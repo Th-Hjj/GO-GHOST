@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 486ff2b0f5ff4a72b46e1cebdb535739, type: 3}
+  m_Name: PlayerStats
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerStatsSO
+  maxHealth: 100
+  moveSpeed: 6
+  jumpForce: 12
+  maxAirJumps: 1
+  gunDamage: 10
+  fireRate: 0.25
+  bulletSpeed: 18
+  dodgeDistance: 3
+  dodgeDuration: 0.18
+  dodgeCooldown: 0.8
+  iFrameDuration: 0.25
+  slashDodgeBonusDistance: 2.5
+  slashDodgeDamagePercent: 0.3

@@ -1,6 +1,6 @@
 # GO GHOST - Project Map
 
-What exists in the repository, where it is, what is missing, and what comes next. Based on the Stage 0 audit (2026-09-17) and the Stage 1 reorganization (2026-09-17, branch `chore/project-organization`). Update this file whenever paths, systems, or stage status change. Do not describe scripts that do not exist.
+What exists in the repository, where it is, what is missing, and what comes next. Based on the Stage 0 audit (2026-09-17), the Stage 1 reorganization (merged into `main` on 2026-09-17) and the Stage 2A combat foundation (2026-09-17, branch `feature/topdown-combat-foundation`). Update this file whenever paths, systems, or stage status change. Do not describe scripts that do not exist.
 
 ## 1. Status
 
@@ -8,32 +8,34 @@ What exists in the repository, where it is, what is missing, and what comes next
 |---|---|
 | Unity | 6000.6.0f1, URP 17.6.0 (2D Renderer), Input System 1.20.0, uGUI 2.6.0, Test Framework 1.8.0 (no tests yet) |
 | Target | Windows PC (StandaloneWindows64), keyboard + mouse |
-| Stage | Stage 1 done (docs + reorganization) on `chore/project-organization`, not merged. Stage 2A not started |
-| Formal entry scene | `Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity` (Main Camera + Global Light 2D only; grey-box start) |
-| Build Settings | One scene, enabled: `Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity`. No Build Profiles |
-| Player test scene | `Assets/_Game/Development/Walker/Scenes/Scene1.unity` (Walker). Not in Build Settings |
-| Compile status | 0 errors (verified in the editor on 2026-09-17 after the moves) |
-| Play Mode | Not run. Scene1 is expected to throw input exceptions until Stage 2A (see section 5) |
-| Windows build | Not run (planned for Stage 2D) |
+| Stage | Stage 1 merged into `main` (3c3c73b, d036a5d). Stage 2A implemented on `feature/topdown-combat-foundation`, not yet committed or merged |
+| Formal entry scene | `Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity`: grey-box arena, Player prefab, one three-enemy encounter, exit barrier that opens on completion |
+| Build Settings | One scene, enabled: `Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity` (index 0). No Build Profiles |
+| Player test scene | `Assets/_Game/Development/Walker/Scenes/Scene1.unity` (Walker). Player prefab instance + camera, no enemies. Not in Build Settings |
+| Compile status | 0 errors, 0 warnings (2026-09-17 after Stage 2A) |
+| Play Mode | Run through the editor-only smoke-test driver (section 8): movement, aim, shooting, dodge, combat, death/retry all pass in L01 and Scene1 |
+| Windows build | Succeeded on 2026-09-17 (Windows x64, 0 errors, 509 shader warnings, 3m 18s). Output: `Builds/Windows/GO GHOST.exe`; standalone launch and scene rendering verified |
 
-Editor settings worth knowing: Force Text serialization, Visible Meta Files, Enter Play Mode Options enabled with Domain Reload disabled (static state persists between play sessions). Physics2D gravity is (0, -9.81); all layers collide. Layers: Ground (6), Enemy (7). No tags, sorting layer Default only.
+Editor settings worth knowing: Force Text serialization, Visible Meta Files, Enter Play Mode Options enabled with Domain Reload disabled (static state persists between play sessions; the game scripts keep no static state). Physics2D gravity is (0, -9.81); the Player and enemies use gravityScale 0. All layers collide with each other. Layers: Ground (6, walls), Enemy (7), Player (8). No tags, sorting layer Default only.
 
-## 2. Layout after Stage 1
+## 2. Layout
 
 ```
 Assets/
   _Game/
     Shared/
-      Scripts/Player/      12 player/shared scripts + READEME.md (Walker's original setup notes)
-      Prefabs/Bullet.prefab
-      Data/PlayerStats.asset
+      Scripts/Player/      PlayerInputReader + the 12 original player/shared scripts + READEME.md (Walker's original notes, partly outdated)
+      Scripts/Enemies/     Enemy.cs
+      Scripts/Encounters/  EncounterZone.cs
+      Prefabs/             Player.prefab, Bullet.prefab, Enemies/Enemy_Basic.prefab
+      Data/                PlayerStats.asset
     Levels/L01_Mission/Scenes/Cyberpunk World.unity
-    Development/Thomas/Scenes/Random Scene.unity   (empty camera-only scene)
-    Development/Walker/Scenes/Scene1.unity         (player test scene)
+    Development/Thomas/Scenes/Random Scene.unity        (empty camera-only scene)
+    Development/Thomas/Scripts/TopDownSmokeTest.cs      (editor-only Play Mode smoke-test driver)
+    Development/Walker/Scenes/Scene1.unity              (player test scene)
   Cyborg-Assets/           two empty folders, see section 7 (not moved)
   Settings/                URP + Input System template assets (keep in place)
   Welcome/                 Unity 2D template welcome content + IET framework (keep in place)
-  Scenes/                  EMPTY leftover folder, pending deletion (see section 9)
 Docs/  CLAUDE.md  README.md
 ```
 
@@ -43,118 +45,129 @@ Docs/  CLAUDE.md  README.md
 
 | Scene | Content | Notes |
 |---|---|---|
-| `_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity` | Main Camera (URP camera data), Global Light 2D | Renamed from the template SampleScene. Formal mission grey-box start. Only build scene |
-| `_Game/Development/Walker/Scenes/Scene1.unity` | Player (SpriteRenderer with built-in Square, Rigidbody2D gravity 1 with rotation frozen, BoxCollider2D, 6 player components), children CameraTarget / GroundCheck / FirePoint; Main Camera with CameraFollow (target = CameraTarget); one stray Bullet prefab instance at the origin | `PlayerShooting.firePoint` and `PlayerMovement.groundCheck` are unassigned even though the child objects exist. No ground, no enemies. Not a prefab |
+| `_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity` | Main Camera (URP camera data, CameraFollow -> Player/CameraTarget), Global Light 2D, `Arena` (five wall segments + `ExitBarrier`, all layer Ground with BoxCollider2D), `Player` (Player.prefab instance at (-8, 0)), `Encounter_01` (EncounterZone trigger 14x14 at (5, 0) with three `Enemy_Basic` children at (6,3), (6,-3), (9,0); disables ExitBarrier on completion) | Formal mission grey-box. Only build scene. Saved in the current scene format (upgraded from the template format in Stage 2A, hence the large diff) |
+| `_Game/Development/Walker/Scenes/Scene1.unity` | Player.prefab instance at the origin; Main Camera with CameraFollow (target = CameraTarget) | Walker's test scene. The stray Bullet instance was removed. No enemies, no walls |
 | `_Game/Development/Thomas/Scenes/Random Scene.unity` | Main Camera only | Empty test scene |
 
-## 4. Scripts (all in `Assets/_Game/Shared/Scripts/Player/`, assembly Assembly-CSharp, no namespace)
+## 4. Scripts
 
-File names are lowercase (e.g. `Playermovement.cs` contains `PlayerMovement`). Unity resolves all 12 classes correctly on Windows; renaming files to match class names is a Proposed cleanup for later, to be done inside Unity and agreed with Walker.
+All game scripts are in Assembly-CSharp, no namespace. File names of the original 12 scripts are lowercase (e.g. `Playermovement.cs` contains `PlayerMovement`); Unity resolves all classes correctly on Windows. Renaming them to match class names is a Proposed cleanup for later.
+
+### `Assets/_Game/Shared/Scripts/Player/`
 
 | File / class | Responsibility | Status |
 |---|---|---|
-| `Playerstatsso.cs` PlayerStatsSO | Tunables: maxHealth, moveSpeed, jumpForce, maxAirJumps, gunDamage, fireRate, bulletSpeed, dodge distance/duration/cooldown, iFrameDuration, slash-dodge bonus/damage. Asset: `Shared/Data/PlayerStats.asset` | Implemented, not verified in play |
-| `Playermovement.cs` PlayerMovement | Reads `Horizontal` + `Jump` (legacy Input), ground check, flips facing, exposes `FacingDirection`; yields Rigidbody control while dodging; double-jump unlock | Implemented, not verified. Platformer logic |
-| `Playershooting.cs` PlayerShooting | Holds `Fire1` to fire at `fireRate`; instantiates `Projectile` at `firePoint` in `FacingDirection` (horizontal only) | Implemented, not verified |
-| `Projectile.cs` Projectile | Straight bullet via Rigidbody2D velocity; trigger hit calls `IDamageable.TakeDamage`, ignores owner, lifetime self-destroy; no layer filtering | Implemented, not verified |
-| `Playerdodge.cs` PlayerDodge | `Fire3` dash via `MovePosition`, i-frames through `PlayerHealth.IsInvulnerable`, cooldown; slash-dodge upgrade damages enemies on the path; `PerformForcedSlashDodge()` for Last Stand | Implemented, not verified. Horizontal only |
-| `Playerhealth.cs` PlayerHealth | Health, damage, invulnerability, death (`Die()` is a TODO); Last Stand once per battle (forced slash dash, ends at 1 HP); events OnHealthChanged / OnDeath / OnLastStandTriggered | Implemented, not verified |
-| `Playerabilityso.cs` PlayerAbilitySO | Abstract ability ScriptableObject (name, description, icon, cooldown, `Activate`) | Implemented; no ability assets exist |
-| `Exampleblastabilityso.cs` ExampleBlastAbilitySO | Radius damage example ability | Implemented; no asset created from it |
-| `Playerabilitysystem.cs` PlayerAbilitySystem | `Fire2` uses selected ability, Q/E cycle, cooldown dictionary, unlocked list | Implemented, not verified |
-| `Playerupgrademanager.cs` PlayerUpgradeManager | Unlock entry points: double jump, slash dodge, Last Stand, ability | Implemented, not verified |
-| `Idamageable.cs` IDamageable | `TakeDamage(int amount, GameObject source)` | Implemented |
-| `Camerafollow.cs` CameraFollow | LateUpdate follow of a target's x/y | Implemented, not verified |
+| `PlayerInputReader.cs` PlayerInputReader (new, Stage 2A) | Single input source: resolves Player/Move, Aim, Attack, Dodge, Ability, Previous, Next from `InputSystem.actions`, polls them each frame, computes the unified `AimDirection` (mouse -> world, normalized, never zero). Logs a clear error if an action or the actions asset is missing. Runs before other scripts (`DefaultExecutionOrder(-100)`) | Verified in Play Mode |
+| `Playerstatsso.cs` PlayerStatsSO; asset `Shared/Data/PlayerStats.asset` | Tunables: maxHealth, moveSpeed, jumpForce, maxAirJumps, gunDamage, fireRate, bulletSpeed, dodge distance/duration/cooldown, iFrameDuration, slash-dodge bonus/damage | Unchanged |
+| `Playermovement.cs` PlayerMovement | Top-down planar movement from `MoveInput` (diagonals normalized); `FacingDirection` follows the aim and flips the sprite with `SpriteRenderer.flipX`; yields to PlayerDodge while dodging. Jump / ground-check members are kept but unused | Verified |
+| `Playershooting.cs` PlayerShooting | Holds Attack to fire at `fireRate`; spawns the bullet at the muzzle (player position + AimDirection x FirePoint radius), rotated to the aim; moves the FirePoint child to the muzzle every frame | Verified |
+| `Projectile.cs` Projectile; prefab `Shared/Prefabs/Bullet.prefab` | Straight bullet; ignores its shooter and anything on the shooter's layer (layer cached at launch, so a destroyed owner is never dereferenced); damages IDamageable; destroyed by `blockingLayers` (Bullet prefab: Ground) | Verified |
+| `Playerdodge.cs` PlayerDodge | Dodge along the Move direction, or along the aim when not moving; i-frames; cooldown; velocity zeroed after the dash; slash-dodge upgrade and `PerformForcedSlashDodge` (nearest enemy in any direction) kept; `CancelDodge()` for death | Verified (manual and forced-slash hooks unchanged in behaviour) |
+| `Playerhealth.cs` PlayerHealth | Health, damage, invulnerability, Last Stand (unchanged); `Die()` now disables input/movement/shooting/dodge/abilities, freezes the body, tints the sprite, and after `retryDelay` (1.5 s) reloads the active scene if it is in Build Settings (otherwise logs a warning) | Verified in L01 |
+| `Playerabilitysystem.cs` PlayerAbilitySystem | Ability action uses the selected ability; Previous/Next cycle. No ability asset exists yet, so the button does nothing | Input wired, no asset (by design for 2A) |
+| `Playerupgrademanager.cs` PlayerUpgradeManager | Unlock entry points (double jump, slash dodge, Last Stand, ability) | Unchanged |
+| `Playerabilityso.cs` PlayerAbilitySO, `Exampleblastabilityso.cs` ExampleBlastAbilitySO | Ability ScriptableObject base + radius-damage example | Unchanged, no assets |
+| `Idamageable.cs` IDamageable | `TakeDamage(int amount, GameObject source)`; implemented by PlayerHealth and Enemy | Unchanged |
+| `Camerafollow.cs` CameraFollow | LateUpdate follow | Unchanged; used in L01 and Scene1 |
 
-Data assets: `Shared/Data/PlayerStats.asset` (PlayerStatsSO, referenced by PlayerMovement, PlayerShooting, PlayerDodge, PlayerHealth in Scene1). Prefabs: `Shared/Prefabs/Bullet.prefab` (Circle sprite, Sprite-Lit-Default material, Rigidbody2D gravity 0, CircleCollider2D trigger, Projectile with lifetime 3).
+### `Assets/_Game/Shared/Scripts/Enemies/` and `Encounters/`
 
-No string paths, `Resources` loads, scene loading by name, or assembly definitions exist in the game scripts, so moving assets is safe.
-
-## 5. Known Input System mismatch (Stage 2A work)
-
-Player Settings: Active Input Handling = **Input System Package (New)** only. The four scripts below still call the legacy `UnityEngine.Input` class, which throws `InvalidOperationException` every frame in Play Mode under this setting. Decision (Confirmed): migrate the scripts to the New Input System. Do not switch Player Settings to "Both".
-
-Existing actions in `Assets/Settings/InputSystem_Actions.inputactions` (template default, unused by any script):
-- Player map: Move (Vector2, WASD/arrows/left stick), Look (Vector2, pointer delta / right stick), Attack (Button, left mouse / Enter / gamepad West), Interact (Button, E), Crouch (C), Jump (Space), Previous (1), Next (2), Sprint (Left Shift).
-- UI map: Navigate, Submit, Cancel, Point, Click, RightClick, MiddleClick, ScrollWheel, TrackedDevicePosition, TrackedDeviceOrientation.
-- Control schemes: Keyboard&Mouse, Gamepad, Touch, Joystick, XR.
-
-Actions Stage 2A needs (Proposed mapping, to confirm):
-- Move: reuse `Move`.
-- Aim: new `Aim` (Value, Vector2) bound to `<Mouse>/position`. `Look` is a delta, not a position, so it does not fit mouse aiming.
-- Fire: reuse `Attack`.
-- Dodge: new `Dodge` (Button), e.g. Left Shift or Space. `Sprint` currently owns Left Shift and `Jump` owns Space; one of them is repurposed or removed.
-- Ability: new `Ability` (Button), e.g. right mouse button or Q.
-- Ability cycling: reuse `Previous` / `Next` if cycling is kept.
-- Interact: reuse `Interact` if narrative interaction needs it.
-
-Scripts to migrate (only the input-reading lines; keep the rest): `PlayerMovement` (Horizontal, Jump), `PlayerDodge` (Fire3), `PlayerShooting` (Fire1), `PlayerAbilitySystem` (Fire2, KeyCode Q/E).
-
-## 6. Top-down conversion (Stage 2A work, Confirmed direction)
-
-The existing scripts are kept and minimally extended. No parallel controller.
-
-| Script | Now | Stage 2 target |
+| File / class | Responsibility | Status |
 |---|---|---|
-| PlayerMovement | Horizontal axis + jump + ground check | 2D planar movement from the Move vector; expose an aim direction |
-| PlayerShooting | fires along `FacingDirection` | fires along the mouse/world aim direction |
-| PlayerDodge | horizontal dash | directional top-down dodge (move or aim direction) |
-| Rigidbody2D on Player | gravity scale 1, Physics2D gravity on | gravityScale = 0 for the player (and enemies) |
+| `Enemy.cs` Enemy (new) | Basic ranged enemy, IDamageable: chases the player until within `preferredDistance`, fires a Bullet at the player every `fireInterval` within `attackRange`, stops when the player is dead; `OnDied` event then Destroy. Target is handed over by EncounterZone (`SetTarget`), falls back to a scene search. Prefab `Shared/Prefabs/Enemies/Enemy_Basic.prefab`: red square, Rigidbody2D (gravity 0, frozen rotation, interpolated), BoxCollider2D, layer Enemy, 30 HP, speed 3, preferred distance 4, fire interval 1.5 s, bullet speed 8, damage 10 | Verified |
+| `EncounterZone.cs` EncounterZone (new) | Trigger area: hides its listed enemies on Awake, activates them when the player enters, counts deaths (with a per-frame fallback), then marks Complete, disables the configured objects (L01: ExitBarrier) and fires `onEncounterComplete`. Resets by scene reload | Verified |
 
-Platformer-related serialized fields (`jumpForce`, `maxAirJumps`, `groundCheck`, `groundCheckRadius`, `groundLayer`, `doubleJumpUnlocked`) stay for now so Walker's data structures are not broken. They are removed or repurposed only by agreement in a later step.
+Data flow: the Player prefab reads input only through PlayerInputReader; enemies and the player damage each other only through IDamageable and Projectile. No string paths, `Resources`, or static state; the only scene load is PlayerHealth's retry by build index.
+
+## 5. Input (New Input System, Confirmed)
+
+Player Settings: Active Input Handling = Input System Package only (unchanged). No script uses the legacy `UnityEngine.Input` class anymore.
+
+Player map in `Assets/Settings/InputSystem_Actions.inputactions`:
+
+| Action | Type | Default binding | Used by |
+|---|---|---|---|
+| Move | Value Vector2 | WASD / arrows / left stick | PlayerMovement, PlayerDodge |
+| Aim (added) | Value Vector2 | `<Mouse>/position` | PlayerInputReader.AimDirection (shooting, dodge, facing) |
+| Attack | Button | left mouse button (also Enter, gamepad West) | PlayerShooting (name kept, treated as Fire) |
+| Dodge (added) | Button | Space | PlayerDodge |
+| Ability (added) | Button | Q | PlayerAbilitySystem |
+| Previous / Next | Button | 1 / 2 | PlayerAbilitySystem (cycle) |
+| Look, Interact, Crouch, Jump, Sprint | | template defaults | unused (Jump still shares Space with Dodge; harmless) |
+
+## 6. Top-down conversion (done in Stage 2A)
+
+| Script | Before | Now |
+|---|---|---|
+| PlayerMovement | Horizontal axis + jump + ground check | planar velocity from Move; facing from aim; sprite flipX |
+| PlayerShooting | fired along FacingDirection | fires along AimDirection from a world-space muzzle |
+| PlayerDodge | horizontal dash | Move-direction dash, aim-direction dash when standing still |
+| Player Rigidbody2D | gravity scale 1 | gravity scale 0, interpolation on (prefab) |
+
+Platformer fields (`jumpForce`, `maxAirJumps`, `groundCheck`, `groundCheckRadius`, `groundLayer`, `doubleJumpUnlocked`, `TryJump`) are still present and unused, by agreement.
 
 ## 7. Missing or not implemented (for the vertical slice)
 
-- Player prefab (Player is a scene object in Scene1).
-- Enemy: AI, spawning, damage to the player, encounter clear condition.
-- Death flow and retry (`PlayerHealth.Die()` is a TODO).
-- Augmentation loadout data, preparation UI, carry-over into the mission, AI control value (single source of truth).
+- Augmentation loadout data, preparation scene/UI, carry-over into the mission, AI control value.
 - Auto-dodge and its meter, manual/auto priority rule.
-- Ability asset (a shockwave from ExampleBlastAbilitySO is the obvious first one).
+- Ability asset (a shockwave from ExampleBlastAbilitySO) and its unlock path.
 - Dialogue / narrative disagreement node and its AI-control effect.
 - Boss.
-- Result / reflection screen, return to preparation.
-- HUD, dialogue box, preparation screen (uGUI available).
-- Audio: no AudioSource or clips; only AudioListeners on cameras. State hooks for audio not yet exposed.
-- Tests, editor tools, Cinemachine: none.
+- Result / reflection screen, return to preparation. Mission exit after the encounter (the barrier opens, nothing is beyond it yet).
+- HUD (health, meter, cooldowns), dialogue box; encounter/death feedback is currently Console logs, a tint and the barrier.
+- Audio: no AudioSource or clips; state hooks for audio not yet exposed.
+- Enemy damage feedback beyond dying; only one enemy type.
+- Tests (Unity Test Framework), editor tools, Cinemachine: none.
 
-Risk: `Assets/Cyborg-Assets/SpritesForChars` and `Assets/Cyborg-Assets/TilesToUse` exist in the repository only as folder `.meta` files (empty folders). Walker may hold uncommitted art there. Do not move or delete these folders until Walker confirms; if the art exists, he commits it first (PNG goes to LFS automatically), then the folder is moved to `Assets/_Game/Shared/Art/` in a separate step.
+Risk: `Assets/Cyborg-Assets/SpritesForChars` and `Assets/Cyborg-Assets/TilesToUse` exist in the repository only as folder `.meta` files (empty folders). Walker may hold uncommitted art there. Do not move or delete these folders until Walker confirms.
 
-## 8. Stage 1 reorganization record (2026-09-17)
+## 8. Stage 2A record (2026-09-17)
 
-All moves were done with `AssetDatabase.MoveAsset` in the open editor. GUIDs unchanged, `.meta` files moved with their assets, file contents byte-identical to the pre-move blobs.
+Branch `feature/topdown-combat-foundation` (uncommitted at the time of writing).
 
-| Old path | New path | GUID |
-|---|---|---|
-| `Assets/SCRIPTS/` (folder, 12 scripts + READEME.md) | `Assets/_Game/Shared/Scripts/Player/` | e5bceed35d87df247924800259b08dc6 |
-| `Assets/Prefabs/` (folder) with `Bullet.prefab` | `Assets/_Game/Shared/Prefabs/` | folder 31b5a48ffbf7b3049b9cc40cf25bd2e1, prefab 3547db12155ba154ca2c620b8cd8c21c |
-| `Assets/PlayerStats.asset` | `Assets/_Game/Shared/Data/PlayerStats.asset` | 173c9b7886aa1a947aab3ac5f0c13fb7 |
-| `Assets/Scene1.unity` | `Assets/_Game/Development/Walker/Scenes/Scene1.unity` | 3dd46098d3c6eb2429ceab50b3bc3ea7 |
-| `Assets/Scenes/Random Scene.unity` | `Assets/_Game/Development/Thomas/Scenes/Random Scene.unity` | 020c02ae62c438c48b2421de71eb7ad4 |
-| `Assets/Scenes/Cyberpunk World.unity` | `Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity` | 8c9cfa26abfee488c85f1582747f6a02 |
+Modified: `InputSystem_Actions.inputactions` (three actions + bindings added), `Playermovement.cs`, `Playershooting.cs`, `Playerdodge.cs`, `Playerhealth.cs`, `Playerabilitysystem.cs`, `Projectile.cs`, `Bullet.prefab` (blockingLayers = Ground), `ProjectSettings/TagManager.asset` (layer 8 Player), `Scene1.unity` (Player converted to a prefab instance, stray Bullet removed), `Cyberpunk World.unity` (grey-box encounter; scene format upgraded on save).
 
-New folders (new GUIDs, folder `.meta` only): `_Game`, `_Game/Shared`, `_Game/Shared/Scripts`, `_Game/Shared/Data`, `_Game/Levels`, `_Game/Levels/L01_Mission`, `_Game/Levels/L01_Mission/Scenes`, `_Game/Development`, `_Game/Development/Thomas`, `_Game/Development/Thomas/Scenes`, `_Game/Development/Walker`, `_Game/Development/Walker/Scenes`.
+Created: `PlayerInputReader.cs`, `Enemy.cs`, `EncounterZone.cs`, `Player.prefab`, `Enemies/Enemy_Basic.prefab`, `Development/Thomas/Scripts/TopDownSmokeTest.cs`.
 
-Other changes: `ProjectSettings/EditorBuildSettings.asset` path updated to the new scene location (same GUID). The four historical `.idea` files were untracked from git (`git rm --cached`), local IDE files kept; `.gitignore` already ignores `.idea/`.
+### Play Mode tests actually run (editor, virtual keyboard/mouse injected by TopDownSmokeTest)
+- Scene1: input wiring, WASD velocity (6 u/s, diagonals normalized), facing/flipX follows the mouse independently of movement, shooting along the aim (dot = 1.000, speed 18), dodge along Move and along aim (about 3 units, i-frames on, velocity zeroed after).
+- L01: same movement/shooting/dodge checks; walking into the zone activates 3 enemies; standing still 3.5 s takes 60 damage from enemy bullets; damage during a dodge is ignored; killing the nearest enemy takes 3 hits (0.5 s); clearing all enemies marks the encounter Complete and disables ExitBarrier; lethal damage disables the player and reloads the scene after 1.5 s with a fresh Player, 3 inactive enemies, zone Idle, one of everything (checked after two consecutive reloads).
+- Console: 0 errors, 0 warnings throughout.
 
-Not moved: `Assets/Settings/`, `Assets/Welcome/`, `Assets/Cyborg-Assets/`, `Packages/`, `ProjectSettings/`.
+### Needs manual verification (Thomas / Walker, keyboard and mouse in hand)
+- Feel: movement speed, dodge distance and cooldown, aim responsiveness, camera follow smoothness.
+- Bullet collider (radius 0.5) hit generosity and any tunneling through the 1-unit walls; report before tuning (kept at Walker's original values on purpose).
+- Player/Enemy physical pushing (collision matrix unchanged on purpose); whether dodging into an enemy feels wrong.
+- Windows build: Succeeded on 2026-09-17; standalone launch and scene rendering verified. This quick recheck verified encounter activation, incoming damage, dodge invulnerability, shooting, and death/retry. The automated combat run ended in player death before clearing the encounter, so full encounter completion was not reverified. Reports: `Builds/quick-check.txt` and `Builds/build-report.txt`.
 
-### Verification results
-- Git: every pre-move GUID exists exactly once after the move; the only new GUIDs are the 12 folder metas above. All 38 moved files (assets + metas) hash-identical to their pre-move blobs. Build Settings change is the only ProjectSettings diff.
-- Editor: 0 compile errors, 0 console errors. Scene1 dependencies: same 17 GUIDs as before. Cyberpunk World: same 3. Random Scene: same 1. Bullet prefab: same 5. All 12 scripts resolve to their classes. `PlayerStats.asset` loads as PlayerStatsSO.
-- Scenes opened in the editor (edit mode only): Random Scene, Scene1, Cyberpunk World all load, none dirty, 0 Missing Scripts. In Scene1 the four `stats` references point to the moved PlayerStats asset, `bulletPrefab` points to the moved Bullet prefab, `CameraFollow.target` still points to CameraTarget. `firePoint` and `groundCheck` were already unassigned before the move.
-- Not run: Play Mode, Windows build.
+### How to run the smoke tests yourself
+In Play Mode (L01 or Scene1), run from an editor script or the C# console: `TopDownSmokeTest.Launch("movement")` (or `shooting`, `dodge`, `combat`, `death`); results appear in the Console prefixed `[SmokeTest]` and in `TopDownSmokeTest.Results`. The driver mutes the real keyboard/mouse while it runs and restores them afterwards.
 
-## 9. Known issues
+## 9. Stage 1 record (2026-09-17, merged)
 
-- Empty `Assets/Scenes/` folder and its `.meta` are still present. Deleting a folder through the editor bridge required an in-editor confirmation, so it is left for a manual delete in the Project window (right-click Delete removes folder and meta).
-- Scene1 in Play Mode throws legacy-input exceptions (section 5). Expected until Stage 2A.
-- Scene1 Player: `firePoint` / `groundCheck` unassigned, gravity on with no ground, stray Bullet instance at the origin.
+All moves were done with `AssetDatabase.MoveAsset`; GUIDs unchanged, `.meta` files moved with their assets.
+
+| Old path | New path |
+|---|---|
+| `Assets/SCRIPTS/` (12 scripts + READEME.md) | `Assets/_Game/Shared/Scripts/Player/` |
+| `Assets/Prefabs/Bullet.prefab` | `Assets/_Game/Shared/Prefabs/Bullet.prefab` |
+| `Assets/PlayerStats.asset` | `Assets/_Game/Shared/Data/PlayerStats.asset` |
+| `Assets/Scene1.unity` | `Assets/_Game/Development/Walker/Scenes/Scene1.unity` |
+| `Assets/Scenes/Random Scene.unity` | `Assets/_Game/Development/Thomas/Scenes/Random Scene.unity` |
+| `Assets/Scenes/Cyberpunk World.unity` | `Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity` |
+
+Also: Build Settings path updated, empty `Assets/Scenes` removed, four `.idea` files untracked. Not moved: `Assets/Settings/`, `Assets/Welcome/`, `Assets/Cyborg-Assets/`, `Packages/`, `ProjectSettings/`.
+
+## 10. Known issues
+
+- Retry only works for scenes in Build Settings (L01). In Development scenes death logs a warning; stop and restart Play Mode.
+- The smoke-test driver changes Input System settings and mutes real devices while running; if a scenario is interrupted mid-run (e.g. Play Mode stopped), settings are restored on destroy, but check `Edit > Project Settings > Input System Package` if input feels wrong afterwards.
 - Script file names do not match class names in case (works on Windows; risk on case-sensitive systems).
 - UnityYAMLMerge is not configured on Thomas's machine; unknown on Walker's (see Collaboration.md section 6).
-- The `READEME.md` next to the scripts describes the original platformer / legacy-Input setup. Direction decisions in `Docs/` take precedence.
+- `Shared/Scripts/Player/READEME.md` (Walker's notes) still describes the legacy-Input platformer setup; the docs in `Docs/` take precedence.
 - Enter Play Mode Options: Domain Reload disabled. Future managers must reset static state.
+- Two enemies on the same spot can push each other and the player (all layers collide); acceptable for the grey-box until tested by hand.
 
-## 10. Next step
+## 11. Next step
 
-Stage 2A (not started, needs explicit approval): New Input System migration of the four scripts, top-down movement, mouse aiming, top-down shooting and dodge, a shared Player prefab, and a minimal combat encounter. Proposed order and details are in the Stage 1 report and will be recorded here once approved.
+Review and merge `feature/topdown-combat-foundation`. Then Stage 2B (needs explicit approval): augmentation loadout data and preparation flow, applying the loadout to the Player prefab through PlayerUpgradeManager, a single AI-control value, the auto-dodge meter, and one ability asset.

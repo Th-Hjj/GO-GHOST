@@ -9,24 +9,26 @@ A single-player 2D top-down narrative action shooter set in a cyberpunk world, a
 ## Opening the project
 1. Clone the repository.
 2. In Unity Hub, add the repository root (the folder containing `Assets/`, `Packages/`, `ProjectSettings/`) and open it with 6000.6.0f1.
-3. Formal entry scene: `Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity`. It is the grey-box start of the vertical slice mission and is still empty.
-4. Player test scene (Walker): `Assets/_Game/Development/Walker/Scenes/Scene1.unity`.
+3. Formal entry scene: `Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity`. Press Play there: a grey-box arena with one three-enemy encounter. Controls: WASD move, mouse aim, left mouse button shoot, Space dodge, Q ability (no ability unlocked yet), 1 / 2 cycle abilities.
+4. Player test scene (Walker): `Assets/_Game/Development/Walker/Scenes/Scene1.unity` (uses the shared Player prefab; no enemies).
 
-Known state (2026-09-17): the player scripts still use the legacy Input class while the project uses the New Input System, so Play Mode in Scene1 throws input exceptions until the Stage 2A conversion. See `Docs/ProjectMap.md`.
+Known state (2026-09-17, Stage 2A): top-down combat foundation is playable in L01 (movement, aim, shooting, dodge, one enemy type, one encounter, death and retry). Retry reloads the scene only for scenes in Build Settings; in Development scenes stop and restart Play Mode. See `Docs/ProjectMap.md`.
 
 ## Layout
 ```
 Assets/
   _Game/
     Shared/                 code and assets used by more than one level
-      Scripts/Player/       player movement, shooting, dodge, health, abilities, upgrades
-      Prefabs/              Bullet.prefab
+      Scripts/Player/       input reader, movement, shooting, dodge, health, abilities, upgrades, projectile
+      Scripts/Enemies/      Enemy.cs (basic ranged enemy)
+      Scripts/Encounters/   EncounterZone.cs (trigger area that runs one encounter)
+      Prefabs/              Player.prefab, Bullet.prefab, Enemies/Enemy_Basic.prefab
       Data/                 PlayerStats.asset
     Levels/
-      L01_Mission/Scenes/   Cyberpunk World.unity (formal mission scene)
+      L01_Mission/Scenes/   Cyberpunk World.unity (formal mission scene, grey-box encounter)
     Development/
-      Thomas/Scenes/        personal test scenes
-      Walker/Scenes/        personal test scenes
+      Thomas/Scenes/, Thomas/Scripts/   personal test scene and the editor-only Play Mode smoke-test driver
+      Walker/Scenes/        personal test scene
   Settings/                 URP and Input System assets (template, keep in place)
   Welcome/                  Unity 2D template welcome content
 Docs/                       design and collaboration docs

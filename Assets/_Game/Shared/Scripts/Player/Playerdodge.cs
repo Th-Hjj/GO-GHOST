@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Base: a short i-frame dodge dash.
+/// Base: a short i-frame dodge dash in any direction (top-down): along the
+/// Move input if the player is moving, otherwise along the aim direction.
 /// Upgraded (slashDodgeUnlocked): longer dash that damages every enemy it
 /// passes through.
 /// Also exposes PerformForcedSlashDodge(), used exclusively by
@@ -12,8 +13,10 @@ using UnityEngine;
 /// </summary>
 // FUNCTION SUMMARY
 // TryDodge()                — starts a dodge if one isn't already on cooldown or in progress.
+// GetDodgeDirection()        — Move direction if there is move input, otherwise the aim direction.
 // DodgeRoutine()             — moves the player through the dash over time, granting i-frames and (if upgraded) damaging enemies passed through.
 // PerformForcedSlashDodge()  — the guaranteed damaging slash used only by Last Stand, aimed at the nearest enemy.
+// CancelDodge()              — stops any running dash and clears its state (used when the player dies).
 // DamageEnemiesAtPoint()     — checks for enemies near a given dash position and damages each one exactly once per dash.
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerDodge : MonoBehaviour
@@ -31,18 +34,23 @@ public class PlayerDodge : MonoBehaviour
 
     private Rigidbody2D rb;
     private PlayerHealth health;
-    private PlayerMovement movement;
+    private PlayerInputReader input;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         health = GetComponent<PlayerHealth>();
-        movement = GetComponent<PlayerMovement>();
+        input = GetComponent<PlayerInputReader>();
+        if (input == null)
+        {
+            Debug.LogError("PlayerDodge requires a PlayerInputReader on the same GameObject. Add it to the Player prefab.", this);
+            enabled = false;
+        }
     }
 
     private void Update()
     {
-        if (Input.GetButtonDown("Fire3")) // assign your "dodge" button to this axis, or swap for your own input
+        if (input.DodgePressedThisFrame) // "Dodge" action in InputSystem_Actions (default: Space)
         {
             TryDodge();
         }
@@ -54,6 +62,23 @@ public class PlayerDodge : MonoBehaviour
         StartCoroutine(DodgeRoutine());
     }
 
+    /// <summary>Move direction while the player is moving, otherwise the aim direction. Always normalized, never zero.</summary>
+    public Vector2 GetDodgeDirection()
+    {
+        if (input.HasMoveInput)
+            return input.MoveInput.normalized;
+        return input.AimDirection;
+    }
+
+    /// <summary>Stops any running dash (manual or forced) and clears its state. Used by PlayerHealth when the player dies.</summary>
+    public void CancelDodge()
+    {
+        StopAllCoroutines();
+        IsDodging = false;
+        canDodge = true;
+        if (health != null) health.IsInvulnerable = false;
+    }
+
     private IEnumerator DodgeRoutine()
     {
         canDodge = false;
@@ -61,7 +86,7 @@ public class PlayerDodge : MonoBehaviour
         health.IsInvulnerable = true;
 
         float distance = stats.dodgeDistance + (slashDodgeUnlocked ? stats.slashDodgeBonusDistance : 0f);
-        Vector2 direction = new Vector2(movement.FacingDirection, 0f);
+        Vector2 direction = GetDodgeDirection();
         Vector2 start = rb.position;
         Vector2 end = start + direction * distance;
 
@@ -82,6 +107,9 @@ public class PlayerDodge : MonoBehaviour
 
             yield return null;
         }
+
+        // MovePosition leaves the body with the dash velocity; stop it so the player does not slide past the end point.
+        rb.linearVelocity = Vector2.zero;
 
         // Keep i-frames slightly beyond the physical dash for a forgiving dodge window.
         float remainingIFrames = stats.iFrameDuration - stats.dodgeDuration;
@@ -107,14 +135,19 @@ public class PlayerDodge : MonoBehaviour
 
         Vector2 start = rb.position;
         float distance = stats.dodgeDistance + stats.slashDodgeBonusDistance;
-        Vector2 direction = new Vector2(movement.FacingDirection, 0f);
+        Vector2 direction = input.AimDirection;
 
-        Collider2D nearest = Physics2D.OverlapCircle(start, distance, enemyLayer);
-        if (nearest != null)
+        // Aim the slash at the nearest enemy in range (any direction in top-down), otherwise along the aim.
+        Collider2D[] candidates = Physics2D.OverlapCircleAll(start, distance, enemyLayer);
+        float bestSqrDistance = float.MaxValue;
+        foreach (var candidate in candidates)
         {
-            float towardEnemy = nearest.transform.position.x - start.x;
-            if (Mathf.Abs(towardEnemy) > 0.01f)
-                direction = new Vector2(Mathf.Sign(towardEnemy), 0f); // slash stays horizontal
+            Vector2 toEnemy = (Vector2)candidate.transform.position - start;
+            if (toEnemy.sqrMagnitude > 0.0001f && toEnemy.sqrMagnitude < bestSqrDistance)
+            {
+                bestSqrDistance = toEnemy.sqrMagnitude;
+                direction = toEnemy.normalized;
+            }
         }
 
         Vector2 end = start + direction * distance;
@@ -131,6 +164,7 @@ public class PlayerDodge : MonoBehaviour
             yield return null;
         }
 
+        rb.linearVelocity = Vector2.zero;
         IsDodging = false;
     }
 

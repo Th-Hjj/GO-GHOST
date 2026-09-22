@@ -30,7 +30,7 @@ Before starting a task, say in chat which files or folders you will touch, which
 
 At any one time only one person edits a given:
 - `.unity` scene
-- shared `.prefab` (Bullet, and the future Player prefab)
+- shared `.prefab` (Player, Bullet, Enemies/Enemy_Basic)
 - `Assets/Settings/InputSystem_Actions.inputactions`
 - `Assets/_Game/Shared/Data/PlayerStats.asset` and other shared data assets
 - anything in `ProjectSettings/` (TagManager, EditorBuildSettings, Physics2D, ProjectSettings.asset)
@@ -85,7 +85,7 @@ Replace `<UnityInstall>` with your own path, for example `C:/Program Files/Unity
 2. Install Git LFS and run `git lfs install` before cloning.
 3. Clone, then open the repository root as a Unity project with 6000.6.0f1. Do not upgrade the Unity version.
 4. Formal entry scene: `Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity` (currently a grey-box start). Walker's player test scene: `Assets/_Game/Development/Walker/Scenes/Scene1.unity`.
-5. Known state: the player scripts still use the legacy `UnityEngine.Input` class while Player Settings enable only the New Input System, so Play Mode in Scene1 throws input exceptions until the Stage 2A conversion (see `ProjectMap.md`). This is expected, not a broken checkout.
+5. Known state (Stage 2A): the player scripts read the New Input System through `PlayerInputReader`; L01 is playable as a grey-box combat loop. Retry after death reloads the scene only when the scene is in Build Settings, so in Development scenes stop and restart Play Mode instead (see `ProjectMap.md`).
 
 ## 8. Before you push or merge
 
@@ -98,4 +98,4 @@ Replace `<UnityInstall>` with your own path, for example `C:/Program Files/Unity
 
 ## 9. The first structural reorganization (Stage 1, 2026-09-17)
 
-Done on branch `chore/project-organization` by Thomas with Claude, not yet merged. Before it is merged: Walker commits or safely saves his local work (including anything in `Assets/Cyborg-Assets/`), both agree on a sync window, the branch is merged, and both pull. Do not edit files at their old paths while the reorganization is pending. The full old-to-new mapping is in `ProjectMap.md`.
+Done on branch `chore/project-organization` by Thomas with Claude and merged into `main` (commits 3c3c73b and d036a5d). Walker should pull `main` before continuing and must not edit files at the old paths. The full old-to-new mapping is in `ProjectMap.md`. `Assets/Cyborg-Assets/` was left in place until Walker confirms whether it holds uncommitted art.

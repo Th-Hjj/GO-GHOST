@@ -47,7 +47,7 @@ The slice is one complete short mission. It is not the full semester game.
 Technical direction (Confirmed):
 - Unity **New Input System** (project-wide `Assets/Settings/InputSystem_Actions.inputactions`). The legacy `UnityEngine.Input` class is not the long-term solution.
 - URP 2D renderer, Unity native audio, uGUI available for UI. No new middleware.
-- The existing player scripts are reused and extended, not replaced. They still carry horizontal-platformer assumptions and are converted in Stage 2 (see `ProjectMap.md`).
+- The existing player scripts are reused and extended, not replaced. Stage 2A converted them to top-down movement, mouse aim, directional dodge and the New Input System (see `ProjectMap.md`).
 
 ## 4. Narrative (Confirmed)
 

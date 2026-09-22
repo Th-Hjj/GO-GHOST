@@ -23,16 +23,28 @@ public class PlayerAbilitySystem : MonoBehaviour
     public IReadOnlyList<PlayerAbilitySO> UnlockedAbilities => unlockedAbilities;
     public PlayerAbilitySO SelectedAbility => selectedIndex >= 0 ? unlockedAbilities[selectedIndex] : null;
 
+    private PlayerInputReader input;
+
+    private void Awake()
+    {
+        input = GetComponent<PlayerInputReader>();
+        if (input == null)
+        {
+            Debug.LogError("PlayerAbilitySystem requires a PlayerInputReader on the same GameObject. Add it to the Player prefab.", this);
+            enabled = false;
+        }
+    }
+
     private void Update()
     {
-        if (Input.GetButtonDown("Fire2")) // assign your "special ability" button to this axis, or swap for your own input
+        if (input.AbilityPressedThisFrame) // "Ability" action in InputSystem_Actions (default: Q)
         {
             UseSelectedAbility();
         }
 
-        // Optional: let the player cycle between unlocked abilities.
-        if (Input.GetKeyDown(KeyCode.Q)) CycleAbility(-1);
-        if (Input.GetKeyDown(KeyCode.E)) CycleAbility(1);
+        // Optional: let the player cycle between unlocked abilities ("Previous"/"Next" actions, default: 1 / 2).
+        if (input.PreviousPressedThisFrame) CycleAbility(-1);
+        if (input.NextPressedThisFrame) CycleAbility(1);
     }
 
     public void UnlockAbility(PlayerAbilitySO ability)

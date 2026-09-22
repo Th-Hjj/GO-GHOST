@@ -1,13 +1,18 @@
 ﻿using UnityEngine;
 
 /// <summary>
-/// Left/right movement, jump, and an unlockable double jump. Yields control
-/// of the Rigidbody2D to PlayerDodge while a dodge is in progress.
+/// Top-down planar movement (Move vector from PlayerInputReader). Facing
+/// follows the aim direction, not the movement, so the player can strafe
+/// one way while shooting the other. Yields control of the Rigidbody2D to
+/// PlayerDodge while a dodge is in progress.
+/// The jump / ground-check members below are left over from the earlier
+/// side-scroller version and are currently unused (kept until the team
+/// decides to remove them).
 /// </summary>
 // FUNCTION SUMMARY
-// Update()             — reads input, flips facing direction, checks if grounded, and listens for the jump button.
-// FixedUpdate()        — applies horizontal velocity each physics step (unless a dodge is currently controlling movement).
-// TryJump()             — performs a ground jump, or an air jump if Double Jump is unlocked and one is still available.
+// Update()             — reads move/aim input from PlayerInputReader, updates FacingDirection and the sprite flip, checks if grounded.
+// FixedUpdate()        — applies the planar velocity each physics step (unless a dodge is currently controlling movement).
+// TryJump()             — (unused in top-down) performs a ground jump, or an air jump if Double Jump is unlocked and one is still available.
 // UnlockDoubleJump()   — permanently turns on the double jump via the upgrade tree.
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerMovement : MonoBehaviour
@@ -23,9 +28,14 @@ public class PlayerMovement : MonoBehaviour
     /// <summary>1 = facing right, -1 = facing left. Used by dodge/shooting to know which way to fire/dash.</summary>
     public int FacingDirection { get; private set; } = 1;
 
+    /// <summary>Current Move input (length 0..1), for other systems that want the movement direction.</summary>
+    public Vector2 MoveInput => moveInput;
+
     private Rigidbody2D rb;
     private PlayerDodge dodge;
-    private float horizontalInput;
+    private PlayerInputReader input;
+    private SpriteRenderer spriteRenderer;
+    private Vector2 moveInput;
     private bool isGrounded;
     private int airJumpsRemaining;
 
@@ -33,17 +43,27 @@ public class PlayerMovement : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         dodge = GetComponent<PlayerDodge>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        input = GetComponent<PlayerInputReader>();
+        if (input == null)
+        {
+            Debug.LogError("PlayerMovement requires a PlayerInputReader on the same GameObject. Add it to the Player prefab.", this);
+            enabled = false;
+        }
     }
 
     private void Update()
     {
-        horizontalInput = Input.GetAxisRaw("Horizontal");
+        moveInput = input.MoveInput;
 
-        if (horizontalInput != 0)
-        {
-            FacingDirection = horizontalInput > 0 ? 1 : -1;
-            transform.localScale = new Vector3(FacingDirection, 1f, 1f);
-        }
+        // Facing follows the aim so the player can move left while shooting right.
+        Vector2 aim = input.AimDirection;
+        if (Mathf.Abs(aim.x) > 0.01f)
+            FacingDirection = aim.x > 0 ? 1 : -1;
+
+        // flipX only mirrors the sprite; flipping localScale would also mirror FirePoint and CameraTarget.
+        if (spriteRenderer != null)
+            spriteRenderer.flipX = FacingDirection < 0;
 
         isGrounded = groundCheck != null &&
                      Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
@@ -53,19 +73,17 @@ public class PlayerMovement : MonoBehaviour
             airJumpsRemaining = doubleJumpUnlocked ? stats.maxAirJumps : 0;
         }
 
-        if (Input.GetButtonDown("Jump"))
-        {
-            TryJump();
-        }
+        // Jump input is no longer read: the game is top-down (see Docs/ProjectMap.md). TryJump is kept for now.
     }
 
     private void FixedUpdate()
     {
         if (dodge != null && dodge.IsDodging) return; // dodge drives movement during a dash
 
+        // Top-down: planar velocity from the Move vector (PlayerInputReader already clamps it to length 1,
+        // so diagonals are not faster). The Player Rigidbody2D must have gravityScale = 0.
         // Unity 6+ renamed Rigidbody2D.velocity to linearVelocity.
-        // If you're on an older Unity version, replace linearVelocity with velocity below.
-        rb.linearVelocity = new Vector2(horizontalInput * stats.moveSpeed, rb.linearVelocity.y);
+        rb.linearVelocity = moveInput * stats.moveSpeed;
     }
 
     private void TryJump()

@@ -11,7 +11,7 @@ Read this file first in every session, then the docs listed at the bottom for th
 ## Confirmed decisions
 - CONFIRMED: Top-down gameplay. Not a side-scrolling platformer.
 - CONFIRMED: Unity New Input System, using the project-wide `Assets/Settings/InputSystem_Actions.inputactions`. Never switch Player Settings to "Both". The legacy `UnityEngine.Input` class is not the long-term solution.
-- CONFIRMED: The current player scripts in `Assets/_Game/Shared/Scripts/Player/` still carry horizontal-platformer assumptions (Horizontal axis, jump, ground check, gravity) and legacy Input calls. Converting them is Stage 2 work, done as a minimal extension of the existing classes. Do not create a parallel `PlayerControllerV2`.
+- CONFIRMED: The player scripts in `Assets/_Game/Shared/Scripts/Player/` were converted to top-down + New Input System in Stage 2A as minimal extensions of the existing classes (`PlayerInputReader` is the single input/aim source). Their leftover platformer fields (jump, ground check) are kept until the team decides to remove them. Do not create a parallel `PlayerControllerV2`.
 
 ## How to work
 1. Read the existing code before proposing anything. Reuse first: direct reuse, then minimal extension, then local refactor, then replacement only with approval.

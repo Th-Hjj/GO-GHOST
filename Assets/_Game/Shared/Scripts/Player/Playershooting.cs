@@ -1,40 +1,65 @@
 ﻿using UnityEngine;
 
 /// <summary>
-/// Fires a Projectile from firePoint in the direction the player is facing.
+/// Fires a Projectile along the mouse aim direction (PlayerInputReader.AimDirection).
+/// The muzzle is the player's position offset along the aim by the FirePoint
+/// child's original distance, so aiming is independent of the movement direction.
 /// </summary>
 // FUNCTION SUMMARY
-// Update() — checks if the fire button is held and enough time has passed since the last shot, then fires.
-// Fire()   — spawns a bullet at the fire point and launches it in the direction the player is facing.
+// Update()            — keeps the FirePoint child on the muzzle; if the Attack button is held and the fire rate allows, fires.
+// GetMuzzlePosition() — world-space spawn point for a given aim direction.
+// Fire()              — spawns a bullet at the muzzle, rotated to the aim, and launches it along the aim direction.
 public class PlayerShooting : MonoBehaviour
 {
     [SerializeField] private PlayerStatsSO stats;
+    [Tooltip("Child transform marking the muzzle. Its distance from the player is used as the spawn radius; it is moved to follow the aim.")]
     [SerializeField] private Transform firePoint;
     [SerializeField] private Projectile bulletPrefab;
 
-    private PlayerMovement movement;
+    private PlayerInputReader input;
     private float nextFireTime;
+    private float firePointRadius = 0.5f;
 
     private void Awake()
     {
-        movement = GetComponent<PlayerMovement>();
+        input = GetComponent<PlayerInputReader>();
+        if (input == null)
+        {
+            Debug.LogError("PlayerShooting requires a PlayerInputReader on the same GameObject. Add it to the Player prefab.", this);
+            enabled = false;
+        }
+
+        if (firePoint != null && firePoint.localPosition.magnitude > 0.01f)
+            firePointRadius = firePoint.localPosition.magnitude;
     }
 
     private void Update()
     {
-        if (Input.GetButton("Fire1") && Time.time >= nextFireTime)
+        Vector2 aim = input.AimDirection;
+
+        if (firePoint != null)
+            firePoint.position = GetMuzzlePosition(aim);
+
+        if (input.AttackHeld && Time.time >= nextFireTime)
         {
-            Fire();
+            Fire(aim);
             nextFireTime = Time.time + stats.fireRate;
         }
     }
 
-    private void Fire()
+    /// <summary>World-space muzzle position for the given (normalized) aim direction.</summary>
+    public Vector2 GetMuzzlePosition(Vector2 aimDirection)
     {
-        if (bulletPrefab == null || firePoint == null) return;
+        return (Vector2)transform.position + aimDirection * firePointRadius;
+    }
 
-        Projectile bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
-        Vector2 direction = new Vector2(movement.FacingDirection, 0f);
+    private void Fire(Vector2 direction)
+    {
+        if (bulletPrefab == null) return;
+
+        Vector2 spawn = GetMuzzlePosition(direction);
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        Projectile bullet = Instantiate(bulletPrefab, spawn, Quaternion.Euler(0f, 0f, angle));
         bullet.Launch(direction, stats.bulletSpeed, stats.gunDamage, gameObject);
     }
 }

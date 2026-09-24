@@ -21,100 +21,168 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerDodge : MonoBehaviour
 {
-using System.Collections;
-using UnityEngine;
-
-/// <summary>
-/// Fires a Projectile along the mouse aim direction (PlayerInputReader.AimDirection).
-/// The muzzle is the player's position offset along the aim by the FirePoint
-/// child's original distance, so aiming is independent of the movement direction.
-/// Base: hold Attack to fire continuously, governed by stats.fireRate.
-/// Upgraded (volleyUnlocked): each Attack press fires a burst of
-/// stats.volleyShotCount shots, stats.volleyShotDelay apart.
-/// </summary>
-// FUNCTION SUMMARY
-// Update()            — keeps the FirePoint child on the muzzle; fires (continuous or volley burst) based on Attack input and the Volley upgrade.
-// GetMuzzlePosition() — world-space spawn point for a given aim direction.
-// Fire()              — spawns a single bullet at the muzzle, rotated to the aim, and launches it along the aim direction.
-// FireVolleyRoutine()  — fires stats.volleyShotCount shots stats.volleyShotDelay apart, re-reading aim each shot.
-public class PlayerShooting : MonoBehaviour
-{
     [SerializeField] private PlayerStatsSO stats;
-    [Tooltip("Child transform marking the muzzle. Its distance from the player is used as the spawn radius; it is moved to follow the aim.")]
-    [SerializeField] private Transform firePoint;
-    [SerializeField] private Projectile bulletPrefab;
+    [SerializeField] private LayerMask enemyLayer;
+    [SerializeField] private float slashCheckRadius = 0.6f;
 
     [Header("Upgrades")]
-    [Tooltip("Unlocked via the upgrade tree: each Attack press fires a 3-shot burst instead of continuous fire.")]
-    public bool volleyUnlocked = false;
+    [Tooltip("Unlocked via the upgrade tree: dodge becomes a longer slash that damages enemies it passes through.")]
+    public bool slashDodgeUnlocked = false;
+    [Tooltip("Set by PlayerUpgradeManager.UnlockAirDodge(). Not read yet: the dodge currently works regardless of this flag.")]
+    public bool airDodgeUnlocked = false;
 
+    public bool IsDodging { get; private set; }
+    private bool canDodge = true;
+
+    private Rigidbody2D rb;
+    private PlayerHealth health;
     private PlayerInputReader input;
-    private float nextFireTime;
-    private float firePointRadius = 0.5f;
-    private bool isFiringVolley;
 
     private void Awake()
     {
+        rb = GetComponent<Rigidbody2D>();
+        health = GetComponent<PlayerHealth>();
         input = GetComponent<PlayerInputReader>();
         if (input == null)
         {
-            Debug.LogError("PlayerShooting requires a PlayerInputReader on the same GameObject. Add it to the Player prefab.", this);
+            Debug.LogError("PlayerDodge requires a PlayerInputReader on the same GameObject. Add it to the Player prefab.", this);
             enabled = false;
         }
-
-        if (firePoint != null && firePoint.localPosition.magnitude > 0.01f)
-            firePointRadius = firePoint.localPosition.magnitude;
     }
 
     private void Update()
     {
-        Vector2 aim = input.AimDirection;
-
-        if (firePoint != null)
-            firePoint.position = GetMuzzlePosition(aim);
-
-        if (volleyUnlocked)
+        if (input.DodgePressedThisFrame) // "Dodge" action in InputSystem_Actions (default: Space)
         {
-            if (!isFiringVolley && input.AttackPressedThisFrame && Time.time >= nextFireTime)
+            TryDodge();
+        }
+    }
+
+    public void TryDodge()
+    {
+        if (!canDodge || IsDodging) return;
+        StartCoroutine(DodgeRoutine());
+    }
+
+    /// <summary>Move direction while the player is moving, otherwise the aim direction. Always normalized, never zero.</summary>
+    public Vector2 GetDodgeDirection()
+    {
+        if (input.HasMoveInput)
+            return input.MoveInput.normalized;
+        return input.AimDirection;
+    }
+
+    /// <summary>Stops any running dash (manual or forced) and clears its state. Used by PlayerHealth when the player dies.</summary>
+    public void CancelDodge()
+    {
+        StopAllCoroutines();
+        IsDodging = false;
+        canDodge = true;
+        if (health != null) health.IsInvulnerable = false;
+    }
+
+    private IEnumerator DodgeRoutine()
+    {
+        canDodge = false;
+        IsDodging = true;
+        health.IsInvulnerable = true;
+
+        float distance = stats.dodgeDistance + (slashDodgeUnlocked ? stats.slashDodgeBonusDistance : 0f);
+        Vector2 direction = GetDodgeDirection();
+        Vector2 start = rb.position;
+        Vector2 end = start + direction * distance;
+
+        HashSet<IDamageable> hitEnemies = new HashSet<IDamageable>();
+        float elapsed = 0f;
+
+        while (elapsed < stats.dodgeDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / stats.dodgeDuration;
+            Vector2 newPos = Vector2.Lerp(start, end, t);
+            rb.MovePosition(newPos);
+
+            if (slashDodgeUnlocked)
             {
-                StartCoroutine(FireVolleyRoutine());
+                DamageEnemiesAtPoint(newPos, hitEnemies);
+            }
+
+            yield return null;
+        }
+
+        // MovePosition leaves the body with the dash velocity; stop it so the player does not slide past the end point.
+        rb.linearVelocity = Vector2.zero;
+
+        // Keep i-frames slightly beyond the physical dash for a forgiving dodge window.
+        float remainingIFrames = stats.iFrameDuration - stats.dodgeDuration;
+        if (remainingIFrames > 0f)
+            yield return new WaitForSeconds(remainingIFrames);
+
+        health.IsInvulnerable = false;
+        IsDodging = false;
+
+        yield return new WaitForSeconds(stats.dodgeCooldown);
+        canDodge = true;
+    }
+
+    /// <summary>
+    /// Used exclusively by PlayerHealth's Last Stand ability. Always slashes
+    /// through enemies regardless of the slashDodgeUnlocked upgrade, aiming
+    /// at the nearest enemy in range (or straight ahead if none is found).
+    /// Does not touch canDodge/cooldown - it's a separate, forced action.
+    /// </summary>
+    public IEnumerator PerformForcedSlashDodge()
+    {
+        IsDodging = true;
+
+        Vector2 start = rb.position;
+        float distance = stats.dodgeDistance + stats.slashDodgeBonusDistance;
+        Vector2 direction = input.AimDirection;
+
+        // Aim the slash at the nearest enemy in range (any direction in top-down), otherwise along the aim.
+        Collider2D[] candidates = Physics2D.OverlapCircleAll(start, distance, enemyLayer);
+        float bestSqrDistance = float.MaxValue;
+        foreach (var candidate in candidates)
+        {
+            Vector2 toEnemy = (Vector2)candidate.transform.position - start;
+            if (toEnemy.sqrMagnitude > 0.0001f && toEnemy.sqrMagnitude < bestSqrDistance)
+            {
+                bestSqrDistance = toEnemy.sqrMagnitude;
+                direction = toEnemy.normalized;
             }
         }
-        else if (input.AttackHeld && Time.time >= nextFireTime)
+
+        Vector2 end = start + direction * distance;
+        HashSet<IDamageable> hitEnemies = new HashSet<IDamageable>();
+        float elapsed = 0f;
+
+        while (elapsed < stats.dodgeDuration)
         {
-            Fire(aim);
-            nextFireTime = Time.time + stats.fireRate;
-        }
-    }
-
-    /// <summary>World-space muzzle position for the given (normalized) aim direction.</summary>
-    public Vector2 GetMuzzlePosition(Vector2 aimDirection)
-    {
-        return (Vector2)transform.position + aimDirection * firePointRadius;
-    }
-
-    private void Fire(Vector2 direction)
-    {
-        if (bulletPrefab == null) return;
-
-        Vector2 spawn = GetMuzzlePosition(direction);
-        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-        Projectile bullet = Instantiate(bulletPrefab, spawn, Quaternion.Euler(0f, 0f, angle));
-        bullet.Launch(direction, stats.bulletSpeed, stats.gunDamage, gameObject);
-    }
-
-    private IEnumerator FireVolleyRoutine()
-    {
-        isFiringVolley = true;
-
-        for (int i = 0; i < stats.volleyShotCount; i++)
-        {
-            Fire(input.AimDirection); // re-read aim each shot so the burst can be swept across a target
-            if (i < stats.volleyShotCount - 1)
-                yield return new WaitForSeconds(stats.volleyShotDelay);
+            elapsed += Time.deltaTime;
+            float t = elapsed / stats.dodgeDuration;
+            Vector2 newPos = Vector2.Lerp(start, end, t);
+            rb.MovePosition(newPos);
+            DamageEnemiesAtPoint(newPos, hitEnemies);
+            yield return null;
         }
 
-        nextFireTime = Time.time + stats.fireRate;
-        isFiringVolley = false;
+        rb.linearVelocity = Vector2.zero;
+        IsDodging = false;
+    }
+
+    private void DamageEnemiesAtPoint(Vector2 point, HashSet<IDamageable> alreadyHit)
+    {
+        Collider2D[] hits = Physics2D.OverlapCircleAll(point, slashCheckRadius, enemyLayer);
+        int damage = Mathf.RoundToInt(stats.gunDamage * stats.slashDodgeDamagePercent);
+
+        foreach (var hit in hits)
+        {
+            IDamageable damageable = hit.GetComponent<IDamageable>();
+            if (damageable != null && !alreadyHit.Contains(damageable))
+            {
+                alreadyHit.Add(damageable);
+                damageable.TakeDamage(damage, gameObject);
+            }
+        }
     }
 }

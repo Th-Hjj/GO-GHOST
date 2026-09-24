@@ -12,7 +12,7 @@ using UnityEngine.InputSystem;
 /// </summary>
 // FUNCTION SUMMARY
 // OnEnable()          — resolves the Player actions from InputSystem.actions and logs an error for any missing action.
-// Update()            — caches Move / Aim / Attack / Dodge / Ability / Previous / Next for this frame and recomputes AimDirection.
+// Update()            — caches Move / Aim / Attack / Jump / Dodge / Ability / Previous / Next for this frame and recomputes AimDirection.
 // UpdateAimDirection() — mouse screen position -> world point -> normalized direction from the player (never zero).
 [DefaultExecutionOrder(-100)]
 public class PlayerInputReader : MonoBehaviour
@@ -20,7 +20,7 @@ public class PlayerInputReader : MonoBehaviour
     [Tooltip("Camera used to convert the mouse position to world space. Leave empty to use Camera.main.")]
     [SerializeField] private Camera aimCamera;
 
-    /// <summary>WASD / left stick, magnitude clamped to 1.</summary>
+    /// <summary>WASD / left stick, magnitude clamped to 1. Only the x component drives movement in this side-scroller; y is left available for other uses (climbing, aim-assist, etc).</summary>
     public Vector2 MoveInput { get; private set; }
     public bool HasMoveInput => MoveInput.sqrMagnitude > 0.0001f;
 
@@ -32,6 +32,7 @@ public class PlayerInputReader : MonoBehaviour
 
     public bool AttackHeld { get; private set; }
     public bool AttackPressedThisFrame { get; private set; }
+    public bool JumpPressedThisFrame { get; private set; }
     public bool DodgePressedThisFrame { get; private set; }
     public bool AbilityPressedThisFrame { get; private set; }
     public bool PreviousPressedThisFrame { get; private set; }
@@ -43,6 +44,7 @@ public class PlayerInputReader : MonoBehaviour
     private InputAction moveAction;
     private InputAction aimAction;
     private InputAction attackAction;
+    private InputAction jumpAction;
     private InputAction dodgeAction;
     private InputAction abilityAction;
     private InputAction previousAction;
@@ -61,12 +63,14 @@ public class PlayerInputReader : MonoBehaviour
         moveAction = Find(asset, "Player/Move");
         aimAction = Find(asset, "Player/Aim");
         attackAction = Find(asset, "Player/Attack");
+        jumpAction = Find(asset, "Player/Jump");
         dodgeAction = Find(asset, "Player/Dodge");
         abilityAction = Find(asset, "Player/Ability");
         previousAction = Find(asset, "Player/Previous");
         nextAction = Find(asset, "Player/Next");
 
-        IsReady = moveAction != null && aimAction != null && attackAction != null && dodgeAction != null && abilityAction != null;
+        IsReady = moveAction != null && aimAction != null && attackAction != null && jumpAction != null
+                  && dodgeAction != null && abilityAction != null;
 
         // Project-wide actions are enabled automatically; this only covers a map that was disabled by other code.
         if (IsReady && !moveAction.actionMap.enabled)
@@ -92,6 +96,7 @@ public class PlayerInputReader : MonoBehaviour
 
         AttackHeld = attackAction.IsPressed();
         AttackPressedThisFrame = attackAction.WasPressedThisFrame();
+        JumpPressedThisFrame = jumpAction.WasPressedThisFrame();
         DodgePressedThisFrame = dodgeAction.WasPressedThisFrame();
         AbilityPressedThisFrame = abilityAction.WasPressedThisFrame();
         PreviousPressedThisFrame = previousAction != null && previousAction.WasPressedThisFrame();
@@ -117,6 +122,7 @@ public class PlayerInputReader : MonoBehaviour
         MoveInput = Vector2.zero;
         AttackHeld = false;
         AttackPressedThisFrame = false;
+        JumpPressedThisFrame = false;
         DodgePressedThisFrame = false;
         AbilityPressedThisFrame = false;
         PreviousPressedThisFrame = false;

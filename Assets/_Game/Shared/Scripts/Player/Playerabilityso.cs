@@ -17,6 +17,10 @@ public abstract class PlayerAbilitySO : ScriptableObject
     public Sprite icon;
     public float cooldown = 5f;
 
-    /// <summary>Runs the ability's effect. Return true if it successfully activated (starts its cooldown).</summary>
+    [Header("Uses")]
+    [Tooltip("0 = unlimited, governed only by cooldown. 1+ = limited charges (e.g. 1 = once per battle); call PlayerAbilitySystem.ResetAbilityUses() to recharge, typically at the start of a new battle.")]
+    public int maxUses = 0;
+
+    /// <summary>Runs the ability's effect. Return true if it successfully activated (starts its cooldown and consumes a use).</summary>
     public abstract bool Activate(GameObject player);
 }

@@ -5,13 +5,16 @@ using UnityEngine;
 /// Handles the special ability button. On a fresh character this list is
 /// empty, so the button does nothing - exactly as requested. As the player
 /// unlocks abilities via PlayerUpgradeManager, they get added here and
-/// become selectable/usable.
+/// become selectable/usable. Abilities with a maxUses > 0 (e.g. Freeze,
+/// meant to be once-per-battle) are also tracked with a limited charge
+/// count separate from their cooldown.
 /// </summary>
 // FUNCTION SUMMARY
 // Update()             — listens for the special-ability button and the ability-cycling keys each frame.
-// UnlockAbility()       — adds a new ability to the player's usable list when it's unlocked via the upgrade tree.
+// UnlockAbility()       — adds a new ability to the player's usable list when it's unlocked via the upgrade tree, and grants its starting charges.
 // CycleAbility()        — switches which unlocked ability is currently selected.
-// UseSelectedAbility()  — activates the currently selected ability if it's off cooldown (does nothing if none are unlocked).
+// UseSelectedAbility()  — activates the currently selected ability if it's off cooldown and has charges left (does nothing if none are unlocked).
+// ResetAbilityUses()    — recharges every limited-use ability back to its maxUses; call at the start of a new battle.
 public class PlayerAbilitySystem : MonoBehaviour
 {
     [Tooltip("Grows as the player unlocks abilities through upgrades. Empty on base.")]
@@ -19,6 +22,7 @@ public class PlayerAbilitySystem : MonoBehaviour
 
     private int selectedIndex = -1;
     private readonly Dictionary<PlayerAbilitySO, float> cooldownTimers = new Dictionary<PlayerAbilitySO, float>();
+    private readonly Dictionary<PlayerAbilitySO, int> usesRemaining = new Dictionary<PlayerAbilitySO, int>();
 
     public IReadOnlyList<PlayerAbilitySO> UnlockedAbilities => unlockedAbilities;
     public PlayerAbilitySO SelectedAbility => selectedIndex >= 0 ? unlockedAbilities[selectedIndex] : null;
@@ -37,7 +41,7 @@ public class PlayerAbilitySystem : MonoBehaviour
 
     private void Update()
     {
-        if (input.AbilityPressedThisFrame) // "Ability" action in InputSystem_Actions (default: Q)
+        if (input.AbilityPressedThisFrame) // "Ability" action in InputSystem_Actions (bind to right mouse button)
         {
             UseSelectedAbility();
         }
@@ -51,6 +55,7 @@ public class PlayerAbilitySystem : MonoBehaviour
     {
         if (ability == null || unlockedAbilities.Contains(ability)) return;
         unlockedAbilities.Add(ability);
+        if (ability.maxUses > 0) usesRemaining[ability] = ability.maxUses;
         if (selectedIndex == -1) selectedIndex = 0; // auto-select the first ability ever unlocked
     }
 
@@ -69,9 +74,23 @@ public class PlayerAbilitySystem : MonoBehaviour
         if (cooldownTimers.TryGetValue(ability, out float readyTime) && Time.time < readyTime)
             return; // still on cooldown
 
+        if (ability.maxUses > 0 && (!usesRemaining.TryGetValue(ability, out int remaining) || remaining <= 0))
+            return; // out of charges until ResetAbilityUses() is called
+
         if (ability.Activate(gameObject))
         {
             cooldownTimers[ability] = Time.time + ability.cooldown;
+            if (ability.maxUses > 0) usesRemaining[ability] = usesRemaining[ability] - 1;
+        }
+    }
+
+    /// <summary>Recharges every limited-use ability back to its maxUses. Call this whenever a new battle/encounter starts.</summary>
+    public void ResetAbilityUses()
+    {
+        foreach (var ability in unlockedAbilities)
+        {
+            if (ability.maxUses > 0)
+                usesRemaining[ability] = ability.maxUses;
         }
     }
 }

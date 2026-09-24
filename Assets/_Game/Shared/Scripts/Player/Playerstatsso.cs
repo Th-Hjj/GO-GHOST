@@ -23,6 +23,12 @@ public class PlayerStatsSO : ScriptableObject
     public float fireRate = 0.25f;
     public float bulletSpeed = 18f;
 
+    [Header("Combat - Volley Upgrade")]
+    [Tooltip("How many shots fire per button press once Volley is unlocked.")]
+    public int volleyShotCount = 3;
+    [Tooltip("Delay between each shot within a volley burst.")]
+    public float volleyShotDelay = 0.08f;
+
     [Header("Dodge")]
     public float dodgeDistance = 3f;
     public float dodgeDuration = 0.18f;

@@ -1,18 +1,17 @@
 ﻿using UnityEngine;
 
 /// <summary>
-/// Top-down planar movement (Move vector from PlayerInputReader). Facing
-/// follows the aim direction, not the movement, so the player can strafe
-/// one way while shooting the other. Yields control of the Rigidbody2D to
-/// PlayerDodge while a dodge is in progress.
-/// The jump / ground-check members below are left over from the earlier
-/// side-scroller version and are currently unused (kept until the team
-/// decides to remove them).
+/// Side-scroller movement: horizontal velocity from Move input, real
+/// gravity-driven jump (Space) with an unlockable double jump. Facing
+/// follows the mouse aim direction (not the movement), so the player can
+/// walk left while shooting/dodging right. Yields control of the
+/// Rigidbody2D to PlayerDodge while a dodge is in progress.
+/// Requires the Rigidbody2D's Gravity Scale to be > 0.
 /// </summary>
 // FUNCTION SUMMARY
-// Update()             — reads move/aim input from PlayerInputReader, updates FacingDirection and the sprite flip, checks if grounded.
-// FixedUpdate()        — applies the planar velocity each physics step (unless a dodge is currently controlling movement).
-// TryJump()             — (unused in top-down) performs a ground jump, or an air jump if Double Jump is unlocked and one is still available.
+// Update()             — reads move/aim/jump input from PlayerInputReader, updates FacingDirection, the sprite flip, and ground state; handles jump presses.
+// FixedUpdate()        — applies horizontal velocity each physics step, preserving vertical (gravity/jump) velocity, unless a dodge is currently controlling movement.
+// TryJump()             — performs a ground jump, or an air jump if Double Jump is unlocked and one is still available.
 // UnlockDoubleJump()   — permanently turns on the double jump via the upgrade tree.
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerMovement : MonoBehaviour
@@ -31,12 +30,14 @@ public class PlayerMovement : MonoBehaviour
     /// <summary>Current Move input (length 0..1), for other systems that want the movement direction.</summary>
     public Vector2 MoveInput => moveInput;
 
+    /// <summary>True while the ground check is touching the Ground layer. Used by PlayerDodge to gate the air-dodge upgrade.</summary>
+    public bool IsGrounded { get; private set; }
+
     private Rigidbody2D rb;
     private PlayerDodge dodge;
     private PlayerInputReader input;
     private SpriteRenderer spriteRenderer;
     private Vector2 moveInput;
-    private bool isGrounded;
     private int airJumpsRemaining;
 
     private void Awake()
@@ -65,30 +66,32 @@ public class PlayerMovement : MonoBehaviour
         if (spriteRenderer != null)
             spriteRenderer.flipX = FacingDirection < 0;
 
-        isGrounded = groundCheck != null &&
+        IsGrounded = groundCheck != null &&
                      Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
 
-        if (isGrounded)
+        if (IsGrounded)
         {
             airJumpsRemaining = doubleJumpUnlocked ? stats.maxAirJumps : 0;
         }
 
-        // Jump input is no longer read: the game is top-down (see Docs/ProjectMap.md). TryJump is kept for now.
+        if (input.JumpPressedThisFrame)
+        {
+            TryJump();
+        }
     }
 
     private void FixedUpdate()
     {
         if (dodge != null && dodge.IsDodging) return; // dodge drives movement during a dash
 
-        // Top-down: planar velocity from the Move vector (PlayerInputReader already clamps it to length 1,
-        // so diagonals are not faster). The Player Rigidbody2D must have gravityScale = 0.
-        // Unity 6+ renamed Rigidbody2D.velocity to linearVelocity.
-        rb.linearVelocity = moveInput * stats.moveSpeed;
+        // Only the horizontal input drives velocity here; vertical velocity is left alone
+        // so gravity and TryJump() keep full control of it.
+        rb.linearVelocity = new Vector2(moveInput.x * stats.moveSpeed, rb.linearVelocity.y);
     }
 
     private void TryJump()
     {
-        if (isGrounded)
+        if (IsGrounded)
         {
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, stats.jumpForce);
         }

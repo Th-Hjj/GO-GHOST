@@ -1,4 +1,4 @@
-# CLAUDE.md - GO GHOST
+# AGENTS.md - GO GHOST
 
 Read this file first in every session, then the docs listed at the bottom for the task at hand.
 
@@ -12,10 +12,11 @@ Read this file first in every session, then the docs listed at the bottom for th
 - Chat with Thomas in Chinese when he writes Chinese. Keep repository docs in concise English so both developers can use them.
 
 ## Confirmed decisions
-- CONFIRMED (2026-09-24, `Docs/GO_GHOST_VS/GO_GHOST_Design_Baseline_ZH.md`): 2D side-view with a single arena and a single-phase Boss for the slice. A defeated officer is replaced by the next one. The loadout has seven slots (six body slots sum to Body %, Weapon is always 0%), is free to change between attempts, and locks at deployment. The ending reads only the winning officer's locked Body %. The Brain AI Aim module takes over aiming and cannot be overridden or switched off in combat. This replaces the earlier top-down direction.
+- CONFIRMED (Thomas's 2026-09-25 global rules and MSP update; current summary: `Docs/VerticalSlice.md`): one platform arena and a two-phase Boss, P1 gun -> discard gun/draw blade -> P2 blade with persistent readable glitch camouflage. Successive officers, fresh 0% New Game, full combat reset per attempt. Seven slots: Left Arm, Right Arm, Left Leg, Right Leg, Torso, Brain, Weapon. Body % comes from current body replacements; Weapon contributes 0%. Loadout locks at deployment; the eventual ending reads only the winner's snapshot. Brain AI Aim owns aim until removed between attempts. Police Archive persistence is separate from session reset; achievements will unlock special hidden branches.
+- CONFIRMED controls/flow: mouse aim, LMB fire, Space jump/leg movement abilities, Left Shift always Dodge, E main augmentation action. Q only if a rare second active ability truly requires it; no more dedicated combat keys. Narrative/session transition pages wait for explicit Continue.
 - CONFIRMED: Unity New Input System, using the project-wide `Assets/Settings/InputSystem_Actions.inputactions`. Never switch Player Settings to "Both". The legacy `UnityEngine.Input` class is not the long-term solution.
 - CONFIRMED: The player scripts in `Assets/_Game/Shared/Scripts/Player/` are extended, not replaced. `PlayerInputReader` is the single input and aim source, for both manual and AI aim. Do not create a parallel `PlayerControllerV2`.
-- NOT confirmed: key bindings, dodge rules, camera, Boss moves, module effects, slot weights, ending thresholds. Current values are TEST values in `Docs/GO_GHOST_VS/Prototype_Test_Profile.md`. Never write them into docs as Confirmed.
+- TEST, not final balance: combat timings/damage, ground-only dodge details, camera framing, module numbers, slot weights and ending thresholds. `Docs/GO_GHOST_VS/Prototype_Test_Profile.md` separates current values from historical ones. Do not invent upgrades for TBD slots or final content IDs.
 
 ## How to work
 1. Read the existing code before proposing anything. Reuse first: direct reuse, then minimal extension, then local refactor, then replacement only with approval.
@@ -24,6 +25,12 @@ Read this file first in every session, then the docs listed at the bottom for th
 4. Label every suggestion Proposed until it is confirmed: by Thomas and Walker, or by Thomas alone during the current period. Never write an unconfirmed suggestion into the docs as Confirmed.
 5. Work stage by stage: audit, plan, approval, implement, verify, report. Approval of one stage does not approve the next. Do only the sub-task that was approved.
 6. If two design sources conflict, report the exact locations and pause that part. Do not pick the version that is easier to build.
+
+### Current MSP execution strategy
+- Target a Minimal Shitty Version: functional completeness > development speed > playability > robustness > polish. Reuse the existing systems and implement the simplest approved feature.
+- Default gate: compile, trigger the feature once in Play Mode, and a short combat/continue smoke path. Fix compile failures, crashes, softlocks, broken requested features and core-system regressions. Record balance, visual quality and rare harmless edge cases as TODO; do not automatically repeat old large suites.
+- A skilled 0% human victory remains a design goal, not a sprint gate. Do not retroactively perfect completed phases or implement the next phase without explicit instruction.
+- Report briefly: Implemented, Files Changed, Happy Path Test, Compile, Core Flow, Known Issues, Blockers, Safe to Move On. Mark unexecuted checks NOT TESTED. The 2026-09-24 staged prompts/design package is historical where later confirmed instructions supersede it; see `Docs/VerticalSlice.md`.
 
 ## Folder rules (`Assets/_Game`)
 - `Shared/` = used by more than one level (player scripts, projectiles, shared prefabs, data). Must not depend on `Levels/` or `Development/`.
@@ -56,11 +63,11 @@ Read this file first in every session, then the docs listed at the bottom for th
 - Record the Windows build result explicitly when a build is made.
 
 ## Docs
-- `Docs/GO_GHOST_VS/GO_GHOST_Design_Baseline_ZH.md` - confirmed design, in Chinese. The source of truth for gameplay rules.
-- `Docs/VerticalSlice.md` - English summary of the confirmed design, TEST items, open questions, and superseded ideas.
+- `Docs/VerticalSlice.md` - current confirmed design and MSP strategy, including the 2026-09-25 overrides.
+- `Docs/GO_GHOST_VS/GO_GHOST_Design_Baseline_ZH.md` - original 2026-09-24 Chinese baseline, preserved as history where superseded.
 - `Docs/GO_GHOST_VS/Prototype_Test_Profile.md` - current TEST values. Replaceable, not confirmed.
 - `Docs/GO_GHOST_VS/Implementation_Log.md` - the only progress log: what was built, what was actually run, NOT_RUN items. Do not start a second progress document.
-- `Docs/GO_GHOST_VS/START_HERE.md`, `Execution_Contract.md`, `Prompts/` - the staged slice execution package, written for Codex. Its engineering rules apply to any agent.
+- `Docs/GO_GHOST_VS/START_HERE.md`, `Execution_Contract.md`, `Prompts/` - current entry pointers followed by the historical staged package. Engineering safety rules still apply; superseded scope/gates do not.
 - `Docs/Collaboration.md` - two-person and multi-machine GitHub rules, ownership, per-machine setup.
 - `Docs/ProjectMap.md` - real paths, scenes, scripts, input, known issues.
 - `README.md` - how to open and play the project.

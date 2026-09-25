@@ -1,5 +1,15 @@
 # GO GHOST — Codex Astra 执行指南
 
+## Current entry point — 2026-09-25 MSP handoff
+
+Start with [../../AGENTS.md](../../AGENTS.md), [../VerticalSlice.md](../VerticalSlice.md), [../ProjectMap.md](../ProjectMap.md) and [Implementation_Log.md](Implementation_Log.md). The current checkpoint includes Phases 1–5: foundations/Archive persistence, platform arena and leg movement, two-phase FSM, P1 gunfighter, and P2 camouflage/Ghost Slash. Phase 6 has not started.
+
+Use the latest explicitly requested phase. MSP verification is compile + targeted Play Mode happy path + short core-flow smoke; known balance/polish limits do not block progress. Runtime details are in the current section of [Prototype_Test_Profile.md](Prototype_Test_Profile.md).
+
+**The rest of this page and `Prompts/00–08` are the historical 2026-09-24 migration package, not the current phase numbering or automatic next-task queue.** They must not restore Spine/Shift Time Slow, single-phase scope, blanket no-persistence rules or exhaustive gates. The original Chinese baseline and Macro are preserved with later overrides summarized in VerticalSlice. Evidence is recorded only in Implementation_Log; local Logs are ignored. Do not copy this package over the existing repository or rerun the old migration.
+
+## Historical execution guide
+
 日期：2026-09-24  
 任务：从真实现有 Unity 项目安全迁移到新版单竞技场横版 Boss vertical slice。  
 交付性质：开发 prompts 与测试流程；本包没有修改 Unity 项目，也没有审查/运行用户当前仓库。

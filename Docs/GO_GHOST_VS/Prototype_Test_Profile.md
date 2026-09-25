@@ -1,5 +1,31 @@
 # GO GHOST — Slice 临时测试方案
 
+## Current MSP values — Phases 1–5, 2026-09-25
+
+These values describe the current prototype, not final balance. This section supersedes conflicting historical sections below (Spine/Shift replacement, single-phase attacks, TEST-v0 catalogue and proposed ending thresholds). Confirmed direction is in [../VerticalSlice.md](../VerticalSlice.md); test evidence stays in [Implementation_Log.md](Implementation_Log.md).
+
+| System | Current TEST values / behavior |
+|---|---|
+| Human | HP 100, speed 6, jump velocity 12, gravity scale 3; grounded Shift dodge, .8s start interval |
+| Arms | Each Rapid Fire arm contributes 10%; 0/1/2 arms: 4/7/10 shots per second; bullet damage 12 |
+| Legs | Each installed leg contributes 10%; Human -> Move Speed -> Double Jump -> Hover. Each speed leg adds 2. One extra air jump regardless of duplicate installation; Hover clamps descent to .75 units/s for up to 1.2s per landing; mixed effects combine |
+| Torso | Time Slow contributes 20%, E (`Player/Ability`), 3 real seconds, 10s start interval, hostile clock 25%; Shift still dodges. No assigned final tier |
+| Brain / Weapon | AI Aim 40%, exclusive aim ownership; Basic Gun 0%. All current official augmentations declare Normal weapon compatibility |
+| Arena | Ground y=-2.5; inner x=±15, ceiling 8.75; camera (0,3.75,-10), ortho 10. Low A/B centers (±4.5,-.5), size (4,.2); High C center (0,1.15), size (4,.3). Native one-way platforms for bodies, blocking for both teams' bullets; High C intact |
+| Boss phases | HP 800; P1 -> transition at 50% HP -> P2 -> Dead. Weapon change .35 hostile seconds; pending transition stops new attacks after the current short execution finishes. No Body % scaling |
+| P1 Burst | .45s warning, 3 aimed bullets .22s apart, speed 14 / damage 12; .25s recovery |
+| P1 Marked | .75s tracking, .3s lock, one speed-24 / damage-24 shot; .45s recovery |
+| P1 Ghost | .5s warning, move toward opposite x=±9 at speed 16, up to 1.5s; body alpha .35, .3s recovery; no old charge contact damage |
+| P1 Sweep | Low then high: each .6s warning, 5 horizontal bullets .22s apart, speed 12 / damage 10; .35s recovery. Gun/bullet height y=-1.65 then y=2.1 |
+| P2 Ghost Slash | .55s locked horizontal warning, .3s rush at speed 24, .65s recovery, repeat. One 22-damage hit attempt per slash; respects player invulnerability; no platform navigation |
+| P2 visuals | Persistent body alpha roughly .48–.72, cyan/pink flicker; blade .95 or 1 during warning. Temporary square-sprite blade, no refraction shader |
+| Flow | Explicit Continue on narrative pages; no runtime 8s auto-advance. Result uses winning snapshot; no ending routing/thresholds implemented |
+| Archive | JSON saveVersion 1, three unlock collections; no final content IDs or gameplay unlock conditions. Independent of session New Game |
+
+P1 cycle: Burst -> Marked -> Ghost -> low Sweep -> high Sweep -> repeat. P2 currently repeats only Ghost Slash. Boss attack timers/movement share the existing hostile Time Slow clock. Telemetry can differ slightly from configured speeds due to physics. Standalone and natural 0% complete victory are NOT TESTED for this checkpoint.
+
+## Historical prototype profiles — not current instructions
+
 **身份：本执行包提出的可替换原型方案，不是 Thomas / Walker 已确认的最终设计。**
 中文基线第 3、5、7、8、9 节与 Idea Backlog 明确保留了这些未决项。此表只为让开发可继续，并让测试可复现。
 Prompt 00 审查工程适配性；Prompt 01 开始实现即按本测试方案推进。不能借它改变已确认规则。改参数时记录原因与版本，不覆盖原设计来源。

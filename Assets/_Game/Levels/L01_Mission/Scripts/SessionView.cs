@@ -25,6 +25,7 @@ public sealed class SessionView : MonoBehaviour
     private TMP_Text rightArmLabel, leftLegLabel, spineLabel;
     private TMP_Text deployLabel, newGameLabel;
     private UnityEngine.UI.LayoutElement detailsLayout;
+    private GameSessionFlow.FlowState displayedState;
 
     private void OnEnable()
     {
@@ -59,7 +60,12 @@ public sealed class SessionView : MonoBehaviour
         spineButton.onClick.RemoveListener(ToggleSpine);
     }
 
-    private void Deploy() => flow.RequestDeploy();
+    private void Deploy()
+    {
+        if (flow.State != displayedState) return; // Do not accept a stale click for a newly entered page.
+        if (flow.State == GameSessionFlow.FlowState.Loadout) flow.RequestDeploy();
+        else flow.RequestContinue();
+    }
     private void NewGame() => flow.RequestNewGame();
     private void ToggleArm() => Toggle(LoadoutSlot.LeftArm);
     private void ToggleLeg() => Toggle(LoadoutSlot.RightLeg);
@@ -105,19 +111,20 @@ public sealed class SessionView : MonoBehaviour
     private void Update()
     {
         var state = flow.State;
+        displayedState = state;
         var fight = flow.ActiveFight;
         bool combat = state == GameSessionFlow.FlowState.Combat;
         bool loadout = state == GameSessionFlow.FlowState.Loadout;
         bool result = state == GameSessionFlow.FlowState.Result;
         bool victory = state == GameSessionFlow.FlowState.VictoryTransition;
         panel.SetActive(!combat);
-        deployButton.gameObject.SetActive(loadout);
+        deployButton.gameObject.SetActive(!combat && !result);
         newGameButton.gameObject.SetActive(result);
         slotPanel.SetActive(loadout);
-        deployButton.interactable = flow.CanDeploy;
+        deployButton.interactable = loadout ? flow.CanDeploy : flow.CanContinue;
         newGameButton.interactable = flow.CanNewGame;
-        deployLabel.text = flow.CanDeploy ? "DEPLOY" : $"READY IN {Mathf.CeilToInt(flow.HoldRemaining)}";
-        newGameLabel.text = flow.CanNewGame ? "NEW GAME" : $"NEW GAME IN {Mathf.CeilToInt(flow.HoldRemaining)}";
+        deployLabel.text = loadout ? "DEPLOY" : "CONTINUE";
+        newGameLabel.text = "NEW GAME";
         detailsLayout.minHeight = detailsLayout.preferredHeight = loadout ? 104 : 420;
         combatCue.gameObject.SetActive(combat);
         controls.gameObject.SetActive(combat);
@@ -156,9 +163,9 @@ public sealed class SessionView : MonoBehaviour
             var record = flow.Victory;
             heading.text = victory ? "VICTORY" : "MISSION COMPLETE";
             details.text = Identity(record.WinningDeployment) + (victory
-                ? "\n\nCYBERPSYCHO NEUTRALIZED\n\nThis officer completed the mission.\nPreparing the deployment record..."
+                ? "\n\nCYBERPSYCHO NEUTRALIZED\n\nThis officer completed the mission.\nContinue to view the deployment record."
                 : "\n\nWINNING DEPLOYMENT\n" + EquipmentSummary(record.WinningDeployment)
-                    + "\n\nStart a new mission as Officer #1, 0% Human.\nContinue when you are ready.");
+                    + "\n\nStart a new mission as Officer #1, 0% Human.\nSelect NEW GAME when you are ready.");
         }
         else if (state == GameSessionFlow.FlowState.DefeatTransition)
         {
@@ -168,7 +175,7 @@ public sealed class SessionView : MonoBehaviour
         else if (state == GameSessionFlow.FlowState.NextOfficerTransition)
         {
             heading.text = $"OFFICER #{flow.OfficerIndex}   /   TAKING OVER";
-            details.text = "SAME MISSION. A NEW OFFICER.\n\nYour predecessor's loadout is ready to edit.\nYou may deploy with any configuration, including 0% Human.\n\nOPENING LOADOUT...";
+            details.text = "SAME MISSION. A NEW OFFICER.\n\nYour predecessor's loadout is ready to edit.\nYou may deploy with any configuration, including 0% Human.\n\nContinue to open your loadout.";
         }
         else
         {
@@ -176,7 +183,7 @@ public sealed class SessionView : MonoBehaviour
             heading.text = newGame ? "GO GHOST   /   NEW MISSION" : "DEPLOYING";
             details.text = newGame ? "<size=32>OFFICER #1   |   BODY MODIFICATION: 0%</size>\nAIM: MANUAL   |   BASIC GUN\n\nONE MISSION. ONE CYBERPSYCHO.\n\nYour first officer deploys fully human."
                 : Identity(flow.Deployment) + "\n\n" + EquipmentSummary(flow.Deployment)
-                    + $"\n\nCOMBAT IN {flow.HoldRemaining:0.0}s\nRelease your controls, then get ready.";
+                    + "\n\nContinue when you are ready for combat.\nRelease your controls, then get ready.";
         }
     }
 }

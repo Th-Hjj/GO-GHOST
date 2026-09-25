@@ -7,14 +7,16 @@ public sealed class GameSessionFlow : MonoBehaviour
 {
     public enum FlowState { NewGameInitialization, Deployment, Combat, DefeatTransition, Loadout, Result, NextOfficerTransition, VictoryTransition }
     [SerializeField] private BossFight attemptPrefab;
-    [Header("Presentation holds — real seconds, independent of combat slow time")]
-    [SerializeField] private float defeatNoticeSeconds = 8f;
-    [SerializeField] private float nextOfficerSeconds = 8f;
-    [SerializeField] private float newGameIntroSeconds = 8f;
-    [SerializeField] private float deploymentSeconds = 8f;
-    [SerializeField] private float victoryNoticeSeconds = 8f;
-    [SerializeField] private float loadoutReadSeconds = 8f;
-    [SerializeField] private float resultReadSeconds = 8f;
+    // Retained for existing scene serialization; presentation now advances only on user input.
+#pragma warning disable CS0414 // These legacy serialized fields intentionally have no runtime readers.
+    [SerializeField, HideInInspector] private float defeatNoticeSeconds = 8f;
+    [SerializeField, HideInInspector] private float nextOfficerSeconds = 8f;
+    [SerializeField, HideInInspector] private float newGameIntroSeconds = 8f;
+    [SerializeField, HideInInspector] private float deploymentSeconds = 8f;
+    [SerializeField, HideInInspector] private float victoryNoticeSeconds = 8f;
+    [SerializeField, HideInInspector] private float loadoutReadSeconds = 8f;
+    [SerializeField, HideInInspector] private float resultReadSeconds = 8f;
+#pragma warning restore CS0414
 
     public FlowState State { get; private set; }
     public int OfficerIndex { get; private set; }
@@ -26,22 +28,16 @@ public sealed class GameSessionFlow : MonoBehaviour
     public event Action<FlowState> OnStateChanged;
     private float stateEnteredAt;
     public float StateAge => Time.unscaledTime - stateEnteredAt;
-    public float HoldRemaining => Mathf.Max(0f, (State switch
-    {
-        FlowState.NewGameInitialization => newGameIntroSeconds,
-        FlowState.Deployment => deploymentSeconds,
-        FlowState.DefeatTransition => defeatNoticeSeconds,
-        FlowState.NextOfficerTransition => nextOfficerSeconds,
-        FlowState.VictoryTransition => victoryNoticeSeconds,
-        FlowState.Loadout => loadoutReadSeconds,
-        FlowState.Result => resultReadSeconds,
-        _ => 0f
-    }) - StateAge);
-    public bool CanDeploy => State == FlowState.Loadout && HoldRemaining <= 0f;
-    public bool CanNewGame => (State == FlowState.Result || State == FlowState.Loadout) && HoldRemaining <= 0f;
+    public float HoldRemaining => 0f;
+    public bool CanDeploy => State == FlowState.Loadout;
+    public bool CanNewGame => State == FlowState.Result || State == FlowState.Loadout;
+    public bool CanContinue => !continueRequested && Draft != null && (State == FlowState.NewGameInitialization
+        || State == FlowState.Deployment || State == FlowState.DefeatTransition
+        || State == FlowState.NextOfficerTransition || State == FlowState.VictoryTransition);
 
     private Action<BossFight.Outcome> outcomeHandler;
     private int generation;
+    private bool continueRequested;
 
     private void Awake()
     {
@@ -54,6 +50,7 @@ public sealed class GameSessionFlow : MonoBehaviour
         Victory = null;
         ActiveFight = null;
         generation = 0;
+        continueRequested = false;
         stateEnteredAt = Time.unscaledTime;
     }
 
@@ -79,8 +76,20 @@ public sealed class GameSessionFlow : MonoBehaviour
 
     private IEnumerator NewGameRoutine()
     {
-        yield return new WaitForSecondsRealtime(newGameIntroSeconds);
+        yield return WaitForContinue();
         yield return DeployRoutine();
+    }
+
+    public bool RequestContinue()
+    {
+        if (!CanContinue) return false;
+        continueRequested = true; // Consume once; a second click in this state cannot skip the next page.
+        return true;
+    }
+
+    private IEnumerator WaitForContinue()
+    {
+        while (!continueRequested) yield return null;
     }
 
     public bool RequestDeploy()
@@ -109,8 +118,8 @@ public sealed class GameSessionFlow : MonoBehaviour
 
         // Settle the existing gravity-driven bodies before allowing input or starting the Boss timer.
         for (int i = 0; i < 6; i++) yield return new WaitForFixedUpdate();
-        while (token == generation && HoldRemaining > 0f) yield return null;
-        if (token != generation || fight != ActiveFight) yield break;
+        yield return WaitForContinue();
+        if (token != generation || fight != ActiveFight || State != FlowState.Deployment) yield break;
         fight.BeginCombat();
         SetState(FlowState.Combat);
     }
@@ -134,7 +143,7 @@ public sealed class GameSessionFlow : MonoBehaviour
 
     private IEnumerator NextOfficerRoutine(int token)
     {
-        yield return new WaitForSecondsRealtime(defeatNoticeSeconds);
+        yield return WaitForContinue();
         if (token != generation || State != FlowState.DefeatTransition) yield break;
         var previous = Deployment;
         DisposeAttempt();
@@ -142,13 +151,13 @@ public sealed class GameSessionFlow : MonoBehaviour
         Draft = new LoadoutDraft(previous, AugmentationsUnlocked);
         Deployment = null;
         SetState(FlowState.NextOfficerTransition);
-        yield return new WaitForSecondsRealtime(nextOfficerSeconds);
-        if (token == generation) SetState(FlowState.Loadout);
+        yield return WaitForContinue();
+        if (token == generation && State == FlowState.NextOfficerTransition) SetState(FlowState.Loadout);
     }
 
     private IEnumerator VictoryRoutine(int token)
     {
-        yield return new WaitForSecondsRealtime(victoryNoticeSeconds);
+        yield return WaitForContinue();
         if (token == generation && State == FlowState.VictoryTransition) SetState(FlowState.Result);
     }
 
@@ -166,6 +175,7 @@ public sealed class GameSessionFlow : MonoBehaviour
     private void SetState(FlowState state)
     {
         State = state;
+        continueRequested = false;
         stateEnteredAt = Time.unscaledTime;
         Debug.Log($"[Session] {state} / Officer #{OfficerIndex}", this);
         OnStateChanged?.Invoke(state);

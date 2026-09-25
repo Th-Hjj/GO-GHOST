@@ -22,6 +22,9 @@ public sealed class SessionView : MonoBehaviour
     [SerializeField] private UnityEngine.UI.Button leftLegButton;
     // Keep the serialized field name to preserve the existing scene reference (TorsoButton).
     [SerializeField] private UnityEngine.UI.Button spineButton;
+    [SerializeField] private UnityEngine.UI.Button archiveButton;
+    public bool ArchiveOpen { get; private set; }
+    private TMP_Text archiveLabel;
     private TMP_Text armLabel, legLabel, brainLabel;
     private TMP_Text rightArmLabel, leftLegLabel, spineLabel;
     private TMP_Text deployLabel, newGameLabel;
@@ -30,6 +33,12 @@ public sealed class SessionView : MonoBehaviour
 
     private void OnEnable()
     {
+        if (archiveButton != null)
+        {
+            archiveButton.onClick.AddListener(ToggleArchive);
+            archiveLabel = archiveButton.GetComponentInChildren<TMP_Text>();
+        }
+        ArchiveOpen = false;
         deployButton.onClick.AddListener(Deploy);
         newGameButton.onClick.AddListener(NewGame);
         leftArmButton.onClick.AddListener(ToggleArm);
@@ -51,6 +60,8 @@ public sealed class SessionView : MonoBehaviour
 
     private void OnDisable()
     {
+        if (archiveButton != null) archiveButton.onClick.RemoveListener(ToggleArchive);
+        ArchiveOpen = false;
         deployButton.onClick.RemoveListener(Deploy);
         newGameButton.onClick.RemoveListener(NewGame);
         leftArmButton.onClick.RemoveListener(ToggleArm);
@@ -63,11 +74,29 @@ public sealed class SessionView : MonoBehaviour
 
     private void Deploy()
     {
-        if (flow.State != displayedState) return; // Do not accept a stale click for a newly entered page.
+        if (ArchiveOpen || flow.State != displayedState) return; // Do not accept a stale click for a newly entered page.
         if (flow.State == GameSessionFlow.FlowState.Loadout) flow.RequestDeploy();
         else flow.RequestContinue();
     }
-    private void NewGame() => flow.RequestNewGame();
+    private void NewGame() { if (!ArchiveOpen) flow.RequestNewGame(); }
+    private void ToggleArchive()
+    {
+        if (flow.State != GameSessionFlow.FlowState.Combat) ArchiveOpen = !ArchiveOpen;
+    }
+
+    private static string ArchiveText()
+    {
+        var archive = PoliceArchive.Current;
+        string endings = archive.UnlockedEndings.Count == 0 ? "No endings recorded."
+            : string.Join("\n", archive.UnlockedEndings);
+        bool complete = archive.HasAchievement(PoliceArchive.TempFirstVictory);
+        bool drone = archive.HasHiddenAugmentation(LoadoutRules.DetachedDroneArm);
+        return "<b>ENDINGS</b>\n" + endings + "\n\n<b>ACHIEVEMENTS</b>\n"
+            + PoliceArchive.TempFirstVictory + (complete ? " — COMPLETED" : " — AVAILABLE")
+            + "\nTEMP / placeholder condition: Defeat the Boss once."
+            + "\nReward: Detached Drone Arm — " + (drone ? "UNLOCKED" : "not yet unlocked")
+            + (string.IsNullOrEmpty(PoliceArchive.LastSaveError) ? "" : "\n\nArchive save unavailable. Progress is currently in memory only.");
+    }
     private void ToggleArm() => Toggle(LoadoutSlot.LeftArm);
     private void ToggleLeg() => Toggle(LoadoutSlot.RightLeg);
     private void ToggleBrain() => Toggle(LoadoutSlot.Brain);
@@ -76,10 +105,9 @@ public sealed class SessionView : MonoBehaviour
     private void ToggleSpine() => Toggle(LoadoutSlot.Torso);
     private void Toggle(LoadoutSlot slot)
     {
-        if (flow.State != GameSessionFlow.FlowState.Loadout) return;
+        if (ArchiveOpen || flow.State != GameSessionFlow.FlowState.Loadout) return;
         string current = flow.Draft.GetSlot(slot).ItemId;
-        flow.TrySetDraftSlot(slot, LoadoutRules.IsLeg(slot) ? LoadoutRules.NextLegOption(current)
-            : string.IsNullOrEmpty(current) ? LoadoutRules.ModuleForSlot(slot) : "");
+        flow.TrySetDraftSlot(slot, LoadoutRules.NextOption(slot, current));
     }
 
     private void UpdateSlot(LoadoutSlot slot, UnityEngine.UI.Button button, TMP_Text label)
@@ -89,10 +117,10 @@ public sealed class SessionView : MonoBehaviour
         string contribution = $"+{LoadoutRules.MaximumContribution(slot):0}%";
         label.text = Tint(slot, LoadoutRules.SlotLabel(slot).ToUpperInvariant()) + "   |   " + (equipped
             ? $"<b>{module}</b> {contribution}   [REMOVE]" : $"HUMAN   [INSTALL {module} {contribution}]");
-        if (LoadoutRules.IsLeg(slot))
+        if (LoadoutRules.IsLeg(slot) || slot == LoadoutSlot.LeftArm || slot == LoadoutSlot.Brain)
         {
             string current = flow.Draft.GetSlot(slot).ItemId;
-            string next = LoadoutRules.NextLegOption(current);
+            string next = LoadoutRules.NextOption(slot, current);
             label.text = Tint(slot, LoadoutRules.SlotLabel(slot).ToUpperInvariant()) + "   |   "
                 + (equipped ? $"<b>{LoadoutRules.ItemLabel(current)}</b> {contribution}" : "HUMAN")
                 + "   [NEXT: " + (string.IsNullOrEmpty(next) ? "Human" : LoadoutRules.ItemLabel(next)) + "]";
@@ -106,7 +134,7 @@ public sealed class SessionView : MonoBehaviour
     private static string Tint(LoadoutSlot slot, string text) => $"<color=#{ColorUtility.ToHtmlStringRGB(OfficerVisual.SlotColor(slot))}>{text}</color>";
     private static string AimLabel(AimControl aim) => aim == AimControl.AI ? Tint(LoadoutSlot.Brain, "AIM: AI") : "AIM: MANUAL";
     private static string Identity(DeploymentSnapshot snapshot) => $"<size=32>OFFICER #{snapshot.OfficerIndex}   |   BODY MODIFICATION: {snapshot.BodyModificationPercent:0.##}%</size>\n"
-        + AimLabel(snapshot.Aim) + "   |   " + (snapshot.HasTimeSlow ? Tint(LoadoutSlot.Torso, "E: TIME SLOW") : "SHIFT: GROUND DODGE");
+        + AimLabel(snapshot.Aim) + (snapshot.HasCounterArm ? "   |   E: COUNTER" : "") + "   |   " + (snapshot.HasTimeSlow ? Tint(LoadoutSlot.Torso, "Q: TIME SLOW") : "SHIFT: GROUND DODGE");
     private static string EquipmentSummary(DeploymentSnapshot snapshot)
     {
         string text = "";
@@ -122,6 +150,7 @@ public sealed class SessionView : MonoBehaviour
     private void Update()
     {
         var state = flow.State;
+        if (state != displayedState) ArchiveOpen = false;
         displayedState = state;
         var fight = flow.ActiveFight;
         bool combat = state == GameSessionFlow.FlowState.Combat;
@@ -129,6 +158,24 @@ public sealed class SessionView : MonoBehaviour
         bool result = state == GameSessionFlow.FlowState.Result;
         bool victory = state == GameSessionFlow.FlowState.VictoryTransition;
         panel.SetActive(!combat);
+        if (archiveButton != null)
+        {
+            archiveButton.gameObject.SetActive(!combat);
+            archiveLabel.text = ArchiveOpen ? "BACK" : "POLICE ARCHIVE";
+        }
+        if (ArchiveOpen)
+        {
+            deployButton.gameObject.SetActive(false);
+            newGameButton.gameObject.SetActive(false);
+            slotPanel.SetActive(false);
+            hud.text = "";
+            combatCue.gameObject.SetActive(false);
+            controls.gameObject.SetActive(false);
+            heading.text = "POLICE ARCHIVE";
+            details.text = ArchiveText();
+            detailsLayout.minHeight = detailsLayout.preferredHeight = 420;
+            return;
+        }
         deployButton.gameObject.SetActive(!combat && !result);
         newGameButton.gameObject.SetActive(result);
         slotPanel.SetActive(loadout);
@@ -146,11 +193,14 @@ public sealed class SessionView : MonoBehaviour
             hud.text = $"<size=30><b>OFFICER #{snapshot.OfficerIndex}   |   BODY MODIFICATION: {snapshot.BodyModificationPercent:0.##}%</b></size>\n"
                 + AimLabel(snapshot.Aim) + $"   |   HP {fight.Player.CurrentHealth}/{fight.Player.MaxHealth}   |   CYBERPSYCHO {fight.BossHealth.CurrentHealth}/{fight.BossHealth.MaxHealth}\n"
                 + (snapshot.HasTimeSlow ? Tint(LoadoutSlot.Torso, fight.Player.GetComponent<PlayerTimeSlow>().Cue) : "GROUND DODGE [SHIFT]")
+                + (snapshot.HasCounterArm ? "   |   " + fight.Player.GetComponent<PlayerCounterArm>().Cue : "")
                 + $"   |   FIRE {snapshot.ShotsPerSecond:0}/s   MOVE {snapshot.MoveSpeed:0}";
-            combatCue.text = fight.Boss.Cue;
+            combatCue.text = fight.Boss.Cue + (fight.Boss.PredictionCue.Length > 0 ? "\n" + fight.Boss.PredictionCue : "");
             controls.text = "A / D  MOVE   SPACE  " + (snapshot.HasDoubleJump ? "DOUBLE JUMP" : "JUMP")
                 + (snapshot.HasHover ? " / HOLD HOVER" : "") + "   SHIFT  DODGE   LMB  FIRE"
-                + (snapshot.HasTimeSlow ? "   E  TIME SLOW" : "")
+                + (snapshot.HasDetachedDrone ? "   DRONE  AUTONOMOUS" : "")
+                + (snapshot.HasCounterArm ? "   E  COUNTER" : "")
+                + (snapshot.HasTimeSlow ? "   Q  TIME SLOW" : "")
                 + (snapshot.Aim == AimControl.AI ? "   AI OWNS AIM" : "   MOUSE  AIM");
         }
         else hud.text = "";
@@ -162,7 +212,7 @@ public sealed class SessionView : MonoBehaviour
             details.text = $"<size=30><b>BODY MODIFICATION: {flow.Draft.BodyModificationPercent:0.##}%</b></size>   |   " + AimLabel(aim)
                 + "\nPrevious loadout shown. Install or remove freely; 0% is always available.\n"
                 + (flow.Draft.GetSlot(LoadoutSlot.Torso).ItemId == LoadoutRules.TorsoSlow
-                    ? Tint(LoadoutSlot.Torso, "E: TIME SLOW — 3s active / 10s between starts") : "SHIFT: GROUND DODGE — 0.8s between starts");
+                    ? Tint(LoadoutSlot.Torso, "Q: TIME SLOW — 3s active / 10s between starts") : "SHIFT: GROUND DODGE — 0.8s between starts");
             weaponLabel.text = Tint(LoadoutSlot.Weapon, "WEAPON") + "   |   BASIC GUN (0%)   /   STANDARD";
             UpdateSlot(LoadoutSlot.LeftArm, leftArmButton, armLabel);
             UpdateSlot(LoadoutSlot.RightArm, rightArmButton, rightArmLabel);

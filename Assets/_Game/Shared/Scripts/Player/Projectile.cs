@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /// <summary>
 /// Simple straight-line bullet. Requires a Rigidbody2D and a Collider2D
@@ -24,6 +24,7 @@ public class Projectile : MonoBehaviour
     private GameObject owner;
     private int ownerLayer = -1; // cached in Launch: the owner may be destroyed while the bullet is still flying
     private bool spent;
+    public bool CanBeCountered { get; private set; }
     private PlayerTimeSlow timeSlow;
     private Vector2 fullVelocity;
     private float remainingLife;
@@ -35,9 +36,10 @@ public class Projectile : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
     }
 
-    public void Launch(Vector2 direction, float speed, int dmg, GameObject shooter, PlayerTimeSlow hostileClock = null)
+    public void Launch(Vector2 direction, float speed, int dmg, GameObject shooter, PlayerTimeSlow hostileClock = null, bool counterable = false)
     {
         damage = dmg;
+        CanBeCountered = counterable;
         owner = shooter;
         ownerLayer = shooter != null ? shooter.layer : -1;
         // The actors' container owns transient bullets too; disposing an attempt removes all of them.
@@ -68,7 +70,9 @@ public class Projectile : MonoBehaviour
         if (damageable != null)
         {
             spent = true; // Destroy is deferred; reject all additional contacts this step.
-            damageable.TakeDamage(damage, owner);
+            var counter = CanBeCountered && damageable is PlayerHealth
+                ? other.GetComponentInParent<PlayerCounterArm>() : null;
+            if (counter == null || !counter.TryCounter()) damageable.TakeDamage(damage, owner);
             Retire();
             return;
         }

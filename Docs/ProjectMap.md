@@ -2,7 +2,7 @@
 
 What exists in the repository, where it is, and how it connects. Progress, test evidence, and NOT_RUN items are recorded only in `Docs/GO_GHOST_VS/Implementation_Log.md`; this file does not repeat them. Update this file when paths, scenes, or systems change. Do not describe scripts that do not exist.
 
-Last updated: 2026-09-25 (Phase 5 MSP closeout). Current design/strategy: `Docs/VerticalSlice.md`. Old migration prompts are historical, not the current phase queue.
+Last updated: 2026-09-25 (Phase 9 MSP). Current design/strategy: `Docs/VerticalSlice.md`. Old migration prompts are historical, not the current phase queue.
 
 ## 1. Status
 
@@ -10,7 +10,7 @@ Last updated: 2026-09-25 (Phase 5 MSP closeout). Current design/strategy: `Docs/
 |---|---|
 | Unity | 6000.6.0f1, URP 17.6.0 (2D Renderer), Input System 1.20.0, uGUI 2.6.0 + TextMesh Pro, Test Framework 1.8.0 |
 | Target | Windows PC (StandaloneWindows64), keyboard + mouse. Build Profiles for Windows and macOS in `Assets/Settings/Build Profiles/` |
-| Slice | Platform arena; two-phase Boss (P1 gunfighter, P2 camouflage/Ghost Slash); officer handoff, replacement loadout, Double Jump/Hover, AI Aim, E Time Slow, Continue flow, separate Archive persistence. Ending routing and Archive UI are not implemented |
+| Slice | Platform arena; two-phase Boss (P1 gunfighter, P2 camouflage/Ghost Slash/Crosscut/Predator Drop/BLACKOUT); attempt-local High C destruction/reset; officer handoff, replacement loadout, Double Jump/Hover, E Counter, Targeting AI/Predictive Cortex, Q Time Slow, Continue flow, Session Police Archive and TEMP victory -> persistent Detached Drone Arm unlock. Final ending routing remains absent |
 | Entry scene | `Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity`, the only scene in Build Settings (index 0) |
 | Validation | Current and historical compile/Play Mode results are in Implementation_Log; old results are not claims of a fresh full regression |
 | Windows build | The recorded successful Windows x64 build predates Phases 1–5; current checkpoint standalone is NOT TESTED |
@@ -36,7 +36,7 @@ Assets/
       Prefabs/             CombatAttempt.prefab, PlayerBody_NoFriction.physicsMaterial2D
     Development/
       Thomas/Scenes/       Random Scene.unity (camera only)
-      Thomas/Scripts/      TopDownSmokeTest.cs + Contact/Demo/Polish/V2/Phase1–5 partials (editor-only tests)
+      Thomas/Scripts/      TopDownSmokeTest.cs + Contact/Demo/Polish/V2/Phase1–9 partials (editor-only tests)
       Walker/Scenes/       Scene1.unity (player test scene)
   Settings/                URP assets, InputSystem_Actions.inputactions, Build Profiles/ (keep in place)
   TextMesh Pro/            TMP Essential Resources (imported for the slice UI)
@@ -70,10 +70,10 @@ All game scripts are in Assembly-CSharp, no namespace. Several file names differ
 
 | File / class | Responsibility |
 |---|---|
-| `GameSessionFlow.cs` | Session state machine: NewGameInitialization, Deployment, Combat, DefeatTransition, NextOfficerTransition, Loadout, VictoryTransition, Result. Officer numbering, unlock-after-first-defeat, generation guard against stale attempts, physics settling before combat, CONTINUE-driven pages |
-| `BossFight.cs` | One outcome per attempt (TEST rule: mutual death counts as defeat); stops combat and clears projectiles; binds the Boss as the AI Aim target |
-| `CyberpsychoBoss.cs` | Sole Boss movement/attack writer; BossPhase + action enum/switch. P1 Burst/Marked/Ghost/low-high Sweep; one pending HP transition -> discard gun/draw blade; P2 persistent camouflage and repeating Ghost Slash. Local hostile clock, damage/death cleanup; no Behavior Tree or coroutine attack scheduler |
-| `SessionView.cs` | uGUI/TMP view: combat HUD (HP, officer, aim authority, Time Slow state), Loadout (seven slots, install/remove, Body %, DEPLOY), transition pages, Result with NEW GAME |
+| `GameSessionFlow.cs` | Session state machine: NewGameInitialization, Deployment, Combat, DefeatTransition, NextOfficerTransition, Loadout, VictoryTransition, Result. Officer numbering, unlock-after-first-defeat, generation guard against stale attempts, physics settling before combat, CONTINUE-driven pages. Scene reference to Arena/HighPlatformC; restores it on deployment and binds it to the fresh Boss |
+| `BossFight.cs` | One outcome per attempt (TEST rule: mutual death counts as defeat); stops combat and clears projectiles; binds the sole Enemy separately to player AI Aim and autonomous Drone |
+| `CyberpsychoBoss.cs` | Sole Boss movement/attack writer; BossPhase + action enum/switch. P1 Burst/Marked/Ghost/low-high Sweep; one pending HP transition -> discard gun/draw blade; P2 persistent camouflage and fixed Ghost Slash/Crosscut/Predator Drop cycle. Once-per-attempt BLACKOUT at TEST 25% HP, two passes/High C mark/final slash/platform disable/recovery to normal P2. Local hostile clock, damage/death cleanup; no Behavior Tree or coroutine attack scheduler |
+| `SessionView.cs` | uGUI/TMP view: combat HUD, seven-slot Loadout, transition pages, Result/NEW GAME; existing panel also shows POLICE ARCHIVE/BACK with Endings and TEMP achievement/reward state. Archive is unavailable during combat; closing preserves the current page |
 
 ### `Shared/Scripts/Player/`
 
@@ -84,7 +84,9 @@ All game scripts are in Assembly-CSharp, no namespace. Several file names differ
 | `Playerdodge.cs` PlayerDodge | Grounded horizontal dash along input or last horizontal facing; no air dodge; cooldown measured start-to-start. Slash-dodge upgrade and `PerformForcedSlashDodge` are legacy |
 | `Playershooting.cs` PlayerShooting | Hold to fire along `AimDirection` from a muzzle offset; fire rate comes from the deployment (arms). Volley upgrade is legacy |
 | `Playerhealth.cs` PlayerHealth | Health, invulnerability, death stops controls. `autoRetryOnDeath` is off in the slice. Last Stand is legacy |
-| `PlayerTimeSlow.cs` | Existing Torso Time Slow on E; independent of Shift Dodge, attempt-local hostile clock; cleanup clears active/cooldown state, global timeScale untouched |
+| `PlayerTimeSlow.cs` | Existing Torso Time Slow on Q (temporary Phase 8 mapping); independent of Shift Dodge, attempt-local hostile clock; cleanup clears active/cooldown state, global timeScale untouched |
+| `PlayerCounterArm.cs` | Snapshot-owned Left Arm E window, one compatible contact per window, cooldown and brief feedback; attempt cleanup. Added only to the player inside CombatAttempt. Shared Projectile opts Burst shots in; level Boss opts normal blade contacts in and opens recovery |
+| `PlayerDetachedDroneArm.cs` | Snapshot-owned hidden Left Arm option. Hides OfficerVisual's left arm, spawns one red arm-shaped unit as an attempt-owned sibling, follows player offset and independently aims/fires existing player-team bullets at bound Enemy. No active input/player aim writes; IAttemptAugmentation removes unit and restores arm at attempt end |
 | `LoadoutState.cs` | `LoadoutSlot` (7), `AimControl`, `LoadoutRules` (TEST weights and module values), `LoadoutDraft` -> `DeploymentSnapshot` -> `VictoryRecord` |
 | `AugmentationDefinition.cs`, `IAttemptAugmentation.cs` | Immutable required/occupied body slots and Normal/Modified/Disabled weapon policy; two hooks ApplyDeployment/CleanupAttempt on existing components. No separate augmentation manager |
 | `OfficerIdentity.cs`, `OfficerVisual.cs` | Per-attempt officer number and snapshot; slot colour palette shared by the stickman body parts and the UI |
@@ -100,11 +102,11 @@ All game scripts are in Assembly-CSharp, no namespace. Several file names differ
 
 `PoliceArchive.cs` contains the profile and lazy/static access facade. It resets only its memory cache when Domain Reload is disabled. `PoliceArchiveStore.cs` loads/saves version-1 JSON at `Application.persistentDataPath/PoliceArchive/archive.json` (Windows: `%USERPROFILE%/AppData/LocalLow/DefaultCompany/GO GHOST/PoliceArchive/archive.json`). Fields: `saveVersion`, `unlockedEndings`, `completedAchievements`, `unlockedHiddenAugmentations`.
 
-Missing files create an empty profile; save flushes a temporary file then replaces the primary with a backup. Invalid originals are preserved before backup/empty recovery. Newer schema versions and unavailable storage use safe in-memory fallback with writes blocked. Call Load before TrySave. Session New Game never deletes the archive. There is no Archive UI, achievement condition or final content ID. Development tests use isolated paths, never normal-profile test unlocks.
+Missing files create an empty profile; save flushes a temporary file then replaces the primary with a backup. Invalid originals are preserved before backup/empty recovery. Newer schema versions and unavailable storage use safe in-memory fallback with writes blocked. Call Load before TrySave. Session New Game never deletes the archive. On a Won outcome, GameSessionFlow calls PoliceArchive.RecordBossVictory: complete TEMP_FIRST_VICTORY and unlock detached_drone_arm, then save both. This condition is explicitly temporary. SessionView reads the same profile for Endings/empty state and achievement/reward status; a failed save shows a memory-only notice. LoadoutRules hides/rejects Drone before unlock. No final endings or extra catalogue.
 
 ### Boss visuals in `CombatAttempt.prefab`
 
-`WeaponRig_TEST` owns `Gun_PLACEHOLDER` and `Blade_PLACEHOLDER`, built from existing square sprites with no weapon colliders. Boss code mirrors facing, temporarily elevates the gun for Sweep, and changes blade pose/tint for Ghost Slash. Existing warning sprites are reused. Enemy owns HP; BossFight owns outcome arbitration; new attempts instantiate fresh objects. No final Animator or custom camouflage shader.
+`WeaponRig_TEST` owns `Gun_PLACEHOLDER` and `Blade_PLACEHOLDER`, built from existing square sprites with no weapon colliders. Boss code mirrors facing, temporarily elevates the gun for Sweep, and changes blade pose/tint for Ghost Slash. Existing warning sprites are reused. When the player's snapshot has Predictive Cortex, Boss code creates one disposable cyan `Prediction_TEST` line from the existing sprite and current telegraph data; hides it outside supported tells/on cleanup. It does not alter camouflage or aim. Enemy owns HP; BossFight owns outcome arbitration; new attempts instantiate fresh objects. No final Animator or custom camouflage shader.
 
 ### `Shared/Scripts/Enemies/` and `Encounters/`
 
@@ -117,9 +119,9 @@ Missing files create an empty profile; save flushes a temporary file then replac
 
 `TopDownSmokeTest.cs` and its partials drive Play Mode with virtual Input System keyboard/mouse and real uGUI clicks. The name is historical; they test the side-view slice. Run from Edit Mode with `TopDownSmokeTest.EnterPlayModeAndLaunch("<scenario>")`, or in batch mode with `-executeMethod TopDownSmokeTest.RunContinueFlowBatch` / `RunBossContactBatch` (omit `-quit`). Evidence is written to `Logs/GO_GHOST_VS/` (local, ignored). Current scenarios and their last results: Implementation_Log.
 
-Current targeted P2 check: `TopDownSmokeTest.EnterPlayModeAndLaunch("phase5-msp")`, once from Edit Mode in the formal scene. Read `TopDownSmokeTest.Done/Results` or the local `phase5-msp.txt`; exit Play Mode after completion. The test temporarily protects/repositions the player, forces outcomes and drives real Continue/Deploy UI; it proves mechanics/flow, not natural victory. Teardown restores real devices and focus/background settings. Do not run two drivers at once.
+Current targeted persistent-loop check: `TopDownSmokeTest.EnterPlayModeAndLaunch("phase9-msp")`, once from Edit Mode in the formal scene. Read `TopDownSmokeTest.Done/Results` or local `phase9-msp.txt`; exit Play Mode after completion. It uses one fresh isolated Archive for real Session UI/victory/save/disk reload/equip/Drone contact damage and cleanup. All smoke scenarios isolate Archive state, including old forced-victory fixtures; teardown restores the normal profile and real input/focus settings. These fixtures prove flow, not natural victory. Earlier `phase6-msp` / `phase7-msp` / `phase8-msp` cover their scoped features; do not run two drivers at once.
 
-Old attack-specific suites are historical: `phase3-boss` expects retired P1 actions; the Phase 4 test expects the then-opaque P2 placeholder. They are not current acceptance suites and should not be rerun blindly. Earlier broad phase results remain dated evidence, not promises that every old assertion matches the new movesets.
+Old attack-specific suites are historical: `phase3-boss` expects retired P1 actions; Phase 4 expects the then-opaque P2 placeholder. Older augmentation suites also assume E Time Slow and two-choice arm/Brain toggles. They are not current acceptance suites and should not be rerun blindly. Earlier broad phase results remain dated evidence, not promises that every old assertion matches the current prototype.
 
 ## 5. Input (New Input System, Confirmed)
 
@@ -134,16 +136,17 @@ Player map in `Assets/Settings/InputSystem_Actions.inputactions`:
 | Dodge | Left Shift | PlayerDodge, regardless of Torso equipment |
 | Aim | Mouse position | PlayerInputReader (manual branch) |
 | Attack | Left mouse button (also Enter) | PlayerShooting |
-| Ability | E | PlayerTimeSlow through PlayerInputReader; existing action/binding GUID retained |
-| Previous, Next | 1, 2 | Legacy ability cycling, disabled in formal slice; no Q combat action |
+| Ability | E | PlayerCounterArm through PlayerInputReader; existing action/binding GUID retained |
+| SecondaryAbility | Q | PlayerTimeSlow through PlayerInputReader; temporary prototype secondary mapping |
+| Previous, Next | 1, 2 | Legacy ability cycling, disabled in formal slice |
 | Sprint, Look, Interact, Crouch | template defaults (Sprint shares Left Shift with Dodge) | Unused |
 
 UI uses the Input System UI actions through the scene's single `EventSystem`.
 
 ## 6. Known issues
 
-- High C can block downward player shots; elevated P1 Sweep pressures that height, but ground Ghost Slash has limited coverage. Do not infer navigation or terrain destruction from the platform setup.
-- P2 currently repeats only Ghost Slash; later attacks, BLACKOUT, destructible High C, additional augmentations, Archive UI, achievement unlock content and ending routing are absent. Numbers/art/camouflage are provisional; natural 0% full victory and current standalone remain unverified.
+- High C can block downward player shots before BLACKOUT; elevated P1 Sweep and Predator Drop pressure that height, but ground Ghost Slash has limited coverage. There is no Boss platform navigation.
+- P2 has three normal attacks and BLACKOUT with High C disappearance/reset. Its cut line, movement and timings are crude; no debris or generalized destruction. Archive/Drone use placeholder UI/art and one TEMP victory reward. Final achievement conditions, wider augmentations and ending routing are absent. Numbers/art/camouflage are provisional; natural 0% full victory and current standalone remain unverified.
 - Unity Company Name remains DefaultCompany; changing it later needs an explicit archive-path migration decision.
 - Builds leave residue, and a cancelled build leaves more (see `Collaboration.md` section 6). `Assets/Resources/PerformanceTestRun*` is ignored by `.gitignore`, but `Assets/Resources.meta` created alongside it is not, so check for it after a cancelled build.
 - `TitleScene.unity` has missing references and is not in Build Settings.
@@ -156,7 +159,7 @@ UI uses the Input System UI actions through the scene's single `EventSystem`.
 
 ## 7. Next step
 
-Phase 5 MSP is the latest completed gameplay sprint. Await the explicit Phase 6 request; do not use the old migration package's Prompt 06 (outcomes) as that request. Follow the current MSP strategy in VerticalSlice. Preserve the working replay loop and record rough edges instead of reopening completed phases for polish.
+Phase 9 MSP is the latest gameplay sprint. Await explicit Phase 10 instructions; old migration prompts are not the current phase queue. Follow the current MSP strategy in VerticalSlice. Preserve the working replay loop and record rough edges instead of reopening completed phases for polish.
 
 ## 8. History
 

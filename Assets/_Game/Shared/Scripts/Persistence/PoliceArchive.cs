@@ -12,6 +12,9 @@ public sealed class PoliceArchiveProfile
     public IReadOnlyList<string> CompletedAchievements => achievements.AsReadOnly();
     public IReadOnlyList<string> UnlockedHiddenAugmentations => hiddenAugmentations.AsReadOnly();
 
+    public bool HasAchievement(string id) => achievements.Contains(id);
+    public bool HasHiddenAugmentation(string id) => hiddenAugmentations.Contains(id);
+
     public bool UnlockEnding(string id) => Add(endings, id);
     public bool CompleteAchievement(string id) => Add(achievements, id);
     public bool UnlockHiddenAugmentation(string id) => Add(hiddenAugmentations, id);
@@ -63,9 +66,12 @@ internal sealed class PoliceArchiveData
     public string[] unlockedHiddenAugmentations;
 }
 
-/// <summary>One local profile, independent of GameSessionFlow.NewGame. No scene object or Archive UI.</summary>
+/// <summary>One local profile, independent of session New Game. TEMP victory reward is not final design.</summary>
 public static class PoliceArchive
 {
+    // TEMP / placeholder condition: defeat the Boss once. Replace when the real challenge is designed.
+    public const string TempFirstVictory = "TEMP_FIRST_VICTORY";
+    public static string LastSaveError { get; private set; }
     private static PoliceArchiveStore store;
     private static PoliceArchiveProfile current;
     public static PoliceArchiveProfile Current { get { EnsureLoaded(); return current; } }
@@ -73,7 +79,7 @@ public static class PoliceArchive
     public static PoliceArchiveLoadStatus LoadStatus { get { EnsureLoaded(); return store.LastLoadStatus; } }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetRuntimeCache() { store = null; current = null; } // Domain Reload can be disabled; disk is untouched.
+    private static void ResetRuntimeCache() { store = null; current = null; LastSaveError = null; } // Domain Reload can be disabled; disk is untouched.
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void EnsureLoaded()
@@ -84,9 +90,18 @@ public static class PoliceArchive
         if (!string.IsNullOrEmpty(store.LastError)) Debug.LogWarning("Police Archive: " + store.LastError);
     }
 
+    public static bool RecordBossVictory(out string error)
+    {
+        Current.CompleteAchievement(TempFirstVictory);
+        Current.UnlockHiddenAugmentation(LoadoutRules.DetachedDroneArm);
+        return Save(out error); // Retry saving even if the in-memory reward was already recorded.
+    }
+
     public static bool Save(out string error)
     {
         EnsureLoaded();
-        return store.TrySave(current, out error);
+        bool saved = store.TrySave(current, out error);
+        LastSaveError = error;
+        return saved;
     }
 }

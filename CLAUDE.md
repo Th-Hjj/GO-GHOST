@@ -2,6 +2,8 @@
 
 Read this file first in every session, then the docs listed at the bottom for the task at hand.
 
+`CLAUDE.md` (read by Claude) and `AGENTS.md` (read by Codex) hold the same rules. When you change one, make the same change in the other.
+
 ## Project
 - GO GHOST: single-player **2D side-view** shooter. One arena, one cyberpsycho Boss. The player controls a succession of police officers who take over the same mission. Theme: power versus free will, meaning how much body augmentation and control you give up to win. USC CTIN 489.
 - Unity **6000.6.0f1**, URP 2D renderer, Windows PC, keyboard + mouse. Never upgrade or downgrade the Unity version.
@@ -44,7 +46,7 @@ Read this file first in every session, then the docs listed at the bottom for th
 - A clean local tree does not mean the other developer has no work in progress.
 - Never print credentials or remote URLs that contain them.
 - Structure changes and gameplay changes go in separate commits.
-- Builds and test runs leave temporary changes that must not be committed: a filled `m_RuntimeSettings` list in `Assets/Settings/UniversalRenderPipelineGlobalSettings.asset`, `InputSystem_Actions` in `preloadedAssets` of `ProjectSettings/ProjectSettings.asset`, and `Assets/Resources/PerformanceTestRun*.json`. See `Docs/Collaboration.md` section 6.
+- Builds leave temporary changes that must not be committed, and a cancelled build leaves more: a filled `m_RuntimeSettings` list in `Assets/Settings/UniversalRenderPipelineGlobalSettings.asset`, `InputSystem_Actions` in `preloadedAssets` of `ProjectSettings/ProjectSettings.asset`, and `Assets/Resources/PerformanceTestRun*.json`. See `Docs/Collaboration.md` section 6.
 
 ## Verification and reporting
 - Report the baseline before a change and the result after. Say which checks were static-only and which ran in the editor.

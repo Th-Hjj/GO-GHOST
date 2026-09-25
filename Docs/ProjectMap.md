@@ -1,22 +1,21 @@
 # GO GHOST - Project Map
 
-What exists in the repository, where it is, what is missing, and what comes next. Based on the Stage 0 audit (2026-09-17), the Stage 1 reorganization (merged into `main` on 2026-09-17) and the Stage 2A combat foundation (2026-09-17, branch `feature/topdown-combat-foundation`). Update this file whenever paths, systems, or stage status change. Do not describe scripts that do not exist.
+What exists in the repository, where it is, and how it connects. Progress, test evidence, and NOT_RUN items are recorded only in `Docs/GO_GHOST_VS/Implementation_Log.md`; this file does not repeat them. Update this file when paths, scenes, or systems change. Do not describe scripts that do not exist.
+
+Last updated: 2026-09-25 (`main` at 426eac9, after the side-view slice merge).
 
 ## 1. Status
 
 | Item | Value |
 |---|---|
-| Unity | 6000.6.0f1, URP 17.6.0 (2D Renderer), Input System 1.20.0, uGUI 2.6.0, Test Framework 1.8.0 (no tests yet) |
-| Target | Windows PC (StandaloneWindows64), keyboard + mouse |
-| Stage | Stage 1 merged into `main` (3c3c73b, d036a5d). Stage 2A implemented on `feature/topdown-combat-foundation`, not yet committed or merged |
-| Formal entry scene | `Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity`: grey-box arena, Player prefab, one three-enemy encounter, exit barrier that opens on completion |
-| Build Settings | One scene, enabled: `Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity` (index 0). No Build Profiles |
-| Player test scene | `Assets/_Game/Development/Walker/Scenes/Scene1.unity` (Walker). Player prefab instance + camera, no enemies. Not in Build Settings |
-| Compile status | 0 errors, 0 warnings (2026-09-17 after Stage 2A) |
-| Play Mode | Run through the editor-only smoke-test driver (section 8): movement, aim, shooting, dodge, combat, death/retry all pass in L01 and Scene1 |
-| Windows build | Succeeded on 2026-09-17 (Windows x64, 0 errors, 509 shader warnings, 3m 18s). Output: `Builds/Windows/GO GHOST.exe`; standalone launch and scene rendering verified |
+| Unity | 6000.6.0f1, URP 17.6.0 (2D Renderer), Input System 1.20.0, uGUI 2.6.0 + TextMesh Pro, Test Framework 1.8.0 |
+| Target | Windows PC (StandaloneWindows64), keyboard + mouse. Build Profiles for Windows and macOS in `Assets/Settings/Build Profiles/` |
+| Slice | Side-view Boss slice: officer handoff loop, seven-slot loadout (TEST-v2: one module per body slot), AI Aim, Time Slow, CONTINUE-driven transition pages. Ending mapping is not implemented |
+| Entry scene | `Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity`, the only scene in Build Settings (index 0) |
+| Compile | 0 errors on Thomas's PC, 2026-09-25: batch-mode import with 6000.6.0f1 and a Rider MSBuild build of the generated solution. Static checks only; Play Mode results are in the Implementation_Log |
+| Windows build | Side-view slice: not recorded in the Implementation_Log (NOT_RUN there). The last recorded build (2026-09-17) was the superseded top-down Stage 2A |
 
-Editor settings worth knowing: Force Text serialization, Visible Meta Files, Enter Play Mode Options enabled with Domain Reload disabled (static state persists between play sessions; the game scripts keep no static state). Physics2D gravity is (0, -9.81); the Player and enemies use gravityScale 0. All layers collide with each other. Layers: Ground (6, walls), Enemy (7), Player (8). No tags, sorting layer Default only.
+Editor settings worth knowing: Force Text serialization, Visible Meta Files, Enter Play Mode Options enabled with Domain Reload disabled (`GameSessionFlow` initializes explicitly on every Play). Physics2D gravity is (0, -9.81). The shared `Player.prefab` keeps gravity scale 0 from the top-down era; the slice's player inside `CombatAttempt.prefab` overrides it to 3. Layers: Ground (6), Enemy (7), Player (8).
 
 ## 2. Layout
 
@@ -24,19 +23,27 @@ Editor settings worth knowing: Force Text serialization, Visible Meta Files, Ent
 Assets/
   _Game/
     Shared/
-      Scripts/Player/      PlayerInputReader + the 12 original player/shared scripts + READEME.md (Walker's original notes, partly outdated)
+      Scripts/Player/      input, movement, dodge, shooting, health, loadout data, officer identity/visual,
+                           Time Slow, legacy ability/upgrade scripts, projectile, READEME.md (Walker's old notes)
       Scripts/Enemies/     Enemy.cs
-      Scripts/Encounters/  EncounterZone.cs
+      Scripts/Encounters/  EncounterZone.cs (legacy)
       Prefabs/             Player.prefab, Bullet.prefab, Enemies/Enemy_Basic.prefab
       Data/                PlayerStats.asset
-    Levels/L01_Mission/Scenes/Cyberpunk World.unity
-    Development/Thomas/Scenes/Random Scene.unity        (empty camera-only scene)
-    Development/Thomas/Scripts/TopDownSmokeTest.cs      (editor-only Play Mode smoke-test driver)
-    Development/Walker/Scenes/Scene1.unity              (player test scene)
-  Cyborg-Assets/           two empty folders, see section 7 (not moved)
-  Settings/                URP + Input System template assets (keep in place)
+    Levels/L01_Mission/
+      Scenes/              Cyberpunk World.unity, TitleScene.unity
+      Scripts/             GameSessionFlow.cs, BossFight.cs, CyberpsychoBoss.cs, SessionView.cs
+      Prefabs/             CombatAttempt.prefab, PlayerBody_NoFriction.physicsMaterial2D
+    Development/
+      Thomas/Scenes/       Random Scene.unity (camera only)
+      Thomas/Scripts/      TopDownSmokeTest.cs + Contact/Demo/Polish/V2 partials (editor-only test drivers)
+      Walker/Scenes/       Scene1.unity (player test scene)
+  Settings/                URP assets, InputSystem_Actions.inputactions, Build Profiles/ (keep in place)
+  TextMesh Pro/            TMP Essential Resources (imported for the slice UI)
   Welcome/                 Unity 2D template welcome content + IET framework (keep in place)
-Docs/  CLAUDE.md  README.md
+  Cyborg-Assets/           two empty folders, waiting for Walker (do not move)
+Docs/                      VerticalSlice.md, Collaboration.md, ProjectMap.md, GO_GHOST_VS/ (baseline, TEST profile,
+                           Implementation_Log, execution contract, prompts, playtest checklist)
+CLAUDE.md  README.md
 ```
 
 `Assets/Settings/InputSystem_Actions.inputactions` is the project-wide input actions asset (referenced from EditorBuildSettings config objects). `Assets/Settings/UniversalRenderPipelineGlobalSettings.asset` is referenced from GraphicsSettings. Do not move either.
@@ -45,129 +52,103 @@ Docs/  CLAUDE.md  README.md
 
 | Scene | Content | Notes |
 |---|---|---|
-| `_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity` | Main Camera (URP camera data, CameraFollow -> Player/CameraTarget), Global Light 2D, `Arena` (five wall segments + `ExitBarrier`, all layer Ground with BoxCollider2D), `Player` (Player.prefab instance at (-8, 0)), `Encounter_01` (EncounterZone trigger 14x14 at (5, 0) with three `Enemy_Basic` children at (6,3), (6,-3), (9,0); disables ExitBarrier on completion) | Formal mission grey-box. Only build scene. Saved in the current scene format (upgraded from the template format in Stage 2A, hence the large diff) |
-| `_Game/Development/Walker/Scenes/Scene1.unity` | Player.prefab instance at the origin; Main Camera with CameraFollow (target = CameraTarget) | Walker's test scene. The stray Bullet instance was removed. No enemies, no walls |
-| `_Game/Development/Thomas/Scenes/Random Scene.unity` | Main Camera only | Empty test scene |
+| `Levels/L01_Mission/Scenes/Cyberpunk World.unity` | Fixed orthographic Main Camera; `Arena` (closed walls, floor, ceiling); `GameSession` (GameSessionFlow, BossFight); `SessionCanvas` (HUD, Loadout with seven slots, transition and Result pages) and one `EventSystem`. The officer and Boss are spawned per attempt from `CombatAttempt.prefab`. Legacy `Encounter_01` and `ExitBarrier` are still in the scene; `Encounter_01` is inactive and `CameraFollow` is disabled | Only build scene. Integrated by Thomas. Arena and camera numbers: `Prototype_Test_Profile.md` |
+| `Levels/L01_Mission/Scenes/TitleScene.unity` | Added by Walker on 2026-09-24 | Not in Build Settings. Has missing references (noted in the Implementation_Log, out of scope so far) |
+| `Development/Walker/Scenes/Scene1.unity` | Shared Player prefab instance + camera | Walker's test scene. Not updated for side-view (the shared prefab has gravity 0); not verified since the migration |
+| `Development/Thomas/Scenes/Random Scene.unity` | Main Camera only | Empty test scene |
 
 ## 4. Scripts
 
-All game scripts are in Assembly-CSharp, no namespace. File names of the original 12 scripts are lowercase (e.g. `Playermovement.cs` contains `PlayerMovement`); Unity resolves all classes correctly on Windows. Renaming them to match class names is a Proposed cleanup for later.
+All game scripts are in Assembly-CSharp, no namespace. Several file names differ from their class names in case (`Playermovement.cs` contains `PlayerMovement`); Unity resolves them. Renaming is a Proposed cleanup for later.
 
-### `Assets/_Game/Shared/Scripts/Player/`
+### Slice data flow
 
-| File / class | Responsibility | Status |
-|---|---|---|
-| `PlayerInputReader.cs` PlayerInputReader (new, Stage 2A) | Single input source: resolves Player/Move, Aim, Attack, Dodge, Ability, Previous, Next from `InputSystem.actions`, polls them each frame, computes the unified `AimDirection` (mouse -> world, normalized, never zero). Logs a clear error if an action or the actions asset is missing. Runs before other scripts (`DefaultExecutionOrder(-100)`) | Verified in Play Mode |
-| `Playerstatsso.cs` PlayerStatsSO; asset `Shared/Data/PlayerStats.asset` | Tunables: maxHealth, moveSpeed, jumpForce, maxAirJumps, gunDamage, fireRate, bulletSpeed, dodge distance/duration/cooldown, iFrameDuration, slash-dodge bonus/damage | Unchanged |
-| `Playermovement.cs` PlayerMovement | Top-down planar movement from `MoveInput` (diagonals normalized); `FacingDirection` follows the aim and flips the sprite with `SpriteRenderer.flipX`; yields to PlayerDodge while dodging. Jump / ground-check members are kept but unused | Verified |
-| `Playershooting.cs` PlayerShooting | Holds Attack to fire at `fireRate`; spawns the bullet at the muzzle (player position + AimDirection x FirePoint radius), rotated to the aim; moves the FirePoint child to the muzzle every frame | Verified |
-| `Projectile.cs` Projectile; prefab `Shared/Prefabs/Bullet.prefab` | Straight bullet; ignores its shooter and anything on the shooter's layer (layer cached at launch, so a destroyed owner is never dereferenced); damages IDamageable; destroyed by `blockingLayers` (Bullet prefab: Ground) | Verified |
-| `Playerdodge.cs` PlayerDodge | Dodge along the Move direction, or along the aim when not moving; i-frames; cooldown; velocity zeroed after the dash; slash-dodge upgrade and `PerformForcedSlashDodge` (nearest enemy in any direction) kept; `CancelDodge()` for death | Verified (manual and forced-slash hooks unchanged in behaviour) |
-| `Playerhealth.cs` PlayerHealth | Health, damage, invulnerability, Last Stand (unchanged); `Die()` now disables input/movement/shooting/dodge/abilities, freezes the body, tints the sprite, and after `retryDelay` (1.5 s) reloads the active scene if it is in Build Settings (otherwise logs a warning) | Verified in L01 |
-| `Playerabilitysystem.cs` PlayerAbilitySystem | Ability action uses the selected ability; Previous/Next cycle. No ability asset exists yet, so the button does nothing | Input wired, no asset (by design for 2A) |
-| `Playerupgrademanager.cs` PlayerUpgradeManager | Unlock entry points (double jump, slash dodge, Last Stand, ability) | Unchanged |
-| `Playerabilityso.cs` PlayerAbilitySO, `Exampleblastabilityso.cs` ExampleBlastAbilitySO | Ability ScriptableObject base + radius-damage example | Unchanged, no assets |
-| `Idamageable.cs` IDamageable | `TakeDamage(int amount, GameObject source)`; implemented by PlayerHealth and Enemy | Unchanged |
-| `Camerafollow.cs` CameraFollow | LateUpdate follow | Unchanged; used in L01 and Scene1 |
+`GameSessionFlow` owns the session. Each deployment seals the editable `LoadoutDraft` into an immutable `DeploymentSnapshot`, instantiates a fresh `CombatAttempt.prefab` (one officer + one Boss), and the player components read their values from that snapshot. A victory copies the snapshot into an immutable `VictoryRecord`. Shared `PlayerStats.asset` is the baseline and is never written at runtime. Defeat destroys the attempt (actors, bullets, timers, callbacks) before the next officer's Loadout opens.
 
-### `Assets/_Game/Shared/Scripts/Enemies/` and `Encounters/`
+### `Levels/L01_Mission/Scripts/`
 
-| File / class | Responsibility | Status |
-|---|---|---|
-| `Enemy.cs` Enemy (new) | Basic ranged enemy, IDamageable: chases the player until within `preferredDistance`, fires a Bullet at the player every `fireInterval` within `attackRange`, stops when the player is dead; `OnDied` event then Destroy. Target is handed over by EncounterZone (`SetTarget`), falls back to a scene search. Prefab `Shared/Prefabs/Enemies/Enemy_Basic.prefab`: red square, Rigidbody2D (gravity 0, frozen rotation, interpolated), BoxCollider2D, layer Enemy, 30 HP, speed 3, preferred distance 4, fire interval 1.5 s, bullet speed 8, damage 10 | Verified |
-| `EncounterZone.cs` EncounterZone (new) | Trigger area: hides its listed enemies on Awake, activates them when the player enters, counts deaths (with a per-frame fallback), then marks Complete, disables the configured objects (L01: ExitBarrier) and fires `onEncounterComplete`. Resets by scene reload | Verified |
+| File / class | Responsibility |
+|---|---|
+| `GameSessionFlow.cs` | Session state machine: NewGameInitialization, Deployment, Combat, DefeatTransition, NextOfficerTransition, Loadout, VictoryTransition, Result. Officer numbering, unlock-after-first-defeat, generation guard against stale attempts, physics settling before combat, CONTINUE-driven pages |
+| `BossFight.cs` | One outcome per attempt (TEST rule: mutual death counts as defeat); stops combat and clears projectiles; binds the Boss as the AI Aim target |
+| `CyberpsychoBoss.cs` | Boss behaviour and the only writer of the Boss's velocity. Fixed four-attack cycle with warnings (aimed shot, dash, fan burst, double dash); directions lock at the warning; no Body % scaling. Uses the attempt-local clock for Time Slow |
+| `SessionView.cs` | uGUI/TMP view: combat HUD (HP, officer, aim authority, Time Slow state), Loadout (seven slots, install/remove, Body %, DEPLOY), transition pages, Result with NEW GAME |
 
-Data flow: the Player prefab reads input only through PlayerInputReader; enemies and the player damage each other only through IDamageable and Projectile. No string paths, `Resources`, or static state; the only scene load is PlayerHealth's retry by build index.
+### `Shared/Scripts/Player/`
+
+| File / class | Responsibility |
+|---|---|
+| `PlayerInputReader.cs` | The single input source. Polls the Player action map and resolves `AimDirection` through an exclusive Manual or AI branch; with AI Aim the mouse cannot override it |
+| `Playermovement.cs` PlayerMovement | Side-scroller movement: horizontal velocity, gravity jump (Space), unlockable double jump (not used by the slice). Facing follows the resolved aim. Speed comes from the deployment (legs) |
+| `Playerdodge.cs` PlayerDodge | Grounded horizontal dash along input or last horizontal facing; no air dodge; cooldown measured start-to-start. Slash-dodge upgrade and `PerformForcedSlashDodge` are legacy |
+| `Playershooting.cs` PlayerShooting | Hold to fire along `AimDirection` from a muzzle offset; fire rate comes from the deployment (arms). Volley upgrade is legacy |
+| `Playerhealth.cs` PlayerHealth | Health, invulnerability, death stops controls. `autoRetryOnDeath` is off in the slice. Last Stand is legacy |
+| `PlayerTimeSlow.cs` | Spine module: replaces dodge with a hostile-only slow on an attempt-local clock; global `timeScale` is untouched |
+| `LoadoutState.cs` | `LoadoutSlot` (7), `AimControl`, `LoadoutRules` (TEST weights and module values), `LoadoutDraft` -> `DeploymentSnapshot` -> `VictoryRecord` |
+| `OfficerIdentity.cs`, `OfficerVisual.cs` | Per-attempt officer number and snapshot; slot colour palette shared by the stickman body parts and the UI |
+| `Projectile.cs`; prefab `Shared/Prefabs/Bullet.prefab` | Straight bullet, one hit per bullet, cleanup on result |
+| `Playerstatsso.cs` PlayerStatsSO; asset `Shared/Data/PlayerStats.asset` | Shared baseline tunables; deployment values override some of them without writing back |
+| `Idamageable.cs` IDamageable | `TakeDamage(int, GameObject)`; implemented by PlayerHealth and Enemy |
+| `Playerabilitysystem.cs`, `Playerabilityso.cs`, `Exampleblastabilityso.cs`, `FreezeEnemyAbilityso.cs` (Walker, 2026-09-24), `Ifreezable.cs`, `Playerupgrademanager.cs` | Legacy ability and upgrade framework. Disabled on the slice's player. No enemy implements `IFreezable` yet |
+| `Camerafollow.cs` CameraFollow | Follow camera; disabled in the slice (fixed camera) |
+
+### `Shared/Scripts/Enemies/` and `Encounters/`
+
+| File / class | Responsibility |
+|---|---|
+| `Enemy.cs` Enemy; prefab `Shared/Prefabs/Enemies/Enemy_Basic.prefab` | Health, collider, IDamageable. On the Boss, `automaticCombat` is off so `CyberpsychoBoss` owns movement and attacks. The old chase-and-shoot behaviour is top-down legacy |
+| `EncounterZone.cs` | Legacy top-down encounter trigger; its scene object is inactive |
+
+### `Development/Thomas/Scripts/` (editor-only, `#if UNITY_EDITOR`)
+
+`TopDownSmokeTest.cs` and its partials drive Play Mode with virtual Input System keyboard/mouse and real uGUI clicks. The name is historical; they test the side-view slice. Run from Edit Mode with `TopDownSmokeTest.EnterPlayModeAndLaunch("<scenario>")`, or in batch mode with `-executeMethod TopDownSmokeTest.RunContinueFlowBatch` / `RunBossContactBatch` (omit `-quit`). Evidence is written to `Logs/GO_GHOST_VS/` (local, ignored). Current scenarios and their last results: Implementation_Log.
 
 ## 5. Input (New Input System, Confirmed)
 
-Player Settings: Active Input Handling = Input System Package only (unchanged). No script uses the legacy `UnityEngine.Input` class anymore.
+Player Settings: Active Input Handling = Input System Package only. No script uses the legacy `UnityEngine.Input` class. Key choices are TEST values.
 
 Player map in `Assets/Settings/InputSystem_Actions.inputactions`:
 
-| Action | Type | Default binding | Used by |
-|---|---|---|---|
-| Move | Value Vector2 | WASD / arrows / left stick | PlayerMovement, PlayerDodge |
-| Aim (added) | Value Vector2 | `<Mouse>/position` | PlayerInputReader.AimDirection (shooting, dodge, facing) |
-| Attack | Button | left mouse button (also Enter, gamepad West) | PlayerShooting (name kept, treated as Fire) |
-| Dodge (added) | Button | Space | PlayerDodge |
-| Ability (added) | Button | Q | PlayerAbilitySystem |
-| Previous / Next | Button | 1 / 2 | PlayerAbilitySystem (cycle) |
-| Look, Interact, Crouch, Jump, Sprint | | template defaults | unused (Jump still shares Space with Dodge; harmless) |
-
-## 6. Top-down conversion (done in Stage 2A)
-
-| Script | Before | Now |
+| Action | Keyboard / mouse binding | Used by |
 |---|---|---|
-| PlayerMovement | Horizontal axis + jump + ground check | planar velocity from Move; facing from aim; sprite flipX |
-| PlayerShooting | fired along FacingDirection | fires along AimDirection from a world-space muzzle |
-| PlayerDodge | horizontal dash | Move-direction dash, aim-direction dash when standing still |
-| Player Rigidbody2D | gravity scale 1 | gravity scale 0, interpolation on (prefab) |
+| Move | A / D, Left / Right arrows (vertical bindings removed) | PlayerMovement, PlayerDodge |
+| Jump | Space | PlayerMovement |
+| Dodge | Left Shift | PlayerDodge, or PlayerTimeSlow when Spine is installed |
+| Aim | Mouse position | PlayerInputReader (manual branch) |
+| Attack | Left mouse button (also Enter) | PlayerShooting |
+| Ability, Previous, Next | Q, 1, 2 | Legacy ability system, not used by the slice |
+| Sprint, Look, Interact, Crouch | template defaults (Sprint shares Left Shift with Dodge) | Unused |
 
-Platformer fields (`jumpForce`, `maxAirJumps`, `groundCheck`, `groundCheckRadius`, `groundLayer`, `doubleJumpUnlocked`, `TryJump`) are still present and unused, by agreement.
+UI uses the Input System UI actions through the scene's single `EventSystem`.
 
-## 7. Missing or not implemented (for the vertical slice)
+## 6. Known issues
 
-- Augmentation loadout data, preparation scene/UI, carry-over into the mission, AI control value.
-- Auto-dodge and its meter, manual/auto priority rule.
-- Ability asset (a shockwave from ExampleBlastAbilitySO) and its unlock path.
-- Dialogue / narrative disagreement node and its AI-control effect.
-- Boss.
-- Result / reflection screen, return to preparation. Mission exit after the encounter (the barrier opens, nothing is beyond it yet).
-- HUD (health, meter, cooldowns), dialogue box; encounter/death feedback is currently Console logs, a tint and the barrier.
-- Audio: no AudioSource or clips; state hooks for audio not yet exposed.
-- Enemy damage feedback beyond dying; only one enemy type.
-- Tests (Unity Test Framework), editor tools, Cinemachine: none.
-
-Risk: `Assets/Cyborg-Assets/SpritesForChars` and `Assets/Cyborg-Assets/TilesToUse` exist in the repository only as folder `.meta` files (empty folders). Walker may hold uncommitted art there. Do not move or delete these folders until Walker confirms.
-
-## 8. Stage 2A record (2026-09-17)
-
-Branch `feature/topdown-combat-foundation` (uncommitted at the time of writing).
-
-Modified: `InputSystem_Actions.inputactions` (three actions + bindings added), `Playermovement.cs`, `Playershooting.cs`, `Playerdodge.cs`, `Playerhealth.cs`, `Playerabilitysystem.cs`, `Projectile.cs`, `Bullet.prefab` (blockingLayers = Ground), `ProjectSettings/TagManager.asset` (layer 8 Player), `Scene1.unity` (Player converted to a prefab instance, stray Bullet removed), `Cyberpunk World.unity` (grey-box encounter; scene format upgraded on save).
-
-Created: `PlayerInputReader.cs`, `Enemy.cs`, `EncounterZone.cs`, `Player.prefab`, `Enemies/Enemy_Basic.prefab`, `Development/Thomas/Scripts/TopDownSmokeTest.cs`.
-
-### Play Mode tests actually run (editor, virtual keyboard/mouse injected by TopDownSmokeTest)
-- Scene1: input wiring, WASD velocity (6 u/s, diagonals normalized), facing/flipX follows the mouse independently of movement, shooting along the aim (dot = 1.000, speed 18), dodge along Move and along aim (about 3 units, i-frames on, velocity zeroed after).
-- L01: same movement/shooting/dodge checks; walking into the zone activates 3 enemies; standing still 3.5 s takes 60 damage from enemy bullets; damage during a dodge is ignored; killing the nearest enemy takes 3 hits (0.5 s); clearing all enemies marks the encounter Complete and disables ExitBarrier; lethal damage disables the player and reloads the scene after 1.5 s with a fresh Player, 3 inactive enemies, zone Idle, one of everything (checked after two consecutive reloads).
-- Console: 0 errors, 0 warnings throughout.
-
-### Needs manual verification (Thomas / Walker, keyboard and mouse in hand)
-- Feel: movement speed, dodge distance and cooldown, aim responsiveness, camera follow smoothness.
-- Bullet collider (radius 0.5) hit generosity and any tunneling through the 1-unit walls; report before tuning (kept at Walker's original values on purpose).
-- Player/Enemy physical pushing (collision matrix unchanged on purpose); whether dodging into an enemy feels wrong.
-- Windows build: Succeeded on 2026-09-17; standalone launch and scene rendering verified. This quick recheck verified encounter activation, incoming damage, dodge invulnerability, shooting, and death/retry. The automated combat run ended in player death before clearing the encounter, so full encounter completion was not reverified. Reports: `Builds/quick-check.txt` and `Builds/build-report.txt`.
-
-### How to run the smoke tests yourself
-In Play Mode (L01 or Scene1), run from an editor script or the C# console: `TopDownSmokeTest.Launch("movement")` (or `shooting`, `dodge`, `combat`, `death`); results appear in the Console prefixed `[SmokeTest]` and in `TopDownSmokeTest.Results`. The driver mutes the real keyboard/mouse while it runs and restores them afterwards.
-
-## 9. Stage 1 record (2026-09-17, merged)
-
-All moves were done with `AssetDatabase.MoveAsset`; GUIDs unchanged, `.meta` files moved with their assets.
-
-| Old path | New path |
-|---|---|
-| `Assets/SCRIPTS/` (12 scripts + READEME.md) | `Assets/_Game/Shared/Scripts/Player/` |
-| `Assets/Prefabs/Bullet.prefab` | `Assets/_Game/Shared/Prefabs/Bullet.prefab` |
-| `Assets/PlayerStats.asset` | `Assets/_Game/Shared/Data/PlayerStats.asset` |
-| `Assets/Scene1.unity` | `Assets/_Game/Development/Walker/Scenes/Scene1.unity` |
-| `Assets/Scenes/Random Scene.unity` | `Assets/_Game/Development/Thomas/Scenes/Random Scene.unity` |
-| `Assets/Scenes/Cyberpunk World.unity` | `Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity` |
-
-Also: Build Settings path updated, empty `Assets/Scenes` removed, four `.idea` files untracked. Not moved: `Assets/Settings/`, `Assets/Welcome/`, `Assets/Cyborg-Assets/`, `Packages/`, `ProjectSettings/`.
-
-## 10. Known issues
-
-- Retry only works for scenes in Build Settings (L01). In Development scenes death logs a warning; stop and restart Play Mode.
-- The smoke-test driver changes Input System settings and mutes real devices while running; if a scenario is interrupted mid-run (e.g. Play Mode stopped), settings are restored on destroy, but check `Edit > Project Settings > Input System Package` if input feels wrong afterwards.
+- `Assets/Settings/UniversalRenderPipelineGlobalSettings.asset` on `main` has a filled `m_RuntimeSettings` list, committed by mistake in a1dcf74 (2026-09-21), most likely saved during a build. The editor empties it on load, so every machine sees it as modified. Proposed: commit the empty list once, in its own commit, with the editor closed or after the editor saved it.
+- Build and test residue appears after builds and Test Runner runs (see `Collaboration.md` section 6). Proposed: add `Assets/Resources/PerformanceTestRun*` to `.gitignore`.
+- `TitleScene.unity` has missing references and is not in Build Settings.
+- `Scene1.unity` (Walker) uses the shared Player prefab, which still has top-down defaults such as gravity scale 0.
+- `FreezeNearestEnemyAbilitySO` has no `IFreezable` target in the project yet.
 - Script file names do not match class names in case (works on Windows; risk on case-sensitive systems).
-- UnityYAMLMerge is not configured on Thomas's machine; unknown on Walker's (see Collaboration.md section 6).
-- `Shared/Scripts/Player/READEME.md` (Walker's notes) still describes the legacy-Input platformer setup; the docs in `Docs/` take precedence.
-- Enter Play Mode Options: Domain Reload disabled. Future managers must reset static state.
-- Two enemies on the same spot can push each other and the player (all layers collide); acceptable for the grey-box until tested by hand.
+- `Shared/Scripts/Player/READEME.md` (Walker's notes) describes the old platformer and legacy Input setup; the docs in `Docs/` take precedence.
+- The smoke-test driver changes Input System settings and mutes real devices while it runs. If a run is interrupted, check `Edit > Project Settings > Input System Package`.
+- `Assets/Cyborg-Assets/SpritesForChars` and `TilesToUse` exist only as folder `.meta` files. Walker may hold uncommitted art there; do not move or delete them until Walker confirms.
 
-## 11. Next step
+## 7. Next step
 
-Review and merge `feature/topdown-combat-foundation`. Then Stage 2B (needs explicit approval): augmentation loadout data and preparation flow, applying the loadout to the Player prefab through PlayerUpgradeManager, a single AI-control value, the auto-dodge meter, and one ability asset.
+From the Implementation_Log (2026-09-24): the slice is ready for human playtesting with `Docs/GO_GHOST_VS/Playtest_Checklist.md`. Still deferred or NOT_RUN: ending (outcome) mapping, the standalone Windows build, and the independent final review. The staged prompts in `Docs/GO_GHOST_VS/START_HERE.md` (06 outcomes, 07 regression and build, 08 review) cover them. Each stage needs explicit approval.
+
+## 8. History
+
+- Stage 1 (2026-09-17, merged): reorganization with `AssetDatabase.MoveAsset`; GUIDs unchanged.
+
+  | Old path | New path |
+  |---|---|
+  | `Assets/SCRIPTS/` (12 scripts + READEME.md) | `Assets/_Game/Shared/Scripts/Player/` |
+  | `Assets/Prefabs/Bullet.prefab` | `Assets/_Game/Shared/Prefabs/Bullet.prefab` |
+  | `Assets/PlayerStats.asset` | `Assets/_Game/Shared/Data/PlayerStats.asset` |
+  | `Assets/Scene1.unity` | `Assets/_Game/Development/Walker/Scenes/Scene1.unity` |
+  | `Assets/Scenes/Random Scene.unity` | `Assets/_Game/Development/Thomas/Scenes/Random Scene.unity` |
+  | `Assets/Scenes/Cyberpunk World.unity` | `Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity` |
+
+- Stage 2A (2026-09-17, PR #1): top-down combat foundation with `PlayerInputReader`, `Enemy`, `EncounterZone`. Superseded by the side-view slice; the input reader and player scripts were kept and extended.
+- Side-view slice (2026-09-24, PR #2 and #3, branch `codex/sideview-boss-slice`): see `Docs/GO_GHOST_VS/Implementation_Log.md`.

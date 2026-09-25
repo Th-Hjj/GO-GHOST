@@ -1,7 +1,8 @@
 ﻿using UnityEngine;
 
 /// <summary>
-/// All the tunable numbers for the player in one asset. Create one via
+/// Shared player baseline. Slice deployment snapshots override gun damage
+/// and dodge start interval without writing back to this asset. Create one via
 /// Assets > Create > Player > Player Stats, drag it into every player
 /// component that asks for a PlayerStatsSO, and tweak values live in the
 /// Inspector without touching code.
@@ -32,6 +33,7 @@ public class PlayerStatsSO : ScriptableObject
     [Header("Dodge")]
     public float dodgeDistance = 3f;
     public float dodgeDuration = 0.18f;
+    [Tooltip("Minimum time from one dodge start to the next; includes the dash and i-frame window.")]
     public float dodgeCooldown = 0.8f;
     [Tooltip("Total invulnerability window. Should be >= dodgeDuration.")]
     public float iFrameDuration = 0.25f;

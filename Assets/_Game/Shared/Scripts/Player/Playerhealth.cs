@@ -7,8 +7,8 @@ using UnityEngine.SceneManagement;
 /// Health, damage intake, death, and the "Last Stand" once-per-battle
 /// revive: instead of dying, the player's onboard AI forces a slash-dash
 /// through the nearest enemy and settles the player at 1 HP.
-/// Death (vertical slice minimum): the player stops acting, is tinted, and
-/// after retryDelay the current Build Settings scene is reloaded.
+/// Death stops controls. Legacy scenes can auto-retry; the Boss slice disables
+/// that option and owns its temporary result feedback.
 /// </summary>
 // FUNCTION SUMMARY
 // TakeDamage()       — reduces health from an attack, or triggers Last Stand instead of dying if it's available.
@@ -16,7 +16,8 @@ using UnityEngine.SceneManagement;
 // LastStandRoutine()  — the one-life-saving slash-dash sequence, called internally when the player would otherwise die.
 // ResetLastStand()    — re-arms Last Stand; call this at the start of every new battle.
 // UnlockLastStand()   — permanently turns on the Last Stand ability via the upgrade tree.
-// Die()               — marks the player dead, fires OnDeath, disables the player's controls and starts the retry countdown.
+// Die()               — marks dead once, fires OnDeath, stops controls and optionally starts legacy retry.
+// StopCombat()        — cancels action state and freezes the body, also used on victory.
 // RetryRoutine()      — waits retryDelay, then reloads the active scene (only if it is in Build Settings).
 [RequireComponent(typeof(PlayerDodge))]
 public class PlayerHealth : MonoBehaviour, IDamageable
@@ -28,12 +29,14 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     [SerializeField] private bool lastStandUnlocked = false;
 
     [Header("Death / Retry")]
+    [SerializeField] private bool autoRetryOnDeath = true;
     [Tooltip("Seconds between death and reloading the current scene.")]
     [SerializeField] private float retryDelay = 1.5f;
     [Tooltip("Sprite tint while dead (greybox feedback).")]
     [SerializeField] private Color deadTint = new Color(0.3f, 0.3f, 0.3f, 1f);
 
     public int CurrentHealth { get; private set; }
+    public int MaxHealth => stats.maxHealth;
     public bool IsInvulnerable { get; set; }
     public bool IsDead { get; private set; }
 
@@ -115,13 +118,27 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     {
         IsDead = true;
         OnDeath?.Invoke();
+        StopCombat();
 
+        var sprite = GetComponent<SpriteRenderer>();
+        if (sprite != null) sprite.color = deadTint;
+
+        Debug.Log("[PlayerHealth] Player died.", this);
+        if (autoRetryOnDeath) StartCoroutine(RetryRoutine());
+    }
+
+    public void StopCombat()
+    {
+        StopAllCoroutines();
         // Stop acting: cancel a running dodge, cut input and the action components, freeze the body.
         if (dodge != null) dodge.CancelDodge();
+        var reader = GetComponent<PlayerInputReader>();
+        if (reader != null) reader.SetGameplayInputEnabled(false);
         SetEnabled<PlayerInputReader>(false);
         SetEnabled<PlayerMovement>(false);
         SetEnabled<PlayerShooting>(false);
         SetEnabled<PlayerDodge>(false);
+        SetEnabled<PlayerTimeSlow>(false);
         SetEnabled<PlayerAbilitySystem>(false);
 
         var rb = GetComponent<Rigidbody2D>();
@@ -130,12 +147,6 @@ public class PlayerHealth : MonoBehaviour, IDamageable
             rb.linearVelocity = Vector2.zero;
             rb.simulated = false;
         }
-
-        var sprite = GetComponent<SpriteRenderer>();
-        if (sprite != null) sprite.color = deadTint;
-
-        Debug.Log($"[PlayerHealth] Player died. Retrying in {retryDelay:F1}s.", this);
-        StartCoroutine(RetryRoutine());
     }
 
     private IEnumerator RetryRoutine()

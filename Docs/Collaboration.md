@@ -87,6 +87,8 @@ Never do these without explicitly agreeing with the other person: force push, `r
 
 ### Scene and Prefab merge conflicts
 
+Repository text uses LF through `.gitattributes`, including C#, Markdown and package JSON; Windows `.bat`/`.cmd` files use CRLF. Binary/LFS assets keep their existing rules. This applies across machines without relying on global `core.autocrlf`. Do not run repository-wide renormalization or LFS history migration as routine cleanup. `.gitignore` excludes Unity/IDE caches, builds, local test evidence, coverage output and personal environment files; keep shared `.vscode` configuration, `Packages/packages-lock.json`, source assets and their `.meta` files tracked.
+
 Avoid them through ownership (section 3). When one happens, do not accept a whole "ours" or "theirs" file without agreeing. Unity's UnityYAMLMerge can merge non-overlapping changes in YAML files; overlapping changes still stop as conflicts. Each machine configures it locally, because the Unity install path differs, so this is never committed:
 
 ```bash

@@ -74,6 +74,8 @@ public partial class TopDownSmokeTest : MonoBehaviour
             case "combat-v2-recovery": yield return TimeRecoveryV2(); break;
             case "polish": yield return Polish(); break;
             case "class-demo": yield return ClassDemo(); break;
+            case "continue-flow": yield return ContinueFlow(); break;
+            case "boss-contact": yield return BossContact(); break;
             // Earlier numerical gates are historical; TEST-v2 uses combat-v2.
             case "movement": yield return Movement(); break;
             case "shooting": yield return Shooting(); break;
@@ -709,10 +711,18 @@ public partial class TopDownSmokeTest : MonoBehaviour
             "old attempt destroyed while the next officer chooses deployment");
     }
 
-    private static IEnumerator WaitForState(GameSessionFlow flow, GameSessionFlow.FlowState expected)
+    private IEnumerator WaitForState(GameSessionFlow flow, GameSessionFlow.FlowState expected)
     {
         float deadline = Time.realtimeSinceStartup + 30f;
-        while (flow.State != expected && Time.realtimeSinceStartup < deadline) yield return null;
+        while (flow.State != expected && Time.realtimeSinceStartup < deadline)
+        {
+            if (flow.CanContinue)
+            {
+                yield return Frames(2); // Let SessionView display the current page before clicking.
+                yield return ClickSessionButton("DeployButton");
+            }
+            else yield return null;
+        }
         if (flow.State != expected) throw new System.InvalidOperationException($"Expected {expected}, got {flow.State}");
         yield return null;
     }

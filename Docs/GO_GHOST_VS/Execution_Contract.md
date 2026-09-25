@@ -1,5 +1,7 @@
 # GO GHOST — Codex 执行约束
 
+> **Historical scope — superseded in part on 2026-09-25.** Read [../VerticalSlice.md](../VerticalSlice.md) and the latest approved phase first. Below, the top-level Spine slot, single-phase-only scope, blanket exclusion of persistence/hidden unlocks, and old exhaustive phase gates are obsolete. Current rules are Torso; two-phase gun/blade Boss; separate Police Archive; explicit Continue; Shift Dodge / E augmentation; MSP happy-path verification. Engineering safety and truthful evidence rules still apply. The original wording below is retained for history, not to undo Phases 1–5. The current progress log is [Implementation_Log.md](Implementation_Log.md).
+
 ## 文件身份与优先关系
 这是本次开发流程的建议，不是对游戏设计基线的改写。
 - 已确认的玩法以 `GO_GHOST_Design_Baseline_ZH.md` 与 Macro 的 Project Goals 为准；Macro 保留表现/音频组织。

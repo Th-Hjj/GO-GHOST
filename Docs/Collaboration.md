@@ -2,7 +2,7 @@
 
 Two developers, one Unity project, one GitHub repository (`Th-Hjj/GO-GHOST`). GitHub `main` is the only shared source of truth. The rules below are deliberately light. Their purpose is to avoid losing work and to avoid two people, two machines, or two agents editing the same Unity file at the same time.
 
-Last updated: 2026-09-25. Since 2026-09-24 the game is a side-view single-arena Boss slice; design rules live in `Docs/GO_GHOST_VS/GO_GHOST_Design_Baseline_ZH.md` (English summary: `VerticalSlice.md`), and progress lives only in `Docs/GO_GHOST_VS/Implementation_Log.md`. Items marked **Proposed** are waiting for confirmation.
+Last updated: 2026-09-25. Current confirmed design and MSP strategy live in `Docs/VerticalSlice.md`; the original 2026-09-24 Chinese baseline is retained as history where superseded. Progress lives only in `Docs/GO_GHOST_VS/Implementation_Log.md`. Items marked **Proposed** are waiting for confirmation.
 
 ## 0. Current period: Thomas leads (from 2026-09-25)
 

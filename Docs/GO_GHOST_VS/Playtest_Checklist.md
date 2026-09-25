@@ -1,5 +1,7 @@
 # GO GHOST — Vertical Slice 验收与 Playtest
 
+> Historical integration/playtest worksheet, not the default MSP sprint gate. Current design and priorities are in [../VerticalSlice.md](../VerticalSlice.md), current numbers in [Prototype_Test_Profile.md](Prototype_Test_Profile.md), and executed results in [Implementation_Log.md](Implementation_Log.md). Apply later Torso/input/two-phase/Archive rules wherever this old sheet differs. Natural 0% victory, final balance and standalone verification remain useful later checks, not requirements to repeat after every feature.
+
 ## 记录规则
 这是空白检查表，不是已运行的报告。
 状态仅填 PASS / FAIL / NOT_RUN / BLOCKED；证据可为实际日志、测试输出、构建启动记录或真人操作记录。

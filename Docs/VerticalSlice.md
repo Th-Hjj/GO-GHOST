@@ -1,98 +1,79 @@
-# GO GHOST - Vertical Slice Design
+# GO GHOST — Current Design and MSP Strategy
 
-English summary of the confirmed design. Source of truth: `Docs/GO_GHOST_VS/GO_GHOST_Design_Baseline_ZH.md` (confirmed 2026-09-24) and the Macro sheet `Docs/GO_GHOST_VS/GO_GHOST_Game_Design_Macro_Revised.xlsx` (text copy: `Macro_Readable_Extract.md`). If this summary and the baseline disagree, the baseline wins; report the difference.
+Current confirmed direction from Thomas's 2026-09-25 global rules, Phase 1–5 requests and MSP strategy update. This supersedes conflicting scope in the original [Chinese baseline](GO_GHOST_VS/GO_GHOST_Design_Baseline_ZH.md), Macro, Execution Contract and old numbered prompts. Preserve those sources as history; do not use them to roll back current work.
 
-Status legend:
-- **Confirmed** = in the 2026-09-24 baseline, or confirmed later under the rules in `Collaboration.md`.
-- **TEST** = a replaceable prototype value in `Docs/GO_GHOST_VS/Prototype_Test_Profile.md`. Not a decision.
-- **Open** = not decided yet.
-- **Proposed** = a suggestion waiting for confirmation (by Thomas alone while he leads; see `Collaboration.md` section 0).
+**Confirmed** means approved game direction, not proof of implementation. **TEST** means a temporary prototype value. **TBD** means no design should be invented. Implementation evidence belongs only in [Implementation_Log](GO_GHOST_VS/Implementation_Log.md); paths are in [ProjectMap](ProjectMap.md), numbers in [Prototype_Test_Profile](GO_GHOST_VS/Prototype_Test_Profile.md).
 
-Last updated: 2026-09-25. Replaces the 2026-09-17 top-down design (see section 10).
+## Identity and flow
 
-## 1. Concept (Confirmed)
+- Single-player 2D side-view boss shooter, one platform arena, one cyberpsycho Boss. Unity 6000.6.0f1, Windows, keyboard and mouse.
+- Theme: power versus free will; the player controls successive police officers attempting the same mission.
+- Every fresh New Game starts a human officer at 0% with the Basic Gun. A skilled 0% officer must eventually be able to win; no forced first defeat. Proving/balancing that victory is not an MSP sprint gate.
+- Defeat -> next officer -> between-attempt loadout -> redeploy. Player HP, Boss HP/phase, attacks, transient abilities and target bindings reset for each attempt. Earlier damage never carries over.
+- Victory reads the winning officer's immutable deployment snapshot. The eventual ending depends only on that officer's current body augmentation percentage; not previous officers, death count, weapon or a final dialogue choice. Ending routing is still unimplemented; the current Result is not an ending.
+- Session/narrative transition pages enter their state and wait for explicit Continue. No mandatory eight-second auto-advance. Combat attack telegraphs and the gun/blade change retain their own short timers.
 
-GO GHOST is a single-player **2D side-view** shooter. The whole game takes place in one arena against one cyberpsycho Boss. The player plays a succession of police officers who take over the same mission. The player is not the Boss, and it is not one officer respawning.
+## Loadout and augmentation
 
-Theme: the trade-off between **power and free will**. The core question: how much body augmentation, and how much of my own control, am I willing to give up to finish this mission? The first choice is how far to augment; within that, the second choice is how to spend it on firepower, mobility, or defence.
+| Slot | Current prototype options | TEST body contribution |
+|---|---|---:|
+| Left Arm | Human / Rapid Fire | 0 / 10% |
+| Right Arm | Human / Rapid Fire | 0 / 10% |
+| Left Leg | Human / Move Speed / Double Jump / Hover | 0 / 10% for any installed option |
+| Right Leg | Human / Move Speed / Double Jump / Hover | 0 / 10% for any installed option |
+| Torso | Human / existing Time Slow | 0 / 20% |
+| Brain | Human / AI Aim | 0 / 40% |
+| Weapon | Basic Gun | Always 0% |
 
-Platform: Windows PC, keyboard + mouse. Engine: Unity 6000.6.0f1, URP 2D.
+- Torso replaces the old top-level Spine slot. A spine augmentation may later be a Torso subtype. Serialized ordinal 4 and some legacy field/item names are intentionally retained for Unity compatibility.
+- Ordinary options are replacements, not cumulative Tier 1 -> 2 -> 3 stacking. Tier 1 is a straightforward enhancement, Tier 2 adds a meaningful function, Tier 3 changes how that body part plays. This is design direction, not a completed tier catalogue. Existing Time Slow has no assigned final tier.
+- Hidden augmentations are special branches, not Tier 4; they may occupy multiple body slots. Current data can express compound occupancy and Normal / Modified / Disabled weapon compatibility; all official current options remain Normal. No playable compound option or Modified weapon effect exists yet.
+- Current ordinary options become freely selectable after the first defeat; there is no currency/death-reward economy. Future hidden options use persistent achievement unlocks, so the old blanket rule that every future item opens after one death no longer applies.
+- Edit the Draft between attempts, seal the battle Snapshot on deployment, copy it to VictoryRecord on success. No combat loadout changes or post-win removal to alter Body %.
+- Double Jump grants one extra airborne jump, even with two matching legs. Hover has one bounded resource, even with two matching legs. Mixed legs combine both; Move Speed combines with either.
+- Brain AI Aim exclusively controls aiming while equipped. The player retains movement, jump, dodge and fire timing. Removing it before deployment restores manual aim.
+- Preserve TBD slots/options. Do not invent missing upgrades, final weights, ending thresholds, narrative text or content IDs.
 
-## 2. Flow (Confirmed)
+## Input budget
 
-New Game -> Officer #1 (0%, human) deploys -> Boss fight.
-
-- Victory: defeat the Boss -> read the winner's Body % for this deployment -> matching ending.
-- Defeat: the officer falls -> the next officer takes over -> free loadout -> redeploy -> same Boss.
-
-Every deployment restores both the player and the Boss to full combat state. Damage dealt by earlier officers does not carry over. Deaths give no currency and unlock nothing further.
-
-This is a repeatable challenge, not a multi-level campaign. The loadout screen is not a level. Flow stages do not need to be separate Unity scenes.
-
-## 3. First deployment and base controls
-
-- Confirmed: every New Game starts with Officer #1 at **0%** with the base weapon. From the start the officer can move left and right, aim freely with the mouse, shoot, jump, and dodge. Other abilities come from upgrades.
-- Confirmed: the first fight must be genuinely winnable. No forced death, and the story must not depend on the player failing first.
-- Open: key bindings, exact dodge rules, air dodge, camera behaviour. The old top-down controls are not the side-view default. Current TEST keys: A/D move, Space jump, Left Shift dodge, mouse aim, left mouse button fire.
-
-## 4. Upgrades and loadout (Confirmed)
-
-- After the first defeat, the whole upgrade catalogue opens at once. From then on, installing, removing, and swapping are free: no currency, no death rewards, no gradual unlocks. The player may stay at 0% forever or go high immediately.
-- The loadout is edited between attempts and locks at deployment. It cannot change during combat, and modules cannot be removed after winning to change the ending.
-- "Everything opens after the first defeat" is the acquisition rule. The slice does not need the final full catalogue; the options it implements all open at once.
-- The UI may offer the previous loadout as a starting draft, but must never add augmentation to the next officer automatically.
-
-## 5. Seven slots and Body % (Confirmed)
-
-| Slot | Counts toward Body % |
+| Input | Responsibility |
 |---|---|
-| Left Arm | Yes, independently |
-| Right Arm | Yes, independently |
-| Left Leg | Yes, independently |
-| Right Leg | Yes, independently |
-| Spine | Yes, independently |
-| Brain | Yes, independently |
-| Weapon | No. It only changes how you attack |
+| Existing movement (A/D or arrows) | Move |
+| Mouse | Aim, unless Brain AI Aim owns it |
+| LMB | Primary fire |
+| Space press / hold | Jump / extra airborne jump / Hover |
+| Left Shift | Always Dodge; Time Slow must never consume it |
+| E | Main augmentation action; currently Torso Time Slow |
 
-**Body % = sum of the six body slot contributions**, based on what is equipped now, not on how many times or how many modules were ever installed. Modules may carry different weights; the high-impact Brain has a larger weight. The six maximum contributions add up to 100%; no augmentation is 0%. Exact weights, per-slot options, and numbers are Open (TEST weights: 10/10/10/10/20/40).
+Prefer extensions of existing inputs, then passive/contextual behavior, then E. Q may only serve a rare second active augmentation if necessary; no additional dedicated combat keys. Current formal gameplay has no Q ability. Reuse PlayerInputReader and the New Input System.
 
-**The weapon always contributes 0%.** It is an attack style, not a body modification, and does not take part in the ending.
+## Arena and Boss
 
-## 6. Benefits and loss of control (Confirmed)
+- One fixed-camera screen: permanent Ground, Low A, Low B, High C. Ordinary 0% jumps can reach both lows, then High C. Arena geometry should accommodate base movement rather than secretly buffing human jump.
+- Ground must remain permanent. High C is currently intact; BLACKOUT-driven destruction is a future feature, not implemented by the existing platform.
+- The existing enum/switch FSM is extended, not replaced by a Behavior Tree. High-level phases are P1 -> weapon transition -> P2 -> Dead; no combat phase enters Police Archive.
+- P1 identity: controlled, precise, ranged and positional. Current MSP moves: Burst Fire, Marked Shot, low/high Suppressive Sweep, Ghost Reposition. Ghost Reposition uses temporary transparency.
+- Transition: stop P1 safely, discard gun, draw blade. The 50% threshold and .35s weapon-change timing are TEST values. No transformation cinematic.
+- P2 identity: aggressive, unstable, close-range blade combat with persistent readable glitchy optical camouflage. This is not invisibility. A crude translucent/tint flicker is acceptable; position, facing, blade and warning must remain readable.
+- Current P2 has Ghost Slash (telegraph -> locked ground rush -> recovery), temporarily repeated. Crosscut, Predator Drop and BLACKOUT are later work. No Boss platform-navigation system exists.
+- Platforms block both teams' bullets. P1's elevated horizontal Sweep can pressure High C; downward player fire can be blocked by High C itself. Ground-based Ghost Slash has limited high-platform coverage. These are design inputs, not a reason to rebuild physics now.
 
-- Augmentation should make the mission easier overall. Full-game balance target: winning at 0% is hard but possible; at 100% a less skilled player wins clearly more easily. That does not mean auto-win or invincibility.
-- The cost shows through appearance, dialogue, endings, and real in-game automation. Not every limb or spine module needs a control penalty; for some the main cost is the higher Body %. High-impact Brain modules carry the clearest takeover.
-- Confirmed slice example, the **Brain AI Aim module**: the AI reliably tracks the Boss and takes over gun aim. The mouse cannot override it and it cannot be switched off during combat. Movement, jumping, dodging, and fire timing stay with the player. Removing the module before the next deployment restores manual aim.
-- The takeover must be useful, stable, and understandable. Random refusals, erratic movement, or deliberate malfunction are not a substitute for "losing free will". UI and combat feedback must make clear who controls the aim.
+## Police Archive and remaining scope
 
-## 7. Boss and endings (Confirmed)
+Police Archive is persistent meta progression, separate from the disposable session. Current versioned local JSON stores ending unlocks, completed achievements and hidden augmentation unlocks; no final records, unlock conditions or player-facing Archive UI exist. New Game does not delete it.
 
-- The Boss is always the same character but may have different moves and behaviour states. The full game may use several phases; the slice needs one working single-phase fight. Exact moves, rhythm, and numbers are Open; state machine versus behaviour tree is left to engineering review. There is no approved rule to scale the Boss by Body %.
-- The ending depends only on the **winning officer's Body % in that deployment**: not predecessors, not the number of deaths, not past equipment, not the weapon, and no final dialogue choice can override it. Module types may change combat and appearance but affect the ending only through the total percentage. The same final percentage always maps to the same ending.
-- Open: number of endings, thresholds, story, and moral framing. Do not write high augmentation as the bad ending or low augmentation as the good ending.
+The intended MSP still needs additional P2 attacks, BLACKOUT and High C destruction; Counter Arm and Predictive Cortex; Archive UI with Endings/Achievements; ending routing; one real Achievement -> Police Archive -> hidden augmentation unlock loop with Detached Drone Arm. Existing Brain AI Aim supplies the current targeting behavior. This list states the target, not permission to start every feature or invent their unresolved details.
 
-## 8. Slice scope (Confirmed)
+## Development strategy
 
-The loop to prove: **one working Boss fight -> a real defeat and next-officer handoff -> a meaningful loadout choice -> a felt difference in the next fight -> consequence feedback matching the choice.**
+Target **MSP — Minimal Shitty Version**: functional completeness > development speed > playability > robustness > polish.
 
-Included: playable side-view base controls, a single-phase Boss, the full fail-and-retry loop, a few modules with real effects, a visible Body %, AI aim takeover, and a simple ending based on the winning loadout. Different test loadouts must feel and end differently.
+Implement the cheapest working approved feature, compile, trigger its normal path at least once in Play Mode, then check combat can continue after death or victory. If there is no crash, softlock or broken core feature, record limitations and move on. Do not automatically rerun large historical suites, build standalone every phase, balance every loadout, polish placeholders or refactor for hypothetical needs.
 
-Verify first: a 0% first-try win does not break the flow; staying at 0% after a defeat works; changing the weapon does not change Body %; the AI takeover cannot be switched off in combat; the ending reads only this deployment's body loadout.
+Immediate blockers: compile errors, crashes, repeated gameplay-breaking exceptions, softlocks, unusable requested features, save corruption threatening normal gameplay, or a new change breaking a required core system. Balance, imperfect High C coverage, rough art/camouflage, awkward movement and harmless rare edge cases are normally TODO.
 
-Not required for the slice: the full upgrade catalogue, a multi-phase Boss, a standalone tutorial, a full arsenal, an intro cinematic, polished ending scenes. Rough visuals, hint text, and placeholder audio are fine, but feedback that lets the player feel the cost must not be skipped.
+Each phase remains explicitly scoped; report briefly and stop. Do not retroactively perfect Phases 0–3, and do not start the next phase without authorization. Git operations still follow [Collaboration](Collaboration.md) and AGENTS.md.
 
-Temporary weights or ending mappings must be labelled TEST and never presented as final. An unimplemented full catalogue must not be claimed as done.
+## Historical ideas
 
-## 9. Engineering direction (Confirmed)
-
-- Unity **New Input System** with the project-wide `Assets/Settings/InputSystem_Actions.inputactions`. The legacy `UnityEngine.Input` class is not the long-term solution.
-- URP 2D renderer, uGUI + TextMesh Pro for UI, Unity native audio. No new middleware without an explicit request.
-- Existing player scripts are reused and extended, not replaced.
-
-## 10. Earlier ideas, not reconfirmed
-
-Kept so they are not silently lost. They are not production commitments unless the team reconfirms them.
-- 2026-09-17 top-down design: a mission with standard combat encounters, an AI auto-dodge meter, a Q ability, a human/AI narrative disagreement node, a "That could become me" reflection after the Boss, and a semester target of about 20 minutes with about 10 stages and 2 bosses.
-- 2026-09-17 narrative: an elite officer saved by an AI neural implant that develops its own will and shares the body. The baseline keeps the theme but does not restate this story.
-- 2026-09-17 audio direction: original music by a Berklee collaborator; SFX, short vocal cues, and integration by the USC team; warmer human music versus precise synthetic AI music; no Wwise or FMOD. The Macro keeps audio notes as production suggestions unless confirmed.
-- From the original Macro: night setting, anime-style presentation, plug-in intro, standalone tutorial.
+The old top-down encounter campaign, multi-level/two-Boss target, AI auto-dodge narrative and legacy upgrade-manager controls are superseded, not active requirements. Original baseline/Macro files retain that history. Future audio, final art, narrative, exact ending thresholds and complete upgrade tiers remain outside the current implemented scope.

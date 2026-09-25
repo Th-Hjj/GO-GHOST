@@ -86,7 +86,7 @@ public partial class TopDownSmokeTest
         yield return PressureV2(flow);
         f.Player.GetComponent<Rigidbody2D>().position=new Vector2(-9,-1.69f);
         f.Boss.GetComponent<Rigidbody2D>().position=new Vector2(9,-1.7f);FocusV2(flow);yield return Frames(3);
-        yield return SpineV2(flow);
+        yield return TorsoV2(flow);
         yield return PolishScreen("time-slow-active");
         var oldSlow=f.Player.GetComponent<PlayerTimeSlow>();
         Record("FIXTURE augmented Boss death: record/UI plus active-slow shutdown.");
@@ -112,7 +112,7 @@ public partial class TopDownSmokeTest
         yield return DeployAndFocus(flow);flow.ActiveFight.Boss.StopCombat();
         CheckPolishColors(flow,"next officer fully removed");
         yield return RateAndMovementV2(flow,"polish removed");
-        yield return VerifyManualAim(flow);yield return MeasureDodgeInterval(flow,.8f,"polish Spine removed");
+        yield return VerifyManualAim(flow);yield return MeasureDodgeInterval(flow,.8f,"polish Torso removed");
         Check("fresh actors and no slow state",FindObjectsByType<PlayerHealth>().Length==1 && FindObjectsByType<CyberpsychoBoss>().Length==1
             && !flow.ActiveFight.Player.GetComponent<PlayerTimeSlow>().IsActive && Time.timeScale==1,"one pair, ordinary dodge restored");
         yield return PolishScreen("removed-final");

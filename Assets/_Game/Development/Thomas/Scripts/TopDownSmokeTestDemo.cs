@@ -27,14 +27,14 @@ public partial class TopDownSmokeTest
         yield return WaitForState(flow,GameSessionFlow.FlowState.Loadout);
         Check("demo Officer 2 clean Loadout",flow.OfficerIndex==2 && flow.ActiveFight==null && FindObjectsByType<Projectile>().Length==0,"old actors/projectiles disposed");
         while(!flow.CanDeploy)yield return null;
-        foreach(var button in new[]{"LeftArmButton","RightLegButton","SpineButton","BrainButton"})yield return ClickSessionButton(button);
-        Check("demo one Arm one Leg Spine Brain",flow.Draft.BodyModificationPercent==80,"10+10+20+40=80%");
+        foreach(var button in new[]{"LeftArmButton","RightLegButton","TorsoButton","BrainButton"})yield return ClickSessionButton(button);
+        Check("demo one Arm one Leg Torso Brain",flow.Draft.BodyModificationPercent==80,"10+10+20+40=80%");
         yield return PolishScreen("demo-loadout");yield return DeployAndFocus(flow);
         f=flow.ActiveFight;f.Boss.StopCombat();CheckPolishColors(flow,"demo 80%");
         Check("demo fresh full-health deployment",f.Player.CurrentHealth==f.Player.MaxHealth && f.BossHealth.CurrentHealth==800 && flow.Deployment.ShotsPerSecond==7 && flow.Deployment.MoveSpeed==8,"fresh combat; snapshot 7 shots/s, move 8");
         yield return RateAndMovementV2(flow,"demo one Arm one Leg");yield return BrainV2(flow);
         rb=f.Player.GetComponent<Rigidbody2D>();rb.position=new Vector2(-9,-1.69f);f.Boss.GetComponent<Rigidbody2D>().position=new Vector2(9,-1.7f);
-        FocusV2(flow);yield return Frames(3);yield return SpineV2(flow);
+        FocusV2(flow);yield return Frames(3);yield return TorsoV2(flow);
         Record("CONTROLLED VICTORY: existing health API to validate result/New Game only; not a human win.");
         f.BossHealth.TakeDamage(f.BossHealth.MaxHealth,f.Player.gameObject);
         yield return WaitForState(flow,GameSessionFlow.FlowState.Result);yield return PolishScreen("demo-result");

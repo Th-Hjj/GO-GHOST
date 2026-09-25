@@ -129,6 +129,7 @@ public class PlayerHealth : MonoBehaviour, IDamageable
 
     public void StopCombat()
     {
+        GetComponent<OfficerIdentity>()?.EndAttempt();
         StopAllCoroutines();
         // Stop acting: cancel a running dodge, cut input and the action components, freeze the body.
         if (dodge != null) dodge.CancelDodge();

@@ -15,7 +15,7 @@ using UnityEngine.InputSystem;
 // Update()            — caches Move / Aim / Attack / Jump / Dodge / Ability / Previous / Next for this frame and recomputes AimDirection.
 // UpdateAimDirection() — resolves exactly one authority: mouse world point or live Boss collider centre (never zero).
 [DefaultExecutionOrder(-100)]
-public class PlayerInputReader : MonoBehaviour
+public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
 {
     [Tooltip("Camera used to convert the mouse position to world space. Leave empty to use Camera.main.")]
     [SerializeField] private Camera aimCamera;
@@ -34,6 +34,7 @@ public class PlayerInputReader : MonoBehaviour
     public bool AttackHeld { get; private set; }
     public bool AttackPressedThisFrame { get; private set; }
     public bool JumpPressedThisFrame { get; private set; }
+    public bool JumpHeld { get; private set; }
     public bool DodgePressedThisFrame { get; private set; }
     public bool AbilityPressedThisFrame { get; private set; }
     public bool PreviousPressedThisFrame { get; private set; }
@@ -97,8 +98,24 @@ public class PlayerInputReader : MonoBehaviour
             moveAction.actionMap.Enable();
     }
 
+    public void ApplyDeployment(DeploymentSnapshot snapshot)
+    {
+        CleanupAttempt();
+        targetBound = false; // BossFight binds the new attempt's target after OfficerIdentity.Assign.
+    }
+
+    public void CleanupAttempt()
+    {
+        GameplayInputEnabled = false;
+        ClearFrameState();
+        waitingForRelease = true;
+        aimTarget = null;
+        aimTargetCollider = null;
+    }
+
     private void OnDisable()
     {
+        // Preserve the legacy temporary-disable behavior. Permanent input shutdown belongs to CleanupAttempt.
         ClearFrameState();
         waitingForRelease = true;
         aimTarget = null;
@@ -136,7 +153,7 @@ public class PlayerInputReader : MonoBehaviour
         {
             ClearFrameState();
             waitingForRelease = Mathf.Abs(move.x) > 0.01f || attackAction.IsPressed()
-                || jumpAction.IsPressed() || dodgeAction.IsPressed();
+                || jumpAction.IsPressed() || dodgeAction.IsPressed() || abilityAction.IsPressed();
             return;
         }
         MoveInput = new Vector2(Mathf.Clamp(move.x, -1f, 1f), 0f);
@@ -144,6 +161,7 @@ public class PlayerInputReader : MonoBehaviour
         AttackHeld = attackAction.IsPressed();
         AttackPressedThisFrame = attackAction.WasPressedThisFrame();
         JumpPressedThisFrame = jumpAction.WasPressedThisFrame();
+        JumpHeld = jumpAction.IsPressed();
         DodgePressedThisFrame = dodgeAction.WasPressedThisFrame();
         AbilityPressedThisFrame = abilityAction.WasPressedThisFrame();
         PreviousPressedThisFrame = previousAction != null && previousAction.WasPressedThisFrame();
@@ -178,6 +196,7 @@ public class PlayerInputReader : MonoBehaviour
         AttackHeld = false;
         AttackPressedThisFrame = false;
         JumpPressedThisFrame = false;
+        JumpHeld = false;
         DodgePressedThisFrame = false;
         AbilityPressedThisFrame = false;
         PreviousPressedThisFrame = false;

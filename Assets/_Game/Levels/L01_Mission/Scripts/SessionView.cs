@@ -20,6 +20,7 @@ public sealed class SessionView : MonoBehaviour
     [SerializeField] private UnityEngine.UI.Button brainButton;
     [SerializeField] private UnityEngine.UI.Button rightArmButton;
     [SerializeField] private UnityEngine.UI.Button leftLegButton;
+    // Keep the serialized field name to preserve the existing scene reference (TorsoButton).
     [SerializeField] private UnityEngine.UI.Button spineButton;
     private TMP_Text armLabel, legLabel, brainLabel;
     private TMP_Text rightArmLabel, leftLegLabel, spineLabel;
@@ -72,11 +73,13 @@ public sealed class SessionView : MonoBehaviour
     private void ToggleBrain() => Toggle(LoadoutSlot.Brain);
     private void ToggleRightArm() => Toggle(LoadoutSlot.RightArm);
     private void ToggleLeftLeg() => Toggle(LoadoutSlot.LeftLeg);
-    private void ToggleSpine() => Toggle(LoadoutSlot.Spine);
+    private void ToggleSpine() => Toggle(LoadoutSlot.Torso);
     private void Toggle(LoadoutSlot slot)
     {
         if (flow.State != GameSessionFlow.FlowState.Loadout) return;
-        flow.TrySetDraftSlot(slot, string.IsNullOrEmpty(flow.Draft.GetSlot(slot).ItemId) ? LoadoutRules.ModuleForSlot(slot) : "");
+        string current = flow.Draft.GetSlot(slot).ItemId;
+        flow.TrySetDraftSlot(slot, LoadoutRules.IsLeg(slot) ? LoadoutRules.NextLegOption(current)
+            : string.IsNullOrEmpty(current) ? LoadoutRules.ModuleForSlot(slot) : "");
     }
 
     private void UpdateSlot(LoadoutSlot slot, UnityEngine.UI.Button button, TMP_Text label)
@@ -86,6 +89,14 @@ public sealed class SessionView : MonoBehaviour
         string contribution = $"+{LoadoutRules.MaximumContribution(slot):0}%";
         label.text = Tint(slot, LoadoutRules.SlotLabel(slot).ToUpperInvariant()) + "   |   " + (equipped
             ? $"<b>{module}</b> {contribution}   [REMOVE]" : $"HUMAN   [INSTALL {module} {contribution}]");
+        if (LoadoutRules.IsLeg(slot))
+        {
+            string current = flow.Draft.GetSlot(slot).ItemId;
+            string next = LoadoutRules.NextLegOption(current);
+            label.text = Tint(slot, LoadoutRules.SlotLabel(slot).ToUpperInvariant()) + "   |   "
+                + (equipped ? $"<b>{LoadoutRules.ItemLabel(current)}</b> {contribution}" : "HUMAN")
+                + "   [NEXT: " + (string.IsNullOrEmpty(next) ? "Human" : LoadoutRules.ItemLabel(next)) + "]";
+        }
         button.interactable = flow.AugmentationsUnlocked && flow.CanDeploy;
         button.image.color = equipped ? new Color(.1f, .1f, .1f) : Color.black;
         var outline = button.GetComponent<UnityEngine.UI.Outline>();
@@ -95,7 +106,7 @@ public sealed class SessionView : MonoBehaviour
     private static string Tint(LoadoutSlot slot, string text) => $"<color=#{ColorUtility.ToHtmlStringRGB(OfficerVisual.SlotColor(slot))}>{text}</color>";
     private static string AimLabel(AimControl aim) => aim == AimControl.AI ? Tint(LoadoutSlot.Brain, "AIM: AI") : "AIM: MANUAL";
     private static string Identity(DeploymentSnapshot snapshot) => $"<size=32>OFFICER #{snapshot.OfficerIndex}   |   BODY MODIFICATION: {snapshot.BodyModificationPercent:0.##}%</size>\n"
-        + AimLabel(snapshot.Aim) + "   |   " + (snapshot.HasTimeSlow ? Tint(LoadoutSlot.Spine, "SHIFT: TIME SLOW") : "SHIFT: GROUND DODGE");
+        + AimLabel(snapshot.Aim) + "   |   " + (snapshot.HasTimeSlow ? Tint(LoadoutSlot.Torso, "E: TIME SLOW") : "SHIFT: GROUND DODGE");
     private static string EquipmentSummary(DeploymentSnapshot snapshot)
     {
         string text = "";
@@ -134,11 +145,13 @@ public sealed class SessionView : MonoBehaviour
             var snapshot = fight.Deployment;
             hud.text = $"<size=30><b>OFFICER #{snapshot.OfficerIndex}   |   BODY MODIFICATION: {snapshot.BodyModificationPercent:0.##}%</b></size>\n"
                 + AimLabel(snapshot.Aim) + $"   |   HP {fight.Player.CurrentHealth}/{fight.Player.MaxHealth}   |   CYBERPSYCHO {fight.BossHealth.CurrentHealth}/{fight.BossHealth.MaxHealth}\n"
-                + (snapshot.HasTimeSlow ? Tint(LoadoutSlot.Spine, fight.Player.GetComponent<PlayerTimeSlow>().Cue) : "GROUND DODGE [SHIFT]")
+                + (snapshot.HasTimeSlow ? Tint(LoadoutSlot.Torso, fight.Player.GetComponent<PlayerTimeSlow>().Cue) : "GROUND DODGE [SHIFT]")
                 + $"   |   FIRE {snapshot.ShotsPerSecond:0}/s   MOVE {snapshot.MoveSpeed:0}";
             combatCue.text = fight.Boss.Cue;
-            controls.text = "A / D  MOVE     SPACE  JUMP     LEFT SHIFT  ABILITY     LEFT MOUSE  FIRE"
-                + (snapshot.Aim == AimControl.AI ? "     AI OWNS AIM" : "     MOUSE  AIM");
+            controls.text = "A / D  MOVE   SPACE  " + (snapshot.HasDoubleJump ? "DOUBLE JUMP" : "JUMP")
+                + (snapshot.HasHover ? " / HOLD HOVER" : "") + "   SHIFT  DODGE   LMB  FIRE"
+                + (snapshot.HasTimeSlow ? "   E  TIME SLOW" : "")
+                + (snapshot.Aim == AimControl.AI ? "   AI OWNS AIM" : "   MOUSE  AIM");
         }
         else hud.text = "";
 
@@ -148,14 +161,14 @@ public sealed class SessionView : MonoBehaviour
             var aim = flow.Draft.GetSlot(LoadoutSlot.Brain).ItemId == LoadoutRules.BrainAI ? AimControl.AI : AimControl.Manual;
             details.text = $"<size=30><b>BODY MODIFICATION: {flow.Draft.BodyModificationPercent:0.##}%</b></size>   |   " + AimLabel(aim)
                 + "\nPrevious loadout shown. Install or remove freely; 0% is always available.\n"
-                + (flow.Draft.GetSlot(LoadoutSlot.Spine).ItemId == LoadoutRules.SpineSlow
-                    ? Tint(LoadoutSlot.Spine, "SHIFT: TIME SLOW — 3s active / 10s between starts") : "SHIFT: GROUND DODGE — 0.8s between starts");
+                + (flow.Draft.GetSlot(LoadoutSlot.Torso).ItemId == LoadoutRules.TorsoSlow
+                    ? Tint(LoadoutSlot.Torso, "E: TIME SLOW — 3s active / 10s between starts") : "SHIFT: GROUND DODGE — 0.8s between starts");
             weaponLabel.text = Tint(LoadoutSlot.Weapon, "WEAPON") + "   |   BASIC GUN (0%)   /   STANDARD";
             UpdateSlot(LoadoutSlot.LeftArm, leftArmButton, armLabel);
             UpdateSlot(LoadoutSlot.RightArm, rightArmButton, rightArmLabel);
             UpdateSlot(LoadoutSlot.LeftLeg, leftLegButton, leftLegLabel);
             UpdateSlot(LoadoutSlot.RightLeg, rightLegButton, legLabel);
-            UpdateSlot(LoadoutSlot.Spine, spineButton, spineLabel);
+            UpdateSlot(LoadoutSlot.Torso, spineButton, spineLabel);
             UpdateSlot(LoadoutSlot.Brain, brainButton, brainLabel);
         }
         else if (result || victory)

@@ -18,7 +18,7 @@ public sealed class OfficerVisual : MonoBehaviour
         LoadoutSlot.RightArm => new Color32(255, 172, 74, 255),
         LoadoutSlot.LeftLeg => new Color32(255, 228, 94, 255),
         LoadoutSlot.RightLeg => new Color32(88, 222, 131, 255),
-        LoadoutSlot.Spine => new Color32(72, 174, 255, 255),
+        LoadoutSlot.Torso => new Color32(72, 174, 255, 255),
         LoadoutSlot.Brain => new Color32(132, 130, 255, 255),
         LoadoutSlot.Weapon => new Color32(209, 132, 255, 255),
         _ => Color.white
@@ -32,7 +32,7 @@ public sealed class OfficerVisual : MonoBehaviour
     {
         LoadoutSlot.LeftArm => leftArm, LoadoutSlot.RightArm => rightArm,
         LoadoutSlot.LeftLeg => leftLeg, LoadoutSlot.RightLeg => rightLeg,
-        LoadoutSlot.Spine => torso, LoadoutSlot.Brain => head, LoadoutSlot.Weapon => weapon, _ => null
+        LoadoutSlot.Torso => torso, LoadoutSlot.Brain => head, LoadoutSlot.Weapon => weapon, _ => null
     };
 
     public void Apply(DeploymentSnapshot snapshot)

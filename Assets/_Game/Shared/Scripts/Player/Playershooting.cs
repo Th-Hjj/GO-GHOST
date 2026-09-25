@@ -81,6 +81,7 @@ public class PlayerShooting : MonoBehaviour
     private void Fire(Vector2 direction)
     {
         if (!isActiveAndEnabled || !input.GameplayInputEnabled || bulletPrefab == null) return;
+        if (officer != null && officer.Deployment != null && !officer.Deployment.CanUseWeapon) return;
 
         Vector2 spawn = GetMuzzlePosition(direction);
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;

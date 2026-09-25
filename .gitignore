@@ -117,3 +117,23 @@ InitTestScene*.unity*
 /[Aa]ssets/[Ss]ceneDependencyCache*
 
 .idea/
+
+# Local test and coverage output (keep source tests under Assets tracked)
+/[Tt]est[Rr]esults/
+/[Cc]ode[Cc]overage/
+/[Cc]overage/
+
+# OS metadata and editor swap files
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+
+# Personal configuration; shared .vscode files and agent instructions stay tracked
+/.claude/settings.local.json
+/.env
+/.env.*
+!/.env.example
+!/.env.template

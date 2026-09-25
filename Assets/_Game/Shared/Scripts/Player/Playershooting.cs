@@ -2,7 +2,7 @@
 using UnityEngine;
 
 /// <summary>
-/// Fires a Projectile along the mouse aim direction (PlayerInputReader.AimDirection).
+/// Fires a Projectile along the sole resolved aim output (PlayerInputReader.AimDirection).
 /// The muzzle is the player's position offset along the aim by the FirePoint
 /// child's original distance, so aiming is independent of the movement direction.
 /// Base: hold Attack to fire continuously, governed by stats.fireRate.
@@ -26,6 +26,10 @@ public class PlayerShooting : MonoBehaviour
     public bool volleyUnlocked = false;
 
     private PlayerInputReader input;
+    private OfficerIdentity officer;
+    public int BulletDamage => officer != null && officer.Deployment != null ? officer.Deployment.BulletDamage : stats.gunDamage;
+    public float FireInterval => officer != null && officer.Deployment != null ? officer.Deployment.FireInterval : stats.fireRate;
+    public int ShotsFired { get; private set; }
     private float nextFireTime;
     private float firePointRadius = 0.5f;
     private bool isFiringVolley;
@@ -33,6 +37,7 @@ public class PlayerShooting : MonoBehaviour
     private void Awake()
     {
         input = GetComponent<PlayerInputReader>();
+        officer = GetComponent<OfficerIdentity>();
         if (input == null)
         {
             Debug.LogError("PlayerShooting requires a PlayerInputReader on the same GameObject. Add it to the Player prefab.", this);
@@ -48,7 +53,10 @@ public class PlayerShooting : MonoBehaviour
         Vector2 aim = input.AimDirection;
 
         if (firePoint != null)
+        {
             firePoint.position = GetMuzzlePosition(aim);
+            firePoint.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(aim.y, aim.x) * Mathf.Rad2Deg);
+        }
 
         if (volleyUnlocked)
         {
@@ -60,7 +68,7 @@ public class PlayerShooting : MonoBehaviour
         else if (input.AttackHeld && Time.time >= nextFireTime)
         {
             Fire(aim);
-            nextFireTime = Time.time + stats.fireRate;
+            nextFireTime = Time.time + FireInterval;
         }
     }
 
@@ -72,12 +80,20 @@ public class PlayerShooting : MonoBehaviour
 
     private void Fire(Vector2 direction)
     {
-        if (bulletPrefab == null) return;
+        if (!isActiveAndEnabled || !input.GameplayInputEnabled || bulletPrefab == null) return;
 
         Vector2 spawn = GetMuzzlePosition(direction);
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         Projectile bullet = Instantiate(bulletPrefab, spawn, Quaternion.Euler(0f, 0f, angle));
-        bullet.Launch(direction, stats.bulletSpeed, stats.gunDamage, gameObject);
+        bullet.Launch(direction, stats.bulletSpeed, BulletDamage, gameObject);
+        ShotsFired++;
+    }
+
+    private void OnDisable()
+    {
+        StopAllCoroutines();
+        isFiringVolley = false;
+        nextFireTime = 0f;
     }
 
     private IEnumerator FireVolleyRoutine()
@@ -91,7 +107,7 @@ public class PlayerShooting : MonoBehaviour
                 yield return new WaitForSeconds(stats.volleyShotDelay);
         }
 
-        nextFireTime = Time.time + stats.fireRate;
+        nextFireTime = Time.time + FireInterval;
         isFiringVolley = false;
     }
 }

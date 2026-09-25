@@ -1,7 +1,7 @@
 using UnityEngine;
 
-/// <summary>Attempt-local Spine ability. Only hostile simulation reads WorldRate; never changes global time.</summary>
-public sealed class PlayerTimeSlow : MonoBehaviour
+/// <summary>Existing prototype Torso ability, activated with E. Hostile-only clock; no assigned final tier.</summary>
+public sealed class PlayerTimeSlow : MonoBehaviour, IAttemptAugmentation
 {
     public const float Duration = 3f;
     public const float StartInterval = 10f;
@@ -11,20 +11,32 @@ public sealed class PlayerTimeSlow : MonoBehaviour
     private PlayerHealth health;
     private float activeUntil;
     private float readyAt;
+    private bool attemptActive;
 
-    public bool IsEquipped => officer != null && officer.Deployment != null && officer.Deployment.HasTimeSlow;
+    public bool IsEquipped => attemptActive && officer != null && officer.Deployment != null && officer.Deployment.HasTimeSlow;
     public bool IsActive => isActiveAndEnabled && IsEquipped && Time.unscaledTime < activeUntil;
     public float WorldRate => IsActive ? SlowRate : 1f;
     public float ActiveRemaining => IsActive ? activeUntil - Time.unscaledTime : 0f;
     public float CooldownRemaining => Mathf.Max(0f, readyAt - Time.unscaledTime);
     public string Cue => IsActive ? $"TIME SLOW ACTIVE {ActiveRemaining:0.0}s / WORLD 25%"
-        : CooldownRemaining > 0 ? $"TIME SLOW COOLDOWN {CooldownRemaining:0.0}s" : "TIME SLOW READY [SHIFT]";
+        : CooldownRemaining > 0 ? $"TIME SLOW COOLDOWN {CooldownRemaining:0.0}s" : "TIME SLOW READY [E]";
 
     private void Awake()
     {
         officer = GetComponent<OfficerIdentity>();
         input = GetComponent<PlayerInputReader>();
         health = GetComponent<PlayerHealth>();
+    }
+
+    public void ApplyDeployment(DeploymentSnapshot snapshot)
+    {
+        CleanupAttempt();
+        attemptActive = true;
+    }
+
+    private void Update()
+    {
+        if (input.AbilityPressedThisFrame) TryActivate();
     }
 
     public bool TryActivate()
@@ -35,9 +47,12 @@ public sealed class PlayerTimeSlow : MonoBehaviour
         return true;
     }
 
-    private void OnDisable()
+    public void CleanupAttempt()
     {
+        attemptActive = false;
         activeUntil = 0f;
         readyAt = 0f;
     }
+
+    private void OnDisable() => CleanupAttempt();
 }

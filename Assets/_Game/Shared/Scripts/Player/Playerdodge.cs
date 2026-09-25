@@ -41,7 +41,6 @@ public class PlayerDodge : MonoBehaviour
     private PlayerHealth health;
     private PlayerInputReader input;
     private PlayerMovement movement;
-    private PlayerTimeSlow timeSlow;
 
     private void Awake()
     {
@@ -50,7 +49,6 @@ public class PlayerDodge : MonoBehaviour
         input = GetComponent<PlayerInputReader>();
         movement = GetComponent<PlayerMovement>();
         officer = GetComponent<OfficerIdentity>();
-        timeSlow = GetComponent<PlayerTimeSlow>();
         if (input == null)
         {
             Debug.LogError("PlayerDodge requires a PlayerInputReader on the same GameObject. Add it to the Player prefab.", this);
@@ -68,11 +66,6 @@ public class PlayerDodge : MonoBehaviour
 
     public void TryDodge()
     {
-        if (timeSlow != null && timeSlow.IsEquipped)
-        {
-            timeSlow.TryActivate();
-            return; // Spine replaces dodge, including when the ability is on cooldown.
-        }
         if (!isActiveAndEnabled || Time.time < nextDodgeTime || IsDodging || health.IsInvulnerable || movement == null
             || !movement.IsGrounded || !input.GameplayInputEnabled) return;
         LastDodgeStartedAt = Time.time;

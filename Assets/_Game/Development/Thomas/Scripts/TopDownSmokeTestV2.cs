@@ -47,7 +47,7 @@ public partial class TopDownSmokeTest
         Check("death unlocks all six slots", flow.OfficerIndex == 2 && flow.AugmentationsUnlocked && FindObjectsByType<Projectile>().Length == 0, "new identity / no bullets");
 
         // Deploy every single body slot via real UI clicks. Stop the boss for measurements, never change shared stats.
-        foreach (LoadoutSlot slot in new[] { LoadoutSlot.LeftArm, LoadoutSlot.RightArm, LoadoutSlot.LeftLeg, LoadoutSlot.RightLeg, LoadoutSlot.Brain, LoadoutSlot.Spine })
+        foreach (LoadoutSlot slot in new[] { LoadoutSlot.LeftArm, LoadoutSlot.RightArm, LoadoutSlot.LeftLeg, LoadoutSlot.RightLeg, LoadoutSlot.Brain, LoadoutSlot.Torso })
         {
             ClearDraftV2(flow);
             yield return ClickSessionButton(slot + "Button");
@@ -59,7 +59,7 @@ public partial class TopDownSmokeTest
                 yield return RateAndMovementV2(flow, slot.ToString());
             if (slot == LoadoutSlot.LeftArm || slot == LoadoutSlot.RightArm) yield return VerifyOneBullet(flow, 12, slot.ToString());
             if (slot == LoadoutSlot.Brain) yield return BrainV2(flow);
-            if (slot == LoadoutSlot.Spine) yield return SpineV2(flow);
+            if (slot == LoadoutSlot.Torso) yield return TorsoV2(flow);
             yield return FixtureNextOfficer(flow);
             Check("attempt disposal " + slot, FindObjectsByType<Projectile>().Length == 0 && FindObjectsByType<PlayerHealth>().Length == 0 && Time.timeScale == 1, "actors/bullets gone; global clock unchanged");
         }
@@ -71,8 +71,8 @@ public partial class TopDownSmokeTest
         flow.ActiveFight.Boss.StopCombat(); VisualV2(flow, "all100");
         Check("all slots = 100; weapon zero", flow.Deployment.BodyModificationPercent == 100 && flow.Deployment.GetSlot(LoadoutSlot.Weapon).BodyContributionPercent == 0, "six independent contributions");
         yield return RateAndMovementV2(flow, "all100");
-        Check("snapshot cannot change in combat", !flow.TrySetDraftSlot(LoadoutSlot.Brain, "") && !flow.Draft.TrySetSlot(LoadoutSlot.Spine, ""), "both edit entry points reject");
-        Keys(Key.LeftShift); yield return Frames(3); Keys();
+        Check("snapshot cannot change in combat", !flow.TrySetDraftSlot(LoadoutSlot.Brain, "") && !flow.Draft.TrySetSlot(LoadoutSlot.Torso, ""), "both edit entry points reject");
+        Keys(Key.E); yield return Frames(3); Keys();
         var oldSlow = flow.ActiveFight.Player.GetComponent<PlayerTimeSlow>();
         Check("combined ability/aim", oldSlow.IsActive && flow.ActiveFight.Player.GetComponent<PlayerInputReader>().AimMode == AimControl.AI, "all modifiers coexist");
         yield return FixtureNextOfficer(flow);
@@ -81,14 +81,14 @@ public partial class TopDownSmokeTest
         Check("next officer clears slow", oldSlow == null && !flow.ActiveFight.Player.GetComponent<PlayerTimeSlow>().IsActive && flow.ActiveFight.Player.GetComponent<PlayerTimeSlow>().CooldownRemaining == 0, "new component instance");
         yield return RateAndMovementV2(flow, "all removed");
         yield return VerifyManualAim(flow);
-        yield return MeasureDodgeInterval(flow, .8f, "Spine removed");
+        yield return MeasureDodgeInterval(flow, .8f, "Torso removed");
 
         // Observe several full attack cycles with explicit fixture protection, not a balance/win test.
         yield return PressureV2(flow);
         yield return FixtureNextOfficer(flow);
         for (int i=0; i<6; i++) flow.TrySetDraftSlot((LoadoutSlot)i, LoadoutRules.ModuleForSlot((LoadoutSlot)i));
         yield return DeployAndFocus(flow);
-        Keys(Key.LeftShift); yield return Frames(3); Keys();
+        Keys(Key.E); yield return Frames(3); Keys();
         var ending = flow.ActiveFight; var endingSlow = ending.Player.GetComponent<PlayerTimeSlow>();
         int resolved=0; ending.OnResolved += _ => resolved++;
         Record("FIXTURE direct Boss death only to verify slow cleanup, immutable record and NEW GAME; not a normal victory claim.");
@@ -120,14 +120,14 @@ public partial class TopDownSmokeTest
     {
         var flow=FindAnyObjectByType<GameSessionFlow>();yield return WaitForState(flow,GameSessionFlow.FlowState.Combat);FocusV2(flow);
         flow.ActiveFight.Boss.StopCombat();yield return FixtureNextOfficer(flow);
-        yield return ClickSessionButton("SpineButton");yield return DeployAndFocus(flow);
+        yield return ClickSessionButton("TorsoButton");yield return DeployAndFocus(flow);
         var f=flow.ActiveFight;var slow=f.Player.GetComponent<PlayerTimeSlow>();
         float deadline=Time.time+3;
         while(f.Boss.State!=CyberpsychoBoss.AttackState.ChargeWarning && Time.time<deadline)yield return null;
-        Keys(Key.LeftShift);yield return Frames(3);Keys();
+        Keys(Key.E);yield return Frames(3);Keys();
         Record("FIXTURE protection after input activation; verify actual velocities, ability HUD and simultaneous-death cleanup.");
         v2ProtectedPlayer=f.Player;
-        Check("follow-up activated",slow.IsActive,"real Shift input");
+        Check("follow-up activated",slow.IsActive,"real E input");
         ScreenCapture.CaptureScreenshot("Logs/GO_GHOST_VS/v2-slow-active.png");
         while(slow.IsActive)yield return null;
         yield return new WaitForFixedUpdate();yield return Frames(2);
@@ -145,8 +145,8 @@ public partial class TopDownSmokeTest
         while(slow.CooldownRemaining>0)yield return null;
         FocusV2(flow);yield return Frames(3);
         Record($"Air setup: grounded={f.Player.GetComponent<PlayerMovement>().IsGrounded}, position={f.Player.transform.position}, velocity={f.Player.GetComponent<Rigidbody2D>().linearVelocity}");
-        Keys(Key.Space);yield return Seconds(.1f);Keys(Key.LeftShift);yield return Frames(3);Keys();
-        Check("Spine works in air without dodge",slow.IsActive && !f.Player.GetComponent<PlayerMovement>().IsGrounded
+        Keys(Key.Space);yield return Seconds(.1f);Keys(Key.E);yield return Frames(3);Keys();
+        Check("Torso works in air without dodge",slow.IsActive && !f.Player.GetComponent<PlayerMovement>().IsGrounded
             && !f.Player.GetComponent<PlayerDodge>().IsDodging,$"active={slow.IsActive}, grounded={f.Player.GetComponent<PlayerMovement>().IsGrounded}, dodge={f.Player.GetComponent<PlayerDodge>().IsDodging}, velocity={f.Player.GetComponent<Rigidbody2D>().linearVelocity}");
         int outcomes=0;f.OnResolved+=_=>outcomes++;
         v2ProtectedPlayer=null;f.Player.IsInvulnerable=false;
@@ -226,7 +226,7 @@ public partial class TopDownSmokeTest
         yield return VerifyOneBullet(flow,12,"Brain fire still requires click");
     }
 
-    private IEnumerator SpineV2(GameSessionFlow flow)
+    private IEnumerator TorsoV2(GameSessionFlow flow)
     {
         var f=flow.ActiveFight;var slow=f.Player.GetComponent<PlayerTimeSlow>();var dodge=f.Player.GetComponent<PlayerDodge>();
         var rb=f.Player.GetComponent<Rigidbody2D>();f.Boss.BeginCombat();
@@ -234,8 +234,8 @@ public partial class TopDownSmokeTest
         while(hostile==null && Time.time<deadline){foreach(var p in FindObjectsByType<Projectile>())if(p.OwnerLayer==f.Boss.gameObject.layer)hostile=p;yield return null;}
         while(f.Boss.State!=CyberpsychoBoss.AttackState.ChargeWarning && Time.time<deadline) yield return null;
         float normal=hostile!=null ? hostile.GetComponent<Rigidbody2D>().linearVelocity.magnitude : 0;
-        float started=Time.unscaledTime;Keys(Key.LeftShift);yield return Frames(3);Keys();
-        Check("Spine replaces dodge, no free invulnerability", slow.IsActive && !dodge.IsDodging && !f.Player.IsInvulnerable && Time.timeScale==1,
+        float started=Time.unscaledTime;Keys(Key.E);yield return Frames(3);Keys();
+        Check("Torso E activation does not dodge or grant invulnerability", slow.IsActive && !dodge.IsDodging && !f.Player.IsInvulnerable && Time.timeScale==1,
             $"active={slow.IsActive}; dodge={dodge.IsDodging}; global={Time.timeScale}");
         yield return new WaitForFixedUpdate();
         Check("existing hostile bullet slows immediately", hostile!=null && Mathf.Abs(hostile.GetComponent<Rigidbody2D>().linearVelocity.magnitude-normal*.25f)<.1f,
@@ -245,16 +245,16 @@ public partial class TopDownSmokeTest
         Check("Boss timer slows", stateTimer-f.Boss.StateTimeRemaining>.015f && stateTimer-f.Boss.StateTimeRemaining<.055f, $"timer delta={stateTimer-f.Boss.StateTimeRemaining:0.000} in ~0.12 real seconds");
         Keys(Key.D,Key.Space); AimAtWorld(f.Player.transform.position+Vector3.up*5,true);yield return Seconds(.12f);Keys();MouseTo(.5f,.5f);
         bool fastPlayerBullet=false; foreach(var p in FindObjectsByType<Projectile>())if(p.OwnerLayer==f.Player.gameObject.layer && p.GetComponent<Rigidbody2D>().linearVelocity.magnitude>17.5f)fastPlayerBullet=true;
-        Check("Spine player move/jump/fire remains full speed", rb.linearVelocity.y>5 && fastPlayerBullet, $"velocity={rb.linearVelocity}; normal player bullet={fastPlayerBullet}");
+        Check("Torso player move/jump/fire remains full speed", rb.linearVelocity.y>5 && fastPlayerBullet, $"velocity={rb.linearVelocity}; normal player bullet={fastPlayerBullet}");
         bool slowCharge=false;
         while(slow.IsActive){if(f.Boss.State==CyberpsychoBoss.AttackState.Charge && Mathf.Abs(f.Boss.GetComponent<Rigidbody2D>().linearVelocity.x-(-4))<.3f)slowCharge=true;yield return null;}
         float duration=Time.unscaledTime-started;
-        Check("Spine 3 real seconds then restores", duration>=2.98f && duration<3.15f && f.Boss.SimulationRate==1 && slowCharge, $"duration={duration:0.000}; charge at 4 units/s={slowCharge}");
-        Keys(Key.LeftShift);yield return Frames(3);Keys();
-        Check("Spine cooldown rejects both abilities", !slow.IsActive && !dodge.IsDodging && slow.CooldownRemaining>6, $"remaining={slow.CooldownRemaining:0.00}");
+        Check("Torso 3 real seconds then restores", duration>=2.98f && duration<3.15f && f.Boss.SimulationRate==1 && slowCharge, $"duration={duration:0.000}; charge at 4 units/s={slowCharge}");
+        Keys(Key.E);yield return Frames(3);Keys();
+        Check("Torso E cooldown rejects reactivation", !slow.IsActive && !dodge.IsDodging && slow.CooldownRemaining>6, $"remaining={slow.CooldownRemaining:0.00}");
         while(slow.CooldownRemaining>0)yield return null;
-        float ready=Time.unscaledTime-started;Keys(Key.LeftShift);yield return Frames(3);Keys();
-        Check("Spine ready at 10 seconds and can repeat", slow.IsActive && ready>=9.98f && ready<10.15f, $"start interval={ready:0.000}");
+        float ready=Time.unscaledTime-started;Keys(Key.E);yield return Frames(3);Keys();
+        Check("Torso ready at 10 seconds and can repeat", slow.IsActive && ready>=9.98f && ready<10.15f, $"start interval={ready:0.000}");
         v2ProtectedPlayer=null;f.Player.IsInvulnerable=false; // caller immediately kills this officer to test active-slow disposal
     }
 

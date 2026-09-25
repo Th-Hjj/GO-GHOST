@@ -1,6 +1,7 @@
 using System;
 
-public enum LoadoutSlot { LeftArm, RightArm, LeftLeg, RightLeg, Spine, Brain, Weapon }
+// Keep serialized ordinal 4: Torso replaces the old Spine concept without shifting any slot.
+public enum LoadoutSlot { LeftArm = 0, RightArm = 1, LeftLeg = 2, RightLeg = 3, Torso = 4, Brain = 5, Weapon = 6 }
 public enum AimControl { Manual, AI }
 
 /// <summary>Immutable slot value. TEST-v0 contributions belong to equipped items, never installation history.</summary>
@@ -9,12 +10,17 @@ public readonly struct LoadoutEntry
     public LoadoutSlot Slot { get; }
     public string ItemId { get; }
     public float BodyContributionPercent { get; }
+    public LoadoutSlot InstallationSlot { get; }
+    public WeaponCompatibility WeaponCompatibility { get; }
 
-    internal LoadoutEntry(LoadoutSlot slot, string itemId, float contribution)
+    internal LoadoutEntry(LoadoutSlot slot, string itemId, float contribution,
+        LoadoutSlot? installationSlot = null, WeaponCompatibility weaponCompatibility = WeaponCompatibility.Normal)
     {
         Slot = slot;
         ItemId = itemId;
         BodyContributionPercent = slot == LoadoutSlot.Weapon ? 0f : contribution;
+        InstallationSlot = installationSlot ?? slot;
+        WeaponCompatibility = weaponCompatibility;
     }
 }
 
@@ -24,28 +30,62 @@ public static class LoadoutRules
     public const string BasicGun = "basic_gun";
     public const string ArmFireRate = "test_v2_arm_rate";
     public const string LegMoveSpeed = "test_v2_leg_speed";
-    public const string SpineSlow = "test_v2_spine_slow";
+    public const string LegDoubleJump = "test_leg_double_jump";
+    public const string LegHover = "test_leg_hover";
+    // Preserve the existing item ID; this prototype Torso option has no assigned final tier.
+    public const string TorsoSlow = "test_v2_spine_slow";
     public const string BrainAI = "ai_aim";
 
-    // TEST-v2 retains the six independent capacities. All six slots now have one implemented option.
+    internal static readonly AugmentationDefinition[] PrototypeCatalog =
+    {
+        new AugmentationDefinition(ArmFireRate, WeaponCompatibility.Normal, LoadoutSlot.LeftArm),
+        new AugmentationDefinition(ArmFireRate, WeaponCompatibility.Normal, LoadoutSlot.RightArm),
+        new AugmentationDefinition(LegMoveSpeed, WeaponCompatibility.Normal, LoadoutSlot.LeftLeg),
+        new AugmentationDefinition(LegMoveSpeed, WeaponCompatibility.Normal, LoadoutSlot.RightLeg),
+        new AugmentationDefinition(LegDoubleJump, WeaponCompatibility.Normal, LoadoutSlot.LeftLeg),
+        new AugmentationDefinition(LegDoubleJump, WeaponCompatibility.Normal, LoadoutSlot.RightLeg),
+        new AugmentationDefinition(LegHover, WeaponCompatibility.Normal, LoadoutSlot.LeftLeg),
+        new AugmentationDefinition(LegHover, WeaponCompatibility.Normal, LoadoutSlot.RightLeg),
+        new AugmentationDefinition(TorsoSlow, WeaponCompatibility.Normal, LoadoutSlot.Torso),
+        new AugmentationDefinition(BrainAI, WeaponCompatibility.Normal, LoadoutSlot.Brain)
+    };
+
+    internal static WeaponCompatibility WeaponPolicy(LoadoutEntry[] slots)
+    {
+        var policy = WeaponCompatibility.Normal;
+        // Most restrictive declaration wins. Effect details for Modified belong to future weapon behavior.
+        for (int i = 0; i < (int)LoadoutSlot.Weapon; i++)
+            if (slots[i].WeaponCompatibility > policy) policy = slots[i].WeaponCompatibility;
+        return policy;
+    }
+
+    // Prototype capacities are per occupied body slot, independent of the chosen replacement.
     public static float MaximumContribution(LoadoutSlot slot) => slot switch
     {
         LoadoutSlot.LeftArm or LoadoutSlot.RightArm or LoadoutSlot.LeftLeg or LoadoutSlot.RightLeg => 10f,
-        LoadoutSlot.Spine => 20f, LoadoutSlot.Brain => 40f, _ => 0f
+        LoadoutSlot.Torso => 20f, LoadoutSlot.Brain => 40f, _ => 0f
     };
 
     public static string ModuleForSlot(LoadoutSlot slot) => slot switch
     {
         LoadoutSlot.LeftArm or LoadoutSlot.RightArm => ArmFireRate,
         LoadoutSlot.LeftLeg or LoadoutSlot.RightLeg => LegMoveSpeed,
-        LoadoutSlot.Spine => SpineSlow,
+        LoadoutSlot.Torso => TorsoSlow,
         LoadoutSlot.Brain => BrainAI, _ => null
     };
 
     public static string ItemLabel(string id) => id switch
     {
-        ArmFireRate => "Rapid Fire", LegMoveSpeed => "Move Speed", SpineSlow => "Time Slow", BrainAI => "AI Aim",
+        ArmFireRate => "Rapid Fire", LegMoveSpeed => "Move Speed", TorsoSlow => "Time Slow", BrainAI => "AI Aim",
+        LegDoubleJump => "Double Jump", LegHover => "Hover",
         BasicGun => "Basic Gun", _ => "Human / Empty"
+    };
+
+    public static bool IsLeg(LoadoutSlot slot) => slot == LoadoutSlot.LeftLeg || slot == LoadoutSlot.RightLeg;
+    // Existing leg buttons cycle replacement choices; no tier tree or hidden-item UI.
+    public static string NextLegOption(string current) => current switch
+    {
+        LegMoveSpeed => LegDoubleJump, LegDoubleJump => LegHover, LegHover => "", _ => LegMoveSpeed
     };
 
     public static string WeaponLabel(string id) => id == BasicGun ? "Basic Gun" : id;
@@ -76,19 +116,35 @@ public static class LoadoutRules
 public sealed class LoadoutDraft
 {
     private readonly LoadoutEntry[] slots = new LoadoutEntry[LoadoutRules.SlotCount];
+    private readonly AugmentationDefinition[] catalog;
     public bool IsLocked { get; private set; }
     public bool AugmentationsAvailable { get; }
     public float BodyModificationPercent => LoadoutRules.BodyModification(slots);
     public string WeaponId => GetSlot(LoadoutSlot.Weapon).ItemId;
+    public WeaponCompatibility WeaponCompatibility => LoadoutRules.WeaponPolicy(slots);
+    public bool CanUseWeapon => WeaponCompatibility != WeaponCompatibility.Disabled;
 
-    public LoadoutDraft(bool augmentationsAvailable = false)
+    public LoadoutDraft(bool augmentationsAvailable = false) : this(augmentationsAvailable, LoadoutRules.PrototypeCatalog) { }
+
+    // An isolated catalog allows data validation without registering fake items in the player-facing catalog.
+    internal LoadoutDraft(bool augmentationsAvailable, AugmentationDefinition[] definitions)
     {
+        catalog = (AugmentationDefinition[])(definitions ?? throw new ArgumentNullException(nameof(definitions))).Clone();
+        for (int i = 0; i < catalog.Length; i++)
+        {
+            if (catalog[i] == null) throw new ArgumentException("Null augmentation definition.");
+            for (int j = 0; j < i; j++)
+                if (catalog[i].ItemId == catalog[j].ItemId)
+                    foreach (var slot in catalog[i].OccupiedSlots)
+                        if (catalog[j].Occupies(slot)) throw new ArgumentException("Ambiguous augmentation ID/slot.");
+        }
         AugmentationsAvailable = augmentationsAvailable;
         for (int i = 0; i < slots.Length; i++)
             slots[i] = new LoadoutEntry((LoadoutSlot)i, i == (int)LoadoutSlot.Weapon ? LoadoutRules.BasicGun : "", 0f);
     }
 
-    public LoadoutDraft(DeploymentSnapshot previous, bool augmentationsAvailable) : this(augmentationsAvailable)
+    public LoadoutDraft(DeploymentSnapshot previous, bool augmentationsAvailable)
+        : this(augmentationsAvailable, previous != null ? previous.CopyCatalog() : LoadoutRules.PrototypeCatalog)
     {
         if (previous == null) return;
         for (int i = 0; i < slots.Length; i++) slots[i] = previous.GetSlot((LoadoutSlot)i);
@@ -99,18 +155,44 @@ public sealed class LoadoutDraft
     public bool TrySetSlot(LoadoutSlot slot, string itemId)
     {
         if (IsLocked || (int)slot < 0 || (int)slot >= slots.Length) return false;
-        float contribution = 0f;
         if (slot == LoadoutSlot.Weapon)
         {
-            if (itemId != LoadoutRules.BasicGun) return false;
+            if (!CanUseWeapon || itemId != LoadoutRules.BasicGun) return false;
+            slots[(int)slot] = new LoadoutEntry(slot, itemId, 0f);
+            return true;
         }
-        else if (!string.IsNullOrEmpty(itemId))
+        if (string.IsNullOrEmpty(itemId))
         {
-            if (!AugmentationsAvailable || itemId != LoadoutRules.ModuleForSlot(slot)) return false;
-            contribution = LoadoutRules.MaximumContribution(slot);
+            ClearInstallation(slot);
+            return true;
         }
-        slots[(int)slot] = new LoadoutEntry(slot, itemId ?? "", contribution);
+        if (!AugmentationsAvailable) return false;
+        AugmentationDefinition definition = null;
+        foreach (var candidate in catalog)
+            if (candidate.ItemId == itemId && candidate.Occupies(slot)) { definition = candidate; break; }
+        if (definition == null) return false;
+
+        var replaced = slots[(int)slot];
+        // Transactional: never evict a separate installation occupying another required slot.
+        foreach (var occupied in definition.OccupiedSlots)
+        {
+            var existing = slots[(int)occupied];
+            if (!string.IsNullOrEmpty(existing.ItemId) &&
+                (existing.InstallationSlot != replaced.InstallationSlot || existing.ItemId != replaced.ItemId)) return false;
+        }
+        ClearInstallation(slot);
+        foreach (var occupied in definition.OccupiedSlots)
+            slots[(int)occupied] = new LoadoutEntry(occupied, itemId, LoadoutRules.MaximumContribution(occupied),
+                definition.OccupiedSlots[0], definition.WeaponCompatibility);
         return true;
+    }
+
+    private void ClearInstallation(LoadoutSlot slot)
+    {
+        var removed = slots[(int)slot];
+        for (int i = 0; i < (int)LoadoutSlot.Weapon; i++)
+            if (slots[i].InstallationSlot == removed.InstallationSlot && slots[i].ItemId == removed.ItemId)
+                slots[i] = new LoadoutEntry((LoadoutSlot)i, "", 0f);
     }
 
     internal void Lock() => IsLocked = true;
@@ -119,7 +201,7 @@ public sealed class LoadoutDraft
     {
         if (IsLocked) throw new InvalidOperationException("This draft was already deployed.");
         Lock();
-        return new DeploymentSnapshot(officerIndex, slots);
+        return new DeploymentSnapshot(officerIndex, slots, catalog);
     }
 }
 
@@ -127,31 +209,41 @@ public sealed class LoadoutDraft
 public sealed class DeploymentSnapshot
 {
     private readonly LoadoutEntry[] slots;
+    private readonly AugmentationDefinition[] catalog;
     public int OfficerIndex { get; }
     public float BodyModificationPercent { get; }
     public string WeaponId => GetSlot(LoadoutSlot.Weapon).ItemId;
+    public WeaponCompatibility WeaponCompatibility => LoadoutRules.WeaponPolicy(slots);
+    public bool CanUseWeapon => WeaponCompatibility != WeaponCompatibility.Disabled;
     public AimControl Aim => GetSlot(LoadoutSlot.Brain).ItemId == LoadoutRules.BrainAI ? AimControl.AI : AimControl.Manual;
     // TEST slice parameters, recomputed from this deployment only. Shared PlayerStats stays untouched.
     public int BulletDamage => 12;
     public float DodgeStartInterval => 0.8f;
     public bool HasModule(LoadoutSlot slot) => !string.IsNullOrEmpty(GetSlot(slot).ItemId);
-    public int ArmCount => (HasModule(LoadoutSlot.LeftArm) ? 1 : 0) + (HasModule(LoadoutSlot.RightArm) ? 1 : 0);
-    public int LegCount => (HasModule(LoadoutSlot.LeftLeg) ? 1 : 0) + (HasModule(LoadoutSlot.RightLeg) ? 1 : 0);
+    public int ArmCount => (GetSlot(LoadoutSlot.LeftArm).ItemId == LoadoutRules.ArmFireRate ? 1 : 0)
+        + (GetSlot(LoadoutSlot.RightArm).ItemId == LoadoutRules.ArmFireRate ? 1 : 0);
+    public int LegCount => (GetSlot(LoadoutSlot.LeftLeg).ItemId == LoadoutRules.LegMoveSpeed ? 1 : 0)
+        + (GetSlot(LoadoutSlot.RightLeg).ItemId == LoadoutRules.LegMoveSpeed ? 1 : 0);
     public float ShotsPerSecond => 4f + 3f * ArmCount;
     public float FireInterval => 1f / ShotsPerSecond;
     public float MoveSpeed => 6f + 2f * LegCount;
-    public bool HasTimeSlow => GetSlot(LoadoutSlot.Spine).ItemId == LoadoutRules.SpineSlow;
+    public bool HasTimeSlow => GetSlot(LoadoutSlot.Torso).ItemId == LoadoutRules.TorsoSlow;
+    private bool HasLegOption(string id) => GetSlot(LoadoutSlot.LeftLeg).ItemId == id || GetSlot(LoadoutSlot.RightLeg).ItemId == id;
+    public bool HasDoubleJump => HasLegOption(LoadoutRules.LegDoubleJump);
+    public bool HasHover => HasLegOption(LoadoutRules.LegHover);
 
-    internal DeploymentSnapshot(int officerIndex, LoadoutEntry[] source)
+    internal DeploymentSnapshot(int officerIndex, LoadoutEntry[] source, AugmentationDefinition[] definitions = null)
     {
         if (officerIndex < 1) throw new ArgumentOutOfRangeException(nameof(officerIndex));
         OfficerIndex = officerIndex;
         slots = (LoadoutEntry[])source.Clone();
+        catalog = (AugmentationDefinition[])(definitions ?? LoadoutRules.PrototypeCatalog).Clone();
         BodyModificationPercent = LoadoutRules.BodyModification(slots);
     }
 
     public LoadoutEntry GetSlot(LoadoutSlot slot) => slots[LoadoutRules.Index(slot)];
-    internal DeploymentSnapshot Copy() => new DeploymentSnapshot(OfficerIndex, slots);
+    internal AugmentationDefinition[] CopyCatalog() => (AugmentationDefinition[])catalog.Clone();
+    internal DeploymentSnapshot Copy() => new DeploymentSnapshot(OfficerIndex, slots, catalog);
 }
 
 public sealed class VictoryRecord

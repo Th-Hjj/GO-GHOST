@@ -75,6 +75,12 @@ public partial class TopDownSmokeTest : MonoBehaviour
             case "polish": yield return Polish(); break;
             case "class-demo": yield return ClassDemo(); break;
             case "continue-flow": yield return ContinueFlow(); break;
+            case "phase1-foundation": yield return Phase1Foundation(); break;
+            case "phase2-arena": yield return Phase2Arena(); break;
+            case "phase2-legs": yield return Phase2Legs(); break;
+            case "phase3-boss": yield return Phase3Boss(); break;
+            case "phase4-msp": yield return Phase4Msp(); break;
+            case "phase5-msp": yield return Phase5Msp(); break;
             case "boss-contact": yield return BossContact(); break;
             // Earlier numerical gates are historical; TEST-v2 uses combat-v2.
             case "movement": yield return Movement(); break;
@@ -231,7 +237,7 @@ public partial class TopDownSmokeTest : MonoBehaviour
         Check("full-body weights and slot restrictions", capacity == 100 && LoadoutRules.MaximumContribution(LoadoutSlot.Weapon) == 0
             && !flow.TrySetDraftSlot(LoadoutSlot.RightArm, LoadoutRules.ArmFireRate)
             && !flow.TrySetDraftSlot(LoadoutSlot.LeftLeg, LoadoutRules.LegMoveSpeed)
-            && !flow.TrySetDraftSlot(LoadoutSlot.Spine, LoadoutRules.BrainAI)
+            && !flow.TrySetDraftSlot(LoadoutSlot.Torso, LoadoutRules.BrainAI)
             && !flow.TrySetDraftSlot(LoadoutSlot.Weapon, "second_gun"), "no fake slots, weapon or normalization");
         for (int i = 0; i < 3; i++) { yield return ClickSessionButton("LeftArmButton"); yield return ClickSessionButton("LeftArmButton"); }
         Check("repeated install/remove never accumulates", flow.Draft.BodyModificationPercent == 0, "three extra arm cycles return to zero");

@@ -2,7 +2,7 @@
 
 /// <summary>
 /// Side-scroller movement: horizontal velocity from Move input, real
-/// gravity-driven jump (Space) with an unlockable double jump. Facing
+/// gravity-driven jump (Space), snapshot-owned extra jump and bounded descent hover. Facing
 /// follows the resolved manual/AI aim direction, independently of movement
 /// and horizontal dodge facing. Yields control of the
 /// Rigidbody2D to PlayerDodge while a dodge is in progress.
@@ -11,11 +11,15 @@
 // FUNCTION SUMMARY
 // Update()             — reads move/aim/jump input from PlayerInputReader, updates FacingDirection, the sprite flip, and ground state; handles jump presses.
 // FixedUpdate()        — applies horizontal velocity each physics step, preserving vertical (gravity/jump) velocity, unless a dodge is currently controlling movement.
-// TryJump()             — performs a ground jump, or an air jump if Double Jump is unlocked and one is still available.
-// UnlockDoubleJump()   — permanently turns on the double jump via the upgrade tree.
+// TryJump()             — performs a ground jump, or consumes one available air jump.
+// ApplyDeployment/CleanupAttempt — initialize/clear attempt-local leg resources.
+// UnlockDoubleJump()   — legacy test-scene hook, never overrides a formal deployment.
 [RequireComponent(typeof(Rigidbody2D))]
-public class PlayerMovement : MonoBehaviour
+public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
 {
+    // Replaceable prototype values. Hover limits descent, never changes gravity or adds height.
+    public const float HoverDuration = 1.2f;
+    public const float HoverFallSpeed = .75f;
     [SerializeField] private PlayerStatsSO stats;
     [SerializeField] private Transform groundCheck;
     [SerializeField] private float groundCheckRadius = 0.15f;
@@ -44,6 +48,39 @@ public class PlayerMovement : MonoBehaviour
     private SpriteRenderer spriteRenderer;
     private Vector2 moveInput;
     private int airJumpsRemaining;
+    private bool attemptActive;
+    private bool HasDeployment => officer != null && officer.Deployment != null;
+    public bool HasDoubleJump => HasDeployment ? attemptActive && officer.Deployment.HasDoubleJump : doubleJumpUnlocked;
+    public bool HasHover => HasDeployment && attemptActive && officer.Deployment.HasHover;
+    private int ExtraJumpCapacity => HasDoubleJump ? (HasDeployment ? 1 : stats.maxAirJumps) : 0;
+    public int AirJumpsRemaining => airJumpsRemaining;
+    public float HoverRemaining { get; private set; }
+    public bool IsHovering { get; private set; }
+
+    public void ApplyDeployment(DeploymentSnapshot snapshot)
+    {
+        CleanupAttempt();
+        attemptActive = true;
+        RefillAirResources();
+    }
+
+    public void CleanupAttempt()
+    {
+        attemptActive = false;
+        airJumpsRemaining = 0;
+        HoverRemaining = 0;
+        IsHovering = false;
+        moveInput = Vector2.zero;
+        IsGrounded = false;
+    }
+
+    private void OnDisable() => CleanupAttempt();
+
+    private void RefillAirResources()
+    {
+        airJumpsRemaining = ExtraJumpCapacity;
+        HoverRemaining = HasHover ? HoverDuration : 0;
+    }
 
     private void Awake()
     {
@@ -85,7 +122,7 @@ public class PlayerMovement : MonoBehaviour
 
         if (IsGrounded)
         {
-            airJumpsRemaining = doubleJumpUnlocked ? stats.maxAirJumps : 0;
+            RefillAirResources();
         }
 
         if (input.JumpPressedThisFrame && (dodge == null || !dodge.IsDodging))
@@ -96,11 +133,18 @@ public class PlayerMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
+        IsHovering = false;
         if (dodge != null && dodge.IsDodging) return; // dodge drives movement during a dash
 
-        // Only the horizontal input drives velocity here; vertical velocity is left alone
-        // so gravity and TryJump() keep full control of it.
-        rb.linearVelocity = new Vector2(moveInput.x * MoveSpeed, rb.linearVelocity.y);
+        float vertical = rb.linearVelocity.y;
+        if (HasHover && input.GameplayInputEnabled && input.JumpHeld && !IsGrounded && vertical <= 0 && HoverRemaining > 0)
+        {
+            IsHovering = true;
+            HoverRemaining = Mathf.Max(0, HoverRemaining - Time.fixedDeltaTime);
+            // Gravity still integrates normally after this cap. Releasing Space resumes free fall.
+            vertical = Mathf.Max(vertical, -HoverFallSpeed);
+        }
+        rb.linearVelocity = new Vector2(moveInput.x * MoveSpeed, vertical);
     }
 
     private void TryJump()
@@ -110,7 +154,7 @@ public class PlayerMovement : MonoBehaviour
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, stats.jumpForce);
             IsGrounded = false;
         }
-        else if (doubleJumpUnlocked && airJumpsRemaining > 0)
+        else if (HasDoubleJump && airJumpsRemaining > 0)
         {
             airJumpsRemaining--;
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, stats.jumpForce);

@@ -97,10 +97,12 @@ Status: Thomas's Windows PC configured and tested 2026-09-25. Thomas's laptop an
 
 ### Build and test residue: never commit
 
-A build or a Test Runner run temporarily changes files that Unity normally restores. If `git status` shows only these after a build or test run, discard them instead of committing:
+A player build temporarily changes files and restores most of them when it finishes. A cancelled build skips that cleanup. If `git status` shows any of these after a build, discard them instead of committing:
 - `Assets/Settings/UniversalRenderPipelineGlobalSettings.asset` with a filled `m_RuntimeSettings` list. URP fills it only while building; the committed state is an empty list (`m_List: []`).
-- `ProjectSettings/ProjectSettings.asset` with the `InputSystem_Actions` asset added to `preloadedAssets`.
-- `Assets/Resources/PerformanceTestRun*.json` (created by test runs).
+- `ProjectSettings/ProjectSettings.asset` with the `InputSystem_Actions` asset added to `preloadedAssets`. The Input System adds it at build start and removes it at build end.
+- `Assets/Resources/PerformanceTestRun*.json` (ignored by `.gitignore`) and, if the folder did not exist before, `Assets/Resources/` and `Assets/Resources.meta`. The Performance Testing package creates them at build start and deletes them at build end.
+
+If Unity is open, clean these up from the editor, or close Unity first. Otherwise the editor can write its in-memory copy back over the file.
 
 ## 7. One developer, several machines
 

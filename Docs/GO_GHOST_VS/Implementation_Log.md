@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-09-25 — Windows build and repository housekeeping (Thomas's PC)
+
+- Windows x64 (StandaloneWindows64) player build via the editor's Build And Run: **Succeeded** in 1 min 52 s (00:35–00:37), Unity 6000.6.0f1. The output location is not recorded in the editor log. Launch and play results of the built player: **NOT_RUN / not recorded**. A second Build And Run was **cancelled** after 2 s.
+- The cancelled build skipped its post-build cleanup and left `InputSystem_Actions` in PlayerSettings preloaded assets plus `Assets/Resources/PerformanceTestRun*.json` (Performance Testing package). Both were removed through the editor; `ProjectSettings.asset` matches `main` again. `.gitignore` now ignores `Assets/Resources/PerformanceTestRun*`.
+- `UniversalRenderPipelineGlobalSettings.asset`: the build-only `m_RuntimeSettings` list, committed by mistake in a1dcf74, was cleared by re-saving from the editor (19e4b6e). Builds regenerate it.
+- Compile: 0 errors (batch-mode import and a Rider MSBuild build of the generated solution). Play Mode smoke tests were not rerun for this entry.
+- Docs synced with the side-view slice (098d0e2). `AGENTS.md` (Codex) now mirrors `CLAUDE.md`.
+
 ## 2026-09-24 — Player / Boss contact sticking
 
 - Reproduced in actual Play Mode with real virtual-key input and the saved actor colliders. Pressing into either side of the Boss reduced jump rise to **0.856 units**; a charging Boss pinning the player at either wall reduced it to **0.000**. The same fixtures with only the player body's friction removed reached **2.328 units** and escaped both corners. Evidence: `Logs/GO_GHOST_VS/contact-before.txt`; forced charge state and temporary player protection isolate collision behavior, not combat balance.

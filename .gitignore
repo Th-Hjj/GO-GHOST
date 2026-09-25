@@ -91,6 +91,9 @@ crashlytics-build.properties
 # TestRunner generated files
 InitTestScene*.unity*
 
+# Performance Testing package build files (deleted after a build, left behind when a build is cancelled)
+/[Aa]ssets/[Rr]esources/PerformanceTestRun*
+
 # Addressables default ignores, before user customizations
 /ServerData
 /[Aa]ssets/StreamingAssets/aa*

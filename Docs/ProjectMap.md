@@ -2,7 +2,7 @@
 
 What exists in the repository, where it is, and how it connects. Progress, test evidence, and NOT_RUN items are recorded only in `Docs/GO_GHOST_VS/Implementation_Log.md`; this file does not repeat them. Update this file when paths, scenes, or systems change. Do not describe scripts that do not exist.
 
-Last updated: 2026-09-25 (`main` at 426eac9, after the side-view slice merge).
+Last updated: 2026-09-25 (after the side-view slice merge and the first Windows build of the slice).
 
 ## 1. Status
 
@@ -13,7 +13,7 @@ Last updated: 2026-09-25 (`main` at 426eac9, after the side-view slice merge).
 | Slice | Side-view Boss slice: officer handoff loop, seven-slot loadout (TEST-v2: one module per body slot), AI Aim, Time Slow, CONTINUE-driven transition pages. Ending mapping is not implemented |
 | Entry scene | `Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity`, the only scene in Build Settings (index 0) |
 | Compile | 0 errors on Thomas's PC, 2026-09-25: batch-mode import with 6000.6.0f1 and a Rider MSBuild build of the generated solution. Static checks only; Play Mode results are in the Implementation_Log |
-| Windows build | Side-view slice: not recorded in the Implementation_Log (NOT_RUN there). The last recorded build (2026-09-17) was the superseded top-down Stage 2A |
+| Windows build | Side-view slice: Windows x64 build **Succeeded** on 2026-09-25 (Build And Run on Thomas's PC). Launching and playing the built player is not recorded. Details: Implementation_Log |
 
 Editor settings worth knowing: Force Text serialization, Visible Meta Files, Enter Play Mode Options enabled with Domain Reload disabled (`GameSessionFlow` initializes explicitly on every Play). Physics2D gravity is (0, -9.81). The shared `Player.prefab` keeps gravity scale 0 from the top-down era; the slice's player inside `CombatAttempt.prefab` overrides it to 3. Layers: Ground (6), Enemy (7), Player (8).
 
@@ -123,8 +123,7 @@ UI uses the Input System UI actions through the scene's single `EventSystem`.
 
 ## 6. Known issues
 
-- `Assets/Settings/UniversalRenderPipelineGlobalSettings.asset` on `main` has a filled `m_RuntimeSettings` list, committed by mistake in a1dcf74 (2026-09-21), most likely saved during a build. The editor empties it on load, so every machine sees it as modified. Proposed: commit the empty list once, in its own commit, with the editor closed or after the editor saved it.
-- Build and test residue appears after builds and Test Runner runs (see `Collaboration.md` section 6). Proposed: add `Assets/Resources/PerformanceTestRun*` to `.gitignore`.
+- Builds leave residue, and a cancelled build leaves more (see `Collaboration.md` section 6). `Assets/Resources/PerformanceTestRun*` is ignored by `.gitignore`, but `Assets/Resources.meta` created alongside it is not, so check for it after a cancelled build.
 - `TitleScene.unity` has missing references and is not in Build Settings.
 - `Scene1.unity` (Walker) uses the shared Player prefab, which still has top-down defaults such as gravity scale 0.
 - `FreezeNearestEnemyAbilitySO` has no `IFreezable` target in the project yet.

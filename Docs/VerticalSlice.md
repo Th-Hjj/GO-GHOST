@@ -3,10 +3,10 @@
 English summary of the confirmed design. Source of truth: `Docs/GO_GHOST_VS/GO_GHOST_Design_Baseline_ZH.md` (confirmed 2026-09-24) and the Macro sheet `Docs/GO_GHOST_VS/GO_GHOST_Game_Design_Macro_Revised.xlsx` (text copy: `Macro_Readable_Extract.md`). If this summary and the baseline disagree, the baseline wins; report the difference.
 
 Status legend:
-- **Confirmed** = in the 2026-09-24 baseline.
+- **Confirmed** = in the 2026-09-24 baseline, or confirmed later under the rules in `Collaboration.md`.
 - **TEST** = a replaceable prototype value in `Docs/GO_GHOST_VS/Prototype_Test_Profile.md`. Not a decision.
 - **Open** = not decided yet.
-- **Proposed** = a suggestion waiting for team confirmation.
+- **Proposed** = a suggestion waiting for confirmation (by Thomas alone while he leads; see `Collaboration.md` section 0).
 
 Last updated: 2026-09-25. Replaces the 2026-09-17 top-down design (see section 10).
 

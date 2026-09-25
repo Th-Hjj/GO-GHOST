@@ -8,6 +8,7 @@ Read this file first in every session, then the docs listed at the bottom for th
 - GO GHOST: single-player **2D side-view** shooter. One arena, one cyberpsycho Boss. The player controls a succession of police officers who take over the same mission. Theme: power versus free will, meaning how much body augmentation and control you give up to win. USC CTIN 489.
 - Unity **6000.6.0f1**, URP 2D renderer, Windows PC, keyboard + mouse. Never upgrade or downgrade the Unity version.
 - Two developers, Thomas Hong and Walker Grupp, share one Unity project through GitHub. Both do design, code, and content. Thomas works on more than one machine.
+- Current period (from 2026-09-25): Walker is busy and Thomas leads development alone. Thomas's confirmation alone makes an item Confirmed, and finished work is committed directly to `main`.
 - Chat with Thomas in Chinese when he writes Chinese. Keep repository docs in concise English so both developers can use them.
 
 ## Confirmed decisions
@@ -20,7 +21,7 @@ Read this file first in every session, then the docs listed at the bottom for th
 1. Read the existing code before proposing anything. Reuse first: direct reuse, then minimal extension, then local refactor, then replacement only with approval.
 2. Never rewrite a working script because of naming or style. Keep class names, public APIs, serialized field names, Inspector values, prefab overrides, and assembly placement.
 3. Do not add managers, event buses, dependency injection, ECS, save frameworks, dialogue editors, or middleware without an explicit request.
-4. Label every suggestion Proposed until Thomas and Walker confirm it. Never write a suggestion into the docs as Confirmed.
+4. Label every suggestion Proposed until it is confirmed: by Thomas and Walker, or by Thomas alone during the current period. Never write an unconfirmed suggestion into the docs as Confirmed.
 5. Work stage by stage: audit, plan, approval, implement, verify, report. Approval of one stage does not approve the next. Do only the sub-task that was approved.
 6. If two design sources conflict, report the exact locations and pause that part. Do not pick the version that is easier to build.
 

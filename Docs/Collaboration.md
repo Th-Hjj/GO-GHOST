@@ -2,7 +2,15 @@
 
 Two developers, one Unity project, one GitHub repository (`Th-Hjj/GO-GHOST`). GitHub `main` is the only shared source of truth. The rules below are deliberately light. Their purpose is to avoid losing work and to avoid two people, two machines, or two agents editing the same Unity file at the same time.
 
-Last updated: 2026-09-25. Since 2026-09-24 the game is a side-view single-arena Boss slice; design rules live in `Docs/GO_GHOST_VS/GO_GHOST_Design_Baseline_ZH.md` (English summary: `VerticalSlice.md`), and progress lives only in `Docs/GO_GHOST_VS/Implementation_Log.md`. Items marked **Proposed** are waiting for Walker's confirmation.
+Last updated: 2026-09-25. Since 2026-09-24 the game is a side-view single-arena Boss slice; design rules live in `Docs/GO_GHOST_VS/GO_GHOST_Design_Baseline_ZH.md` (English summary: `VerticalSlice.md`), and progress lives only in `Docs/GO_GHOST_VS/Implementation_Log.md`. Items marked **Proposed** are waiting for confirmation.
+
+## 0. Current period: Thomas leads (from 2026-09-25)
+
+Walker is busy, so Thomas leads development alone until further notice.
+- Thomas's confirmation alone makes a decision Confirmed.
+- Finished, working changes are committed directly to `main`. The pull request flow in sections 2 and 5 resumes when both developers are active again.
+- Walker may still have uncommitted local work. `Assets/_Game/Development/Walker/`, `Assets/Cyborg-Assets/`, and Walker's `TitleScene.unity` and freeze-ability files stay untouched unless Thomas decides otherwise.
+- When Walker returns: read the `main` commit log since 2026-09-25 and the Implementation_Log, then pull before editing anything.
 
 ## 1. Where things live: Shared, Level, Development
 
@@ -26,7 +34,7 @@ Formal game content is never split by developer name. Create a new `Lxx_Name` or
 - Use short-lived branches with descriptive names, for example `feature/ending-mapping`, `feature/boss-attack`, `chore/docs-update`. Branches created by Codex use the `codex/` prefix. These are naming examples, not assignments.
 - One branch equals one task. Merge soon. Do not keep a personal long-running copy of the project.
 - Folder separation does not make Git resolve conflicts for you. Two branches that touch the same `.unity` or `.prefab` will still conflict.
-- **Proposed:** delete a branch on GitHub after its pull request is merged. As of 2026-09-25, `chore/project-organization`, `feature/topdown-combat-foundation`, and `codex/sideview-boss-slice` are fully merged into `main`.
+- **Proposed:** delete a branch on GitHub after its pull request is merged. The three merged branches `chore/project-organization`, `feature/topdown-combat-foundation`, and `codex/sideview-boss-slice` were deleted on 2026-09-25; their commits are all in `main`.
 
 ## 3. File ownership (per task, not permanent)
 

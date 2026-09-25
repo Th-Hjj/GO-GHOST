@@ -13,22 +13,23 @@ using UnityEngine.InputSystem;
 // FUNCTION SUMMARY
 // OnEnable()          — resolves the Player actions from InputSystem.actions and logs an error for any missing action.
 // Update()            — caches Move / Aim / Attack / Jump / Dodge / Ability / Previous / Next for this frame and recomputes AimDirection.
-// UpdateAimDirection() — mouse screen position -> world point -> normalized direction from the player (never zero).
+// UpdateAimDirection() — resolves exactly one authority: mouse world point or live Boss collider centre (never zero).
 [DefaultExecutionOrder(-100)]
 public class PlayerInputReader : MonoBehaviour
 {
     [Tooltip("Camera used to convert the mouse position to world space. Leave empty to use Camera.main.")]
     [SerializeField] private Camera aimCamera;
 
-    /// <summary>WASD / left stick, magnitude clamped to 1. Only the x component drives movement in this side-scroller; y is left available for other uses (climbing, aim-assist, etc).</summary>
+    /// <summary>Horizontal input, clamped to -1..1; y is always zero in the side-view slice.</summary>
     public Vector2 MoveInput { get; private set; }
     public bool HasMoveInput => MoveInput.sqrMagnitude > 0.0001f;
 
     /// <summary>Raw mouse position in screen pixels.</summary>
     public Vector2 AimScreenPosition { get; private set; }
 
-    /// <summary>Normalized direction from the player to the mouse cursor in world space. Never zero.</summary>
+    /// <summary>Final manual/AI world-space aim. All aim consumers read this output; never zero.</summary>
     public Vector2 AimDirection { get; private set; } = Vector2.right;
+    public AimControl AimMode => officer != null && officer.Deployment != null ? officer.Deployment.Aim : AimControl.Manual;
 
     public bool AttackHeld { get; private set; }
     public bool AttackPressedThisFrame { get; private set; }
@@ -40,6 +41,25 @@ public class PlayerInputReader : MonoBehaviour
 
     /// <summary>False when the actions asset or a required action could not be resolved.</summary>
     public bool IsReady { get; private set; }
+
+    public bool GameplayInputEnabled { get; private set; } = true;
+    private bool hasFocus = true;
+    private bool waitingForRelease = true;
+    private OfficerIdentity officer;
+    private Enemy aimTarget;
+    private Collider2D aimTargetCollider;
+    private bool targetBound;
+
+    private void Awake() => officer = GetComponent<OfficerIdentity>();
+
+    // Bound exactly once by the new attempt. There is no live mode setter or global Boss lookup.
+    internal void BindAimTarget(Enemy target)
+    {
+        if (targetBound) throw new System.InvalidOperationException("Aim target is assigned once per officer.");
+        targetBound = true;
+        aimTarget = target;
+        aimTargetCollider = target != null ? target.GetComponent<Collider2D>() : null;
+    }
 
     private InputAction moveAction;
     private InputAction aimAction;
@@ -80,19 +100,46 @@ public class PlayerInputReader : MonoBehaviour
     private void OnDisable()
     {
         ClearFrameState();
+        waitingForRelease = true;
+        aimTarget = null;
+        aimTargetCollider = null;
+    }
+
+    public void SetGameplayInputEnabled(bool value)
+    {
+        GameplayInputEnabled = value;
+        waitingForRelease = true;
+        ClearFrameState();
+    }
+
+    private void OnApplicationFocus(bool value)
+    {
+        hasFocus = value;
+        waitingForRelease = true;
+        ClearFrameState();
     }
 
     private void Update()
     {
-        if (!IsReady)
+        if (!IsReady || !GameplayInputEnabled || !hasFocus)
         {
             ClearFrameState();
             return;
         }
 
-        Vector2 move = moveAction.ReadValue<Vector2>();
-        MoveInput = move.sqrMagnitude > 1f ? move.normalized : move;
+        // Aim authority stays live even while action buttons wait for release after deployment.
         AimScreenPosition = aimAction.ReadValue<Vector2>();
+        UpdateAimDirection();
+        Vector2 move = moveAction.ReadValue<Vector2>();
+        // A UI click or a held key on focus regain must not start an action.
+        if (waitingForRelease)
+        {
+            ClearFrameState();
+            waitingForRelease = Mathf.Abs(move.x) > 0.01f || attackAction.IsPressed()
+                || jumpAction.IsPressed() || dodgeAction.IsPressed();
+            return;
+        }
+        MoveInput = new Vector2(Mathf.Clamp(move.x, -1f, 1f), 0f);
 
         AttackHeld = attackAction.IsPressed();
         AttackPressedThisFrame = attackAction.WasPressedThisFrame();
@@ -102,17 +149,25 @@ public class PlayerInputReader : MonoBehaviour
         PreviousPressedThisFrame = previousAction != null && previousAction.WasPressedThisFrame();
         NextPressedThisFrame = nextAction != null && nextAction.WasPressedThisFrame();
 
-        UpdateAimDirection();
     }
 
     private void UpdateAimDirection()
     {
-        Camera cam = aimCamera != null ? aimCamera : Camera.main;
-        if (cam == null) return;
-
-        // Orthographic camera: the z argument only affects the returned z, which is discarded here.
-        Vector3 world = cam.ScreenToWorldPoint(new Vector3(AimScreenPosition.x, AimScreenPosition.y, 0f));
-        Vector2 dir = (Vector2)world - (Vector2)transform.position;
+        Vector2 dir;
+        if (AimMode == AimControl.AI)
+        {
+            // Exclusive authority: an invalid/dead target holds the last aim; it never falls back to mouse.
+            if (aimTarget == null || aimTarget.IsDead || !aimTarget.isActiveAndEnabled) return;
+            Vector2 point = aimTargetCollider != null ? aimTargetCollider.bounds.center : aimTarget.transform.position;
+            dir = point - (Vector2)transform.position;
+        }
+        else
+        {
+            Camera cam = aimCamera != null ? aimCamera : Camera.main;
+            if (cam == null) return;
+            Vector3 world = cam.ScreenToWorldPoint(new Vector3(AimScreenPosition.x, AimScreenPosition.y, 0f));
+            dir = (Vector2)world - (Vector2)transform.position;
+        }
         if (dir.sqrMagnitude > 0.0001f)
             AimDirection = dir.normalized;
     }

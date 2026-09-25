@@ -3,8 +3,8 @@
 /// <summary>
 /// Side-scroller movement: horizontal velocity from Move input, real
 /// gravity-driven jump (Space) with an unlockable double jump. Facing
-/// follows the mouse aim direction (not the movement), so the player can
-/// walk left while shooting/dodging right. Yields control of the
+/// follows the resolved manual/AI aim direction, independently of movement
+/// and horizontal dodge facing. Yields control of the
 /// Rigidbody2D to PlayerDodge while a dodge is in progress.
 /// Requires the Rigidbody2D's Gravity Scale to be > 0.
 /// </summary>
@@ -24,18 +24,23 @@ public class PlayerMovement : MonoBehaviour
     [Header("Upgrades")]
     public bool doubleJumpUnlocked = false;
 
-    /// <summary>1 = facing right, -1 = facing left. Used by dodge/shooting to know which way to fire/dash.</summary>
+    /// <summary>Visual aim facing: 1 = right, -1 = left. Independent of movement/dodge.</summary>
     public int FacingDirection { get; private set; } = 1;
+
+    // Movement facing is independent of the mouse; it owns the idle dodge direction.
+    public int MovementFacingDirection { get; private set; } = 1;
 
     /// <summary>Current Move input (length 0..1), for other systems that want the movement direction.</summary>
     public Vector2 MoveInput => moveInput;
 
-    /// <summary>True while the ground check is touching the Ground layer. Used by PlayerDodge to gate the air-dodge upgrade.</summary>
+    /// <summary>True while the feet find an upward-facing Ground surface. Gates jump and ground dodge.</summary>
     public bool IsGrounded { get; private set; }
 
     private Rigidbody2D rb;
     private PlayerDodge dodge;
     private PlayerInputReader input;
+    private OfficerIdentity officer;
+    public float MoveSpeed => officer != null && officer.Deployment != null ? officer.Deployment.MoveSpeed : stats.moveSpeed;
     private SpriteRenderer spriteRenderer;
     private Vector2 moveInput;
     private int airJumpsRemaining;
@@ -46,6 +51,7 @@ public class PlayerMovement : MonoBehaviour
         dodge = GetComponent<PlayerDodge>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         input = GetComponent<PlayerInputReader>();
+        officer = GetComponent<OfficerIdentity>();
         if (input == null)
         {
             Debug.LogError("PlayerMovement requires a PlayerInputReader on the same GameObject. Add it to the Player prefab.", this);
@@ -56,6 +62,8 @@ public class PlayerMovement : MonoBehaviour
     private void Update()
     {
         moveInput = input.MoveInput;
+        if (Mathf.Abs(moveInput.x) > 0.01f)
+            MovementFacingDirection = moveInput.x > 0f ? 1 : -1;
 
         // Facing follows the aim so the player can move left while shooting right.
         Vector2 aim = input.AimDirection;
@@ -66,15 +74,21 @@ public class PlayerMovement : MonoBehaviour
         if (spriteRenderer != null)
             spriteRenderer.flipX = FacingDirection < 0;
 
-        IsGrounded = groundCheck != null &&
-                     Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+        IsGrounded = false;
+        if (groundCheck != null && rb.linearVelocity.y <= 0.1f)
+        {
+            // A downward foot probe avoids treating a wall as a landing surface.
+            var hit = Physics2D.Raycast(groundCheck.position + Vector3.up * groundCheckRadius,
+                Vector2.down, groundCheckRadius + 0.08f, groundLayer);
+            IsGrounded = hit.collider != null && hit.normal.y > 0.5f;
+        }
 
         if (IsGrounded)
         {
             airJumpsRemaining = doubleJumpUnlocked ? stats.maxAirJumps : 0;
         }
 
-        if (input.JumpPressedThisFrame)
+        if (input.JumpPressedThisFrame && (dodge == null || !dodge.IsDodging))
         {
             TryJump();
         }
@@ -86,7 +100,7 @@ public class PlayerMovement : MonoBehaviour
 
         // Only the horizontal input drives velocity here; vertical velocity is left alone
         // so gravity and TryJump() keep full control of it.
-        rb.linearVelocity = new Vector2(moveInput.x * stats.moveSpeed, rb.linearVelocity.y);
+        rb.linearVelocity = new Vector2(moveInput.x * MoveSpeed, rb.linearVelocity.y);
     }
 
     private void TryJump()
@@ -94,6 +108,7 @@ public class PlayerMovement : MonoBehaviour
         if (IsGrounded)
         {
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, stats.jumpForce);
+            IsGrounded = false;
         }
         else if (doubleJumpUnlocked && airJumpsRemaining > 0)
         {

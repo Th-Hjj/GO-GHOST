@@ -2823,6 +2823,39 @@ MonoBehaviour:
   comboDuration: 0.4
   comboGap: 0.18
   comboRecovery: 0.4
+  burstShots: 3
+  markedTrackSeconds: 0.75
+  markedLockSeconds: 0.3
+  markedBulletSpeed: 24
+  markedDamage: 24
+  markedRecovery: 0.45
+  repositionX: 9
+  repositionTimeout: 1.5
+  ghostAlpha: 0.35
+  sweepShots: 5
+  highSweepY: 2.1
+  slashWindup: 0.55
+  slashSpeed: 24
+  slashDuration: 0.3
+  slashRecovery: 0.65
+  slashDamage: 22
+  crosscutWindup: 0.45
+  crosscutSpeed: 30
+  crosscutGap: 0.3
+  crosscutRecovery: 0.6
+  crosscutDamage: 18
+  dropWindup: 0.55
+  dropTargetSeconds: 0.5
+  dropHeight: 3.5
+  dropSpeed: 26
+  dropRecovery: 0.7
+  dropDamage: 26
+  blackoutHealthThreshold: 0.25
+  blackoutSignalSeconds: 0.7
+  blackoutSpeed: 36
+  blackoutDamage: 32
+  blackoutMarkSeconds: 0.7
+  blackoutBreakDelay: 0.5
 --- !u!4 &7057850109366038213 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7764064877583276450, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
@@ -2954,6 +2987,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 487589043217061207, guid: 4c9747d0a62a87747a0ad78845eb6c21, type: 3}
       insertIndex: -1
       addedObject: {fileID: 8964479646200771897}
+    - targetCorrespondingSourceObject: {fileID: 487589043217061207, guid: 4c9747d0a62a87747a0ad78845eb6c21, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1389502691836009886}
+    - targetCorrespondingSourceObject: {fileID: 487589043217061207, guid: 4c9747d0a62a87747a0ad78845eb6c21, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5400151444886507475}
   m_SourcePrefab: {fileID: 100100000, guid: 4c9747d0a62a87747a0ad78845eb6c21, type: 3}
 --- !u!114 &2456847596484187656 stripped
 MonoBehaviour:
@@ -3015,6 +3054,31 @@ MonoBehaviour:
   head: {fileID: 7251627255620726841}
   weapon: {fileID: 4370029504005724765}
   weaponGrip: {fileID: 7290769022813382869}
+--- !u!114 &1389502691836009886
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5467936353624813887}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 486552ff2a83d7c4797f825bb564fe28, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerCounterArm
+--- !u!114 &5400151444886507475
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5467936353624813887}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 58b23f1392c6cbb40b8c07362850acb6, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerDetachedDroneArm
+  bulletPrefab: {fileID: 2702211504617055106, guid: 3547db12155ba154ca2c620b8cd8c21c, type: 3}
 --- !u!4 &6691119421868101195 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1296439845425080867, guid: 4c9747d0a62a87747a0ad78845eb6c21, type: 3}

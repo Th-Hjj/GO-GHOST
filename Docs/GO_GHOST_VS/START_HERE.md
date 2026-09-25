@@ -2,7 +2,7 @@
 
 ## Current entry point — 2026-09-25 MSP handoff
 
-Start with [../../AGENTS.md](../../AGENTS.md), [../VerticalSlice.md](../VerticalSlice.md), [../ProjectMap.md](../ProjectMap.md) and [Implementation_Log.md](Implementation_Log.md). The current checkpoint includes Phases 1–5: foundations/Archive persistence, platform arena and leg movement, two-phase FSM, P1 gunfighter, and P2 camouflage/Ghost Slash. Phase 6 has not started.
+Start with [../../AGENTS.md](../../AGENTS.md), [../VerticalSlice.md](../VerticalSlice.md), [../ProjectMap.md](../ProjectMap.md) and [Implementation_Log.md](Implementation_Log.md). The current checkpoint includes Phases 1–9: platform arena/leg movement, complete two-phase Boss/BLACKOUT, Counter Arm, Targeting AI/Predictive Cortex, and Session Police Archive with TEMP_FIRST_VICTORY -> persistent Detached Drone Arm unlock. No final endings or final achievement condition. Temporary inputs: Shift Dodge, E Counter, Q Torso Time Slow; Drone is autonomous. Phase 10 has not started.
 
 Use the latest explicitly requested phase. MSP verification is compile + targeted Play Mode happy path + short core-flow smoke; known balance/polish limits do not block progress. Runtime details are in the current section of [Prototype_Test_Profile.md](Prototype_Test_Profile.md).
 

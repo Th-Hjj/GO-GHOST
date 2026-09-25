@@ -64,6 +64,16 @@ public partial class TopDownSmokeTest : MonoBehaviour
         Done = false;
         Running = true;
         Setup();
+        // Every smoke victory now awards persistent progress. Keep historical fixtures off the normal profile too.
+        // Phase 9 owns its isolation so it can verify disk reload and restore explicitly.
+        if (scenario != "phase9-msp")
+        {
+            phase9OriginalProfile = PoliceArchive.Current;
+            phase9OriginalStore = (PoliceArchiveStore)typeof(PoliceArchive).GetField("store", ArchiveFields).GetValue(null);
+            phase9ArchiveIsolated = true;
+            Phase9UseArchive(System.IO.Path.GetFullPath("Logs/GO_GHOST_VS/SmokeArchives/"
+                + System.Guid.NewGuid().ToString("N") + "/archive.json"));
+        }
         yield return null;
 
         switch (scenario)
@@ -81,6 +91,11 @@ public partial class TopDownSmokeTest : MonoBehaviour
             case "phase3-boss": yield return Phase3Boss(); break;
             case "phase4-msp": yield return Phase4Msp(); break;
             case "phase5-msp": yield return Phase5Msp(); break;
+            case "phase6-msp": yield return Phase6Msp(); break;
+            case "phase7-msp": yield return Phase7Msp(); break;
+            case "phase8-msp": yield return Phase8Msp(); break;
+            case "phase9-msp": yield return Phase9Msp(); break;
+            case "phase10-msp": yield return Phase10Msp(); break;
             case "boss-contact": yield return BossContact(); break;
             // Earlier numerical gates are historical; TEST-v2 uses combat-v2.
             case "movement": yield return Movement(); break;
@@ -91,6 +106,7 @@ public partial class TopDownSmokeTest : MonoBehaviour
             default: Record("unknown scenario " + scenario); break;
         }
 
+        RestorePhase9Archive();
         Teardown();
         System.IO.Directory.CreateDirectory("Logs/GO_GHOST_VS");
         System.IO.File.WriteAllLines("Logs/GO_GHOST_VS/" + scenario + ".txt", Results);
@@ -1007,6 +1023,7 @@ public partial class TopDownSmokeTest : MonoBehaviour
 
     private void OnDestroy()
     {
+        RestorePhase9Archive();
         if (Running) { Teardown(); Running = false; Done = true; }
     }
 }

@@ -28,6 +28,7 @@ public class BossFight : MonoBehaviour
         Deployment = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
         player.GetComponent<OfficerIdentity>().Assign(snapshot);
         player.GetComponent<PlayerInputReader>().BindAimTarget(bossHealth);
+        player.GetComponent<PlayerDetachedDroneArm>()?.BindTarget(bossHealth);
         player.OnDeath += PlayerDied;
         bossHealth.OnDied += BossDied;
         subscribed = true;

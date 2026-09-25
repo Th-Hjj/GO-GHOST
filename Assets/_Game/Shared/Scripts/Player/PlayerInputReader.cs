@@ -37,6 +37,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     public bool JumpHeld { get; private set; }
     public bool DodgePressedThisFrame { get; private set; }
     public bool AbilityPressedThisFrame { get; private set; }
+    public bool SecondaryAbilityPressedThisFrame { get; private set; }
     public bool PreviousPressedThisFrame { get; private set; }
     public bool NextPressedThisFrame { get; private set; }
 
@@ -68,6 +69,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     private InputAction jumpAction;
     private InputAction dodgeAction;
     private InputAction abilityAction;
+    private InputAction secondaryAbilityAction;
     private InputAction previousAction;
     private InputAction nextAction;
 
@@ -87,11 +89,12 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         jumpAction = Find(asset, "Player/Jump");
         dodgeAction = Find(asset, "Player/Dodge");
         abilityAction = Find(asset, "Player/Ability");
+        secondaryAbilityAction = Find(asset, "Player/SecondaryAbility");
         previousAction = Find(asset, "Player/Previous");
         nextAction = Find(asset, "Player/Next");
 
         IsReady = moveAction != null && aimAction != null && attackAction != null && jumpAction != null
-                  && dodgeAction != null && abilityAction != null;
+                  && dodgeAction != null && abilityAction != null && secondaryAbilityAction != null;
 
         // Project-wide actions are enabled automatically; this only covers a map that was disabled by other code.
         if (IsReady && !moveAction.actionMap.enabled)
@@ -153,7 +156,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         {
             ClearFrameState();
             waitingForRelease = Mathf.Abs(move.x) > 0.01f || attackAction.IsPressed()
-                || jumpAction.IsPressed() || dodgeAction.IsPressed() || abilityAction.IsPressed();
+                || jumpAction.IsPressed() || dodgeAction.IsPressed() || abilityAction.IsPressed() || secondaryAbilityAction.IsPressed();
             return;
         }
         MoveInput = new Vector2(Mathf.Clamp(move.x, -1f, 1f), 0f);
@@ -164,6 +167,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         JumpHeld = jumpAction.IsPressed();
         DodgePressedThisFrame = dodgeAction.WasPressedThisFrame();
         AbilityPressedThisFrame = abilityAction.WasPressedThisFrame();
+        SecondaryAbilityPressedThisFrame = secondaryAbilityAction.WasPressedThisFrame();
         PreviousPressedThisFrame = previousAction != null && previousAction.WasPressedThisFrame();
         NextPressedThisFrame = nextAction != null && nextAction.WasPressedThisFrame();
 
@@ -199,6 +203,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         JumpHeld = false;
         DodgePressedThisFrame = false;
         AbilityPressedThisFrame = false;
+        SecondaryAbilityPressedThisFrame = false;
         PreviousPressedThisFrame = false;
         NextPressedThisFrame = false;
     }

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-/// <summary>Existing prototype Torso ability, activated with E. Hostile-only clock; no assigned final tier.</summary>
+/// <summary>Existing prototype Torso ability, activated with Q (temporary MSP mapping). Hostile-only clock; no assigned final tier.</summary>
 public sealed class PlayerTimeSlow : MonoBehaviour, IAttemptAugmentation
 {
     public const float Duration = 3f;
@@ -19,7 +19,7 @@ public sealed class PlayerTimeSlow : MonoBehaviour, IAttemptAugmentation
     public float ActiveRemaining => IsActive ? activeUntil - Time.unscaledTime : 0f;
     public float CooldownRemaining => Mathf.Max(0f, readyAt - Time.unscaledTime);
     public string Cue => IsActive ? $"TIME SLOW ACTIVE {ActiveRemaining:0.0}s / WORLD 25%"
-        : CooldownRemaining > 0 ? $"TIME SLOW COOLDOWN {CooldownRemaining:0.0}s" : "TIME SLOW READY [E]";
+        : CooldownRemaining > 0 ? $"TIME SLOW COOLDOWN {CooldownRemaining:0.0}s" : "TIME SLOW READY [Q]";
 
     private void Awake()
     {
@@ -36,7 +36,7 @@ public sealed class PlayerTimeSlow : MonoBehaviour, IAttemptAugmentation
 
     private void Update()
     {
-        if (input.AbilityPressedThisFrame) TryActivate();
+        if (input.SecondaryAbilityPressedThisFrame) TryActivate();
     }
 
     public bool TryActivate()

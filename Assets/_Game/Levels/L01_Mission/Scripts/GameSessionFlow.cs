@@ -7,6 +7,7 @@ public sealed class GameSessionFlow : MonoBehaviour
 {
     public enum FlowState { NewGameInitialization, Deployment, Combat, DefeatTransition, Loadout, Result, NextOfficerTransition, VictoryTransition }
     [SerializeField] private BossFight attemptPrefab;
+    [SerializeField] private GameObject highCPlatform;
     // Retained for existing scene serialization; presentation now advances only on user input.
 #pragma warning disable CS0414 // These legacy serialized fields intentionally have no runtime readers.
     [SerializeField, HideInInspector] private float defeatNoticeSeconds = 8f;
@@ -109,10 +110,13 @@ public sealed class GameSessionFlow : MonoBehaviour
         SetState(FlowState.Deployment); // Close the API/UI gate before a second click can be accepted.
         Deployment = Draft.Deploy(OfficerIndex);
         int token = ++generation;
+        // Restore only this scene platform at deployment; never persist terrain in Police Archive.
+        if (highCPlatform != null) highCPlatform.SetActive(true);
         var fight = Instantiate(attemptPrefab, transform);
         ActiveFight = fight;
         fight.name = "CombatAttempt_Officer_" + OfficerIndex;
         fight.Prepare(Deployment);
+        fight.Boss.BindHighC(highCPlatform);
         outcomeHandler = outcome => ResolveAttempt(fight, token, outcome);
         fight.OnResolved += outcomeHandler;
 
@@ -130,6 +134,8 @@ public sealed class GameSessionFlow : MonoBehaviour
         if (outcome == BossFight.Outcome.Won)
         {
             Victory = new VictoryRecord(source.Deployment);
+            if (!PoliceArchive.RecordBossVictory(out string archiveError))
+                Debug.LogWarning("Police Archive victory save failed: " + archiveError, this);
             SetState(FlowState.VictoryTransition);
             StartCoroutine(VictoryRoutine(token));
         }

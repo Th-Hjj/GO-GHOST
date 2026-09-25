@@ -35,6 +35,9 @@ public static class LoadoutRules
     // Preserve the existing item ID; this prototype Torso option has no assigned final tier.
     public const string TorsoSlow = "test_v2_spine_slow";
     public const string BrainAI = "ai_aim";
+    public const string DetachedDroneArm = "detached_drone_arm";
+    public const string CounterArm = "test_counter_arm";
+    public const string PredictiveCortex = "test_predictive_cortex";
 
     internal static readonly AugmentationDefinition[] PrototypeCatalog =
     {
@@ -47,7 +50,10 @@ public static class LoadoutRules
         new AugmentationDefinition(LegHover, WeaponCompatibility.Normal, LoadoutSlot.LeftLeg),
         new AugmentationDefinition(LegHover, WeaponCompatibility.Normal, LoadoutSlot.RightLeg),
         new AugmentationDefinition(TorsoSlow, WeaponCompatibility.Normal, LoadoutSlot.Torso),
-        new AugmentationDefinition(BrainAI, WeaponCompatibility.Normal, LoadoutSlot.Brain)
+        new AugmentationDefinition(BrainAI, WeaponCompatibility.Normal, LoadoutSlot.Brain),
+        new AugmentationDefinition(CounterArm, WeaponCompatibility.Normal, LoadoutSlot.LeftArm),
+        new AugmentationDefinition(PredictiveCortex, WeaponCompatibility.Normal, LoadoutSlot.Brain),
+        new AugmentationDefinition(DetachedDroneArm, WeaponCompatibility.Normal, LoadoutSlot.LeftArm)
     };
 
     internal static WeaponCompatibility WeaponPolicy(LoadoutEntry[] slots)
@@ -76,7 +82,8 @@ public static class LoadoutRules
 
     public static string ItemLabel(string id) => id switch
     {
-        ArmFireRate => "Rapid Fire", LegMoveSpeed => "Move Speed", TorsoSlow => "Time Slow", BrainAI => "AI Aim",
+        ArmFireRate => "Rapid Fire", LegMoveSpeed => "Move Speed", TorsoSlow => "Time Slow", BrainAI => "Targeting AI",
+        CounterArm => "Counter Arm", PredictiveCortex => "Predictive Cortex", DetachedDroneArm => "Detached Drone Arm",
         LegDoubleJump => "Double Jump", LegHover => "Hover",
         BasicGun => "Basic Gun", _ => "Human / Empty"
     };
@@ -87,6 +94,18 @@ public static class LoadoutRules
     {
         LegMoveSpeed => LegDoubleJump, LegDoubleJump => LegHover, LegHover => "", _ => LegMoveSpeed
     };
+
+    public static string NextOption(LoadoutSlot slot, string current)
+    {
+        if (IsLeg(slot)) return NextLegOption(current);
+        if (slot == LoadoutSlot.LeftArm)
+            return current == ArmFireRate ? CounterArm
+                : current == CounterArm ? (PoliceArchive.Current.HasHiddenAugmentation(DetachedDroneArm) ? DetachedDroneArm : "")
+                : current == DetachedDroneArm ? "" : ArmFireRate;
+        if (slot == LoadoutSlot.Brain)
+            return current == BrainAI ? PredictiveCortex : current == PredictiveCortex ? "" : BrainAI;
+        return string.IsNullOrEmpty(current) ? ModuleForSlot(slot) : "";
+    }
 
     public static string WeaponLabel(string id) => id == BasicGun ? "Basic Gun" : id;
     public static string SlotLabel(LoadoutSlot slot) => slot switch
@@ -167,6 +186,7 @@ public sealed class LoadoutDraft
             return true;
         }
         if (!AugmentationsAvailable) return false;
+        if (itemId == LoadoutRules.DetachedDroneArm && !PoliceArchive.Current.HasHiddenAugmentation(itemId)) return false;
         AugmentationDefinition definition = null;
         foreach (var candidate in catalog)
             if (candidate.ItemId == itemId && candidate.Occupies(slot)) { definition = candidate; break; }
@@ -228,6 +248,9 @@ public sealed class DeploymentSnapshot
     public float FireInterval => 1f / ShotsPerSecond;
     public float MoveSpeed => 6f + 2f * LegCount;
     public bool HasTimeSlow => GetSlot(LoadoutSlot.Torso).ItemId == LoadoutRules.TorsoSlow;
+    public bool HasDetachedDrone => GetSlot(LoadoutSlot.LeftArm).ItemId == LoadoutRules.DetachedDroneArm;
+    public bool HasCounterArm => GetSlot(LoadoutSlot.LeftArm).ItemId == LoadoutRules.CounterArm;
+    public bool HasPredictiveCortex => GetSlot(LoadoutSlot.Brain).ItemId == LoadoutRules.PredictiveCortex;
     private bool HasLegOption(string id) => GetSlot(LoadoutSlot.LeftLeg).ItemId == id || GetSlot(LoadoutSlot.RightLeg).ItemId == id;
     public bool HasDoubleJump => HasLegOption(LoadoutRules.LegDoubleJump);
     public bool HasHover => HasLegOption(LoadoutRules.LegHover);

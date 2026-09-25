@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Base: a short i-frame dodge dash in any direction (top-down): along the
-/// Move input if the player is moving, otherwise along the aim direction.
+/// Base: a grounded horizontal dash, along movement input or the last
+/// horizontal movement facing. Mouse aim never selects the dash direction.
 /// Upgraded (slashDodgeUnlocked): longer dash that damages every enemy it
 /// passes through.
 /// Also exposes PerformForcedSlashDodge(), used exclusively by
@@ -13,7 +13,7 @@ using UnityEngine;
 /// </summary>
 // FUNCTION SUMMARY
 // TryDodge()                — starts a dodge if one isn't already on cooldown or in progress.
-// GetDodgeDirection()        — Move direction if there is move input, otherwise the aim direction.
+// GetDodgeDirection()        — horizontal input, otherwise the last movement facing.
 // DodgeRoutine()             — moves the player through the dash over time, granting i-frames and (if upgraded) damaging enemies passed through.
 // PerformForcedSlashDodge()  — the guaranteed damaging slash used only by Last Stand, aimed at the nearest enemy.
 // CancelDodge()              — stops any running dash and clears its state (used when the player dies).
@@ -28,21 +28,29 @@ public class PlayerDodge : MonoBehaviour
     [Header("Upgrades")]
     [Tooltip("Unlocked via the upgrade tree: dodge becomes a longer slash that damages enemies it passes through.")]
     public bool slashDodgeUnlocked = false;
-    [Tooltip("Set by PlayerUpgradeManager.UnlockAirDodge(). Not read yet: the dodge currently works regardless of this flag.")]
+    [Tooltip("Legacy upgrade hook. Air dodge is not enabled in the current side-view slice.")]
     public bool airDodgeUnlocked = false;
 
     public bool IsDodging { get; private set; }
-    private bool canDodge = true;
+    private float nextDodgeTime;
+    private OfficerIdentity officer;
+    public float DodgeStartInterval => officer != null && officer.Deployment != null ? officer.Deployment.DodgeStartInterval : stats.dodgeCooldown;
+    public float LastDodgeStartedAt { get; private set; } = float.NegativeInfinity;
 
     private Rigidbody2D rb;
     private PlayerHealth health;
     private PlayerInputReader input;
+    private PlayerMovement movement;
+    private PlayerTimeSlow timeSlow;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         health = GetComponent<PlayerHealth>();
         input = GetComponent<PlayerInputReader>();
+        movement = GetComponent<PlayerMovement>();
+        officer = GetComponent<OfficerIdentity>();
+        timeSlow = GetComponent<PlayerTimeSlow>();
         if (input == null)
         {
             Debug.LogError("PlayerDodge requires a PlayerInputReader on the same GameObject. Add it to the Player prefab.", this);
@@ -52,7 +60,7 @@ public class PlayerDodge : MonoBehaviour
 
     private void Update()
     {
-        if (input.DodgePressedThisFrame) // "Dodge" action in InputSystem_Actions (default: Space)
+        if (input.DodgePressedThisFrame) // "Dodge" action: Left Shift
         {
             TryDodge();
         }
@@ -60,16 +68,25 @@ public class PlayerDodge : MonoBehaviour
 
     public void TryDodge()
     {
-        if (!canDodge || IsDodging) return;
+        if (timeSlow != null && timeSlow.IsEquipped)
+        {
+            timeSlow.TryActivate();
+            return; // Spine replaces dodge, including when the ability is on cooldown.
+        }
+        if (!isActiveAndEnabled || Time.time < nextDodgeTime || IsDodging || health.IsInvulnerable || movement == null
+            || !movement.IsGrounded || !input.GameplayInputEnabled) return;
+        LastDodgeStartedAt = Time.time;
+        nextDodgeTime = Time.time + DodgeStartInterval;
         StartCoroutine(DodgeRoutine());
     }
 
-    /// <summary>Move direction while the player is moving, otherwise the aim direction. Always normalized, never zero.</summary>
+    /// <summary>Horizontal input or last movement facing. Always left or right.</summary>
     public Vector2 GetDodgeDirection()
     {
-        if (input.HasMoveInput)
-            return input.MoveInput.normalized;
-        return input.AimDirection;
+        float horizontal = input.MoveInput.x;
+        int direction = Mathf.Abs(horizontal) > 0.01f ? (horizontal > 0f ? 1 : -1)
+            : (movement != null ? movement.MovementFacingDirection : 1);
+        return Vector2.right * direction;
     }
 
     /// <summary>Stops any running dash (manual or forced) and clears its state. Used by PlayerHealth when the player dies.</summary>
@@ -77,41 +94,46 @@ public class PlayerDodge : MonoBehaviour
     {
         StopAllCoroutines();
         IsDodging = false;
-        canDodge = true;
         if (health != null) health.IsInvulnerable = false;
+        if (rb != null) rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+    }
+
+    private void OnDisable() => CancelDodge();
+
+    private void OnApplicationFocus(bool focused)
+    {
+        if (!focused) CancelDodge();
     }
 
     private IEnumerator DodgeRoutine()
     {
-        canDodge = false;
         IsDodging = true;
         health.IsInvulnerable = true;
 
         float distance = stats.dodgeDistance + (slashDodgeUnlocked ? stats.slashDodgeBonusDistance : 0f);
         Vector2 direction = GetDodgeDirection();
-        Vector2 start = rb.position;
-        Vector2 end = start + direction * distance;
+        float duration = Mathf.Max(0.02f, stats.dodgeDuration);
+        float speed = distance / duration;
 
         HashSet<IDamageable> hitEnemies = new HashSet<IDamageable>();
         float elapsed = 0f;
 
-        while (elapsed < stats.dodgeDuration)
+        while (elapsed + 0.0001f < duration)
         {
-            elapsed += Time.deltaTime;
-            float t = elapsed / stats.dodgeDuration;
-            Vector2 newPos = Vector2.Lerp(start, end, t);
-            rb.MovePosition(newPos);
+            // One physics writer during the dash. Gravity and solid collisions stay enabled.
+            rb.linearVelocity = new Vector2(direction.x * speed, rb.linearVelocity.y);
 
             if (slashDodgeUnlocked)
             {
-                DamageEnemiesAtPoint(newPos, hitEnemies);
+                DamageEnemiesAtPoint(rb.position, hitEnemies);
             }
 
-            yield return null;
+            yield return new WaitForFixedUpdate();
+            elapsed += Time.fixedDeltaTime;
         }
 
-        // MovePosition leaves the body with the dash velocity; stop it so the player does not slide past the end point.
-        rb.linearVelocity = Vector2.zero;
+        rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+        IsDodging = false;
 
         // Keep i-frames slightly beyond the physical dash for a forgiving dodge window.
         float remainingIFrames = stats.iFrameDuration - stats.dodgeDuration;
@@ -121,15 +143,14 @@ public class PlayerDodge : MonoBehaviour
         health.IsInvulnerable = false;
         IsDodging = false;
 
-        yield return new WaitForSeconds(stats.dodgeCooldown);
-        canDodge = true;
+        // Cooldown deadline was set at dodge START; dash/i-frames do not add another wait.
     }
 
     /// <summary>
     /// Used exclusively by PlayerHealth's Last Stand ability. Always slashes
     /// through enemies regardless of the slashDodgeUnlocked upgrade, aiming
     /// at the nearest enemy in range (or straight ahead if none is found).
-    /// Does not touch canDodge/cooldown - it's a separate, forced action.
+    /// Does not touch the cooldown deadline - it's a separate, forced action.
     /// </summary>
     public IEnumerator PerformForcedSlashDodge()
     {

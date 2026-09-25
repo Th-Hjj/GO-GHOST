@@ -20,6 +20,11 @@ public class Enemy : MonoBehaviour, IDamageable
     [Header("Health")]
     [SerializeField] private int maxHealth = 30;
 
+    [Header("Behaviour ownership")]
+    [Tooltip("Disable when a level-specific boss controls movement and attacks. Health and damage remain active.")]
+    [SerializeField] private bool automaticCombat = true;
+    [SerializeField] private bool destroyOnDeath = true;
+
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 3f;
     [Tooltip("Stops approaching once the player is closer than this.")]
@@ -39,12 +44,13 @@ public class Enemy : MonoBehaviour, IDamageable
     public int MaxHealth => maxHealth;
     public bool IsDead { get; private set; }
 
-    /// <summary>Fired once, right before the enemy GameObject is destroyed.</summary>
+    /// <summary>Fired once on death; optional destruction happens afterwards.</summary>
     public event Action<Enemy> OnDied;
 
     private Rigidbody2D rb;
     private PlayerHealth player;
     private float nextFireTime;
+    private bool combatStopped;
 
     private void Awake()
     {
@@ -67,6 +73,7 @@ public class Enemy : MonoBehaviour, IDamageable
 
     private void FixedUpdate()
     {
+        if (!automaticCombat || combatStopped) return;
         if (IsDead || player == null || player.IsDead)
         {
             rb.linearVelocity = Vector2.zero;
@@ -79,7 +86,7 @@ public class Enemy : MonoBehaviour, IDamageable
 
     private void Update()
     {
-        if (IsDead || player == null || player.IsDead) return;
+        if (!automaticCombat || combatStopped || IsDead || player == null || player.IsDead) return;
 
         Vector2 toPlayer = (Vector2)player.transform.position - rb.position;
         if (toPlayer.magnitude <= attackRange && Time.time >= nextFireTime)
@@ -109,11 +116,17 @@ public class Enemy : MonoBehaviour, IDamageable
             Die();
     }
 
+    public void StopCombat()
+    {
+        combatStopped = true;
+        rb.linearVelocity = Vector2.zero;
+    }
+
     private void Die()
     {
         IsDead = true;
-        rb.linearVelocity = Vector2.zero;
+        StopCombat();
         OnDied?.Invoke(this);
-        Destroy(gameObject);
+        if (destroyOnDeath) Destroy(gameObject);
     }
 }

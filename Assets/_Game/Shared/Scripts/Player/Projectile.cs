@@ -22,6 +22,7 @@ public class Projectile : MonoBehaviour
     private Rigidbody2D rb;
     private int damage;
     private GameObject owner;
+    private PlayerShooting accuracyOwner;
     private int ownerLayer = -1; // cached in Launch: the owner may be destroyed while the bullet is still flying
     private bool spent;
     public bool CanBeCountered { get; private set; }
@@ -36,9 +37,10 @@ public class Projectile : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
     }
 
-    public void Launch(Vector2 direction, float speed, int dmg, GameObject shooter, PlayerTimeSlow hostileClock = null, bool counterable = false)
+    public void Launch(Vector2 direction, float speed, int dmg, GameObject shooter, PlayerTimeSlow hostileClock = null, bool counterable = false, PlayerShooting accuracyOwner = null)
     {
         damage = dmg;
+        this.accuracyOwner = accuracyOwner;
         CanBeCountered = counterable;
         owner = shooter;
         ownerLayer = shooter != null ? shooter.layer : -1;
@@ -72,7 +74,13 @@ public class Projectile : MonoBehaviour
             spent = true; // Destroy is deferred; reject all additional contacts this step.
             var counter = CanBeCountered && damageable is PlayerHealth
                 ? other.GetComponentInParent<PlayerCounterArm>() : null;
-            if (counter == null || !counter.TryCounter()) damageable.TakeDamage(damage, owner);
+            if (counter == null || !counter.TryCounter())
+            {
+                // Only player-fired bullets opt in; Drone and hostile shots never affect accuracy.
+                if (accuracyOwner != null && damage > 0 && damageable is Enemy enemy && !enemy.IsDead)
+                    accuracyOwner.RegisterHit();
+                damageable.TakeDamage(damage, owner);
+            }
             Retire();
             return;
         }

@@ -96,6 +96,8 @@ public partial class TopDownSmokeTest : MonoBehaviour
             case "phase8-msp": yield return Phase8Msp(); break;
             case "phase9-msp": yield return Phase9Msp(); break;
             case "phase10-msp": yield return Phase10Msp(); break;
+            case "bare-gameplay": yield return BareGameplay(); break;
+            case "strict-ui": yield return StrictUI(); break;
             case "boss-contact": yield return BossContact(); break;
             // Earlier numerical gates are historical; TEST-v2 uses combat-v2.
             case "movement": yield return Movement(); break;

@@ -1,8 +1,10 @@
 # GO GHOST — Slice 临时测试方案
 
-## Current MSP values — Phases 1–9, 2026-09-25
+**Strict UI/flow override after the reset:** Combat values below remain unchanged. Launch opens Main Menu; START MISSION opens the editable Upgrade screen; BEGIN OPERATION deploys; both outcomes open Mission Result; CONTINUE returns to Main Menu. UI uses black/white only, with exactly two unlabeled combat HP bars and four frozen result values (elapsed time, remaining Boss/Player HP, player bullet accuracy). HEAD maps to Brain; SPINE has an empty submenu. Archive uses the three specified tabs; no return control, officer history generation or ending content. See [../VerticalSlice.md](../VerticalSlice.md) for the exact permitted content and [Implementation_Log](Implementation_Log.md) for executed checks. The Phase 10 standalone predates this UI.
 
-These values describe the current prototype, not final balance. This section supersedes conflicting historical sections below (Spine/Shift replacement, single-phase attacks, TEST-v0 catalogue and proposed ending thresholds). Confirmed direction is in [../VerticalSlice.md](../VerticalSlice.md); test evidence stays in [Implementation_Log.md](Implementation_Log.md).
+## Current MSP values — Phase 10 checkpoint, 2026-09-25
+
+These values describe the current prototype, not final balance. Phase 10 retained the Phase 1–9 gameplay values. This section supersedes conflicting historical sections below (Spine/Shift replacement, single-phase attacks, TEST-v0 catalogue and proposed ending thresholds). Confirmed direction is in [../VerticalSlice.md](../VerticalSlice.md); test evidence stays in [Implementation_Log.md](Implementation_Log.md).
 
 | System | Current TEST values / behavior |
 |---|---|
@@ -23,11 +25,11 @@ These values describe the current prototype, not final balance. This section sup
 | P2 Predator Drop | .55s tell, lock surface below target feet; script Boss 3.5 units above landing, hold .5s, descend at speed 26. Landing offset 1.3 units inward; marked impact area 3.6 wide / 2 high, one 26-damage attempt, .15s impact + .7s recovery. Temporary kinematic body restores afterward. Ground/High C supported; no navigation, cracks, platform HP or destruction |
 | P2 visuals | Persistent body alpha roughly .48–.72, cyan/pink flicker; blade .95 or 1 during warning. Temporary square-sprite blade, no refraction shader |
 | P2 BLACKOUT | Once at <=25% HP, entered at a normal P2 recovery. .7s signal; two speed-36 arena passes with .18s gaps; .7s High C mark; .4s final tell and one speed-36 blade pass / 32 damage; .5s delay then disable High C; .7s recovery to normal P2. Body alpha .3–.5 with stronger tint, bright blade. Ground/Low A/Low B untouched; no debris, platform HP or persistence |
-| Flow | Explicit Continue on narrative pages; no runtime 8s auto-advance. Result uses winning snapshot; no ending routing/thresholds implemented |
-| Archive | JSON saveVersion 1, same three unlock collections. TEMP_FIRST_VICTORY: placeholder condition "Defeat the Boss once"; records completion and detached_drone_arm unlock together. New Game preserves both. Current Session UI shows Endings/empty state and the one available/completed TEMP achievement; no final endings |
+| Flow | Main Menu -> Upgrade -> Combat -> success/failure Result -> Main Menu. Only six fixed settling steps before combat. Result freezes combat duration, remaining Boss/Player HP and player bullet hit percentage; zero shots = 0%. No ending routing |
+| Archive | JSON saveVersion 1, unchanged three unlock collections. Existing TEMP_FIRST_VICTORY records Boss victory and detached_drone_arm unlock together; new missions preserve it. Mission Intelligence displays only achievement, condition and completion. Police Records / Case Closure remain empty; no reward information or return navigation |
 | Detached Drone Arm | Hidden Left Arm replacement, 10%, available only after persistent reward; no active key. Hides left arm and spawns one red arm-shaped unit. Follow offset (1.3,1), speed 10; independently fires every .7s, speed 18 / damage 6, existing player-team projectile. Sole Boss binding; no player aim/fire changes. Death/victory/attempt end removes it; removing before deployment prevents spawn |
 
-P1 cycle: Burst -> Marked -> Ghost -> low Sweep -> high Sweep -> repeat. P2 cycle: Ghost Slash -> Crosscut -> Predator Drop -> repeat. Boss attack timers/movement share the existing hostile Time Slow clock. Telemetry can differ slightly from configured speeds due to physics. Standalone and natural 0% complete victory are NOT TESTED for this checkpoint.
+P1 cycle: Burst -> Marked -> Ghost -> low Sweep -> high Sweep -> repeat. P2 cycle: Ghost Slash -> Crosscut -> Predator Drop -> repeat. Boss attack timers/movement share the existing hostile Time Slow clock. Telemetry can differ slightly from configured speeds due to physics. Phase 10 build and limited standalone results are recorded in [Implementation_Log.md](Implementation_Log.md); physical input confirmation, standalone P2/full progression and natural 0% complete victory remain unverified. Controlled editor fixtures do not establish balance.
 
 ## Historical prototype profiles — not current instructions
 

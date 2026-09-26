@@ -5,20 +5,9 @@ using UnityEngine;
 /// <summary>One scene-local session. Each deployment owns a fresh combat prefab; no static/persistent session state.</summary>
 public sealed class GameSessionFlow : MonoBehaviour
 {
-    public enum FlowState { NewGameInitialization, Deployment, Combat, DefeatTransition, Loadout, Result, NextOfficerTransition, VictoryTransition }
+    public enum FlowState { NewGameInitialization, Deployment, Combat, DefeatTransition, Loadout, Result, NextOfficerTransition, VictoryTransition, MainMenu, Archive }
     [SerializeField] private BossFight attemptPrefab;
     [SerializeField] private GameObject highCPlatform;
-    // Retained for existing scene serialization; presentation now advances only on user input.
-#pragma warning disable CS0414 // These legacy serialized fields intentionally have no runtime readers.
-    [SerializeField, HideInInspector] private float defeatNoticeSeconds = 8f;
-    [SerializeField, HideInInspector] private float nextOfficerSeconds = 8f;
-    [SerializeField, HideInInspector] private float newGameIntroSeconds = 8f;
-    [SerializeField, HideInInspector] private float deploymentSeconds = 8f;
-    [SerializeField, HideInInspector] private float victoryNoticeSeconds = 8f;
-    [SerializeField, HideInInspector] private float loadoutReadSeconds = 8f;
-    [SerializeField, HideInInspector] private float resultReadSeconds = 8f;
-#pragma warning restore CS0414
-
     public FlowState State { get; private set; }
     public int OfficerIndex { get; private set; }
     public bool AugmentationsUnlocked { get; private set; }
@@ -31,19 +20,16 @@ public sealed class GameSessionFlow : MonoBehaviour
     public float StateAge => Time.unscaledTime - stateEnteredAt;
     public float HoldRemaining => 0f;
     public bool CanDeploy => State == FlowState.Loadout;
-    public bool CanNewGame => State == FlowState.Result || State == FlowState.Loadout;
-    public bool CanContinue => !continueRequested && Draft != null && (State == FlowState.NewGameInitialization
-        || State == FlowState.Deployment || State == FlowState.DefeatTransition
-        || State == FlowState.NextOfficerTransition || State == FlowState.VictoryTransition);
+    public bool CanNewGame => State == FlowState.MainMenu || State == FlowState.Result || State == FlowState.Loadout;
+    public bool CanContinue => State == FlowState.Result;
 
     private Action<BossFight.Outcome> outcomeHandler;
     private int generation;
-    private bool continueRequested;
 
     private void Awake()
     {
         // Explicit instance initialization also works with Domain Reload disabled.
-        State = FlowState.NewGameInitialization;
+        State = FlowState.MainMenu;
         OfficerIndex = 1;
         AugmentationsUnlocked = false;
         Draft = null;
@@ -51,46 +37,44 @@ public sealed class GameSessionFlow : MonoBehaviour
         Victory = null;
         ActiveFight = null;
         generation = 0;
-        continueRequested = false;
         stateEnteredAt = Time.unscaledTime;
     }
 
-    private void Start() => RequestNewGame();
-
     public bool RequestNewGame()
     {
-        if (!(State == FlowState.NewGameInitialization && Draft == null) && !CanNewGame) return false;
+        if (!CanNewGame) return false;
         if (attemptPrefab == null) { Debug.LogError("GameSessionFlow requires a combat attempt prefab.", this); return false; }
         StopAllCoroutines();
         generation++;
         DisposeAttempt();
         Draft?.Lock();
         OfficerIndex = 1;
-        AugmentationsUnlocked = false;
-        Draft = new LoadoutDraft();
+        AugmentationsUnlocked = true;
+        Draft = new LoadoutDraft(true);
         Deployment = null;
         Victory = null;
-        SetState(FlowState.NewGameInitialization);
-        StartCoroutine(NewGameRoutine());
+        SetState(FlowState.Loadout);
         return true;
-    }
-
-    private IEnumerator NewGameRoutine()
-    {
-        yield return WaitForContinue();
-        yield return DeployRoutine();
     }
 
     public bool RequestContinue()
     {
         if (!CanContinue) return false;
-        continueRequested = true; // Consume once; a second click in this state cannot skip the next page.
+        StopAllCoroutines();
+        generation++;
+        DisposeAttempt();
+        Draft?.Lock();
+        Draft = null;
+        Deployment = null;
+        SetState(FlowState.MainMenu);
         return true;
     }
 
-    private IEnumerator WaitForContinue()
+    public bool RequestArchive()
     {
-        while (!continueRequested) yield return null;
+        if (State != FlowState.MainMenu) return false;
+        SetState(FlowState.Archive);
+        return true;
     }
 
     public bool RequestDeploy()
@@ -107,7 +91,7 @@ public sealed class GameSessionFlow : MonoBehaviour
 
     private IEnumerator DeployRoutine()
     {
-        SetState(FlowState.Deployment); // Close the API/UI gate before a second click can be accepted.
+        SetState(FlowState.Deployment); // Reject duplicate deployment requests.
         Deployment = Draft.Deploy(OfficerIndex);
         int token = ++generation;
         // Restore only this scene platform at deployment; never persist terrain in Police Archive.
@@ -122,7 +106,6 @@ public sealed class GameSessionFlow : MonoBehaviour
 
         // Settle the existing gravity-driven bodies before allowing input or starting the Boss timer.
         for (int i = 0; i < 6; i++) yield return new WaitForFixedUpdate();
-        yield return WaitForContinue();
         if (token != generation || fight != ActiveFight || State != FlowState.Deployment) yield break;
         fight.BeginCombat();
         SetState(FlowState.Combat);
@@ -136,35 +119,12 @@ public sealed class GameSessionFlow : MonoBehaviour
             Victory = new VictoryRecord(source.Deployment);
             if (!PoliceArchive.RecordBossVictory(out string archiveError))
                 Debug.LogWarning("Police Archive victory save failed: " + archiveError, this);
-            SetState(FlowState.VictoryTransition);
-            StartCoroutine(VictoryRoutine(token));
+            SetState(FlowState.Result);
         }
         else if (outcome == BossFight.Outcome.Died)
         {
-            AugmentationsUnlocked = true;
-            SetState(FlowState.DefeatTransition);
-            StartCoroutine(NextOfficerRoutine(token));
+            SetState(FlowState.Result);
         }
-    }
-
-    private IEnumerator NextOfficerRoutine(int token)
-    {
-        yield return WaitForContinue();
-        if (token != generation || State != FlowState.DefeatTransition) yield break;
-        var previous = Deployment;
-        DisposeAttempt();
-        OfficerIndex++;
-        Draft = new LoadoutDraft(previous, AugmentationsUnlocked);
-        Deployment = null;
-        SetState(FlowState.NextOfficerTransition);
-        yield return WaitForContinue();
-        if (token == generation && State == FlowState.NextOfficerTransition) SetState(FlowState.Loadout);
-    }
-
-    private IEnumerator VictoryRoutine(int token)
-    {
-        yield return WaitForContinue();
-        if (token == generation && State == FlowState.VictoryTransition) SetState(FlowState.Result);
     }
 
     private void DisposeAttempt()
@@ -181,7 +141,6 @@ public sealed class GameSessionFlow : MonoBehaviour
     private void SetState(FlowState state)
     {
         State = state;
-        continueRequested = false;
         stateEnteredAt = Time.unscaledTime;
         Debug.Log($"[Session] {state} / Officer #{OfficerIndex}", this);
         OnStateChanged?.Invoke(state);

@@ -19,6 +19,11 @@ public class BossFight : MonoBehaviour
     private bool combatRunning;
     private bool subscribed;
     private bool started;
+    private float combatStartedAt;
+    public float CombatDuration { get; private set; }
+    public int ResultBossHealth { get; private set; }
+    public int ResultPlayerHealth { get; private set; }
+    public float AccuracyPercent { get; private set; }
 
     private void Awake() => player.GetComponent<PlayerInputReader>().SetGameplayInputEnabled(false);
 
@@ -39,6 +44,7 @@ public class BossFight : MonoBehaviour
         if (Deployment == null || started) return;
         started = true;
         combatRunning = true;
+        combatStartedAt = Time.unscaledTime;
         player.GetComponent<PlayerInputReader>().SetGameplayInputEnabled(true);
         boss.BeginCombat();
     }
@@ -60,6 +66,12 @@ public class BossFight : MonoBehaviour
         if (!combatRunning || !deathPending || Result != Outcome.Fighting) return;
         // Resolve after damage callbacks for this frame. TEST rule: mutual death is failure.
         Result = player.IsDead ? Outcome.Died : Outcome.Won;
+        // Freeze the four requested result values before actor/projectile cleanup.
+        CombatDuration = Time.unscaledTime - combatStartedAt;
+        ResultBossHealth = bossHealth.CurrentHealth;
+        ResultPlayerHealth = player.CurrentHealth;
+        var shooting = player.GetComponent<PlayerShooting>();
+        AccuracyPercent = shooting.ShotsFired == 0 ? 0 : 100f * shooting.ShotsHit / shooting.ShotsFired;
         CancelCombat();
         Debug.Log($"[BossFight] Officer #{Deployment.OfficerIndex}: {Result}", this);
         OnResolved?.Invoke(Result);

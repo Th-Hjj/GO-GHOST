@@ -12,8 +12,8 @@ public partial class TopDownSmokeTest
     private static string[] StrictTexts() => FindObjectsByType<TMP_Text>().Where(t => t.isActiveAndEnabled).Select(t => t.text).ToArray();
     private static string StrictText(string name) => GameObject.Find(name).GetComponent<TMP_Text>().text;
     private static string[] StrictOfficerFields = { "OFFICER #", "AGE", "RANK", "YEARS OF SERVICE", "MISSIONS COMPLETED", "MISSION SUCCESS RATE", "STATUS" };
-    private static string[] StrictRegions = { "HEAD", "TORSO", "LEFT ARM", "RIGHT ARM", "LEFT LEG", "RIGHT LEG", "SPINE" };
-    private static string[] StrictTabs = { "POLICE RECORDS", "MISSION INTELLIGENCE", "CASE CLOSURE RECORDS" };
+    private static string[] StrictRegions = { "HEAD", "TORSO", "LEFT ARM", "RIGHT ARM", "LEFT LEG", "RIGHT LEG", "WEAPON" };
+    private static string[] StrictTabs = { "POLICE RECORDS", "MISSION INTELLIGENCE", "CASE CLOSURE RECORDS", "BACK" };
 
     private void StrictAudit(string screen, string[] permitted)
     {
@@ -34,13 +34,63 @@ public partial class TopDownSmokeTest
     private IEnumerator StrictClickRegion(int index)
     {
         var region = GameObject.Find("Region_" + StrictRegions[index].Replace(' ', '_'));
-        // The Spine is intentionally inside the Torso; hit the Torso's exposed left side.
         Vector3 world = region.transform.position;
-        if (index == 1) world = region.transform.TransformPoint(new Vector3(-70, 0, 0));
         Vector2 p = RectTransformUtility.WorldToScreenPoint(null, world);
         Mouse(p.x / Screen.width, p.y / Screen.height, false); yield return Frames(3);
         Mouse(p.x / Screen.width, p.y / Screen.height, true); yield return Frames(3);
         Mouse(p.x / Screen.width, p.y / Screen.height, false); yield return Frames(3);
+    }
+
+    private IEnumerator StrictUICorrections()
+    {
+        Record("UI corrections smoke: actual virtual pointer clicks; no combat or generated officer records.");
+        System.IO.Directory.CreateDirectory("Logs/GO_GHOST_VS");
+        var flow = FindAnyObjectByType<GameSessionFlow>();
+        var ui = FindAnyObjectByType<MissionUI>();
+        yield return Phase8Until(() => flow.State == GameSessionFlow.FlowState.MainMenu, "Main Menu", 3);
+        yield return Frames(4);
+        var labels = GameObject.Find("AugmentationRecord").GetComponentsInChildren<TMP_Text>()
+            .Where(t => t.name.StartsWith("Field_")).Select(t => t.text).ToArray();
+        Check("Main Menu seven equipment rows", labels.SequenceEqual(StrictRegions), string.Join(" / ", labels));
+        var recordFields = typeof(MissionUI.OfficerRecord).GetFields().Select(f => f.Name).ToArray();
+        Check("Officer record schema uses Weapon", recordFields.Contains("weapon") && !recordFields.Contains("spine")
+            && new MissionUI.OfficerRecord().Equipment.Length == 7, "same seven-value schema feeds previous-officer and Police Records views");
+        Check("Exactly two BACK buttons", FindObjectsByType<Button>(FindObjectsInactive.Include)
+            .Count(b => b.GetComponentInChildren<TMP_Text>(true)?.text == "BACK") == 2, "Archive and Upgrade only");
+        yield return ClickSessionButton("PoliceArchive");
+        StrictAudit("corrected-archive", StrictTabs);
+        var archiveBack = (RectTransform)GameObject.Find("ArchiveBack").transform;
+        Check("Archive BACK top-left", archiveBack.anchorMin == new Vector2(0, 1) && archiveBack.anchorMax == new Vector2(0, 1), "existing black/white rectangular button style");
+        yield return Seconds(.25f);
+        ScreenCapture.CaptureScreenshot("Logs/GO_GHOST_VS/corrected-archive.png");
+        yield return Seconds(.15f);
+        yield return ClickSessionButton("ArchiveBack");
+        Check("Main Menu -> Archive -> BACK -> Main Menu", flow.State == GameSessionFlow.FlowState.MainMenu
+            && flow.ActiveFight == null && FindObjectsByType<Button>().Length == 2, "direct return; no intermediate screen");
+        yield return ClickSessionButton("StartMission");
+        var selectors = FindObjectsByType<Button>().Where(b => b.name.StartsWith("Region_")).Select(b => b.name).OrderBy(n => n).ToArray();
+        Check("Exactly seven build selectors", selectors.SequenceEqual(StrictRegions.Select(s => "Region_" + s.Replace(' ', '_')).OrderBy(n => n))
+            && FindObjectsByType<MissionBodyRegion>().Length == 6, string.Join(" / ", selectors));
+        bool selectable = true;
+        for (int i = 0; i < 7; i++) { yield return StrictClickRegion(i); selectable &= ui.SelectedRegion == i; }
+        Check("All seven selectors clickable", selectable, "six body regions plus separate Weapon equipment slot");
+        StrictAudit("corrected-weapon", new[] { "BACK", "WEAPON", "BEGIN OPERATION", "Basic Gun" });
+        yield return ClickSessionButton("Choice_" + LoadoutRules.BasicGun);
+        Check("Weapon uses existing Basic Gun", flow.Draft.GetSlot(LoadoutSlot.Weapon).ItemId == LoadoutRules.BasicGun
+            && Enum.GetValues(typeof(LoadoutSlot)).Length == 7, "existing Weapon slot/filter; no eighth slot or new equipment");
+        var upgradeBack = (RectTransform)GameObject.Find("UpgradeBack").transform;
+        Check("Upgrade BACK top-left", upgradeBack.anchorMin == new Vector2(0, 1) && upgradeBack.anchorMax == new Vector2(0, 1), "same style and anchoring as Archive BACK");
+        yield return Seconds(.25f);
+        ScreenCapture.CaptureScreenshot("Logs/GO_GHOST_VS/corrected-weapon.png");
+        yield return Seconds(.15f);
+        yield return StrictClickRegion(1);
+        StrictAudit("corrected-torso", new[] { "BACK", "WEAPON", "BEGIN OPERATION", "Time Slow" });
+        yield return ClickSessionButton("Choice_" + LoadoutRules.TorsoSlow);
+        Check("Torso stays independent", flow.Draft.GetSlot(LoadoutSlot.Torso).ItemId == LoadoutRules.TorsoSlow
+            && flow.Draft.GetSlot(LoadoutSlot.Weapon).ItemId == LoadoutRules.BasicGun, "existing body/core augmentation and weapon occupy separate slots");
+        yield return ClickSessionButton("UpgradeBack");
+        Check("Main Menu -> Upgrade -> BACK -> Main Menu", flow.State == GameSessionFlow.FlowState.MainMenu
+            && flow.ActiveFight == null && FindObjectsByType<Button>().Length == 2, "direct return; no combat start");
     }
 
     private IEnumerator StrictUI()
@@ -62,9 +112,9 @@ public partial class TopDownSmokeTest
             yield return Frames(2);
             yield return ClickSessionButton("StartMission");
             Check("START MISSION opens Upgrade", flow.State == GameSessionFlow.FlowState.Loadout && flow.ActiveFight == null
-                && FindObjectsByType<MissionBodyRegion>().Length == 7 && flow.Draft.BodyModificationPercent == 0,
+                && FindObjectsByType<Button>().Count(b => b.name.StartsWith("Region_")) == 7 && flow.Draft.BodyModificationPercent == 0,
                 "seven selectable regions, fresh editable build, no intervening screen");
-            StrictAudit("upgrade-empty", new[] { "BEGIN OPERATION" });
+            StrictAudit("upgrade-empty", new[] { "BEGIN OPERATION", "BACK", "WEAPON" });
             ScreenCapture.CaptureScreenshot("Logs/GO_GHOST_VS/strict-upgrade.png");
             yield return Frames(2);
             LoadoutSlot[] slots = { LoadoutSlot.Brain, LoadoutSlot.Torso, LoadoutSlot.LeftArm, LoadoutSlot.RightArm, LoadoutSlot.LeftLeg, LoadoutSlot.RightLeg };
@@ -75,7 +125,7 @@ public partial class TopDownSmokeTest
                 selected &= ui.SelectedRegion == i;
                 var definitions = i == 6 ? Array.Empty<AugmentationDefinition>()
                     : LoadoutRules.PrototypeCatalog.Where(d => d.Occupies(slots[i]) && d.ItemId != LoadoutRules.DetachedDroneArm).ToArray();
-                string[] expected = new[] { "BEGIN OPERATION" }.Concat(definitions.Select(d => LoadoutRules.ItemLabel(d.ItemId))).ToArray();
+                string[] expected = new[] { "BEGIN OPERATION", "BACK", "WEAPON" }.Concat(i == 6 ? new[] { "Basic Gun" } : definitions.Select(d => LoadoutRules.ItemLabel(d.ItemId))).ToArray();
                 validOnly &= StrictTexts().OrderBy(x => x).SequenceEqual(expected.OrderBy(x => x));
                 foreach (var definition in definitions)
                 {
@@ -84,10 +134,10 @@ public partial class TopDownSmokeTest
                 }
             }
             Check("Seven body regions and existing choices", selected && choicesWork && validOnly,
-                $"seven clicks={selected}; all available choices equip={choicesWork}; catalog-only/Spine empty={validOnly}; Drone unavailable before existing unlock");
+                $"seven clicks={selected}; all available choices equip={choicesWork}; catalog-only/Weapon Basic Gun={validOnly}; Drone unavailable before existing unlock");
             // Show a real populated submenu for visual inspection, without altering the final selected build.
             yield return StrictClickRegion(0);
-            StrictAudit("upgrade-head", new[] { "BEGIN OPERATION", "Targeting AI", "Predictive Cortex" });
+            StrictAudit("upgrade-head", new[] { "BEGIN OPERATION", "BACK", "WEAPON", "Targeting AI", "Predictive Cortex" });
             yield return Seconds(.25f);
             ScreenCapture.CaptureScreenshot("Logs/GO_GHOST_VS/strict-upgrade-head.png");
             yield return Frames(2);
@@ -177,8 +227,8 @@ public partial class TopDownSmokeTest
             yield return Frames(2);
             yield return ClickSessionButton("ResultContinue");
             yield return ClickSessionButton("PoliceArchive");
-            Check("POLICE ARCHIVE opens shell", flow.State == GameSessionFlow.FlowState.Archive && ui.ArchiveTab == 0 && FindObjectsByType<Button>().Length == 3,
-                "exactly the three specified tabs; no extra navigation");
+            Check("POLICE ARCHIVE opens shell", flow.State == GameSessionFlow.FlowState.Archive && ui.ArchiveTab == 0 && FindObjectsByType<Button>().Length == 4,
+                "exactly the three specified tabs and BACK");
             StrictAudit("police-records", StrictTabs);
             ScreenCapture.CaptureScreenshot("Logs/GO_GHOST_VS/strict-police-records.png");
             yield return Frames(2);
@@ -190,11 +240,11 @@ public partial class TopDownSmokeTest
             yield return Frames(2);
             yield return ClickSessionButton("ArchiveTab2");
             StrictAudit("case-closure", StrictTabs);
-            Check("Case Closure structure only", ui.ArchiveTab == 2 && StrictTexts().Length == 3, "empty content; no endings or counters");
+            Check("Case Closure structure only", ui.ArchiveTab == 2 && StrictTexts().Length == 4, "empty content; no endings or counters");
             ScreenCapture.CaptureScreenshot("Logs/GO_GHOST_VS/strict-case-closure.png");
             yield return Frames(2);
             yield return ClickSessionButton("ArchiveTab0");
-            Check("Police Records stays empty", ui.ArchiveTab == 0 && StrictTexts().Length == 3, "no historical officers generated after either outcome");
+            Check("Police Records stays empty", ui.ArchiveTab == 0 && StrictTexts().Length == 4, "no historical officers generated after either outcome");
         }
         finally
         {

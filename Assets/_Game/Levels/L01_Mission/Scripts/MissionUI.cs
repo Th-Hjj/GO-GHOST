@@ -15,15 +15,15 @@ public sealed class MissionUI : MonoBehaviour
     [Serializable] public sealed class OfficerRecord
     {
         public string officerNumber, age, rank, yearsOfService, missionsCompleted, missionSuccessRate, status;
-        public string head, torso, leftArm, rightArm, leftLeg, rightLeg, spine;
+        public string head, torso, leftArm, rightArm, leftLeg, rightLeg, weapon;
         public string[] Fields => new[] { officerNumber, age, rank, yearsOfService, missionsCompleted, missionSuccessRate, status };
-        public string[] Equipment => new[] { head, torso, leftArm, rightArm, leftLeg, rightLeg, spine };
+        public string[] Equipment => new[] { head, torso, leftArm, rightArm, leftLeg, rightLeg, weapon };
     }
     [SerializeField] private OfficerRecord previousOfficer;
     [SerializeField] private OfficerRecord[] policeRecords = Array.Empty<OfficerRecord>();
     private static readonly string[] OfficerFields = { "OFFICER #", "AGE", "RANK", "YEARS OF SERVICE", "MISSIONS COMPLETED", "MISSION SUCCESS RATE", "STATUS" };
-    private static readonly string[] Regions = { "HEAD", "TORSO", "LEFT ARM", "RIGHT ARM", "LEFT LEG", "RIGHT LEG", "SPINE" };
-    private static readonly LoadoutSlot?[] Slots = { LoadoutSlot.Brain, LoadoutSlot.Torso, LoadoutSlot.LeftArm, LoadoutSlot.RightArm, LoadoutSlot.LeftLeg, LoadoutSlot.RightLeg, null };
+    private static readonly string[] Regions = { "HEAD", "TORSO", "LEFT ARM", "RIGHT ARM", "LEFT LEG", "RIGHT LEG", "WEAPON" };
+    private static readonly LoadoutSlot[] Slots = { LoadoutSlot.Brain, LoadoutSlot.Torso, LoadoutSlot.LeftArm, LoadoutSlot.RightArm, LoadoutSlot.LeftLeg, LoadoutSlot.RightLeg, LoadoutSlot.Weapon };
     private GameObject main, upgrade, combat, result, archive;
     private RectTransform choices, archiveContent;
     private RectTransform bossFill, playerFill;
@@ -82,13 +82,14 @@ public sealed class MissionUI : MonoBehaviour
     private void BuildUpgrade(RectTransform root)
     {
         upgrade = Screen(root, "Upgrade");
+        BackButton(upgrade.transform, "UpgradeBack");
         BodyRegion(0, new Vector2(960, 866), new Vector2(124, 140), true);
         BodyRegion(1, new Vector2(960, 628), new Vector2(240, 292));
         BodyRegion(2, new Vector2(782, 623), new Vector2(95, 300));
         BodyRegion(3, new Vector2(1138, 623), new Vector2(95, 300));
         BodyRegion(4, new Vector2(886, 315), new Vector2(100, 300));
         BodyRegion(5, new Vector2(1034, 315), new Vector2(100, 300));
-        BodyRegion(6, new Vector2(960, 628), new Vector2(38, 252));
+        Button(upgrade.transform, "Region_WEAPON", "WEAPON", new Vector2(570, 628), new Vector2(220, 72), () => SelectRegion(6));
         choices = Panel(upgrade.transform, "UpgradeChoices", new Vector2(1565, 580), new Vector2(500, 450));
         choices.gameObject.SetActive(false);
         Button(upgrade.transform, "BeginOperation", "BEGIN OPERATION", new Vector2(1585, 78), new Vector2(520, 90), () => flow.RequestDeploy());
@@ -114,8 +115,13 @@ public sealed class MissionUI : MonoBehaviour
         foreach (Transform child in choices)
             if (child.name.StartsWith("Choice_", StringComparison.Ordinal)) { child.gameObject.SetActive(false); Destroy(child.gameObject); }
         choices.gameObject.SetActive(true);
-        if (!Slots[index].HasValue) return;
-        var slot = Slots[index].Value;
+        var slot = Slots[index];
+        if (slot == LoadoutSlot.Weapon)
+        {
+            if (flow.Draft.CanUseWeapon)
+                Button(choices, "Choice_" + LoadoutRules.BasicGun, LoadoutRules.WeaponLabel(LoadoutRules.BasicGun), new Vector2(250, 374), new Vector2(450, 72), () => flow.TrySetDraftSlot(slot, LoadoutRules.BasicGun));
+            return;
+        }
         int row = 0;
         foreach (var definition in LoadoutRules.PrototypeCatalog)
         {
@@ -159,6 +165,7 @@ public sealed class MissionUI : MonoBehaviour
     private void BuildArchive(RectTransform root)
     {
         archive = Screen(root, "Archive");
+        BackButton(archive.transform, "ArchiveBack");
         string[] tabs = { "POLICE RECORDS", "MISSION INTELLIGENCE", "CASE CLOSURE RECORDS" };
         for (int i = 0; i < tabs.Length; i++)
         {
@@ -291,6 +298,13 @@ public sealed class MissionUI : MonoBehaviour
         button.onClick.AddListener(click);
         Text(rect, "Text", label, size * .5f, size - new Vector2(24, 10), 30);
         return button;
+    }
+    private void BackButton(Transform parent, string name)
+    {
+        var button = Button(parent, name, "BACK", Vector2.zero, new Vector2(180, 50), () => flow.RequestBackToMainMenu());
+        var rect = (RectTransform)button.transform;
+        rect.anchorMin = rect.anchorMax = new Vector2(0, 1);
+        rect.anchoredPosition = new Vector2(120, -30);
     }
     private static void ConfigureButton(UnityEngine.UI.Button button)
     {

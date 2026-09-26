@@ -823,7 +823,7 @@ MonoBehaviour:
     rightArm:
     leftLeg:
     rightLeg:
-    spine:
+    weapon:
   policeRecords: []
 --- !u!1 &619394800
 GameObject:

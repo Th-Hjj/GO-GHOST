@@ -75,7 +75,7 @@ All game scripts are in Assembly-CSharp, no namespace. Several file names differ
 | `GameSessionFlow.cs` | Main Menu/Upgrade/Combat/Result/Archive transitions, snapshot deployment, stale-attempt guard, existing six fixed physics-settling steps and High C reset. Old enum values remain for compatibility but old presentation states are unused. No history generation or automatic defeat restart |
 | `BossFight.cs` | One outcome per attempt (mutual death = defeat), cleanup, AI/Drone target binding, frozen combat duration/remaining HP/bullet accuracy at resolution |
 | `CyberpsychoBoss.cs` | Sole Boss movement/attack writer; BossPhase + action enum/switch. P1 Burst/Marked/Ghost/low-high Sweep; one pending HP transition -> discard gun/draw blade; P2 persistent camouflage and fixed Ghost Slash/Crosscut/Predator Drop cycle. Once-per-attempt BLACKOUT at TEST 25% HP, two passes/High C mark/final slash/platform disable/recovery to normal P2. Local hostile clock, damage/death cleanup; no Behavior Tree or coroutine attack scheduler |
-| `MissionUI.cs` | Runtime uGUI/TMP black/white screens, seven-region silhouette/submenus, two health bars, four result values, three Archive tabs and manual officer-record data slots. No automatic record generation or extra navigation |
+| `MissionUI.cs` | Runtime uGUI/TMP black/white screens, seven-region silhouette/submenus, two health bars, four result values, three Archive tabs and manual officer-record data slots. HEAD/TORSO/arms/legs/WEAPON data; BACK only on Upgrade and Archive. No automatic record generation |
 
 ### `Shared/Scripts/Player/`
 

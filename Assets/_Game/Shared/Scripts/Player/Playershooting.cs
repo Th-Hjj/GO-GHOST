@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 
 /// <summary>
@@ -30,6 +30,8 @@ public class PlayerShooting : MonoBehaviour
     public int BulletDamage => officer != null && officer.Deployment != null ? officer.Deployment.BulletDamage : stats.gunDamage;
     public float FireInterval => officer != null && officer.Deployment != null ? officer.Deployment.FireInterval : stats.fireRate;
     public int ShotsFired { get; private set; }
+    public int ShotsHit { get; private set; }
+    internal void RegisterHit() => ShotsHit++;
     private float nextFireTime;
     private float firePointRadius = 0.5f;
     private bool isFiringVolley;
@@ -86,7 +88,7 @@ public class PlayerShooting : MonoBehaviour
         Vector2 spawn = GetMuzzlePosition(direction);
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         Projectile bullet = Instantiate(bulletPrefab, spawn, Quaternion.Euler(0f, 0f, angle));
-        bullet.Launch(direction, stats.bulletSpeed, BulletDamage, gameObject);
+        bullet.Launch(direction, stats.bulletSpeed, BulletDamage, gameObject, accuracyOwner: this);
         ShotsFired++;
     }
 

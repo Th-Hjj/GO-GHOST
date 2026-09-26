@@ -21,7 +21,6 @@ public class CyberpsychoBoss : MonoBehaviour
     [SerializeField] private SpriteRenderer shotWarning;
     [SerializeField] private SpriteRenderer chargeWarning;
     [SerializeField] private SpriteRenderer[] spreadWarnings;
-    [SerializeField] private GameObject warningMark;
     [Header("TEST phase foundation — temporary values, not final balance")]
     [Range(0.01f, 0.99f)]
     [SerializeField] private float phase2HealthThreshold = 0.5f;
@@ -664,8 +663,7 @@ public class CyberpsychoBoss : MonoBehaviour
             {
                 var part = visualParts[i];
                 if (part == null || part == shotWarning || part == chargeWarning
-                    || (spreadWarnings != null && System.Array.IndexOf(spreadWarnings, part) >= 0)
-                    || (warningMark != null && part.transform.IsChildOf(warningMark.transform))) continue;
+                    || (spreadWarnings != null && System.Array.IndexOf(spreadWarnings, part) >= 0)) continue;
                 Color color = visualColors[i];
                 if (p2Camo)
                 {
@@ -683,9 +681,6 @@ public class CyberpsychoBoss : MonoBehaviour
         if (body != null)
             if (health != null && health.IsDead) body.color = new Color(.35f, .35f, .35f);
         bool marked = State == AttackState.MarkedTracking || State == AttackState.MarkedLock;
-        if (warningMark != null) warningMark.SetActive(State == AttackState.BurstWarning || marked
-            || State == AttackState.GhostWarning || State == AttackState.SweepWarning || State == AttackState.SlashWarning
-            || CrosscutTelling || DropTelling || BlackoutActive);
         if (shotWarning != null)
         {
             shotWarning.enabled = State == AttackState.BurstWarning || marked;

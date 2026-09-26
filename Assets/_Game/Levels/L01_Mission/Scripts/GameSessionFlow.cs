@@ -77,6 +77,15 @@ public sealed class GameSessionFlow : MonoBehaviour
         return true;
     }
 
+    public bool RequestBackToMainMenu()
+    {
+        if (State != FlowState.Archive && State != FlowState.Loadout) return false;
+        Draft?.Lock();
+        Draft = null;
+        SetState(FlowState.MainMenu);
+        return true;
+    }
+
     public bool RequestDeploy()
     {
         if (!CanDeploy || Draft == null || Draft.IsLocked) return false;

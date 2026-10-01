@@ -6,11 +6,11 @@ using UnityEngine;
 /// The muzzle is the player's position offset along the aim by the FirePoint
 /// child's original distance, so aiming is independent of the movement direction.
 /// Base: hold Attack to fire continuously, governed by stats.fireRate.
-/// Upgraded (volleyUnlocked): each Attack press fires a burst of
-/// stats.volleyShotCount shots, stats.volleyShotDelay apart.
+/// LEGACY / TEST ONLY (volleyUnlocked): each Attack press fires a burst of
+/// stats.volleyShotCount shots, stats.volleyShotDelay apart. Not a formal augmentation.
 /// </summary>
 // FUNCTION SUMMARY
-// Update()            — keeps the FirePoint child on the muzzle; fires (continuous or volley burst) based on Attack input and the Volley upgrade.
+// Update()            — keeps the FirePoint child on the muzzle; fires (continuous or volley burst) based on Attack input and the legacy test-only Volley toggle.
 // GetMuzzlePosition() — world-space spawn point for a given aim direction.
 // Fire()              — spawns a single bullet at the muzzle, rotated to the aim, and launches it along the aim direction.
 // FireVolleyRoutine()  — fires stats.volleyShotCount shots stats.volleyShotDelay apart, re-reading aim each shot.
@@ -21,8 +21,9 @@ public class PlayerShooting : MonoBehaviour
     [SerializeField] private Transform firePoint;
     [SerializeField] private Projectile bulletPrefab;
 
-    [Header("Upgrades")]
-    [Tooltip("Unlocked via the upgrade tree: each Attack press fires a 3-shot burst instead of continuous fire.")]
+    // LEGACY / TEST ONLY: formal augmentations come from DeploymentSnapshot, never this field.
+    [Header("Legacy (test only)")]
+    [Tooltip("LEGACY / TEST ONLY. Not a formal augmentation: each Attack press fires a 3-shot burst instead of continuous fire.")]
     public bool volleyUnlocked = false;
 
     private PlayerInputReader input;

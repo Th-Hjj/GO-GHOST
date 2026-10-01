@@ -6,7 +6,8 @@ using UnityEngine.SceneManagement;
 /// <summary>
 /// Health, damage intake, death, and the "Last Stand" once-per-battle
 /// revive: instead of dying, the player's onboard AI forces a slash-dash
-/// through the nearest enemy and settles the player at 1 HP.
+/// through the nearest enemy and settles the player at 1 HP. Last Stand is LEGACY / TEST ONLY and
+/// off in the formal slice; it is not part of the formal loadout architecture.
 /// Death stops controls. Legacy scenes can auto-retry; the Boss slice disables
 /// that option and owns its temporary result feedback.
 /// </summary>
@@ -15,7 +16,6 @@ using UnityEngine.SceneManagement;
 // Heal()              — restores health up to the max, for pickups/regen.
 // LastStandRoutine()  — the one-life-saving slash-dash sequence, called internally when the player would otherwise die.
 // ResetLastStand()    — re-arms Last Stand; call this at the start of every new battle.
-// UnlockLastStand()   — permanently turns on the Last Stand ability via the upgrade tree.
 // Die()               — marks dead once, fires OnDeath, stops controls and optionally starts legacy retry.
 // StopCombat()        — cancels action state and freezes the body, also used on victory.
 // RetryRoutine()      — waits retryDelay, then reloads the active scene (only if it is in Build Settings).
@@ -24,8 +24,8 @@ public class PlayerHealth : MonoBehaviour, IDamageable
 {
     [SerializeField] private PlayerStatsSO stats;
 
-    [Header("Last Stand")]
-    [Tooltip("Unlocked via the upgrade tree.")]
+    [Header("Last Stand (legacy, test only)")]
+    [Tooltip("LEGACY / TEST ONLY. Not a formal augmentation; keep off in formal content.")]
     [SerializeField] private bool lastStandUnlocked = false;
 
     [Header("Death / Retry")]
@@ -107,11 +107,6 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     public void ResetLastStand()
     {
         LastStandAvailable = true;
-    }
-
-    public void UnlockLastStand()
-    {
-        lastStandUnlocked = true;
     }
 
     private void Die()

@@ -8,7 +8,8 @@ public enum PoliceArchiveLoadStatus { Loaded, CreatedEmpty, RecoveredBackup, Rec
 /// <summary>Versioned local JSON with atomic replacement, one backup and preservation of invalid originals.</summary>
 public sealed class PoliceArchiveStore
 {
-    public const int CurrentVersion = 1;
+    // Version 2 adds completed run records; version 1 files load with an empty run history.
+    public const int CurrentVersion = 2;
     public string FilePath { get; }
     public PoliceArchiveLoadStatus LastLoadStatus { get; private set; }
     public string LastError { get; private set; }

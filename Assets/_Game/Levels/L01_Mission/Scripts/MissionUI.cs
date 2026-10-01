@@ -11,23 +11,16 @@ public sealed class MissionUI : MonoBehaviour
     [SerializeField] private GameSessionFlow flow;
     [SerializeField] private InputActionAsset inputActions;
     [SerializeField] private TMP_FontAsset font;
-    // Manual data slots only. This pass does not create officer history.
-    [Serializable] public sealed class OfficerRecord
-    {
-        public string officerNumber, age, rank, yearsOfService, missionsCompleted, missionSuccessRate, status;
-        public string head, torso, leftArm, rightArm, leftLeg, rightLeg, weapon;
-        public string[] Fields => new[] { officerNumber, age, rank, yearsOfService, missionsCompleted, missionSuccessRate, status };
-        public string[] Equipment => new[] { head, torso, leftArm, rightArm, leftLeg, rightLeg, weapon };
-    }
-    [SerializeField] private OfficerRecord previousOfficer;
-    [SerializeField] private OfficerRecord[] policeRecords = Array.Empty<OfficerRecord>();
+    // Officer/build values come only from completed Police Archive run records; "—" until one exists.
     private static readonly string[] OfficerFields = { "OFFICER #", "AGE", "RANK", "YEARS OF SERVICE", "MISSIONS COMPLETED", "MISSION SUCCESS RATE", "STATUS" };
     private static readonly string[] Regions = { "HEAD", "TORSO", "LEFT ARM", "RIGHT ARM", "LEFT LEG", "RIGHT LEG", "WEAPON" };
+    private static readonly string[] ResultLabels = { "TIME", "BOSS HP", "PLAYER HP", "ACCURACY" };
     private static readonly LoadoutSlot[] Slots = { LoadoutSlot.Brain, LoadoutSlot.Torso, LoadoutSlot.LeftArm, LoadoutSlot.RightArm, LoadoutSlot.LeftLeg, LoadoutSlot.RightLeg, LoadoutSlot.Weapon };
     private GameObject main, upgrade, combat, result, archive;
     private RectTransform choices, archiveContent;
     private RectTransform bossFill, playerFill;
     private TMP_Text resultHeading, timeValue, bossValue, playerValue, accuracyValue;
+    private TMP_Text[] previousOfficerValues, previousEquipmentValues;
     private GameSessionFlow.FlowState shown = (GameSessionFlow.FlowState)(-1);
     public int SelectedRegion { get; private set; } = -1;
     public int ArchiveTab { get; private set; }
@@ -57,6 +50,7 @@ public sealed class MissionUI : MonoBehaviour
         module.move = Action("UI/Navigate");
         module.submit = Action("UI/Submit");
         module.cancel = Action("UI/Cancel");
+        module.scrollWheel = Action("UI/ScrollWheel"); // Existing UI action; only scrolls the Police Records list.
         Refresh();
     }
 
@@ -74,9 +68,9 @@ public sealed class MissionUI : MonoBehaviour
         Button(main.transform, "StartMission", "START MISSION", new Vector2(960, 570), new Vector2(500, 90), () => flow.RequestNewGame());
         Button(main.transform, "PoliceArchive", "POLICE ARCHIVE", new Vector2(960, 440), new Vector2(500, 90), () => flow.RequestArchive());
         var left = Panel(main.transform, "PreviousOfficer", new Vector2(295, 510), new Vector2(480, 780));
-        RecordFields(left, OfficerFields, previousOfficer?.Fields, 700, 96);
+        previousOfficerValues = RecordFields(left, OfficerFields, null, 700, 96);
         var right = Panel(main.transform, "AugmentationRecord", new Vector2(1625, 510), new Vector2(480, 780));
-        RecordFields(right, Regions, previousOfficer?.Equipment, 700, 96);
+        previousEquipmentValues = RecordFields(right, Regions, null, 700, 96);
     }
 
     private void BuildUpgrade(RectTransform root)
@@ -151,11 +145,10 @@ public sealed class MissionUI : MonoBehaviour
     {
         result = Screen(root, "MissionResult");
         resultHeading = Text(result.transform, "ResultHeading", "", new Vector2(960, 890), new Vector2(1280, 120), 64);
-        string[] labels = { "TIME", "BOSS HP", "PLAYER HP", "ACCURACY" };
         var values = new TMP_Text[4];
         for (int i = 0; i < 4; i++)
         {
-            Text(result.transform, "StatisticLabel" + i, labels[i], new Vector2(760, 660 - i * 110), new Vector2(390, 70), 32, TextAlignmentOptions.Left);
+            Text(result.transform, "StatisticLabel" + i, ResultLabels[i], new Vector2(760, 660 - i * 110), new Vector2(390, 70), 32, TextAlignmentOptions.Left);
             values[i] = Text(result.transform, "StatisticValue" + i, "", new Vector2(1190, 660 - i * 110), new Vector2(360, 70), 32, TextAlignmentOptions.Right);
         }
         timeValue = values[0]; bossValue = values[1]; playerValue = values[2]; accuracyValue = values[3];
@@ -180,26 +173,78 @@ public sealed class MissionUI : MonoBehaviour
         ArchiveTab = tab;
         foreach (Transform child in archiveContent)
             if (child.name.StartsWith("Content_", StringComparison.Ordinal)) { child.gameObject.SetActive(false); Destroy(child.gameObject); }
-        if (tab == 0)
-        {
-            // Only supplied actual records can populate this. No record generation or fake entries.
-            for (int i = 0; i < policeRecords.Length; i++)
-            {
-                var record = policeRecords[i];
-                if (record == null) continue;
-                var item = Panel(archiveContent, "Content_Officer" + i, new Vector2(440 + 880 * i, 410), new Vector2(840, 760));
-                RecordFields(item, OfficerFields, record.Fields, 705, 49);
-                RecordFields(item, Regions, record.Equipment, 347, 46);
-            }
-        }
+        if (tab == 0) BuildRunRecords();
         else if (tab == 1)
         {
             Text(archiveContent, "Content_Achievement", PoliceArchive.TempFirstVictory, new Vector2(880, 690), new Vector2(1500, 70), 32);
             Text(archiveContent, "Content_Condition", "Defeat the Boss once.", new Vector2(880, 590), new Vector2(1500, 70), 30);
             Text(archiveContent, "Content_Completion", PoliceArchive.Current.HasAchievement(PoliceArchive.TempFirstVictory) ? "COMPLETED" : "INCOMPLETE", new Vector2(880, 490), new Vector2(1500, 70), 30);
         }
-        // Case closure has no authored content. It stays empty.
+        else if (tab == 2)
+        {
+            // TEMP ending IDs only: no descriptions, lore or reward information.
+            var endings = PoliceArchive.Current.UnlockedEndings;
+            for (int i = 0; i < endings.Count; i++)
+                Text(archiveContent, "Content_Ending" + i, endings[i], new Vector2(880, 690 - i * 100), new Vector2(1500, 70), 32);
+        }
     }
+
+    // One simple vertical list of completed runs, newest first. No scrollbar, sorting, filtering or other controls.
+    private void BuildRunRecords()
+    {
+        const float cardHeight = 380, gap = 20;
+        var runs = PoliceArchive.Current.RunRecords;
+        var view = Rect(archiveContent, "Content_Records", Vector2.zero, Vector2.zero);
+        view.anchorMin = Vector2.zero; view.anchorMax = Vector2.one;
+        view.offsetMin = new Vector2(4, 4); view.offsetMax = new Vector2(-4, -4);
+        var viewImage = view.gameObject.AddComponent<UnityEngine.UI.Image>();
+        viewImage.color = Color.black; // Receives drag/scroll events inside the existing content area.
+        view.gameObject.AddComponent<UnityEngine.UI.RectMask2D>();
+        float listHeight = gap + runs.Count * (cardHeight + gap);
+        var list = Rect(view, "Records", Vector2.zero, Vector2.zero);
+        list.anchorMin = new Vector2(0, 1); list.anchorMax = Vector2.one; list.pivot = new Vector2(.5f, 1);
+        list.anchoredPosition = Vector2.zero; list.sizeDelta = new Vector2(0, listHeight);
+        var scroll = view.gameObject.AddComponent<UnityEngine.UI.ScrollRect>();
+        scroll.viewport = view; scroll.content = list;
+        scroll.horizontal = false; scroll.vertical = true;
+        scroll.movementType = UnityEngine.UI.ScrollRect.MovementType.Clamped;
+        scroll.inertia = false;
+        scroll.scrollSensitivity = 60;
+        float width = archiveContent.sizeDelta.x - 8;
+        for (int i = 0; i < runs.Count; i++)
+        {
+            var run = runs[runs.Count - 1 - i];
+            var card = Panel(list, "Record" + i, new Vector2(width * .5f, listHeight - gap - cardHeight * .5f - i * (cardHeight + gap)), new Vector2(width - 2 * gap, cardHeight));
+            var officer = Rect(card, "Officer", new Vector2(300, 190), new Vector2(560, 360));
+            RecordFields(officer, OfficerFields, OfficerValues(run), 330, 46);
+            var build = Rect(card, "Build", new Vector2(860, 190), new Vector2(560, 360));
+            RecordFields(build, Regions, EquipmentValues(run), 330, 46);
+            var stats = Rect(card, "Combat", new Vector2(1410, 190), new Vector2(520, 360));
+            RecordFields(stats, ResultLabels, new[] { FormatTime(run.CombatDuration), run.BossHealth.ToString(), run.PlayerHealth.ToString(), FormatAccuracy(run.AccuracyPercent) }, 330, 46);
+        }
+    }
+
+    private static string[] OfficerValues(PoliceRunRecord run) => run == null ? null : new[]
+    {
+        run.OfficerNumber.ToString(), run.Age.ToString(), run.Rank, run.YearsOfService.ToString(), run.MissionsCompleted.ToString(),
+        run.MissionSuccessRate + "%", run.Success ? "MISSION SUCCESS" : "MISSION FAILED"
+    };
+
+    // Stored item IDs resolve through the existing LoadoutRules labels.
+    private static string[] EquipmentValues(PoliceRunRecord run)
+    {
+        if (run == null) return null;
+        var values = new string[Slots.Length];
+        for (int i = 0; i < Slots.Length; i++)
+        {
+            string id = run.SlotItemId(Slots[i]);
+            values[i] = Slots[i] == LoadoutSlot.Weapon ? LoadoutRules.WeaponLabel(id) : LoadoutRules.ItemLabel(id);
+        }
+        return values;
+    }
+
+    private static string FormatTime(float duration) => $"{(int)(duration / 60):00}:{duration % 60:00.0}";
+    private static string FormatAccuracy(float percent) => percent.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + "%";
 
     private void Update()
     {
@@ -219,29 +264,43 @@ public sealed class MissionUI : MonoBehaviour
         combat.SetActive(shown == GameSessionFlow.FlowState.Combat);
         result.SetActive(shown == GameSessionFlow.FlowState.Result);
         archive.SetActive(shown == GameSessionFlow.FlowState.Archive);
+        if (shown == GameSessionFlow.FlowState.MainMenu)
+        {
+            // The latest completed run is the previous officer. Before any run exists, values stay "—".
+            var latest = PoliceArchive.Current.LatestRun;
+            SetValues(previousOfficerValues, OfficerValues(latest));
+            SetValues(previousEquipmentValues, EquipmentValues(latest));
+        }
         if (shown == GameSessionFlow.FlowState.Loadout) { SelectedRegion = -1; choices.gameObject.SetActive(false); }
         if (shown == GameSessionFlow.FlowState.Archive) SelectArchiveTab(0);
         if (shown == GameSessionFlow.FlowState.Result && flow.ActiveFight != null)
         {
             var fight = flow.ActiveFight;
             resultHeading.text = fight.Result == BossFight.Outcome.Won ? "MISSION SUCCESS" : "MISSION FAILED";
-            float duration = fight.CombatDuration;
-            timeValue.text = $"{(int)(duration / 60):00}:{duration % 60:00.0}";
+            timeValue.text = FormatTime(fight.CombatDuration);
             bossValue.text = fight.ResultBossHealth.ToString();
             playerValue.text = fight.ResultPlayerHealth.ToString();
-            accuracyValue.text = fight.AccuracyPercent.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + "%";
+            accuracyValue.text = FormatAccuracy(fight.AccuracyPercent);
         }
     }
 
-    private void RecordFields(Transform parent, string[] names, string[] values, float top, float spacing)
+    private TMP_Text[] RecordFields(Transform parent, string[] names, string[] values, float top, float spacing)
     {
         float width = ((RectTransform)parent).sizeDelta.x;
+        var valueTexts = new TMP_Text[names.Length];
         for (int i = 0; i < names.Length; i++)
         {
-            string value = values != null && !string.IsNullOrWhiteSpace(values[i]) ? values[i] : "—";
             Text(parent, "Field_" + names[i], names[i], new Vector2(width * .39f, top - i * spacing), new Vector2(width * .7f, 45), 23, TextAlignmentOptions.Left);
-            Text(parent, "Value_" + names[i], value, new Vector2(width * .87f, top - i * spacing), new Vector2(width * .15f, 45), 23, TextAlignmentOptions.Right);
+            valueTexts[i] = Text(parent, "Value_" + names[i], "", new Vector2(width * .87f, top - i * spacing), new Vector2(width * .15f, 45), 23, TextAlignmentOptions.Right);
         }
+        SetValues(valueTexts, values);
+        return valueTexts;
+    }
+
+    private static void SetValues(TMP_Text[] texts, string[] values)
+    {
+        for (int i = 0; i < texts.Length; i++)
+            texts[i].text = values != null && !string.IsNullOrWhiteSpace(values[i]) ? values[i] : "—";
     }
 
     private GameObject Screen(RectTransform parent, string name)

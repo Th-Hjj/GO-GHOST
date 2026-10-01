@@ -95,16 +95,16 @@ All game scripts are in Assembly-CSharp, no namespace. Several file names differ
 | `Projectile.cs`; prefab `Shared/Prefabs/Bullet.prefab` | Straight bullet, one hit per bullet, cleanup on result |
 | `Playerstatsso.cs` PlayerStatsSO; asset `Shared/Data/PlayerStats.asset` | Shared baseline tunables; deployment values override some of them without writing back |
 | `Idamageable.cs` IDamageable | `TakeDamage(int, GameObject)`; implemented by PlayerHealth and Enemy |
-| `Playerabilitysystem.cs`, `Playerabilityso.cs`, `Exampleblastabilityso.cs`, `FreezeEnemyAbilityso.cs` (Walker, 2026-09-24), `Ifreezable.cs`, `Playerupgrademanager.cs` | Legacy ability and upgrade framework. Disabled on the slice's player. No enemy implements `IFreezable` yet |
+| `Playerabilitysystem.cs`, `Playerabilityso.cs`, `Exampleblastabilityso.cs`, `FreezeEnemyAbilityso.cs` (Walker, 2026-09-24), `Ifreezable.cs` | LEGACY / TEST ONLY ability framework. Disabled on the slice's player. `PlayerUpgradeManager` was deleted 2026-10-01; there is no level-up / skill-tree path. No enemy implements `IFreezable` yet |
 | `Camerafollow.cs` CameraFollow | Follow camera; disabled in the slice (fixed camera) |
 
 `Torso = 4` preserves the old serialized Spine ordinal; all other slot values are unchanged. The Time Slow item ID `test_v2_spine_slow`, some serialized `spine...` field names and body child names remain intentionally compatible. They do not imply a top-level Spine slot. `OfficerIdentity.Assign` applies the snapshot and `EndAttempt` clears component runtime state. Formal loadout options are in VerticalSlice; isolated compound/weapon-policy test definitions are not player content.
 
 ### `Shared/Scripts/Persistence/`
 
-`PoliceArchive.cs` contains the profile and lazy/static access facade. It resets only its memory cache when Domain Reload is disabled. `PoliceArchiveStore.cs` loads/saves version-1 JSON at `Application.persistentDataPath/PoliceArchive/archive.json` (Windows: `%USERPROFILE%/AppData/LocalLow/DefaultCompany/GO GHOST/PoliceArchive/archive.json`). Fields: `saveVersion`, `unlockedEndings`, `completedAchievements`, `unlockedHiddenAugmentations`.
+`PoliceArchive.cs` contains the profile and lazy/static access facade. It resets only its memory cache when Domain Reload is disabled. `PoliceArchiveStore.cs` loads/saves version-2 JSON (version 1 migrates with empty run history) at `Application.persistentDataPath/PoliceArchive/archive.json` (Windows: `%USERPROFILE%/AppData/LocalLow/DefaultCompany/GO GHOST/PoliceArchive/archive.json`). Fields: `saveVersion`, `unlockedEndings`, `completedAchievements`, `unlockedHiddenAugmentations`, `runRecords`. `PoliceArchive.cs` also holds TEMP `OfficerProfile` generation and the frozen `PoliceRunRecord`.
 
-Missing files create an empty profile; atomic save/recovery and schema rules are unchanged. New missions retain the profile. On victory, GameSessionFlow records existing TEMP_FIRST_VICTORY and detached_drone_arm; no new reward logic. MissionUI shows only the achievement ID, condition and completion in MISSION INTELLIGENCE. It never displays reward information. Police Records and Case Closure are empty structures; officer generation and ending content remain deferred. LoadoutRules hides/rejects unearned Drone choices.
+Missing files create an empty profile; atomic save/recovery and schema rules are unchanged. New missions retain the profile. START MISSION generates the TEMP officer profile. On each resolved attempt GameSessionFlow calls `PoliceArchive.RecordCompletedRun` once: it stores the frozen run record, and on victory evaluates TEMP_FIRST_VICTORY + detached_drone_arm and the TEMP ending (Body % < 50 / >= 50), then saves once. MissionUI shows the latest run on Main Menu, all runs in POLICE RECORDS (ScrollRect, newest first), only the achievement ID/condition/completion in MISSION INTELLIGENCE (never reward information) and TEMP ending IDs in CASE CLOSURE RECORDS. LoadoutRules hides/rejects unearned Drone choices.
 
 ### Boss visuals in `CombatAttempt.prefab`
 
@@ -150,7 +150,7 @@ UI uses the Input System UI actions through the scene's single `EventSystem`.
 ## 6. Known issues
 
 - High C can block downward player shots before BLACKOUT; elevated P1 Sweep and Predator Drop pressure that height, but ground Ghost Slash has limited coverage. There is no Boss platform navigation.
-- P2 has three normal attacks and BLACKOUT with High C disappearance/reset. Its cut line, movement and timings are crude; no debris or generalized destruction. Archive/Drone use placeholder UI/art and one TEMP victory reward. Final achievement conditions, wider augmentations and ending routing are absent. Numbers/art/camouflage are provisional. Pending physical input, standalone P2/full progression and natural 0% victory checks are listed in Implementation_Log.
+- P2 has three normal attacks and BLACKOUT with High C disappearance/reset. Its cut line, movement and timings are crude; no debris or generalized destruction. Archive/Drone use placeholder UI/art and one TEMP victory reward. Final achievement conditions, wider augmentations and authored endings are absent (only TEMP ending routing). Numbers/art/camouflage are provisional. Pending physical input, standalone P2/full progression and natural 0% victory checks are listed in Implementation_Log.
 - Phase 10 records package/shader build warnings and non-blocking player Bloom/postprocess and telemetry DNS messages; see Implementation_Log for details. Optional Bloom is absent in the player.
 - Unity Company Name remains DefaultCompany; changing it later needs an explicit archive-path migration decision.
 - Builds leave residue, and a cancelled build leaves more (see `Collaboration.md` section 6). `Assets/Resources/PerformanceTestRun*` is ignored by `.gitignore`, but `Assets/Resources.meta` created alongside it is not, so check for it after a cancelled build.
@@ -164,7 +164,7 @@ UI uses the Input System UI actions through the scene's single `EventSystem`.
 
 ## 7. Next step
 
-The strict UI specification is the current scope. Stop after its targeted smoke and content audit; do not add navigation, guidance, polish, officer generation or endings. The Phase 10 standalone is historical. Current implementation evidence and untested scope are in Implementation_Log.
+The strict UI specification is the current scope. Stop after its targeted smoke and content audit; do not add navigation, guidance, polish, authored endings or new achievements. TEMP run archive/ending placeholders were added 2026-10-01 (`run-archive` smoke scenario). The Phase 10 standalone is historical. Current implementation evidence and untested scope are in Implementation_Log.
 
 ## 8. History
 

@@ -809,22 +809,6 @@ MonoBehaviour:
   flow: {fileID: 574306979}
   inputActions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   font: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  previousOfficer:
-    officerNumber:
-    age:
-    rank:
-    yearsOfService:
-    missionsCompleted:
-    missionSuccessRate:
-    status:
-    head:
-    torso:
-    leftArm:
-    rightArm:
-    leftLeg:
-    rightLeg:
-    weapon:
-  policeRecords: []
 --- !u!1 &619394800
 GameObject:
   m_ObjectHideFlags: 0

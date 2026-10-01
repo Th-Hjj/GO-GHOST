@@ -31,6 +31,16 @@ public partial class TopDownSmokeTest
         System.IO.File.WriteAllLines("Logs/GO_GHOST_VS/strict-" + screen + "-text.txt", texts);
     }
 
+    // Record cards may show only the approved officer/build/result labels plus their values.
+    private void StrictRecordsAudit()
+    {
+        var recordTexts = GameObject.Find("Records").GetComponentsInChildren<TMP_Text>();
+        var labels = StrictOfficerFields.Concat(StrictRegions).Concat(new[] { "TIME", "BOSS HP", "PLAYER HP", "ACCURACY" }).ToArray();
+        Check("Police Records labels allowlist", recordTexts.All(t => t.name.StartsWith("Value_") || (t.name.StartsWith("Field_") && labels.Contains(t.text))),
+            recordTexts.Length + " record texts");
+        StrictAudit("police-records", StrictTabs.Concat(recordTexts.Select(t => t.text)).ToArray());
+    }
+
     private IEnumerator StrictClickRegion(int index)
     {
         var region = GameObject.Find("Region_" + StrictRegions[index].Replace(' ', '_'));
@@ -52,9 +62,8 @@ public partial class TopDownSmokeTest
         var labels = GameObject.Find("AugmentationRecord").GetComponentsInChildren<TMP_Text>()
             .Where(t => t.name.StartsWith("Field_")).Select(t => t.text).ToArray();
         Check("Main Menu seven equipment rows", labels.SequenceEqual(StrictRegions), string.Join(" / ", labels));
-        var recordFields = typeof(MissionUI.OfficerRecord).GetFields().Select(f => f.Name).ToArray();
-        Check("Officer record schema uses Weapon", recordFields.Contains("weapon") && !recordFields.Contains("spine")
-            && new MissionUI.OfficerRecord().Equipment.Length == 7, "same seven-value schema feeds previous-officer and Police Records views");
+        Check("Run record schema uses Weapon", LoadoutRules.SlotCount == 7 && Enum.IsDefined(typeof(LoadoutSlot), LoadoutSlot.Weapon)
+            && !Enum.GetNames(typeof(LoadoutSlot)).Contains("Spine"), "same seven-slot schema feeds previous-officer and Police Records views");
         Check("Exactly two BACK buttons", FindObjectsByType<Button>(FindObjectsInactive.Include)
             .Count(b => b.GetComponentInChildren<TMP_Text>(true)?.text == "BACK") == 2, "Archive and Upgrade only");
         yield return ClickSessionButton("PoliceArchive");
@@ -204,8 +213,9 @@ public partial class TopDownSmokeTest
             Check("Result values stay frozen", f.CombatDuration == frozenTime && StrictTexts().OrderBy(s => s).SequenceEqual(success.OrderBy(s => s)), "combat cleanup cannot change displayed results");
             yield return ClickSessionButton("ResultContinue");
             Check("CONTINUE returns to Main Menu", flow.State == GameSessionFlow.FlowState.MainMenu && flow.ActiveFight == null && FindObjectsByType<Button>().Length == 2,
-                "attempt disposed; previous records remain ungenerated placeholders");
-            StrictAudit("main-return", mainText);
+                "attempt disposed; latest run record shown");
+            Check("Main Menu shows latest run", StrictText("Value_STATUS") == "MISSION SUCCESS"
+                && StrictText("Value_OFFICER #") == PoliceArchive.Current.LatestRun.OfficerNumber.ToString(), "previous officer = latest completed run");
             yield return ClickSessionButton("StartMission");
             yield return ClickSessionButton("BeginOperation");
             yield return Phase8Until(() => flow.State == GameSessionFlow.FlowState.Combat, "second combat", 3);
@@ -229,7 +239,7 @@ public partial class TopDownSmokeTest
             yield return ClickSessionButton("PoliceArchive");
             Check("POLICE ARCHIVE opens shell", flow.State == GameSessionFlow.FlowState.Archive && ui.ArchiveTab == 0 && FindObjectsByType<Button>().Length == 4,
                 "exactly the three specified tabs and BACK");
-            StrictAudit("police-records", StrictTabs);
+            StrictRecordsAudit();
             ScreenCapture.CaptureScreenshot("Logs/GO_GHOST_VS/strict-police-records.png");
             yield return Frames(2);
             yield return ClickSessionButton("ArchiveTab1");
@@ -239,12 +249,14 @@ public partial class TopDownSmokeTest
             ScreenCapture.CaptureScreenshot("Logs/GO_GHOST_VS/strict-intelligence.png");
             yield return Frames(2);
             yield return ClickSessionButton("ArchiveTab2");
-            StrictAudit("case-closure", StrictTabs);
-            Check("Case Closure structure only", ui.ArchiveTab == 2 && StrictTexts().Length == 4, "empty content; no endings or counters");
+            StrictAudit("case-closure", StrictTabs.Concat(PoliceArchive.Current.UnlockedEndings).ToArray());
+            Check("Case Closure TEMP ending IDs only", ui.ArchiveTab == 2 && PoliceArchive.Current.UnlockedEndings.Count == 1
+                && StrictTexts().Length == 5, "one TEMP ending ID from the single victory; no descriptions");
             ScreenCapture.CaptureScreenshot("Logs/GO_GHOST_VS/strict-case-closure.png");
             yield return Frames(2);
             yield return ClickSessionButton("ArchiveTab0");
-            Check("Police Records stays empty", ui.ArchiveTab == 0 && StrictTexts().Length == 4, "no historical officers generated after either outcome");
+            Check("Police Records lists both runs", ui.ArchiveTab == 0 && GameObject.Find("Records").transform.childCount == 2
+                && PoliceArchive.Current.RunRecords.Count == 2, "one record per resolved attempt; no generated history");
         }
         finally
         {

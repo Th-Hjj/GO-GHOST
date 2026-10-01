@@ -14,6 +14,10 @@ public sealed class GameSessionFlow : MonoBehaviour
     public LoadoutDraft Draft { get; private set; }
     public DeploymentSnapshot Deployment { get; private set; }
     public VictoryRecord Victory { get; private set; }
+    /// <summary>TEMP generated officer for the current mission; stable from START MISSION until the mission ends.</summary>
+    public OfficerProfile Officer { get; private set; }
+    /// <summary>The frozen Archive record for the latest resolved attempt in this scene session.</summary>
+    public PoliceRunRecord LastRunRecord { get; private set; }
     public BossFight ActiveFight { get; private set; }
     public event Action<FlowState> OnStateChanged;
     private float stateEnteredAt;
@@ -35,6 +39,8 @@ public sealed class GameSessionFlow : MonoBehaviour
         Draft = null;
         Deployment = null;
         Victory = null;
+        Officer = null;
+        LastRunRecord = null;
         ActiveFight = null;
         generation = 0;
         stateEnteredAt = Time.unscaledTime;
@@ -53,6 +59,8 @@ public sealed class GameSessionFlow : MonoBehaviour
         Draft = new LoadoutDraft(true);
         Deployment = null;
         Victory = null;
+        // One generated profile per new mission, before its deployment. Numbering follows persistent Archive history.
+        Officer = OfficerProfile.Generate(PoliceArchive.Current.NextOfficerNumber);
         SetState(FlowState.Loadout);
         return true;
     }
@@ -66,6 +74,7 @@ public sealed class GameSessionFlow : MonoBehaviour
         Draft?.Lock();
         Draft = null;
         Deployment = null;
+        Officer = null;
         SetState(FlowState.MainMenu);
         return true;
     }
@@ -82,13 +91,14 @@ public sealed class GameSessionFlow : MonoBehaviour
         if (State != FlowState.Archive && State != FlowState.Loadout) return false;
         Draft?.Lock();
         Draft = null;
+        Officer = null; // Backing out abandons an unresolved mission; nothing is recorded.
         SetState(FlowState.MainMenu);
         return true;
     }
 
     public bool RequestDeploy()
     {
-        if (!CanDeploy || Draft == null || Draft.IsLocked) return false;
+        if (!CanDeploy || Draft == null || Draft.IsLocked || Officer == null) return false;
         StartCoroutine(DeployRoutine());
         return true;
     }
@@ -123,17 +133,15 @@ public sealed class GameSessionFlow : MonoBehaviour
     private void ResolveAttempt(BossFight source, int token, BossFight.Outcome outcome)
     {
         if (State != FlowState.Combat || token != generation || source != ActiveFight) return;
-        if (outcome == BossFight.Outcome.Won)
-        {
-            Victory = new VictoryRecord(source.Deployment);
-            if (!PoliceArchive.RecordBossVictory(out string archiveError))
-                Debug.LogWarning("Police Archive victory save failed: " + archiveError, this);
-            SetState(FlowState.Result);
-        }
-        else if (outcome == BossFight.Outcome.Died)
-        {
-            SetState(FlowState.Result);
-        }
+        if (outcome != BossFight.Outcome.Won && outcome != BossFight.Outcome.Died) return;
+        if (outcome == BossFight.Outcome.Won) Victory = new VictoryRecord(source.Deployment);
+        // Exactly one frozen record per resolved attempt: this officer, the immutable deployment and BossFight's frozen values.
+        // Archive evaluates the TEMP achievement/Drone unlock and TEMP ending from it, then saves once.
+        LastRunRecord = new PoliceRunRecord(Officer, source.Deployment, outcome == BossFight.Outcome.Won,
+            source.CombatDuration, source.ResultBossHealth, source.ResultPlayerHealth, source.AccuracyPercent);
+        if (!PoliceArchive.RecordCompletedRun(LastRunRecord, out string archiveError))
+            Debug.LogWarning("Police Archive run save failed: " + archiveError, this);
+        SetState(FlowState.Result);
     }
 
     private void DisposeAttempt()

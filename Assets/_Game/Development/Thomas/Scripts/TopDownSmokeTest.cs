@@ -99,6 +99,7 @@ public partial class TopDownSmokeTest : MonoBehaviour
             case "bare-gameplay": yield return BareGameplay(); break;
             case "strict-ui": yield return StrictUI(); break;
             case "ui-corrections": yield return StrictUICorrections(); break;
+            case "run-archive": yield return RunArchive(); break;
             case "boss-contact": yield return BossContact(); break;
             // Earlier numerical gates are historical; TEST-v2 uses combat-v2.
             case "movement": yield return Movement(); break;

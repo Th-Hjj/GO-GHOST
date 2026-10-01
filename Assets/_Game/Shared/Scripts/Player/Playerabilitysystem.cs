@@ -2,16 +2,17 @@
 using UnityEngine;
 
 /// <summary>
-/// Handles the special ability button. On a fresh character this list is
-/// empty, so the button does nothing - exactly as requested. As the player
-/// unlocks abilities via PlayerUpgradeManager, they get added here and
+/// LEGACY / TEST ONLY. Not part of the formal GO GHOST augmentation architecture
+/// (LoadoutDraft -> DeploymentSnapshot -> IAttemptAugmentation); disabled in the formal combat prefab.
+/// Handles the old special ability button. On a fresh character this list is
+/// empty, so the button does nothing. Abilities added via UnlockAbility()
 /// become selectable/usable. Abilities with a maxUses > 0 (e.g. Freeze,
 /// meant to be once-per-battle) are also tracked with a limited charge
 /// count separate from their cooldown.
 /// </summary>
 // FUNCTION SUMMARY
 // Update()             — listens for the special-ability button and the ability-cycling keys each frame.
-// UnlockAbility()       — adds a new ability to the player's usable list when it's unlocked via the upgrade tree, and grants its starting charges.
+// UnlockAbility()       — adds a new ability to the player's usable list (legacy test path only), and grants its starting charges.
 // CycleAbility()        — switches which unlocked ability is currently selected.
 // UseSelectedAbility()  — activates the currently selected ability if it's off cooldown and has charges left (does nothing if none are unlocked).
 // ResetAbilityUses()    — recharges every limited-use ability back to its maxUses; call at the start of a new battle.

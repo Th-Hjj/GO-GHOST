@@ -5,8 +5,8 @@ using UnityEngine;
 /// <summary>
 /// Base: a grounded horizontal dash, along movement input or the last
 /// horizontal movement facing. Mouse aim never selects the dash direction.
-/// Upgraded (slashDodgeUnlocked): longer dash that damages every enemy it
-/// passes through.
+/// LEGACY / TEST ONLY (slashDodgeUnlocked): longer dash that damages every enemy it
+/// passes through. Not part of the formal GO GHOST loadout architecture.
 /// Also exposes PerformForcedSlashDodge(), used exclusively by
 /// PlayerHealth's Last Stand ability, which always slashes regardless of
 /// the upgrade state.
@@ -25,10 +25,11 @@ public class PlayerDodge : MonoBehaviour
     [SerializeField] private LayerMask enemyLayer;
     [SerializeField] private float slashCheckRadius = 0.6f;
 
-    [Header("Upgrades")]
-    [Tooltip("Unlocked via the upgrade tree: dodge becomes a longer slash that damages enemies it passes through.")]
+    // LEGACY / TEST ONLY: old pre-loadout toggles. Formal augmentations come from DeploymentSnapshot, never these fields.
+    [Header("Legacy (test only)")]
+    [Tooltip("LEGACY / TEST ONLY. Not a formal augmentation: dodge becomes a longer slash that damages enemies it passes through.")]
     public bool slashDodgeUnlocked = false;
-    [Tooltip("Legacy upgrade hook. Air dodge is not enabled in the current side-view slice.")]
+    [Tooltip("LEGACY / TEST ONLY. Air dodge is not enabled in the current side-view slice.")]
     public bool airDodgeUnlocked = false;
 
     public bool IsDodging { get; private set; }

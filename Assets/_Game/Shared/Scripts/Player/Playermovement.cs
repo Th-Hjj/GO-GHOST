@@ -13,7 +13,6 @@
 // FixedUpdate()        — applies horizontal velocity each physics step, preserving vertical (gravity/jump) velocity, unless a dodge is currently controlling movement.
 // TryJump()             — performs a ground jump, or consumes one available air jump.
 // ApplyDeployment/CleanupAttempt — initialize/clear attempt-local leg resources.
-// UnlockDoubleJump()   — legacy test-scene hook, never overrides a formal deployment.
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
 {
@@ -25,7 +24,8 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
     [SerializeField] private float groundCheckRadius = 0.15f;
     [SerializeField] private LayerMask groundLayer;
 
-    [Header("Upgrades")]
+    // LEGACY / TEST ONLY: used only without a formal deployment. Formal Double Jump comes from DeploymentSnapshot.
+    [Header("Legacy (test only)")]
     public bool doubleJumpUnlocked = false;
 
     /// <summary>Visual aim facing: 1 = right, -1 = left. Independent of movement/dodge.</summary>
@@ -159,11 +159,6 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
             airJumpsRemaining--;
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, stats.jumpForce);
         }
-    }
-
-    public void UnlockDoubleJump()
-    {
-        doubleJumpUnlocked = true;
     }
 
     private void OnDrawGizmosSelected()

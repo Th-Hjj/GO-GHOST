@@ -17,7 +17,6 @@ GameObject:
   - component: {fileID: 4640224141119323793}
   - component: {fileID: 7490000951923346626}
   - component: {fileID: 8155644661045115993}
-  - component: {fileID: 4530148641029752234}
   - component: {fileID: 8375035366991033825}
   m_Layer: 8
   m_Name: Player
@@ -256,18 +255,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAbilitySystem
   unlockedAbilities: []
---- !u!114 &4530148641029752234
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 487589043217061207}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7cd15fd6469d46f590354ee5df9118b7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerUpgradeManager
 --- !u!114 &8375035366991033825
 MonoBehaviour:
   m_ObjectHideFlags: 0

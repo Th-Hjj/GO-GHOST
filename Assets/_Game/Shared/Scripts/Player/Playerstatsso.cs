@@ -24,8 +24,8 @@ public class PlayerStatsSO : ScriptableObject
     public float fireRate = 0.25f;
     public float bulletSpeed = 18f;
 
-    [Header("Combat - Volley Upgrade")]
-    [Tooltip("How many shots fire per button press once Volley is unlocked.")]
+    [Header("Combat - Volley (legacy, test only)")]
+    [Tooltip("LEGACY / TEST ONLY. Shots per button press when the legacy Volley toggle is on.")]
     public int volleyShotCount = 3;
     [Tooltip("Delay between each shot within a volley burst.")]
     public float volleyShotDelay = 0.08f;
@@ -38,8 +38,8 @@ public class PlayerStatsSO : ScriptableObject
     [Tooltip("Total invulnerability window. Should be >= dodgeDuration.")]
     public float iFrameDuration = 0.25f;
 
-    [Header("Dodge - Slash Upgrade")]
-    [Tooltip("Extra dash distance added once Slash Dodge is unlocked.")]
+    [Header("Dodge - Slash (legacy, test only)")]
+    [Tooltip("LEGACY / TEST ONLY. Extra dash distance when the legacy Slash Dodge toggle is on.")]
     public float slashDodgeBonusDistance = 2.5f;
     [Range(0f, 1f)]
     [Tooltip("Percentage of gunDamage dealt to each enemy the slash passes through.")]

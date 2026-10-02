@@ -7,6 +7,7 @@ public partial class CyberpsychoBoss
 
     private void BeginCamoReposition()
     {
+        camoRushRevealed = false;
         float distance = Mathf.Abs(player.transform.position.x - rb.position.x);
         float toward = player.transform.position.x < rb.position.x ? -1f : 1f;
         float direction = distance > 5f ? toward : -toward;
@@ -53,6 +54,8 @@ public partial class CyberpsychoBoss
 
     private float NormalCamoAlpha(bool blade)
     {
+        if (CamoRushActive) return blade ? .65f : .08f;
+        if (camoRushRevealed && State == AttackState.SlashWarning) return 1f;
         if (State == AttackState.CamoReposition) return blade ? .65f : .35f;
         if (State == AttackState.SlashWarning)
         {

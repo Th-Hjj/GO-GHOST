@@ -78,17 +78,17 @@ public partial class TopDownSmokeTest
             var gun = f.Player.GetComponent<PlayerShooting>();
             var sfx = f.GetComponent<SfxSet>();
             Check("Launch weapon is the Assault Rifle with a full magazine", flow.Deployment.WeaponId == LoadoutRules.AssaultRifle
-                && gun.MagazineSize == 24 && gun.AmmoInMagazine == 24 && AmmoReadout() == "24 / 24" && flow.Deployment.BodyModificationPercent == 0,
+                && gun.MagazineSize == 10 && gun.AmmoInMagazine == 10 && AmmoReadout() == "10 / 10" && flow.Deployment.BodyModificationPercent == 0,
                 AmmoReadout());
             Mouse(.3f, .9f, true); yield return Seconds(1f);
             int held = gun.TriggerPulls;
-            Check("AR fires while held, one round and one cue per shot", held >= 3 && gun.AmmoInMagazine == 24 - held && gun.ShotsFired == held
-                && sfx.Requested(Sfx.Shot) == held && AmmoReadout() == gun.AmmoInMagazine + " / 24", $"pulls={held} ammo={gun.AmmoInMagazine}");
+            Check("AR fires while held, one round and one cue per shot", held >= 3 && gun.AmmoInMagazine == 10 - held && gun.ShotsFired == held
+                && sfx.Requested(Sfx.Shot) == held && AmmoReadout() == gun.AmmoInMagazine + " / 10", $"pulls={held} ammo={gun.AmmoInMagazine}");
             Check("AR bullets pass the practice wall", BulletBeyondPracticeWalls(), "a live bullet is outside the room");
             yield return Phase8Until(() => gun.IsReloading, "AR empties", 9);
             int atEmpty = gun.TriggerPulls;
             yield return Frames(2);
-            Check("AR empty magazine starts the automatic reload", atEmpty == 24 && gun.AmmoInMagazine == 0 && AmmoReadout() == "RELOADING", AmmoReadout());
+            Check("AR empty magazine starts the automatic reload", atEmpty == 10 && gun.AmmoInMagazine == 0 && AmmoReadout() == "RELOADING", AmmoReadout());
             float x0 = f.Player.transform.position.x;
             Keys(Key.D); yield return Seconds(.6f);
             Check("Reloading: can move, cannot fire, no shot cue", gun.IsReloading && gun.TriggerPulls == atEmpty && sfx.Requested(Sfx.Shot) == atEmpty
@@ -97,10 +97,10 @@ public partial class TopDownSmokeTest
             yield return Phase8Until(() => !gun.IsReloading, "AR reload completes", 3);
             yield return Seconds(.45f);
             int resumed = gun.TriggerPulls - atEmpty;
-            Check("AR resumes automatically while LMB is still held", resumed >= 1 && gun.AmmoInMagazine == 24 - resumed, $"shots after reload={resumed}");
+            Check("AR resumes automatically while LMB is still held", resumed >= 1 && gun.AmmoInMagazine == 10 - resumed, $"shots after reload={resumed}");
             Keys(Key.D);
             yield return Phase8Until(() => flow.State == GameSessionFlow.FlowState.Combat, "AR door", 20);
-            Check("Door refills the AR magazine and restarts statistics", gun.AmmoInMagazine + gun.TriggerPulls == 24 && gun.TriggerPulls <= 2
+            Check("Door refills the AR magazine and restarts statistics", gun.AmmoInMagazine + gun.TriggerPulls == 10 && gun.TriggerPulls <= 2
                 && gun.ShotsFired == gun.TriggerPulls && !gun.IsReloading, $"ammo={gun.AmmoInMagazine} pulls={gun.TriggerPulls}");
             Keys(); Mouse(.3f, .9f, false);
             yield return Frames(3);
@@ -111,7 +111,7 @@ public partial class TopDownSmokeTest
             AimAtWorld(boss, false);
             yield return Seconds(1.2f);
             Check("AR damages the Boss per bullet, accuracy counts bullets", f.BossHealth.CurrentHealth == f.BossHealth.MaxHealth - 12 * gun.ShotsHit
-                && gun.ShotsHit <= gun.ShotsFired && AmmoReadout() == gun.AmmoInMagazine + " / 24", $"hits={gun.ShotsHit}/{gun.ShotsFired}");
+                && gun.ShotsHit <= gun.ShotsFired && AmmoReadout() == gun.AmmoInMagazine + " / 10", $"hits={gun.ShotsHit}/{gun.ShotsFired}");
             f.Player.IsInvulnerable = false;
             f.Player.TakeDamage(10000, f.Boss.gameObject);
             yield return Phase8Until(() => flow.State == GameSessionFlow.FlowState.MainMenu, "AR defeat", 3);
@@ -210,7 +210,7 @@ public partial class TopDownSmokeTest
             yield return Seconds(1.2f);
             int closeHits = gun.ShotsHit - farHits;
             Check("Shotgun accuracy counts pellets and never exceeds 100%", gun.ShotsFired == 12 && gun.TriggerPulls == 2 && gun.ShotsHit <= gun.ShotsFired
-                && gun.ShotsHit >= 1 && f.BossHealth.CurrentHealth == f.BossHealth.MaxHealth - 6 * gun.ShotsHit,
+                && gun.ShotsHit >= 1 && f.BossHealth.CurrentHealth == f.BossHealth.MaxHealth - 7 * gun.ShotsHit,
                 $"far hits={farHits}/6 close hits={closeHits}/6 bossHP={f.BossHealth.CurrentHealth}");
             f.Player.IsInvulnerable = false;
             f.Player.TakeDamage(10000, f.Boss.gameObject);

@@ -8,9 +8,9 @@ Supersedes the single-gun numbers below. All values live in `LoadoutRules.Weapon
 
 | Weapon | Fire | Damage | Interval | Magazine | Reload | Notes |
 |---|---|---:|---:|---:|---:|---|
-| Assault Rifle | hold | 12 | .25 s | 24 | 1.2 s | previous gun numbers; default |
+| Assault Rifle | hold | 12 | .25 s | 10 | 1.2 s | default; magazine cut from 24 on Thomas's request |
 | Sniper | per press | 45 | 1.0 s | 4 | 1.8 s | one projectile |
-| Shotgun | per press | 6 x 6 pellets | .8 s | 5 | 1.6 s | fixed 25 degree fan, one round per pull |
+| Shotgun | per press | 7 x 6 pellets | .8 s | 5 | 1.6 s | fixed 25 degree fan, one round per pull; 42 point-blank (was 36) |
 
 Bullet speed 18 for all. Rapid Fire (Right Arm): interval / 1.75. Reload is automatic on an empty magazine; unlimited reserve.
 Arm-Blade: E, .35 s swing window, 1 s start interval, box 1.7 x 1.7 in front along the aim, 20 damage once per target per swing, deflects any hostile bullet inside the box without changing its damage.

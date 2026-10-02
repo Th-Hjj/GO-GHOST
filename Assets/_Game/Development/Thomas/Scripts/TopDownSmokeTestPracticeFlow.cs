@@ -49,7 +49,7 @@ public partial class TopDownSmokeTest
             string baseControls = "A / D — MOVE\nMOUSE — AIM\nLEFT MOUSE — SHOOT\nSPACE — JUMP\nLEFT SHIFT — DODGE";
             Check("Launch enters practice without menus", GameObject.Find("MainMenu") == null && GameObject.Find("Upgrade") == null
                 && GameObject.Find("CombatHUD") == null, "no menu or HUD");
-            Check("Base controls text is exact; only it and the ammo readout are shown", StrictTexts().OrderBy(x => x).SequenceEqual(new[] { baseControls, "24 / 24" }.OrderBy(x => x)), string.Join(" / ", StrictTexts()).Replace("\n", " | "));
+            Check("Base controls text is exact; only it and the ammo readout are shown", StrictTexts().OrderBy(x => x).SequenceEqual(new[] { baseControls, "10 / 10" }.OrderBy(x => x)), string.Join(" / ", StrictTexts()).Replace("\n", " | "));
             ScreenCapture.CaptureScreenshot("Logs/GO_GHOST_VS/practice-flow-base.png");
             Check("Launch uses default human build and one officer", officer != null && deployment.BodyModificationPercent == 0
                 && deployment.GetSlot(LoadoutSlot.Weapon).ItemId == LoadoutRules.AssaultRifle && PoliceArchive.Current.RunRecords.Count == 0,

@@ -10,8 +10,9 @@ public sealed partial class GameSessionFlow
     private bool developmentSettingsSaved, originalPermissionEnabled;
     private int originalPermissionTier;
     private string developmentLastNode;
+    private bool developmentMenuPauseActive, developmentPreviousPause;
     public bool IsDevelopmentJumpRun => developmentJumpRun;
-    public string DevelopmentCurrentNode => TowerStageId ?? developmentLastNode ?? "practice";
+    public string DevelopmentCurrentNode => TowerStageId == "loadout" ? "practice" : TowerStageId ?? developmentLastNode ?? "practice";
     public IEnumerable<string> DevelopmentRouteNodes
     {
         get
@@ -23,9 +24,20 @@ public sealed partial class GameSessionFlow
 
     public void DevelopmentPauseMenu(bool paused)
     {
-        // The menu takes ownership after resolving any dialogue/aim override, never nests a second pause.
-        if (paused) CancelIntervention();
-        if (ActiveFight != null) ActiveFight.SetNarrativePaused(paused);
+        // Closing F8 without jumping must resume the pending interaction, not delete its continuation.
+        // Actual Jump/Restart disposes it through the normal run lifecycle below.
+        if (paused)
+        {
+            if (!developmentMenuPauseActive) developmentPreviousPause = ActiveFight != null && ActiveFight.NarrativePaused;
+            developmentMenuPauseActive = true;
+            ActiveFight?.SetNarrativePaused(true);
+        }
+        else
+        {
+            developmentMenuPauseActive = false;
+            ActiveFight?.SetNarrativePaused(developmentPreviousPause || (StoryUI.DialogueVisible && !replyWindow));
+            developmentPreviousPause = false;
+        }
     }
 
     public bool DevelopmentJump(string stageId, int tier, LoadoutDraft choices)
@@ -50,6 +62,7 @@ public sealed partial class GameSessionFlow
         permissionPrototypeEnabled = true;
         developmentPermissionTier = tier;
         developmentJumpRun = true;
+        Narrative = new TowerNarrativeState(true);
         developmentLastNode = stageId;
         if (!RequestDeploy()) return false;
         StartCoroutine(CompleteDevelopmentJump(generation, index));
@@ -75,7 +88,7 @@ public sealed partial class GameSessionFlow
             developmentSettingsSaved = false;
         }
         developmentLastNode = null;
-        return RequestNewGame() && RequestDeploy(); // Normal default loadout, practice door, route and Archive policy.
+        return RequestNewGame(); // Normal loadout preview, then formal deployment/practice; no test facts retained.
     }
 }
 #endif

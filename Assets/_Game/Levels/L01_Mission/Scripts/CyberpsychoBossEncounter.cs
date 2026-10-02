@@ -40,6 +40,27 @@ public partial class CyberpsychoBoss
         }
     }
 
+    public void ApplyFinalProfile(TowerRoom.FinalProfile profile)
+    {
+        // Reuse the existing burst/mark/reposition/sweep cycle, with an actual floating body and Inspector tuning.
+        rb.gravityScale = 0;
+        rb.linearVelocity = Vector2.zero;
+        repositionX = 4f;
+        burstShots = profile.burstCount;
+        burstInterval *= profile.cadence; shotWindup *= profile.cadence;
+        markedTrackSeconds *= profile.cadence; markedLockSeconds *= profile.cadence;
+        shotRecovery *= profile.recovery; spreadRecovery *= profile.recovery; chargeRecovery *= profile.recovery;
+    }
+
+    public void ResumeRoomCombat()
+    {
+        if (health.IsDead || player == null || player.IsDead) return;
+        combatEnabled = true;
+        ClearAttack();
+        if (Phase == BossPhase.Phase2) { SetWeapons(false, true); BeginSlash(); }
+        else { SetWeapons(true, false); Enter(AttackState.Arrival, arrivalDelay); }
+    }
+
     public SpriteRenderer[] RoomPresentationParts()
     {
         var parts = new List<SpriteRenderer> { body };

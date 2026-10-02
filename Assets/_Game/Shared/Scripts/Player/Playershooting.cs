@@ -134,6 +134,16 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
         return (Vector2)transform.position + aimDirection * firePointRadius;
     }
 
+    // An explicit player choice can request one ordinary shot; failed cadence/reload never creates damage or free ammo.
+    public bool RequestPlayerAttackAt(Vector2 point)
+    {
+        if (!HasDeployment || IsReloading || AmmoInMagazine <= 0 || Time.time < nextFireTime) return false;
+        input.AimPlayerActionAt(point);
+        if (!FireWeapon(input.AimDirection, officer.Deployment.Weapon, ProjectileActor.Player)) return false;
+        nextFireTime = Time.time + FireInterval;
+        return true;
+    }
+
     // One trigger pull = one round, one projectile, one shot sound and one muzzle flash.
     private bool FireWeapon(Vector2 direction, WeaponProfile weapon, ProjectileActor actor)
     {

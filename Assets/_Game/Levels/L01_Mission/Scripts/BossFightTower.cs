@@ -29,7 +29,7 @@ public partial class BossFight
         bossHealth = null;
     }
 
-    public void BeginRoomEncounter(CyberpsychoBoss source, TowerRoom room)
+    public void BeginRoomEncounter(CyberpsychoBoss source, TowerRoom room, bool staged = false)
     {
         if (!TowerMission || !combatRunning || EncounterActive || player.IsDead) return;
         boss = Instantiate(source, room.BossSpawn, Quaternion.identity, transform);
@@ -37,15 +37,24 @@ public partial class BossFight
         bossHealth = boss.GetComponent<Enemy>();
         bossHealth.OnDied += BossDied;
         player.GetComponent<PlayerInputReader>().SetEncounterAimTarget(bossHealth);
-        player.GetComponent<PlayerDetachedDroneArm>()?.BindTarget(bossHealth);
+        player.GetComponent<PlayerDetachedDroneArm>()?.BindTarget(staged ? null : bossHealth);
         GetComponent<AttemptPresentationVfx>()?.BindBossParts(boss.RoomPresentationParts());
-        EncounterActive = true;
+        EncounterActive = !staged;
         boss.BeginRoomEncounter(player, room.PlayableBounds, room.Kind == TowerRoom.RoomKind.Blade,
-            room.Kind == TowerRoom.RoomKind.DevelopmentFinal);
+            false);
+        if (staged) boss.StopCombat();
+    }
+
+    public void StartPreparedEncounter()
+    {
+        if (bossHealth == null || player.IsDead) return;
+        EncounterActive = true;
+        player.GetComponent<PlayerDetachedDroneArm>()?.BindTarget(bossHealth);
+        if (boss != null) boss.ResumeRoomCombat(); else bossHealth.ResumeCombat();
     }
 
     // Reuse the same encounter health/target/exit lifecycle for the existing basic enemy.
-    public void BeginSecurityEncounter(TowerRoom room)
+    public void BeginSecurityEncounter(TowerRoom room, bool staged = false)
     {
         if (!TowerMission || !combatRunning || EncounterActive || player.IsDead || room.SecurityTemplate == null) return;
         boss = null;
@@ -54,8 +63,22 @@ public partial class BossFight
         bossHealth.SetTarget(player);
         bossHealth.OnDied += BossDied;
         player.GetComponent<PlayerInputReader>().SetEncounterAimTarget(bossHealth);
-        player.GetComponent<PlayerDetachedDroneArm>()?.BindTarget(bossHealth);
-        EncounterActive = true;
+        player.GetComponent<PlayerDetachedDroneArm>()?.BindTarget(staged ? null : bossHealth);
+        EncounterActive = !staged;
+        if (staged) bossHealth.StopCombat();
+    }
+
+    public void CompleteTowerMission()
+    {
+        if (!TowerMission || Result != Outcome.Fighting || player.IsDead) return;
+        Result = Outcome.Won;
+        CombatDuration = CombatElapsed;
+        ResultBossHealth = bossHealth != null ? bossHealth.CurrentHealth : 0;
+        ResultPlayerHealth = player.CurrentHealth;
+        var shooting = player.GetComponent<PlayerShooting>();
+        AccuracyPercent = shooting.ShotsFired == 0 ? 0 : 100f * shooting.ShotsHit / shooting.ShotsFired;
+        EncounterActive = false;
+        CancelCombat();
     }
 
     private void TickTowerMission()

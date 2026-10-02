@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>One scene-local session. Each deployment owns a fresh combat prefab; no static/persistent session state.</summary>
+[DefaultExecutionOrder(-50)]
 public sealed partial class GameSessionFlow : MonoBehaviour
 {
     public enum FlowState { NewGameInitialization, Deployment, Combat, DefeatTransition, Loadout, Result, NextOfficerTransition, VictoryTransition, MainMenu, Archive, Practice, Ending }
@@ -35,7 +36,7 @@ public sealed partial class GameSessionFlow : MonoBehaviour
     public bool CanNewGame => State == FlowState.MainMenu || State == FlowState.Result || State == FlowState.Loadout;
     public bool CanContinue => State == FlowState.Result || State == FlowState.Ending;
     /// <summary>The ending earned by the winning officer's immutable deployment; null without a victory.</summary>
-    public string EndingId => Victory != null ? PoliceArchive.EndingFor(Victory.BodyModificationPercent) : null;
+    public string EndingId => HasTowerEnding ? towerEndingId : !towerPrototypeEnabled && Victory != null ? PoliceArchive.EndingFor(Victory.BodyModificationPercent) : null;
 
     private Action<BossFight.Outcome> outcomeHandler;
     private int generation;
@@ -60,10 +61,10 @@ public sealed partial class GameSessionFlow : MonoBehaviour
         if (Camera.main != null) { view = Camera.main.transform; arenaView = view.position; }
     }
 
-    // Launch goes straight to the practice room with the default human / Assault Rifle build. The Archive is only read.
+    // Tower launch stops at editable loadout; formal deployment enters practice. Legacy scene behavior remains local.
     private void Start()
     {
-        if (RequestNewGame()) RequestDeploy();
+        if (RequestNewGame() && !towerPrototypeEnabled) RequestDeploy();
     }
 
     public bool RequestNewGame()
@@ -93,7 +94,7 @@ public sealed partial class GameSessionFlow : MonoBehaviour
     {
         if (!CanContinue) return false;
         // Victory: Mission Result -> Ending -> Main Menu. Defeat: Mission Result -> Main Menu. The record was saved at resolution.
-        if (State == FlowState.Result && Victory != null) SetState(FlowState.Ending);
+        if (State == FlowState.Result && Victory != null) { SetState(FlowState.Ending); if (HasTowerEnding) PresentTowerEnding(); }
         else ReturnToMainMenu();
         return true;
     }
@@ -158,7 +159,7 @@ public sealed partial class GameSessionFlow : MonoBehaviour
         CancelIntervention();
         interventionOffered = false;
         if (chandelier != null) chandelier.ResetEncounter();
-        Deployment = Draft.Deploy(OfficerIndex, permissionPrototypeEnabled ? developmentPermissionTier : -1);
+        Deployment = Draft.Deploy(OfficerIndex, permissionPrototypeEnabled ? developmentPermissionTier : towerPrototypeEnabled ? 0 : -1);
         int token = ++generation;
         // Restore the breakable scene platforms at every deployment; never persist terrain in Police Archive.
         if (highCPlatform != null) highCPlatform.SetActive(true);
@@ -220,6 +221,7 @@ public sealed partial class GameSessionFlow : MonoBehaviour
 
     private void DisposeAttempt()
     {
+        CancelStory();
         CancelIntervention();
         if (ActiveFight == null) return;
         ActiveFight.OnEncounterEnded -= TowerEncounterEnded;

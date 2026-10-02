@@ -78,6 +78,9 @@ public partial class TopDownSmokeTest : MonoBehaviour
 
         switch (scenario)
         {
+            case "flow-route": yield return FlowRoute(); break;
+            case "flow-local": yield return FlowLocal(); break;
+            case "flow-edges": yield return FlowEdges(); break;
             case "s02-delta-dev": yield return S02DeltaDev(); break;
             case "s02-tower": yield return S02Tower(); break;
             case "s01-permission": yield return S01Permission(); break;

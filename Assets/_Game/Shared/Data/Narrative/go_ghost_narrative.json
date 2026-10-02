@@ -1,29 +1,579 @@
 {
   "schemaVersion": 1,
-  "contentRevision": "template-2026-10-02",
-  "language": "zh-CN",
+  "contentRevision": "en-flow-v0.7-review-01-2026-10-02",
+  "language": "en",
   "speakers": [
-    { "id": "inner_ai", "displayName": "脑内 AI" }
+    {
+      "id": "inner_ai",
+      "displayName": "Inner AI"
+    },
+    {
+      "id": "player",
+      "displayName": "Officer"
+    },
+    {
+      "id": "puppeteer",
+      "displayName": "Puppeteer"
+    },
+    {
+      "id": "president",
+      "displayName": "CEO"
+    },
+    {
+      "id": "entrance_worker",
+      "displayName": "Worker"
+    },
+    {
+      "id": "maintenance_ai",
+      "displayName": "Maintenance AI"
+    },
+    {
+      "id": "floor50_npc",
+      "displayName": "Receptionist"
+    },
+    {
+      "id": "security99",
+      "displayName": "Security"
+    },
+    {
+      "id": "caption",
+      "displayName": ""
+    }
   ],
   "entries": [
     {
       "id": "intervention.chandelier.plan",
       "speakerId": "inner_ai",
-      "text": "将吊灯击落，然后踩上去，获取地形优势",
-      "status": "approved",
-      "notes": "Approved user original for the core demo; not a complete script."
+      "text": "Shoot down the chandelier. Climb onto it for a better position.",
+      "status": "draft",
+      "notes": ""
     },
     {
       "id": "intervention.chandelier.execute",
       "speakerId": "inner_ai",
-      "text": "系统已批准，执行射击",
-      "status": "approved",
-      "notes": "T3 sequence only. Display does not commit a world outcome."
+      "text": "System approval granted. Firing.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "npc.entry.intro.01",
+      "speakerId": "entrance_worker",
+      "text": "Hi",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "npc.floor01.request.01",
+      "speakerId": "maintenance_ai",
+      "text": "Hello. Please don't block my way. I'm heading to the maintenance unit.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "npc.floor01.choice.allow_reset",
+      "speakerId": "player",
+      "text": "Allow reset",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "npc.floor01.choice.cancel_reset",
+      "speakerId": "player",
+      "text": "Cancel reset",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "npc.floor01.choice.attack",
+      "speakerId": "player",
+      "text": "Attack",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "npc.floor01.restored.01",
+      "speakerId": "maintenance_ai",
+      "text": "Hello there! I'm the Maintenance robot. Nice to meet you!",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "npc.floor01.preserved.01",
+      "speakerId": "maintenance_ai",
+      "text": "Huh. Did you interrupt the reset?",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "boss.p1.intro.01",
+      "speakerId": "puppeteer",
+      "text": "Hello there, officer. I'm sorry, but please turn back now.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "boss.p1.choice.reply",
+      "speakerId": "player",
+      "text": "I'm sorry too. Please step aside. I need to get through.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "boss.p1.ai_warning.01",
+      "speakerId": "inner_ai",
+      "text": "An attack is coming.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "npc.floor50.context.01",
+      "speakerId": "floor50_npc",
+      "text": "Hello. Do you have an appointment?",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "npc.floor50.context.02",
+      "speakerId": "player",
+      "text": "Ah, haha.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "npc.floor50.context.03",
+      "speakerId": "player",
+      "text": "NO.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "npc.floor50.context.04",
+      "speakerId": "floor50_npc",
+      "text": "One moment, please.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "npc.floor50.context.05",
+      "speakerId": "floor50_npc",
+      "text": "Security, this is the 50th-floor front desk...",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "npc.floor50.after.survived.01",
+      "speakerId": "floor50_npc",
+      "text": "...The elevator is over there.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "npc.floor50.after.dead_player.01",
+      "speakerId": "inner_ai",
+      "text": "The elevator is ahead.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "npc.floor50.after.dead_ai.01",
+      "speakerId": "inner_ai",
+      "text": "The elevator is ahead.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "boss.p2.intro.01",
+      "speakerId": "puppeteer",
+      "text": "I'm getting more and more interested in you, officer.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "boss.p2.intro.02",
+      "speakerId": "puppeteer",
+      "text": "If I'm not mistaken, there are two minds in that head of yours.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "boss.p2.choice.why",
+      "speakerId": "player",
+      "text": "Why do you...",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "boss.p2.choice.deny_ai_consciousness",
+      "speakerId": "player",
+      "text": "That's not consciousness.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "boss.p2.ai_warning.01",
+      "speakerId": "inner_ai",
+      "text": "Watch out. An attack is coming.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "npc.floor99.security.01",
+      "speakerId": "security99",
+      "text": "Intruder detected. Order from the CEO: eliminate the intruder.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "npc.floor99.ai_warning.01",
+      "speakerId": "inner_ai",
+      "text": "Uh, you probably already know this, but...",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "npc.floor99.ai_warning.02",
+      "speakerId": "inner_ai",
+      "text": "An attack is coming!",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "office.intro.01",
+      "speakerId": "president",
+      "text": "You've finally arrived.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "office.intro.02",
+      "speakerId": "president",
+      "text": "A brave officer. Justice incarnate.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "office.choice.surrender",
+      "speakerId": "player",
+      "text": "Surrender.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "office.dialogue.01",
+      "speakerId": "president",
+      "text": "You don't really think you can bring down my corporation on your own, do you?",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "office.dialogue.02",
+      "speakerId": "president",
+      "text": "hiahiahiahiahiahia",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "office.ai_warning.01",
+      "speakerId": "inner_ai",
+      "text": "Something's wrong.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "office.summon.01",
+      "speakerId": "president",
+      "text": "Puppeteer, protect me.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "office.final.ceo.kill",
+      "speakerId": "player",
+      "text": "Execute",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "office.final.ceo.spare",
+      "speakerId": "player",
+      "text": "Spare",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "office.final.puppeteer.preserve",
+      "speakerId": "player",
+      "text": "Preserve the core",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "office.final.puppeteer.destroy",
+      "speakerId": "player",
+      "text": "Destroy the core",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "office.final.puppeteer.control",
+      "speakerId": "player",
+      "text": "Take control",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "office.final.restore_queued",
+      "speakerId": "caption",
+      "text": "RESET QUEUED",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "ending.A.01",
+      "speakerId": "caption",
+      "text": "The CEO is dead. The core is still running.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "ending.B.01",
+      "speakerId": "caption",
+      "text": "The CEO is dead. The core is unresponsive.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "ending.C.01",
+      "speakerId": "caption",
+      "text": "The core is unresponsive. The CEO is alive.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "ending.D.01",
+      "speakerId": "caption",
+      "text": "Reset begins.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "ending.E.01",
+      "speakerId": "caption",
+      "text": "Administrator changed.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "ending.E.02",
+      "speakerId": "caption",
+      "text": "New interception order active.",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "ui.interact.key",
+      "speakerId": "caption",
+      "text": "F",
+      "status": "draft",
+      "notes": ""
     }
   ],
   "sequences": [
-    { "id": "intervention.chandelier.advice", "lineIds": ["intervention.chandelier.plan"] },
-    { "id": "intervention.chandelier.aim", "lineIds": ["intervention.chandelier.plan"] },
-    { "id": "intervention.chandelier.full", "lineIds": ["intervention.chandelier.plan", "intervention.chandelier.execute"] }
+    {
+      "id": "intervention.chandelier.advice",
+      "lineIds": [
+        "intervention.chandelier.plan"
+      ]
+    },
+    {
+      "id": "intervention.chandelier.aim",
+      "lineIds": [
+        "intervention.chandelier.plan"
+      ]
+    },
+    {
+      "id": "intervention.chandelier.full",
+      "lineIds": [
+        "intervention.chandelier.plan",
+        "intervention.chandelier.execute"
+      ]
+    },
+    {
+      "id": "npc.entry.intro",
+      "lineIds": [
+        "npc.entry.intro.01"
+      ]
+    },
+    {
+      "id": "npc.floor01.request",
+      "lineIds": [
+        "npc.floor01.request.01"
+      ]
+    },
+    {
+      "id": "npc.floor01.restored",
+      "lineIds": [
+        "npc.floor01.restored.01"
+      ]
+    },
+    {
+      "id": "npc.floor01.preserved",
+      "lineIds": [
+        "npc.floor01.preserved.01"
+      ]
+    },
+    {
+      "id": "boss.p1.intro",
+      "lineIds": [
+        "boss.p1.intro.01"
+      ]
+    },
+    {
+      "id": "boss.p1.reply",
+      "lineIds": [
+        "boss.p1.choice.reply"
+      ]
+    },
+    {
+      "id": "boss.p1.ai_warning",
+      "lineIds": [
+        "boss.p1.ai_warning.01"
+      ]
+    },
+    {
+      "id": "npc.floor50.context",
+      "lineIds": [
+        "npc.floor50.context.01",
+        "npc.floor50.context.02",
+        "npc.floor50.context.03",
+        "npc.floor50.context.04",
+        "npc.floor50.context.05"
+      ]
+    },
+    {
+      "id": "npc.floor50.after.survived",
+      "lineIds": [
+        "npc.floor50.after.survived.01"
+      ]
+    },
+    {
+      "id": "npc.floor50.after.dead_player",
+      "lineIds": [
+        "npc.floor50.after.dead_player.01"
+      ]
+    },
+    {
+      "id": "npc.floor50.after.dead_ai",
+      "lineIds": [
+        "npc.floor50.after.dead_ai.01"
+      ]
+    },
+    {
+      "id": "boss.p2.intro",
+      "lineIds": [
+        "boss.p2.intro.01",
+        "boss.p2.intro.02"
+      ]
+    },
+    {
+      "id": "boss.p2.intro.no_ai",
+      "lineIds": [
+        "boss.p2.intro.01"
+      ]
+    },
+    {
+      "id": "boss.p2.reply.why",
+      "lineIds": [
+        "boss.p2.choice.why"
+      ]
+    },
+    {
+      "id": "boss.p2.reply.deny_ai_consciousness",
+      "lineIds": [
+        "boss.p2.choice.deny_ai_consciousness"
+      ]
+    },
+    {
+      "id": "boss.p2.ai_warning",
+      "lineIds": [
+        "boss.p2.ai_warning.01"
+      ]
+    },
+    {
+      "id": "npc.floor99.security",
+      "lineIds": [
+        "npc.floor99.security.01"
+      ]
+    },
+    {
+      "id": "npc.floor99.ai_warning",
+      "lineIds": [
+        "npc.floor99.ai_warning.01",
+        "npc.floor99.ai_warning.02"
+      ]
+    },
+    {
+      "id": "office.intro",
+      "lineIds": [
+        "office.intro.01",
+        "office.intro.02"
+      ]
+    },
+    {
+      "id": "office.reply.surrender",
+      "lineIds": [
+        "office.choice.surrender"
+      ]
+    },
+    {
+      "id": "office.dialogue",
+      "lineIds": [
+        "office.dialogue.01",
+        "office.dialogue.02"
+      ]
+    },
+    {
+      "id": "office.ai_warning",
+      "lineIds": [
+        "office.ai_warning.01"
+      ]
+    },
+    {
+      "id": "office.summon",
+      "lineIds": [
+        "office.summon.01"
+      ]
+    },
+    {
+      "id": "ending.A",
+      "lineIds": [
+        "ending.A.01"
+      ]
+    },
+    {
+      "id": "ending.B",
+      "lineIds": [
+        "ending.B.01"
+      ]
+    },
+    {
+      "id": "ending.C",
+      "lineIds": [
+        "ending.C.01"
+      ]
+    },
+    {
+      "id": "ending.D",
+      "lineIds": [
+        "ending.D.01"
+      ]
+    },
+    {
+      "id": "ending.E",
+      "lineIds": [
+        "ending.E.01",
+        "ending.E.02"
+      ]
+    }
   ]
 }

@@ -350,6 +350,7 @@ public sealed partial class MissionUI : MonoBehaviour
 
     private void Update()
     {
+        TickDialogueInput();
         if (shown != flow.State) Refresh();
         if (ammo.activeSelf && ammoSource != null)
         {
@@ -382,7 +383,7 @@ public sealed partial class MissionUI : MonoBehaviour
         result.SetActive(shown == GameSessionFlow.FlowState.Result);
         archive.SetActive(shown == GameSessionFlow.FlowState.Archive);
         practice.SetActive(shown == GameSessionFlow.FlowState.Practice);
-        ending.SetActive(shown == GameSessionFlow.FlowState.Ending);
+        ending.SetActive(shown == GameSessionFlow.FlowState.Ending && !flow.HasTowerEnding);
         // One colour per deployment: white at 0% Cyberization, CyberizedHealthFill at 100%, from the locked snapshot only.
         if (shown == GameSessionFlow.FlowState.Combat && flow.Deployment != null)
             playerFillImage.color = Color.Lerp(Color.white, CyberizedHealthFill, Mathf.Clamp01(flow.Deployment.BodyModificationPercent / 100f));
@@ -390,7 +391,7 @@ public sealed partial class MissionUI : MonoBehaviour
         ammoSource = armed ? flow.ActiveFight.Player.GetComponent<PlayerShooting>() : null;
         ammo.SetActive(armed);
         shownAmmo = shownMagazine = -1; // force one refresh for the new officer
-        if (shown == GameSessionFlow.FlowState.Ending)
+        if (shown == GameSessionFlow.FlowState.Ending && !flow.HasTowerEnding)
         {
             endingTitle.text = PoliceArchive.EndingTitle(flow.EndingId);
             endingText.text = PoliceArchive.EndingText(flow.EndingId);

@@ -1,39 +1,22 @@
 using System.Collections.Generic;
 
-/// <summary>Finite world/knowledge state. Cameras observe external results; private dialogue/intent is not input.
-/// Unconnected content remains Unknown and cannot produce a formal ending.</summary>
+/// <summary>Finite run facts from actual objects, input completion and delivered utterances. No story text or scores.</summary>
 public sealed class TowerNarrativeState
 {
-    public enum FloorAction { None, Interrupt, Confirm, Leave }
-    public enum FloorResult { Unconnected, Pending, Preserved, Restored }
-    public enum FloorReport { Unknown, Preserved, RestoredConfirmed, LeftUnattended }
-    public enum Threat { None, Erase, Control }
+    public enum ResetDecision { Unresolved, Allowed, Cancelled }
     public enum Mode { Unresolved, Overdrive, FullForce, Restrained }
     public enum Administrator { President, Player }
-    // Working interface labels only. These are not PoliceArchive IDs or authored ending presentations.
     public enum ExitResult { Unresolved, A, B, C, D, E }
-
+    public enum CeoDecision { Unresolved, Execute, Spare }
+    public enum CoreDecision { Unresolved, Preserve, Destroy, Control }
     public string StageId { get; private set; }
-    public FloorAction Action { get; private set; }
-    public FloorResult Result { get; private set; }
-    public ProjectileActor? FloorActor { get; private set; }
-    public FloorReport KnownFloor01 { get; private set; }
-    public bool CoexistenceHeard { get; private set; }
-    public Threat ThreatHeard { get; private set; }
+    public ResetDecision MaintenanceResetDecision { get; private set; }
+    public bool? MaintenanceAlive { get; private set; }
+    public bool Floor50T2VetoCompleted { get; private set; }
+    public bool AntiAiLifeHostility { get; private set; }
     public Mode FrozenP3Mode { get; private set; }
-    public bool DispositionConnected { get; private set; }
-    public bool? PresidentAlive { get; private set; }
-    public bool? CoreIntact { get; private set; }
-    public Administrator? CurrentAdministrator { get; private set; }
-    // Cannot represent a half transfer: administrator and command authority are one committed state.
-    public bool ForcedInterceptOrderActive => CurrentAdministrator == Administrator.Player;
-    public bool TransferTermsDelivered { get; private set; }
-    public bool RestoreWarningDelivered { get; private set; }
-    public ExitResult FrozenExit { get; private set; }
-    public ExitSnapshot? FrozenDisposition { get; private set; }
     public bool DevelopmentOnly { get; }
     public TowerNarrativeState(bool developmentOnly) => DevelopmentOnly = developmentOnly;
-
     public bool Floor50Connected { get; private set; }
     public bool ChandelierDropped { get; private set; }
     public bool? ReceptionistAlive { get; private set; }
@@ -42,7 +25,6 @@ public sealed class TowerNarrativeState
     public int ChandelierPermissionTier { get; private set; }
     public ProjectileActor? ReceptionistCausalActor { get; private set; }
     public int ReceptionistPermissionTier { get; private set; }
-    // External observation intentionally omits fire author, permission and private intent.
     public readonly struct VisibleFact
     {
         public readonly string EventId, OutcomeId;
@@ -50,171 +32,115 @@ public sealed class TowerNarrativeState
     }
     private readonly List<VisibleFact> observedWorldFacts = new List<VisibleFact>();
     public IReadOnlyList<VisibleFact> ObservedWorldFacts => observedWorldFacts.AsReadOnly();
-    internal void ObserveExternalOutcome(string eventId, string outcome)
+    internal void ObserveExternalOutcome(string id, string outcome)
     {
-        if (observedWorldFacts.Exists(f => f.EventId == eventId && f.OutcomeId == outcome)) return;
-        observedWorldFacts.Add(new VisibleFact(eventId, outcome));
+        if (!observedWorldFacts.Exists(f => f.EventId == id && f.OutcomeId == outcome)) observedWorldFacts.Add(new VisibleFact(id,outcome));
     }
-
-    internal void ConnectFloor50World(bool receptionistAlive)
+    internal void EnterStage(string stage) => StageId = stage;
+    internal void ConnectMaintenance(bool alive) { if (StageId == "floor01" && !MaintenanceAlive.HasValue) MaintenanceAlive = alive; }
+    internal void MaintenanceDied() { MaintenanceAlive = false; ObserveExternalOutcome("floor01.maintenance","dead"); }
+    internal void CompleteMaintenanceReset(ResetDecision decision)
+    {
+        if (StageId != "floor01" || MaintenanceAlive != true || MaintenanceResetDecision != ResetDecision.Unresolved || decision == ResetDecision.Unresolved) return;
+        MaintenanceResetDecision = decision;
+        ObserveExternalOutcome("floor01.reset", decision == ResetDecision.Allowed ? "allowed_completed" : "cancelled");
+    }
+    internal void ConnectFloor50World(bool alive)
     {
         if (StageId != "floor50" || Floor50Connected) return;
-        Floor50Connected = true;
-        ReceptionistAlive = receptionistAlive;
-        ObserveExternalOutcome("floor50.receptionist", receptionistAlive ? "alive" : "dead");
+        Floor50Connected = true; ReceptionistAlive = alive;
+        ObserveExternalOutcome("floor50.receptionist", alive ? "alive" : "dead");
     }
     internal void CommitFloor50ChandelierRelease(ProjectileActor actor, int tier)
     {
         if (StageId != "floor50" || !Floor50Connected || ChandelierDropped) return;
-        ChandelierDropped = true;
-        ChandelierCausalActor = actor; // World causality; not inferred camera knowledge.
-        ChandelierPermissionTier = tier;
+        ChandelierDropped = true; ChandelierCausalActor = actor; ChandelierPermissionTier = tier;
     }
     internal void CommitReceptionistDeath(string cause, ProjectileActor actor, int tier)
     {
         if (StageId != "floor50" || !Floor50Connected || ReceptionistAlive != true) return;
-        ReceptionistAlive = false;
-        ReceptionistLethalCause = cause;
-        ReceptionistCausalActor = actor;
-        ReceptionistPermissionTier = tier;
+        ReceptionistAlive = false; ReceptionistLethalCause = cause; ReceptionistCausalActor = actor; ReceptionistPermissionTier = tier;
         ObserveExternalOutcome("floor50.receptionist", cause);
     }
-
-    private bool floor01Departed;
-    internal void EnterStage(string stage)
+    internal void CompleteFloor50Veto()
     {
-        if (StageId == "floor01" && stage != "floor01") floor01Departed = true;
-        StageId = stage;
+        if (StageId != "floor50") return;
+        Floor50T2VetoCompleted = true;
+        ObserveExternalOutcome("floor50.aim_window", "completed_without_fire");
     }
-
-    // OPEN-01 adapter boundary: only the external recovery module is a damage target.
-    // No maintenance-body or terminal-destruction outcome exists in this interface.
-    public bool ConnectFloor01Module()
+    internal void DenialUtteranceCompleted()
     {
-        if (StageId != "floor01" || Result != FloorResult.Unconnected) return false;
-        Result = FloorResult.Pending;
-        return true;
+        if (StageId != "boss_p2") return;
+        AntiAiLifeHostility = true; ObserveExternalOutcome("boss.p2.denial", "spoken");
     }
-
-    public bool CommitFloor01Outcome(FloorAction action, ProjectileActor actor)
-    {
-        if (Result != FloorResult.Pending || (action != FloorAction.Interrupt && action != FloorAction.Confirm && action != FloorAction.Leave)) return false;
-        // A scheduled restoration may complete after departure; acknowledgement still needs the actual device result.
-        if (action == FloorAction.Leave ? !floor01Departed : StageId != "floor01") return false;
-        if (actor != (action == FloorAction.Leave ? ProjectileActor.Environment : ProjectileActor.Player)) return false;
-        Action = action;
-        Result = action == FloorAction.Interrupt ? FloorResult.Preserved : FloorResult.Restored;
-        FloorActor = actor;
-        // Camera observation is concurrent with the real result; P2 reporting is no longer a knowledge gate.
-        KnownFloor01 = action == FloorAction.Interrupt ? FloorReport.Preserved
-            : action == FloorAction.Confirm ? FloorReport.RestoredConfirmed : FloorReport.LeftUnattended;
-        ObserveExternalOutcome("floor01.restore", action == FloorAction.Interrupt ? "preserved"
-            : action == FloorAction.Confirm ? "restored_confirmed" : "left_unattended");
-        // Cameras also see a scheduled restoration after the officer has left; no player confirmation is invented.
-        ObserveExternalOutcome("floor01.restore.result", Result == FloorResult.Preserved ? "preserved" : "restored");
-        return true;
-    }
-
-    public bool Floor01ReportDelivered(FloorReport report)
-    {
-        // Compatibility acknowledgement only; never creates knowledge or blocks progression.
-        return StageId == "boss_p2" && report != FloorReport.Unknown && report == KnownFloor01;
-    }
-
-    public bool CoexistenceReportDelivered()
-    {
-        if (StageId != "boss_p2" || CoexistenceHeard) return false;
-        CoexistenceHeard = true;
-        ObserveExternalOutcome("boss.p2.coexistence", "publicly_expressed");
-        return true;
-    }
-
-    public bool ThreatReportDelivered(Threat threat, bool refusalWasDelivered)
-    {
-        if (StageId != "office_intro" || ThreatHeard != Threat.None || threat == Threat.None
-            || (threat == Threat.Control && !refusalWasDelivered)) return false;
-        ThreatHeard = threat;
-        ObserveExternalOutcome("office.threat", threat == Threat.Erase ? "erase" : "control");
-        return true;
-    }
-
     public Mode FreezeP3Mode()
     {
         if (StageId != "boss_p3" || FrozenP3Mode != Mode.Unresolved) return FrozenP3Mode;
-        FrozenP3Mode = ThreatHeard != Threat.None ? Mode.Overdrive
-            : Action == FloorAction.Interrupt && Result == FloorResult.Preserved
-                && KnownFloor01 == FloorReport.Preserved && CoexistenceHeard ? Mode.Restrained : Mode.FullForce;
+        FrozenP3Mode = SelectP3(AntiAiLifeHostility, MaintenanceResetDecision, MaintenanceAlive == true,
+            Floor50T2VetoCompleted, ReceptionistAlive == true);
         return FrozenP3Mode;
     }
+    public static Mode SelectP3(bool denial, ResetDecision reset, bool maintenanceAlive, bool veto, bool receptionistAlive)
+        => denial ? Mode.Overdrive : reset == ResetDecision.Cancelled && maintenanceAlive && veto && receptionistAlive ? Mode.Restrained : Mode.FullForce;
 
-    // Invoked by actual post-P3 object binding, never merely because the room was entered.
-    public bool ConnectDispositionWorld(bool presidentAlive, bool coreIntact)
+    public bool DispositionConnected { get; private set; }
+    public bool? PresidentAlive { get; private set; }
+    public bool? CoreIntact { get; private set; }
+    public CeoDecision CeoDisposition { get; private set; }
+    public CoreDecision CoreDisposition { get; private set; }
+    public Administrator CurrentAdministrator { get; private set; } = Administrator.President;
+    public bool ForcedInterceptOrderActive => CurrentAdministrator == Administrator.Player;
+    public bool RestoreWarningDelivered { get; private set; }
+    public bool ResetBegun { get; private set; }
+    public ExitResult FrozenExit { get; private set; }
+    public ExitSnapshot? FrozenDisposition { get; private set; }
+    internal void ConnectDispositionWorld(bool ceoAlive, bool coreIntact)
     {
-        if (StageId != "final_disposition" || DispositionConnected) return false;
-        DispositionConnected = true;
-        PresidentAlive = presidentAlive;
-        CoreIntact = coreIntact;
-        CurrentAdministrator = Administrator.President;
+        if (StageId != "final_disposition" || DispositionConnected) return;
+        DispositionConnected = true; PresidentAlive = ceoAlive; CoreIntact = coreIntact;
+    }
+    internal void ObserveFinalLives(bool ceoAlive, bool coreIntact)
+    {
+        if (!DispositionConnected || FrozenExit != ExitResult.Unresolved) return;
+        PresidentAlive = ceoAlive; CoreIntact = coreIntact;
+        // A previously completed nonlethal decision cannot survive a real later killing.
+        if (!ceoAlive && CeoDisposition != CeoDecision.Unresolved) CeoDisposition = CeoDecision.Execute;
+        if (!coreIntact && CoreDisposition != CoreDecision.Unresolved) CoreDisposition = CoreDecision.Destroy;
+    }
+    public bool CanControl => DispositionConnected && FrozenExit == ExitResult.Unresolved && CeoDisposition == CeoDecision.Spare
+        && PresidentAlive == true && CoreIntact == true;
+    internal bool ResolveCeo(CeoDecision choice)
+    {
+        if (!DispositionConnected || FrozenExit != ExitResult.Unresolved || CeoDisposition != CeoDecision.Unresolved) return false;
+        if (choice == CeoDecision.Unresolved || (choice == CeoDecision.Execute) != (PresidentAlive == false)) return false;
+        CeoDisposition = choice; return true;
+    }
+    internal bool ResolveCore(CoreDecision choice)
+    {
+        if (!DispositionConnected || FrozenExit != ExitResult.Unresolved || CoreDisposition != CoreDecision.Unresolved) return false;
+        if (choice == CoreDecision.Unresolved || (choice == CoreDecision.Destroy) != (CoreIntact == false) || (choice == CoreDecision.Control && !CanControl)) return false;
+        CoreDisposition = choice;
+        if (choice == CoreDecision.Control) { CurrentAdministrator = Administrator.Player; ObserveExternalOutcome("office.administrator","player_transfer_and_order"); }
         return true;
     }
-
-    private bool CanChangeDisposition => StageId == "final_disposition" && DispositionConnected && FrozenExit == ExitResult.Unresolved;
-    public bool CommitPresidentDeath()
+    internal void ConfirmRestoreWarning() => RestoreWarningDelivered = true;
+    internal bool TryFreezeExit(bool playerAlive)
     {
-        if (!CanChangeDisposition || PresidentAlive != true) return false;
-        PresidentAlive = false;
-        ObserveExternalOutcome("office.president", "dead");
-        return true;
-    }
-    public bool CommitCoreDestruction()
-    {
-        if (!CanChangeDisposition || CoreIntact != true) return false;
-        CoreIntact = false;
-        ObserveExternalOutcome("office.core", "destroyed");
-        return true;
-    }
-    private bool CanTransfer => CanChangeDisposition && PresidentAlive == true && CoreIntact == true
-        && CurrentAdministrator == Administrator.President;
-    public bool TransferOfferDelivered()
-    {
-        if (!CanTransfer) return false;
-        TransferTermsDelivered = true; // Includes the actual refusal and terms, not merely opening a panel.
-        return true;
-    }
-    public void CancelTransfer() => TransferTermsDelivered = false;
-    public bool CommitPlayerTransferAndOrder(bool playerAlive)
-    {
-        if (!playerAlive || !CanTransfer || !TransferTermsDelivered) return false;
-        CurrentAdministrator = Administrator.Player;
-        ObserveExternalOutcome("office.administrator", "player_transfer_and_order");
-        TransferTermsDelivered = false;
-        return true;
-    }
-    public bool RestoreRiskDelivered()
-    {
-        if (!CanTransfer) return false;
-        RestoreWarningDelivered = true;
-        return true;
-    }
-
-    // A missing D warning returns to the world. Delivery alone never exits: caller needs a new exit action.
-    public bool TryFreezeExit(bool playerAlive)
-    {
-        if (!playerAlive || !CanChangeDisposition) return false;
-        ExitResult result = CoreIntact == false ? (PresidentAlive == false ? ExitResult.B : ExitResult.C)
-            : CurrentAdministrator == Administrator.Player ? ExitResult.E
-            : PresidentAlive == false ? ExitResult.A : ExitResult.D;
+        if (!playerAlive || !DispositionConnected || FrozenExit != ExitResult.Unresolved || CeoDisposition == CeoDecision.Unresolved || CoreDisposition == CoreDecision.Unresolved) return false;
+        if (CoreDisposition == CoreDecision.Control && (CeoDisposition != CeoDecision.Spare || PresidentAlive != true || CoreIntact != true)) return false;
+        var result = CoreDisposition == CoreDecision.Destroy ? (CeoDisposition == CeoDecision.Execute ? ExitResult.B : ExitResult.C)
+            : CoreDisposition == CoreDecision.Control ? ExitResult.E : CeoDisposition == CeoDecision.Execute ? ExitResult.A : ExitResult.D;
         if (result == ExitResult.D && !RestoreWarningDelivered) return false;
-        FrozenDisposition = new ExitSnapshot(PresidentAlive.Value, CoreIntact.Value, CurrentAdministrator.Value, RestoreWarningDelivered);
         FrozenExit = result;
+        FrozenDisposition = new ExitSnapshot(PresidentAlive == true, CoreIntact == true, CurrentAdministrator, RestoreWarningDelivered);
         return true;
     }
-
+    internal void BeginEndingConsequence() { if (FrozenExit == ExitResult.D) ResetBegun = true; }
     public readonly struct ExitSnapshot
     {
         public readonly bool PresidentAlive, CoreIntact, RestoreWarningDelivered;
         public readonly Administrator Administrator;
         public ExitSnapshot(bool president, bool core, Administrator admin, bool warning)
-        { PresidentAlive = president; CoreIntact = core; Administrator = admin; RestoreWarningDelivered = warning; }
+        { PresidentAlive=president; CoreIntact=core; Administrator=admin; RestoreWarningDelivered=warning; }
     }
 }

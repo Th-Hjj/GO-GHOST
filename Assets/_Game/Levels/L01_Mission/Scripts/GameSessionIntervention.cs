@@ -10,14 +10,15 @@ public sealed partial class GameSessionFlow
     [Min(.1f)] [SerializeField] private float autonomousWindowSeconds = 3f;
     private bool interventionOffered;
     private bool interventionActive;
+    private PlayerInputReader interventionReader;
 
     private void Update()
     {
         if (State != FlowState.Combat || ActiveFight == null || Deployment == null) return;
-        if (towerPrototypeEnabled) TickTowerRoom();
+        if (towerPrototypeEnabled) { TickNarrative(); TickTowerRoom(); }
         if (interventionActive)
         {
-            if (ActiveFight.Player.IsDead || chandelier == null || !chandelier.IsHanging)
+            if (ActiveFight.Player.IsDead || chandelier == null || !chandelier.IsHanging || (towerPrototypeEnabled && (!ActiveFight.EncounterActive || ActiveFight.BossHealth == null || ActiveFight.BossHealth.IsDead)))
                 CancelIntervention();
             else if (!ActiveFight.NarrativePaused && !ActiveFight.Player.GetComponent<PlayerInputReader>().HasTemporaryAimOverride)
                 interventionActive = false;
@@ -47,14 +48,30 @@ public sealed partial class GameSessionFlow
         int tier = Deployment.BrainPermissionTier;
         if (tier < 2 || chandelier == null || !chandelier.IsHanging) { CancelIntervention(); return; }
         var reader = ActiveFight.Player.GetComponent<PlayerInputReader>();
+        interventionReader = reader;
+        reader.OnAimOverrideEnded += InterventionEnded;
         if (!reader.BeginAimOverride(chandelier.AimTarget, tier == 2 ? 3f : autonomousWindowSeconds, tier == 3))
             CancelIntervention();
     }
 
+    private void InterventionEnded(PlayerInputReader.AimEndReason reason, bool requestedFire)
+    {
+        if (interventionReader != null) interventionReader.OnAimOverrideEnded -= InterventionEnded;
+        interventionReader = null;
+        if (interventionActive && TowerStageId == "floor50" && Deployment.BrainPermissionTier == 2
+            && reason == PlayerInputReader.AimEndReason.Expired && !requestedFire && ActiveFight != null
+            && !ActiveFight.Player.IsDead && ActiveFight.EncounterActive && ActiveFight.BossHealth != null && !ActiveFight.BossHealth.IsDead
+            && chandelier != null && chandelier.IsHanging) Narrative.CompleteFloor50Veto();
+        interventionActive = false;
+    }
+
     private void CancelIntervention()
     {
+        if (interventionReader != null) interventionReader.OnAimOverrideEnded -= InterventionEnded;
+        interventionReader = null;
+        bool wasActive = interventionActive;
         interventionActive = false;
-        GetComponent<MissionUI>()?.HideDialogue();
+        if (wasActive) GetComponent<MissionUI>()?.HideDialogue();
         if (ActiveFight != null)
         {
             ActiveFight.SetNarrativePaused(false);
@@ -62,6 +79,6 @@ public sealed partial class GameSessionFlow
         }
     }
 
-    private void OnApplicationFocus(bool focused) { if (!focused) CancelIntervention(); }
+    private void OnApplicationFocus(bool focused) { if (!focused && interventionActive) CancelIntervention(); }
     private void OnDisable() { CancelIntervention(); ClearTowerWorld(); }
 }

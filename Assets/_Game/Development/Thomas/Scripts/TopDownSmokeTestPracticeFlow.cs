@@ -18,6 +18,7 @@ public partial class TopDownSmokeTest
         var states = new List<GameSessionFlow.FlowState>();
         System.Action<GameSessionFlow.FlowState> watch = s => states.Add(s);
         flow.OnStateChanged += watch;
+        var focus = StartCoroutine(KeepVirtualFocus(flow));
         var uiSfx = flow.GetComponent<SfxSet>();
         try
         {
@@ -33,7 +34,7 @@ public partial class TopDownSmokeTest
             probe.TrySetSlot(LoadoutSlot.Brain, "");
             var probeSnapshot = probe.Deploy(1);
             Check("Cyberization is 0-100 from current body slots only", emptyPercent == 0 && fullPercent == 100 && replacedPercent == 100
-                && probeSnapshot.BodyModificationPercent == 60 && probeSnapshot.WeaponId == LoadoutRules.BasicGun
+                && probeSnapshot.BodyModificationPercent == 60 && probeSnapshot.WeaponId == LoadoutRules.AssaultRifle
                 && new VictoryRecord(probeSnapshot).BodyModificationPercent == 60
                 && PoliceArchive.EndingFor(49.9f) == PoliceArchive.HumanEnding && PoliceArchive.EndingFor(50f) == PoliceArchive.AiEnding
                 && PoliceArchive.EndingFor(100f) == PoliceArchive.AiEnding && PoliceArchive.EndingFor(0f) == PoliceArchive.HumanEnding,
@@ -48,10 +49,10 @@ public partial class TopDownSmokeTest
             string baseControls = "A / D — MOVE\nMOUSE — AIM\nLEFT MOUSE — SHOOT\nSPACE — JUMP\nLEFT SHIFT — DODGE";
             Check("Launch enters practice without menus", GameObject.Find("MainMenu") == null && GameObject.Find("Upgrade") == null
                 && GameObject.Find("CombatHUD") == null, "no menu or HUD");
-            Check("Base controls text is exact and the only text", StrictTexts().SequenceEqual(new[] { baseControls }), string.Join(" / ", StrictTexts()).Replace("\n", " | "));
+            Check("Base controls text is exact; only it and the ammo readout are shown", StrictTexts().OrderBy(x => x).SequenceEqual(new[] { baseControls, "24 / 24" }.OrderBy(x => x)), string.Join(" / ", StrictTexts()).Replace("\n", " | "));
             ScreenCapture.CaptureScreenshot("Logs/GO_GHOST_VS/practice-flow-base.png");
             Check("Launch uses default human build and one officer", officer != null && deployment.BodyModificationPercent == 0
-                && deployment.GetSlot(LoadoutSlot.Weapon).ItemId == LoadoutRules.BasicGun && PoliceArchive.Current.RunRecords.Count == 0,
+                && deployment.GetSlot(LoadoutSlot.Weapon).ItemId == LoadoutRules.AssaultRifle && PoliceArchive.Current.RunRecords.Count == 0,
                 $"officer #{officer?.OfficerNumber} body={deployment.BodyModificationPercent}%");
             Check("Practice has no live Boss", !f.Boss.gameObject.activeInHierarchy && f.BossHealth.CurrentHealth == f.BossHealth.MaxHealth
                 && f.Result == BossFight.Outcome.Fighting, "boss inactive, full HP");
@@ -105,7 +106,7 @@ public partial class TopDownSmokeTest
                 && Mathf.Abs(f.Player.transform.position.x + 9f) < 3f, $"cam={Camera.main.transform.position.x:0.0} player={f.Player.transform.position.x:0.0}");
             Check("Practice shots are cleared and not counted", shotsAtEntry <= 1 && practiceBullets == 0 && shotsAtEntry < practiceShots
                 && f.BossHealth.CurrentHealth == f.BossHealth.MaxHealth, $"practice={practiceShots} atEntry={shotsAtEntry} leftover={practiceBullets}");
-            Check("Boss HUD only", GameObject.Find("CombatHUD") != null && StrictTexts().Length == 0 && PoliceArchive.Current.RunRecords.Count == 0, "two bars, no text, no record");
+            Check("Boss HUD only", GameObject.Find("CombatHUD") != null && StrictTexts().Length == 1 && PoliceArchive.Current.RunRecords.Count == 0, "two bars, ammo readout only, no record");
 
             // 4. Controlled defeat -> Main Menu directly.
             yield return Seconds(.6f);
@@ -122,7 +123,7 @@ public partial class TopDownSmokeTest
             Check("Defeat cues: one hurt, one defeat, combat voice stopped", sfx.Requested(Sfx.PlayerHurt) == 1 && uiSfx.Requested(Sfx.Defeat) == 1
                 && uiSfx.Requested(Sfx.Victory) == 0, $"hurt={sfx.Requested(Sfx.PlayerHurt)} defeat={uiSfx.Requested(Sfx.Defeat)}");
             Check("Main Menu shows the saved defeat", StrictText("Value_OFFICER #") == officer.OfficerNumber.ToString()
-                && StrictText("Value_STATUS") == "MISSION FAILED" && StrictText("Value_WEAPON") == "Basic Gun", "latest real record");
+                && StrictText("Value_STATUS") == "MISSION FAILED" && StrictText("Value_WEAPON") == "Assault Rifle", "latest real record");
             ScreenCapture.CaptureScreenshot("Logs/GO_GHOST_VS/practice-flow-menu.png");
 
             // 5. Upgrade -> practice with another build -> door.
@@ -144,8 +145,8 @@ public partial class TopDownSmokeTest
                 && flow.Deployment.GetSlot(LoadoutSlot.Torso).ItemId == LoadoutRules.TorsoSlow && flow.Deployment.Aim == AimControl.AI
                 && flow.Deployment.BodyModificationPercent > 0 && !f.Boss.gameObject.activeInHierarchy && PoliceArchive.Current.RunRecords.Count == 1,
                 $"officer #{flow.Officer.OfficerNumber} body={flow.Deployment.BodyModificationPercent}%");
-            Check("Upgraded controls text matches the build", StrictTexts().SequenceEqual(new[] {
-                "A / D — MOVE\nAIM — AUTOMATIC\nLEFT MOUSE — SHOOT\nSPACE — JUMP\nLEFT SHIFT — DODGE\nSPACE AGAIN — DOUBLE JUMP\nQ — TIME SLOW" }),
+            Check("Upgraded controls text matches the build", StrictTexts().Intersect(new[] {
+                "A / D — MOVE\nAIM — AUTOMATIC\nLEFT MOUSE — SHOOT\nSPACE — JUMP\nLEFT SHIFT — DODGE\nSPACE AGAIN — DOUBLE JUMP\nQ — TIME SLOW" }).Count() == 1 && StrictTexts().Length == 2,
                 string.Join(" / ", StrictTexts()).Replace("\n", " | "));
             reader.SendMessage("OnApplicationFocus", true);
             Keys(); MouseTo(.5f, .9f);
@@ -172,7 +173,7 @@ public partial class TopDownSmokeTest
                 "same snapshot, counters reset");
             Check("Door refills resources of the same build", !slow.IsActive && slow.IsEquipped && slow.CooldownRemaining == 0
                 && f.Player.CurrentHealth == f.Player.MaxHealth && f.Player.GetComponent<PlayerMovement>().AirJumpsRemaining == 1
-                && StrictTexts().Length == 0, $"slow cd={slow.CooldownRemaining:0.0} hp={f.Player.CurrentHealth} airJumps={f.Player.GetComponent<PlayerMovement>().AirJumpsRemaining}");
+                && StrictTexts().Length == 1, $"slow cd={slow.CooldownRemaining:0.0} hp={f.Player.CurrentHealth} airJumps={f.Player.GetComponent<PlayerMovement>().AirJumpsRemaining}");
             sfx = f.GetComponent<SfxSet>();
             Check("Door clears practice VFX", f.transform.Find("AttemptVfx_Transient") == null, "no leftover effects");
 
@@ -276,6 +277,7 @@ public partial class TopDownSmokeTest
         finally
         {
             flow.OnStateChanged -= watch;
+            StopCoroutine(focus);
             Keys(); Mouse(.5f, .5f, false);
             if (flow != null && flow.ActiveFight != null) flow.ActiveFight.CancelCombat();
         }

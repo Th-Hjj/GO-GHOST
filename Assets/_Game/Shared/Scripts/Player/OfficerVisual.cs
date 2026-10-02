@@ -24,7 +24,7 @@ public sealed class OfficerVisual : MonoBehaviour
         _ => Color.white
     };
     public static Color EquipmentColor(LoadoutSlot slot, string itemId) =>
-        string.IsNullOrEmpty(itemId) || (slot == LoadoutSlot.Weapon && itemId == LoadoutRules.BasicGun)
+        string.IsNullOrEmpty(itemId) || slot == LoadoutSlot.Weapon // guns keep the plain white placeholder
             ? Color.white : SlotColor(slot);
     public static Color AugmentedColor => SlotColor(LoadoutSlot.LeftArm); // historical developer fixture compatibility
 

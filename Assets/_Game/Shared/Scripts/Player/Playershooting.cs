@@ -2,19 +2,24 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// Fires a Projectile along the sole resolved aim output (PlayerInputReader.AimDirection).
+/// Fires Projectiles along the sole resolved aim output (PlayerInputReader.AimDirection).
 /// The muzzle is the player's position offset along the aim by the FirePoint
 /// child's original distance, so aiming is independent of the movement direction.
-/// Base: hold Attack to fire continuously, governed by stats.fireRate.
+/// Deployed officers use the weapon in their locked snapshot (LoadoutRules.Weapon):
+/// Assault Rifle fires while Attack is held, Sniper and Shotgun once per press. Each trigger pull
+/// spends one round from a finite magazine; an empty magazine reloads by itself (unlimited reserve,
+/// no manual reload, no cancel). Nothing fires while reloading.
+/// Without a deployment the legacy behaviour remains: hold Attack to fire at stats.fireRate.
 /// LEGACY / TEST ONLY (volleyUnlocked): each Attack press fires a burst of
 /// stats.volleyShotCount shots, stats.volleyShotDelay apart. Not a formal augmentation.
 /// </summary>
 // FUNCTION SUMMARY
-// Update()            — keeps the FirePoint child on the muzzle; fires (continuous or volley burst) based on Attack input and the legacy test-only Volley toggle.
+// Update()            — keeps the FirePoint child on the muzzle; runs reload and the weapon trigger (or the legacy fire paths).
 // GetMuzzlePosition() — world-space spawn point for a given aim direction.
-// Fire()              — spawns a single bullet at the muzzle, rotated to the aim, and launches it along the aim direction.
+// FireWeapon()        — one trigger pull: spends one round and launches the weapon's pellet(s) in a fixed fan.
+// Fire()              — legacy single bullet without a deployment.
 // FireVolleyRoutine()  — fires stats.volleyShotCount shots stats.volleyShotDelay apart, re-reading aim each shot.
-public class PlayerShooting : MonoBehaviour
+public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
 {
     [SerializeField] private PlayerStatsSO stats;
     [Tooltip("Child transform marking the muzzle. Its distance from the player is used as the spawn radius; it is moved to follow the aim.")]
@@ -30,14 +35,22 @@ public class PlayerShooting : MonoBehaviour
     private OfficerIdentity officer;
     private SfxSet sfx;
     private AttemptPresentationVfx vfx;
-    public int BulletDamage => officer != null && officer.Deployment != null ? officer.Deployment.BulletDamage : stats.gunDamage;
-    public float FireInterval => officer != null && officer.Deployment != null ? officer.Deployment.FireInterval : stats.fireRate;
+    private bool HasDeployment => officer != null && officer.Deployment != null;
+    public int BulletDamage => HasDeployment ? officer.Deployment.BulletDamage : stats.gunDamage;
+    public float FireInterval => HasDeployment ? officer.Deployment.FireInterval : stats.fireRate;
+    /// <summary>Player gun projectiles launched / that hit a living enemy. A Shotgun pull adds one per pellet.</summary>
     public int ShotsFired { get; private set; }
     public int ShotsHit { get; private set; }
+    /// <summary>Successful trigger pulls: one round spent, one shot sound and one muzzle flash each.</summary>
+    public int TriggerPulls { get; private set; }
+    public int MagazineSize => HasDeployment ? officer.Deployment.Weapon.MagazineSize : 0;
+    public int AmmoInMagazine { get; private set; }
+    public bool IsReloading { get; private set; }
     internal void RegisterHit() => ShotsHit++;
     /// <summary>Called when the real combat starts so earlier practice shots never count.</summary>
-    public void ResetShotCounters() { ShotsFired = 0; ShotsHit = 0; }
+    public void ResetShotCounters() { ShotsFired = 0; ShotsHit = 0; TriggerPulls = 0; }
     private float nextFireTime;
+    private float reloadDoneAt;
     private float firePointRadius = 0.5f;
     private bool isFiringVolley;
 
@@ -57,6 +70,16 @@ public class PlayerShooting : MonoBehaviour
             firePointRadius = firePoint.localPosition.magnitude;
     }
 
+    // Full magazine, no reload in progress. Also re-applied once at the practice -> combat door.
+    public void ApplyDeployment(DeploymentSnapshot snapshot)
+    {
+        IsReloading = false;
+        AmmoInMagazine = snapshot.Weapon.MagazineSize;
+        nextFireTime = 0f;
+    }
+
+    public void CleanupAttempt() => IsReloading = false;
+
     private void Update()
     {
         Vector2 aim = input.AimDirection;
@@ -65,6 +88,27 @@ public class PlayerShooting : MonoBehaviour
         {
             firePoint.position = GetMuzzlePosition(aim);
             firePoint.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(aim.y, aim.x) * Mathf.Rad2Deg);
+        }
+
+        if (HasDeployment)
+        {
+            var weapon = officer.Deployment.Weapon;
+            if (IsReloading && Time.time >= reloadDoneAt)
+            {
+                IsReloading = false;
+                AmmoInMagazine = weapon.MagazineSize;
+            }
+            // Held Attack resumes an automatic weapon after the reload; Sniper and Shotgun need a new press.
+            bool trigger = weapon.Automatic ? input.AttackHeld : input.AttackPressedThisFrame;
+            if (trigger && !IsReloading && AmmoInMagazine > 0 && Time.time >= nextFireTime && FireWeapon(aim, weapon))
+                nextFireTime = Time.time + FireInterval;
+            // Automatic reload the moment the magazine is empty; there is no manual reload or cancel.
+            if (!IsReloading && AmmoInMagazine <= 0)
+            {
+                IsReloading = true;
+                reloadDoneAt = Time.time + weapon.ReloadSeconds;
+            }
+            return;
         }
 
         if (volleyUnlocked)
@@ -87,10 +131,34 @@ public class PlayerShooting : MonoBehaviour
         return (Vector2)transform.position + aimDirection * firePointRadius;
     }
 
+    // One trigger pull = one round, one shot sound and one muzzle flash, however many pellets leave the barrel.
+    private bool FireWeapon(Vector2 direction, WeaponProfile weapon)
+    {
+        if (!isActiveAndEnabled || !input.GameplayInputEnabled || bulletPrefab == null || !officer.Deployment.CanUseWeapon) return false;
+
+        AmmoInMagazine--;
+        Vector2 spawn = GetMuzzlePosition(direction);
+        float facing = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        for (int i = 0; i < weapon.Pellets; i++)
+        {
+            // Fixed, evenly spaced fan; no random spread.
+            float angle = weapon.Pellets > 1
+                ? facing + Mathf.Lerp(-weapon.SpreadDegrees * .5f, weapon.SpreadDegrees * .5f, i / (float)(weapon.Pellets - 1))
+                : facing;
+            var pelletDirection = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
+            Projectile bullet = Instantiate(bulletPrefab, spawn, Quaternion.Euler(0f, 0f, angle));
+            bullet.Launch(pelletDirection, stats.bulletSpeed, weapon.Damage, gameObject, accuracyOwner: this);
+            ShotsFired++;
+        }
+        TriggerPulls++;
+        if (sfx != null) sfx.Play(Sfx.Shot);
+        if (vfx != null) vfx.Muzzle(spawn, direction);
+        return true;
+    }
+
     private void Fire(Vector2 direction)
     {
         if (!isActiveAndEnabled || !input.GameplayInputEnabled || bulletPrefab == null) return;
-        if (officer != null && officer.Deployment != null && !officer.Deployment.CanUseWeapon) return;
 
         Vector2 spawn = GetMuzzlePosition(direction);
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
@@ -106,6 +174,7 @@ public class PlayerShooting : MonoBehaviour
         StopAllCoroutines();
         isFiringVolley = false;
         nextFireTime = 0f;
+        IsReloading = false;
     }
 
     private IEnumerator FireVolleyRoutine()

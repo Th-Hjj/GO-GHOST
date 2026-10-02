@@ -19,7 +19,9 @@ public sealed class MissionUI : MonoBehaviour
     private GameObject main, upgrade, combat, result, archive, practice, ending;
     private RectTransform choices, archiveContent;
     private RectTransform bossFill, playerFill;
-    private TMP_Text resultHeading, timeValue, bossValue, playerValue, accuracyValue, practiceControls, endingTitle, endingText;
+    private TMP_Text resultHeading, timeValue, bossValue, playerValue, accuracyValue, practiceControls, endingTitle, endingText, ammoText;
+    private GameObject ammo;
+    private PlayerShooting ammoSource;
     private TMP_Text[] previousOfficerValues, previousEquipmentValues;
     private GameSessionFlow.FlowState shown = (GameSessionFlow.FlowState)(-1);
     public int SelectedRegion { get; private set; } = -1;
@@ -62,6 +64,13 @@ public sealed class MissionUI : MonoBehaviour
         practice = Rect(root, "PracticeControls", Vector2.zero, Vector2.zero).gameObject;
         Stretch((RectTransform)practice.transform);
         practiceControls = Text(practice.transform, "Controls", "", new Vector2(540, 590), new Vector2(700, 380), 26, TextAlignmentOptions.TopLeft);
+        // Magazine readout just above the player HP bar position, in the practice room and the Boss room: "12 / 24" or "RELOADING".
+        ammo = Rect(root, "AmmoHUD", Vector2.zero, Vector2.zero).gameObject;
+        Stretch((RectTransform)ammo.transform);
+        ammoText = Text(ammo.transform, "Ammo", "", new Vector2(960, 72), new Vector2(400, 40), 26);
+        var ammoRect = (RectTransform)ammoText.transform;
+        ammoRect.anchorMin = ammoRect.anchorMax = new Vector2(.5f, 0);
+        ammoRect.anchoredPosition = new Vector2(0, 72);
         var events = new GameObject("MissionEventSystem", typeof(UnityEngine.EventSystems.EventSystem), typeof(InputSystemUIInputModule));
         events.transform.SetParent(transform, false);
         var module = events.GetComponent<InputSystemUIInputModule>();
@@ -134,7 +143,11 @@ public sealed class MissionUI : MonoBehaviour
         if (slot == LoadoutSlot.Weapon)
         {
             if (flow.Draft.CanUseWeapon)
-                Button(choices, "Choice_" + LoadoutRules.BasicGun, LoadoutRules.WeaponLabel(LoadoutRules.BasicGun), new Vector2(250, 374), new Vector2(450, 72), () => Equip(slot, LoadoutRules.BasicGun), false);
+                for (int i = 0; i < LoadoutRules.OfferedWeapons.Length; i++)
+                {
+                    string weaponId = LoadoutRules.OfferedWeapons[i];
+                    Button(choices, "Choice_" + weaponId, LoadoutRules.WeaponLabel(weaponId), new Vector2(250, 374 - i * 90), new Vector2(450, 72), () => Equip(slot, weaponId), false);
+                }
             return;
         }
         int row = 0;
@@ -280,6 +293,11 @@ public sealed class MissionUI : MonoBehaviour
     private void Update()
     {
         if (shown != flow.State) Refresh();
+        if (ammo.activeSelf && ammoSource != null)
+        {
+            string readout = ammoSource.IsReloading ? "RELOADING" : ammoSource.AmmoInMagazine + " / " + ammoSource.MagazineSize;
+            if (ammoText.text != readout) ammoText.text = readout;
+        }
         if (flow.State == GameSessionFlow.FlowState.Combat && flow.ActiveFight != null)
         {
             Fill(bossFill, (float)flow.ActiveFight.BossHealth.CurrentHealth / flow.ActiveFight.BossHealth.MaxHealth);
@@ -301,6 +319,9 @@ public sealed class MissionUI : MonoBehaviour
         archive.SetActive(shown == GameSessionFlow.FlowState.Archive);
         practice.SetActive(shown == GameSessionFlow.FlowState.Practice);
         ending.SetActive(shown == GameSessionFlow.FlowState.Ending);
+        bool armed = (shown == GameSessionFlow.FlowState.Practice || shown == GameSessionFlow.FlowState.Combat) && flow.ActiveFight != null;
+        ammoSource = armed ? flow.ActiveFight.Player.GetComponent<PlayerShooting>() : null;
+        ammo.SetActive(armed);
         if (shown == GameSessionFlow.FlowState.Ending)
         {
             endingTitle.text = PoliceArchive.EndingTitle(flow.EndingId);

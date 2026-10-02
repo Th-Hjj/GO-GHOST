@@ -15,7 +15,7 @@ The loader is an instance lookup constructed each Play entry, including with Dom
 | Record | Fields |
 |---|---|
 | Root | `schemaVersion` = 1; nonempty `contentRevision`, `language`; arrays `speakers`, `entries`, `sequences` |
-| Speaker | `id`, `displayName` strings; no required on-screen nameplate |
+| Speaker | `id`, `displayName` strings; current entry resolves the upper-left dialogue speaker label (empty caption names stay empty); no world nameplate |
 | Entry | `id`, `speakerId`, `text`, `status`, `notes`; status `draft` or `approved` |
 | Sequence | `id`, ordered entry `lineIds` array |
 
@@ -39,8 +39,8 @@ Room IDs remain `loadout`, `practice`, `tower_entry`, `floor01`, `boss_p1`, `flo
 
 ## Runtime responsibilities and boundaries
 
-- `NarrativeContent`: validates data and looks up entries/sequences by ID. Text/status/notes execute no gameplay.
-- `MissionUIDialogue`: black/white panel, one floating F, ordered lines, finite Up/Down choices/fresh F. Emits **Completed**, **Cancelled** or **ChoiceCommitted** separately; an interrupted page is not a completed stance.
+- `NarrativeContent`: validates data and looks up entries/sequences by ID, retaining each line's speaker display name through the presenter. Text/status/notes execute no gameplay.
+- `MissionUIDialogue`: translucent black panel, opaque white plain text of consistent size, current data-derived speaker label, and the existing floating F. F or fresh left-click advances ordinary pages; W/S navigates choices; fresh F or one mouse click on the intended row commits. Mouse hover highlights the row without overriding later keyboard navigation while stationary. No arrow-key navigation, markup/underline or invented labels. The UI owns panel clicks until release so they cannot fire; outside an unpaused ReplyOrAttack panel, existing shooting remains available. Emits **Completed**, **Cancelled** or **ChoiceCommitted** separately; an interrupted page is not a completed stance.
 - `GameSessionNarrative` / existing flow: one nearby focus, authored node sequencing, forced events, live ReplyOrAttack and centralized `hasInnerAI`/`highAI`. Owns IDs and typed callbacks, not literal prose. Cancel stale coroutines/listeners on exit. Missing content reports a development error and never chooses for the player.
 - `TowerNarrativeState` / actual objects: keep reset decision, real life states, actual full T2 veto, delivered denial, frozen P3 profile, final decisions and one completed ending. `GameSessionDisposition` resolves target life-state/intent before completion. No generic event bus or general narrative scripting language.
 

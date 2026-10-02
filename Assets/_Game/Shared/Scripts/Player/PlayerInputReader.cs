@@ -31,6 +31,8 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     public Vector2 AimDirection { get; private set; } = Vector2.right;
     public AimControl AimMode => officer != null && officer.Deployment != null ? officer.Deployment.Aim : AimControl.Manual;
 
+    // UI-only ownership predicate. The level presenter supplies it; Shared never references level UI.
+    public System.Func<bool> UiBlocksManualFire { get; set; }
     public bool AttackHeld { get; private set; }
     public bool AttackPressedThisFrame { get; private set; }
     public bool JumpPressedThisFrame { get; private set; }
@@ -190,6 +192,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
             secondaryGated = secondaryAbilityAction.IsPressed();
         }
         attackGated &= attackAction.IsPressed();
+        if (attackAction.IsPressed() && UiBlocksManualFire?.Invoke() == true) SuppressUiFireUntilRelease();
         jumpGated &= jumpAction.IsPressed();
         dodgeGated &= dodgeAction.IsPressed();
         abilityGated &= abilityAction.IsPressed();
@@ -264,6 +267,13 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         overrideEndsAt = 0f;
         overrideFire = false;
         if (notify) OnAimOverrideEnded?.Invoke(reason, requested);
+    }
+
+    public void SuppressUiFireUntilRelease()
+    {
+        attackGated = true;
+        suppressAttackFrame = Time.frameCount;
+        AttackHeld = AttackPressedThisFrame = false;
     }
 
     public void SetNarrativePaused(bool paused)

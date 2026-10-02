@@ -12,10 +12,17 @@ public sealed partial class MissionUI
     [SerializeField] private bool allowNarrativeDraft = true;
     private NarrativeContent narrative;
     private GameObject dialogue;
-    private TMP_Text dialogueText, consequenceText, interactionKey;
-    private RectTransform narrativeCanvas;
+    private TMP_Text dialogueText, speakerText, consequenceText, interactionKey;
+    private RectTransform narrativeCanvas, dialoguePanel;
+    private readonly UnityEngine.UI.Image[] choiceRows = new UnityEngine.UI.Image[3];
+    private PlayerInputReader dialogueInput;
+    private bool dialogueBlocksWorld, mouseReady;
+    private Vector2 previousDialoguePointer;
+    private int hoveredChoice = -1;
+    private const float DialogueFontSize = 38;
     private readonly TMP_Text[] choiceLabels = new TMP_Text[3];
-    private string[] dialogueLines, choiceIds;
+    private NarrativeContent.Line[] dialogueLines;
+    private string[] choiceIds;
     private int dialogueIndex, selectedChoice, shownFrame, consumedFFrame = -1;
     private Action<DialogueResult, string> dialogueResult;
     private Func<string, string> choiceConsequence;
@@ -26,6 +33,7 @@ public sealed partial class MissionUI
     public string CurrentNarrativeId { get; private set; }
     public string SelectedChoiceId => ChoicesVisible ? choiceIds[selectedChoice] : null;
     public string DisplayedNarrativeText => dialogueText != null ? dialogueText.text : null;
+    public string DisplayedSpeaker => speakerText != null ? speakerText.text : null;
     public string DisplayedConsequence => consequenceText != null ? consequenceText.text : null;
     public bool InteractionKeyVisible => interactionKey != null && interactionKey.gameObject.activeSelf;
 
@@ -36,25 +44,42 @@ public sealed partial class MissionUI
         catch (Exception error) { Debug.LogError("Narrative: " + error.Message, this); }
         dialogue = Screen(canvas, "NarrativeDialogue");
         dialogue.GetComponent<UnityEngine.UI.Image>().color = Color.clear;
-        var panel = Panel(dialogue.transform, "DialoguePanel", new Vector2(960, 260), new Vector2(1440, 290));
-        panel.GetComponent<UnityEngine.UI.Image>().color = Color.black;
-        dialogueText = Text(panel, "DialogueLine", "", new Vector2(720, 145), new Vector2(1340, 220), 38);
-        // English uses the existing full Latin font; the old Chinese subset is not a Latin font source.
-        dialogueText.color = Color.white;
-        dialogueText.richText = false;
-        dialogueText.textWrappingMode = TextWrappingModes.Normal;
+        dialoguePanel = Panel(dialogue.transform, "DialoguePanel", new Vector2(960, 260), new Vector2(1440, 350));
+        dialoguePanel.GetComponent<UnityEngine.UI.Image>().color = new Color(0, 0, 0, .6f);
+        speakerText = DialogueLabel(dialoguePanel, "SpeakerName", new Vector2(720, 310), new Vector2(1340, 46));
+        dialogueText = DialogueLabel(dialoguePanel, "DialogueLine", new Vector2(720, 173), new Vector2(1340, 210));
+        dialogueText.alignment = TextAlignmentOptions.TopLeft;
         for (int i = 0; i < choiceLabels.Length; i++)
         {
-            choiceLabels[i] = Text(panel, "NarrativeChoice" + i, "", new Vector2(720, 210-i*65), new Vector2(1340, 62), 32);
-            choiceLabels[i].richText = false;
+            var row = Rect(dialoguePanel, "NarrativeChoiceRow" + i, new Vector2(720, 242-i*65), new Vector2(1360, 62));
+            choiceRows[i] = row.gameObject.AddComponent<UnityEngine.UI.Image>();
+            choiceRows[i].color = Color.clear;
+            choiceLabels[i] = DialogueLabel(row, "NarrativeChoice" + i, new Vector2(680, 31), new Vector2(1340, 62));
         }
-        consequenceText = Text(panel, "ChoiceConsequence", "", new Vector2(720, 20), new Vector2(1340, 35), 25);
-        consequenceText.color = Color.white;
+        consequenceText = DialogueLabel(dialoguePanel, "ChoiceConsequence", new Vector2(720, 40), new Vector2(1340, 46));
         interactionKey = Text(canvas, "InteractionKey", "", Vector2.zero, new Vector2(60, 60), 36);
         interactionKey.color = Color.white;
         interactionKey.raycastTarget = false;
         interactionKey.gameObject.SetActive(false);
         dialogue.SetActive(false);
+    }
+
+    private TMP_Text DialogueLabel(Transform parent, string name, Vector2 position, Vector2 size)
+    {
+        var label = Text(parent, name, "", position, size, DialogueFontSize, TextAlignmentOptions.Left);
+        // Keep the existing Latin font; no implicit markup, size changes or emphasis.
+        label.fontStyle = FontStyles.Normal;
+        label.enableAutoSizing = false;
+        label.richText = false;
+        label.color = Color.white;
+        label.textWrappingMode = TextWrappingModes.Normal;
+        return label;
+    }
+
+    private void PresentLine()
+    {
+        dialogueText.text = dialogueLines[dialogueIndex].Text;
+        speakerText.text = dialogueLines[dialogueIndex].SpeakerName;
     }
 
     public string NarrativeEntry(string id) => narrative.EntryText(id, allowNarrativeDraft);
@@ -66,11 +91,11 @@ public sealed partial class MissionUI
     public bool ShowNarrative(string sequenceId, Action<DialogueResult, string> result, bool cancellable = false)
     {
         if (DialogueVisible || narrative == null) return false;
-        try { dialogueLines = NarrativeSequence(sequenceId); }
+        try { dialogueLines = narrative.SequenceLines(sequenceId, allowNarrativeDraft); }
         catch (Exception error) { Debug.LogError("Narrative: " + error.Message, this); return false; }
         choiceIds = null;
         dialogueIndex = 0;
-        dialogueText.text = dialogueLines[0];
+        PresentLine();
         OpenDialogue(sequenceId, result, cancellable, true);
         return true;
     }
@@ -96,10 +121,17 @@ public sealed partial class MissionUI
         dialogueResult = result;
         dialogueCanCancel = cancellable;
         shownFrame = Time.frameCount;
+        dialogueBlocksWorld = blockPointer;
+        mouseReady = Mouse.current == null || !Mouse.current.leftButton.isPressed;
+        previousDialoguePointer = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
+        hoveredChoice = -1;
+        dialogueInput = flow.ActiveFight != null ? flow.ActiveFight.Player.GetComponent<PlayerInputReader>() : null;
+        if (dialogueInput != null) dialogueInput.UiBlocksManualFire = DialogueOwnsPointer;
         dialogue.transform.SetAsLastSibling();
         dialogue.SetActive(true);
         foreach (var image in dialogue.GetComponentsInChildren<UnityEngine.UI.Image>(true)) image.raycastTarget = blockPointer;
-        foreach (var label in choiceLabels) label.gameObject.SetActive(choiceIds != null);
+        dialoguePanel.GetComponent<UnityEngine.UI.Image>().raycastTarget = true;
+        foreach (var row in choiceRows) { row.raycastTarget = true; row.gameObject.SetActive(choiceIds != null); }
         consequenceText.text = "";
         dialogueText.gameObject.SetActive(choiceIds == null);
         ShowInteractionKey(null);
@@ -114,37 +146,70 @@ public sealed partial class MissionUI
         return true;
     }
 
+    private bool DialogueOwnsPointer()
+    {
+        if (!DialogueVisible) return false;
+        return dialogueBlocksWorld || (Mouse.current != null && RectTransformUtility.RectangleContainsScreenPoint(
+            dialoguePanel, Mouse.current.position.ReadValue(), null));
+    }
+
     private void TickDialogueInput()
     {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         if (GetComponent<DeveloperRouteJump>()?.MenuVisible == true) return;
 #endif
-        if (!DialogueVisible || Time.frameCount <= shownFrame || Keyboard.current == null) return;
+        if (!DialogueVisible || Time.frameCount <= shownFrame) return;
         var keys = Keyboard.current;
-        if (dialogueCanCancel && keys.escapeKey.wasPressedThisFrame) { HideDialogue(); return; }
+        var mouse = Mouse.current;
+        if (mouse != null && !mouse.leftButton.isPressed) mouseReady = true;
+        bool click = mouse != null && mouseReady && mouse.leftButton.wasPressedThisFrame;
+        if (dialogueCanCancel && keys != null && keys.escapeKey.wasPressedThisFrame) { HideDialogue(); return; }
         if (choiceIds != null)
         {
+            int hit = -1;
+            if (mouse != null)
+            {
+                Vector2 pointer = mouse.position.ReadValue();
+                for (int i = 0; i < choiceIds.Length; i++)
+                    if (RectTransformUtility.RectangleContainsScreenPoint((RectTransform)choiceRows[i].transform, pointer, null)) { hit = i; break; }
+                // Stationary hover must not undo W/S navigation. A click always uses its actual row.
+                if (hit >= 0 && (hit != hoveredChoice || pointer != previousDialoguePointer || click)) selectedChoice = hit;
+                hoveredChoice = hit;
+                previousDialoguePointer = pointer;
+            }
             int previousChoice = selectedChoice;
-            if (keys.upArrowKey.wasPressedThisFrame) selectedChoice = (selectedChoice + choiceIds.Length - 1) % choiceIds.Length;
-            if (keys.downArrowKey.wasPressedThisFrame) selectedChoice = (selectedChoice + 1) % choiceIds.Length;
+            if (keys != null && keys.wKey.wasPressedThisFrame) selectedChoice = (selectedChoice + choiceIds.Length - 1) % choiceIds.Length;
+            if (keys != null && keys.sKey.wasPressedThisFrame) selectedChoice = (selectedChoice + 1) % choiceIds.Length;
             RefreshNarrativeChoices();
-            if (previousChoice != selectedChoice) { shownFrame = Time.frameCount; ConsumeInteractionPress(); return; }
+            if (click && hit >= 0)
+            {
+                selectedChoice = hit;
+                RefreshNarrativeChoices();
+                ConsumeInteractionPress();
+                FinishDialogue(DialogueResult.ChoiceCommitted, SelectedChoiceId);
+                return;
+            }
+            if (previousChoice != selectedChoice) { ConsumeInteractionPress(); return; }
+            if (ConsumeInteractionPress()) FinishDialogue(DialogueResult.ChoiceCommitted, SelectedChoiceId);
         }
-        if (!ConsumeInteractionPress()) return;
-        if (choiceIds != null) FinishDialogue(DialogueResult.ChoiceCommitted, SelectedChoiceId);
-        else AdvanceDialogue();
+        else if (ConsumeInteractionPress() || click)
+        {
+            mouseReady = false;
+            shownFrame = Time.frameCount;
+            AdvanceDialogue();
+        }
     }
 
     private void RefreshNarrativeChoices()
     {
         for (int i = 0; i < choiceLabels.Length; i++)
         {
-            choiceLabels[i].gameObject.SetActive(i < choiceIds.Length);
+            choiceRows[i].gameObject.SetActive(i < choiceIds.Length);
             if (i >= choiceIds.Length) continue;
             choiceLabels[i].text = NarrativeEntry(choiceIds[i]);
-            choiceLabels[i].color = i == selectedChoice ? Color.white : new Color(.55f,.55f,.55f);
-            choiceLabels[i].fontStyle = i == selectedChoice ? FontStyles.Underline : FontStyles.Normal;
+            choiceRows[i].color = i == selectedChoice ? new Color(1, 1, 1, .18f) : Color.clear;
         }
+        speakerText.text = narrative.EntryLine(SelectedChoiceId, allowNarrativeDraft).SpeakerName;
         string cue = choiceConsequence?.Invoke(SelectedChoiceId);
         consequenceText.text = cue == null ? "" : NarrativeEntry(cue);
     }
@@ -152,14 +217,23 @@ public sealed partial class MissionUI
     private void AdvanceDialogue()
     {
         if (!DialogueVisible || choiceIds != null) return;
-        if (++dialogueIndex < dialogueLines.Length) { dialogueText.text = dialogueLines[dialogueIndex]; return; }
+        if (++dialogueIndex < dialogueLines.Length) { PresentLine(); return; }
         FinishDialogue(DialogueResult.Completed, CurrentNarrativeId);
     }
     private void FinishDialogue(DialogueResult result, string id)
     {
         var callback = dialogueResult;
         dialogueResult = null;
-        dialogueLines = choiceIds = null;
+        // A click held while the panel closes must never become a gameplay shot.
+        if (dialogueInput != null)
+        {
+            if (DialogueOwnsPointer() && Mouse.current != null && Mouse.current.leftButton.isPressed)
+                dialogueInput.SuppressUiFireUntilRelease();
+            dialogueInput.UiBlocksManualFire = null;
+        }
+        dialogueInput = null;
+        dialogueLines = null;
+        choiceIds = null;
         choiceConsequence = null;
         CurrentNarrativeId = null;
         if (dialogue != null) dialogue.SetActive(false);

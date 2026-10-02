@@ -421,7 +421,7 @@ public partial class TopDownSmokeTest : MonoBehaviour
     private void CheckAugmentConfig(GameSessionFlow flow, float body, int damage, float interval, AimControl aim, string label)
     {
         var f = flow.ActiveFight; var reader = f.Player.GetComponent<PlayerInputReader>();
-        Check(label + " runtime config", flow.Deployment.BodyModificationPercent == body && flow.Deployment.WeaponId == LoadoutRules.BasicGun
+        Check(label + " runtime config", flow.Deployment.BodyModificationPercent == body && flow.Deployment.WeaponId == LoadoutRules.AssaultRifle
             && f.Player.GetComponent<PlayerShooting>().BulletDamage == damage && Mathf.Abs(f.Player.GetComponent<PlayerDodge>().DodgeStartInterval - interval) < .001f
             && reader.AimMode == aim && flow.Deployment.Aim == aim, $"body={body}, damage={damage}, dodge={interval}, aim={reader.AimMode}");
         var so = new UnityEditor.SerializedObject(f.Boss);
@@ -439,7 +439,7 @@ public partial class TopDownSmokeTest : MonoBehaviour
     {
         var record = flow.Victory;
         Check(label, flow.State == GameSessionFlow.FlowState.Result && record != null && record.BodyModificationPercent == body
-            && record.WeaponId == LoadoutRules.BasicGun && record.OfficerIndex == flow.OfficerIndex, "winning snapshot body=" + record?.BodyModificationPercent);
+            && record.WeaponId == LoadoutRules.AssaultRifle && record.OfficerIndex == flow.OfficerIndex, "winning snapshot body=" + record?.BodyModificationPercent);
         var editable = new LoadoutDraft(record.WinningDeployment, true);
         editable.TrySetSlot(LoadoutSlot.LeftArm, ""); editable.TrySetSlot(LoadoutSlot.RightLeg, ""); editable.TrySetSlot(LoadoutSlot.Brain, "");
         Check(label + " immutable", !ReferenceEquals(record.WinningDeployment, flow.Deployment)
@@ -570,7 +570,7 @@ public partial class TopDownSmokeTest : MonoBehaviour
         var firstVictory = flow.Victory;
         var firstDraft = flow.Draft;
         Check("victory owns a copied snapshot", !ReferenceEquals(firstVictory.WinningDeployment, flow.Deployment)
-            && firstVictory.WeaponId == LoadoutRules.BasicGun, "immutable value entries and private copied arrays");
+            && firstVictory.WeaponId == LoadoutRules.AssaultRifle, "immutable value entries and private copied arrays");
         ScreenCapture.CaptureScreenshot("Logs/GO_GHOST_VS/session-first-victory.png");
         yield return Frames(2);
         yield return ClickSessionButton("NewGameButton");
@@ -592,7 +592,7 @@ public partial class TopDownSmokeTest : MonoBehaviour
             "held Move/Attack/Dodge, no actors or attacks");
         var secondDraft = flow.Draft;
         Check("editable draft accepts only implemented entries", flow.TrySetDraftSlot(LoadoutSlot.LeftArm, "")
-            && flow.TrySetDraftSlot(LoadoutSlot.Weapon, LoadoutRules.BasicGun)
+            && flow.TrySetDraftSlot(LoadoutSlot.Weapon, LoadoutRules.AssaultRifle)
             && !flow.TrySetDraftSlot(LoadoutSlot.Brain, "not_implemented"), "no fake catalog");
         // Keep keyboard held across the click; the fresh input reader must wait for release.
         yield return ClickSessionButton("DeployButton");
@@ -631,7 +631,7 @@ public partial class TopDownSmokeTest : MonoBehaviour
         flow.OnStateChanged -= resetObserver;
         CheckFreshAttempt(flow, 1, "D reset");
         Check("D complete session reset", clearedAtInitialization && !flow.AugmentationsUnlocked && flow.Victory == null
-            && flow.Deployment.Aim == AimControl.Manual && flow.Deployment.WeaponId == LoadoutRules.BasicGun,
+            && flow.Deployment.Aim == AimControl.Manual && flow.Deployment.WeaponId == LoadoutRules.AssaultRifle,
             "Officer #1, human, basic gun, manual aim, fresh draft/deployment, no victory/unlock state");
         Check("D previous victory remains immutable", secondVictory.OfficerIndex == 2 && secondVictory.BodyModificationPercent == 0f,
             "held record survives New Game without changing");
@@ -733,8 +733,8 @@ public partial class TopDownSmokeTest : MonoBehaviour
         var bossRb = fight.Boss.GetComponent<Rigidbody2D>();
         Check(label + " identity/config", flow.OfficerIndex == officer && flow.Deployment.OfficerIndex == officer
             && player.GetComponent<OfficerIdentity>().OfficerIndex == officer && flow.Deployment.BodyModificationPercent == 0f
-            && flow.Deployment.WeaponId == LoadoutRules.BasicGun && flow.Deployment.Aim == AimControl.Manual,
-            $"Officer #{flow.OfficerIndex}, 0%, basic_gun, Manual");
+            && flow.Deployment.WeaponId == LoadoutRules.AssaultRifle && flow.Deployment.Aim == AimControl.Manual,
+            $"Officer #{flow.OfficerIndex}, 0%, assault_rifle, Manual");
         Check(label + " full reset", player.CurrentHealth == 100 && fight.BossHealth.CurrentHealth == 320
             && !player.IsDead && !fight.BossHealth.IsDead && !player.IsInvulnerable && !player.GetComponent<PlayerDodge>().IsDodging
             && player.GetComponent<PlayerMovement>().IsGrounded && Mathf.Abs(rb.position.x + 6f) < 0.02f
@@ -750,7 +750,7 @@ public partial class TopDownSmokeTest : MonoBehaviour
     {
         Check(label + " next officer/loadout", flow.OfficerIndex == officer && flow.AugmentationsUnlocked
             && flow.Deployment == null && flow.Victory == null && !flow.Draft.IsLocked && flow.Draft.BodyModificationPercent == 0f
-            && flow.Draft.WeaponId == LoadoutRules.BasicGun, $"Officer #{flow.OfficerIndex}, unlock={flow.AugmentationsUnlocked}");
+            && flow.Draft.WeaponId == LoadoutRules.AssaultRifle, $"Officer #{flow.OfficerIndex}, unlock={flow.AugmentationsUnlocked}");
         Check(label + " world cleared", flow.ActiveFight == null && FindObjectsByType<PlayerHealth>().Length == 0
             && FindObjectsByType<CyberpsychoBoss>().Length == 0 && FindObjectsByType<Projectile>().Length == 0,
             "old attempt destroyed while the next officer chooses deployment");

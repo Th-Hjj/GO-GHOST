@@ -27,7 +27,7 @@ public sealed class SfxSet : MonoBehaviour
     {
         int index = (int)id;
         if (output == null || index < 0 || index >= clips.Length) return;
-        // Several Shotgun pellets landing in one frame are one audible impact, not a stack of voices.
+        // Several simultaneous impacts share one audible cue instead of stacking voices.
         if (lastFrame[index] == Time.frameCount) return;
         lastFrame[index] = Time.frameCount;
         requested[index]++;

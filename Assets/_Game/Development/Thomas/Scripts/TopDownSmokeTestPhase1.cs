@@ -44,7 +44,7 @@ public partial class TopDownSmokeTest
         Check("Modified weapon declaration", isolated.WeaponCompatibility == WeaponCompatibility.Modified && isolated.CanUseWeapon, "data only; no invented weapon effect");
         isolated.TrySetSlot(LoadoutSlot.LeftArm, disabled.ItemId);
         Check("Disabled weapon declaration", isolated.WeaponCompatibility == WeaponCompatibility.Disabled && !isolated.CanUseWeapon
-            && !isolated.TrySetSlot(LoadoutSlot.Weapon, LoadoutRules.BasicGun), "restrictive status wins; selected weapon retained with 0% contribution");
+            && !isolated.TrySetSlot(LoadoutSlot.Weapon, LoadoutRules.AssaultRifle), "restrictive status wins; selected weapon retained with 0% contribution");
         var compoundSnapshot = isolated.Deploy(2);
         Check("compound snapshot does not invent passive effects", compoundSnapshot.LegCount == 0 && compoundSnapshot.MoveSpeed == 6
             && compoundSnapshot.WeaponCompatibility == WeaponCompatibility.Disabled, "only known Rapid Fire/Move Speed IDs grant their effects");

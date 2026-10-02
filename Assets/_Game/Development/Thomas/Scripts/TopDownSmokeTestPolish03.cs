@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-/// <summary>Batch 03a/03b presentation check only: Sniper muzzle length, Arm-Blade white line, old counter marker hidden.</summary>
+/// <summary>Presentation check only: rifle muzzle, Arm-Blade white line, old counter marker hidden.</summary>
 public partial class TopDownSmokeTest
 {
     // Longest live "ImpactLines" ray right now (muzzle rays start .035 from the origin).
@@ -31,6 +31,7 @@ public partial class TopDownSmokeTest
             float rifleRay = 0f;
             for (int i = 0; i < 8 && rifleRay <= 0f; i++) { yield return null; rifleRay = LongestMuzzleRay(f); }
             Mouse(.3f, .9f, false);
+            Check("Rifle muzzle ray length", Mathf.Abs(rifleRay - .165f) < .01f, $"ray={rifleRay:0.000}");
             Keys(Key.D);
             yield return Phase8Until(() => flow.State == GameSessionFlow.FlowState.Combat, "door", 20);
             Keys(); yield return Frames(3);
@@ -38,20 +39,14 @@ public partial class TopDownSmokeTest
             f.Player.TakeDamage(10000, f.Boss.gameObject);
             yield return DefeatToMenu(flow);
 
-            // Sniper + Arm-Blade.
+            // Rifle + Arm-Blade.
             yield return ClickSessionButton("StartMission");
-            flow.TrySetDraftSlot(LoadoutSlot.Weapon, LoadoutRules.Sniper);
+            flow.TrySetDraftSlot(LoadoutSlot.Weapon, LoadoutRules.AssaultRifle);
             flow.TrySetDraftSlot(LoadoutSlot.LeftArm, LoadoutRules.ArmBlade);
             yield return ClickSessionButton("BeginOperation");
             yield return WeaponsPracticeStart(flow);
             f = flow.ActiveFight;
             var arm = f.Player.GetComponent<PlayerCounterArm>();
-            Mouse(.3f, .9f, true);
-            float sniperRay = 0f;
-            for (int i = 0; i < 8 && sniperRay <= 0f; i++) { yield return null; sniperRay = LongestMuzzleRay(f); }
-            Mouse(.3f, .9f, false);
-            Check("Sniper muzzle rays are longer than the Assault Rifle's", Mathf.Abs(rifleRay - .165f) < .01f && Mathf.Abs(sniperRay - .215f) < .01f,
-                $"rifle ray={rifleRay:0.000} sniper ray={sniperRay:0.000}");
             yield return Seconds(.3f);
             Keys(Key.E); yield return Frames(3); Keys();
             var transient = f.transform.Find("AttemptVfx_Transient");

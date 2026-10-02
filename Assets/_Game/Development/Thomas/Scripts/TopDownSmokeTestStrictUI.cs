@@ -83,9 +83,9 @@ public partial class TopDownSmokeTest
         bool selectable = true;
         for (int i = 0; i < 7; i++) { yield return StrictClickRegion(i); selectable &= ui.SelectedRegion == i; }
         Check("All seven selectors clickable", selectable, "six body regions plus separate Weapon equipment slot");
-        StrictAudit("corrected-weapon", new[] { "BACK", "WEAPON", "BEGIN OPERATION", "Basic Gun" });
-        yield return ClickSessionButton("Choice_" + LoadoutRules.BasicGun);
-        Check("Weapon uses existing Basic Gun", flow.Draft.GetSlot(LoadoutSlot.Weapon).ItemId == LoadoutRules.BasicGun
+        StrictAudit("corrected-weapon", new[] { "BACK", "WEAPON", "BEGIN OPERATION", "Assault Rifle" });
+        yield return ClickSessionButton("Choice_" + LoadoutRules.AssaultRifle);
+        Check("Weapon uses existing Assault Rifle", flow.Draft.GetSlot(LoadoutSlot.Weapon).ItemId == LoadoutRules.AssaultRifle
             && Enum.GetValues(typeof(LoadoutSlot)).Length == 7, "existing Weapon slot/filter; no eighth slot or new equipment");
         var upgradeBack = (RectTransform)GameObject.Find("UpgradeBack").transform;
         Check("Upgrade BACK top-left", upgradeBack.anchorMin == new Vector2(0, 1) && upgradeBack.anchorMax == new Vector2(0, 1), "same style and anchoring as Archive BACK");
@@ -96,7 +96,7 @@ public partial class TopDownSmokeTest
         StrictAudit("corrected-torso", new[] { "BACK", "WEAPON", "BEGIN OPERATION", "Time Slow" });
         yield return ClickSessionButton("Choice_" + LoadoutRules.TorsoSlow);
         Check("Torso stays independent", flow.Draft.GetSlot(LoadoutSlot.Torso).ItemId == LoadoutRules.TorsoSlow
-            && flow.Draft.GetSlot(LoadoutSlot.Weapon).ItemId == LoadoutRules.BasicGun, "existing body/core augmentation and weapon occupy separate slots");
+            && flow.Draft.GetSlot(LoadoutSlot.Weapon).ItemId == LoadoutRules.AssaultRifle, "existing body/core augmentation and weapon occupy separate slots");
         yield return ClickSessionButton("UpgradeBack");
         Check("Main Menu -> Upgrade -> BACK -> Main Menu", flow.State == GameSessionFlow.FlowState.MainMenu
             && flow.ActiveFight == null && FindObjectsByType<Button>().Length == 2, "direct return; no combat start");
@@ -134,7 +134,7 @@ public partial class TopDownSmokeTest
                 selected &= ui.SelectedRegion == i;
                 var definitions = i == 6 ? Array.Empty<AugmentationDefinition>()
                     : LoadoutRules.PrototypeCatalog.Where(d => d.Occupies(slots[i]) && d.ItemId != LoadoutRules.DetachedDroneArm).ToArray();
-                string[] expected = new[] { "BEGIN OPERATION", "BACK", "WEAPON" }.Concat(i == 6 ? new[] { "Basic Gun" } : definitions.Select(d => LoadoutRules.ItemLabel(d.ItemId))).ToArray();
+                string[] expected = new[] { "BEGIN OPERATION", "BACK", "WEAPON" }.Concat(i == 6 ? new[] { "Assault Rifle" } : definitions.Select(d => LoadoutRules.ItemLabel(d.ItemId))).ToArray();
                 validOnly &= StrictTexts().OrderBy(x => x).SequenceEqual(expected.OrderBy(x => x));
                 foreach (var definition in definitions)
                 {
@@ -143,7 +143,7 @@ public partial class TopDownSmokeTest
                 }
             }
             Check("Seven body regions and existing choices", selected && choicesWork && validOnly,
-                $"seven clicks={selected}; all available choices equip={choicesWork}; catalog-only/Weapon Basic Gun={validOnly}; Drone unavailable before existing unlock");
+                $"seven clicks={selected}; all available choices equip={choicesWork}; catalog-only/Weapon Assault Rifle={validOnly}; Drone unavailable before existing unlock");
             // Show a real populated submenu for visual inspection, without altering the final selected build.
             yield return StrictClickRegion(0);
             StrictAudit("upgrade-head", new[] { "BEGIN OPERATION", "BACK", "WEAPON", "Targeting AI", "Predictive Cortex" });

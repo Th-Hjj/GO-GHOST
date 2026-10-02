@@ -40,11 +40,11 @@ public partial class TopDownSmokeTest
                 && PoliceArchive.Current.LatestRun.BossHealth == 500 && !PoliceArchive.Current.LatestRun.Success, "BOSS HP 500");
             yield return ClickSessionButton("ResultContinue");
 
-            // ---------- Run 2 (50% build, Shotgun): transition, immunity, Phase 2, BLACKOUT, death in Phase 2 ----------
+            // ---------- Run 2 (50% build, Assault Rifle): transition, immunity, Phase 2, BLACKOUT, death in Phase 2 ----------
             yield return ClickSessionButton("StartMission");
             flow.TrySetDraftSlot(LoadoutSlot.LeftArm, LoadoutRules.ArmBlade);
             flow.TrySetDraftSlot(LoadoutSlot.Brain, LoadoutRules.BrainAI);
-            flow.TrySetDraftSlot(LoadoutSlot.Weapon, LoadoutRules.Shotgun);
+            flow.TrySetDraftSlot(LoadoutSlot.Weapon, LoadoutRules.AssaultRifle);
             yield return ClickSessionButton("BeginOperation");
             yield return WeaponsPracticeStart(flow);
             Keys(Key.D);
@@ -55,7 +55,7 @@ public partial class TopDownSmokeTest
             var arm = f.Player.GetComponent<PlayerCounterArm>();
             playerBar = BarFill("PlayerHealth"); bossBar = BarFill("BossHealth");
             Color half = Color.Lerp(Color.white, DeepBlueTest, .5f);
-            Check("50% build with a Shotgun: player bar is the white/blue midpoint", flow.Deployment.BodyModificationPercent == 50 && SameColour(playerBar.color, half), playerBar.color.ToString());
+            Check("50% build with a Assault Rifle: player bar is the white/blue midpoint", flow.Deployment.BodyModificationPercent == 50 && SameColour(playerBar.color, half), playerBar.color.ToString());
             f.Player.IsInvulnerable = true; // observation protection only
             float combatStart = Time.unscaledTime;
             f.BossHealth.TakeDamage(100000, f.Player.gameObject);
@@ -66,7 +66,7 @@ public partial class TopDownSmokeTest
             float depletedAt = Time.time;
             yield return WeaponsWait(() => f.Boss.Phase == CyberpsychoBoss.BossPhase.PhaseTransition, 2);
             Check("2 Boss enters its transition", f.Boss.Phase == CyberpsychoBoss.BossPhase.PhaseTransition, $"after {Time.time - depletedAt:0.00}s");
-            // Immunity: real shotgun fire with the Targeting AI still locked on the Boss, then a real blade swing next to it.
+            // Immunity: real rifle fire with the Targeting AI still locked on the Boss, then a real blade swing next to it.
             var reader = f.Player.GetComponent<PlayerInputReader>();
             Vector2 toBoss = (Vector2)f.BossHealth.GetComponent<Collider2D>().bounds.center - (Vector2)f.Player.transform.position;
             bool aiStillTargets = Vector2.Angle(reader.AimDirection, toBoss) < 5f;

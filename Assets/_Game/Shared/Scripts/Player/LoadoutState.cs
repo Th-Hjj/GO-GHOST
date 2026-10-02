@@ -31,36 +31,24 @@ public readonly struct WeaponProfile
     public float FireInterval { get; }   // seconds between trigger pulls before Rapid Fire
     public int MagazineSize { get; }
     public float ReloadSeconds { get; }
-    public int Pellets { get; }          // projectiles per trigger pull
-    public float SpreadDegrees { get; }  // total fixed fan for Pellets > 1
-    public bool Automatic { get; }       // true: hold to fire; false: one pull per press
-
-    public WeaponProfile(int damage, float fireInterval, int magazineSize, float reloadSeconds, int pellets, float spreadDegrees, bool automatic)
+    public WeaponProfile(int damage, float fireInterval, int magazineSize, float reloadSeconds)
     {
         Damage = damage; FireInterval = fireInterval; MagazineSize = magazineSize; ReloadSeconds = reloadSeconds;
-        Pellets = pellets; SpreadDegrees = spreadDegrees; Automatic = automatic;
     }
 }
 
 public static class LoadoutRules
 {
     public const int SlotCount = 7;
-    // Legacy weapon ID kept for older run records and fixtures; at runtime it behaves as the Assault Rifle.
-    public const string BasicGun = "basic_gun";
     public const string AssaultRifle = "assault_rifle";
-    public const string Sniper = "sniper";
-    public const string Shotgun = "shotgun";
     /// <summary>The Weapon slot choices offered before deployment, in display order.</summary>
-    public static readonly string[] OfferedWeapons = { AssaultRifle, Sniper, Shotgun };
-    public static bool IsWeapon(string id) => id == AssaultRifle || id == Sniper || id == Shotgun || id == BasicGun;
+    public static readonly string[] OfferedWeapons = { AssaultRifle };
+    public static bool IsWeapon(string id) => id == AssaultRifle;
 
     // TEST values. Assault Rifle keeps the previous gun damage and rate (12 damage, 4 shots/s) with a 10-round magazine.
-    public static WeaponProfile Weapon(string id) => id switch
-    {
-        Sniper => new WeaponProfile(45, 1f, 4, 1.8f, 1, 0f, false),
-        Shotgun => new WeaponProfile(7, .8f, 5, 1.6f, 6, 25f, false),
-        _ => new WeaponProfile(12, .25f, 10, 1.2f, 1, 0f, true)
-    };
+    public static WeaponProfile Weapon(string id) => IsWeapon(id)
+        ? new WeaponProfile(12, .25f, 10, 1.2f)
+        : throw new ArgumentException("Unsupported weapon ID.", nameof(id));
     public const string ArmFireRate = "test_v2_arm_rate";
     public const string LegMoveSpeed = "test_v2_leg_speed";
     public const string LegDoubleJump = "test_leg_double_jump";
@@ -137,7 +125,7 @@ public static class LoadoutRules
         ArmFireRate => "Rapid Fire", LegMoveSpeed => "Move Speed", TorsoSlow => "Time Slow", BrainAI => "Targeting AI",
         CounterArm => "Counter Arm", PredictiveCortex => "Predictive Cortex", DetachedDroneArm => "Detached Drone Arm",
         LegDoubleJump => "Double Jump", LegHover => "Hover", LegAirDash => "Air Dash", ArmBlade => "Arm-Blade",
-        BasicGun => "Basic Gun", _ => "Human / Empty"
+        AssaultRifle => "Assault Rifle", _ => "Human / Empty"
     };
 
     public static bool IsLeg(LoadoutSlot slot) => slot == LoadoutSlot.LeftLeg || slot == LoadoutSlot.RightLeg;
@@ -161,7 +149,7 @@ public static class LoadoutRules
 
     public static string WeaponLabel(string id) => id switch
     {
-        AssaultRifle => "Assault Rifle", Sniper => "Sniper", Shotgun => "Shotgun", BasicGun => "Basic Gun", _ => id
+        AssaultRifle => "Assault Rifle", _ => id
     };
     public static string SlotLabel(LoadoutSlot slot) => slot switch
     {
@@ -335,6 +323,8 @@ public sealed class DeploymentSnapshot
         OfficerIndex = officerIndex;
         BrainPermissionTier = brainPermissionTier;
         slots = (LoadoutEntry[])source.Clone();
+        if (!LoadoutRules.IsWeapon(slots[(int)LoadoutSlot.Weapon].ItemId))
+            throw new ArgumentException("Only Assault Rifle can be deployed.", nameof(source));
         catalog = (AugmentationDefinition[])(definitions ?? LoadoutRules.PrototypeCatalog).Clone();
         BodyModificationPercent = LoadoutRules.BodyModification(slots);
     }

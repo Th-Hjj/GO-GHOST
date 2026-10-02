@@ -40,10 +40,10 @@ public partial class TopDownSmokeTest
             ScreenCapture.CaptureScreenshot("Logs/GO_GHOST_VS/ui-upgrade-leg.png");
             yield return Frames(3);
             yield return ClickSessionButton("Region_WEAPON");
-            yield return ClickSessionButton("Choice_" + LoadoutRules.Shotgun);
+            yield return ClickSessionButton("Choice_" + LoadoutRules.AssaultRifle);
             yield return Frames(2);
-            Check("Weapon region and chosen gun are inverted", Inverted("Region_WEAPON") && Inverted("Choice_" + LoadoutRules.Shotgun)
-                && !Inverted("Choice_" + LoadoutRules.AssaultRifle) && !GameObject.Find("Region_LEFT_LEG").GetComponent<MissionBodyRegion>().Selected, "Weapon / Shotgun");
+            Check("Weapon region and rifle are inverted", Inverted("Region_WEAPON") && Inverted("Choice_" + LoadoutRules.AssaultRifle)
+                && !GameObject.Find("Region_LEFT_LEG").GetComponent<MissionBodyRegion>().Selected, "Weapon / Assault Rifle");
             ScreenCapture.CaptureScreenshot("Logs/GO_GHOST_VS/ui-upgrade-weapon.png");
             yield return Frames(3);
             yield return ClickSessionButton("UpgradeBack");

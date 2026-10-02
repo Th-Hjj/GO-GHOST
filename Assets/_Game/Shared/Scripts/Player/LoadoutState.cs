@@ -65,6 +65,7 @@ public static class LoadoutRules
     public const string LegMoveSpeed = "test_v2_leg_speed";
     public const string LegDoubleJump = "test_leg_double_jump";
     public const string LegHover = "test_leg_hover";
+    public const string LegAirDash = "leg_air_dash";
     // Preserve the existing item ID; this prototype Torso option has no assigned final tier.
     public const string TorsoSlow = "test_v2_spine_slow";
     public const string BrainAI = "ai_aim";
@@ -88,7 +89,9 @@ public static class LoadoutRules
         new AugmentationDefinition(CounterArm, WeaponCompatibility.Normal, LoadoutSlot.LeftArm),
         new AugmentationDefinition(PredictiveCortex, WeaponCompatibility.Normal, LoadoutSlot.Brain),
         new AugmentationDefinition(DetachedDroneArm, WeaponCompatibility.Normal, LoadoutSlot.LeftArm),
-        new AugmentationDefinition(ArmBlade, WeaponCompatibility.Normal, LoadoutSlot.LeftArm)
+        new AugmentationDefinition(ArmBlade, WeaponCompatibility.Normal, LoadoutSlot.LeftArm),
+        new AugmentationDefinition(LegAirDash, WeaponCompatibility.Normal, LoadoutSlot.LeftLeg),
+        new AugmentationDefinition(LegAirDash, WeaponCompatibility.Normal, LoadoutSlot.RightLeg)
     };
 
     /// <summary>
@@ -99,7 +102,7 @@ public static class LoadoutRules
     {
         LoadoutSlot.LeftArm => itemId == ArmBlade || itemId == DetachedDroneArm,
         LoadoutSlot.RightArm => itemId == ArmFireRate,
-        LoadoutSlot.LeftLeg or LoadoutSlot.RightLeg => itemId == LegDoubleJump || itemId == LegHover,
+        LoadoutSlot.LeftLeg or LoadoutSlot.RightLeg => itemId == LegDoubleJump || itemId == LegHover || itemId == LegAirDash,
         LoadoutSlot.Torso => itemId == TorsoSlow,
         LoadoutSlot.Brain => itemId == BrainAI,
         _ => false
@@ -133,7 +136,7 @@ public static class LoadoutRules
     {
         ArmFireRate => "Rapid Fire", LegMoveSpeed => "Move Speed", TorsoSlow => "Time Slow", BrainAI => "Targeting AI",
         CounterArm => "Counter Arm", PredictiveCortex => "Predictive Cortex", DetachedDroneArm => "Detached Drone Arm",
-        LegDoubleJump => "Double Jump", LegHover => "Hover", ArmBlade => "Arm-Blade",
+        LegDoubleJump => "Double Jump", LegHover => "Hover", LegAirDash => "Air Dash", ArmBlade => "Arm-Blade",
         BasicGun => "Basic Gun", _ => "Human / Empty"
     };
 
@@ -239,8 +242,8 @@ public sealed class LoadoutDraft
             return true;
         }
         if (!AugmentationsAvailable) return false;
-        // One Double Jump and one Hover at most. The other leg is never changed on the player's behalf.
-        if (LoadoutRules.IsLeg(slot) && (itemId == LoadoutRules.LegDoubleJump || itemId == LoadoutRules.LegHover)
+        // One Double Jump, one Hover and one Air Dash at most. The other leg is never changed on the player's behalf.
+        if (LoadoutRules.IsLeg(slot) && (itemId == LoadoutRules.LegDoubleJump || itemId == LoadoutRules.LegHover || itemId == LoadoutRules.LegAirDash)
             && slots[(int)(slot == LoadoutSlot.LeftLeg ? LoadoutSlot.RightLeg : LoadoutSlot.LeftLeg)].ItemId == itemId) return false;
         if (itemId == LoadoutRules.DetachedDroneArm && !PoliceArchive.Current.HasHiddenAugmentation(itemId)) return false;
         AugmentationDefinition definition = null;
@@ -313,6 +316,7 @@ public sealed class DeploymentSnapshot
     private bool HasLegOption(string id) => GetSlot(LoadoutSlot.LeftLeg).ItemId == id || GetSlot(LoadoutSlot.RightLeg).ItemId == id;
     public bool HasDoubleJump => HasLegOption(LoadoutRules.LegDoubleJump);
     public bool HasHover => HasLegOption(LoadoutRules.LegHover);
+    public bool HasAirDash => HasLegOption(LoadoutRules.LegAirDash);
 
     internal DeploymentSnapshot(int officerIndex, LoadoutEntry[] source, AugmentationDefinition[] definitions = null)
     {

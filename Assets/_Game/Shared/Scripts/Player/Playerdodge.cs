@@ -34,6 +34,11 @@ public class PlayerDodge : MonoBehaviour
 
     public bool IsDodging { get; private set; }
     private float nextDodgeTime;
+    // Formal Air Dash (leg upgrade in the DeploymentSnapshot): one horizontal dash per airtime, same cooldown as the
+    // ground dash. The base Human stays ground-only; the legacy airDodgeUnlocked field is not a progression path.
+    private bool airDashAvailable = true;
+    public bool HasAirDash => officer != null && officer.Deployment != null && officer.Deployment.HasAirDash;
+    public bool AirDashAvailable => HasAirDash && airDashAvailable;
     private OfficerIdentity officer;
     public float DodgeStartInterval => officer != null && officer.Deployment != null ? officer.Deployment.DodgeStartInterval : stats.dodgeCooldown;
     public float LastDodgeStartedAt { get; private set; } = float.NegativeInfinity;
@@ -59,6 +64,8 @@ public class PlayerDodge : MonoBehaviour
 
     private void Update()
     {
+        // Landing restores the one air use; it never touches the shared cooldown.
+        if (movement != null && movement.IsGrounded) airDashAvailable = true;
         if (input.DodgePressedThisFrame) // "Dodge" action: Left Shift
         {
             TryDodge();
@@ -68,7 +75,12 @@ public class PlayerDodge : MonoBehaviour
     public void TryDodge()
     {
         if (!isActiveAndEnabled || Time.time < nextDodgeTime || IsDodging || health.IsInvulnerable || movement == null
-            || !movement.IsGrounded || !input.GameplayInputEnabled) return;
+            || !input.GameplayInputEnabled) return;
+        if (!movement.IsGrounded)
+        {
+            if (!AirDashAvailable) return;
+            airDashAvailable = false;
+        }
         LastDodgeStartedAt = Time.time;
         nextDodgeTime = Time.time + DodgeStartInterval;
         StartCoroutine(DodgeRoutine());
@@ -97,6 +109,7 @@ public class PlayerDodge : MonoBehaviour
     {
         CancelDodge();
         nextDodgeTime = 0f;
+        airDashAvailable = true;
     }
 
     private void OnDisable() => CancelDodge();

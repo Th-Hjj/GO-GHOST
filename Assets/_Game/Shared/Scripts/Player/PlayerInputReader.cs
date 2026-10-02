@@ -46,7 +46,9 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
 
     public bool GameplayInputEnabled { get; private set; } = true;
     private bool hasFocus = true;
+    // Release gates are (re)armed whenever input starts or focus returns. See Update.
     private bool waitingForRelease = true;
+    private bool attackGated, jumpGated, dodgeGated, abilityGated, secondaryGated;
     private OfficerIdentity officer;
     private Enemy aimTarget;
     private Collider2D aimTargetCollider;
@@ -151,23 +153,32 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         AimScreenPosition = aimAction.ReadValue<Vector2>();
         UpdateAimDirection();
         Vector2 move = moveAction.ReadValue<Vector2>();
-        // A UI click or a held key on focus regain must not start an action.
+        // A UI click or a button held through a focus return must not start an action: each button that is already
+        // down when input (re)starts stays ignored until it is released once. Movement and every other button respond
+        // immediately, so one held key never locks the whole officer. Focus loss still clears everything above.
         if (waitingForRelease)
         {
-            ClearFrameState();
-            waitingForRelease = Mathf.Abs(move.x) > 0.01f || attackAction.IsPressed()
-                || jumpAction.IsPressed() || dodgeAction.IsPressed() || abilityAction.IsPressed() || secondaryAbilityAction.IsPressed();
-            return;
+            waitingForRelease = false;
+            attackGated = attackAction.IsPressed();
+            jumpGated = jumpAction.IsPressed();
+            dodgeGated = dodgeAction.IsPressed();
+            abilityGated = abilityAction.IsPressed();
+            secondaryGated = secondaryAbilityAction.IsPressed();
         }
+        attackGated &= attackAction.IsPressed();
+        jumpGated &= jumpAction.IsPressed();
+        dodgeGated &= dodgeAction.IsPressed();
+        abilityGated &= abilityAction.IsPressed();
+        secondaryGated &= secondaryAbilityAction.IsPressed();
         MoveInput = new Vector2(Mathf.Clamp(move.x, -1f, 1f), 0f);
 
-        AttackHeld = attackAction.IsPressed();
-        AttackPressedThisFrame = attackAction.WasPressedThisFrame();
-        JumpPressedThisFrame = jumpAction.WasPressedThisFrame();
-        JumpHeld = jumpAction.IsPressed();
-        DodgePressedThisFrame = dodgeAction.WasPressedThisFrame();
-        AbilityPressedThisFrame = abilityAction.WasPressedThisFrame();
-        SecondaryAbilityPressedThisFrame = secondaryAbilityAction.WasPressedThisFrame();
+        AttackHeld = !attackGated && attackAction.IsPressed();
+        AttackPressedThisFrame = !attackGated && attackAction.WasPressedThisFrame();
+        JumpPressedThisFrame = !jumpGated && jumpAction.WasPressedThisFrame();
+        JumpHeld = !jumpGated && jumpAction.IsPressed();
+        DodgePressedThisFrame = !dodgeGated && dodgeAction.WasPressedThisFrame();
+        AbilityPressedThisFrame = !abilityGated && abilityAction.WasPressedThisFrame();
+        SecondaryAbilityPressedThisFrame = !secondaryGated && secondaryAbilityAction.WasPressedThisFrame();
         PreviousPressedThisFrame = previousAction != null && previousAction.WasPressedThisFrame();
         NextPressedThisFrame = nextAction != null && nextAction.WasPressedThisFrame();
 

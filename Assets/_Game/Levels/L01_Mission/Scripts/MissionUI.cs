@@ -22,6 +22,8 @@ public sealed class MissionUI : MonoBehaviour
     private TMP_Text resultHeading, timeValue, bossValue, playerValue, accuracyValue, practiceControls, endingTitle, endingText, ammoText;
     private GameObject ammo;
     private PlayerShooting ammoSource;
+    private int shownAmmo = -1, shownMagazine = -1;
+    private bool shownReloading;
     private TMP_Text[] previousOfficerValues, previousEquipmentValues;
     private GameSessionFlow.FlowState shown = (GameSessionFlow.FlowState)(-1);
     public int SelectedRegion { get; private set; } = -1;
@@ -304,8 +306,11 @@ public sealed class MissionUI : MonoBehaviour
         if (shown != flow.State) Refresh();
         if (ammo.activeSelf && ammoSource != null)
         {
-            string readout = ammoSource.IsReloading ? "RELOADING" : ammoSource.AmmoInMagazine + " / " + ammoSource.MagazineSize;
-            if (ammoText.text != readout) ammoText.text = readout;
+            if (ammoSource.IsReloading != shownReloading || ammoSource.AmmoInMagazine != shownAmmo || ammoSource.MagazineSize != shownMagazine)
+            {
+                shownReloading = ammoSource.IsReloading; shownAmmo = ammoSource.AmmoInMagazine; shownMagazine = ammoSource.MagazineSize;
+                ammoText.text = shownReloading ? "RELOADING" : shownAmmo + " / " + shownMagazine;
+            }
         }
         if (flow.State == GameSessionFlow.FlowState.Combat && flow.ActiveFight != null)
         {
@@ -331,6 +336,7 @@ public sealed class MissionUI : MonoBehaviour
         bool armed = (shown == GameSessionFlow.FlowState.Practice || shown == GameSessionFlow.FlowState.Combat) && flow.ActiveFight != null;
         ammoSource = armed ? flow.ActiveFight.Player.GetComponent<PlayerShooting>() : null;
         ammo.SetActive(armed);
+        shownAmmo = shownMagazine = -1; // force one refresh for the new officer
         if (shown == GameSessionFlow.FlowState.Ending)
         {
             endingTitle.text = PoliceArchive.EndingTitle(flow.EndingId);
@@ -367,6 +373,7 @@ public sealed class MissionUI : MonoBehaviour
         };
         if (build.HasDoubleJump) lines.Add("SPACE AGAIN — DOUBLE JUMP");
         if (build.HasHover) lines.Add("HOLD SPACE — HOVER");
+        if (build.HasAirDash) lines.Add("LEFT SHIFT IN AIR — AIR DASH");
         if (build.HasArmBlade) lines.Add("E — SLASH / DEFLECT");
         else if (build.HasCounterArm) lines.Add("E — COUNTER");
         if (build.HasTimeSlow) lines.Add("Q — TIME SLOW");

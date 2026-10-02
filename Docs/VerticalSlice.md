@@ -22,6 +22,8 @@
 - Arm-Blade (Left Arm, E, controls line `E — SLASH / DEFLECT`): one short slash that damages the Boss once per swing and really deflects hostile bullets inside it (reversed, now the officer's bullet, no homing or bonus). Normal Boss blade contacts stay parryable; BLACKOUT and Predator Drop do not. It replaces Counter Arm in the catalogue.
 - Audio Batch 01 (ten approved Kenney CC0 cues), VFX A–H (white line effects, Boss echoes) and PP02 (very weak Bloom) are integrated as feedback only; gameplay stays the authority.
 
+**Source audit note — 2026-10-01:** current source additionally contains Camo Rush (68f5bcf); implementation values and verification limits are in Prototype_Test_Profile / Implementation_Log. The blue terminal styling integrated by B batches 05a/05b conflicts with this document's black/white restriction. This remains unresolved; this audit does not mark a new design decision Confirmed. Sections below the latest override contain historical descriptions (including TEMP endings, single-pool thresholds and terrain-blocked bullets); do not use them as current implementation guidance.
+
 **Earlier confirmed override — strict UI and flow:** Thomas's post-reset specification permits only the following monochrome interface. It supersedes automatic combat entry, first-defeat upgrade gating and all older session/Continue UI requirements below. Gameplay values and existing controls stay unchanged. Evidence is in [Implementation_Log](GO_GHOST_VS/Implementation_Log.md).
 
 - Black backgrounds; white text, lines and outlines; black rectangular buttons with white outlines. No other UI colors, effects, icons, instructions or polish.

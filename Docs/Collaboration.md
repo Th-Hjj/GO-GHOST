@@ -114,6 +114,10 @@ A player build temporarily changes files and restores most of them when it finis
 
 If Unity is open, clean these up from the editor, or close Unity first. Otherwise the editor can write its in-memory copy back over the file.
 
+### Git Desktop: changed file with no content changes
+
+If Settings.json (IET framework) is marked modified but the diff is empty, compare the worktree, index and HEAD blob hashes before changing content. On 2026-10-01 all three matched; the index cached size was 582 bytes while the actual LF file was 567. A normal index refresh alone did not clear it. Re-registering only that verified-identical file with git add -- ProjectSettings/Packages/com.unity.learn.iet-framework/Settings.json cleared the stale status and produced no staged diff. This is a cache repair, not a content update. Verify git status and git diff --cached afterward; do not commit an empty settings change or discard unrelated edits.
+
 ## 7. One developer, several machines
 
 Thomas works on a laptop and a Windows PC. **Proposed** rules for moving between machines:
@@ -132,7 +136,7 @@ Thomas works on a laptop and a Windows PC. **Proposed** rules for moving between
 1. Install Unity 6000.6.0f1 through Unity Hub.
 2. Install Git LFS and run `git lfs install` before cloning.
 3. Clone, then open the repository root as a Unity project with 6000.6.0f1. Do not upgrade the Unity version.
-4. Entry scene: `Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity`. Press Play: Officer #1 (0%) fights the Boss, defeat opens the next officer's Loadout, victory shows the Result and NEW GAME. Controls are listed in `README.md`.
+4. Entry scene: Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity. Play starts a human/Assault Rifle officer in practice; walk through the door for combat. Both outcomes show Result; victory then shows Ending. Later missions pass through Main Menu -> Upgrade -> practice. Current controls: README.md.
 5. Current state and what has actually been tested: `Docs/GO_GHOST_VS/Implementation_Log.md`. All numbers are TEST values (`Prototype_Test_Profile.md`).
 
 ## 9. Before you push or merge

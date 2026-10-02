@@ -1,5 +1,16 @@
 # GO GHOST slice implementation
 
+## 2026-10-01 — Current-source audit, Git status repair and documentation handoff
+
+- Baseline: main at 68f5bcf (Camo Rush), following e421a76 (Archive final). No Unity editor process found. Git Desktop showed IET Settings.json as modified with no content diff.
+- Diagnosis: raw worktree, index and HEAD hashes all matched 1f72e47f6f7432db66b73527ee5697efc8a41344. Index cached size 582 bytes; actual LF file 567. Index refresh alone did not clear it. Re-registering only this identical file with git add cleared the stale status and left no staged diff. No settings content change, discard, commit or push.
+- Static audit: Unity 6000.6.0f1, New Input System, Force Text and disabled Domain Reload retained. Checked script GUIDs in eight _Game scenes/prefabs; initially unresolved references resolved to URP package-cache scripts. No _Game file lacked a companion .meta. This does not prove all serialized references or runtime behaviours are valid.
+- Existing Camo Rush code: every third normal P2 opening attempts a locked horizontal rush; 1 s warning, speed 36, damage 20, one swept hit attempt, compatible blade parry, temporary body/collision override with cleanup, then the visible slash tell. No dedicated scenario or prior log entry found. Source inspection only; this records implementation, not a new design approval.
+- Updated README, ProjectMap, START_HERE and Prototype_Test_Profile for practice/door, weapons, Arm-Blade/Air Dash, health phases, endings, Archive and Camo Rush. Collaboration records the cache repair; VerticalSlice flags blue terminal versus written black/white authority as unresolved. Historical sections remain subordinate to latest overrides.
+- Evidence: October claims above/below remain dated log evidence. This machine's local runtime evidence and Builds/Windows date to September 25; October Final-UI output is absent. Ignored files do not transfer via Git. The recorded Final-UI build predates Archive/Camo Rush. archive-final remains 16 PASS / 1 FAIL, fixture count corrected but not re-run.
+- Validation: documentation diff check passed. Only documentation changed after cache repair. Gameplay/assets/settings/packages unchanged. Compile, editor happy path, core flow and Windows build: NOT RUN. Natural 0% victory/balance: NOT TESTED. Development preparation can continue; current-head runtime readiness is unverified.
+- Proposed next gate, not executed: compile, focused Camo Rush damage/Dodge/parry/interruption, then practice-door/combat/both outcomes/Continue/redeployment-reset smoke with isolated Archive. Resolve UI colour authority before UI edits.
+
 ## 2026-10-01 — Archive final: ending cards, MARKSMAN PROTOCOL, Police Records session reset
 
 - **Case Closure Records:** always two fixed, equal cards in the police-terminal style (left = Human slot, right = AI slot). An unlocked card shows the title and exact text from `PoliceArchive.EndingTitle` / `EndingText` (no second copy of the text). A locked card is blank: border and background only. Older `TEMP_ENDING_*` IDs stay in the save, are never shown and fill no card. No expand, detail page, buttons or animation.

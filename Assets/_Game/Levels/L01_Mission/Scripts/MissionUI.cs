@@ -30,6 +30,27 @@ public sealed class MissionUI : MonoBehaviour
     public int ArchiveTab { get; private set; }
     private readonly List<InputActionReference> uiReferences = new List<InputActionReference>();
     private SfxSet sfx; // menu/result scope, separate from the combat attempt's voices
+    // Selected state only: the selected region / equipped choice / open tab is drawn inverted (white fill, black text).
+    private readonly MissionBodyRegion[] bodyRegions = new MissionBodyRegion[6];
+    private UnityEngine.UI.Button weaponRegion;
+    private readonly UnityEngine.UI.Button[] archiveTabs = new UnityEngine.UI.Button[3];
+
+    private static void Highlight(UnityEngine.UI.Button button, bool on)
+    {
+        button.targetGraphic.color = on ? Color.white : Color.black;
+        var label = button.GetComponentInChildren<TMP_Text>();
+        if (label != null) label.color = on ? Color.black : Color.white;
+    }
+
+    private void ShowSelectedRegion(int index)
+    {
+        for (int i = 0; i < bodyRegions.Length; i++)
+        {
+            bodyRegions[i].Selected = i == index;
+            bodyRegions[i].SetVerticesDirty();
+        }
+        Highlight(weaponRegion, index == 6);
+    }
 
     private void Start()
     {
@@ -43,6 +64,7 @@ public sealed class MissionUI : MonoBehaviour
     {
         string before = flow.Draft.GetSlot(slot).ItemId;
         if (flow.TrySetDraftSlot(slot, id) && flow.Draft.GetSlot(slot).ItemId != before) Play(Sfx.Equip);
+        if (SelectedRegion >= 0) SelectRegion(SelectedRegion); // redraw the equipped state
     }
 
     private void Awake()
@@ -115,7 +137,7 @@ public sealed class MissionUI : MonoBehaviour
         BodyRegion(3, new Vector2(1138, 623), new Vector2(95, 300));
         BodyRegion(4, new Vector2(886, 315), new Vector2(100, 300));
         BodyRegion(5, new Vector2(1034, 315), new Vector2(100, 300));
-        Button(upgrade.transform, "Region_WEAPON", "WEAPON", new Vector2(570, 628), new Vector2(220, 72), () => SelectRegion(6));
+        weaponRegion = Button(upgrade.transform, "Region_WEAPON", "WEAPON", new Vector2(570, 628), new Vector2(220, 72), () => SelectRegion(6));
         choices = Panel(upgrade.transform, "UpgradeChoices", new Vector2(1565, 580), new Vector2(500, 450));
         choices.gameObject.SetActive(false);
         Button(upgrade.transform, "BeginOperation", "BEGIN OPERATION", new Vector2(1585, 78), new Vector2(520, 90), () => flow.RequestDeploy());
@@ -127,6 +149,7 @@ public sealed class MissionUI : MonoBehaviour
         var graphic = rect.gameObject.AddComponent<MissionBodyRegion>();
         graphic.color = Color.white;
         graphic.Round = round;
+        bodyRegions[index] = graphic;
         var button = rect.gameObject.AddComponent<UnityEngine.UI.Button>();
         button.targetGraphic = graphic;
         ConfigureButton(button);
@@ -137,6 +160,7 @@ public sealed class MissionUI : MonoBehaviour
     {
         if (flow.State != GameSessionFlow.FlowState.Loadout) return;
         SelectedRegion = index;
+        ShowSelectedRegion(index);
         // Border objects stay; only the old option buttons are replaced.
         foreach (Transform child in choices)
             if (child.name.StartsWith("Choice_", StringComparison.Ordinal)) { child.gameObject.SetActive(false); Destroy(child.gameObject); }
@@ -148,12 +172,14 @@ public sealed class MissionUI : MonoBehaviour
                 for (int i = 0; i < LoadoutRules.OfferedWeapons.Length; i++)
                 {
                     string weaponId = LoadoutRules.OfferedWeapons[i];
-                    Button(choices, "Choice_" + weaponId, LoadoutRules.WeaponLabel(weaponId), new Vector2(250, 374 - i * 90), new Vector2(450, 72), () => Equip(slot, weaponId), false);
+                    Highlight(Button(choices, "Choice_" + weaponId, LoadoutRules.WeaponLabel(weaponId), new Vector2(250, 374 - i * 90), new Vector2(450, 72), () => Equip(slot, weaponId), false),
+                        flow.Draft.WeaponId == weaponId);
                 }
             return;
         }
         // Human first (removes the augmentation), then this round's offered upgrades. Hidden items are simply not listed.
-        Button(choices, "Choice_Human", "Human", new Vector2(250, 374), new Vector2(450, 72), () => Equip(slot, ""), false);
+        string equipped = flow.Draft.GetSlot(slot).ItemId;
+        Highlight(Button(choices, "Choice_Human", "Human", new Vector2(250, 374), new Vector2(450, 72), () => Equip(slot, ""), false), string.IsNullOrEmpty(equipped));
         int row = 1;
         foreach (var definition in LoadoutRules.PrototypeCatalog)
         {
@@ -162,7 +188,7 @@ public sealed class MissionUI : MonoBehaviour
             string id = definition.ItemId;
             // A leg ability already on the other leg cannot be installed twice.
             if (LoadoutRules.IsLeg(slot) && flow.Draft.GetSlot(slot == LoadoutSlot.LeftLeg ? LoadoutSlot.RightLeg : LoadoutSlot.LeftLeg).ItemId == id) continue;
-            Button(choices, "Choice_" + id, LoadoutRules.ItemLabel(id), new Vector2(250, 374 - row * 90), new Vector2(450, 72), () => Equip(slot, id), false);
+            Highlight(Button(choices, "Choice_" + id, LoadoutRules.ItemLabel(id), new Vector2(250, 374 - row * 90), new Vector2(450, 72), () => Equip(slot, id), false), equipped == id);
             row++;
         }
     }
@@ -213,7 +239,7 @@ public sealed class MissionUI : MonoBehaviour
         for (int i = 0; i < tabs.Length; i++)
         {
             int index = i;
-            Button(archive.transform, "ArchiveTab" + i, tabs[i], new Vector2(380 + i * 580, 970), new Vector2(560, 90), () => SelectArchiveTab(index));
+            archiveTabs[i] = Button(archive.transform, "ArchiveTab" + i, tabs[i], new Vector2(380 + i * 580, 950), new Vector2(560, 90), () => SelectArchiveTab(index));
         }
         archiveContent = Panel(archive.transform, "ArchiveContent", new Vector2(960, 470), new Vector2(1760, 820));
     }
@@ -221,6 +247,7 @@ public sealed class MissionUI : MonoBehaviour
     private void SelectArchiveTab(int tab)
     {
         ArchiveTab = tab;
+        for (int i = 0; i < archiveTabs.Length; i++) Highlight(archiveTabs[i], i == tab);
         foreach (Transform child in archiveContent)
             if (child.name.StartsWith("Content_", StringComparison.Ordinal)) { child.gameObject.SetActive(false); Destroy(child.gameObject); }
         if (tab == 0) BuildRunRecords();
@@ -350,7 +377,7 @@ public sealed class MissionUI : MonoBehaviour
             SetValues(previousOfficerValues, OfficerValues(latest));
             SetValues(previousEquipmentValues, EquipmentValues(latest));
         }
-        if (shown == GameSessionFlow.FlowState.Loadout) { SelectedRegion = -1; choices.gameObject.SetActive(false); }
+        if (shown == GameSessionFlow.FlowState.Loadout) { SelectedRegion = -1; choices.gameObject.SetActive(false); ShowSelectedRegion(-1); }
         if (shown == GameSessionFlow.FlowState.Archive) SelectArchiveTab(0);
         if (shown == GameSessionFlow.FlowState.Result && flow.ActiveFight != null)
         {
@@ -496,17 +523,19 @@ public sealed class MissionUI : MonoBehaviour
 public sealed class MissionBodyRegion : UnityEngine.UI.MaskableGraphic
 {
     public bool Round;
+    public bool Selected; // selected region is filled white instead of black
     protected override void OnPopulateMesh(UnityEngine.UI.VertexHelper mesh)
     {
         mesh.Clear();
         var rect = rectTransform.rect;
         int count = Round ? 32 : 4;
         Vector2[] points = Round ? null : new[] { new Vector2(-1, -1), new Vector2(1, -1), new Vector2(1, 1), new Vector2(-1, 1) };
-        mesh.AddVert(Vector2.zero, Color.black, Vector2.zero);
+        Color fill = Selected ? Color.white : Color.black;
+        mesh.AddVert(Vector2.zero, fill, Vector2.zero);
         for (int i = 0; i < count; i++)
         {
             Vector2 p = Round ? new Vector2(Mathf.Cos(i * Mathf.PI * 2 / count), Mathf.Sin(i * Mathf.PI * 2 / count)) : points[i];
-            mesh.AddVert(new Vector2(p.x * rect.width * .5f, p.y * rect.height * .5f), Color.black, Vector2.zero);
+            mesh.AddVert(new Vector2(p.x * rect.width * .5f, p.y * rect.height * .5f), fill, Vector2.zero);
         }
         for (int i = 0; i < count; i++) mesh.AddTriangle(0, i + 1, (i + 1) % count + 1);
         for (int i = 0; i < count; i++)

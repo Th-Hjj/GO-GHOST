@@ -106,6 +106,7 @@ public partial class TopDownSmokeTest : MonoBehaviour
             case "polish03": yield return Polish03(); break;
             case "perf-input": yield return PerfInput(); break;
             case "air-dash": yield return AirDash(); break;
+            case "ui-polish": yield return UiPolish(); break;
             case "boss-contact": yield return BossContact(); break;
             // Earlier numerical gates are historical; TEST-v2 uses combat-v2.
             case "movement": yield return Movement(); break;

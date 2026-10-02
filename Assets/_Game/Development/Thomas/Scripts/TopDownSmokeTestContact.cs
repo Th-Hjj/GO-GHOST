@@ -6,6 +6,85 @@ using UnityEngine.InputSystem;
 
 public partial class TopDownSmokeTest
 {
+    private IEnumerator BossHeadJump()
+    {
+        var flow = FindAnyObjectByType<GameSessionFlow>();
+        var focus = StartCoroutine(S01Focus(flow));
+        Record("Boss-head regression: real player physics and Space input; controlled stationary Boss and isolated Archive.");
+        try
+        {
+            yield return S01Fresh(flow, 0);
+            var fight = flow.ActiveFight;
+            fight.Boss.StopCombat();
+            var player = fight.Player.GetComponent<Rigidbody2D>();
+            var boss = fight.Boss.GetComponent<Rigidbody2D>();
+            var playerCollider = player.GetComponent<Collider2D>();
+            var bossCollider = boss.GetComponent<Collider2D>();
+            var movement = player.GetComponent<PlayerMovement>();
+            boss.bodyType = RigidbodyType2D.Kinematic;
+            boss.position = new Vector2(6f, 2f);
+            boss.linearVelocity = Vector2.zero;
+            Physics2D.SyncTransforms();
+            player.position = new Vector2(6f, bossCollider.bounds.max.y + playerCollider.bounds.extents.y + .2f);
+            player.linearVelocity = Vector2.zero;
+            yield return Seconds(.4f);
+            Check("standing on Boss is grounded", movement.IsGrounded && playerCollider.IsTouching(bossCollider),
+                $"grounded={movement.IsGrounded}, touching={playerCollider.IsTouching(bossCollider)}");
+            float startY = player.position.y;
+            Keys(Key.Space); yield return Seconds(.15f);
+            Check("Space jumps off Boss head", player.position.y > startY + .8f && player.linearVelocity.y > 0f,
+                $"rise={player.position.y - startY:0.000}, velocity={player.linearVelocity}");
+            Keys(); yield return Frames(3);
+            float velocity = player.linearVelocity.y;
+            Keys(Key.Space); yield return Seconds(.05f);
+            Check("human cannot jump again in midair", !movement.HasDoubleJump && !movement.IsGrounded && player.linearVelocity.y <= velocity,
+                $"vy={velocity:0.000}->{player.linearVelocity.y:0.000}");
+            Keys();
+
+            float gravity = player.gravityScale;
+            player.gravityScale = 0f;
+            foreach (bool underside in new[] { false, true })
+            {
+                player.position = underside
+                    ? new Vector2(6f, bossCollider.bounds.min.y - playerCollider.bounds.extents.y + .005f)
+                    : new Vector2(bossCollider.bounds.max.x + playerCollider.bounds.extents.x - .005f, 2f);
+                player.linearVelocity = Vector2.zero;
+                Physics2D.SyncTransforms(); yield return Seconds(.1f);
+                bool touching = playerCollider.IsTouching(bossCollider);
+                Keys(Key.Space); yield return Seconds(.05f);
+                Check(underside ? "Boss underside is not ground" : "Boss side is not ground",
+                    touching && !movement.IsGrounded && player.linearVelocity.y < .1f,
+                    $"touching={touching}, grounded={movement.IsGrounded}, vy={player.linearVelocity.y:0.000}");
+                Keys(); yield return Frames(3);
+            }
+
+            player.position = new Vector2(6f, bossCollider.bounds.max.y + playerCollider.bounds.extents.y + .01f);
+            player.linearVelocity = Vector2.zero;
+            Physics2D.IgnoreCollision(playerCollider, bossCollider, true);
+            Physics2D.SyncTransforms(); yield return Seconds(.1f);
+            Check("ignored Boss collision does not support player", !movement.IsGrounded, $"grounded={movement.IsGrounded}");
+            Physics2D.IgnoreCollision(playerCollider, bossCollider, false);
+            player.gravityScale = gravity;
+            player.position = new Vector2(-5f, -1.5f); player.linearVelocity = Vector2.zero;
+            yield return Seconds(.3f);
+            bool grounded = movement.IsGrounded;
+            startY = player.position.y;
+            Keys(Key.Space); yield return Seconds(.15f);
+            Check("ordinary floor jump still works", grounded && player.position.y > startY + .8f, $"rise={player.position.y - startY:0.000}");
+            Keys();
+            yield return S01Fresh(flow, 0);
+            yield return Seconds(.2f);
+            Check("death Continue and redeploy remain valid", flow.State == GameSessionFlow.FlowState.Combat
+                && flow.ActiveFight.Player.GetComponent<PlayerMovement>().IsGrounded && Time.timeScale == 1f, flow.State.ToString());
+        }
+        finally
+        {
+            StopCoroutine(focus);
+            Keys();
+            flow.ActiveFight?.CancelCombat();
+        }
+    }
+
     // One-time editor repair; the normal boss-contact scenario only reads the saved prefab.
     public static void ApplyPlayerContactFixAndRunBatch()
     {

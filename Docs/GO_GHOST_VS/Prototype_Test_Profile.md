@@ -13,6 +13,7 @@ Supersedes the single-gun numbers below. All values live in `LoadoutRules.Weapon
 | Shotgun | per press | 7 x 6 pellets | .8 s | 5 | 1.6 s | fixed 25 degree fan, one round per pull; 42 point-blank (was 36) |
 
 Bullet speed 18 for all. Rapid Fire (Right Arm): interval / 1.75. Reload is automatic on an empty magazine; unlimited reserve.
+Air Dash: same values as the ground dash (3 units in .18 s, .25 s i-frames, .8 s shared start interval), one use per airtime.
 Arm-Blade: E, .35 s swing window, 1 s start interval, box 1.7 x 1.7 in front along the aim, 20 damage once per target per swing, deflects any hostile bullet inside the box without changing its damage.
 
 ## Current MSP values — Phase 10 checkpoint, 2026-09-25

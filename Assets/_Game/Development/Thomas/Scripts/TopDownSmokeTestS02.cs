@@ -23,17 +23,18 @@ public partial class TopDownSmokeTest
         bool restored = left.CommitFloor01Outcome(TowerNarrativeState.FloorAction.Leave, ProjectileActor.Environment);
         left.EnterStage("boss_p2");
         Check("OPEN-01 departure alone is not a device result or witnessed recovery", pending && restored
+            && left.ObservedWorldFacts.Any(f=>f.EventId == "floor01.restore.result" && f.OutcomeId == "restored")
             && !left.Floor01ReportDelivered(TowerNarrativeState.FloorReport.RestoredConfirmed)
             && left.Floor01ReportDelivered(TowerNarrativeState.FloorReport.LeftUnattended), left.KnownFloor01.ToString());
         state.EnterStage("boss_p3");
-        Check("OPEN-02 undisclosed preservation is normal", state.FreezeP3Mode() == TowerNarrativeState.Mode.FullForce, state.FrozenP3Mode.ToString());
+        Check("OPEN-02 camera preservation without public stance is normal", state.FreezeP3Mode() == TowerNarrativeState.Mode.FullForce, state.FrozenP3Mode.ToString());
         var restrained = new TowerNarrativeState(true);
         restrained.EnterStage("floor01"); restrained.ConnectFloor01Module();
         restrained.CommitFloor01Outcome(TowerNarrativeState.FloorAction.Interrupt, ProjectileActor.Player);
         restrained.EnterStage("boss_p2");
-        bool report = restrained.Floor01ReportDelivered(TowerNarrativeState.FloorReport.Preserved);
+        bool report = restrained.KnownFloor01 == TowerNarrativeState.FloorReport.Preserved; // No P2 fact report.
         restrained.CoexistenceReportDelivered(); restrained.EnterStage("boss_p3");
-        Check("OPEN-02 actual preservation plus delivered knowledge/stance", report && restrained.FreezeP3Mode() == TowerNarrativeState.Mode.Restrained,
+        Check("OPEN-02 actual preservation plus camera knowledge/public stance", report && restrained.FreezeP3Mode() == TowerNarrativeState.Mode.Restrained,
             restrained.FrozenP3Mode.ToString());
         restrained.EnterStage("final_disposition");
         Check("OPEN-02 mode is frozen after P3 entry", !restrained.ThreatReportDelivered(TowerNarrativeState.Threat.Erase, true)
@@ -103,7 +104,7 @@ public partial class TopDownSmokeTest
         var flow = FindAnyObjectByType<GameSessionFlow>();
         var ui = flow.GetComponent<MissionUI>();
         var focus = StartCoroutine(S01Focus(flow));
-        Record("S02 only: three controlled paths. P1/P2 forced completions prove lifecycle, not balance. P3 body, 50F opportunity and completion are explicitly DEV. Isolated Archive.");
+        Record("S02 only: three controlled paths. P1/P2 forced completions prove lifecycle, not balance. P3 body and completion remain explicitly DEV. Isolated Archive.");
         try
         {
             S02ApprovedInterfaces();
@@ -125,7 +126,7 @@ public partial class TopDownSmokeTest
                 && !flow.RequestTowerExit(flow.CurrentRoom), flow.TowerStageId);
             fight.Boss.StopCombat(); // keep the causal gun/prop pipeline real; suppress incoming damage in this flow fixture.
             slow.TryActivate();
-            yield return WeaponsWait(() => ui.DialogueVisible, 2f);
+            yield return WeaponsWait(() => ui.DialogueVisible, 4.5f);
             float active = slow.ActiveRemaining, cooldown = slow.CooldownRemaining, elapsed = fight.CombatElapsed;
             int pulls = gun.TriggerPulls, ammo = gun.AmmoInMagazine;
             flow.DevelopmentRepeatRoomEvent();
@@ -160,16 +161,17 @@ public partial class TopDownSmokeTest
             Check("room transition preserves resources and prior facts", flow.TowerStageId == "floor50" && player.CurrentHealth == hp
                 && gun.AmmoInMagazine == ammo && slow.CooldownRemaining <= cooldown && slow.CooldownRemaining > cooldown - 1f
                 && flow.TowerFacts.Count == 2 && !reader.HasTemporaryAimOverride, $"hp={hp}/{player.CurrentHealth}, ammo={ammo}/{gun.AmmoInMagazine}");
-            yield return WeaponsWait(() => ui.DialogueVisible, 2f);
+            yield return WeaponsWait(() => ui.DialogueVisible, 4.5f);
             var secondProp = flow.CurrentRoom.Prop;
-            Check("separate DEV 50F instance offers same JSON sequence", ui.DialogueVisible && secondProp != firstProp
+            Check("separate real 50F instance offers same JSON sequence", ui.DialogueVisible && secondProp != firstProp
                 && flow.TowerFacts.All(f=>f.EventId == "boss_p1.chandelier"), $"instance={flow.CurrentRoom.PropEventInstanceId}");
             yield return ClickSessionButton("DialoguePanel");
             yield return ClickSessionButton("DialoguePanel");
             yield return WeaponsWait(() => secondProp.HasLanded, 4f);
-            Check("separate actual result retains scope and causal actor", flow.TowerFacts.Count == 4
-                && flow.TowerFacts.Count(f=>f.DevelopmentOnly && f.Actor == ProjectileActor.InnerAI) == 2,
+            Check("separate actual result retains scope and causal actor", flow.TowerFacts.Count == 5
+                && flow.TowerFacts.Count(f=>!f.DevelopmentOnly && f.Actor == ProjectileActor.InnerAI) == 5,
                 $"facts={flow.TowerFacts.Count}");
+            flow.DevelopmentCompleteEncounter(); yield return Frames(3);
             flow.RequestTowerExit(flow.CurrentRoom);
             yield return Frames(3);
             Check("P2 starts existing blade phase in its own bounds", flow.TowerStageId == "boss_p2"
@@ -183,11 +185,11 @@ public partial class TopDownSmokeTest
                 && ReferenceEquals(snapshot, flow.Deployment) && PoliceArchive.Current.RunRecords.Count == records, flow.TowerStageId);
             flow.RequestTowerExit(flow.CurrentRoom); // 99F
             yield return Frames(2);
-            Check("99F empty DEV node does not invent choices", flow.TowerStageId == "floor99" && flow.TowerFacts.Count == 4, flow.TowerStageId);
+            Check("99F empty DEV node does not invent choices", flow.TowerStageId == "floor99" && flow.TowerFacts.Count == 5, flow.TowerStageId);
             flow.RequestTowerExit(flow.CurrentRoom); // office
             flow.RequestTowerExit(flow.CurrentRoom); // P3
             yield return Frames(3);
-            Check("P3 captures input facts without guessing a mode", flow.TowerStageId == "boss_p3" && flow.P3EntryFacts.Count == 4
+            Check("P3 captures input facts without guessing a mode", flow.TowerStageId == "boss_p3" && flow.P3EntryFacts.Count == 5
                 && flow.P3DevelopmentMode == GameSessionFlow.DevelopmentP3Mode.Unspecified
                 && flow.Narrative.FrozenP3Mode == TowerNarrativeState.Mode.FullForce && !flow.Narrative.DispositionConnected, flow.TowerStageId);
             var carrier = fight.Boss;
@@ -201,7 +203,7 @@ public partial class TopDownSmokeTest
             bool firstExit = flow.RequestTowerExit(exit), repeatedExit = flow.RequestTowerExit(exit);
             yield return Frames(3);
             Check("final DEV exit completes once without Archive or percentage fallback", firstExit && !repeatedExit
-                && flow.DevelopmentCompletionCount == 1 && flow.LastDevelopmentCompletionFacts.Count == 4
+                && flow.DevelopmentCompletionCount == 1 && flow.LastDevelopmentCompletionFacts.Count == 5
                 && flow.State == GameSessionFlow.FlowState.MainMenu && flow.EndingId == null
                 && PoliceArchive.Current.RunRecords.Count == records && PoliceArchive.Current.UnlockedEndings.Count == endings,
                 $"completions={flow.DevelopmentCompletionCount}, records={PoliceArchive.Current.RunRecords.Count}");
@@ -212,7 +214,7 @@ public partial class TopDownSmokeTest
             snapshot = flow.Deployment; officer = flow.Officer;
             flow.RequestTowerExit(flow.CurrentRoom); flow.RequestTowerExit(flow.CurrentRoom);
             fight.Boss.StopCombat();
-            yield return WeaponsWait(() => ui.DialogueVisible, 2f);
+            yield return WeaponsWait(() => ui.DialogueVisible, 4.5f);
             gun = player.GetComponent<PlayerShooting>(); pulls = gun.TriggerPulls;
             yield return ClickSessionButton("DialoguePanel");
             yield return Frames(2);
@@ -225,7 +227,7 @@ public partial class TopDownSmokeTest
                 && flow.TowerFacts.All(f=>f.Actor == ProjectileActor.Player && f.PermissionTier == 2), $"facts={flow.TowerFacts.Count}");
             flow.DevelopmentCompleteEncounter(); yield return Frames(2);
             flow.RequestTowerExit(flow.CurrentRoom);
-            yield return WeaponsWait(() => ui.DialogueVisible, 2f);
+            yield return WeaponsWait(() => ui.DialogueVisible, 4.5f);
             records = PoliceArchive.Current.RunRecords.Count;
             var resetProp = flow.CurrentRoom.Prop;
             player.IsInvulnerable = false;

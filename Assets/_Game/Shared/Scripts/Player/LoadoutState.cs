@@ -193,6 +193,10 @@ public sealed class LoadoutDraft
     private readonly LoadoutEntry[] slots = new LoadoutEntry[LoadoutRules.SlotCount];
     private readonly AugmentationDefinition[] catalog;
     public bool IsLocked { get; private set; }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    // Only developer drafts may test existing locked items, without writing an Archive unlock.
+    internal bool DevelopmentAllowLockedItems { get; set; }
+#endif
     public bool AugmentationsAvailable { get; }
     public float BodyModificationPercent => LoadoutRules.BodyModification(slots);
     public string WeaponId => GetSlot(LoadoutSlot.Weapon).ItemId;
@@ -245,7 +249,11 @@ public sealed class LoadoutDraft
         // One Double Jump, one Hover and one Air Dash at most. The other leg is never changed on the player's behalf.
         if (LoadoutRules.IsLeg(slot) && (itemId == LoadoutRules.LegDoubleJump || itemId == LoadoutRules.LegHover || itemId == LoadoutRules.LegAirDash)
             && slots[(int)(slot == LoadoutSlot.LeftLeg ? LoadoutSlot.RightLeg : LoadoutSlot.LeftLeg)].ItemId == itemId) return false;
-        if (itemId == LoadoutRules.DetachedDroneArm && !PoliceArchive.Current.HasHiddenAugmentation(itemId)) return false;
+        if (itemId == LoadoutRules.DetachedDroneArm && !PoliceArchive.Current.HasHiddenAugmentation(itemId)
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            && !DevelopmentAllowLockedItems
+#endif
+        ) return false;
         AugmentationDefinition definition = null;
         foreach (var candidate in catalog)
             if (candidate.ItemId == itemId && candidate.Occupies(slot)) { definition = candidate; break; }

@@ -14,6 +14,7 @@ public sealed partial class GameSessionFlow
     private void Update()
     {
         if (State != FlowState.Combat || ActiveFight == null || Deployment == null) return;
+        if (towerPrototypeEnabled) TickTowerRoom();
         if (interventionActive)
         {
             if (ActiveFight.Player.IsDead || chandelier == null || !chandelier.IsHanging)

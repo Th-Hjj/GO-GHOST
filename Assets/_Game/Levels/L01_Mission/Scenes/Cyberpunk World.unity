@@ -146,7 +146,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d0c2ea9969cf0be438c172096b68d430, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TowerRoom
   stageId: tower_entry
   kind: 0
@@ -155,7 +155,10 @@ MonoBehaviour:
     m_Extent: {x: 15, y: 5.625, z: 0}
   prop: {fileID: 0}
   exitBarrier: {fileID: 412421235}
-  propEventInstanceId:
+  propEventInstanceId: 
+  securityTemplate: {fileID: 0}
+  receptionist: {fileID: 0}
+  securityDelay: 2
 --- !u!4 &23909532
 Transform:
   m_ObjectHideFlags: 0
@@ -1456,7 +1459,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d0c2ea9969cf0be438c172096b68d430, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TowerRoom
   stageId: office_intro
   kind: 0
@@ -1465,7 +1468,10 @@ MonoBehaviour:
     m_Extent: {x: 15, y: 5.625, z: 0}
   prop: {fileID: 0}
   exitBarrier: {fileID: 1736290136}
-  propEventInstanceId:
+  propEventInstanceId: 
+  securityTemplate: {fileID: 0}
+  receptionist: {fileID: 0}
+  securityDelay: 2
 --- !u!4 &234848029
 Transform:
   m_ObjectHideFlags: 0
@@ -1768,6 +1774,39 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
+--- !u!1 &275885294
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 275885295}
+  m_Layer: 0
+  m_Name: Body
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &275885295
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 275885294}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1886888405}
+  - {fileID: 995005805}
+  m_Father: {fileID: 1683698415}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &278467742
 GameObject:
   m_ObjectHideFlags: 0
@@ -1820,7 +1859,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d0c2ea9969cf0be438c172096b68d430, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TowerRoom
   stageId: boss_p1
   kind: 1
@@ -1830,6 +1869,9 @@ MonoBehaviour:
   prop: {fileID: 1608423100}
   exitBarrier: {fileID: 940931565}
   propEventInstanceId: boss_p1.chandelier
+  securityTemplate: {fileID: 0}
+  receptionist: {fileID: 0}
+  securityDelay: 2
 --- !u!1 &339529036
 GameObject:
   m_ObjectHideFlags: 0
@@ -2290,7 +2332,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 99d5588f3633cf643bd374a10f6efa9a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TowerDoor
 --- !u!61 &369860363
 BoxCollider2D:
@@ -3277,7 +3319,7 @@ GameObject:
   - component: {fileID: 502580295}
   - component: {fileID: 502580294}
   m_Layer: 6
-  m_Name: DEV_Floor50_Chandelier
+  m_Name: Floor50_Chandelier
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3293,7 +3335,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30396e5ca45eb0f4aa041d47bcfb79a8, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChandelierEncounter
   suspension: {fileID: 85190779}
   body: {fileID: 502580295}
@@ -3431,8 +3473,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   m_RenderShadows: 1
   m_RequiresDepthTextureOption: 2
   m_RequiresOpaqueTextureOption: 2
@@ -3541,7 +3583,7 @@ MonoBehaviour:
   m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fd60d28af6524c3eabdd7b548677ee83, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraFollow
   target: {fileID: 0}
 --- !u!1 &522510376
@@ -3928,6 +3970,7 @@ GameObject:
   - component: {fileID: 574306984}
   - component: {fileID: 574306983}
   - component: {fileID: 574306982}
+  - component: {fileID: 574306985}
   m_Layer: 0
   m_Name: GameSession
   m_TagString: Untagged
@@ -3945,7 +3988,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: eaf886b27d944c942b684ead2ca9a760, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameSessionFlow
   attemptPrefab: {fileID: 3146305453974893584, guid: 2b9f8cf13ff978547ab7cd69e5bacb6f, type: 3}
   highCPlatform: {fileID: 0}
@@ -3997,7 +4040,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3920370b827186042b50582c03c0cd38, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MissionUI
   flow: {fileID: 574306979}
   inputActions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
@@ -4014,7 +4057,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a0d7ab5b279f22b41879b05a06f2c92a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SfxSet
   clips:
   - {fileID: 8300000, guid: 34fc9f1f3f7e9ee4a830a951cac1b524, type: 3}
@@ -4038,7 +4081,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98afb261b953a88478a25244bc27e6d8, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PresentationOneShot
   output: {fileID: 574306984}
 --- !u!82 &574306984
@@ -4138,6 +4181,20 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &574306985
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 574306978}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6c22c21da4d52c4eac74b2b25933301, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DeveloperRouteJump
+  flow: {fileID: 574306979}
+  font: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
 --- !u!1 &584798265
 GameObject:
   m_ObjectHideFlags: 0
@@ -4952,8 +5009,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 073797afb82c5a1438f328866b10b3f0, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   m_ComponentVersion: 4
   m_LightType: 4
   m_BlendStyleIndex: 0
@@ -5446,7 +5503,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 99d5588f3633cf643bd374a10f6efa9a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TowerDoor
 --- !u!61 &757754284
 BoxCollider2D:
@@ -6050,6 +6107,107 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
+--- !u!1001 &889727711
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1406762439}
+    m_Modifications:
+    - target: {fileID: 255533988286645315, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
+      propertyPath: destroyOnDeath
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2867931007630196828, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
+      propertyPath: m_Constraints
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 4772372473770674118, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
+      propertyPath: m_Name
+      value: Security_Template
+      objectReference: {fileID: 0}
+    - target: {fileID: 4772372473770674118, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4982615033018923180, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
+      propertyPath: m_Color.b
+      value: 0.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 4982615033018923180, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
+      propertyPath: m_Color.g
+      value: 0.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 4982615033018923180, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
+      propertyPath: m_Color.r
+      value: 0.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 7764064877583276450, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 7764064877583276450, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -13
+      objectReference: {fileID: 0}
+    - target: {fileID: 7764064877583276450, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -1.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 7764064877583276450, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7764064877583276450, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7764064877583276450, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7764064877583276450, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7764064877583276450, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7764064877583276450, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7764064877583276450, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7764064877583276450, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
+--- !u!114 &889727712 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 255533988286645315, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
+  m_PrefabInstance: {fileID: 889727711}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd9a32c9cfbd05d4d946e08670a307cf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Enemy
+--- !u!4 &889727713 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7764064877583276450, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
+  m_PrefabInstance: {fileID: 889727711}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &916262421
 GameObject:
   m_ObjectHideFlags: 0
@@ -6324,7 +6482,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 99d5588f3633cf643bd374a10f6efa9a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TowerDoor
 --- !u!61 &936404726
 BoxCollider2D:
@@ -6650,6 +6808,98 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
+--- !u!1 &995005804
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 995005805}
+  - component: {fileID: 995005806}
+  m_Layer: 0
+  m_Name: Head
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &995005805
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 995005804}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1.25, z: 0}
+  m_LocalScale: {x: 0.45, y: 0.45, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 275885295}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!212 &995005806
+SpriteRenderer:
+  serializedVersion: 3
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 995005804}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 5
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 1, y: 1}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_SpriteSortPoint: 0
+  m_BlendShapeWeights: []
 --- !u!1 &1025768025
 GameObject:
   m_ObjectHideFlags: 0
@@ -6769,7 +7019,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d0c2ea9969cf0be438c172096b68d430, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TowerRoom
   stageId: floor01
   kind: 0
@@ -6778,7 +7028,10 @@ MonoBehaviour:
     m_Extent: {x: 15, y: 5.625, z: 0}
   prop: {fileID: 0}
   exitBarrier: {fileID: 787931223}
-  propEventInstanceId:
+  propEventInstanceId: 
+  securityTemplate: {fileID: 0}
+  receptionist: {fileID: 0}
+  securityDelay: 2
 --- !u!4 &1036243103
 Transform:
   m_ObjectHideFlags: 0
@@ -6869,7 +7122,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bd9a32c9cfbd05d4d946e08670a307cf, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
 --- !u!4 &1118046233 stripped
 Transform:
@@ -7058,7 +7311,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 99d5588f3633cf643bd374a10f6efa9a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TowerDoor
 --- !u!61 &1165697271
 BoxCollider2D:
@@ -7149,7 +7402,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 99d5588f3633cf643bd374a10f6efa9a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TowerDoor
 --- !u!61 &1167391749
 BoxCollider2D:
@@ -7263,7 +7516,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bd9a32c9cfbd05d4d946e08670a307cf, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
 --- !u!4 &1212536339 stripped
 Transform:
@@ -7990,16 +8243,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d0c2ea9969cf0be438c172096b68d430, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TowerRoom
   stageId: floor50
-  kind: 0
+  kind: 5
   localBounds:
     m_Center: {x: 0, y: 3.125, z: 0}
     m_Extent: {x: 15, y: 5.625, z: 0}
   prop: {fileID: 502580294}
   exitBarrier: {fileID: 339529036}
-  propEventInstanceId: dev.floor50.chandelier
+  propEventInstanceId: floor50.chandelier
+  securityTemplate: {fileID: 889727712}
+  receptionist: {fileID: 1683698414}
+  securityDelay: 2
 --- !u!4 &1406762439
 Transform:
   m_ObjectHideFlags: 0
@@ -8023,6 +8279,8 @@ Transform:
   - {fileID: 757754282}
   - {fileID: 1964657075}
   - {fileID: 1867529243}
+  - {fileID: 1683698415}
+  - {fileID: 889727713}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1431547023
@@ -8068,7 +8326,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 99d5588f3633cf643bd374a10f6efa9a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TowerDoor
 --- !u!61 &1431547026
 BoxCollider2D:
@@ -8298,7 +8556,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 99d5588f3633cf643bd374a10f6efa9a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TowerDoor
 --- !u!61 &1510748518
 BoxCollider2D:
@@ -8652,7 +8910,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 22fa6b461849d4445b74112d25ff5576, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EncounterZone
   enemies:
   - {fileID: 1118046232}
@@ -9037,7 +9295,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30396e5ca45eb0f4aa041d47bcfb79a8, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChandelierEncounter
   suspension: {fileID: 368532300}
   body: {fileID: 1608423101}
@@ -9319,7 +9577,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 99d5588f3633cf643bd374a10f6efa9a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TowerDoor
 --- !u!61 &1609489512
 BoxCollider2D:
@@ -9670,7 +9928,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d0c2ea9969cf0be438c172096b68d430, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TowerRoom
   stageId: floor99
   kind: 0
@@ -9679,7 +9937,10 @@ MonoBehaviour:
     m_Extent: {x: 15, y: 5.625, z: 0}
   prop: {fileID: 0}
   exitBarrier: {fileID: 589085704}
-  propEventInstanceId:
+  propEventInstanceId: 
+  securityTemplate: {fileID: 0}
+  receptionist: {fileID: 0}
+  securityDelay: 2
 --- !u!4 &1652015951
 Transform:
   m_ObjectHideFlags: 0
@@ -9982,6 +10243,101 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
+--- !u!1 &1683698413
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1683698415}
+  - component: {fileID: 1683698416}
+  - component: {fileID: 1683698414}
+  m_Layer: 0
+  m_Name: Receptionist_Greybox
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1683698414
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1683698413}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4dedc80c7235269428eb33b0a7df100d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Floor50Receptionist
+  visual: {fileID: 275885295}
+  maxHealth: 20
+  fallingImpactDamage: 20
+--- !u!4 &1683698415
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1683698413}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -2.5, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 275885295}
+  m_Father: {fileID: 1406762439}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!61 &1683698416
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1683698413}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0.75}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0, y: 0}
+    oldSize: {x: 0, y: 0}
+    newSize: {x: 0, y: 0}
+    adaptiveTilingThreshold: 0
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 0.8, y: 1.5}
+  m_EdgeRadius: 0
 --- !u!1 &1732679186
 GameObject:
   m_ObjectHideFlags: 0
@@ -11258,7 +11614,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d0c2ea9969cf0be438c172096b68d430, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TowerRoom
   stageId: boss_p3
   kind: 3
@@ -11267,7 +11623,10 @@ MonoBehaviour:
     m_Extent: {x: 15, y: 5.625, z: 0}
   prop: {fileID: 0}
   exitBarrier: {fileID: 251563619}
-  propEventInstanceId:
+  propEventInstanceId: 
+  securityTemplate: {fileID: 0}
+  receptionist: {fileID: 0}
+  securityDelay: 2
 --- !u!4 &1847526247
 Transform:
   m_ObjectHideFlags: 0
@@ -11519,7 +11878,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dac0ea8bb0b526245b8d6ed4a3d80d90, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PracticeDoor
   flow: {fileID: 574306979}
 --- !u!61 &1880875054
@@ -11568,6 +11927,98 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 1, y: 3.2}
   m_EdgeRadius: 0
+--- !u!1 &1886888404
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1886888405}
+  - component: {fileID: 1886888406}
+  m_Layer: 0
+  m_Name: Torso
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1886888405
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1886888404}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.55, z: 0}
+  m_LocalScale: {x: 0.65, y: 0.9, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 275885295}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!212 &1886888406
+SpriteRenderer:
+  serializedVersion: 3
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1886888404}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 5
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 1, y: 1}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_SpriteSortPoint: 0
+  m_BlendShapeWeights: []
 --- !u!1 &1896050450
 GameObject:
   m_ObjectHideFlags: 0
@@ -11911,7 +12362,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d0c2ea9969cf0be438c172096b68d430, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TowerRoom
   stageId: final_disposition
   kind: 4
@@ -11920,7 +12371,10 @@ MonoBehaviour:
     m_Extent: {x: 15, y: 5.625, z: 0}
   prop: {fileID: 0}
   exitBarrier: {fileID: 1230828529}
-  propEventInstanceId:
+  propEventInstanceId: 
+  securityTemplate: {fileID: 0}
+  receptionist: {fileID: 0}
+  securityDelay: 2
 --- !u!4 &1915110798
 Transform:
   m_ObjectHideFlags: 0
@@ -12851,7 +13305,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d0c2ea9969cf0be438c172096b68d430, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TowerRoom
   stageId: boss_p2
   kind: 2
@@ -12860,7 +13314,10 @@ MonoBehaviour:
     m_Extent: {x: 15, y: 5.625, z: 0}
   prop: {fileID: 0}
   exitBarrier: {fileID: 1598929850}
-  propEventInstanceId:
+  propEventInstanceId: 
+  securityTemplate: {fileID: 0}
+  receptionist: {fileID: 0}
+  securityDelay: 2
 --- !u!4 &2092123409
 Transform:
   m_ObjectHideFlags: 0
@@ -12951,7 +13408,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bd9a32c9cfbd05d4d946e08670a307cf, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
 --- !u!4 &2094171579 stripped
 Transform:
@@ -13001,7 +13458,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 99d5588f3633cf643bd374a10f6efa9a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TowerDoor
 --- !u!61 &2123167066
 BoxCollider2D:

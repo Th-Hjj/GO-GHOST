@@ -152,7 +152,8 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
         }
         TriggerPulls++;
         if (sfx != null) sfx.Play(Sfx.Shot);
-        if (vfx != null) vfx.Muzzle(spawn, direction);
+        // One flash per accepted pull; only the Sniper's visual length differs.
+        if (vfx != null) vfx.Muzzle(spawn, direction, officer.Deployment.WeaponId == LoadoutRules.Sniper ? 1.25f : 1f);
         return true;
     }
 

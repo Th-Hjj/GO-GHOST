@@ -107,6 +107,10 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
 
     // A/B: after successful Launch, never from the warning/input state.
     public void Muzzle(Vector3 origin, Vector2 direction) => Rays(origin, direction, 3, .20f, .06f);
+
+    // One accepted discharge, never one call per pellet. Only the visual length changes.
+    public void Muzzle(Vector3 origin, Vector2 direction, float visualScale)
+        => Rays(origin, direction, 3, .20f * Mathf.Clamp(visualScale, 1f, 1.25f), .06f);
     // A: actual contact only; direction points away from the impacted surface.
     public void BulletHit(Vector3 contact, Vector2 outward) => Rays(contact, outward, 3, .17f, .10f);
     // E: accepted counter contact only.
@@ -125,6 +129,18 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
             points[i] = pivot + new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0) * visualReach;
         }
         var line = Line(go, points, .025f, Color.white);
+        flashes.Add(new Flash { root = go, lines = new[] { line }, born = Time.unscaledTime, life = .10f, alpha = 1f });
+    }
+
+    // Arm-Blade swing only; hit and deflection remain separate accepted gameplay events.
+    public void ArmBladeSwing(Vector3 pivot, Vector2 direction, float visualReach)
+    {
+        if (!CanDraw || lineMaterial == null || visualReach <= 0f || direction.sqrMagnitude < .0001f) return;
+        BladeSlash(pivot, direction, visualReach);
+        var go = Child("ArmBladeLine");
+        Vector3 forward = direction.normalized;
+        var line = Line(go, new[] { pivot + forward * (visualReach * .15f),
+            pivot + forward * (visualReach * .5f) }, .025f, Color.white);
         flashes.Add(new Flash { root = go, lines = new[] { line }, born = Time.unscaledTime, life = .10f, alpha = 1f });
     }
 

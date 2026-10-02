@@ -24,7 +24,7 @@ public partial class TopDownSmokeTest
             Keys(); yield return Frames(3);
             flow.ActiveFight.Player.IsInvulnerable = false;
             flow.ActiveFight.Player.TakeDamage(10000, flow.ActiveFight.Boss.gameObject);
-            yield return Phase8Until(() => flow.State == GameSessionFlow.FlowState.MainMenu, "defeat", 3);
+            yield return DefeatToMenu(flow);
 
             // Catalogue: Human + this round's upgrades only; legs never duplicate.
             yield return ClickSessionButton("StartMission");
@@ -118,7 +118,7 @@ public partial class TopDownSmokeTest
                 && gun.ShotsFired == 0 && gun.ShotsHit == 0 && gun.AmmoInMagazine == gun.MagazineSize, $"boss HP {bossHp}->{f.BossHealth.CurrentHealth}");
 
             // Controlled victory at 60% -> AI Ending; Case Closure lists formal endings only.
-            f.BossHealth.TakeDamage(10000, f.Player.gameObject);
+            yield return ControlledVictory(f);
             yield return Phase8Until(() => flow.State == GameSessionFlow.FlowState.Result, "victory", 3);
             yield return ClickSessionButton("ResultContinue");
             yield return Frames(3);

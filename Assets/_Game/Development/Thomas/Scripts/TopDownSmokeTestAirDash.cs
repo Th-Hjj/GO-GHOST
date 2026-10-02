@@ -42,7 +42,7 @@ public partial class TopDownSmokeTest
             Keys(); yield return Frames(3);
             f.Player.IsInvulnerable = false;
             f.Player.TakeDamage(10000, f.Boss.gameObject);
-            yield return Phase8Until(() => flow.State == GameSessionFlow.FlowState.MainMenu, "defeat", 3);
+            yield return DefeatToMenu(flow);
 
             // 7 / 8. Catalogue, +10%, no duplicate.
             yield return ClickSessionButton("StartMission");

@@ -12,13 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 486ff2b0f5ff4a72b46e1cebdb535739, type: 3}
   m_Name: PlayerStats
   m_EditorClassIdentifier: Assembly-CSharp::PlayerStatsSO
-  maxHealth: 100
+  maxHealth: 150
   moveSpeed: 6
   jumpForce: 12
   maxAirJumps: 1
   gunDamage: 10
   fireRate: 0.25
   bulletSpeed: 18
+  volleyShotCount: 3
+  volleyShotDelay: 0.08
   dodgeDistance: 3
   dodgeDuration: 0.18
   dodgeCooldown: 0.8

@@ -25,6 +25,7 @@ public partial class TopDownSmokeTest
             var reader = fight != null ? fight.Player.GetComponent<PlayerInputReader>() : null;
             if (reader != null && !(bool)ReaderFocus.GetValue(reader)) ReaderFocus.SetValue(reader, true);
             if (reader != null) ReaderRelease.SetValue(reader, false); // a refocus must not wait for held virtual keys
+            ResendVirtualState();
             yield return null;
         }
     }
@@ -38,6 +39,23 @@ public partial class TopDownSmokeTest
     {
         float end = Time.realtimeSinceStartup + seconds;
         while (!condition() && Time.realtimeSinceStartup < end) yield return null;
+    }
+
+    // Defeat stops on Mission Result; CONTINUE returns to the Main Menu.
+    private IEnumerator DefeatToMenu(GameSessionFlow flow)
+    {
+        yield return Phase8Until(() => flow.State == GameSessionFlow.FlowState.Result, "MISSION FAILED", 3);
+        yield return Frames(2);
+        yield return ClickSessionButton("ResultContinue");
+        yield return Phase8Until(() => flow.State == GameSessionFlow.FlowState.MainMenu, "Main Menu", 3);
+    }
+
+    // Controlled victory through both Boss phases: Phase 1 depletion, the Boss's own transition, then Phase 2.
+    private IEnumerator ControlledVictory(BossFight fight)
+    {
+        fight.BossHealth.TakeDamage(100000, fight.Player.gameObject);
+        yield return WeaponsWait(() => fight.BossHealth.IsDead || (fight.BossHealth.PhaseIndex == 2 && !fight.BossHealth.AwaitingSecondPhase), 8);
+        fight.BossHealth.TakeDamage(100000, fight.Player.gameObject);
     }
 
     private IEnumerator WeaponClick(float fx, float fy)
@@ -114,7 +132,7 @@ public partial class TopDownSmokeTest
                 && gun.ShotsHit <= gun.ShotsFired && AmmoReadout() == gun.AmmoInMagazine + " / 10", $"hits={gun.ShotsHit}/{gun.ShotsFired}");
             f.Player.IsInvulnerable = false;
             f.Player.TakeDamage(10000, f.Boss.gameObject);
-            yield return Phase8Until(() => flow.State == GameSessionFlow.FlowState.MainMenu, "AR defeat", 3);
+            yield return DefeatToMenu(flow);
             yield return Frames(3);
             var run = PoliceArchive.Current.LatestRun;
             Check("Defeat record freezes the Assault Rifle", PoliceArchive.Current.RunRecords.Count == 1 && !run.Success
@@ -166,7 +184,7 @@ public partial class TopDownSmokeTest
             yield return WeaponsWait(() => gun.ShotsHit >= 1, 3);
             Check("Sniper: one bullet, one hit, 45 damage", gun.ShotsFired == 1 && gun.ShotsHit == 1
                 && f.BossHealth.CurrentHealth == f.BossHealth.MaxHealth - 45, $"boss HP={f.BossHealth.CurrentHealth}");
-            f.BossHealth.TakeDamage(10000, f.Player.gameObject);
+            yield return ControlledVictory(f);
             yield return Phase8Until(() => flow.State == GameSessionFlow.FlowState.Result, "Sniper victory", 3);
             yield return ClickSessionButton("ResultContinue");
             yield return Frames(3);
@@ -214,7 +232,7 @@ public partial class TopDownSmokeTest
                 $"far hits={farHits}/6 close hits={closeHits}/6 bossHP={f.BossHealth.CurrentHealth}");
             f.Player.IsInvulnerable = false;
             f.Player.TakeDamage(10000, f.Boss.gameObject);
-            yield return Phase8Until(() => flow.State == GameSessionFlow.FlowState.MainMenu, "Shotgun defeat", 3);
+            yield return DefeatToMenu(flow);
             yield return Frames(3);
             run = PoliceArchive.Current.LatestRun;
             Check("Defeat record freezes the Shotgun", !run.Success && run.SlotItemId(LoadoutSlot.Weapon) == LoadoutRules.Shotgun

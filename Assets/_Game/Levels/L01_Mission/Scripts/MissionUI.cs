@@ -19,6 +19,10 @@ public sealed class MissionUI : MonoBehaviour
     private GameObject main, upgrade, combat, result, archive, practice, ending;
     private RectTransform choices, archiveContent;
     private RectTransform bossFill, playerFill;
+    // TEST colours, one place: Boss Phase 2 bar, and the player bar end colour at 100% Cyberization (white at 0%).
+    private static readonly Color BossPhase2Fill = Color.red;
+    private static readonly Color CyberizedHealthFill = new Color(.10f, .28f, .90f);
+    private UnityEngine.UI.Image bossFillImage, playerFillImage;
     private TMP_Text resultHeading, timeValue, bossValue, playerValue, accuracyValue, practiceControls, endingTitle, endingText, ammoText;
     private GameObject ammo;
     private PlayerShooting ammoSource;
@@ -199,6 +203,8 @@ public sealed class MissionUI : MonoBehaviour
         Stretch((RectTransform)combat.transform);
         bossFill = HealthBar(combat.transform, "BossHealth", new Vector2(960, 970), new Vector2(1200, 28));
         playerFill = HealthBar(combat.transform, "PlayerHealth", new Vector2(960, 28), new Vector2(1800, 28));
+        bossFillImage = bossFill.GetComponent<UnityEngine.UI.Image>();
+        playerFillImage = playerFill.GetComponent<UnityEngine.UI.Image>();
         var top = (RectTransform)bossFill.parent;
         top.anchorMin = top.anchorMax = new Vector2(.5f, 1);
         top.anchoredPosition = new Vector2(0, -50);
@@ -342,6 +348,7 @@ public sealed class MissionUI : MonoBehaviour
         if (flow.State == GameSessionFlow.FlowState.Combat && flow.ActiveFight != null)
         {
             Fill(bossFill, (float)flow.ActiveFight.BossHealth.CurrentHealth / flow.ActiveFight.BossHealth.MaxHealth);
+            bossFillImage.color = flow.ActiveFight.BossHealth.PhaseIndex == 2 ? BossPhase2Fill : Color.white; // same bar, second health pool
             Fill(playerFill, (float)flow.ActiveFight.Player.CurrentHealth / flow.ActiveFight.Player.MaxHealth);
         }
     }
@@ -350,9 +357,9 @@ public sealed class MissionUI : MonoBehaviour
     {
         var previous = shown;
         shown = flow.State;
-        // One result cue per resolved attempt: defeat now lands on the Main Menu, victory on the Result page.
-        if (shown == GameSessionFlow.FlowState.MainMenu && previous == GameSessionFlow.FlowState.Combat) Play(Sfx.Defeat);
-        if (shown == GameSessionFlow.FlowState.Result) Play(Sfx.Victory);
+        // One result cue per resolved attempt, when its Mission Result page opens.
+        if (shown == GameSessionFlow.FlowState.Result && previous != shown && flow.ActiveFight != null)
+            Play(flow.ActiveFight.Result == BossFight.Outcome.Won ? Sfx.Victory : Sfx.Defeat);
         main.SetActive(shown == GameSessionFlow.FlowState.MainMenu);
         upgrade.SetActive(shown == GameSessionFlow.FlowState.Loadout);
         combat.SetActive(shown == GameSessionFlow.FlowState.Combat);
@@ -360,6 +367,9 @@ public sealed class MissionUI : MonoBehaviour
         archive.SetActive(shown == GameSessionFlow.FlowState.Archive);
         practice.SetActive(shown == GameSessionFlow.FlowState.Practice);
         ending.SetActive(shown == GameSessionFlow.FlowState.Ending);
+        // One colour per deployment: white at 0% Cyberization, CyberizedHealthFill at 100%, from the locked snapshot only.
+        if (shown == GameSessionFlow.FlowState.Combat && flow.Deployment != null)
+            playerFillImage.color = Color.Lerp(Color.white, CyberizedHealthFill, Mathf.Clamp01(flow.Deployment.BodyModificationPercent / 100f));
         bool armed = (shown == GameSessionFlow.FlowState.Practice || shown == GameSessionFlow.FlowState.Combat) && flow.ActiveFight != null;
         ammoSource = armed ? flow.ActiveFight.Player.GetComponent<PlayerShooting>() : null;
         ammo.SetActive(armed);

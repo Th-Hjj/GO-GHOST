@@ -60,6 +60,21 @@ CLAUDE.md  README.md
 | `Development/Walker/Scenes/Scene1.unity` | Shared Player prefab instance + camera | Walker's test scene. Not updated for side-view (the shared prefab has gravity 0); not verified since the migration |
 | `Development/Thomas/Scenes/Random Scene.unity` | Main Camera only | Empty test scene |
 
+### Arena geometry (world space, formal scene `Arena/`)
+
+Playable interior: x -15..15, floor surface y -2.5, ceiling y 8.75 (Bounds centre (0, 3.125), size (30, 11.25)). All platforms: Ground layer, BoxCollider2D + one-way PlatformEffector2D.
+
+| Object | Centre | Size | Top y | Breakable |
+|---|---|---|---:|---|
+| `Wall_Bottom` (ground) | (0, -2.75) | 31 x .5 | -2.5 | no |
+| `LowPlatformA` | (-4.5, -.5) | 4 x .2 | -.4 | no |
+| `LowPlatformB` | (4.5, -.5) | 4 x .2 | -.4 | no |
+| `HighPlatformC` | (0, 1.15) | 4 x .3 | 1.3 | yes |
+| `HighPlatformD` | (-9, 1.15) | 3 x .3 | 1.3 | yes |
+| `HighPlatformE` | (9, 1.15) | 3 x .3 | 1.3 | yes |
+
+`GameSessionFlow` restores C/D/E at every deployment and holds the collider arrays for the Boss bind.
+
 ## 4. Scripts
 
 All game scripts are in Assembly-CSharp, no namespace. Several file names differ from their class names in case (`Playermovement.cs` contains `PlayerMovement`); Unity resolves them. Renaming is a Proposed cleanup for later.

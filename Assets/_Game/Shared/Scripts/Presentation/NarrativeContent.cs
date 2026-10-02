@@ -48,7 +48,17 @@ public sealed class NarrativeContent
         }
     }
 
-    public string[] ApprovedSequence(string id)
+    public string[] ApprovedSequence(string id) => SequenceText(id, false);
+
+    public string EntryText(string id, bool allowDraft = false)
+    {
+        if (!entries.TryGetValue(id, out var entry) || string.IsNullOrWhiteSpace(entry.text)
+            || (entry.status != "approved" && !allowDraft))
+            throw new ArgumentException("Missing, empty or unaccepted narrative entry: " + id);
+        return entry.text;
+    }
+
+    public string[] SequenceText(string id, bool allowDraft = false)
     {
         if (!sequences.TryGetValue(id, out var sequence) || sequence.lineIds.Length == 0)
             throw new ArgumentException("Missing or empty narrative sequence: " + id);
@@ -56,7 +66,7 @@ public sealed class NarrativeContent
         for (int i = 0; i < lines.Length; i++)
         {
             var entry = entries[sequence.lineIds[i]];
-            if (entry.status != "approved" || string.IsNullOrWhiteSpace(entry.text))
+            if ((!allowDraft && entry.status != "approved") || string.IsNullOrWhiteSpace(entry.text))
                 throw new ArgumentException("Unapproved or empty connected narrative line: " + entry.id);
             lines[i] = entry.text;
         }

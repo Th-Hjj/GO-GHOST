@@ -7,64 +7,7 @@ using UnityEngine.InputSystem;
 // The three S02 paths only, on the existing virtual-input / isolated-Archive driver.
 public partial class TopDownSmokeTest
 {
-    private void S02ApprovedInterfaces()
-    {
-        // Detached DEV fixtures exercise the approved interfaces. They never populate the live room's unknown content.
-        var state = new TowerNarrativeState(true);
-        state.EnterStage("floor01");
-        Check("OPEN-01 unconnected room cannot invent an outcome", !state.CommitFloor01Outcome(TowerNarrativeState.FloorAction.Leave, ProjectileActor.Environment)
-            && state.Result == TowerNarrativeState.FloorResult.Unconnected, state.Result.ToString());
-        state.ConnectFloor01Module();
-        bool saved = state.CommitFloor01Outcome(TowerNarrativeState.FloorAction.Interrupt, ProjectileActor.Player);
-        Check("OPEN-01 finite actual result is once only", saved && !state.CommitFloor01Outcome(TowerNarrativeState.FloorAction.Leave, ProjectileActor.Environment)
-            && state.Result == TowerNarrativeState.FloorResult.Preserved, state.Result.ToString());
-        var left = new TowerNarrativeState(true); left.EnterStage("floor01"); left.ConnectFloor01Module(); left.EnterStage("boss_p1");
-        bool pending = left.Result == TowerNarrativeState.FloorResult.Pending;
-        bool restored = left.CommitFloor01Outcome(TowerNarrativeState.FloorAction.Leave, ProjectileActor.Environment);
-        left.EnterStage("boss_p2");
-        Check("OPEN-01 departure alone is not a device result or witnessed recovery", pending && restored
-            && left.ObservedWorldFacts.Any(f=>f.EventId == "floor01.restore.result" && f.OutcomeId == "restored")
-            && !left.Floor01ReportDelivered(TowerNarrativeState.FloorReport.RestoredConfirmed)
-            && left.Floor01ReportDelivered(TowerNarrativeState.FloorReport.LeftUnattended), left.KnownFloor01.ToString());
-        state.EnterStage("boss_p3");
-        Check("OPEN-02 camera preservation without public stance is normal", state.FreezeP3Mode() == TowerNarrativeState.Mode.FullForce, state.FrozenP3Mode.ToString());
-        var restrained = new TowerNarrativeState(true);
-        restrained.EnterStage("floor01"); restrained.ConnectFloor01Module();
-        restrained.CommitFloor01Outcome(TowerNarrativeState.FloorAction.Interrupt, ProjectileActor.Player);
-        restrained.EnterStage("boss_p2");
-        bool report = restrained.KnownFloor01 == TowerNarrativeState.FloorReport.Preserved; // No P2 fact report.
-        restrained.CoexistenceReportDelivered(); restrained.EnterStage("boss_p3");
-        Check("OPEN-02 actual preservation plus camera knowledge/public stance", report && restrained.FreezeP3Mode() == TowerNarrativeState.Mode.Restrained,
-            restrained.FrozenP3Mode.ToString());
-        restrained.EnterStage("final_disposition");
-        Check("OPEN-02 mode is frozen after P3 entry", !restrained.ThreatReportDelivered(TowerNarrativeState.Threat.Erase, true)
-            && restrained.FreezeP3Mode() == TowerNarrativeState.Mode.Restrained, restrained.FrozenP3Mode.ToString());
-        var threat = new TowerNarrativeState(true);
-        threat.EnterStage("floor01"); threat.ConnectFloor01Module();
-        threat.CommitFloor01Outcome(TowerNarrativeState.FloorAction.Interrupt, ProjectileActor.Player);
-        threat.EnterStage("boss_p2"); threat.Floor01ReportDelivered(TowerNarrativeState.FloorReport.Preserved); threat.CoexistenceReportDelivered();
-        threat.EnterStage("office_intro");
-        bool rejectsAmbiguous = !threat.ThreatReportDelivered(TowerNarrativeState.Threat.Control, false);
-        threat.ThreatReportDelivered(TowerNarrativeState.Threat.Control, true); threat.EnterStage("boss_p3");
-        Check("OPEN-02 explicit threat takes priority", rejectsAmbiguous && threat.FreezeP3Mode() == TowerNarrativeState.Mode.Overdrive, threat.FrozenP3Mode.ToString());
-        state.EnterStage("final_disposition");
-        Check("OPEN-03 no world binding means no ending", !state.TryFreezeExit(true) && state.PresidentAlive == null, state.FrozenExit.ToString());
-        state.ConnectDispositionWorld(true, true); state.TransferOfferDelivered(); state.CancelTransfer();
-        bool cancelled = !state.CommitPlayerTransferAndOrder(true) && !state.ForcedInterceptOrderActive;
-        state.TransferOfferDelivered(); bool transferred = state.CommitPlayerTransferAndOrder(true);
-        state.CommitPresidentDeath(); state.TryFreezeExit(true);
-        Check("OPEN-03 cancel leaves no half state; commit survives president death", cancelled && transferred && state.ForcedInterceptOrderActive
-            && state.FrozenExit == TowerNarrativeState.ExitResult.E, state.FrozenExit.ToString());
-        var destroyed = new TowerNarrativeState(true); destroyed.EnterStage("final_disposition"); destroyed.ConnectDispositionWorld(true, true);
-        destroyed.TransferOfferDelivered(); destroyed.CommitPlayerTransferAndOrder(true); destroyed.CommitCoreDestruction(); destroyed.TryFreezeExit(true);
-        Check("OPEN-03 destroyed core takes priority over transfer", destroyed.FrozenExit == TowerNarrativeState.ExitResult.C, destroyed.FrozenExit.ToString());
-        var warning = new TowerNarrativeState(true); warning.EnterStage("final_disposition"); warning.ConnectDispositionWorld(true, true);
-        bool held = !warning.TryFreezeExit(true); warning.RestoreRiskDelivered();
-        bool noAutoExit = warning.FrozenExit == TowerNarrativeState.ExitResult.Unresolved;
-        bool exited = warning.TryFreezeExit(true);
-        Check("OPEN-03 D requires delivered warning and another exit, then freezes once", held && noAutoExit && exited
-            && warning.FrozenExit == TowerNarrativeState.ExitResult.D && !warning.TryFreezeExit(true) && !warning.CommitCoreDestruction(), warning.FrozenExit.ToString());
-    }
+    private void S02ApprovedInterfaces() { Record("Historical OPEN interfaces retired by flow v0.7; use flow-focused checks."); }
 
     private IEnumerator S02Fresh(GameSessionFlow flow, int tier)
     {

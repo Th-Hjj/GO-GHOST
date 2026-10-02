@@ -148,6 +148,8 @@ public class Enemy : MonoBehaviour, IDamageable
         CurrentHealth = pool;
     }
 
+    public void ResumeCombat() { if (!IsDead) combatStopped = false; }
+
     public void StopCombat()
     {
         combatStopped = true;

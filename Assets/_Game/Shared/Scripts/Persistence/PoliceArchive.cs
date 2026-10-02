@@ -151,6 +151,8 @@ public sealed class PoliceRunRecord
     [SerializeField] private int bossHealth;
     [SerializeField] private int playerHealth;
     [SerializeField] private float accuracyPercent;
+    [SerializeField] private string narrativeEndingId;
+    public string NarrativeEndingId => narrativeEndingId;
 
     public int OfficerNumber => officerNumber;
     public int Age => age;
@@ -169,8 +171,9 @@ public sealed class PoliceRunRecord
     private PoliceRunRecord() { } // For JsonUtility.
 
     public PoliceRunRecord(OfficerProfile officer, DeploymentSnapshot deployment, bool success,
-        float combatDuration, int bossHealth, int playerHealth, float accuracyPercent)
+        float combatDuration, int bossHealth, int playerHealth, float accuracyPercent, string narrativeEndingId = null)
     {
+        this.narrativeEndingId = narrativeEndingId;
         if (officer == null) throw new ArgumentNullException(nameof(officer));
         if (deployment == null) throw new ArgumentNullException(nameof(deployment));
         officerNumber = officer.OfficerNumber; age = officer.Age; rank = officer.Rank; yearsOfService = officer.YearsOfService;
@@ -277,7 +280,10 @@ public static class PoliceArchive
     private static void EvaluateCompletedRun(PoliceArchiveProfile profile, PoliceRunRecord run)
     {
         if (!run.Success) return;
-        profile.UnlockEnding(EndingFor(run.BodyModificationPercent));
+        if (string.IsNullOrEmpty(run.NarrativeEndingId)) profile.UnlockEnding(EndingFor(run.BodyModificationPercent));
+        else if (run.NarrativeEndingId == "ending.A" || run.NarrativeEndingId == "ending.B" || run.NarrativeEndingId == "ending.C"
+            || run.NarrativeEndingId == "ending.D" || run.NarrativeEndingId == "ending.E") profile.UnlockEnding(run.NarrativeEndingId);
+        else throw new ArgumentException("Unknown explicit narrative ending.");
         // Marksman Protocol reads only the frozen record: a victory with accuracy >= 70 (exactly 70 counts). The reward
         // is granted once, with the first completion, and is saved by the same Archive write as the record.
         if (run.AccuracyPercent >= MarksmanAccuracyPercent && profile.CompleteAchievement(MarksmanProtocol))

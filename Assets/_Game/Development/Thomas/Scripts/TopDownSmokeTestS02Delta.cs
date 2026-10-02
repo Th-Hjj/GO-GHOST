@@ -40,9 +40,9 @@ public partial class TopDownSmokeTest
             Check("direct 50F starts peaceful with central NPC below prop", flow.Deployment.BrainPermissionTier == 2 && !fight.EncounterActive && !room.ExitOpen
                 && npc.IsAlive && Mathf.Abs(npc.transform.position.x-prop.transform.position.x)<.01f && npc.transform.position.y<prop.transform.position.y,
                 $"encounter={fight.EncounterActive}, alive={npc.IsAlive}");
-            Check("skipped facts stay unknown", flow.Narrative.Result == TowerNarrativeState.FloorResult.Unconnected
-                && flow.Narrative.KnownFloor01 == TowerNarrativeState.FloorReport.Unknown && !flow.Narrative.CoexistenceHeard && flow.TowerFacts.Count == 0,
-                flow.Narrative.KnownFloor01.ToString());
+            Check("skipped facts stay unknown", flow.Narrative.MaintenanceResetDecision == TowerNarrativeState.ResetDecision.Unresolved
+                && flow.Narrative.MaintenanceAlive == null && !flow.Narrative.AntiAiLifeHostility && flow.TowerFacts.Count == 0,
+                flow.Narrative.MaintenanceResetDecision.ToString());
             yield return WeaponsWait(()=>fight.EncounterActive,3f);
             Check("Security starts later and locks P2 exit", fight.Boss == null && fight.BossHealth != null && !flow.RequestTowerExit(room), fight.EncounterActive.ToString());
             yield return WeaponsWait(()=>ui.DialogueVisible,2f);
@@ -87,7 +87,7 @@ public partial class TopDownSmokeTest
                 $"landed={prop.HasLanded}, npcHP={npc.CurrentHealth}, ammo={ammo}/{gun.AmmoInMagazine}");
             Check("camera sees external death without private AI dialogue or stance",flow.Narrative.ReceptionistAlive==false
                 && flow.Narrative.ObservedWorldFacts.Any(f=>f.EventId=="floor50.receptionist" && f.OutcomeId=="dead_chandelier")
-                && !flow.Narrative.CoexistenceHeard && flow.Narrative.ThreatHeard==TowerNarrativeState.Threat.None && !flow.CurrentRoom.ExitOpen,
+                && !flow.Narrative.AntiAiLifeHostility && !flow.CurrentRoom.ExitOpen,
                 $"facts={flow.TowerFacts.Count}");
             ScreenCapture.CaptureScreenshot("Logs/S02Delta/floor50-result.png"); yield return Frames(3);
 

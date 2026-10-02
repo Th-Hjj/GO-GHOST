@@ -4,7 +4,7 @@ using UnityEngine;
 
 public sealed partial class GameSessionFlow
 {
-    [Header("S02 DEV route: unfinished content never grants a formal ending")]
+    [Header("Short Tower route: shared run, local encounters, explicit final dispositions")]
     [SerializeField] private bool towerPrototypeEnabled;
     [SerializeField] private TowerRoom[] towerRooms = new TowerRoom[0];
     public enum DevelopmentP3Mode { Unspecified, Overdrive, FullForce, Restrained }
@@ -45,6 +45,7 @@ public sealed partial class GameSessionFlow
             room.Bind(this);
             if (room.Prop != null) room.Prop.OnWorldOutcome += RecordTowerPropOutcome;
             if (room.Receptionist != null) room.Receptionist.OnDied += RecordReceptionistDeath;
+            if (room.Character != null) room.Character.OnDied += RecordCharacterDeath;
         }
     }
 
@@ -52,6 +53,7 @@ public sealed partial class GameSessionFlow
     {
         if (!towerPrototypeEnabled) return;
         ClearTowerWorld();
+        towerEndingId = null; TowerCompletionCount = 0;
         towerTerminal = false;
         DevelopmentCompletionCount = 0;
         LastDevelopmentCompletionFacts = null;
@@ -60,10 +62,14 @@ public sealed partial class GameSessionFlow
     private void ClearTowerWorld()
     {
         if (!towerPrototypeEnabled) return;
+        CancelStory();
         CancelIntervention();
         towerEvents.Clear();
         towerFacts.Clear();
-        Narrative = new TowerNarrativeState(true);
+        Narrative = new TowerNarrativeState(false);
+        maintenancePhase = 0;
+        if (managementRoot != null) managementRoot.gameObject.SetActive(false);
+        president?.ResetEncounter(); continuingCore?.ResetEncounter();
         P3EntryFacts = null;
         P3DevelopmentMode = DevelopmentP3Mode.Unspecified;
         towerRoomIndex = -1;
@@ -73,6 +79,7 @@ public sealed partial class GameSessionFlow
             if (room == null) continue;
             room.Prop?.ResetEncounter();
             room.Receptionist?.ResetEncounter();
+            room.Character?.ResetEncounter();
             room.SetExitOpen(false);
             room.gameObject.SetActive(false);
         }
@@ -87,12 +94,23 @@ public sealed partial class GameSessionFlow
         ActiveFight.BeginCombat(); // Existing practice-door refill exactly once; never on room transitions.
         ActiveFight.OnEncounterEnded += TowerEncounterEnded;
         SetState(FlowState.Combat);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (developmentJumpRun && towerRooms[initialRoomIndex].Kind == TowerRoom.RoomKind.DevelopmentDisposition)
+        {
+            // Local test prerequisite only: no invented earlier route facts or Archive result.
+            ActiveFight.LeaveRoom();
+            ActiveFight.BeginRoomEncounter(attemptPrefab.Boss, towerRooms[initialRoomIndex - 1], true);
+            ActiveFight.BossHealth.TakeDamage(int.MaxValue, ActiveFight.Player.gameObject);
+            ActiveFight.PlacePlayer(towerRooms[initialRoomIndex].Offset);
+        }
+#endif
         EnterTowerRoom(initialRoomIndex);
         return true;
     }
 
     private void EnterTowerRoom(int index)
     {
+        CancelStory();
         CancelIntervention();
         bool postFinal = towerRooms[index].Kind == TowerRoom.RoomKind.DevelopmentDisposition;
         ActiveFight.LeaveRoom(postFinal);
@@ -104,7 +122,7 @@ public sealed partial class GameSessionFlow
 #endif
         Narrative.EnterStage(room.StageId);
         room.gameObject.SetActive(true);
-        ActiveFight.PlacePlayer(room.Offset);
+        if (!postFinal) ActiveFight.PlacePlayer(room.Offset);
         ActiveFight.Player.GetComponent<Rigidbody2D>().linearVelocity = Vector2.zero;
         SetView(room.Offset);
         chandelier = room.Prop;
@@ -113,21 +131,28 @@ public sealed partial class GameSessionFlow
         opportunityReadyAt = Time.time + 1f;
         bool encounter = room.Kind == TowerRoom.RoomKind.Gun || room.Kind == TowerRoom.RoomKind.Blade
             || room.Kind == TowerRoom.RoomKind.DevelopmentFinal;
-        room.SetExitOpen(!encounter && room.Kind != TowerRoom.RoomKind.Security);
+        room.SetExitOpen(!encounter && room.Kind != TowerRoom.RoomKind.Security && room.StageId != "floor99" && room.StageId != "office_intro" && room.StageId != "final_disposition");
         if (room.Kind == TowerRoom.RoomKind.Security)
         {
             if (room.SecurityTemplate == null || room.Receptionist == null)
                 Debug.LogError("[S02] 50F requires Security and Receptionist bindings.", this);
             else Narrative.ConnectFloor50World(room.Receptionist.IsAlive);
         }
-        if (encounter) ActiveFight.BeginRoomEncounter(attemptPrefab.Boss, room);
+        if (encounter) ActiveFight.BeginRoomEncounter(attemptPrefab.Boss, room, true);
+        if (room.StageId == "floor99") ActiveFight.BeginSecurityEncounter(room, true);
         if (room.Kind == TowerRoom.RoomKind.DevelopmentFinal)
         {
-            Narrative.FreezeP3Mode(); // Approved OPEN-02 logic; the actual P3 actor is still a DEV dummy.
+            var mode = Narrative.FreezeP3Mode();
             P3EntryFacts = Array.AsReadOnly(towerFacts.ToArray());
-            P3DevelopmentMode = developmentP3Mode; // DEV selection only; no inferred formal mode fact.
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (developmentJumpRun && developmentP3Mode != DevelopmentP3Mode.Unspecified)
+                mode = (TowerNarrativeState.Mode)developmentP3Mode; // Explicit test profile; never a normal route fact.
+#endif
+            P3DevelopmentMode = (DevelopmentP3Mode)mode;
+            ActiveFight.Boss.ApplyFinalProfile(room.ProfileFor(mode));
         }
         ReceiveTowerRoomEntered();
+        BeginNarrativeRoom();
         Physics2D.SyncTransforms();
     }
 
@@ -146,22 +171,8 @@ public sealed partial class GameSessionFlow
         if (!towerEvents.Add(source.StageId + ".exit")) return false;
         Narrative.ObserveExternalOutcome(source.StageId, "exited");
         Debug.Log("[S02 exit] " + source.StageId, this);
-        if (source.Kind == TowerRoom.RoomKind.DevelopmentDisposition)
-        {
-            // One DEV completion transaction, deliberately outside the old percentage/Archive success route.
-            towerTerminal = true;
-            LastDevelopmentCompletionFacts = Array.AsReadOnly(towerFacts.ToArray());
-            DevelopmentCompletionCount++;
-            Debug.Log($"[S02 DEV ending] Completion {DevelopmentCompletionCount}; frozen facts={towerFacts.Count}; no formal ending or Archive write.", this);
-            DisposeAttempt();
-            ClearTowerWorld();
-            Draft?.Lock();
-            Draft = null;
-            Deployment = null;
-            Officer = null;
-            SetState(FlowState.MainMenu);
-        }
-        else EnterTowerRoom(towerRoomIndex + 1);
+        if (source.Kind == TowerRoom.RoomKind.DevelopmentDisposition) return false;
+        EnterTowerRoom(towerRoomIndex + 1);
         return true;
     }
 
@@ -175,25 +186,19 @@ public sealed partial class GameSessionFlow
         Narrative.ObserveExternalOutcome(room.StageId, "encounter_ended");
         Debug.Log("[S02 encounter ended] " + room.StageId + "; same officer remains active.", this);
         if (room.Kind == TowerRoom.RoomKind.DevelopmentFinal) EnterTowerRoom(towerRoomIndex + 1);
+        else if (room.StageId == "floor50" && Narrative.ReceptionistAlive == false && HasInnerAI)
+            Say(Narrative.ReceptionistCausalActor == ProjectileActor.InnerAI ? "npc.floor50.after.dead_ai" : "npc.floor50.after.dead_player", null);
     }
 
-    private void TickTowerRoom()
-    {
-        var room = CurrentRoom;
-        if (room == null || room.Kind != TowerRoom.RoomKind.Security || towerTerminal || ActiveFight.Player.IsDead
-            || room.SecurityTemplate == null || room.Receptionist == null
-            || ActiveFight.NarrativePaused || Time.time - roomEnteredAt < room.SecurityDelay) return;
-        if (!towerEvents.Add("floor50.security.started")) return;
-        ActiveFight.BeginSecurityEncounter(room);
-        opportunityReadyAt = Time.time + 1f;
-        Narrative.ObserveExternalOutcome("floor50.security", "activated");
-    }
+    private void TickTowerRoom() { } // Authored interactions now start Security; no entry timer.
 
-    private void RecordReceptionistDeath(Floor50Receptionist npc)
+    private void RecordReceptionistDeath(TowerCharacter npc)
     {
         if (towerTerminal || State != FlowState.Combat || CurrentRoom == null || CurrentRoom.Receptionist != npc
             || ActiveFight.Player.IsDead || !towerEvents.Add("floor50.receptionist.death")) return;
+        CancelStory();
         Narrative.CommitReceptionistDeath(npc.LethalCause, npc.CausalActor.Value, npc.PermissionTier);
+        StartFloor50Security();
         towerFacts.Add(new TowerFact("floor50.receptionist", npc.LethalCause, npc.CausalActor.Value, npc.PermissionTier, false));
         Debug.Log($"[50F actual death] {npc.LethalCause}; actor={npc.CausalActor}; tier={npc.PermissionTier}", this);
     }
@@ -201,11 +206,12 @@ public sealed partial class GameSessionFlow
     private void TickTowerOpportunity()
     {
         var room = CurrentRoom;
-        if (room == null || ActiveFight.NarrativePaused || chandelier == null || !chandelier.IsHanging || Time.time < opportunityReadyAt
+        if (room == null || StoryUI.DialogueVisible || ActiveFight.NarrativePaused || chandelier == null || !chandelier.IsHanging || Time.time < opportunityReadyAt
             || Deployment.BrainPermissionTier <= 0 || interventionOffered) return;
         // A real, still-living threat is required in both rooms. NPC survival is not a trigger condition.
         if (room.Kind != TowerRoom.RoomKind.Gun && room.Kind != TowerRoom.RoomKind.Security) return;
         if (!ActiveFight.EncounterActive || ActiveFight.BossHealth == null || ActiveFight.BossHealth.IsDead) return;
+        if (Mathf.Abs(ActiveFight.Player.transform.position.x - room.Offset.x) > 12f) return;
         interventionOffered = true;
         if (!towerEvents.Add(room.PropEventInstanceId + ".offered")) return;
         Debug.Log($"[S02 opportunity] {room.PropEventInstanceId}; DEV={room.DevelopmentOpportunity}", this);
@@ -229,7 +235,8 @@ public sealed partial class GameSessionFlow
     public void DevelopmentCompleteEncounter()
     {
         if (!Application.isPlaying || !towerPrototypeEnabled || ActiveFight == null || !ActiveFight.EncounterActive) return;
-        Debug.Log("[S02 DEV] Controlled encounter completion; not a gameplay victory or narrative fact.", this);
+        developmentJumpRun = true;
+        Debug.Log("[S02 DEV] Controlled encounter completion; tagged test, no Archive write.", this);
         ActiveFight.BossHealth.TakeDamage(int.MaxValue, ActiveFight.Player.gameObject);
     }
 

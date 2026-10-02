@@ -51,7 +51,9 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     public bool AutomaticFireRequested => HasTemporaryAimOverride && overrideFire && GameplayInputEnabled && hasFocus && !NarrativePaused;
     private Transform overrideTarget;
     private float overrideEndsAt;
-    private bool overrideFire;
+    private bool overrideFire, overrideRunning, overridePlayerRequestedFire;
+    public enum AimEndReason { Expired, Cancelled, TargetLost }
+    public event System.Action<AimEndReason,bool> OnAimOverrideEnded;
     private int suppressAttackFrame = -1;
     private bool hasFocus = true;
     // Release gates are (re)armed whenever input starts or focus returns. See Update.
@@ -163,7 +165,8 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
 
     private void Update()
     {
-        if (!HasTemporaryAimOverride) EndAimOverride();
+        if (overrideRunning && !HasTemporaryAimOverride)
+            EndAimOverride(overrideTarget != null && overrideTarget.gameObject.activeInHierarchy ? AimEndReason.Expired : AimEndReason.TargetLost);
         if (!IsReady || !GameplayInputEnabled || !hasFocus || NarrativePaused)
         {
             ClearFrameState();
@@ -195,6 +198,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
 
         AttackHeld = Time.frameCount > suppressAttackFrame && !attackGated && attackAction.IsPressed();
         AttackPressedThisFrame = Time.frameCount > suppressAttackFrame && !attackGated && attackAction.WasPressedThisFrame();
+        if (overrideRunning && AttackHeld) overridePlayerRequestedFire = true;
         JumpPressedThisFrame = !jumpGated && jumpAction.WasPressedThisFrame();
         JumpHeld = !jumpGated && jumpAction.IsPressed();
         DodgePressedThisFrame = !dodgeGated && dodgeAction.WasPressedThisFrame();
@@ -235,6 +239,9 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         var snapshot = officer != null ? officer.Deployment : null;
         if (snapshot == null || snapshot.BrainPermissionTier < 2 || (autonomousFire && snapshot.BrainPermissionTier < 3)
             || target == null || !target.gameObject.activeInHierarchy || seconds <= 0f || !GameplayInputEnabled) return false;
+        EndAimOverride();
+        overrideRunning = true;
+        overridePlayerRequestedFire = false;
         overrideTarget = target;
         overrideEndsAt = Time.time + seconds;
         overrideFire = autonomousFire;
@@ -242,11 +249,21 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         return true;
     }
 
-    public void EndAimOverride()
+    public void AimPlayerActionAt(Vector2 point)
     {
+        Vector2 dir = point - (Vector2)transform.position;
+        if (dir.sqrMagnitude > .0001f) AimDirection = dir.normalized;
+    }
+
+    public void EndAimOverride() => EndAimOverride(AimEndReason.Cancelled);
+    private void EndAimOverride(AimEndReason reason)
+    {
+        bool notify = overrideRunning, requested = overridePlayerRequestedFire;
+        overrideRunning = false;
         overrideTarget = null;
         overrideEndsAt = 0f;
         overrideFire = false;
+        if (notify) OnAimOverrideEnded?.Invoke(reason, requested);
     }
 
     public void SetNarrativePaused(bool paused)

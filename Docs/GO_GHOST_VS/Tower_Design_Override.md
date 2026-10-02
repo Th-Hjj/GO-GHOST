@@ -1,0 +1,58 @@
+# GO GHOST — Tower design override
+
+2026-10-02. Thomas confirmed the target design in the Tower handoff and the S00 request. Sources: `01_Design_Baseline_ZH.md` (design), `02_Engineering_and_Codex_Prompts.md` (common contract and S00 scope), `04_Narrative_Content_Contract.md` (text interface). This concise English import preserves **Approved / Proposed / Open** distinctions. Implementation evidence belongs only in [Implementation_Log](Implementation_Log.md).
+
+## Approved target
+
+- Single-player 2D side-view shooter, Unity **6000.6.0f1**, Windows, keyboard/mouse. Power grants useful abilities while transferring specific decisions to the inner AI. Cyberization describes the body, not morality or relationships.
+- Short linear route: loadout preview -> tower-front practice -> entrance worker -> 1F maintenance AI -> elevator -> P1 room -> elevator -> 50F NPC/event -> elevator -> P2 room -> elevator -> 99F security -> stairs -> 100F president's office/dialogue -> P3 -> final disposition/ending. P1/P2 floor numbers are Open. Use a few key rooms, not 100 simulated floors.
+- P1 is a real defeat of the current body, followed by a later separate P2 encounter. P2 retains injuries and shows red-eye restart, window exit, climbing and window entry. P3 is the floating complete Puppeteer, appearing from top to bottom above a round platform. P1/P2 do not resolve the mission or unlock an ending. P3 still leads to the approved final disposition before terminal settlement.
+- Boss decisions respond to distance, height, sight lines, cover and player position, with readable attack commitments. P3 modes are `overdrive`, `full_force`, `restrained`; selection rules and moves remain Open. Do not soften difficulty solely to prove a 0% victory or make unaugmented defeat mandatory.
+- Keep seven slots: Left/Right Arm, Left/Right Leg, Torso, Brain, Weapon; no Spine slot. Each of the six body slots has no modification, three cumulative ordinary tiers and a hidden direction. Benefit and authority advance together, not two independent menus. Weapon remains separate and contributes 0% body modification. Undesigned tiers/hidden items are not implementation tasks.
+- Brain example: dialogue pauses combat. T1 advises and leaves aim/fire manual. T2 begins a three-second aim lock on the suspension point only after dialogue closes and combat resumes; movement/jump/dodge remain available, and not firing is a real veto. Held fire and the dialogue-closing click cannot count as consent. T3 adds the approved execution line, then requests real fire within prior authorization through the existing weapon pipeline. It respects ammo, automatic reload, fire interval and weapon availability. No automatic climb.
+- Actual projectile hits bring the chandelier down; the landed object becomes bullet cover and a standing surface. Only explicitly marked objects block bullets; ordinary unmarked platforms may retain pass-through. Falling panels, maintenance bridges and fire gates are candidates, not approved S01 additions.
+- S01 playtest layout adjustment (Thomas, 2026-10-02): center the chandelier horizontally and remove all five existing floating arena platforms. Keep the floor/boundaries; future rooms will receive their own designs. This does not authorize designing those rooms now. The old platform-dependent BLACKOUT remains unbound while its platforms are absent.
+- Record actual outcomes and their actor (Player / InnerAI / Environment) and permission. Showing dialogue, aiming and pulling a trigger do not prove a hit or consequence. Actions -> outcomes -> relationships/P3/final disposition/ending; never choose these from body percentage alone.
+- Preview and formal deployment are distinct. Once the mission is sealed, body and permissions cannot be revoked. Death ends that officer's mission; the next officer starts again from the beginning. No room checkpoints, mid-run save system or unapproved cross-run world persistence. Preserve existing Police Archive unlocks and compatibility IDs.
+- All new visible narrative text uses the single JSON interface in [Narrative_Content_Contract](Narrative_Content_Contract.md). Thomas and the narrative author define branches/text; Walker can refine wording. Codex implements approved mechanics/bindings and does not author missing story or translate final prose without approval.
+
+## Approved narrative boundaries
+
+The president created/trained powerful AI to expand the group's rule and insists on final execution, revocation and restoration authority. The human officer initially intends to ascend and kill him. The self-aware inner AI helps the shared body survive and values this particular experienced self; an identical copy is not automatically its continuation. It can disagree with risks imposed by the human.
+
+The self-aware Puppeteer appears obedient but studies life, change, finitude, copies and difference. She cannot fuse with a human in this setting; the human and inner AI sharing one body while retaining differences interests her. She is neither all-knowing nor a neutral moral judge. Her precise factory restriction is: she cannot directly harm the president or remove that restriction, and must engage when ordered to intercept. She retains tactical and effort choices, including restraint. Do not broaden the ban to every action against the president's interests or give the inner AI the same ban.
+
+Entrance-worker, 1F maintenance/personality and costly 50F opportunities are approved structural directions, not finished branches. **99F security has no self-awareness and normally obeys attack orders.** The conscious victim who internally refuses to fire, and its personality-rescue branch, are rejected. Names, knowledge boundaries, facts, relationship conditions and endings await authored approval.
+
+## Superseded constraints and retained implementation
+
+| Older authority/location | Tower replacement |
+|---|---|
+| AGENTS/CLAUDE `Project` and 2026-09-25/10-01 decisions; VerticalSlice `Identity and flow` / `Arena and Boss` | Short tower with three separate-room encounters; old runtime remains until its authorized migration. |
+| VerticalSlice 10-01 bullet rule; `Projectile` pass-through comment | Explicit bullet-cover objects; no global change making all terrain block. |
+| VerticalSlice 10-01 ending rule / `Identity and flow`; `GameSessionFlow.EndingId`, `PoliceArchive.EndingFor` | Authored actual-action routes and explicit terminal results. Old 50% code is migration debt, never a new-story fallback. Preserve old unlock IDs; do not map them to unapproved new endings. |
+| VerticalSlice `Loadout and augmentation` independent options / permanent Brain aim description | Cumulative ability/authority tiers. Ordinary Brain aim and return state remain Open; the confirmed intervention does not grant permanent control of every action. |
+| VerticalSlice 10-01 practice paragraph | Preview versus formal sealing must be wired explicitly; the current pre-practice lock is not proof of preview support. |
+
+Unchanged engineering constraints remain: one writer/editor per working copy; Shared cannot depend on Levels/Development; preserve GUIDs, serialized references and APIs; no unrelated asset moves, new managers/event buses/dialogue frameworks or input replacement; no Git mutation without the specific authorization. Current session authorizes **common contract + S00 only**. Historical reports and old code are not to be erased.
+
+## Historical S00 proposal for S01 wiring
+
+Thomas subsequently authorized S01. Its actual implementation and verification are in [Implementation_Log](Implementation_Log.md); this original checklist is retained as the S00 handoff, not authority for later stages.
+
+1. Use one development entry/small room with the existing attempt/player. Add only a development selector for 0/T1/T2/T3, frozen into the same `DeploymentSnapshot` before `OfficerIdentity.Assign`; do not expose a new formal menu or fill the six-slot catalogue. Proposed demo base/return aim: manual, explicitly DEV, without changing legacy `ai_aim` behaviour. No tier is inferred from Body % or read live from Draft.
+2. Extend `PlayerInputReader.cs` for one bounded environment-target override and release/new-press gating. Extend `Playershooting.cs` (`PlayerShooting`) with an AI request sharing the existing ammo/reload/cadence/CanUseWeapon checks and real projectile path. A narrow intervention state in existing `GameSessionFlow` owns dialogue -> active window -> release; retain a finite T3 attempt window with a declared TEST duration, not unlimited retries. Preserve actor/tier at emission so delayed hits cannot be credited using the current UI state.
+3. Reuse `MissionUI` Canvas/EventSystem for a small black/white dialogue layer and one serialized TextAsset reference. Add one plain JSON data/lookup helper, not a service. Pause combat without `CancelCombat`/`StopCombat`/disabling augmentation components; locally suspend `PlayerTimeSlow` unscaled deadlines and exclude pause time from `BossFight` duration, restoring prior state. Release on target invalidation, completion, timeout, focus loss, death, redeployment, disable/Play exit. Check Chinese glyph rendering in the bound font.
+4. Minimum new world component: one level-local chandelier (suspension target + controlled fallen state), using existing `IDamageable` plus a narrow shared projectile-hit/context or blocking contract where required. `Projectile.cs` handles only shared contracts. Capture Player/InnerAI/Environment and snapshot tier, commit the actual result once despite multiple pellets, and retain ordinary platform pass-through. Add no general interaction/quest framework. Scene/prefab binding is future S01 work through Unity, not an S00 disk edit.
+5. Verify only compilation; T1 manual hit, T2 refusal/unlock and deliberate new-press hit, T3 real autonomous hit; landed standing/cover versus ordinary pass-through; pause/death/restart cleanup; and edit/reload/restore one JSON line. Keep old accuracy/reward rules unchanged unless approved; use development logs/isolated Archive for the demo. Stop for Thomas's hands-on assessment of benefit, veto and autonomy; do not build the tower first.
+
+## Open, with local gates
+
+- S01 implementation choices: bounded T3 failure duration (TEST), minimal development entry and snapshot wiring, normal/return aim for the demo (manual proposed above). The full ordinary Brain aim rule remains a later design decision. These do not require the full body table or script before S01.
+- S02: exact launch/preview return UI, formal commitment point and between-room resource policy. No new button or refill rule approved here.
+- S03: per-body inherited benefits/authority, contributions, hidden upgrades and cross-part arbitration. Preserve slot ordinals (Torso 4, Weapon 6).
+- S04/S05: per-phase move cards, NPC facts/branches, P3 selection, final disposition/ending IDs, and cross-officer narrative continuity. Receive approved Route Spec plus JSON; do not invent thresholds.
+- Before changing scoring: environmental hits/autonomous fire and MARKSMAN_PROTOCOL eligibility remain undecided. Do not quietly redefine accuracy or rewards.
+- Presentation: `MissionUITerminal.cs` blue constants/styles conflict with VerticalSlice's historical monochrome UI restriction. Whole-UI restyling remains Open; the proposed S01 dialogue can be simple black/white while existing screens stay as they are. Final display language is Open; S01 uses the two approved Chinese originals, without an invented translation.
+
+S00 ends after the static audit, these pointers and the frozen text interface. Subsequent stages require an explicit instruction; the checklist is not a request to execute them.

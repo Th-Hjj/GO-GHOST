@@ -63,6 +63,7 @@ public partial class CyberpsychoBoss
     {
         RestoreDropBody();
         RestorePlayerCollision();
+        IgnorePlayerCollision(); // Body pair only; damage queries, AI/Drone targets and projectile layers stay unchanged.
         BlackoutUsed = true;
         BlackoutsStarted++;
         DistortionRunsStarted = BlackoutCutsExecuted = 0;
@@ -95,6 +96,8 @@ public partial class CyberpsychoBoss
             else ShowWarnings();
             return;
         }
+        // Restore as the .1 s reveal finishes, before the visible recovery window.
+        if (blackoutClock >= finalEnd + .6f) RestorePlayerCollision();
         for (int i = 0; i < redCuts.Length; i++)
         {
             var cut = redCuts[i];
@@ -163,6 +166,7 @@ public partial class CyberpsychoBoss
         }
         if (blackoutClock >= finalEnd + 1.8f)
         {
+            RestorePlayerCollision();
             if (vfx != null) vfx.ClearBlackoutLines();
             BeginSlash();
             return;
@@ -229,6 +233,7 @@ public partial class CyberpsychoBoss
 
     private void AbortUnsafePlacement()
     {
+        RestorePlayerCollision();
         BlackoutPlacementFailed = true;
         platformsBroken = true; // Cancel pending break; no platform is actually changed here.
         finalEnd = blackoutClock - .5f;
@@ -314,6 +319,7 @@ public partial class CyberpsychoBoss
 
     private void ClearBlackout()
     {
+        RestorePlayerCollision(); // StopCombat/OnDisable/death/cancel and next BeginCombat all clear through here.
         blackoutClock = 0;
         for (int i = 0; i < redCuts.Length; i++) redCuts[i] = null;
         if (vfx != null) vfx.ClearBossEffects();

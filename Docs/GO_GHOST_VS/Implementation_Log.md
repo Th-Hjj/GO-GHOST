@@ -1,5 +1,16 @@
 # GO GHOST slice implementation
 
+## 2026-10-01 — B batches 04c (BLACKOUT body collision) and 05b (Upgrade terminal), final build with the new UI
+
+- Both patches checked with `git apply --check` on the current tree (05a already present, not re-applied), hashes match B's manifests, applied unchanged.
+- **04c:** during BLACKOUT the Boss ignores the body collision pair with the officer and restores it at the reveal, at normal exit, on an unsafe-placement abort and in `ClearBlackout`. Colliders, layers, targeting and the red-line damage queries are unchanged. This resolves the earlier finding that the hidden Boss body could trap the officer inside a red band.
+- **05b:** Upgrade page redrawn as a geometric body (head, torso, spread arms, legs) with a faint guide circle; selected region = blue fill, installed part = blue double outline, equipped choice = blue fill; WEAPON button moved left; polygon hit shapes. No new text or buttons.
+- **One fix on top of 05b (blocker-level look defect):** assigning button colours at runtime started a .12 s fade from the default white tint, so every rebuilt choice list flashed white with unreadable text. `TerminalButtonStyle` now starts at the normal colour (`CrossFadeColor(..., 0)`). Hover fade is unchanged.
+- **Focused check `increments06` (editor Play Mode, 2560x1440, isolated Archive, forced phase health, fixture positions): 7 PASS / 0 FAIL.** Seven regions each select with a real pointer click; an installed part keeps its outline when another region is selected; reselecting shows the equipped choice; Human removes it; leg duplicate rule intact; BACK and BEGIN OPERATION fire once; practice text is not restyled. BLACKOUT: the officer walks straight through the hidden Boss (2.52 units past its centre) while the Boss collider stays enabled; a red cut still damages a standing officer (150 -> 118); the pair is restored at the reveal and after BLACKOUT, after a death mid-BLACKOUT, and the next deployment starts with normal collision. After the flash fix, `upgrade-look` re-check: choice buttons start dark; screenshots checked by eye.
+- **Windows x64 build: PASS** (Succeeded, 0 errors, 14 s incremental), output `Builds/Windows-Playtest-Final-UI/GO-GHOST.exe` (+ `GO-GHOST-perf.bat`); `Windows-Playtest-Final` and the earlier folders are kept. Started headless: reached `[Session] Practice`, no exceptions, no arena-bind error. Build residue discarded.
+- **NOT TESTED:** the standalone by hand (window, keyboard/mouse, sound, new UI by eye); 1280x720 capture; hover fade by hand; Boss death mid-BLACKOUT for the collision pair (covered by the same `ClearBlackout` path as player death, not run); Targeting AI / Drone against the hidden Boss; no gameplay suite was re-run.
+
+
 ## 2026-10-01 — B batch 05a: police terminal look for Main Menu / Archive / Result
 
 - Applied Agent B's `05a.patch` unchanged (hash matches B's manifest; `git apply --check` first): `MissionUI` becomes partial, new `MissionUITerminal` and `MissionTerminalFrame`. Main Menu, Archive and Mission Result get dark panels with blue edge frames, pale text, stacked label/value records and a tinted hover; no new text, buttons or pages. Upgrade, practice, combat HUD and Ending are unchanged. 05b was not applied.

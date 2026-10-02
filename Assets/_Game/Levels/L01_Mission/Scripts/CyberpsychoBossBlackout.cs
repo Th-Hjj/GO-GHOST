@@ -61,6 +61,7 @@ public partial class CyberpsychoBoss
 
     private void BeginBlackout()
     {
+        ClearCamoRush(); // Red BLACKOUT is independent; never retain a Rush motion override.
         RestoreDropBody();
         RestorePlayerCollision();
         IgnorePlayerCollision(); // Body pair only; damage queries, AI/Drone targets and projectile layers stay unchanged.

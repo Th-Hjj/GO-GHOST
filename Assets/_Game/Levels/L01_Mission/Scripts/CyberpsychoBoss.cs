@@ -14,7 +14,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
         CrosscutWarning, CrosscutFirst, CrosscutGap, CrosscutSecond, CrosscutRecovery,
         DropWarning, DropTarget, DropExecute, DropImpact, DropRecovery,
         BlackoutSignal, BlackoutRun, BlackoutGap, BlackoutMark, BlackoutFinalWarning,
-        BlackoutFinalSlash, BlackoutBreakDelay, BlackoutRecovery, CamoReposition, BladeComboRecovery }
+        BlackoutFinalSlash, BlackoutBreakDelay, BlackoutRecovery, CamoReposition, BladeComboRecovery, CamoRushWarning, CamoRushExecute }
 
     [SerializeField] private PlayerHealth player;
     [SerializeField] private Projectile bulletPrefab;
@@ -361,7 +361,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
         }
     }
 
-    private void BeginSlash() => BeginCamoReposition();
+    private void BeginSlash() => BeginP2Opening();
 
     private void LockSlashWarning()
     {
@@ -380,6 +380,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
             && (State == AttackState.SlashRecovery || State == AttackState.CrosscutRecovery || State == AttackState.DropRecovery || State == AttackState.BladeComboRecovery))
             BeginBlackout();
         if (BlackoutActive) { TickBlackout(dt); return; }
+        if (CamoRushActive) { TickCamoRush(dt); return; }
         if (State == AttackState.CamoReposition) { TickCamoReposition(dt); return; }
         rb.linearVelocity = new Vector2(State == AttackState.SlashExecute ? chargeDirection * slashSpeed * SimulationRate
             : CrosscutExecuting ? chargeDirection * crosscutSpeed * SimulationRate
@@ -587,10 +588,10 @@ public partial class CyberpsychoBoss : MonoBehaviour
         // Presentation only, once per actual state entry. Never an attack, damage or timing authority.
         if (vfx != null)
         {
-            vfx.SetGhosting(next == AttackState.GhostMove);
+            vfx.SetGhosting(next == AttackState.GhostMove || next == AttackState.CamoRushExecute);
             if (bladeVisual != null && bladeVisual.activeInHierarchy &&
                 (next == AttackState.SlashExecute || next == AttackState.CrosscutFirst || next == AttackState.CrosscutSecond
-                 || next == AttackState.DropExecute))
+                 || next == AttackState.DropExecute || next == AttackState.CamoRushExecute))
                 vfx.BladeSlash(bladeVisual.transform.position,
                     next == AttackState.DropExecute ? Vector2.down : Vector2.right * chargeDirection, .65f);
         }
@@ -599,11 +600,11 @@ public partial class CyberpsychoBoss : MonoBehaviour
         switch (next)
         {
             case AttackState.SlashExecute: case AttackState.CrosscutFirst: case AttackState.CrosscutSecond:
-            case AttackState.DropExecute:
+            case AttackState.DropExecute: case AttackState.CamoRushExecute:
                 sfx.Play(Sfx.BladeSwing); break;
             case AttackState.BurstWarning: case AttackState.SweepWarning: case AttackState.GhostWarning:
             case AttackState.SlashWarning: case AttackState.CrosscutWarning: case AttackState.DropWarning:
-            case AttackState.BlackoutSignal:
+            case AttackState.BlackoutSignal: case AttackState.CamoRushWarning:
                 sfx.Play(Sfx.Glitch); break;
         }
     }
@@ -653,7 +654,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
             }
         if (bladeVisual != null)
             bladeVisual.transform.localRotation = bladeRestRotation * Quaternion.Euler(0, 0,
-                p2Camo && (State == AttackState.SlashExecute || CrosscutExecuting || State == AttackState.DropExecute || BlackoutMoving) ? -75f : 0f);
+                p2Camo && (State == AttackState.SlashExecute || CrosscutExecuting || State == AttackState.DropExecute || State == AttackState.CamoRushExecute || BlackoutMoving) ? -75f : 0f);
         if (body != null)
             if (health != null && health.IsDead) body.color = new Color(.35f, .35f, .35f);
         bool marked = State == AttackState.MarkedTracking || State == AttackState.MarkedLock;
@@ -672,6 +673,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
         if (chargeWarning != null)
         {
             if (BlackoutActive) { chargeWarning.enabled = false; return; }
+            if (State == AttackState.CamoRushWarning) { ShowCamoRushWarning(); return; }
             bool slashWarning = State == AttackState.SlashWarning;
             chargeWarning.enabled = Sweeping || slashWarning || CrosscutTelling || State == AttackState.DropTarget
                 || State == AttackState.DropExecute || State == AttackState.DropImpact || HighCMarked;
@@ -774,6 +776,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
 
     private void ClearAttack()
     {
+        ClearCamoRush();
         ClearBlackout();
         ClearCamoPresentation();
         PredictionCue = "";
@@ -832,6 +835,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
         DropsStarted = 0;
         BlackoutUsed = false;
         BlackoutsStarted = 0;
+        CamoRushesStarted = CamoRushHitAttempts = 0;
         DistortionRunsStarted = 0;
         SetWeapons(true, false);
         FacePlayer();

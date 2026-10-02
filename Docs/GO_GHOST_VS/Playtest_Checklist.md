@@ -1,85 +1,20 @@
-# GO GHOST — Vertical Slice 验收与 Playtest
+# GO GHOST — Focused Flow / Playtest Worksheet
 
-> Historical integration/playtest worksheet, not the default MSP sprint gate. Current design and priorities are in [../VerticalSlice.md](../VerticalSlice.md), current numbers in [Prototype_Test_Profile.md](Prototype_Test_Profile.md), and executed results in [Implementation_Log.md](Implementation_Log.md). Apply later Torso/input/two-phase/Archive rules wherever this old sheet differs. Natural 0% victory, final balance and standalone verification remain useful later checks, not requirements to repeat after every feature.
+Current behaviour: [Tower_Design_Override](Tower_Design_Override.md). Numbers: [Prototype_Test_Profile](Prototype_Test_Profile.md). **This is a blank worksheet, not new test evidence or a task to rerun every path.** Executed results belong only in [Implementation_Log](Implementation_Log.md).
 
-## 记录规则
-这是空白检查表，不是已运行的报告。
-状态仅填 PASS / FAIL / NOT_RUN / BLOCKED；证据可为实际日志、测试输出、构建启动记录或真人操作记录。
-调试强制胜败可以验证路径，不能当作 0% 实战可胜、改造更易用或玩家理解主题的证据。
+Record commit, machine, Unity version, tester and any assistance. Use PASS / FAIL / NOT RUN / BLOCKED honestly. Forced kills, invulnerability, repositioning and virtual input establish specific mechanisms/flow, not balance or hardware usability. Use an isolated Archive for fixtures. Assault Rifle is the only active weapon; no retired weapon requirements.
 
-构建标识：未填写  
-代码 commit / 工作区说明：未填写  
-TEST 参数版本：未填写  
-运行环境：未填写  
-记录者与日期：未填写
-
-## A. 技术与规则检查
-| ID | 操作/检查 | 预期 | 状态 | 证据/实际结果 |
-|---|---|---|---|---|
-| R01 | 全新 New Game | 第一位 0%、基础枪、无强制死亡 | NOT_RUN | |
-| R02 | 第一位直接击败 Boss | 正常进入 0% 对应结果，不访问失败后专属状态 | NOT_RUN | |
-| R03 | 真实被 Boss 击败 | 显示下一位警察接替，进入自由配装 | NOT_RUN | |
-| R04 | 首败后检查目录，再失败一次 | 已实现项首败全开；后续无新奖励/解锁 | NOT_RUN | |
-| R05 | 不装任何身体模块再部署 | 仍为 0%，五类基础动作可用 | NOT_RUN | |
-| R06 | 切换左右身体槽的测试数据 | 独立相加，不串槽；武器不在贡献中 | NOT_RUN | |
-| R07 | 不同武器数据的测试夹具 | 身体比例及相同百分比结果不变 | NOT_RUN | |
-| R08 | 装卸手部/腿部模块，反复部署 | 伤害/冷却与 TEST 值一致，无叠加漂移 | NOT_RUN | |
-| R09 | 当前三件模块全装 | 显示 60%；不伪称已做可玩 100% 内容 | NOT_RUN | |
-| R10 | 六个最高贡献相加/全改造数据夹具 | 定义为 100%，不按当前可用目录归一化 | NOT_RUN | |
-| R11 | 战斗中通过 UI/正常接口尝试换装 | 被拒绝，快照不变 | NOT_RUN | |
-| R12 | 部署后改变草稿对象或预览 | 不影响本次战斗/获胜记录 | NOT_RUN | |
-| R13 | AI 模块下把鼠标移离 Boss | 枪口仍由 AI 追踪 Boss；反馈明确 | NOT_RUN | |
-| R14 | AI 模块下松开开火，移动/跳/闪避 | 不自动射击；其余基础动作手动 | NOT_RUN | |
-| R15 | AI 下尝试热键/设置关闭接管 | 战斗中不可关闭 | NOT_RUN | |
-| R16 | AI 下 Boss 在左右侧、重合处、失效 | 无抖动抢控制/无效方向；不回退手动 | NOT_RUN | |
-| R17 | 死亡后卸除脑模块并再次部署 | 恢复手动瞄准，无状态残留 | NOT_RUN | |
-| R18 | Boss 被打残后玩家失败并再部署 | Boss 满血，位置/攻击/弹体都重置 | NOT_RUN | |
-| R19 | 连续 10 次失败/部署 | 无多玩家、多监听、重复伤害或界面残留 | NOT_RUN | |
-| R20 | 同一结算步双方致死 | 按 TEST 规则只判一次失败 | NOT_RUN | |
-| R21 | 结算后还有旧弹体/回调 | 不改写结果，不影响下一位 | NOT_RUN | |
-| R22 | 百分比 0、40 边界两侧、40、100 | 匹配唯一 TEST 映射，不受显示舍入影响 | NOT_RUN | |
-| R23 | 同比例、不同历史/死亡/模块/武器 | 同一结果 ID，不擅自赋予道德好坏 | NOT_RUN | |
-| R24 | AI 配装经历后返回 New Game | 回第一位 0% + 基础枪和初始目录状态 | NOT_RUN | |
-| R25 | 独立构建从正确入口启动 | 不依赖 Editor，UI/瞄准/跳跃/闪避可用 | NOT_RUN | |
-| R26 | 菜单按钮、窗口失焦后恢复 | 不点击穿透开火，不卡住输入 | NOT_RUN | |
-| R27 | 正常试玩构建检查 | 无作弊入口、旧多关卡流程、Missing Script | NOT_RUN | |
-
-数据夹具可验证规则，但不算已完成的武器、100% 内容或真实玩家体验。
-记录真实生命变化、模块数据和构建状态即可；不要求为这次作业造统计平台。
-
-## B. 真人体验：先验证规则，再验证选择
-先由 Thomas / Walker 走通规则路径；之后可请不熟悉设计的人试玩。
-首次自由体验不要先告诉玩家“你应该觉得更强但不自由”，避免替玩家给答案。
-让玩家从正常 New Game 开始；若首战直接获胜，保留这条真实结果，不强制补一场假失败。
-
-需要分别记录的三种构型：
-- H：无身体改造，0%，基础枪。
-- M：只装一个或两个被动身体模块，仍是手动瞄准。
-- A：AI Aim 脑模块，与 H 使用相同基础枪；初轮尽量不混入被动模块，隔离瞄准接管的影响。
-
-首次自由试玩遵循真实流程：要失败后才开目录，不以调试入口冒充玩家体验。
-随后可在测试者知情的控制对照中比较构型；不同参与者可交换 M/A 顺序，避免把熟练度误认为模块收益。每次正常部署仍重置同一 Boss。
-跨构型对照不能同时改 Boss 招式、武器、场地与大量数值。
-
-| 观察问题 | 原话/操作现象 | 暂时解释（不是事实） |
+| Focused path | What to check | New manual record |
 |---|---|---|
-| 玩家知道自己是在控制警察而不是 Boss 吗？ | | |
-| 玩家理解失败后是下一位接替，而不是攒死亡货币吗？ | | |
-| 玩家找到保持 0% 和自由卸装的方法吗？ | | |
-| Boss 两招的预警和应对是否能被学会？ | | |
-| 有技术足够好的测试者实际用 0% 获胜吗？ | | |
-| 被动模块的实际作用能被察觉吗？ | | |
-| AI 模块让瞄准更轻松吗？有无可靠性问题？ | | |
-| 玩家能说清 AI 接管了什么、自己还控制什么吗？ | | |
-| 玩家是否尝试把枪指向别处，并注意到无法做到？ | | |
-| 玩家下次会保留还是卸除脑模块，理由是什么？ | | |
-| 玩家理解结果来自获胜者本次身体比例吗？ | | |
-| 有无内容被误认为最终结局或“高改造必然坏”？ | | |
+| Normal continuous run | Loadout/practice -> actual fights -> both final F decisions -> Result/ending/Main Menu; same officer/snapshot, no room refills or DEV completions | NOT RUN |
+| F / ReplyOrAttack | Single nearby F, fresh presses, cancellation distinct; live Boss/office manual shots; tier 0 omits Inner AI | NOT RUN |
+| 1F | Short real walk/reset, later greeting, cancellation and physical death; untouched unresolved; no exit softlock | NOT RUN |
+| 50F T2 / T3 | F call before guard, valid full T2 veto, real T3 ammo/reload/projectile/fall; actual Player/InnerAI causality and no scripted NPC death | NOT RUN |
+| P3 rule | Delivered denial precedence; exact living/cancel/T2-veto requirements for restraint; killing without denial defaults Full Force | NOT RUN |
+| Final local setups | A–E through two F decisions, Control prerequisite, D cue in either order, dead-target acknowledgement, once-only completion | NOT RUN |
+| Lifecycle | Mid-run death/new officer, F8 during pause/aim, restart/full restart, default skipped facts, no DEV Archive pollution | NOT RUN |
+| Content / UI | Exact English JSON lookup after next Play; black/white minimal panel; no extra narrative help UI | NOT RUN |
 
-## C. 这轮如何判断
-**技术可试玩：** 独立构建实际运行，核心循环不被卡住，已确认规则没有已知阻塞。
-**体验已得到初步验证：** 出现真实战斗与尝试间选择，玩家感知到收益以及瞄准权转移，而不是只看见数字。
-**仍未被证明：** 0% 尚无真实胜利证据、AI 收益没有被察觉、控制权转移被误认作 bug，或结果关系没被理解。
+Select only checks relevant to the authorized change. Compile and a short affected continuation are the normal code gate. No old exhaustive phase matrix, standalone Build, every-upgrade campaign or generic harness required. For a documentation-only update, verify authority/links/diff and do not run gameplay tests.
 
-不能把“功能做齐了”直接等同“玩法已经成立”。
-失败测试不是催促扩大规模的理由：先用 FIX 或 PLAYTEST prompt 修正当前闭环，复测相关项，再考虑更多内容。
+Later human review can assess AI usefulness, control conflict, readable physical consequences and unassisted Boss difficulty. Preserve sparse storytelling; do not answer player confusion by automatically adding explanatory dialogue/HUD. Body tiers, final art/voice and responsive move redesign require their own approved scope.

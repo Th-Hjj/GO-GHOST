@@ -1,187 +1,69 @@
-# GO GHOST - Project Map
+# GO GHOST — Project Map
 
-What exists in the repository, where it is, and how it connects. Progress, test evidence, and NOT_RUN items are recorded only in `Docs/GO_GHOST_VS/Implementation_Log.md`; this file does not repeat them. Update this file when paths, scenes, or systems change. Do not describe scripts that do not exist.
+Inspected source after the **2026-10-02 full-flow integration**. This maps implementation, not design approval or test results. Current authority: [Tower_Design_Override](GO_GHOST_VS/Tower_Design_Override.md). Actual progress/verification: [Implementation_Log](GO_GHOST_VS/Implementation_Log.md).
 
-**Current source — 2026-10-02 S02:** `GameSessionFlow` + `GameSessionTower` connect nine room roots in the existing mission scene after practice. `TowerRoom`/`TowerDoor` own room metadata and exits. `BossFightTower` separates room actors from the persistent officer; `CyberpsychoBossEncounter` binds the existing P1/P2 attacks to each room's bounds and player. `GameSessionIntervention` reuses S01 JSON/UI/pause; `ChandelierEncounter` emits actual outcomes. `TowerNarrativeState` exposes camera-visible external facts and the approved finite P3/transfer/exit interfaces. `Floor50Receptionist` handles real falling-prop damage; the room binds existing Enemy for delayed Security activation. `GameSessionDevelopment` reuses deployment/room entry for F8 `DeveloperRouteJump`; existing upgrades and permission enter a fresh snapshot. The menu/API compile only in Editor/Development Build. Empty content stays unconnected; P3 and final completion remain DEV. Normal death records one failure; developer-jump attempts skip Archive writes. DEV completion never reaches the old percentage ending path. No SessionView exists.
+## Scene and environment
 
-Implementation evidence and NOT_RUN items belong in Implementation_Log. This audit is static only. The blue terminal implementation conflicts with the written black/white restriction; resolve before further UI changes. Historical documents/scenarios are not current acceptance authority.
+- Unity **6000.6.0f1**, URP 2D, New Input System, uGUI/TMP, Windows keyboard/mouse. No package/version change in this integration.
+- Entry/build scene: `Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity`. `GameSession` holds flow/UI/F8; `CombatAttempt.prefab` supplies the deployed player and initial encounter foundation. Nine `TowerRoom` roots plus practice use one scene and camera offsets, not separate scene loads.
+- Tower entrance/1F/50F have local greybox characters; 1F has its reset unit. P1/50F have independent physical chandeliers. 50F/99F bind Security templates. Office/P3/final share a management root with CEO, continuing core and pre-P3 separation. P3/final include the greybox circular platform.
+- Old floating arena platforms were removed; platform-dependent BLACKOUT stays unbound. Do not use the old A/B/C/D/E geometry table as current layout.
+- Force Text, Visible Meta Files, Domain Reload disabled. Runtime state must reset explicitly each Play/attempt. Shared Player retains legacy defaults; the combat prefab owns side-view overrides. Do not copy those defaults into a second player controller.
+- `TitleScene.unity`, Walker's `Development/Walker/Scenes/Scene1.unity`, Thomas's `Development/Thomas/Scenes/Random Scene.unity` are not the active route entry. Historical TitleScene missing references and Walker's test content were not changed.
 
-## 1. Status
+## Existing level code
 
-| Item | Value |
+Paths below are under `Assets/_Game/Levels/L01_Mission/Scripts/`.
+
+| Script(s) | Current ownership |
 |---|---|
-| Unity | 6000.6.0f1, URP 17.6.0 (2D Renderer), Input System 1.20.0, uGUI 2.6.0 + TextMesh Pro, Test Framework 1.8.0 |
-| Target | Windows PC (StandaloneWindows64), keyboard + mouse. Build Profiles for Windows and macOS in `Assets/Settings/Build Profiles/` |
-| Slice | Practice -> fixed Tower DEV route; independent P1/P2, DEV P3 -> disposition -> DEV exit. Existing weapons/abilities/Archive retained; floating platforms removed, platform-dependent BLACKOUT unbound |
-| Entry scene | `Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity`, the only scene in Build Settings (index 0) |
-| Validation | Current and historical compile/Play Mode results are in Implementation_Log; old results are not claims of a fresh full regression |
-| Windows build | Log records October Final-UI build before Archive/Camo Rush changes. This machine only has historical Builds/Windows; current-head build NOT RUN. Ignored outputs do not transfer through Git |
+| `GameSessionFlow` | Loadout/deployment/practice/result/ending/Archive states, officer and immutable snapshot, attempt generation/disposal |
+| `GameSessionTower`, `TowerRoom`, `TowerDoor` | Existing ordered room definitions, room entry/exit, local encounter cleanup, run facts and normal mission routing |
+| `GameSessionNarrative` | Nearby focus, F callbacks, mandatory sequences, ReplyOrAttack, 1F movement/reset, Security triggers, P2/office authored greybox beats |
+| `GameSessionIntervention` | Existing S01 chandelier permission sequence, actual temporary aim request, real T2 completion reason, cleanup |
+| `GameSessionDisposition` | P3 reveal, final target choices/physical result, D cue, legal A–E freeze, explicit normal result/ending |
+| `TowerNarrativeState` | Nullable/unresolved world facts, external observation pairs, delivered denial, frozen finite P3 mode, final decisions/administrator/order/result |
+| `BossFight` / `BossFightTower` | Practice refill/statistics boundary, genuine narrative pause and clock compensation, persistent player vs local actors, staged combat start, local defeat vs mission death/completion |
+| `CyberpsychoBoss` + encounter/attack partials | Existing P1 gun/P2 blade movement and attack owner, room bounds/target, shared real floating P3 profile; final responsive redesign absent |
+| `TowerCharacter` | Local NPC/CEO/core life, actual player projectile/attack damage, interaction anchor and death event |
+| `Floor50Receptionist` | Extends local life state with actual falling-chandelier contact and inherited causal actor |
+| `ChandelierEncounter` | Existing real suspension hit, Rigidbody2D drop/landing, explicit projectile blocking/standable body, separate once/actor/result |
+| `TowerManagementBarrier` | Opt-in projectile blocking plus physical separation before P3; no global terrain rule |
+| `MissionUI`, `MissionUIDialogue` and existing terminal partials | Existing screens/HUD; one JSON-bound dialogue/choice panel/F anchor, typed completed/cancelled/committed results. Legacy terminal/card styling retained |
+| `GameSessionDevelopment`, `DeveloperRouteJump` | F8 Editor/Development UI and real fresh deployment/route jump; existing equipment/tier selection; skipped facts unknown; DEV Archive isolation |
 
-Editor settings worth knowing: Force Text serialization, Visible Meta Files, Enter Play Mode Options enabled with Domain Reload disabled (`GameSessionFlow` initializes explicitly on every Play). Physics2D gravity is (0, -9.81). The shared `Player.prefab` keeps gravity scale 0 from the top-down era; the slice's player inside `CombatAttempt.prefab` overrides it to 3. Layers: Ground (6), Enemy (7), Player (8).
+`RoomKind.DevelopmentFinal` / `DevelopmentDisposition` names remain serialized compatibility identifiers; normal P3/final behaviour is no longer a stationary DEV-completion path. `TowerRoom.securityDelay` is retained serialized data but no longer drives 50F activation. The current radio/death event does.
 
-## 2. Layout
+## Shared code and content
 
-```
-Assets/
-  _Game/
-    Shared/
-      Scripts/Player/      input, movement, dodge, shooting, health, loadout data, officer identity/visual,
-                           Time Slow, legacy ability/upgrade scripts, projectile, READEME.md (Walker's old notes)
-      Scripts/Enemies/     Enemy.cs
-      Scripts/Persistence/ PoliceArchive.cs, PoliceArchiveStore.cs (profile, versioned local JSON)
-      Scripts/Encounters/  EncounterZone.cs (legacy)
-      Prefabs/             Player.prefab, Bullet.prefab, Enemies/Enemy_Basic.prefab
-      Data/                PlayerStats.asset
-    Levels/L01_Mission/
-      Scenes/              Cyberpunk World.unity, TitleScene.unity
-      Scripts/             GameSessionFlow.cs, BossFight.cs, CyberpsychoBoss.cs, MissionUI.cs
-      Prefabs/             CombatAttempt.prefab, PlayerBody_NoFriction.physicsMaterial2D
-    Development/
-      Thomas/Scenes/       Random Scene.unity (camera only)
-      Thomas/Scripts/      TopDownSmokeTest.cs + StrictUI and historical scenario partials (editor-only tests)
-      Walker/Scenes/       Scene1.unity (player test scene)
-  Settings/                URP assets, InputSystem_Actions.inputactions, Build Profiles/ (keep in place)
-  TextMesh Pro/            TMP Essential Resources (imported for the slice UI)
-  Welcome/                 Unity 2D template welcome content + IET framework (keep in place)
-  Cyborg-Assets/           two empty folders, waiting for Walker (do not move)
-Docs/                      VerticalSlice.md, Collaboration.md, ProjectMap.md, GO_GHOST_VS/ (baseline, TEST profile,
-                           Implementation_Log, execution contract, prompts, playtest checklist)
-CLAUDE.md  README.md
-```
+Paths below are under `Assets/_Game/Shared/`.
 
-`Assets/Settings/InputSystem_Actions.inputactions` is the project-wide input actions asset (referenced from EditorBuildSettings config objects). `Assets/Settings/UniversalRenderPipelineGlobalSettings.asset` is referenced from GraphicsSettings. Do not move either.
-
-## 3. Scenes
-
-| Scene | Content | Notes |
-|---|---|---|
-| `Levels/L01_Mission/Scenes/Cyberpunk World.unity` | Fixed Main Camera; Arena/HighPlatformC; GameSession (GameSessionFlow + MissionUI). MissionUI creates one Canvas/EventSystem at runtime. Fresh actors/BossFight spawn from CombatAttempt.prefab. Legacy Encounter_01 is inactive and CameraFollow disabled | Only build scene. Current gameplay values: Prototype_Test_Profile.md |
-| `Levels/L01_Mission/Scenes/TitleScene.unity` | Added by Walker on 2026-09-24 | Not in Build Settings. Has missing references (noted in the Implementation_Log, out of scope so far) |
-| `Development/Walker/Scenes/Scene1.unity` | Shared Player prefab instance + camera | Walker's test scene. Not updated for side-view (the shared prefab has gravity 0); not verified since the migration |
-| `Development/Thomas/Scenes/Random Scene.unity` | Main Camera only | Empty test scene |
-
-### Arena geometry (world space, formal scene `Arena/`)
-
-Playable interior: x -15..15, floor surface y -2.5, ceiling y 8.75 (Bounds centre (0, 3.125), size (30, 11.25)). All platforms: Ground layer, BoxCollider2D + one-way PlatformEffector2D.
-
-| Object | Centre | Size | Top y | Breakable |
-|---|---|---|---:|---|
-| `Wall_Bottom` (ground) | (0, -2.75) | 31 x .5 | -2.5 | no |
-| `LowPlatformA` | (-4.5, -.5) | 4 x .2 | -.4 | no |
-| `LowPlatformB` | (4.5, -.5) | 4 x .2 | -.4 | no |
-| `HighPlatformC` | (0, 1.15) | 4 x .3 | 1.3 | yes |
-| `HighPlatformD` | (-9, 1.15) | 3 x .3 | 1.3 | yes |
-| `HighPlatformE` | (9, 1.15) | 3 x .3 | 1.3 | yes |
-
-`GameSessionFlow` restores C/D/E at every deployment and holds the collider arrays for the Boss bind.
-
-## 4. Scripts
-
-All game scripts are in Assembly-CSharp, no namespace. Several file names differ from their class names in case (`Playermovement.cs` contains `PlayerMovement`); Unity resolves them. Renaming is a Proposed cleanup for later.
-
-### Slice data flow
-
-`GameSessionFlow` owns Main Menu, editable Loadout, Deployment, Practice, Combat, Result, Ending and Archive states. Deployment seals the draft into an immutable snapshot and instantiates one fresh CombatAttempt. Both outcomes stop actors and freeze four result statistics; defeat CONTINUE disposes the attempt and returns to Main Menu, while victory first shows Ending and waits for another CONTINUE. The next START MISSION creates a fresh editable human draft. Success still stores VictoryRecord and the existing Archive reward. Shared PlayerStats is never written at runtime.
-
-### `Levels/L01_Mission/Scripts/`
-
-| File / class | Responsibility |
+| Path | Responsibility |
 |---|---|
-| GameSessionFlow.cs | Launch/default deployment, Main Menu/Upgrade/Practice/Combat/Result/Ending/Archive; immutable deployment, generated officer, stale-attempt guard, six settling steps, platform restoration and exactly one frozen run record |
-| `BossFight.cs` | One outcome per attempt (mutual death = defeat), cleanup, AI/Drone target binding, frozen combat duration/remaining HP/bullet accuracy at resolution |
-| CyberpsychoBoss.cs + Blackout/Camouflage/CamoRush partials | Sole Boss movement/attack writer; P1 gun, immune transition, P2 blade with bounded follow-ups, once-per-attempt seven-cut BLACKOUT/C-D-E break, every-third-opening Camo Rush; cleanup and attempt-local hostile clock |
-| MissionUI.cs + MissionUITerminal / MissionTerminalFrame / MissionAugmentationGuide | Runtime screens, seven equipment regions, practice controls, HP/ammo HUD, four frozen result values, exact ending text and three Archive tabs; blue terminal styling on menu/Upgrade/Archive/Result |
+| `Scripts/Player/LoadoutState.cs` | `LoadoutRules`, current prototype catalogue, draft and immutable deployment; sole weapon `assault_rifle`; Brain permission frozen here |
+| `Scripts/Player/OfficerIdentity.cs` | Assign snapshot and apply/clean augmentation consumers |
+| `Scripts/Player/PlayerInputReader.cs` | Single New Input System reader and final aim outlet; held-input gating; temporary target/timer/fire request and completion reason |
+| `Scripts/Player/Playermovement.cs`, `Playerdodge.cs`, `PlayerHealth.cs` | Existing movement/grounding/jump/Dodge and death; no checkpoint resurrection |
+| `Scripts/Player/Playershooting.cs` | Existing real Rifle ammo/reload/cadence/muzzle/projectile/sound/accuracy pipeline; manual and authorized autonomous requests |
+| `Scripts/Player/Projectile.cs`, `IProjectileReceiver.cs` | Real team-filtered contacts, opt-in receivers, damage, actual actor/tier and lifetime; unmarked terrain passes bullets |
+| `Scripts/Player/PlayerTimeSlow.cs`, `PlayerCounterArm.cs`, `PlayerDetachedDroneArm.cs` | Existing prototypes; unscaled clocks compensate narrative pause; staged Drone targeting waits for combat |
+| `Scripts/Enemies/Enemy.cs` | Existing health/team/collider foundation and minimal Security pursuit/fire, staged stop/resume |
+| `Scripts/Presentation/NarrativeContent.cs` | One instance JSON loader, stable entry/sequence lookup, explicit draft acceptance |
+| `Data/Narrative/go_ghost_narrative.json` | Sole runtime story/choice/ending text; exact supplied English draft, schema 1 |
+| `Scripts/Persistence/PoliceArchive.cs`, `PoliceArchiveStore.cs` | Existing persistent unlock collections/local store plus session records; optional explicit A–E ending on frozen run record |
+| `Prefabs/Player.prefab`, `Bullet.prefab`, `Enemies/Enemy_Basic.prefab`, `Data/PlayerStats.asset` | Existing shared sources; level combat prefab overrides remain authoritative for its actors |
 
-### `Shared/Scripts/Player/`
+Normal flow: draft -> sealed snapshot -> officer/player -> same run across rooms -> actual final decisions or death -> one frozen normal record. DEV runs use the same init/encounter route but skip normal saves/unlocks. Old percentage ending helpers remain solely for legacy data/non-Tower code, not current Tower routing. Existing two Case Closure cards still read old IDs; A–E browsing is not integrated there.
 
-| File / class | Responsibility |
-|---|---|
-| `PlayerInputReader.cs` | The single input source. Polls the Player action map and resolves `AimDirection` through an exclusive Manual or AI branch; with AI Aim the mouse cannot override it |
-| `Playermovement.cs` PlayerMovement | Horizontal movement, gravity jump, snapshot-owned one extra airborne jump and bounded hold-Space Hover. Duplicate leg effects do not stack; lifecycle resets air resources. Facing follows resolved aim; speed comes from the snapshot |
-| Playerdodge.cs PlayerDodge | Ground Dodge plus snapshot-owned Air Dash: one horizontal air use per airtime, shared cooldown, landing restores use only. Legacy slash-dodge remains outside current progression |
-| `Playershooting.cs` PlayerShooting | Existing weapon firing plus attempt-local shots/hits counters; Projectile reports accepted player-bullet Enemy hits, excluding Drone/hostile shots. Only the derived accuracy is displayed |
-| `Playerhealth.cs` PlayerHealth | Health, invulnerability, death stops controls. `autoRetryOnDeath` is off in the slice. Last Stand is legacy |
-| `PlayerTimeSlow.cs` | Existing Torso Time Slow on Q (temporary Phase 8 mapping); independent of Shift Dodge, attempt-local hostile clock; cleanup clears active/cooldown state, global timeScale untouched |
-| PlayerCounterArm.cs | Arm-Blade E slash, one Boss hit per swing, real hostile bullet deflection and compatible blade parry. Hidden legacy Counter Arm remains for compatibility |
-| `PlayerDetachedDroneArm.cs` | Snapshot-owned hidden Left Arm option. Hides OfficerVisual's left arm, spawns one red arm-shaped unit as an attempt-owned sibling, follows player offset and independently aims/fires existing player-team bullets at bound Enemy. No active input/player aim writes; IAttemptAugmentation removes unit and restores arm at attempt end |
-| `LoadoutState.cs` | `LoadoutSlot` (7), `AimControl`, `LoadoutRules` (TEST weights and module values), `LoadoutDraft` -> `DeploymentSnapshot` -> `VictoryRecord` |
-| `AugmentationDefinition.cs`, `IAttemptAugmentation.cs` | Immutable required/occupied body slots and Normal/Modified/Disabled weapon policy; two hooks ApplyDeployment/CleanupAttempt on existing components. No separate augmentation manager |
-| `OfficerIdentity.cs`, `OfficerVisual.cs` | Per-attempt officer number and snapshot; slot colour palette shared by the stickman body parts and the UI |
-| `Projectile.cs`; prefab `Shared/Prefabs/Bullet.prefab` | Straight bullet, one hit per bullet, cleanup on result |
-| `Playerstatsso.cs` PlayerStatsSO; asset `Shared/Data/PlayerStats.asset` | Shared baseline tunables; deployment values override some of them without writing back |
-| `Idamageable.cs` IDamageable | `TakeDamage(int, GameObject)`; implemented by PlayerHealth and Enemy |
-| `Playerabilitysystem.cs`, `Playerabilityso.cs`, `Exampleblastabilityso.cs`, `FreezeEnemyAbilityso.cs` (Walker, 2026-09-24), `Ifreezable.cs` | LEGACY / TEST ONLY ability framework. Disabled on the slice's player. `PlayerUpgradeManager` was deleted 2026-10-01; there is no level-up / skill-tree path. No enemy implements `IFreezable` yet |
-| `Camerafollow.cs` CameraFollow | Follow camera; disabled in the slice (fixed camera) |
+## Development, settings and boundaries
 
-`Torso = 4` preserves the old serialized Spine ordinal; all other slot values are unchanged. The Time Slow item ID `test_v2_spine_slow`, some serialized `spine...` field names and body child names remain intentionally compatible. They do not imply a top-level Spine slot. `OfficerIdentity.Assign` applies the snapshot and `EndAttempt` clears component runtime state. Formal loadout options are in VerticalSlice; isolated compound/weapon-policy test definitions are not player content.
+- `Assets/_Game/Development/Thomas/Scripts/TopDownSmokeTestFlow.cs` extends the existing isolated-Archive/virtual-input fixture with `flow-route`, `flow-local`, `flow-edges`. Formal content has no Development asset dependency. Historical test cases are not the current acceptance matrix.
+- `Assets/Settings/InputSystem_Actions.inputactions` remains the project-wide asset. `Assets/Settings/UniversalRenderPipelineGlobalSettings.asset`, `Packages/` and `ProjectSettings/` were unchanged. No manual R reload or legacy Input/Both switch.
+- Actual tests and NOT_RUN limits live in Implementation_Log, not in this map. Ignored Logs/Builds and generated IDE/cache files do not transfer through Git; no current standalone package was produced.
+- Known differences: independent old upgrade catalogue, fixed/shared Boss attack foundations vs responsive target design, simplified carrier reveals/damage presentation, existing blue terminal styling and old Case Closure cards. Future work needs a scoped instruction.
+- `Shared/Scripts/Player/READEME.md` is Walker's historical player notes; current root/Docs instructions take precedence. Walker's content and empty `Assets/Cyborg-Assets/` folders were not moved or removed.
 
-### `Shared/Scripts/Persistence/`
-
-`PoliceArchive.cs` contains the profile and lazy/static access facade. It resets only its memory cache when Domain Reload is disabled. `PoliceArchiveStore.cs` loads/saves version-2 JSON (version 1 migrates with empty run history) at `Application.persistentDataPath/PoliceArchive/archive.json` (Windows: `%USERPROFILE%/AppData/LocalLow/DefaultCompany/GO GHOST/PoliceArchive/archive.json`). Fields: `saveVersion`, `unlockedEndings`, `completedAchievements`, `unlockedHiddenAugmentations`, `runRecords`. `PoliceArchive.cs` also holds TEMP `OfficerProfile` generation and the frozen `PoliceRunRecord`.
-
-Missing files create an empty profile; atomic save/recovery and schema rules are unchanged. New missions retain the profile. START MISSION generates the TEMP officer profile. On each resolved attempt GameSessionFlow calls `PoliceArchive.RecordCompletedRun` once: it stores the frozen run record, and on victory unlocks the HUMAN / AI ending (Body % < 50 / >= 50) and, at accuracy >= 70, MARKSMAN_PROTOCOL + detached_drone_arm (first time only), then saves once. `PoliceArchive.BeginSession` (once per application session) clears the loaded run records, so Police Records and officer numbering restart each launch while unlocks persist. MissionUI shows the latest run on Main Menu, all runs in POLICE RECORDS (ScrollRect, newest first), only the achievement title/condition/completion in MISSION INTELLIGENCE (never reward information) and two fixed ending cards (blank while locked) in CASE CLOSURE RECORDS. LoadoutRules hides/rejects unearned Drone choices.
-
-### Boss visuals in `CombatAttempt.prefab`
-
-`WeaponRig_TEST` owns `Gun_PLACEHOLDER` and `Blade_PLACEHOLDER`, built from existing square sprites with no weapon colliders. Boss code mirrors facing, temporarily elevates the gun for Sweep, and changes blade pose/tint for Ghost Slash. Existing warning sprites are reused. When the player's snapshot has Predictive Cortex, Boss code creates one disposable cyan `Prediction_TEST` line from the existing sprite and current telegraph data; hides it outside supported tells/on cleanup. It does not alter camouflage or aim. Enemy owns HP; BossFight owns outcome arbitration; new attempts instantiate fresh objects. No final Animator or custom camouflage shader.
-
-### `Shared/Scripts/Enemies/` and `Encounters/`
-
-| File / class | Responsibility |
-|---|---|
-| `Enemy.cs` Enemy; prefab `Shared/Prefabs/Enemies/Enemy_Basic.prefab` | Health, collider, IDamageable. On the Boss, `automaticCombat` is off so `CyberpsychoBoss` owns movement and attacks. The old chase-and-shoot behaviour is top-down legacy |
-| `EncounterZone.cs` | Legacy top-down encounter trigger; its scene object is inactive |
-
-### `Development/Thomas/Scripts/` (editor-only, `#if UNITY_EDITOR`)
-
-`TopDownSmokeTest.cs` and its partials drive Play Mode with virtual Input System keyboard/mouse and real uGUI clicks. The name is historical; they test the side-view slice. Run from Edit Mode with `TopDownSmokeTest.EnterPlayModeAndLaunch("<scenario>")`, or in batch mode with `-executeMethod TopDownSmokeTest.RunContinueFlowBatch` / `RunBossContactBatch` (omit `-quit`). Evidence is written to `Logs/GO_GHOST_VS/` (local, ignored). Current scenarios and their last results: Implementation_Log.
-
-Review the current scenario before running it. archive-final, result-arena, boss-phases, blackout, increments06, practice-flow, weapons, arm-blade and air-dash cover focused parts of the implementation; their dated results and limitations belong in Implementation_Log. No dedicated Camo Rush scenario was found at this audit. strict-ui contains historical expectations.
-
-Historical phase/reset scenarios describe former interfaces and must not be rerun as current acceptance checks without an explicitly scoped update. The common smoke harness isolates Archive state and restores normal bindings after canceling combat. Do not run two drivers or automatically repeat old suites. Logs/screenshots are ignored local evidence.
-
-Old attack-specific suites are historical: `phase3-boss` expects retired P1 actions; Phase 4 expects the then-opaque P2 placeholder. Older augmentation suites also assume E Time Slow and two-choice arm/Brain toggles. They are not current acceptance suites and should not be rerun blindly. Earlier broad phase results remain dated evidence, not promises that every old assertion matches the current prototype.
-
-## 5. Input (New Input System, Confirmed)
-
-Player Settings: Active Input Handling = Input System Package only. No script uses the legacy `UnityEngine.Input` class. Current input budget: Space jump/leg abilities, Shift Dodge/Air Dash, E Arm-Blade and Q Torso Time Slow; see VerticalSlice. Remaining template bindings are not new combat features.
-
-Player map in `Assets/Settings/InputSystem_Actions.inputactions`:
-
-| Action | Keyboard / mouse binding | Used by |
-|---|---|---|
-| Move | A / D, Left / Right arrows (vertical bindings removed) | PlayerMovement, PlayerDodge |
-| Jump | Space press / hold | PlayerMovement jump / Double Jump / Hover |
-| Dodge | Left Shift | PlayerDodge, regardless of Torso equipment |
-| Aim | Mouse position | PlayerInputReader (manual branch) |
-| Attack | Left mouse button (also Enter) | PlayerShooting |
-| Ability | E | PlayerCounterArm through PlayerInputReader; existing action/binding GUID retained |
-| SecondaryAbility | Q | PlayerTimeSlow through PlayerInputReader; temporary prototype secondary mapping |
-| Previous, Next | 1, 2 | Legacy ability cycling, disabled in formal slice |
-| Sprint, Look, Interact, Crouch | template defaults (Sprint shares Left Shift with Dodge) | Unused |
-
-UI uses the Input System UI actions through the scene's single `EventSystem`.
-
-## 6. Known issues
-
-- All bullets pass through platforms/walls. Boss high-platform coverage and natural 0% victory remain playtest questions; there is no general Boss platform-navigation system.
-- P2 includes camouflage openings, bounded blade follow-ups, BLACKOUT and Camo Rush. Current-head integration, latest Archive victory flow and Camo Rush are not runtime-verified by this audit; inspect the dated Implementation_Log entries. Wider augmentations and final balance remain out of scope.
-- Historical Phase 10 package/shader warnings are dated build evidence. PP02 weak Bloom is now integrated; current standalone presentation/audio/performance still need verification.
-- Unity Company Name remains DefaultCompany; changing it later needs an explicit archive-path migration decision.
-- Builds leave residue, and a cancelled build leaves more (see `Collaboration.md` section 6). `Assets/Resources/PerformanceTestRun*` is ignored by `.gitignore`, but `Assets/Resources.meta` created alongside it is not, so check for it after a cancelled build.
-- `TitleScene.unity` has missing references and is not in Build Settings.
-- `Scene1.unity` (Walker) uses the shared Player prefab, which still has top-down defaults such as gravity scale 0.
-- `FreezeNearestEnemyAbilitySO` has no `IFreezable` target in the project yet.
-- Script file names do not match class names in case (works on Windows; risk on case-sensitive systems).
-- `Shared/Scripts/Player/READEME.md` (Walker's notes) describes the old platformer and legacy Input setup; the docs in `Docs/` take precedence.
-- The smoke-test driver changes Input System settings and mutes real devices while it runs. If a run is interrupted, check `Edit > Project Settings > Input System Package`.
-- `Assets/Cyborg-Assets/SpritesForChars` and `TilesToUse` exist only as folder `.meta` files. Walker may hold uncommitted art there; do not move or delete them until Walker confirms.
-
-## 7. Next step
-
-Proposed: verify current-head compile and a focused Camo Rush/core-flow smoke before extending gameplay; reconcile terminal colours with the written restriction before further UI changes. Do only the next task explicitly authorized by Thomas. Current evidence and untested scope belong in Implementation_Log.
-
-## 8. History
+## Historical asset organization
 
 - Stage 1 (2026-09-17, merged): reorganization with `AssetDatabase.MoveAsset`; GUIDs unchanged.
 

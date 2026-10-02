@@ -1,6 +1,6 @@
 # GO GHOST — Codex 执行约束
 
-> **Historical scope — superseded in part on 2026-09-25.** Read [../VerticalSlice.md](../VerticalSlice.md) and the latest approved phase first. Below, the top-level Spine slot, single-phase-only scope, blanket exclusion of persistence/hidden unlocks, and old exhaustive phase gates are obsolete. Current rules are Torso; two-phase gun/blade Boss; separate Police Archive; explicit Continue; Shift Dodge / E augmentation; MSP happy-path verification. Engineering safety and truthful evidence rules still apply. The original wording below is retained for history, not to undo Phases 1–5. The current progress log is [Implementation_Log.md](Implementation_Log.md).
+> **Historical execution package.** Current design is [Tower_Design_Override](Tower_Design_Override.md), consolidated from Thomas's 2026-10-02 EOD handoff; read [START_HERE](START_HERE.md) and root AGENTS/CLAUDE first. Single-arena scope, percentage endings, old body catalogue, old P2/final interfaces and exhaustive phase gates below are superseded. Engineering safety and truthful evidence rules still apply. This file and Prompts/00–08 are not an active phase queue or authorization to build, rebalance or restore removed content. Current Git authorization is in AGENTS/CLAUDE and the user's request. Actual evidence belongs only in [Implementation_Log](Implementation_Log.md).
 
 ## 文件身份与优先关系
 这是本次开发流程的建议，不是对游戏设计基线的改写。

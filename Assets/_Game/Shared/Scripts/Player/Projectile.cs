@@ -4,8 +4,7 @@ using UnityEngine;
 /// Simple straight-line bullet. Requires a Rigidbody2D and a Collider2D
 /// marked "Is Trigger" on the prefab. Used by the player and by enemies:
 /// it never hits its shooter or anything on the shooter's layer (same team).
-/// CONFIRMED 2026-10-01: every bullet (player, Boss, Drone) passes through walls and platforms;
-/// it ends only on a hostile IDamageable or when its lifetime runs out.
+/// Unmarked walls/platforms pass bullets. Explicit IProjectileReceiver objects may consume a real contact.
 /// </summary>
 // FUNCTION SUMMARY
 // Launch()          — sets the bullet's velocity, damage, and owner (layer cached), and schedules it to self-destruct after its lifetime.
@@ -19,6 +18,9 @@ public class Projectile : MonoBehaviour
 
     /// <summary>Layer of the shooter at launch time (-1 if none). Same-layer objects are never hit.</summary>
     public int OwnerLayer => ownerLayer;
+    public int Damage => damage;
+    public ProjectileActor Actor { get; private set; }
+    public int PermissionTier { get; private set; }
 
     private Rigidbody2D rb;
     private int damage;
@@ -42,8 +44,11 @@ public class Projectile : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
     }
 
-    public void Launch(Vector2 direction, float speed, int dmg, GameObject shooter, PlayerTimeSlow hostileClock = null, bool counterable = false, PlayerShooting accuracyOwner = null)
+    public void Launch(Vector2 direction, float speed, int dmg, GameObject shooter, PlayerTimeSlow hostileClock = null, bool counterable = false, PlayerShooting accuracyOwner = null,
+        ProjectileActor actor = ProjectileActor.Environment, int permissionTier = 0)
     {
+        Actor = actor;
+        PermissionTier = permissionTier;
         damage = dmg;
         this.accuracyOwner = accuracyOwner;
         CanBeCountered = counterable;
@@ -69,6 +74,9 @@ public class Projectile : MonoBehaviour
     {
         if (!launched || spent || Deflected || newOwner == null) return false;
         Deflected = true;
+        Actor = ProjectileActor.Player;
+        var identity = newOwner.GetComponent<OfficerIdentity>();
+        PermissionTier = identity != null && identity.Deployment != null ? Mathf.Max(0, identity.Deployment.BrainPermissionTier) : 0;
         owner = newOwner;
         ownerLayer = newOwner.layer;
         accuracyOwner = null;
@@ -100,6 +108,13 @@ public class Projectile : MonoBehaviour
         // Unity's overloaded == makes this safe even after the owner was destroyed; never dereference owner here.
         if (other.gameObject == owner) return;
         if (other.gameObject.layer == ownerLayer) return; // same team (e.g. enemy bullets pass through other enemies)
+
+        var receiver = other.GetComponentInParent<IProjectileReceiver>();
+        if (receiver != null && receiver.ReceiveProjectile(this, other))
+        {
+            Retire();
+            return;
+        }
 
         IDamageable damageable = other.GetComponentInParent<IDamageable>();
         if (damageable != null)

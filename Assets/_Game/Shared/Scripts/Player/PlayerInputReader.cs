@@ -45,6 +45,14 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     public bool IsReady { get; private set; }
 
     public bool GameplayInputEnabled { get; private set; } = true;
+    public bool NarrativePaused { get; private set; }
+    public bool HasTemporaryAimOverride => overrideTarget != null && overrideTarget.gameObject.activeInHierarchy && Time.time < overrideEndsAt;
+    public float OverrideRemaining => HasTemporaryAimOverride ? Mathf.Max(0f, overrideEndsAt - Time.time) : 0f;
+    public bool AutomaticFireRequested => HasTemporaryAimOverride && overrideFire && GameplayInputEnabled && hasFocus && !NarrativePaused;
+    private Transform overrideTarget;
+    private float overrideEndsAt;
+    private bool overrideFire;
+    private int suppressAttackFrame = -1;
     private bool hasFocus = true;
     // Release gates are (re)armed whenever input starts or focus returns. See Update.
     private bool waitingForRelease = true;
@@ -111,6 +119,8 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
 
     public void CleanupAttempt()
     {
+        EndAimOverride();
+        NarrativePaused = false;
         GameplayInputEnabled = false;
         ClearFrameState();
         waitingForRelease = true;
@@ -120,6 +130,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
 
     private void OnDisable()
     {
+        EndAimOverride();
         // Preserve the legacy temporary-disable behavior. Permanent input shutdown belongs to CleanupAttempt.
         ClearFrameState();
         waitingForRelease = true;
@@ -129,6 +140,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
 
     public void SetGameplayInputEnabled(bool value)
     {
+        if (!value) EndAimOverride();
         GameplayInputEnabled = value;
         waitingForRelease = true;
         ClearFrameState();
@@ -136,6 +148,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
 
     private void OnApplicationFocus(bool value)
     {
+        if (!value) EndAimOverride();
         hasFocus = value;
         waitingForRelease = true;
         ClearFrameState();
@@ -143,7 +156,8 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
 
     private void Update()
     {
-        if (!IsReady || !GameplayInputEnabled || !hasFocus)
+        if (!HasTemporaryAimOverride) EndAimOverride();
+        if (!IsReady || !GameplayInputEnabled || !hasFocus || NarrativePaused)
         {
             ClearFrameState();
             return;
@@ -172,8 +186,8 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         secondaryGated &= secondaryAbilityAction.IsPressed();
         MoveInput = new Vector2(Mathf.Clamp(move.x, -1f, 1f), 0f);
 
-        AttackHeld = !attackGated && attackAction.IsPressed();
-        AttackPressedThisFrame = !attackGated && attackAction.WasPressedThisFrame();
+        AttackHeld = Time.frameCount > suppressAttackFrame && !attackGated && attackAction.IsPressed();
+        AttackPressedThisFrame = Time.frameCount > suppressAttackFrame && !attackGated && attackAction.WasPressedThisFrame();
         JumpPressedThisFrame = !jumpGated && jumpAction.WasPressedThisFrame();
         JumpHeld = !jumpGated && jumpAction.IsPressed();
         DodgePressedThisFrame = !dodgeGated && dodgeAction.WasPressedThisFrame();
@@ -187,7 +201,11 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     private void UpdateAimDirection()
     {
         Vector2 dir;
-        if (AimMode == AimControl.AI)
+        if (HasTemporaryAimOverride)
+        {
+            dir = (Vector2)overrideTarget.position - (Vector2)transform.position;
+        }
+        else if (AimMode == AimControl.AI)
         {
             // Exclusive authority: an invalid/dead target holds the last aim; it never falls back to mouse.
             if (aimTarget == null || aimTarget.IsDead || !aimTarget.isActiveAndEnabled) return;
@@ -203,6 +221,33 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         }
         if (dir.sqrMagnitude > 0.0001f)
             AimDirection = dir.normalized;
+    }
+
+    public bool BeginAimOverride(Transform target, float seconds, bool autonomousFire)
+    {
+        var snapshot = officer != null ? officer.Deployment : null;
+        if (snapshot == null || snapshot.BrainPermissionTier < 2 || (autonomousFire && snapshot.BrainPermissionTier < 3)
+            || target == null || !target.gameObject.activeInHierarchy || seconds <= 0f || !GameplayInputEnabled) return false;
+        overrideTarget = target;
+        overrideEndsAt = Time.time + seconds;
+        overrideFire = autonomousFire;
+        UpdateAimDirection();
+        return true;
+    }
+
+    public void EndAimOverride()
+    {
+        overrideTarget = null;
+        overrideEndsAt = 0f;
+        overrideFire = false;
+    }
+
+    public void SetNarrativePaused(bool paused)
+    {
+        NarrativePaused = paused;
+        ClearFrameState();
+        waitingForRelease = true;
+        suppressAttackFrame = Time.frameCount; // the closing UI event cannot leak into this frame's shot
     }
 
     private void ClearFrameState()

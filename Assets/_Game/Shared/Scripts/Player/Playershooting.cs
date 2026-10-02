@@ -82,6 +82,7 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
 
     private void Update()
     {
+        if (input.NarrativePaused) return;
         Vector2 aim = input.AimDirection;
 
         if (firePoint != null)
@@ -99,8 +100,10 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
                 AmmoInMagazine = weapon.MagazineSize;
             }
             // Held Attack resumes an automatic weapon after the reload; Sniper and Shotgun need a new press.
-            bool trigger = weapon.Automatic ? input.AttackHeld : input.AttackPressedThisFrame;
-            if (trigger && !IsReloading && AmmoInMagazine > 0 && Time.time >= nextFireTime && FireWeapon(aim, weapon))
+            bool autonomous = input.AutomaticFireRequested;
+            bool trigger = autonomous || (weapon.Automatic ? input.AttackHeld : input.AttackPressedThisFrame);
+            if (trigger && !IsReloading && AmmoInMagazine > 0 && Time.time >= nextFireTime
+                && FireWeapon(aim, weapon, autonomous ? ProjectileActor.InnerAI : ProjectileActor.Player))
                 nextFireTime = Time.time + FireInterval;
             // Automatic reload the moment the magazine is empty; there is no manual reload or cancel.
             if (!IsReloading && AmmoInMagazine <= 0)
@@ -132,9 +135,9 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
     }
 
     // One trigger pull = one round, one shot sound and one muzzle flash, however many pellets leave the barrel.
-    private bool FireWeapon(Vector2 direction, WeaponProfile weapon)
+    private bool FireWeapon(Vector2 direction, WeaponProfile weapon, ProjectileActor actor)
     {
-        if (!isActiveAndEnabled || !input.GameplayInputEnabled || bulletPrefab == null || !officer.Deployment.CanUseWeapon) return false;
+        if (!isActiveAndEnabled || !input.GameplayInputEnabled || input.NarrativePaused || bulletPrefab == null || !officer.Deployment.CanUseWeapon) return false;
 
         AmmoInMagazine--;
         Vector2 spawn = GetMuzzlePosition(direction);
@@ -147,7 +150,8 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
                 : facing;
             var pelletDirection = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
             Projectile bullet = Instantiate(bulletPrefab, spawn, Quaternion.Euler(0f, 0f, angle));
-            bullet.Launch(pelletDirection, stats.bulletSpeed, weapon.Damage, gameObject, accuracyOwner: this);
+            bullet.Launch(pelletDirection, stats.bulletSpeed, weapon.Damage, gameObject, accuracyOwner: this,
+                actor: actor, permissionTier: Mathf.Max(0, officer.Deployment.BrainPermissionTier));
             ShotsFired++;
         }
         TriggerPulls++;
@@ -159,12 +163,12 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
 
     private void Fire(Vector2 direction)
     {
-        if (!isActiveAndEnabled || !input.GameplayInputEnabled || bulletPrefab == null) return;
+        if (!isActiveAndEnabled || !input.GameplayInputEnabled || input.NarrativePaused || bulletPrefab == null) return;
 
         Vector2 spawn = GetMuzzlePosition(direction);
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         Projectile bullet = Instantiate(bulletPrefab, spawn, Quaternion.Euler(0f, 0f, angle));
-        bullet.Launch(direction, stats.bulletSpeed, BulletDamage, gameObject, accuracyOwner: this);
+        bullet.Launch(direction, stats.bulletSpeed, BulletDamage, gameObject, accuracyOwner: this, actor: ProjectileActor.Player);
         if (sfx != null) sfx.Play(Sfx.Shot);
         if (vfx != null) vfx.Muzzle(spawn, direction);
         ShotsFired++;

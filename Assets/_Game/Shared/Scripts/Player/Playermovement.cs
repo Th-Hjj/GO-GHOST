@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /// <summary>
 /// Side-scroller movement: horizontal velocity from Move input, real
@@ -98,6 +98,7 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
 
     private void Update()
     {
+        if (input.NarrativePaused) return;
         moveInput = input.MoveInput;
         if (Mathf.Abs(moveInput.x) > 0.01f)
             MovementFacingDirection = moveInput.x > 0f ? 1 : -1;

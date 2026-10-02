@@ -17,6 +17,9 @@ public sealed class PlayerCounterArm : MonoBehaviour, IAttemptAugmentation
     private PlayerInputReader input;
     private PlayerHealth health;
     private float windowUntil, readyAt, feedbackUntil;
+    private bool narrativePaused;
+    private float pauseStartedAt;
+    private float Clock => narrativePaused ? pauseStartedAt : Time.unscaledTime;
     private bool equipped;
     private bool blade;
     private Vector2 slashDirection = Vector2.right;
@@ -26,7 +29,7 @@ public sealed class PlayerCounterArm : MonoBehaviour, IAttemptAugmentation
     private AttemptPresentationVfx vfx;
     public bool IsEquipped => equipped && isActiveAndEnabled;
     public bool IsBlade => IsEquipped && blade;
-    public bool IsWindowOpen => IsEquipped && input.GameplayInputEnabled && !health.IsDead && Time.unscaledTime < windowUntil;
+    public bool IsWindowOpen => IsEquipped && input.GameplayInputEnabled && !health.IsDead && Clock < windowUntil;
     /// <summary>Only the legacy Counter Arm cancels a compatible bullet on body contact; Arm-Blade deflects inside its slash.</summary>
     public bool NullifiesProjectiles => IsEquipped && !blade;
     public int CountersSucceeded { get; private set; }
@@ -34,8 +37,8 @@ public sealed class PlayerCounterArm : MonoBehaviour, IAttemptAugmentation
     public int SlashesStarted { get; private set; }
     public int BladeHits { get; private set; }
     public int Deflections { get; private set; }
-    public float CooldownRemaining => Mathf.Max(0, readyAt - Time.unscaledTime);
-    public string Cue => Time.unscaledTime < feedbackUntil ? "COUNTERED!"
+    public float CooldownRemaining => Mathf.Max(0, readyAt - Clock);
+    public string Cue => Clock < feedbackUntil ? "COUNTERED!"
         : IsWindowOpen ? "COUNTER WINDOW [E]" : CooldownRemaining > 0 ? $"COUNTER {CooldownRemaining:0.0}s" : "COUNTER READY [E]";
 
     private void Awake()
@@ -66,6 +69,7 @@ public sealed class PlayerCounterArm : MonoBehaviour, IAttemptAugmentation
 
     private void Update()
     {
+        if (narrativePaused) return;
         if (IsEquipped && input.GameplayInputEnabled && !health.IsDead
             && input.AbilityPressedThisFrame && CooldownRemaining <= 0)
         {
@@ -132,10 +136,26 @@ public sealed class PlayerCounterArm : MonoBehaviour, IAttemptAugmentation
 
     public void CleanupAttempt()
     {
+        narrativePaused = false;
+        pauseStartedAt = 0f;
         equipped = blade = false;
         windowUntil = readyAt = feedbackUntil = 0;
         struck.Clear();
         if (feedback != null) feedback.enabled = false;
+    }
+
+    public void SetNarrativePaused(bool paused)
+    {
+        if (narrativePaused == paused) return;
+        if (paused) pauseStartedAt = Time.unscaledTime;
+        else
+        {
+            float duration = Time.unscaledTime - pauseStartedAt;
+            windowUntil += duration;
+            readyAt += duration;
+            feedbackUntil += duration;
+        }
+        narrativePaused = paused;
     }
 
     private void OnDisable() => CleanupAttempt();

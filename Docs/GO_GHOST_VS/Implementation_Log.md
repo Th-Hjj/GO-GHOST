@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-10-02 — Approved future 50F revision (documentation only)
+
+- Baseline: clean `main` at `3d5448e`. Recorded Thomas's Receptionist + delayed Security activation layout as the replacement for fixed firing-point suppression, including real damage/causal attribution, the later camera-observation boundary, reuse/scope limits and focused future acceptance checks. Updated Tower design, narrative contract and README; current S02 DEV state is explicitly unchanged.
+- Static review and `git diff --check` only. No gameplay, scene, prefab, JSON, settings or package edit; no compilation/Play Mode rerun or build for this documentation change. S02 remains complete; 50F content implementation and all later stages remain deferred until requested. Synchronize this approved design through the existing main-delivery authorization.
+
 ## 2026-10-02 — S02 short Tower mission and narrative interfaces
 
 - **Baseline/scope:** clean `main` at `bdc93aa`, subsequently fetched and confirmed equal to `origin/main`. Read AGENTS/CLAUDE, original 01/02/04, S02 route-review handoff and S01 code. Thomas then approved OPEN-01/02/03 from `Narrative_Route_Spec (1).md` v0.2 as engineering interfaces only. Unity remains **6000.6.0f1**; one connected Editor, no package/settings/prefab changes, new story text, build, old full suite or later-stage work.

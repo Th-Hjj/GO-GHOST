@@ -150,12 +150,16 @@ public sealed class MissionUI : MonoBehaviour
                 }
             return;
         }
-        int row = 0;
+        // Human first (removes the augmentation), then this round's offered upgrades. Hidden items are simply not listed.
+        Button(choices, "Choice_Human", "Human", new Vector2(250, 374), new Vector2(450, 72), () => Equip(slot, ""), false);
+        int row = 1;
         foreach (var definition in LoadoutRules.PrototypeCatalog)
         {
-            if (!definition.Occupies(slot)) continue;
+            if (!definition.Occupies(slot) || !LoadoutRules.IsOffered(slot, definition.ItemId)) continue;
             if (definition.ItemId == LoadoutRules.DetachedDroneArm && !PoliceArchive.Current.HasHiddenAugmentation(definition.ItemId)) continue;
             string id = definition.ItemId;
+            // A leg ability already on the other leg cannot be installed twice.
+            if (LoadoutRules.IsLeg(slot) && flow.Draft.GetSlot(slot == LoadoutSlot.LeftLeg ? LoadoutSlot.RightLeg : LoadoutSlot.LeftLeg).ItemId == id) continue;
             Button(choices, "Choice_" + id, LoadoutRules.ItemLabel(id), new Vector2(250, 374 - row * 90), new Vector2(450, 72), () => Equip(slot, id), false);
             row++;
         }
@@ -226,10 +230,15 @@ public sealed class MissionUI : MonoBehaviour
         }
         else if (tab == 2)
         {
-            // Unlocked ending names only: no ending text, descriptions or reward information.
+            // Unlocked formal ending names only: no ending text or descriptions. Older TEMP IDs stay in the save, unlisted.
             var endings = PoliceArchive.Current.UnlockedEndings;
+            int listed = 0;
             for (int i = 0; i < endings.Count; i++)
-                Text(archiveContent, "Content_Ending" + i, PoliceArchive.EndingTitle(endings[i]), new Vector2(880, 690 - i * 100), new Vector2(1500, 70), 32);
+            {
+                if (endings[i] != PoliceArchive.HumanEnding && endings[i] != PoliceArchive.AiEnding) continue;
+                Text(archiveContent, "Content_Ending" + listed, PoliceArchive.EndingTitle(endings[i]), new Vector2(880, 690 - listed * 100), new Vector2(1500, 70), 32);
+                listed++;
+            }
         }
     }
 
@@ -358,7 +367,8 @@ public sealed class MissionUI : MonoBehaviour
         };
         if (build.HasDoubleJump) lines.Add("SPACE AGAIN — DOUBLE JUMP");
         if (build.HasHover) lines.Add("HOLD SPACE — HOVER");
-        if (build.HasCounterArm) lines.Add("E — COUNTER");
+        if (build.HasArmBlade) lines.Add("E — SLASH / DEFLECT");
+        else if (build.HasCounterArm) lines.Add("E — COUNTER");
         if (build.HasTimeSlow) lines.Add("Q — TIME SLOW");
         return string.Join("\n", lines);
     }

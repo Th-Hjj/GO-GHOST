@@ -69,7 +69,8 @@ public static class LoadoutRules
     public const string TorsoSlow = "test_v2_spine_slow";
     public const string BrainAI = "ai_aim";
     public const string DetachedDroneArm = "detached_drone_arm";
-    public const string CounterArm = "test_counter_arm";
+    public const string CounterArm = "test_counter_arm"; // hidden from the current catalog; its function lives on in Arm-Blade
+    public const string ArmBlade = "arm_blade";
     public const string PredictiveCortex = "test_predictive_cortex";
 
     internal static readonly AugmentationDefinition[] PrototypeCatalog =
@@ -86,7 +87,22 @@ public static class LoadoutRules
         new AugmentationDefinition(BrainAI, WeaponCompatibility.Normal, LoadoutSlot.Brain),
         new AugmentationDefinition(CounterArm, WeaponCompatibility.Normal, LoadoutSlot.LeftArm),
         new AugmentationDefinition(PredictiveCortex, WeaponCompatibility.Normal, LoadoutSlot.Brain),
-        new AugmentationDefinition(DetachedDroneArm, WeaponCompatibility.Normal, LoadoutSlot.LeftArm)
+        new AugmentationDefinition(DetachedDroneArm, WeaponCompatibility.Normal, LoadoutSlot.LeftArm),
+        new AugmentationDefinition(ArmBlade, WeaponCompatibility.Normal, LoadoutSlot.LeftArm)
+    };
+
+    /// <summary>
+    /// The upgrade choices shown before deployment this round. Hidden items (Left Arm Rapid Fire, Move Speed, Counter Arm,
+    /// Predictive Cortex) keep their IDs, labels and behaviour for older records and fixtures; they are only not listed.
+    /// </summary>
+    public static bool IsOffered(LoadoutSlot slot, string itemId) => slot switch
+    {
+        LoadoutSlot.LeftArm => itemId == ArmBlade || itemId == DetachedDroneArm,
+        LoadoutSlot.RightArm => itemId == ArmFireRate,
+        LoadoutSlot.LeftLeg or LoadoutSlot.RightLeg => itemId == LegDoubleJump || itemId == LegHover,
+        LoadoutSlot.Torso => itemId == TorsoSlow,
+        LoadoutSlot.Brain => itemId == BrainAI,
+        _ => false
     };
 
     internal static WeaponCompatibility WeaponPolicy(LoadoutEntry[] slots)
@@ -117,7 +133,7 @@ public static class LoadoutRules
     {
         ArmFireRate => "Rapid Fire", LegMoveSpeed => "Move Speed", TorsoSlow => "Time Slow", BrainAI => "Targeting AI",
         CounterArm => "Counter Arm", PredictiveCortex => "Predictive Cortex", DetachedDroneArm => "Detached Drone Arm",
-        LegDoubleJump => "Double Jump", LegHover => "Hover",
+        LegDoubleJump => "Double Jump", LegHover => "Hover", ArmBlade => "Arm-Blade",
         BasicGun => "Basic Gun", _ => "Human / Empty"
     };
 
@@ -223,6 +239,9 @@ public sealed class LoadoutDraft
             return true;
         }
         if (!AugmentationsAvailable) return false;
+        // One Double Jump and one Hover at most. The other leg is never changed on the player's behalf.
+        if (LoadoutRules.IsLeg(slot) && (itemId == LoadoutRules.LegDoubleJump || itemId == LoadoutRules.LegHover)
+            && slots[(int)(slot == LoadoutSlot.LeftLeg ? LoadoutSlot.RightLeg : LoadoutSlot.LeftLeg)].ItemId == itemId) return false;
         if (itemId == LoadoutRules.DetachedDroneArm && !PoliceArchive.Current.HasHiddenAugmentation(itemId)) return false;
         AugmentationDefinition definition = null;
         foreach (var candidate in catalog)
@@ -289,6 +308,7 @@ public sealed class DeploymentSnapshot
     public bool HasTimeSlow => GetSlot(LoadoutSlot.Torso).ItemId == LoadoutRules.TorsoSlow;
     public bool HasDetachedDrone => GetSlot(LoadoutSlot.LeftArm).ItemId == LoadoutRules.DetachedDroneArm;
     public bool HasCounterArm => GetSlot(LoadoutSlot.LeftArm).ItemId == LoadoutRules.CounterArm;
+    public bool HasArmBlade => GetSlot(LoadoutSlot.LeftArm).ItemId == LoadoutRules.ArmBlade;
     public bool HasPredictiveCortex => GetSlot(LoadoutSlot.Brain).ItemId == LoadoutRules.PredictiveCortex;
     private bool HasLegOption(string id) => GetSlot(LoadoutSlot.LeftLeg).ItemId == id || GetSlot(LoadoutSlot.RightLeg).ItemId == id;
     public bool HasDoubleJump => HasLegOption(LoadoutRules.LegDoubleJump);

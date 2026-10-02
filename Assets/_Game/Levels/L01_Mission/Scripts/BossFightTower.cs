@@ -20,11 +20,11 @@ public partial class BossFight
         GetComponent<AttemptPresentationVfx>()?.ClearBossEffects();
         if (bossHealth == null) return;
         bossHealth.OnDied -= BossDied;
-        boss.StopCombat();
+        if (boss != null) boss.StopCombat();
         bossHealth.StopCombat();
         if (retainDefeatedCarrier) return;
-        boss.gameObject.SetActive(false);
-        Destroy(boss.gameObject);
+        bossHealth.gameObject.SetActive(false);
+        Destroy(bossHealth.gameObject);
         boss = null;
         bossHealth = null;
     }
@@ -42,6 +42,20 @@ public partial class BossFight
         EncounterActive = true;
         boss.BeginRoomEncounter(player, room.PlayableBounds, room.Kind == TowerRoom.RoomKind.Blade,
             room.Kind == TowerRoom.RoomKind.DevelopmentFinal);
+    }
+
+    // Reuse the same encounter health/target/exit lifecycle for the existing basic enemy.
+    public void BeginSecurityEncounter(TowerRoom room)
+    {
+        if (!TowerMission || !combatRunning || EncounterActive || player.IsDead || room.SecurityTemplate == null) return;
+        boss = null;
+        bossHealth = Instantiate(room.SecurityTemplate, room.SecurityTemplate.transform.position, Quaternion.identity, transform);
+        bossHealth.gameObject.SetActive(true);
+        bossHealth.SetTarget(player);
+        bossHealth.OnDied += BossDied;
+        player.GetComponent<PlayerInputReader>().SetEncounterAimTarget(bossHealth);
+        player.GetComponent<PlayerDetachedDroneArm>()?.BindTarget(bossHealth);
+        EncounterActive = true;
     }
 
     private void TickTowerMission()
@@ -66,7 +80,7 @@ public partial class BossFight
         deathPending = false;
         player.GetComponent<PlayerInputReader>().SetEncounterAimTarget(null);
         player.GetComponent<PlayerDetachedDroneArm>()?.BindTarget(null);
-        boss.StopCombat();
+        if (boss != null) boss.StopCombat();
         foreach (var bullet in GetComponentsInChildren<Projectile>(true)) bullet.Retire();
         GetComponent<AttemptPresentationVfx>()?.ClearBossEffects();
         OnEncounterEnded?.Invoke(); // Player, mission timer, ammunition and abilities stay alive.

@@ -75,6 +75,9 @@ public sealed partial class GameSessionFlow : MonoBehaviour
         DisposeAttempt();
         ResetTowerRun();
         Draft?.Lock();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        developmentJumpRun = false;
+#endif
         OfficerIndex = PoliceArchive.Current.NextOfficerNumber;
         AugmentationsUnlocked = true;
         Draft = new LoadoutDraft(true);
@@ -206,6 +209,9 @@ public sealed partial class GameSessionFlow : MonoBehaviour
         // Archive evaluates the TEMP achievement/Drone unlock and TEMP ending from it, then saves once.
         LastRunRecord = new PoliceRunRecord(Officer, source.Deployment, outcome == BossFight.Outcome.Won,
             source.CombatDuration, source.ResultBossHealth, source.ResultPlayerHealth, source.AccuracyPercent);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (!developmentJumpRun)
+#endif
         if (!PoliceArchive.RecordCompletedRun(LastRunRecord, out string archiveError))
             Debug.LogWarning("Police Archive run save failed: " + archiveError, this);
         // Both outcomes stop on Mission Result (the attempt stays alive for its frozen values) and wait for CONTINUE.

@@ -56,7 +56,8 @@ public class Enemy : MonoBehaviour, IDamageable
 
     private Rigidbody2D rb;
     private PlayerHealth player;
-    private float nextFireTime;
+    private float fireRemaining;
+    private PlayerTimeSlow hostileClock;
     private bool combatStopped;
 
     private void Awake()
@@ -69,13 +70,14 @@ public class Enemy : MonoBehaviour, IDamageable
     public void SetTarget(PlayerHealth target)
     {
         player = target;
+        hostileClock = target != null ? target.GetComponent<PlayerTimeSlow>() : null;
     }
 
     private void Start()
     {
         if (player == null)
-            player = FindAnyObjectByType<PlayerHealth>();
-        nextFireTime = Time.time + fireInterval; // no instant shot on activation
+            SetTarget(FindAnyObjectByType<PlayerHealth>());
+        fireRemaining = fireInterval; // no instant shot on activation
     }
 
     private void FixedUpdate()
@@ -88,18 +90,19 @@ public class Enemy : MonoBehaviour, IDamageable
         }
 
         Vector2 toPlayer = (Vector2)player.transform.position - rb.position;
-        rb.linearVelocity = toPlayer.magnitude > preferredDistance ? toPlayer.normalized * moveSpeed : Vector2.zero;
+        rb.linearVelocity = toPlayer.magnitude > preferredDistance ? toPlayer.normalized * moveSpeed * (hostileClock != null ? hostileClock.WorldRate : 1f) : Vector2.zero;
     }
 
     private void Update()
     {
-        if (!automaticCombat || combatStopped || IsDead || player == null || player.IsDead) return;
+        if (!automaticCombat || combatStopped || IsDead || player == null || player.IsDead || Time.deltaTime <= 0f) return;
+        fireRemaining -= Time.deltaTime * (hostileClock != null ? hostileClock.WorldRate : 1f);
 
         Vector2 toPlayer = (Vector2)player.transform.position - rb.position;
-        if (toPlayer.magnitude <= attackRange && Time.time >= nextFireTime)
+        if (toPlayer.magnitude <= attackRange && fireRemaining <= 0f)
         {
             Fire(toPlayer);
-            nextFireTime = Time.time + fireInterval;
+            fireRemaining = fireInterval;
         }
     }
 
@@ -111,7 +114,7 @@ public class Enemy : MonoBehaviour, IDamageable
         Vector2 spawn = rb.position + direction * bulletSpawnOffset;
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         Projectile bullet = Instantiate(bulletPrefab, spawn, Quaternion.Euler(0f, 0f, angle));
-        bullet.Launch(direction, bulletSpeed, bulletDamage, gameObject);
+        bullet.Launch(direction, bulletSpeed, bulletDamage, gameObject, hostileClock);
     }
 
     public void TakeDamage(int amount, GameObject source)

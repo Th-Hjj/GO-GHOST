@@ -98,6 +98,7 @@ public partial class BossFight : MonoBehaviour
         }
         combatRunning = true;
         combatStartedAt = Time.unscaledTime;
+        pausedSeconds = 0f; // A developer menu pause in practice is outside the combat clock.
         var vfx = GetComponent<AttemptPresentationVfx>();
         if (vfx != null) vfx.BeginAttempt(); // drops any practice leftovers, then draws for the real combat
         // Walking in from practice keeps live input; a fresh enable would wait for every key to be released.
@@ -170,7 +171,7 @@ public partial class BossFight : MonoBehaviour
     /// <summary>Reversible dialogue pause. No actor disable, terminal cleanup or ability reset.</summary>
     public void SetNarrativePaused(bool paused)
     {
-        if (NarrativePaused == paused || (paused && !combatRunning)) return;
+        if (NarrativePaused == paused || (paused && !combatRunning && !practicing)) return;
         if (paused)
         {
             pauseStartedAt = Time.unscaledTime;

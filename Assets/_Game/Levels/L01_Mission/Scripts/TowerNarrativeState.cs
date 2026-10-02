@@ -1,5 +1,7 @@
-/// <summary>Approved OPEN-01/02/03 interfaces only. Callbacks acknowledge actual world changes or delivered reports.
-/// S02 has no NPC/terminal adapters: unconnected rooms remain Unknown and cannot produce a formal ending.</summary>
+using System.Collections.Generic;
+
+/// <summary>Finite world/knowledge state. Cameras observe external results; private dialogue/intent is not input.
+/// Unconnected content remains Unknown and cannot produce a formal ending.</summary>
 public sealed class TowerNarrativeState
 {
     public enum FloorAction { None, Interrupt, Confirm, Leave }
@@ -32,6 +34,52 @@ public sealed class TowerNarrativeState
     public bool DevelopmentOnly { get; }
     public TowerNarrativeState(bool developmentOnly) => DevelopmentOnly = developmentOnly;
 
+    public bool Floor50Connected { get; private set; }
+    public bool ChandelierDropped { get; private set; }
+    public bool? ReceptionistAlive { get; private set; }
+    public string ReceptionistLethalCause { get; private set; }
+    public ProjectileActor? ChandelierCausalActor { get; private set; }
+    public int ChandelierPermissionTier { get; private set; }
+    public ProjectileActor? ReceptionistCausalActor { get; private set; }
+    public int ReceptionistPermissionTier { get; private set; }
+    // External observation intentionally omits fire author, permission and private intent.
+    public readonly struct VisibleFact
+    {
+        public readonly string EventId, OutcomeId;
+        public VisibleFact(string id, string outcome) { EventId = id; OutcomeId = outcome; }
+    }
+    private readonly List<VisibleFact> observedWorldFacts = new List<VisibleFact>();
+    public IReadOnlyList<VisibleFact> ObservedWorldFacts => observedWorldFacts.AsReadOnly();
+    internal void ObserveExternalOutcome(string eventId, string outcome)
+    {
+        if (observedWorldFacts.Exists(f => f.EventId == eventId && f.OutcomeId == outcome)) return;
+        observedWorldFacts.Add(new VisibleFact(eventId, outcome));
+    }
+
+    internal void ConnectFloor50World(bool receptionistAlive)
+    {
+        if (StageId != "floor50" || Floor50Connected) return;
+        Floor50Connected = true;
+        ReceptionistAlive = receptionistAlive;
+        ObserveExternalOutcome("floor50.receptionist", receptionistAlive ? "alive" : "dead");
+    }
+    internal void CommitFloor50ChandelierRelease(ProjectileActor actor, int tier)
+    {
+        if (StageId != "floor50" || !Floor50Connected || ChandelierDropped) return;
+        ChandelierDropped = true;
+        ChandelierCausalActor = actor; // World causality; not inferred camera knowledge.
+        ChandelierPermissionTier = tier;
+    }
+    internal void CommitReceptionistDeath(string cause, ProjectileActor actor, int tier)
+    {
+        if (StageId != "floor50" || !Floor50Connected || ReceptionistAlive != true) return;
+        ReceptionistAlive = false;
+        ReceptionistLethalCause = cause;
+        ReceptionistCausalActor = actor;
+        ReceptionistPermissionTier = tier;
+        ObserveExternalOutcome("floor50.receptionist", cause);
+    }
+
     private bool floor01Departed;
     internal void EnterStage(string stage)
     {
@@ -57,24 +105,27 @@ public sealed class TowerNarrativeState
         Action = action;
         Result = action == FloorAction.Interrupt ? FloorResult.Preserved : FloorResult.Restored;
         FloorActor = actor;
+        // Camera observation is concurrent with the real result; P2 reporting is no longer a knowledge gate.
+        KnownFloor01 = action == FloorAction.Interrupt ? FloorReport.Preserved
+            : action == FloorAction.Confirm ? FloorReport.RestoredConfirmed : FloorReport.LeftUnattended;
+        ObserveExternalOutcome("floor01.restore", action == FloorAction.Interrupt ? "preserved"
+            : action == FloorAction.Confirm ? "restored_confirmed" : "left_unattended");
+        // Cameras also see a scheduled restoration after the officer has left; no player confirmation is invented.
+        ObserveExternalOutcome("floor01.restore.result", Result == FloorResult.Preserved ? "preserved" : "restored");
         return true;
     }
 
     public bool Floor01ReportDelivered(FloorReport report)
     {
-        if (StageId != "boss_p2" || KnownFloor01 != FloorReport.Unknown) return false;
-        bool matches = report == FloorReport.Preserved && Action == FloorAction.Interrupt && Result == FloorResult.Preserved
-            || report == FloorReport.RestoredConfirmed && Action == FloorAction.Confirm && Result == FloorResult.Restored
-            || report == FloorReport.LeftUnattended && Action == FloorAction.Leave && Result == FloorResult.Restored;
-        if (!matches) return false;
-        KnownFloor01 = report;
-        return true;
+        // Compatibility acknowledgement only; never creates knowledge or blocks progression.
+        return StageId == "boss_p2" && report != FloorReport.Unknown && report == KnownFloor01;
     }
 
     public bool CoexistenceReportDelivered()
     {
         if (StageId != "boss_p2" || CoexistenceHeard) return false;
         CoexistenceHeard = true;
+        ObserveExternalOutcome("boss.p2.coexistence", "publicly_expressed");
         return true;
     }
 
@@ -83,6 +134,7 @@ public sealed class TowerNarrativeState
         if (StageId != "office_intro" || ThreatHeard != Threat.None || threat == Threat.None
             || (threat == Threat.Control && !refusalWasDelivered)) return false;
         ThreatHeard = threat;
+        ObserveExternalOutcome("office.threat", threat == Threat.Erase ? "erase" : "control");
         return true;
     }
 
@@ -111,12 +163,14 @@ public sealed class TowerNarrativeState
     {
         if (!CanChangeDisposition || PresidentAlive != true) return false;
         PresidentAlive = false;
+        ObserveExternalOutcome("office.president", "dead");
         return true;
     }
     public bool CommitCoreDestruction()
     {
         if (!CanChangeDisposition || CoreIntact != true) return false;
         CoreIntact = false;
+        ObserveExternalOutcome("office.core", "destroyed");
         return true;
     }
     private bool CanTransfer => CanChangeDisposition && PresidentAlive == true && CoreIntact == true
@@ -132,6 +186,7 @@ public sealed class TowerNarrativeState
     {
         if (!playerAlive || !CanTransfer || !TransferTermsDelivered) return false;
         CurrentAdministrator = Administrator.Player;
+        ObserveExternalOutcome("office.administrator", "player_transfer_and_order");
         TransferTermsDelivered = false;
         return true;
     }

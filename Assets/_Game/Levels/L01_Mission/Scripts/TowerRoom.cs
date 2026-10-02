@@ -3,13 +3,20 @@ using UnityEngine;
 /// <summary>One authored S02 room root. No navigation, scene loading or narrative language.</summary>
 public sealed class TowerRoom : MonoBehaviour
 {
-    public enum RoomKind { Passage, Gun, Blade, DevelopmentFinal, DevelopmentDisposition }
+    public enum RoomKind { Passage, Gun, Blade, DevelopmentFinal, DevelopmentDisposition, Security }
     [SerializeField] private string stageId;
     [SerializeField] private RoomKind kind;
     [SerializeField] private Bounds localBounds = new Bounds(new Vector3(0, 3.25f, 0), new Vector3(30, 11.5f, 1));
     [SerializeField] private ChandelierEncounter prop;
     [SerializeField] private GameObject exitBarrier;
     [SerializeField] private string propEventInstanceId;
+    [Header("50F local encounter")]
+    [SerializeField] private Enemy securityTemplate;
+    [SerializeField] private Floor50Receptionist receptionist;
+    [Min(.1f)] [SerializeField] private float securityDelay = 2f; // TEST unobstructed introduction before activation.
+    public Enemy SecurityTemplate => securityTemplate;
+    public Floor50Receptionist Receptionist => receptionist;
+    public float SecurityDelay => securityDelay;
     public string StageId => stageId;
     public RoomKind Kind => kind;
     public ChandelierEncounter Prop => prop;
@@ -27,7 +34,6 @@ public sealed class TowerRoom : MonoBehaviour
         if (exitBarrier != null) exitBarrier.SetActive(!open);
     }
 
-    // The existing encounter's approved text is exercised on a distinct DEV instance at 50F.
-    // No turret/NPC/threat result is represented by that test opportunity.
-    public bool DevelopmentOpportunity => stageId == "floor50";
+    // Compatibility property: the old unopposed DEV opportunity is retired.
+    public bool DevelopmentOpportunity => false;
 }

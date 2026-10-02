@@ -284,7 +284,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
         if (Phase != BossPhase.Phase1) return;
         if (State == AttackState.Stopped) return;
 
-        if (!TransitionPending && health.CurrentHealth <= health.MaxHealth * phase2HealthThreshold)
+        if (!independentEncounter && !TransitionPending && health.CurrentHealth <= health.MaxHealth * phase2HealthThreshold)
             TransitionPending = true;
 
         if (State == AttackState.MarkedTracking)
@@ -331,7 +331,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
                 Enter(AttackState.MarkedRecovery, .75f);
                 break;
             case AttackState.MarkedRecovery:
-                repositionTarget = rb.position.x >= 0 ? -repositionX : repositionX;
+                repositionTarget = arenaCenterX + (rb.position.x >= arenaCenterX ? -repositionX : repositionX);
                 Enter(AttackState.GhostWarning, chargeWindup);
                 break;
             case AttackState.GhostWarning:
@@ -503,7 +503,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
         chargeDirection = player.transform.position.x < rb.position.x ? -1f : 1f;
         // Cross the locked target with a short overshoot so the next slash normally returns.
         crosscutEndX = Mathf.Clamp(player.transform.position.x + chargeDirection * 2f,
-            -arenaHalfWidth + .9f, arenaHalfWidth - .9f);
+            ArenaLeft + .9f, ArenaRight - .9f);
     }
 
     private void StartCrosscut(AttackState attack)
@@ -518,13 +518,13 @@ public partial class CyberpsychoBoss : MonoBehaviour
     private void BeginDrop()
     {
         // Mark the surface immediately below the player's feet, including native one-way High C.
-        float x = Mathf.Clamp(player.transform.position.x, -arenaHalfWidth + 1f, arenaHalfWidth - 1f);
+        float x = Mathf.Clamp(player.transform.position.x, ArenaLeft + 1f, ArenaRight - 1f);
         float feet = playerCollider != null ? playerCollider.bounds.min.y : player.transform.position.y;
         var ground = Physics2D.Raycast(new Vector2(x, feet + .15f), Vector2.down, 30f, LayerMask.GetMask("Ground"));
         dropPoint = new Vector2(x, ground.collider != null ? ground.point.y : floorY);
         float halfHeight = bossCollider != null ? bossCollider.bounds.extents.y : .75f;
         // Small inward offset avoids ending with solid actor bodies stacked at the same point.
-        dropLanding = new Vector2(Mathf.Clamp(x + (x >= 0f ? -1.3f : 1.3f), -arenaHalfWidth + .9f, arenaHalfWidth - .9f),
+        dropLanding = new Vector2(Mathf.Clamp(x + (x >= arenaCenterX ? -1.3f : 1.3f), ArenaLeft + .9f, ArenaRight - .9f),
             dropPoint.y + halfHeight + .02f);
         previousBodyType = rb.bodyType;
         scriptedDrop = true;
@@ -680,7 +680,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
             chargeWarning.color = slashWarning || CrosscutTelling ? new Color(1f, 1f, 1f, .85f)
                 : new Color(1f, 1f, 1f, State == AttackState.SweepWarning ? .75f : .25f);
             float end = slashWarning ? Mathf.Clamp(rb.position.x + chargeDirection * slashSpeed * slashDuration,
-                -arenaHalfWidth, arenaHalfWidth) : CrosscutTelling ? crosscutEndX : chargeDirection * arenaHalfWidth;
+                ArenaLeft, ArenaRight) : CrosscutTelling ? crosscutEndX : arenaCenterX + chargeDirection * arenaHalfWidth;
             chargeWarning.transform.position = new Vector3((rb.position.x + end) * .5f, slashWarning || CrosscutTelling ? rb.position.y : SweepY, 0);
             chargeWarning.transform.localScale = new Vector3(Mathf.Max(.1f, Mathf.Abs(end - rb.position.x)) / transform.lossyScale.x, .10f / transform.lossyScale.y, 1);
             if (State == AttackState.DropTarget || State == AttackState.DropExecute || State == AttackState.DropImpact)
@@ -720,7 +720,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
         {
             from = rb.position;
             float end = CrosscutTelling ? crosscutEndX : Mathf.Clamp(from.x + chargeDirection * slashSpeed * slashDuration,
-                -arenaHalfWidth, arenaHalfWidth);
+                ArenaLeft, ArenaRight);
             to = new Vector2(end, from.y);
             PredictionCue = CrosscutTelling ? "PREDICT: CROSSCUT PATH" : "PREDICT: GHOST SLASH PATH";
         }

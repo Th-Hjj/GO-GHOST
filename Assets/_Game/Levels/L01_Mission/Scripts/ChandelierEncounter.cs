@@ -8,6 +8,7 @@ public sealed class ChandelierEncounter : MonoBehaviour, IProjectileReceiver
     [SerializeField] private BoxCollider2D body;
     [SerializeField] private LayerMask releaseLayers;
     [SerializeField] private LayerMask blockedProjectileLayers;
+    public event System.Action<ChandelierEncounter, string> OnWorldOutcome;
     private Rigidbody2D physicsBody;
     private Vector3 initialPosition;
     public Transform AimTarget => suspension != null ? suspension.transform : null;
@@ -60,6 +61,7 @@ public sealed class ChandelierEncounter : MonoBehaviour, IProjectileReceiver
             physicsBody.bodyType = RigidbodyType2D.Dynamic;
             physicsBody.WakeUp();
             Debug.Log($"[S01] chandelier released by {LastActor}, permission {LastPermissionTier}", this);
+            OnWorldOutcome?.Invoke(this, "released");
             return true;
         }
         if (!IsHanging && contact == body && Includes(blockedProjectileLayers, projectile.OwnerLayer))
@@ -83,6 +85,7 @@ public sealed class ChandelierEncounter : MonoBehaviour, IProjectileReceiver
             physicsBody.angularVelocity = 0f;
             physicsBody.bodyType = RigidbodyType2D.Static;
             OutcomeCount = 1;
+            OnWorldOutcome?.Invoke(this, "landed");
             Debug.Log($"[S01 fact] eventId=intervention.chandelier outcomeId=landed actor={LastActor} permissionTier={LastPermissionTier}", this);
             break;
         }

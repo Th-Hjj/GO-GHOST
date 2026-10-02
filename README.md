@@ -13,7 +13,15 @@ A single-player 2D side-view shooter about the trade-off between power and free 
 2. In Unity Hub choose Add > Add project from disk, select the repository root (the folder containing `Assets/`, `Packages/`, `ProjectSettings/`), and open it with 6000.6.0f1. The first open builds `Library/` and takes several minutes.
 3. Open `Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity`, the only scene in Build Settings, and press Play.
 
-## Playing the current slice
+## Playing the current S02 prototype
+
+Use the same scene and Unity **6000.6.0f1**. Walk right through each doorway: practice -> tower_entry -> floor01 -> P1 -> floor50 -> P2 -> floor99 -> office_intro -> P3 -> final_disposition -> exit. P1/P2 must lose their single health pool before their doors open. P3 is a stationary damageable **DEV** carrier using existing assets, not the finished final Boss. Its defeat preserves the officer, weapon and deployment in the post-combat room. Leaving that room returns to Main Menu via a DEV completion; it awards no ending, achievement or success record. Death uses failure -> CONTINUE -> Main Menu -> fresh loadout/practice.
+
+On `GameSession`, the existing development permission selector chooses 0/T1/T2/T3 before Play; default is T2. P1 and the explicitly DEV 50F fixture have separate physical chandeliers and once state. 50F has no NPC or turret yet. The other empty nodes are passage hooks, not completed story choices. The Inspector context menu `S02 DEV/Complete current encounter (flow proof only)` can advance controlled Editor tests; it is not a real player victory. The existing input controls and auto-reload remain. Only marked chandelier bodies block hostile projectiles; ordinary terrain stays pass-through.
+
+The three approved narrative interfaces are implemented as finite state rules, but their NPC/terminal/dialogue adapters and formal A–E presentation are not connected. Practice still uses the existing pre-practice deployment lock; preview-then-seal UX remains unfinished. Pulling source does not transfer ignored Builds/Logs. Current verification and limits: [Implementation_Log](Docs/GO_GHOST_VS/Implementation_Log.md).
+
+## Historical pre-Tower slice
 
 Current implementation includes practice, combat, results, endings and Police Archive. Main Menu, Upgrade, Archive and Result use the integrated blue police-terminal presentation. The written black/white restriction has not been reconciled with that implementation; resolve it before further UI changes. Design authority: [VerticalSlice](Docs/VerticalSlice.md). Verification: [Implementation_Log](Docs/GO_GHOST_VS/Implementation_Log.md).
 

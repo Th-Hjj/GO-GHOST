@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 /// <summary>One disposable combat attempt. Reports one outcome; session flow owns what happens next.</summary>
-public class BossFight : MonoBehaviour
+public partial class BossFight : MonoBehaviour
 {
     public enum Outcome { Fighting, Won, Died }
     [SerializeField] private PlayerHealth player;
@@ -103,7 +103,7 @@ public class BossFight : MonoBehaviour
         // Walking in from practice keeps live input; a fresh enable would wait for every key to be released.
         var reader = player.GetComponent<PlayerInputReader>();
         if (!reader.GameplayInputEnabled) reader.SetGameplayInputEnabled(true);
-        boss.BeginCombat();
+        if (!TowerMission) boss.BeginCombat();
     }
 
     private void OnDisable()
@@ -121,6 +121,7 @@ public class BossFight : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (TowerMission) { TickTowerMission(); return; }
         if (NarrativePaused && !deathPending) return;
         if (combatRunning && boss.Phase == CyberpsychoBoss.BossPhase.PhaseTransition)
         {
@@ -160,9 +161,9 @@ public class BossFight : MonoBehaviour
         var vfx = GetComponent<AttemptPresentationVfx>();
         if (vfx != null) vfx.EndAttempt();
         player.StopCombat();
-        boss.StopCombat();
-        bossHealth.StopCombat();
-        bossHealth.GetComponent<Rigidbody2D>().simulated = false;
+        if (boss != null) boss.StopCombat();
+        if (bossHealth != null) bossHealth.StopCombat();
+        if (bossHealth != null) bossHealth.GetComponent<Rigidbody2D>().simulated = false;
         foreach (var bullet in GetComponentsInChildren<Projectile>(true)) bullet.Retire();
     }
 

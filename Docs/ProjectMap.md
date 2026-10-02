@@ -2,7 +2,7 @@
 
 What exists in the repository, where it is, and how it connects. Progress, test evidence, and NOT_RUN items are recorded only in `Docs/GO_GHOST_VS/Implementation_Log.md`; this file does not repeat them. Update this file when paths, scenes, or systems change. Do not describe scripts that do not exist.
 
-**Current source — 2026-10-01 audit (68f5bcf):** runtime MissionUI/terminal partials create the Canvas/EventSystem. Launch enters practice; later missions open Upgrade before practice. The door starts combat; both outcomes stop on Result, with victory continuing through Ending. Police Archive has generated officer records, MARKSMAN PROTOCOL and two fixed ending cards. No SessionView remains.
+**Current source — 2026-10-02 S02:** `GameSessionFlow` + `GameSessionTower` connect nine room roots in the existing mission scene after practice. `TowerRoom`/`TowerDoor` own room metadata and exits. `BossFightTower` separates room actors from the persistent officer; `CyberpsychoBossEncounter` binds the existing P1/P2 attacks to each room's bounds and player. `GameSessionIntervention` reuses S01 JSON/UI/pause; `ChandelierEncounter` emits actual outcomes. `TowerNarrativeState` contains the approved finite knowledge/P3/transfer/exit interfaces. Empty content stays unconnected; P3 and final completion remain DEV. Death still records one failure; DEV completion never reaches the old percentage ending path. No SessionView exists.
 
 Implementation evidence and NOT_RUN items belong in Implementation_Log. This audit is static only. The blue terminal implementation conflicts with the written black/white restriction; resolve before further UI changes. Historical documents/scenarios are not current acceptance authority.
 
@@ -12,7 +12,7 @@ Implementation evidence and NOT_RUN items belong in Implementation_Log. This aud
 |---|---|
 | Unity | 6000.6.0f1, URP 17.6.0 (2D Renderer), Input System 1.20.0, uGUI 2.6.0 + TextMesh Pro, Test Framework 1.8.0 |
 | Target | Windows PC (StandaloneWindows64), keyboard + mouse. Build Profiles for Windows and macOS in `Assets/Settings/Build Profiles/` |
-| Slice | Practice -> door -> two-phase Boss; three weapons, Arm-Blade, Air Dash, BLACKOUT/Camo Rush; Result/Ending/Main Menu and three-tab Archive |
+| Slice | Practice -> fixed Tower DEV route; independent P1/P2, DEV P3 -> disposition -> DEV exit. Existing weapons/abilities/Archive retained; floating platforms removed, platform-dependent BLACKOUT unbound |
 | Entry scene | `Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity`, the only scene in Build Settings (index 0) |
 | Validation | Current and historical compile/Play Mode results are in Implementation_Log; old results are not claims of a fresh full regression |
 | Windows build | Log records October Final-UI build before Archive/Camo Rush changes. This machine only has historical Builds/Windows; current-head build NOT RUN. Ignored outputs do not transfer through Git |

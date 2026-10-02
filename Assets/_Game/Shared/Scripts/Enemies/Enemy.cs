@@ -134,6 +134,17 @@ public class Enemy : MonoBehaviour, IDamageable
         CurrentHealth = secondPhaseMaxHealth;
     }
 
+    /// <summary>Fresh Tower actor only: one existing health pool, with no automatic second life.</summary>
+    public void ConfigureSingleEncounter(bool secondPhase)
+    {
+        if (IsDead || CurrentHealth != maxHealth) throw new InvalidOperationException("Configure a fresh enemy before damage.");
+        int pool = secondPhase && secondPhaseMaxHealth > 0 ? secondPhaseMaxHealth : maxHealth;
+        maxHealth = pool;
+        secondPhaseMaxHealth = secondPhase ? pool : 0;
+        PhaseIndex = secondPhase ? 2 : 1;
+        CurrentHealth = pool;
+    }
+
     public void StopCombat()
     {
         combatStopped = true;

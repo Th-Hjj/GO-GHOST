@@ -13,8 +13,8 @@ public partial class CyberpsychoBoss
         float direction = distance > 5f ? toward : -toward;
         float amount = distance > 5f ? Mathf.Min(4.5f, distance - 3f) : 4.5f;
         Bounds bodyBounds = bossCollider != null ? bossCollider.bounds : new Bounds(rb.position, new Vector3(1, 1.5f, 1));
-        float left = arenaBound ? blackoutArena.min.x : -arenaHalfWidth;
-        float right = arenaBound ? blackoutArena.max.x : arenaHalfWidth;
+        float left = arenaBound ? blackoutArena.min.x : ArenaLeft;
+        float right = arenaBound ? blackoutArena.max.x : ArenaRight;
         float target = Mathf.Clamp(rb.position.x + direction * amount,
             left + bodyBounds.extents.x + .1f, right - bodyBounds.extents.x - .1f);
         int groundMask = LayerMask.GetMask("Ground");

@@ -27,6 +27,8 @@ public class Projectile : MonoBehaviour
     private int ownerLayer = -1; // cached in Launch: the owner may be destroyed while the bullet is still flying
     private bool spent;
     public bool CanBeCountered { get; private set; }
+    /// <summary>True once an Arm-Blade slash turned this bullet around; it then belongs to the deflecting side.</summary>
+    public bool Deflected { get; private set; }
     private PlayerTimeSlow timeSlow;
     private Vector2 fullVelocity;
     private float remainingLife;
@@ -58,6 +60,32 @@ public class Projectile : MonoBehaviour
         launched = true;
     }
 
+    /// <summary>
+    /// Arm-Blade deflection: the same bullet flies back the way it came and now belongs to <paramref name="newOwner"/>
+    /// (team, damage credit). No aiming, homing or damage bonus; it keeps its remaining lifetime, passes through walls
+    /// and is never counted as a gun shot. Returns false if it was already spent or deflected.
+    /// </summary>
+    public bool Deflect(GameObject newOwner)
+    {
+        if (!launched || spent || Deflected || newOwner == null) return false;
+        Deflected = true;
+        owner = newOwner;
+        ownerLayer = newOwner.layer;
+        accuracyOwner = null;
+        CanBeCountered = false;
+        timeSlow = null; // the hostile clock no longer applies to a bullet that now belongs to the player
+        fullVelocity = -fullVelocity;
+        rb.linearVelocity = fullVelocity;
+        transform.Rotate(0f, 0f, 180f);
+        return true;
+    }
+
+    // A bullet deflected while already overlapping its old team gets no new Enter event; resolve that contact here.
+    private void OnTriggerStay2D(Collider2D other)
+    {
+        if (Deflected) OnTriggerEnter2D(other);
+    }
+
     private void FixedUpdate()
     {
         if (!launched || spent) return;
@@ -80,7 +108,8 @@ public class Projectile : MonoBehaviour
             var counter = CanBeCountered && damageable is PlayerHealth
                 ? other.GetComponentInParent<PlayerCounterArm>() : null;
             Vector2 contact = other.ClosestPoint(transform.position);
-            if (counter != null && counter.TryCounter())
+            // Legacy Counter Arm cancels a compatible bullet on contact. Arm-Blade never does: it deflects inside its slash.
+            if (counter != null && counter.NullifiesProjectiles && counter.TryCounter())
             {
                 if (vfx != null) vfx.CounterSuccess(contact, -fullVelocity.normalized);
             }

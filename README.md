@@ -1,76 +1,52 @@
 # GO GHOST
 
-A single-player 2D side-view shooter about the trade-off between power and free will. One arena, one cyberpsycho Boss: each time an officer falls, the next one takes over, chooses how much of their body to augment, and fights again. USC CTIN 489 project by Thomas Hong and Walker Grupp.
+A single-player 2D side-view action/shooting game about a short corporate-tower infiltration. An officer gains power by granting a self-aware Inner AI authority over the same body; human and AI priorities can conflict. Death ends that officer's run, and a new officer starts from the opening. USC CTIN 489, Thomas Hong and Walker Grupp.
 
-## Requirements
-- Unity **6000.6.0f1**, installed through Unity Hub. Do not upgrade the project to another version.
-- Git with **Git LFS**. Run `git lfs install` once per machine before cloning or pulling. Textures, audio, models, and fonts are stored in LFS.
-- A C# IDE selected in Unity under Preferences > External Tools (Rider, Visual Studio, or VS Code). Unity generates the solution and project files; they are not committed.
-- Per-machine Git setup for Unity scene and prefab merges: see [Docs/Collaboration.md](Docs/Collaboration.md) section 6.
+## Open and play
 
-## Opening the project
-1. Clone the repository, or pull `main`.
-2. In Unity Hub choose Add > Add project from disk, select the repository root (the folder containing `Assets/`, `Packages/`, `ProjectSettings/`), and open it with 6000.6.0f1. The first open builds `Library/` and takes several minutes.
-3. Open `Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity`, the only scene in Build Settings, and press Play.
+1. Use Unity **6000.6.0f1**, Git and Git LFS (`git lfs install` once per machine). Do not change Unity version. Thomas uses Rider.
+2. Pull the approved `main` state with Unity closed and local work preserved; open the repository root through Unity Hub. Each machine imports its own `Library/`.
+3. Open `Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity` and press Play. Launch stops at **Loadout**; choose existing equipment, then **BEGIN OPERATION** to seal the snapshot and enter practice.
+4. Walk through the practice door, then the short Tower route. Room exits open when the required fight is won. P3 defeat leads to two separate final decisions; complete both to reach Result, Continue to the JSON ending, then F to Main Menu. Death -> Result -> Continue -> Main Menu -> Start Mission -> new Loadout/practice. No floor checkpoint.
 
-## Playing the current S02 prototype
+Route: practice -> entrance worker -> 1F Maintenance AI -> P1 -> 50F Receptionist/Security -> P2 -> 99F Security -> CEO office -> P3 -> final disposition -> ending. The same officer, Player and locked snapshot persist between rooms; only the practice door refills resources.
 
-Use the same scene and Unity **6000.6.0f1**. Walk right through each doorway: practice -> tower_entry -> floor01 -> P1 -> floor50 -> P2 -> floor99 -> office_intro -> P3 -> final_disposition -> exit. P1/P2 must lose their single health pool before their doors open. P3 is a stationary damageable **DEV** carrier using existing assets, not the finished final Boss. Its defeat preserves the officer, weapon and deployment in the post-combat room. Leaving that room returns to Main Menu via a DEV completion; it awards no ending, achievement or success record. Death uses failure -> CONTINUE -> Main Menu -> fresh loadout/practice.
+| Input | Current behaviour |
+|---|---|
+| A/D, mouse, LMB | Move, aim, fire Assault Rifle; reload automatically |
+| Space / Left Shift | Jump and equipped leg ability / Dodge or equipped Air Dash |
+| E / Q | Existing Arm-Blade slash/deflect / equipped prototype Time Slow |
+| F | Near the single overhead F: interact; advance/close dialogue |
+| Up/Down then fresh F | Select/commit a dialogue or final disposition choice |
+| Escape | Cancel a voluntary interaction/choice |
+| F8 | Editor/Development-only route testing |
 
-Assault Rifle is the only weapon in the formal Upgrade screen and F8 developer menu. Sniper, Shotgun and old weapon-ID compatibility are removed. Rifle TEST values remain 12 damage, .25 s interval, 10 rounds, 1.2 s automatic reload.
+Boss ReplyOrAttack windows accept real manual shots; ordinary dialogue pauses gameplay. Tier 0 has no Inner AI; T1 advises; T2 temporarily aims for three seconds but allows no-fire refusal; T3 really aims/fires through ammo/reload/projectiles. Old held Fire cannot leak out of dialogue. The existing GameSession Inspector permission configuration is frozen at deployment; F8 can select all four tiers for testing.
 
-P1 and 50F have separate physical chandeliers and once state. In 50F, the central Receptionist starts alive beneath the chandelier; existing Security activates after a TEST two-second viewing interval. Defeat Security to open P2, with or without dropping the chandelier. Real falling-body damage can kill the Receptionist and retains the release shot's actor. Cameras observe external results directly; they do not hear inner-AI conversation or infer intent. Other empty nodes remain passage hooks. Only marked chandelier bodies block hostile projectiles; ordinary terrain stays pass-through.
+Assault Rifle is the only current weapon in normal/F8 loadouts. In 50F, approach the central Receptionist beneath the chandelier and finish the F radio conversation to bring in Security; actual pre-call death also starts it. Defeat Security to reach P2. Chandelier release, fall, cover, standing surface and lethal contact are physical, with Player/InnerAI causality. No NPC death or chandelier use is required to win the guard fight.
 
-**Developer entry: press F8 in Play Mode / Development Build.** Select any of the ten existing route nodes, 0/T1/T2/T3, and click the seven upgrade slots to cycle existing choices. Jump applies the choices through a fresh LoadoutDraft / DeploymentSnapshot and enters that node. Restart Current applies changes and starts that node fresh. Restart Full Run restores the default build/configured permission and starts at practice. Skipped facts stay unknown; old pause/aim overrides are cleared. DEV attempts do not save Archive records or unlocks. The existing locked Drone can be tested here without unlocking it. Release compilation has no F8 handler/menu/jump API; no formal Main Menu button is added.
+## Developer jump
 
-The pre-Play permission selector remains on `GameSession` (default T2). Its Inspector context menu `S02 DEV/Complete current encounter (flow proof only)` can advance controlled Editor tests; it is not a real player victory.
+In the **Game view during Play**, press F8. Choose Practice, Tower Entrance, 1F, P1, 50F, P2, 99F, CEO Office, P3 or Final Disposition; choose 0/T1/T2/T3 and cycle currently implemented upgrade slots.
 
-The three approved narrative interfaces are implemented as finite state rules, but their NPC/terminal/dialogue adapters and formal A–E presentation are not connected. Practice still uses the existing pre-practice deployment lock; preview-then-seal UX remains unfinished. Pulling source does not transfer ignored Builds/Logs. Current verification and limits: [Implementation_Log](Docs/GO_GHOST_VS/Implementation_Log.md).
+- **Jump to selected node:** fresh tagged run with the selected snapshot, entering that actual node.
+- **Restart Current Node:** apply the selected equipment/tier to a fresh instance of this node.
+- **Restart Full Run:** restore normal defaults/configured tier and return to Loadout, then normal deployment/practice.
 
-## Historical pre-Tower slice
+Closing F8 without jumping resumes the underlying interaction. Jump/restart clears old dialogue/pause/aim/projectiles and skipped facts remain unknown. Locked prototype equipment may be tested without granting unlocks. DEV attempts never write normal Archive records/endings. Release configuration contains no F8 menu/input/jump API; this is not a player feature. On another machine, use the same commit, wait for compilation, open the correct scene and focus Game view before testing.
 
-Current implementation includes practice, combat, results, endings and Police Archive. Main Menu, Upgrade, Archive and Result use the integrated blue police-terminal presentation. The written black/white restriction has not been reconciled with that implementation; resolve it before further UI changes. Design authority: [VerticalSlice](Docs/VerticalSlice.md). Verification: [Implementation_Log](Docs/GO_GHOST_VS/Implementation_Log.md).
+## Current status and boundaries
 
-1. Launch enters practice as Officer #1 with the default human / Assault Rifle build. Walk through the door to start combat. Practice time and shots are excluded from results; the door refills resources and clears transient effects/statistics.
-2. Later missions: Main Menu -> START MISSION -> Upgrade -> BEGIN OPERATION -> practice -> door -> combat. HEAD maps to Brain; TORSO is the existing core body slot. WEAPON offers Assault Rifle, Sniper or Shotgun (0% body contribution). Ordinary upgrades are available immediately; Drone requires its persistent unlock. BEGIN OPERATION locks the build. Top-left BACK returns directly to Main Menu.
-3. Combat displays Boss/Player HP bars and the ammo/reloading readout. A/D move, mouse aim, LMB fire, Space jump/Double Jump/Hover, Left Shift ground Dodge or equipped Air Dash, E Arm-Blade slash/deflect, Q equipped Time Slow. Targeting AI owns aim when equipped. Guns reload automatically; Sniper and Shotgun require a new press. All bullets pass through terrain.
-4. Both outcomes stop on Mission Result with TIME, BOSS HP, PLAYER HP and ACCURACY. Accuracy counts player gun projectiles hitting the Boss; Drone, blade and deflected/hostile fire are excluded. Defeat -> CONTINUE -> Main Menu. Victory -> CONTINUE -> HUMAN ENDING (<50% body modification) or AI ENDING (>=50%) -> CONTINUE -> Main Menu. The winning deployment snapshot determines the ending.
-5. POLICE ARCHIVE contains POLICE RECORDS, MISSION INTELLIGENCE and CASE CLOSURE RECORDS. Records accumulate during one application session and restart empty each launch. MARKSMAN PROTOCOL requires victory with accuracy >=70%; its first completion unlocks Drone internally. Case Closure always has two ending cards, blank while locked. BACK returns to Main Menu.
+The S01/S02 foundation and subsequent full English greybox route are implemented. Normal completion stores explicit A–E results; body percentage does not choose P3/endings. The full inherited body-tier catalogue and responsive final Boss redesign are not implemented. P2/P3 cinematics, art and voice remain rough. Existing blue terminal screens and legacy two-card Case Closure presentation remain mismatches; new endings play at completion but are not yet browsable in those old cards.
 
-Player HP is TEST 150; Boss HP is two independent TEST 600 pools with an immune transition. High platforms C/D/E break during BLACKOUT and reset on deployment. Phase 2 includes Camo Rush from commit 68f5bcf; current-head runtime verification is pending. Numbers remain provisional: [Prototype_Test_Profile](Docs/GO_GHOST_VS/Prototype_Test_Profile.md). The version-2 profile (v1 loads with empty history) lives at Application.persistentDataPath/PoliceArchive/archive.json. Endings, achievements and hidden unlocks persist across launches. Officer biography fields remain TEMP; HUMAN/AI ending screens use the team's exact text. Tests use isolated profiles.
+See [Implementation_Log](Docs/GO_GHOST_VS/Implementation_Log.md) for actual compile/Play Mode evidence, controlled-test assists and NOT_RUN items. No new Windows build/package was produced for this flow. Ignored `Logs/` and `Builds/` do not transfer through Git; older executables do not represent current source.
 
-The Implementation Log records a successful Windows-Playtest-Final-UI build on 2026-10-01, before the latest Archive/Camo Rush commits. That folder and the October test evidence are absent on this machine at this audit; only the historical Builds/Windows output is present. Builds and Logs are ignored local files, so a Git pull does not transfer them. Rebuild and verify the current source before distributing it; keep the complete runtime folder.
+## Documentation and layout
 
-## Layout
-```
-Assets/
-  _Game/
-    Shared/                 code and assets used by more than one level
-      Scripts/Player/       input reader, movement, jump, dodge, shooting, health, loadout data,
-                            officer identity and visuals, Time Slow, legacy abilities, projectile
-      Scripts/Persistence/  PoliceArchive profile and versioned local JSON store
-      Scripts/Enemies/      Enemy.cs (health and collider base, reused by the Boss)
-      Scripts/Encounters/   EncounterZone.cs (legacy top-down encounter, not used by the slice)
-      Prefabs/              Player.prefab, Bullet.prefab, Enemies/Enemy_Basic.prefab
-      Data/                 PlayerStats.asset
-    Levels/
-      L01_Mission/
-        Scenes/             Cyberpunk World.unity (the slice), TitleScene.unity (not in Build Settings)
-        Scripts/            GameSessionFlow, BossFight, CyberpsychoBoss, MissionUI
-        Prefabs/            CombatAttempt.prefab (one officer + Boss per attempt), player physics material
-    Development/
-      Thomas/               test scene and editor-only Play Mode test drivers (TopDownSmokeTest*.cs)
-      Walker/               player test scene
-  Settings/                 URP, Input System actions, Build Profiles (keep in place)
-  TextMesh Pro/             TMP Essential Resources
-  Welcome/                  Unity 2D template welcome content
-  Cyborg-Assets/            empty folders kept for Walker (do not move)
-Docs/                       design, collaboration, and slice execution docs (Docs/GO_GHOST_VS/)
-CLAUDE.md                   working rules for AI-assisted sessions
-```
+- [START_HERE](Docs/GO_GHOST_VS/START_HERE.md): authority/read order.
+- [Tower_Design_Override](Docs/GO_GHOST_VS/Tower_Design_Override.md): **canonical current confirmed design** and Open items.
+- [Narrative_Content_Contract](Docs/GO_GHOST_VS/Narrative_Content_Contract.md): exact text remains in the single JSON, stable IDs and finite runtime responsibilities.
+- [VerticalSlice](Docs/VerticalSlice.md): overview/MSP strategy; [TEST profile](Docs/GO_GHOST_VS/Prototype_Test_Profile.md): provisional numbers.
+- [ProjectMap](Docs/ProjectMap.md): real scenes/scripts/data; [Collaboration](Docs/Collaboration.md): ownership/Git/multi-machine rules.
 
-## Docs
-- [Docs/VerticalSlice.md](Docs/VerticalSlice.md): English summary of the confirmed design and slice scope.
-- [Docs/GO_GHOST_VS/](Docs/GO_GHOST_VS/START_HERE.md): current handoff, TEST values and implementation log, plus the historical Chinese baseline and staged prompts.
-- [Docs/Collaboration.md](Docs/Collaboration.md): how two people and several machines work in one Unity project on GitHub.
-- [Docs/ProjectMap.md](Docs/ProjectMap.md): where everything is, how the systems connect, and known issues.
+`Assets/_Game/Shared/` holds reusable player/input/weapon/persistence/content code and data. `Levels/L01_Mission/` holds the scene and Tower coordinator/NPC/Boss content. `Development/Thomas/` holds editor-only fixtures. Settings, Packages and ProjectSettings remain in place. Historical baseline/Macro/prompts/log entries are context, not current single-arena or percentage-ending instructions.

@@ -1,5 +1,6 @@
 # GO GHOST — Macro 逐单元格文字摘录
 
+> **Historical source extract, not current design.** Original cells below are preserved. [Tower_Design_Override](Tower_Design_Override.md) and [START_HERE](START_HERE.md) supersede conflicting route, narrative, upgrade and ending assumptions; the companion spreadsheet is also historical.
 来源：同目录 GO_GHOST_Game_Design_Macro_Revised.xlsx。
 以下按工作表、原始行号、列字母逐项摘录有内容的单元格；保留原文，不补写设计。
 本文件便于代码代理读取；不代表工程实现状态。Excel 与中文基线仍是设计来源。

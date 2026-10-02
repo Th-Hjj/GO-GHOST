@@ -1,194 +1,25 @@
-# GO GHOST — Codex Astra 执行指南
+# GO GHOST — Start Here
 
-## Current entry point — 2026-10-02 Tower S02 + developer jump
+## Current authority — 2026-10-02 end of day
 
-Read [AGENTS](../../AGENTS.md), [Tower_Design_Override](Tower_Design_Override.md), the frozen [Narrative_Content_Contract](Narrative_Content_Contract.md), and the newest [Implementation_Log](Implementation_Log.md) entry. The Tower override is the current design authority where older documents conflict. Local source and existing work take precedence over the static GitHub audit at `6a4e7b72e4913dfd3b048ab672d8c6d4e6c3f77a`; that SHA is not a rollback request.
+1. Read [AGENTS.md](../../AGENTS.md) / [CLAUDE.md](../../CLAUDE.md) for engineering, Unity and Git rules.
+2. Read [Tower_Design_Override.md](Tower_Design_Override.md): **the canonical current design**, incorporating Thomas's EOD decisions and the non-conflicting full-flow v0.7 rules.
+3. Read [Narrative_Content_Contract.md](Narrative_Content_Contract.md) for the single runtime JSON, stable bindings, F/input/pause and actual-fact boundary. Exact English draft wording belongs in that JSON, not a second script in documentation.
+4. Read the newest [Implementation_Log.md](Implementation_Log.md) entry for what actually ran, assists, mismatches and NOT_RUN items. Use [ProjectMap](../ProjectMap.md) for paths, [TEST profile](Prototype_Test_Profile.md) for provisional numbers and [README](../../README.md) to play.
 
-S01 supplies permission/chandelier/JSON. S02 connects the short route; the latest local delta wires 50F Receptionist/Security and camera-observed facts. F8 in Editor/Development Build opens route, tier and existing-upgrade selection through fresh normal deployments. See README for the three actions and Implementation_Log for actual checks. P3 moves, other NPC content and formal endings remain deferred; no next stage is authorized.
+Current code connects a normal Loadout/practice -> short Tower -> real P1/P2/P3 -> two final F decisions -> A–E flow. S01/S02 are reused, F8 uses the real route/snapshot path, and Assault Rifle is the sole current weapon. Full body-tier design and final Boss/art work are still Open. A design requirement is not proof of implementation; a prototype is not final design approval.
 
-## Historical entry point — 2026-10-01 source audit
+No next task is implied by this page. Do only Thomas's authorized scope. For documentation-only work, record implementation differences and do not fix code/assets. Preserve the current worktree; the old GitHub static-review SHA is not a rollback target. Stay on Unity **6000.6.0f1**.
 
-Read AGENTS.md, the latest override at the top of [VerticalSlice](../VerticalSlice.md), and the newest [Implementation_Log](Implementation_Log.md) entries. Current source checkpoint: 68f5bcf on main (Camo Rush), following e421a76 (Archive final).
+## Status language and verification
 
-Launch -> human/Assault Rifle practice -> door -> Boss. Later missions pass through Upgrade and practice. Both outcomes stop on Result; defeat continues to Main Menu, victory continues to the snapshot-selected Human/AI Ending and then Main Menu. Three weapons, Arm-Blade, Air Dash, two independent Boss health phases, BLACKOUT and Camo Rush are implemented. Police Records restart each application launch; endings, MARKSMAN PROTOCOL and hidden unlocks persist.
+- **Confirmed:** Thomas approved the design; **Implemented:** inspected code exists; **TEST:** replaceable tuning.
+- **Open:** undecided; **Proposed:** not approved; **Historical:** superseded context.
+- Compile, focused Play Mode path and a short core-flow check are the MSP default for code changes. Mark unexecuted checks **NOT RUN**. Controlled invulnerability/positioning/forced outcomes are not balance or physical-input proof.
+- Do not rerun the old broad matrix or Build/package without a scoped request. [Playtest_Checklist](Playtest_Checklist.md) is a focused worksheet, not an automatic task queue.
 
-The integrated blue terminal UI conflicts with the still-written black/white restriction. This is an unresolved documentation/design discrepancy, not authority to roll back or extend either version.
+## Historical package
 
-Verification boundary: this audit was static only. Compile, current-head Play Mode, Camo Rush, full outcome paths and Windows build are NOT RUN. October runtime evidence/build folders described by the log are not present on this machine; local ignored output does not arrive with a Git pull. The archive-final fixture's count expectation was corrected after 16 PASS / 1 FAIL and has not been re-run.
+The original [Chinese baseline](GO_GHOST_Design_Baseline_ZH.md), [Macro extract](Macro_Readable_Extract.md), companion spreadsheet and `Prompts/00–08` preserve earlier work. Their single-arena, percentage-ending, old catalogue, report-tree and exhaustive-gate assumptions are **not current instructions**. [Execution_Contract](Execution_Contract.md) retains engineering history; its current authority notice takes precedence. Do not execute its numbered phase queue unless Thomas explicitly requests a reviewed scope.
 
-Proposed next verification: compile, one focused Camo Rush trigger (damage, Dodge/parry and interruption), then practice door -> combat -> each outcome -> Continue -> next deployment reset. Use an isolated Archive profile. Historical strict-ui/reset/phase scenarios contain obsolete expectations and are not current acceptance suites without review.
-
-Use only the explicitly requested task. MSP gate: compile + targeted Play Mode happy path + short core-flow smoke. Keep evidence and NOT_RUN items in Implementation_Log; numbers in Prototype_Test_Profile; paths in ProjectMap.
-
-**The rest of this page and Prompts/00–08 are the historical 2026-09-24 migration package, not a current phase queue.** Do not use them to restore retired flow, controls or exhaustive gates.
-## Historical execution guide
-
-日期：2026-09-24  
-任务：从真实现有 Unity 项目安全迁移到新版单竞技场横版 Boss vertical slice。  
-交付性质：开发 prompts 与测试流程；本包没有修改 Unity 项目，也没有审查/运行用户当前仓库。
-
-## 开始使用
-将本包的 `Docs/GO_GHOST_VS` 文件夹复制到真实 Unity/Git 项目根目录下，形成同名路径。
-不要放入 Assets，不要覆盖已存在的同名文件夹；若那里已有另一份执行包，先核对版本再合并。
-在 Codex 中打开实际项目工作目录，选 Astra，然后在客户端手动选择下表档位。
-本包不修改你的模型设置、权限设置或原有 AGENTS.md；只有阶段 01 会在审查后考虑加一个简短文档指针。
-
-按 00→08 逐个运行，不能一口气把后续全部执行。
-00 只读。01–07 完成后先按该阶段检查，在 Unity 中实际验证，再进入下一阶段。
-失败时用 FIX，不要将错误堆到最后；验收通过后可由你自己建立 Git checkpoint。Codex 不自动 commit/push。
-建议 00–03、04–06、07 分别保持一个连贯工作会话；换会话先读 Implementation_Log。
-08 使用新会话，让其独立核对当前代码而不是相信前一会话的完成声明。
-不让多个代理同时写同一个场景/Prefab。
-
-## 档位说明
-沿用你界面的高、极高、最高、ultra 标签。下表是按本项目风险给出的任务分配建议，不是官方性能测试结论。
-迁移、状态和数据边界用最高，单个机制用极高，表现收尾用高；ultra 留给最后一次独立审查。
-官方配置说明可用档位随模型和客户端变化，不必修改配置文件来猜测一个未显示的值。
-
-| 阶段 | 内容 | 思考档位 | 你应看到的结果 |
-|---|---|---|---|
-| 00 | 只读仓库审查与迁移计划 | 最高 | 能看到基于真实文件的迁移计划；没有项目改动。 |
-| 01 | 安全迁移与横版基础操作 | 最高 | 你能亲手移动、跳跃、瞄准射靶和闪避；没有旧俯视角输入干扰。 |
-| 02 | 可用 0% 警察挑战的单阶段 Boss | 极高 | 你能打一场有预警和反击窗口的 Boss 战；双方都能正常死亡。 |
-| 03 | 新游戏、失败接替与完整重试闭环 | 最高 | 真实死亡后出现下一位警察；重打 Boss 回满血；New Game 重置到第一位 0%。 |
-| 04 | 七槽自由配装、百分比与被动改造 | 最高 | 能自由装卸两项强化，也能坚持 0%；进入战斗后收益生效、配装锁定。 |
-| 05 | AI 瞄准接管与手动操作对照 | 极高 | 鼠标不能抢回 AI 瞄准，但你仍必须自己开火、移动、跳跃、闪避。 |
-| 06 | 简版结尾与完整可读反馈 | 高 | 玩家能看懂接替、改造收益、瞄准归属和胜利后果；不是只有一串数字。 |
-| 07 | 回归测试、修复与独立试玩构建 | 最高 | 独立试玩包可启动，关键回归有证据，正常流程里没有调试作弊。 |
-| 08 | 独立验收审查 | ultra | 新会话审查实际代码与测试证据，确认是否真的适合交给真人试玩。 |
-
-## 已确认设计与新增建议
-确认内容来自随包复制的中文基线和英文 Macro。
-本包新增的键位、固定镜头、两招 Boss、两件被动模块、权重和 A/B/C 结果映射，都集中在 Prototype_Test_Profile。
-这些只用于可替换的 TEST-v0，不代表团队已经最终定案。
-不需要在本轮填满升级目录或做 100% 可用构型；此测试目录全装为 60%，明确保留六槽满额合计 100% 的定义。
-基础枪足够。武器“始终 0%”可用不同数据夹具做逻辑检查，不强迫本轮完成多武器系统。
-
-## 发送给 Codex 的逐阶段 prompt
-下面是实际发送的短入口。完整任务、边界和验收在对应文件中。
-### 00｜只读仓库审查与迁移计划｜最高
-
-```text
-请完整读取 Docs/GO_GHOST_VS/Prompts/00_repo_audit.md 及它引用的执行约束、设计基线和测试方案。
-按该文件执行本阶段，不执行其他阶段。实际运行与未运行的检查分开报告。
-```
-
-验收：能看到基于真实文件的迁移计划；没有项目改动。
-
-### 01｜安全迁移与横版基础操作｜最高
-
-```text
-请完整读取 Docs/GO_GHOST_VS/Prompts/01_sideview_graybox.md 及它引用的执行约束、设计基线和测试方案。
-按该文件执行本阶段，不执行其他阶段。实际运行与未运行的检查分开报告。
-```
-
-验收：你能亲手移动、跳跃、瞄准射靶和闪避；没有旧俯视角输入干扰。
-
-### 02｜可用 0% 警察挑战的单阶段 Boss｜极高
-
-```text
-请完整读取 Docs/GO_GHOST_VS/Prompts/02_single_phase_boss.md 及它引用的执行约束、设计基线和测试方案。
-按该文件执行本阶段，不执行其他阶段。实际运行与未运行的检查分开报告。
-```
-
-验收：你能打一场有预警和反击窗口的 Boss 战；双方都能正常死亡。
-
-### 03｜新游戏、失败接替与完整重试闭环｜最高
-
-```text
-请完整读取 Docs/GO_GHOST_VS/Prompts/03_attempt_loop.md 及它引用的执行约束、设计基线和测试方案。
-按该文件执行本阶段，不执行其他阶段。实际运行与未运行的检查分开报告。
-```
-
-验收：真实死亡后出现下一位警察；重打 Boss 回满血；New Game 重置到第一位 0%。
-
-### 04｜七槽自由配装、百分比与被动改造｜最高
-
-```text
-请完整读取 Docs/GO_GHOST_VS/Prompts/04_loadout_and_passives.md 及它引用的执行约束、设计基线和测试方案。
-按该文件执行本阶段，不执行其他阶段。实际运行与未运行的检查分开报告。
-```
-
-验收：能自由装卸两项强化，也能坚持 0%；进入战斗后收益生效、配装锁定。
-
-### 05｜AI 瞄准接管与手动操作对照｜极高
-
-```text
-请完整读取 Docs/GO_GHOST_VS/Prompts/05_ai_aim_takeover.md 及它引用的执行约束、设计基线和测试方案。
-按该文件执行本阶段，不执行其他阶段。实际运行与未运行的检查分开报告。
-```
-
-验收：鼠标不能抢回 AI 瞄准，但你仍必须自己开火、移动、跳跃、闪避。
-
-### 06｜简版结尾与完整可读反馈｜高
-
-```text
-请完整读取 Docs/GO_GHOST_VS/Prompts/06_outcomes_and_feedback.md 及它引用的执行约束、设计基线和测试方案。
-按该文件执行本阶段，不执行其他阶段。实际运行与未运行的检查分开报告。
-```
-
-验收：玩家能看懂接替、改造收益、瞄准归属和胜利后果；不是只有一串数字。
-
-### 07｜回归测试、修复与独立试玩构建｜最高
-
-```text
-请完整读取 Docs/GO_GHOST_VS/Prompts/07_regression_and_build.md 及它引用的执行约束、设计基线和测试方案。
-按该文件执行本阶段，不执行其他阶段。实际运行与未运行的检查分开报告。
-```
-
-验收：独立试玩包可启动，关键回归有证据，正常流程里没有调试作弊。
-
-### 08｜独立验收审查｜ultra
-
-```text
-请完整读取 Docs/GO_GHOST_VS/Prompts/08_independent_review.md 及它引用的执行约束、设计基线和测试方案。
-按该文件执行本阶段，不执行其他阶段。实际运行与未运行的检查分开报告。
-```
-
-验收：新会话审查实际代码与测试证据，确认是否真的适合交给真人试玩。
-
-
-## 任意阶段失败：最高
-```text
-请读取 Docs/GO_GHOST_VS/Prompts/FIX_current_stage.md。
-根据本消息附上的错误/现象，或上一阶段明确的 FAIL/BLOCKED 项，只修复当前阶段。
-不要进入下一阶段。区分实际修复验证和仍需我在 Unity 中检查的部分。
-```
-同时提供可获得的实际 Console 错误、复现步骤或截图。
-
-## 真人试玩后的小迭代：极高
-```text
-请读取 Docs/GO_GHOST_VS/Prompts/PLAYTEST_iteration.md。
-根据我提供的实际试玩记录，选择最重要的问题做一轮小范围改进并回归验证。
-不要增加新关卡、Boss 阶段或升级目录。
-```
-
-## 不能跳过的人工节点
-01：亲手确认横版移动、跳跃、射击、闪避。  
-02：亲手体验 Boss 的预警与攻击应对；调试击杀不算 0% 实战可胜。  
-03：真实失败后确认下一位、Boss 满状态和 New Game 重置。  
-05：鼠标反向移动，确认 AI 拒绝让出瞄准，但仍需你自己开火；卸除后再战恢复手动。  
-07：实际启动独立构建。  
-08 后：按 Playtest_Checklist 收集真人感受；不把编译成功当作体验验证。
-
-## 文档导航
-- GO_GHOST_Design_Baseline_ZH.md：原始已确认中文设计，逐字保留。
-- GO_GHOST_Game_Design_Macro_Revised.xlsx：原始英文表，字节原样复制。
-- Macro_Readable_Extract.md：原表非空单元格的逐项文字摘录，保留原行列。
-- Execution_Contract.md：执行范围、工程边界、验收与报告方式。
-- Prototype_Test_Profile.md：仅供这轮原型使用的临时建议。
-- Playtest_Checklist.md：空白验收表和真人试玩记录。
-- Prompts/：00–08、FIX 和 PLAYTEST 的完整任务。
-- Implementation_Log.md：由 Codex 从 01 起记录真实实施，不在本包伪造进度。
-
-## 资料说明
-游戏规则依据：原始中文基线第 1–10 节、Macro / Project Goals / Idea Backlog。
-模型和工作流说明参考（查阅于 2026-09-24）：
-- OpenAI / ChatGPT Learn，Configuration Reference：`model_reasoning_effort` 可用级别依模型与客户端而定。
-  https://developers.openai.com/codex/config-reference
-- OpenAI / ChatGPT Learn，Custom instructions with AGENTS.md：项目级持久约束。
-  https://developers.openai.com/codex/guides/agents-md
-- OpenAI / ChatGPT Learn，Best practices：明确目标、上下文、约束和完成条件；复杂任务先计划，并做测试与审查。
-  https://developers.openai.com/codex/learn/best-practices
-
-本包的具体分阶段、档位分配、临时游戏参数和人工验收是本次建议，不是引用来源已经测试过的结论。
+S00/S01/S02 and prior iteration evidence remains dated in the one Implementation Log. Ignored `Logs/` and `Builds/` do not travel to another machine through Git. Physical Play Mode testing on another computer is separate from local virtual-input evidence.

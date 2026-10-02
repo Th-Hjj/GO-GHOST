@@ -1,6 +1,6 @@
 # GO GHOST — 游戏设计基线
 
-> **Historical baseline (2026-09-24), original body preserved.** Thomas's later global rules and MSP update supersede conflicting text below: Torso replaces Spine; the target requires a two-phase gun/blade Boss with readable P2 camouflage; hidden augmentations can use persistent achievement unlocks; Shift remains Dodge and E is the main augmentation action; 0% victory remains a design goal rather than an MSP sprint gate. See [../VerticalSlice.md](../VerticalSlice.md) for current confirmed direction and [Implementation_Log.md](Implementation_Log.md) for actual implementation. The companion Macro and extracted text are historical where they conflict with those later instructions.
+> **Historical baseline (2026-09-24), original body preserved.** The canonical current design is [Tower_Design_Override](Tower_Design_Override.md), confirmed by Thomas on 2026-10-02 end of day. Short Tower, action-based P3/A–E, killable NPCs, current permission and Rifle-only rules supersede conflicting text here and in the companion Macro. Read [START_HERE](START_HERE.md); use [Implementation_Log](Implementation_Log.md) for actual implementation. This original baseline is not authority to restore percentage endings, a whole-game single arena or the old catalogue.
 
 **确认日期：2026-09-24**  
 **团队：Thomas Hong、Walker Grupp**  

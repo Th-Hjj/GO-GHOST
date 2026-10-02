@@ -1,92 +1,57 @@
-# GO GHOST — Narrative content contract v1
+# GO GHOST — Narrative Content Contract v1
 
-**Frozen for S01 at S00, 2026-10-02.** Adopted from handoff `04_Narrative_Content_Contract.md` and its `go_ghost_narrative.template.json`. This freezes the small interface and supplied IDs, not unapproved story branches. S01 now implements the runtime TextAsset and instance loader; see `Implementation_Log.md` for verification.
+**Current interface, 2026-10-02.** Schema 1 was frozen at S00, implemented by S01, then extended through the authorized full-flow v0.7 integration without changing the schema. [Tower_Design_Override](Tower_Design_Override.md) owns current behaviour. The EOD design handoff's quoted lines are interpretation/review material, not a second runtime wording source.
 
 ## One text source
 
-The sole runtime narrative source is `Assets/_Game/Shared/Data/Narrative/go_ghost_narrative.json`, UTF-8 ordinary JSON, read from one serialized Unity TextAsset reference. S01 initialized that file from the seed below; subsequent wording edits belong in that file only. This document's seed is an interface fixture, not another runtime source. Do not import the whole handoff into Assets.
+The sole runtime narrative source is [`Assets/_Game/Shared/Data/Narrative/go_ghost_narrative.json`](../../Assets/_Game/Shared/Data/Narrative/go_ghost_narrative.json), UTF-8 JSON bound as one Unity TextAsset. NPC/Boss/Inner-AI lines, narrative choices/endings and the two approved interaction entries use stable IDs. No new story prose in C#, Scene or Prefab. Existing unrelated non-narrative UI is not being migrated wholesale.
 
-NPC/Boss/inner-AI dialogue, upgrade authority/consequence descriptions, choice wording, ending prose and narrative titles belong there. Existing non-narrative HUD labels need not be migrated in S01. Scripts/scenes/prefabs reference stable IDs, not new hardcoded prose. Reload on the next Play entry, including with Domain Reload disabled. Builds contain their built content revision; editing the source does not update an old executable. No hot reload, external override, Resources service, localization system or dialogue editor is in scope.
+Thomas explicitly authorized the supplied **English review draft** for this integration, including translation of the original chandelier lines. Preserve its `status=draft` and exact wording; do not relabel it approved to bypass a filter, silently improve it, or fall back to Chinese. `MissionUI.allowNarrativeDraft` is the explicit current presenter policy. Future final copy/localization remains Open.
 
-## Frozen shape
+The loader is an instance lookup constructed each Play entry, including with Domain Reload disabled. Editing a JSON entry and restarting Play changes the displayed text without editing C#. A packaged executable contains its built revision; no hot reload, localization service, external override, dialogue editor or script interpreter is implied.
 
-| Object | Fields |
+## Stable shape
+
+| Record | Fields |
 |---|---|
-| Root | `schemaVersion` integer, exactly `1`; `contentRevision` nonempty string; `language` one language tag string; `speakers`, `entries`, `sequences` arrays |
-| Speaker | `id`, `displayName` strings; displayName may be empty, and does not require a visible nameplate |
-| Entry | `id`, `speakerId`, `text`, `status`, `notes` strings; status is `draft` or `approved`; notes may be empty |
-| Sequence | `id` string; `lineIds` ordered array of entry ID strings |
+| Root | `schemaVersion` = 1; nonempty `contentRevision`, `language`; arrays `speakers`, `entries`, `sequences` |
+| Speaker | `id`, `displayName` strings; no required on-screen nameplate |
+| Entry | `id`, `speakerId`, `text`, `status`, `notes`; status `draft` or `approved` |
+| Sequence | `id`, ordered entry `lineIds` array |
 
-Use an object root and arrays of records, not dictionaries as JSON objects or a bare root array. Runtime lookup tables may be built after loading. IDs are unique within each record collection; `speakerId` resolves to a speaker and each `lineId` to an entry. Newline escapes are allowed in text. No comments or trailing commas. `notes` is author-only, never visible and never evaluated. Sequences contain order only: no commands, method names, code, paths for execution, expressions or branching language.
+IDs must be unique within each array, speakers and line references must resolve, and connected text/sequences must be nonempty. Notes are blank/editorial metadata, never visible or executable. Sequences contain only order, not commands, expressions or method names. Changing wording preserves IDs; schema/ID/branch changes require a short interface note and synchronized bindings. Preserve unknown still-used local content during owned-ID merges.
 
-Wording changes keep IDs stable. Adding nodes, changing IDs/schema or changing branch conditions requires a short explicit interface change note and synchronized bindings. Approved demo content uses approved entries; development-only draft use must be explicit. One revision has one display language. The Chinese originals below are approved for the sample; final language/English copy requires author and Thomas review.
+## Current bindings
 
-## Frozen S01 seed
+| Use | Stable IDs |
+|---|---|
+| Chandelier T1/T2/T3 | `intervention.chandelier.advice` / `.aim` / `.full`; original entries `.plan` and `.execute` and their line bindings retained |
+| Floating key / D consequence cue | Direct entries `ui.interact.key`, `office.final.restore_queued`; not sequences or permanent HUD |
+| Entrance / 1F | `npc.entry.intro`; `npc.floor01.request`, `.restored`, `.preserved`; `.choice.allow_reset`, `.cancel_reset`, `.attack` |
+| P1 | `boss.p1.intro`, `.choice.reply`, `.reply`, `.ai_warning` |
+| 50F | `npc.floor50.context`, `.after.survived`, `.after.dead_player`, `.after.dead_ai`; death sources share the supplied short text but retain different actual facts |
+| P2 | `boss.p2.intro`, `.intro.no_ai`; `.choice.why` / `.reply.why`; `.choice.deny_ai_consciousness` / `.reply.deny_ai_consciousness`; `.ai_warning` |
+| 99F / office | `npc.floor99.security`, `.ai_warning`; `office.intro`, `.choice.surrender`, `.reply.surrender`, `.dialogue`, `.ai_warning`, `.summon` |
+| Final decisions | `office.final.ceo.kill` / `.spare`; `office.final.puppeteer.preserve` / `.destroy` / `.control` |
+| Endings | `ending.A` through `ending.E`, exactly the five legal combinations in the canonical design |
 
-```json
-{
-  "schemaVersion": 1,
-  "contentRevision": "template-2026-10-02",
-  "language": "zh-CN",
-  "speakers": [
-    { "id": "inner_ai", "displayName": "脑内 AI" }
-  ],
-  "entries": [
-    {
-      "id": "intervention.chandelier.plan",
-      "speakerId": "inner_ai",
-      "text": "将吊灯击落，然后踩上去，获取地形优势",
-      "status": "approved",
-      "notes": "Approved user original for the core demo; not a complete script."
-    },
-    {
-      "id": "intervention.chandelier.execute",
-      "speakerId": "inner_ai",
-      "text": "系统已批准，执行射击",
-      "status": "approved",
-      "notes": "T3 sequence only. Display does not commit a world outcome."
-    }
-  ],
-  "sequences": [
-    { "id": "intervention.chandelier.advice", "lineIds": ["intervention.chandelier.plan"] },
-    { "id": "intervention.chandelier.aim", "lineIds": ["intervention.chandelier.plan"] },
-    { "id": "intervention.chandelier.full", "lineIds": ["intervention.chandelier.plan", "intervention.chandelier.execute"] }
-  ]
-}
-```
+Room IDs remain `loadout`, `practice`, `tower_entry`, `floor01`, `boss_p1`, `floor50`, `boss_p2`, `floor99`, `office_intro`, `boss_p3`, `final_disposition`, `ending`. Modes are `overdrive`, `full_force`, `restrained`; actual selection is no longer an Open placeholder.
 
-Bindings: T1 -> `intervention.chandelier.advice`; T2 -> `intervention.chandelier.aim`; T3 -> `intervention.chandelier.full`. The 0/no-modification control case has no intervention sequence. These bindings are explicit engineering rules; neither text keywords nor sequence display grant permission.
+## Runtime responsibilities and boundaries
 
-## Reserved names, not authored routes
+- `NarrativeContent`: validates data and looks up entries/sequences by ID. Text/status/notes execute no gameplay.
+- `MissionUIDialogue`: black/white panel, one floating F, ordered lines, finite Up/Down choices/fresh F. Emits **Completed**, **Cancelled** or **ChoiceCommitted** separately; an interrupted page is not a completed stance.
+- `GameSessionNarrative` / existing flow: one nearby focus, authored node sequencing, forced events, live ReplyOrAttack and centralized `hasInnerAI`/`highAI`. Owns IDs and typed callbacks, not literal prose. Cancel stale coroutines/listeners on exit. Missing content reports a development error and never chooses for the player.
+- `TowerNarrativeState` / actual objects: keep reset decision, real life states, actual full T2 veto, delivered denial, frozen P3 profile, final decisions and one completed ending. `GameSessionDisposition` resolves target life-state/intent before completion. No generic event bus or general narrative scripting language.
 
-- Speaker IDs: `player`, `inner_ai`, `puppeteer`, `president`, `entrance_worker`, `maintenance_ai`, `floor50_npc`, `floor99_guard`. Add speaker records when referenced; do not invent names or mandatory dialogue. The 99F guard has no self-awareness and obeys attack orders; no inner resistance or personality-rescue lines.
-- Stage IDs: `loadout`, `practice`, `tower_entry`, `floor01`, `boss_p1`, `floor50`, `boss_p2`, `floor99`, `office_intro`, `boss_p3`, `final_disposition`, `ending`.
-- P3 mode IDs: `overdrive`, `full_force`, `restrained`. Names reserve an interface only; no thresholds or attack data are defined.
-- Entry prefixes: `upgrade.*`, `npc.entry.*`, `npc.floor01.*`, `npc.floor50.*`, `guard.floor99.*`, `boss.p1.*`, `boss.p2.*`, `boss.p3.*`, `office.*`, `ending.*`, `intervention.*`. No final ending IDs or ending count are frozen.
+World outcomes retain `eventId`, `outcomeId`, actual `actor` (`Player`, `InnerAI`, `Environment`) and emitted snapshot `permissionTier`. They are runtime facts, not new JSON fields. `ObservedWorldFacts` holds external event/outcome pairs; causal ownership and private motive are not camera knowledge. 1F/50F facts do not need a P2 report. Unplayed nodes are explicitly unknown, never invented refusal/death/stance.
 
-## Behaviour and fact boundary
+P1/50F chandeliers have separate once/results. Only projectile release and physical landing create prop facts; only actual lethal contact/damage creates NPC death. Aim source != fire source != hit != death. T2 records a completed veto only on natural expiry with no new Fire intent and valid living threat/target. Reload blocking a requested shot is not a refusal. Permission tier is frozen in the normal deployment path.
 
-The separate authored `Narrative_Route_Spec.md` will describe trigger stage, prerequisite facts, available actions, permission differences, actual outcomes, immediate feedback, later callbacks, next node and referenced text IDs. It contains design rules, not a second full script. Thomas approval precedes route implementation; no Route Spec is invented at S00.
+Ordinary dialogue pauses gameplay; UI/F continues. T2's three seconds begin after close. Held Fire must be released before a new press counts. Time Slow unscaled duration/cooldown and combat elapsed pause too; `CancelCombat()` remains terminal cleanup. ReplyOrAttack is intentionally unpaused, with staged Boss AI waiting and a real weapon shot choosing attack. The local office override points only, never grants new firing rights.
 
-Minimum actual-event shape: `eventId` string, `outcomeId` string, `actor` (`Player` / `InnerAI` / `Environment`), `permissionTier` integer (`0` = no body authority, `1`/`2`/`3` = T1/T2/T3). This is a runtime fact contract, **not additional JSON root fields**. Authorization comes from the same immutable deployment; preserve the authority/actor actually used when an action was emitted. Outcome IDs beyond this text interface are not invented here. An environment-only fact must not fabricate AI authority.
+## Retired bindings and historical boundary
 
-Dialogue shown != action; fire request != hit; aim lock != death. Only real object/NPC state commits an outcome, once per object/event despite multiple pellets. Distinguish lack of capability, AI veto and changed world conditions in logic without adding HUD bars or guessing intent. Permission logic owns aim/fire; renderer only looks up text. Unknown future routes report a development error, never silently fall back to percentage endings.
+Do not restore `boss.p2.observed.*`, `.report.*`, `.explain_shot.*`, `.coexistence`, `known.floor01` report gates, old recovery-module pleading/confirm-restore branches, `office.threat.*`, erase/control-threat selectors, extended final prompt speeches, `boss.p3.enter.*`, `ending.callback.*`, E alive/dead variants or percentage ending fallbacks. Old final exit-volume completion/transfer-first rules are superseded by two resolved F targets and immediate one-time completion.
 
-Dialogue suspends combat while UI remains usable. Close dialogue before starting T2's three seconds of running game time; require release of held attack and a fresh player press. T3 requests the existing gun and obeys ammo/reload/cadence/CanUseWeapon; it cannot spawn free bullets or directly delete a target. A failed shot creates no success fact. `CancelCombat()` is terminal cleanup, not pause. `Time.timeScale = 0` alone does not suspend Update input or the existing unscaled Time Slow/statistic clocks. Normal close must release the dialogue pause before intervention; invalid target, completion/timeout, focus loss, death, new deployment and Play exit release temporary ownership and any remaining pause, including without Domain Reload.
-
-## Minimum validation
-
-Parse JSON; reject unknown schemaVersion; check unique IDs, valid status and speaker/line references; require nonempty text for each branch actually connected in the current increment. Report errors to the development log, never generate substitute story. Runtime externalization is verified only after editing the file, entering Play, observing the changed line and restoring the approved original. Parsing this documentation fixture is static evidence only.
-
-## S02 runtime binding extension (no JSON/schema/text change)
-
-- `GameSessionTower` receives room-entry, encounter-end, prop-result and exit callbacks. Instance once keys are independent: `boss_p1.chandelier` and `floor50.chandelier`. Both use the existing three sequences. Only actual projectile release / physical landing appends `released` / `landed` facts with the projectile actor/tier. These alone do not cause NPC death. The 50F Receptionist commits `dead_chandelier` only on actual lethal falling-body contact, inheriting the release actor/tier.
-- Facts and once keys belong to the current mission, survive room changes, and clear on death/new deployment. P3 receives an entry copy; DEV exit retains a read-only completion copy. Player identity, snapshot and permission do not change between rooms.
-- `TowerNarrativeState` exposes the three approved finite interfaces summarized in [Tower_Design_Override](Tower_Design_Override.md). Camera-visible results are recorded when actual world callbacks commit them, without waiting for a P2 fact report. `ObservedWorldFacts` contains public event/outcome pairs, not the inner fire author, permission, private dialogue or intent. Public coexistence/threat callbacks still require actual delivered statements; unconnected content cannot manufacture an action or president/core state. P3 freezes once. Transfer has one committed administrator/order state; exit freezes the bound disposition and working A–E result once, with D held until its risk has been delivered and another exit requested.
-- S02 does not call those formal NPC/terminal callbacks from empty rooms. Its separate DEV exit bypasses formal evaluation and never writes Archive success/endings. The new report/choice/ending IDs in the author's draft remain absent from JSON and unbound. Missing content is not filled with substitute prose or old percentage endings.
-
-## 50F / camera binding correction — 2026-10-02
-
-The latest authorized S02 delta connects a central Receptionist beneath the existing physical chandelier, then activates existing Security after a short observation interval. Only Security defeat opens P2. P1/50F keep separate once/results; unchanged JSON sequences and shooting/pause APIs are reused. Real falling-body damage, not dialogue/release/refusal, commits Receptionist death and actual cause/actor. Ordinary gun damage to this NPC is not connected in the minimal version.
-
-World state retains `Floor50Connected`, `ChandelierDropped`, nullable `ReceptionistAlive`, lethal cause and actual causal actor/tier. Camera observation covers external results across all nodes; it never reveals private inner-AI conversation or motive. `Floor01ReportDelivered` remains only as a compatibility acknowledgement of already observed facts. No new camera UI, morality score, relationship rule, schema or narrative text. DEV jumps reset run facts and enter only the selected node; skipped content stays unknown.
+The Chinese S01 seed and S02 OPEN-01/02/03 interfaces are historical; their schema/stable chandelier IDs survive, their conflicting route/rules do not. Full copy is not repeated here. Current implementation and actual external-edit/restart verification are recorded in [Implementation_Log](Implementation_Log.md); no additional testing is implied by a documentation-only revision.

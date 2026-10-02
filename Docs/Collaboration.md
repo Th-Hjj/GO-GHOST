@@ -2,7 +2,7 @@
 
 Two developers, one Unity project, one GitHub repository (`Th-Hjj/GO-GHOST`). GitHub `main` is the only shared source of truth. The rules below are deliberately light. Their purpose is to avoid losing work and to avoid two people, two machines, or two agents editing the same Unity file at the same time.
 
-Last updated: 2026-09-25. Current confirmed design and MSP strategy live in `Docs/VerticalSlice.md`; the original 2026-09-24 Chinese baseline is retained as history where superseded. Progress lives only in `Docs/GO_GHOST_VS/Implementation_Log.md`. Items marked **Proposed** are waiting for confirmation.
+Last updated: 2026-10-02. Current confirmed design lives in `Docs/GO_GHOST_VS/Tower_Design_Override.md`; `START_HERE.md` gives the read order and `Docs/VerticalSlice.md` summarizes MSP strategy. The original baseline/Macro/prompts are Historical where superseded. Progress lives only in `Docs/GO_GHOST_VS/Implementation_Log.md`. Items marked **Proposed** are waiting for confirmation.
 
 ## 0. Current period: Thomas leads (from 2026-09-25)
 
@@ -41,7 +41,7 @@ Formal game content is never split by developer name. Create a new `Lxx_Name` or
 Before starting a task, say in chat which files or folders you will touch, which shared files may be affected, and who integrates the final scene.
 
 At any one time only one person edits a given:
-- `.unity` scene. `Cyberpunk World.unity` also holds all slice UI (`SessionCanvas`, `EventSystem`), so a UI change is a scene change.
+- `.unity` scene. `Cyberpunk World.unity` binds GameSession/MissionUI; UI is built at runtime, and changes to scene bindings still require coordination.
 - shared `.prefab` (Player, Bullet, Enemies/Enemy_Basic) and `Levels/L01_Mission/Prefabs/CombatAttempt.prefab`, which nests Player and Enemy
 - `Assets/Settings/InputSystem_Actions.inputactions`
 - `Assets/Settings/` render pipeline assets and `Build Profiles/`
@@ -121,7 +121,7 @@ If Settings.json (IET framework) is marked modified but the diff is empty, compa
 ## 7. One developer, several machines
 
 Thomas works on a laptop and a Windows PC. **Proposed** rules for moving between machines:
-1. Before leaving a machine: save in Unity, commit, and push. Finished work goes through a branch and pull request as usual. Unfinished work goes to your own branch (for example `wip/thomas-boss-attack`), not to `main`.
+1. Before leaving a machine: save in Unity, commit, and push. During Thomas's current solo-lead period, verified authorized work goes directly to main under the standing delivery authorization in AGENTS/CLAUDE. Unfinished work goes to your own branch (for example `wip/thomas-boss-attack`), not to `main`.
 2. On the next machine: close Unity and any agent working in the folder, pull, then open Unity.
 3. Never copy `Library/`, `Temp/`, `Logs/`, or `UserSettings/` between machines. Each machine rebuilds `Library/` on the first open (several minutes).
 4. Set up every new machine once. None of this is stored in the repository:
@@ -136,7 +136,7 @@ Thomas works on a laptop and a Windows PC. **Proposed** rules for moving between
 1. Install Unity 6000.6.0f1 through Unity Hub.
 2. Install Git LFS and run `git lfs install` before cloning.
 3. Clone, then open the repository root as a Unity project with 6000.6.0f1. Do not upgrade the Unity version.
-4. Entry scene: Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity. Play starts a human/Assault Rifle officer in practice; walk through the door for combat. Both outcomes show Result; victory then shows Ending. Later missions pass through Main Menu -> Upgrade -> practice. Current controls: README.md.
+4. Entry scene: Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity. Play starts at editable Loadout; BEGIN OPERATION seals the snapshot and enters practice, then the Tower route. Two final dispositions resolve victory/ending; death returns through Result/Main Menu to a new officer and fresh Loadout/practice. Current controls: README.md.
 5. Current state and what has actually been tested: `Docs/GO_GHOST_VS/Implementation_Log.md`. All numbers are TEST values (`Prototype_Test_Profile.md`).
 
 ## 9. Before you push or merge

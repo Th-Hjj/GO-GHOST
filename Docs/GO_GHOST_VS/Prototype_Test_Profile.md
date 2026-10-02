@@ -1,6 +1,27 @@
-# GO GHOST — Slice 临时测试方案
+# GO GHOST — Current TEST Profile
 
-**Current flow — 2026-10-01:** Launch -> human/Assault Rifle practice -> door -> Boss. Later missions: Main Menu -> Upgrade -> practice -> door -> Boss. Both outcomes stop on Result; defeat continues to Main Menu, victory continues to the winning snapshot's HUMAN ENDING (<50%) or AI ENDING (>=50%) and then Main Menu. Practice shots/time are excluded; the door is the refill/reset boundary. Police Records reset on launch; endings, achievement and hidden unlocks persist. The 2026-10-02 override keeps only Assault Rifle with automatic reload. Ammo/reloading text accompanies the HP bars. The blue terminal implementation conflicts with the still-written black/white UI restriction; reconcile before further UI work. Older rows below are historical wherever the current sections or VerticalSlice's top override supersede them.
+**2026-10-02 full-flow greybox.** These are inspected, replaceable implementation values, not final design. [Tower_Design_Override](Tower_Design_Override.md) owns confirmed behaviour; [Implementation_Log](Implementation_Log.md) owns actual evidence. Do not rebalance from this documentation update.
+
+| System | Current TEST value / ownership |
+|---|---|
+| Weapon | Assault Rifle only: 12 damage, .25 s interval, 10 rounds, 1.2 s automatic reload, unlimited reserve; `LoadoutRules.Weapon` |
+| Rifle projectile / Rapid Fire | Speed 18; existing Right Arm interval / 1.75; no replacement weapon implied |
+| Player | Shared HP 150, jump velocity 12; movement comes from the deployment, not the obsolete tables below |
+| Permission | Snapshot 0/T1/T2/T3. T2 three scaled gameplay seconds after dialogue; existing bounded T3 request window three seconds. Pause does not spend either |
+| Time Slow | Existing Q prototype: 3 unscaled gameplay seconds, 10 s start interval, hostile rate .25; narrative pause compensates both deadlines |
+| Local NPC life | Worker/Maintenance/Receptionist 20 HP; falling chandelier 20 actual impact damage; CEO/core 24 HP in greybox |
+| 1F staging / focus | Authored walk 2.5 units/s; reset wait .8 s; interaction radius 2.4 units |
+| Room entry | Nine authored room roots after practice; only practice door refills. 50F radio completion or actual pre-call death activates guard; old two-second timer is unused |
+| P3 shared profiles | Restrained cadence ×1.35 / recovery ×1.6 / burst 2; Full Force ×1 / ×1 / 3; Overdrive ×.65 / ×.6 / 5. Inspector-editable multipliers on existing attacks; not final moves or balance |
+| Result | Both final F targets resolved -> exact A–E; no percentage threshold. DEV outcomes skip normal Archive |
+
+Current independent Arm-Blade, Drone, Rapid Fire, Double Jump, Hover, Air Dash, Time Slow and Targeting AI options are retained prototypes, **not** assigned final inherited body tiers. Body weights are legacy descriptors and do not select P3/endings. Final body/Hidden design remains Open.
+
+Default gate: compile + focused requested path + affected continuation/cleanup, using [Playtest_Checklist](Playtest_Checklist.md). No removed-weapon test requirements, no old broad matrix or Build/package by default.
+
+## Historical profiles below — not current authority or acceptance requirements
+
+Every following dated section is retained as historical tuning/context, including headings that once said current. Old two-phase same-room flow, platforms, catalogue, percentage endings and test gates must not be reapplied. Look at live source before using any old numeric value; current sections above and canonical design take precedence.
 
 ## Camo Rush — source values, 2026-10-01
 
@@ -22,7 +43,7 @@ Rifle bullet speed 18. Rapid Fire (Right Arm): interval / 1.75. Reload is automa
 Air Dash: same values as the ground dash (3 units in .18 s, .25 s i-frames, .8 s shared start interval), one use per airtime.
 Arm-Blade: E, .35 s swing window, 1 s start interval, box 1.7 x 1.7 in front along the aim, 20 damage once per target per swing, deflects any hostile bullet inside the box without changing its damage.
 
-## Current MSP values — Phase 10 checkpoint, 2026-09-25
+## Historical MSP values — Phase 10 checkpoint, 2026-09-25
 
 These values describe the current prototype, not final balance. Phase 10 retained the Phase 1–9 gameplay values. This section supersedes conflicting historical sections below (Spine/Shift replacement, single-phase attacks, TEST-v0 catalogue and proposed ending thresholds). Confirmed direction is in [../VerticalSlice.md](../VerticalSlice.md); test evidence stays in [Implementation_Log.md](Implementation_Log.md).
 
@@ -57,7 +78,7 @@ P1 cycle: Burst -> Marked -> Ghost -> low Sweep -> high Sweep -> repeat. P2 cycl
 中文基线第 3、5、7、8、9 节与 Idea Backlog 明确保留了这些未决项。此表只为让开发可继续，并让测试可复现。
 Prompt 00 审查工程适配性；Prompt 01 开始实现即按本测试方案推进。不能借它改变已确认规则。改参数时记录原因与版本，不覆盖原设计来源。
 
-## Presentation pass — current arena / color / timing overrides
+## Historical presentation pass — former arena / color / timing overrides
 
 These presentation values supersede the TEST-v2 red-only appearance and old arena below. Combat stats, augmentation effects, single-phase attack cycle and immutable deployment data remain unchanged.
 

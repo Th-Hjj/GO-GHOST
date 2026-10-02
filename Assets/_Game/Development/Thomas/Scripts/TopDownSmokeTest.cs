@@ -117,6 +117,7 @@ public partial class TopDownSmokeTest : MonoBehaviour
             case "upgrade-look": yield return UpgradeLookOnly(); break;
             case "archive-final": yield return ArchiveFinal(); break;
             case "boss-contact": yield return BossContact(); break;
+            case "boss-head-jump": yield return BossHeadJump(); break;
             // Earlier numerical gates are historical; TEST-v2 uses combat-v2.
             case "movement": yield return Movement(); break;
             case "shooting": yield return Shooting(); break;

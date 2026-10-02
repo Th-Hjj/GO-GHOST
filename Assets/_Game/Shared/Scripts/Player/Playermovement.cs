@@ -37,10 +37,11 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
     /// <summary>Current Move input (length 0..1), for other systems that want the movement direction.</summary>
     public Vector2 MoveInput => moveInput;
 
-    /// <summary>True while the feet find an upward-facing Ground surface. Gates jump and ground dodge.</summary>
+    /// <summary>True on an upward-facing Ground surface or a solid enemy supporting the player. Gates jump and ground dodge.</summary>
     public bool IsGrounded { get; private set; }
 
     private Rigidbody2D rb;
+    private readonly ContactPoint2D[] supportContacts = new ContactPoint2D[8];
     private PlayerDodge dodge;
     private PlayerInputReader input;
     private OfficerIdentity officer;
@@ -119,6 +120,21 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
             var hit = Physics2D.Raycast(groundCheck.position + Vector3.up * groundCheckRadius,
                 Vector2.down, groundCheckRadius + 0.08f, groundLayer);
             IsGrounded = hit.collider != null && hit.normal.y > 0.5f;
+            if (!IsGrounded)
+            {
+                // Enemy bodies can physically support the officer without belonging to Ground.
+                // Require a real upward contact: nearby bodies, side/ceiling contacts, triggers and
+                // temporarily ignored Boss collision pairs must not grant a jump or refill air resources.
+                int count = rb.GetContacts(supportContacts);
+                for (int i = 0; i < count; i++)
+                {
+                    var contact = supportContacts[i];
+                    if (contact.normal.y <= 0.5f || contact.collider == null
+                        || contact.collider.GetComponentInParent<Enemy>() == null) continue;
+                    IsGrounded = true;
+                    break;
+                }
+            }
         }
 
         if (IsGrounded)

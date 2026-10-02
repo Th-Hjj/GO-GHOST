@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-10-02 — Fix jumping from the Boss's head
+
+- Baseline: clean `main` at `2148111`, matching fetched `origin/main`; Unity 6000.6.0f1. Thomas reported that standing on the Boss prevents jumping. Targeted Play Mode reproduction confirmed solid head contact with `IsGrounded=false`; a real Space press produced **0.000** vertical rise. Ordinary floor jumping still worked.
+- Cause: `PlayerMovement` only queried the Ground layer beneath the feet, while the Boss's solid supporting collider belongs to Enemy. Added an allocation-free contact fallback to the existing grounding path: a real upward-facing contact with an `Enemy` body counts as support. Side/underside contacts and ignored collision pairs do not qualify; the existing upward-velocity gate prevents a second grounded jump during takeoff. Existing jump strength, input, layers, prefabs, scenes and Boss attacks are unchanged.
+- Files: `Shared/Scripts/Player/Playermovement.cs`, the existing `Development/Thomas/Scripts/TopDownSmokeTestContact.cs` plus its dispatcher, and this log. The small `boss-head-jump` scenario uses the existing isolated Archive/input driver, controlled stationary Boss placement and real player physics/Space presses. No new harness, full historical suite, build or later-stage work.
+- **Verification:** compile PASS; targeted `boss-head-jump` **8 PASS / 0 FAIL** after the fix. Standing head contact now reports grounded; Space produced **1.496** units of rise with positive vertical velocity. No extra human air jump, side/underside false grounding or support from an ignored Boss collision pair. Ordinary floor jump and death -> Continue -> redeploy passed. Local evidence: `Logs/BossHeadJump/before.txt` and `after.txt`. Hardware-input replay and natural moving-Boss combat are **NOT RUN**; controlled placement proves the contact/jump path. Scene/prefab/settings/package files unchanged; no build produced.
+- Editor returned to clean Edit Mode, time scale 1, no compilation failure/current console errors. One Pipeline evaluation timed out during script reload; it recovered before the reproduction and final regression and was not a gameplay exception.
+
 ## 2026-10-02 — Main delivery authorization
 
 - Thomas will perform manual tests on another computer and explicitly authorizes committing/pushing each successfully completed, validated stage to `main`. Recorded the standing authorization identically in AGENTS/CLAUDE; unrelated work and later stages remain outside that authorization.

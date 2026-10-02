@@ -2,6 +2,19 @@
 
 **Strict UI/flow override after the reset:** Combat values below remain unchanged. Launch opens Main Menu; START MISSION opens the editable Upgrade screen; BEGIN OPERATION deploys; both outcomes open Mission Result; CONTINUE returns to Main Menu. UI uses black/white only, with exactly two unlabeled combat HP bars and four frozen result values (elapsed time, remaining Boss/Player HP, player bullet accuracy). HEAD maps to Brain; TORSO remains the core body slot; WEAPON is the seventh, separate equipment slot with the existing Basic Gun choice. Archive uses the three specified tabs; top-left BACK on Archive and Upgrade returns to Main Menu. TEMP officer generation, run records and two TEMP ending IDs (see Archive row). See [../VerticalSlice.md](../VerticalSlice.md) for the exact permitted content and [Implementation_Log](Implementation_Log.md) for executed checks. The Phase 10 standalone predates this UI.
 
+## Weapons and Arm-Blade — TEST values, 2026-10-01
+
+Supersedes the single-gun numbers below. All values live in `LoadoutRules.Weapon` / `PlayerCounterArm` and are replaceable.
+
+| Weapon | Fire | Damage | Interval | Magazine | Reload | Notes |
+|---|---|---:|---:|---:|---:|---|
+| Assault Rifle | hold | 12 | .25 s | 24 | 1.2 s | previous gun numbers; default |
+| Sniper | per press | 45 | 1.0 s | 4 | 1.8 s | one projectile |
+| Shotgun | per press | 6 x 6 pellets | .8 s | 5 | 1.6 s | fixed 25 degree fan, one round per pull |
+
+Bullet speed 18 for all. Rapid Fire (Right Arm): interval / 1.75. Reload is automatic on an empty magazine; unlimited reserve.
+Arm-Blade: E, .35 s swing window, 1 s start interval, box 1.7 x 1.7 in front along the aim, 20 damage once per target per swing, deflects any hostile bullet inside the box without changing its damage.
+
 ## Current MSP values — Phase 10 checkpoint, 2026-09-25
 
 These values describe the current prototype, not final balance. Phase 10 retained the Phase 1–9 gameplay values. This section supersedes conflicting historical sections below (Spine/Shift replacement, single-phase attacks, TEST-v0 catalogue and proposed ending thresholds). Confirmed direction is in [../VerticalSlice.md](../VerticalSlice.md); test evidence stays in [Implementation_Log.md](Implementation_Log.md).

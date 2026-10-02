@@ -208,6 +208,8 @@ public class CyberpsychoBoss : MonoBehaviour
     private bool CrosscutExecuting => State == AttackState.CrosscutFirst || State == AttackState.CrosscutSecond;
     private bool CrosscutTelling => State == AttackState.CrosscutWarning || State == AttackState.CrosscutGap;
     private GameObject highCPlatform;
+    private SfxSet sfx;
+    private AttemptPresentationVfx vfx;
     private Bounds highCBounds;
     private bool BlackoutActive => State >= AttackState.BlackoutSignal && State <= AttackState.BlackoutRecovery;
     private bool HighCMarked => State >= AttackState.BlackoutMark && State <= AttackState.BlackoutBreakDelay;
@@ -220,6 +222,8 @@ public class CyberpsychoBoss : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         body = GetComponent<SpriteRenderer>();
         bossCollider = GetComponent<Collider2D>();
+        sfx = GetComponentInParent<SfxSet>();
+        vfx = GetComponentInParent<AttemptPresentationVfx>();
         visualParts = GetComponentsInChildren<SpriteRenderer>(true);
         visualColors = new Color[visualParts.Length];
         for (int i = 0; i < visualParts.Length; i++) visualColors[i] = visualParts[i].color;
@@ -403,6 +407,7 @@ public class CyberpsychoBoss : MonoBehaviour
                 if (State != AttackState.BlackoutFinalSlash && playerCounter != null && playerCounter.TryCounter())
                 {
                     BladeParries++;
+                    if (vfx != null && playerCollider != null) vfx.CounterSuccess(playerCollider.ClosestPoint(rb.position), Vector2.right * -chargeDirection);
                     bool crosscut = CrosscutExecuting;
                     RestorePlayerCollision();
                     rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
@@ -497,6 +502,7 @@ public class CyberpsychoBoss : MonoBehaviour
                     break;
                 case AttackState.BlackoutBreakDelay:
                     // This exact scene platform is attempt-local; no HP, debris or persistence.
+                    if (vfx != null && highCPlatform != null && highCPlatform.activeInHierarchy) vfx.HighCBroken(highCBounds);
                     if (highCPlatform != null) highCPlatform.SetActive(false);
                     Enter(AttackState.BlackoutRecovery, .7f);
                     break;
@@ -634,6 +640,28 @@ public class CyberpsychoBoss : MonoBehaviour
         timer = duration;
         ShowWarnings();
         FacePlayer();
+        // Presentation only, once per actual state entry. Never an attack, damage or timing authority.
+        if (vfx != null)
+        {
+            vfx.SetGhosting(next == AttackState.GhostMove || next == AttackState.BlackoutRun || next == AttackState.BlackoutFinalSlash);
+            if (bladeVisual != null && bladeVisual.activeInHierarchy &&
+                (next == AttackState.SlashExecute || next == AttackState.CrosscutFirst || next == AttackState.CrosscutSecond
+                 || next == AttackState.DropExecute || next == AttackState.BlackoutFinalSlash))
+                vfx.BladeSlash(bladeVisual.transform.position,
+                    next == AttackState.DropExecute ? Vector2.down : Vector2.right * chargeDirection, .65f);
+        }
+        if (sfx == null) return;
+        // Feedback only, once per actual state entry. Never an attack, damage or timing authority.
+        switch (next)
+        {
+            case AttackState.SlashExecute: case AttackState.CrosscutFirst: case AttackState.CrosscutSecond:
+            case AttackState.DropExecute: case AttackState.BlackoutFinalSlash:
+                sfx.Play(Sfx.BladeSwing); break;
+            case AttackState.BurstWarning: case AttackState.SweepWarning: case AttackState.GhostWarning:
+            case AttackState.SlashWarning: case AttackState.CrosscutWarning: case AttackState.DropWarning:
+            case AttackState.BlackoutSignal: case AttackState.BlackoutFinalWarning:
+                sfx.Play(Sfx.Glitch); break;
+        }
     }
 
     private void Fire(Vector2 direction, float speed, int damage)
@@ -646,6 +674,8 @@ public class CyberpsychoBoss : MonoBehaviour
         var bullet = Instantiate(bulletPrefab, origin, Quaternion.Euler(0f, 0f, angle));
         bullet.Launch(direction, speed, damage, gameObject, timeSlow,
             State == AttackState.BurstWarning || State == AttackState.BurstFire);
+        if (sfx != null) sfx.Play(Sfx.Shot);
+        if (vfx != null) vfx.Muzzle(origin, direction);
         ShotsFired++;
         var sprite = bullet.GetComponent<SpriteRenderer>();
         if (sprite != null) sprite.color = State == AttackState.MarkedLock ? Color.yellow : Color.white;

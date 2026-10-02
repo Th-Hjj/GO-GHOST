@@ -19,13 +19,19 @@ public class BossFight : MonoBehaviour
     private bool combatRunning;
     private bool subscribed;
     private bool started;
+    private bool practicing;
+    private Vector2 playerSpawn;
     private float combatStartedAt;
     public float CombatDuration { get; private set; }
     public int ResultBossHealth { get; private set; }
     public int ResultPlayerHealth { get; private set; }
     public float AccuracyPercent { get; private set; }
 
-    private void Awake() => player.GetComponent<PlayerInputReader>().SetGameplayInputEnabled(false);
+    private void Awake()
+    {
+        playerSpawn = player.transform.position;
+        player.GetComponent<PlayerInputReader>().SetGameplayInputEnabled(false);
+    }
 
     public void Prepare(DeploymentSnapshot snapshot)
     {
@@ -37,15 +43,59 @@ public class BossFight : MonoBehaviour
         player.OnDeath += PlayerDied;
         bossHealth.OnDied += BossDied;
         subscribed = true;
+        var sfx = GetComponent<SfxSet>();
+        if (sfx != null) sfx.BeginScope(); // this attempt's own voices: practice and combat
+        var vfx = GetComponent<AttemptPresentationVfx>();
+        if (vfx != null) vfx.BeginAttempt(); // practice shows the officer's own effects
+    }
+
+    /// <summary>Puts the officer (and its Drone unit) at the arena spawn plus an offset. The attempt lifecycle is untouched.</summary>
+    public void PlacePlayer(Vector2 offsetFromSpawn)
+    {
+        Vector2 target = playerSpawn + offsetFromSpawn;
+        Vector3 delta = target - (Vector2)player.transform.position;
+        player.transform.position += delta;
+        player.GetComponent<Rigidbody2D>().position = target;
+        var drone = player.GetComponent<PlayerDetachedDroneArm>();
+        if (drone != null && drone.Unit != null) drone.Unit.position += delta;
+    }
+
+    /// <summary>Practice room: formal player control with the locked build. No Boss, combat timer or statistics.</summary>
+    public void BeginPractice()
+    {
+        if (Deployment == null || started || practicing) return;
+        practicing = true;
+        // An inactive Boss is the existing "no valid target" case: AI aim holds, the Drone does not fire, nothing can hit it.
+        boss.gameObject.SetActive(false);
+        player.GetComponent<PlayerInputReader>().SetGameplayInputEnabled(true);
     }
 
     public void BeginCombat()
     {
         if (Deployment == null || started) return;
         started = true;
+        if (practicing)
+        {
+            practicing = false;
+            // Practice -> combat boundary only. Practice shots never reach the Boss room or the result statistics.
+            foreach (var bullet in GetComponentsInChildren<Projectile>(true)) bullet.Retire();
+            player.GetComponent<PlayerShooting>().ResetShotCounters();
+            // Same officer and locked build: end running effects, clear cooldowns, refill air resources and HP.
+            player.GetComponent<PlayerDodge>().ResetCooldown();
+            player.GetComponent<PlayerTimeSlow>().ApplyDeployment(Deployment);
+            player.GetComponent<PlayerCounterArm>().ApplyDeployment(Deployment);
+            player.GetComponent<PlayerMovement>().ApplyDeployment(Deployment);
+            player.GetComponent<Rigidbody2D>().linearVelocity = Vector2.zero;
+            player.Heal(player.MaxHealth);
+            boss.gameObject.SetActive(true);
+        }
         combatRunning = true;
         combatStartedAt = Time.unscaledTime;
-        player.GetComponent<PlayerInputReader>().SetGameplayInputEnabled(true);
+        var vfx = GetComponent<AttemptPresentationVfx>();
+        if (vfx != null) vfx.BeginAttempt(); // drops any practice leftovers, then draws for the real combat
+        // Walking in from practice keeps live input; a fresh enable would wait for every key to be released.
+        var reader = player.GetComponent<PlayerInputReader>();
+        if (!reader.GameplayInputEnabled) reader.SetGameplayInputEnabled(true);
         boss.BeginCombat();
     }
 
@@ -80,6 +130,10 @@ public class BossFight : MonoBehaviour
     public void CancelCombat()
     {
         combatRunning = false;
+        var sfx = GetComponent<SfxSet>();
+        if (sfx != null) sfx.EndScope(); // no combat voice survives death, victory or disposal
+        var vfx = GetComponent<AttemptPresentationVfx>();
+        if (vfx != null) vfx.EndAttempt();
         player.StopCombat();
         boss.StopCombat();
         bossHealth.StopCombat();

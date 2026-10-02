@@ -92,6 +92,13 @@ public class PlayerDodge : MonoBehaviour
         if (rb != null) rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
     }
 
+    /// <summary>Ends a running dash and clears the cooldown deadline. Used once when practice hands over to the real combat.</summary>
+    public void ResetCooldown()
+    {
+        CancelDodge();
+        nextDodgeTime = 0f;
+    }
+
     private void OnDisable() => CancelDodge();
 
     private void OnApplicationFocus(bool focused)

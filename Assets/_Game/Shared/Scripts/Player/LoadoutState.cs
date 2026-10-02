@@ -115,12 +115,13 @@ public static class LoadoutRules
         _ => slot.ToString()
     };
 
-    // Fixed six body slots. Never normalize against the currently implemented catalog.
+    // CONFIRMED 2026-10-01: this is the one Cyberization Percentage (0-100). Sum of the six currently equipped body
+    // slots (TEST weights 10/10/10/10/20/40); Weapon is never counted. Never normalize against the implemented catalog.
     internal static float BodyModification(LoadoutEntry[] slots)
     {
         float total = 0f;
         for (int i = 0; i < (int)LoadoutSlot.Weapon; i++) total += slots[i].BodyContributionPercent;
-        return total;
+        return total < 0f ? 0f : total > 100f ? 100f : total;
     }
 
     internal static int Index(LoadoutSlot slot)

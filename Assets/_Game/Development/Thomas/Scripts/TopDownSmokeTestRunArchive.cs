@@ -74,7 +74,7 @@ public partial class TopDownSmokeTest
                 && PoliceArchive.Current.RunRecords[0].SlotItemId(LoadoutSlot.Torso) == LoadoutRules.TorsoSlow, "earlier record unchanged");
             Check("Victory keeps TEMP achievement and Drone unlock", PoliceArchive.Current.HasAchievement(PoliceArchive.TempFirstVictory)
                 && PoliceArchive.Current.HasHiddenAugmentation(LoadoutRules.DetachedDroneArm), "existing placeholder reward");
-            Check("Victory routes one TEMP ending", PoliceArchive.Current.UnlockedEndings.SequenceEqual(new[] { PoliceArchive.TempEndingUnder50 })
+            Check("Victory routes one TEMP ending", PoliceArchive.Current.UnlockedEndings.SequenceEqual(new[] { PoliceArchive.HumanEnding })
                 && victory.BodyModificationPercent == 0, "0% < 50% TEST threshold");
             yield return ClickSessionButton("ResultContinue");
             yield return ClickSessionButton("PoliceArchive");
@@ -82,7 +82,7 @@ public partial class TopDownSmokeTest
             Check("Police Records newest first", GameObject.Find("Records").transform.childCount == 2
                 && GameObject.Find("Record0").GetComponentsInChildren<TMP_Text>().Any(t => t.name == "Value_STATUS" && t.text == "MISSION SUCCESS"), "two cards");
             yield return ClickSessionButton("ArchiveTab2");
-            Check("Case Closure shows TEMP ending IDs", StrictTexts().Contains(PoliceArchive.TempEndingUnder50) && StrictTexts().Length == 5, "IDs only");
+            Check("Case Closure shows TEMP ending IDs", StrictTexts().Contains(PoliceArchive.HumanEnding) && StrictTexts().Length == 5, "IDs only");
             ScreenCapture.CaptureScreenshot("Logs/GO_GHOST_VS/run-archive-case-closure.png");
             yield return ClickSessionButton("ArchiveTab0");
             ScreenCapture.CaptureScreenshot("Logs/GO_GHOST_VS/run-archive-records.png");
@@ -91,7 +91,7 @@ public partial class TopDownSmokeTest
 
             var reloaded = new PoliceArchiveStore(store.FilePath).Load();
             Check("Archive reload keeps everything", reloaded.RunRecords.Count == 2 && reloaded.HasAchievement(PoliceArchive.TempFirstVictory)
-                && reloaded.HasHiddenAugmentation(LoadoutRules.DetachedDroneArm) && reloaded.UnlockedEndings.Contains(PoliceArchive.TempEndingUnder50)
+                && reloaded.HasHiddenAugmentation(LoadoutRules.DetachedDroneArm) && reloaded.UnlockedEndings.Contains(PoliceArchive.HumanEnding)
                 && reloaded.RunRecords[0].SlotItemId(LoadoutSlot.Torso) == LoadoutRules.TorsoSlow && reloaded.RunRecords[1].Success, store.FilePath);
 
             string v1 = Path.Combine(Path.GetDirectoryName(store.FilePath), "v1-" + Guid.NewGuid().ToString("N") + ".json");

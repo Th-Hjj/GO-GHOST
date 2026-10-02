@@ -54,12 +54,12 @@ public static class LoadoutRules
     public static readonly string[] OfferedWeapons = { AssaultRifle, Sniper, Shotgun };
     public static bool IsWeapon(string id) => id == AssaultRifle || id == Sniper || id == Shotgun || id == BasicGun;
 
-    // TEST values. Assault Rifle keeps the previous gun numbers (12 damage, 4 shots/s).
+    // TEST values. Assault Rifle keeps the previous gun damage and rate (12 damage, 4 shots/s) with a 10-round magazine.
     public static WeaponProfile Weapon(string id) => id switch
     {
         Sniper => new WeaponProfile(45, 1f, 4, 1.8f, 1, 0f, false),
-        Shotgun => new WeaponProfile(6, .8f, 5, 1.6f, 6, 25f, false),
-        _ => new WeaponProfile(12, .25f, 24, 1.2f, 1, 0f, true)
+        Shotgun => new WeaponProfile(7, .8f, 5, 1.6f, 6, 25f, false),
+        _ => new WeaponProfile(12, .25f, 10, 1.2f, 1, 0f, true)
     };
     public const string ArmFireRate = "test_v2_arm_rate";
     public const string LegMoveSpeed = "test_v2_leg_speed";

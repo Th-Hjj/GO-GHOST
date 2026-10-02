@@ -75,7 +75,7 @@ public partial class TopDownSmokeTest
         yield return PolishScreen("loadout-human");
         for(int i=0;i<6;i++)yield return ClickSessionButton(((LoadoutSlot)i)+"Button");
         yield return PolishScreen("loadout-rainbow");
-        Check("seven slot UI palette",PolishSlotLabels(flow),"shared palette in selected slot names/outlines; purple Weapon label with white Basic Gun");
+        Check("seven slot UI palette",PolishSlotLabels(flow),"shared palette in selected slot names/outlines; purple Weapon label with white Assault Rifle");
         yield return DeployAndFocus(flow);f=flow.ActiveFight;f.Boss.StopCombat();
         CheckPolishColors(flow,"all equipped");
         Check("unchanged augmented snapshot",flow.Deployment.BodyModificationPercent==100 && flow.Deployment.ShotsPerSecond==10

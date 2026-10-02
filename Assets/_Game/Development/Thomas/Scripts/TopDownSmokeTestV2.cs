@@ -101,8 +101,8 @@ public partial class TopDownSmokeTest
         yield return WaitForState(flow, GameSessionFlow.FlowState.Combat); FocusV2(flow);
         flow.ActiveFight.Boss.StopCombat(); VisualV2(flow, "newgame");
         Check("NEW GAME clears v2 modifiers/session", flow.OfficerIndex == 1 && flow.Deployment.BodyModificationPercent == 0
-            && flow.Deployment.Aim == AimControl.Manual && !flow.AugmentationsUnlocked && flow.Victory == null && flow.Deployment.WeaponId == LoadoutRules.BasicGun,
-            "Officer1 / 0 / manual / locked / Basic Gun / no old victory");
+            && flow.Deployment.Aim == AimControl.Manual && !flow.AugmentationsUnlocked && flow.Victory == null && flow.Deployment.WeaponId == LoadoutRules.AssaultRifle,
+            "Officer1 / 0 / manual / locked / Assault Rifle / no old victory");
         Check("old winning snapshot immutable", record.BodyModificationPercent == 100 && record.WinningDeployment.HasTimeSlow && record.WinningDeployment.ShotsPerSecond == 10, "New Game cannot mutate old record");
         yield return RateAndMovementV2(flow, "New Game");
         Check("one actor pair remains", FindObjectsByType<PlayerHealth>().Length == 1 && FindObjectsByType<CyberpsychoBoss>().Length == 1

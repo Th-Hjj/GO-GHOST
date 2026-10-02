@@ -45,7 +45,7 @@ public partial class TopDownSmokeTest
                 && defeat.OfficerNumber == officer.OfficerNumber && defeat.Age == officer.Age && defeat.Rank == officer.Rank,
                 "officer frozen into record");
             Check("Defeat record holds snapshot and frozen stats", defeat.SlotItemId(LoadoutSlot.Torso) == LoadoutRules.TorsoSlow
-                && defeat.SlotItemId(LoadoutSlot.Weapon) == LoadoutRules.BasicGun && defeat.BodyModificationPercent == f.Deployment.BodyModificationPercent
+                && defeat.SlotItemId(LoadoutSlot.Weapon) == LoadoutRules.AssaultRifle && defeat.BodyModificationPercent == f.Deployment.BodyModificationPercent
                 && defeat.CombatDuration == f.CombatDuration && defeat.BossHealth == f.ResultBossHealth && defeat.PlayerHealth == f.ResultPlayerHealth
                 && defeat.AccuracyPercent == f.AccuracyPercent, $"body={defeat.BodyModificationPercent}% time={defeat.CombatDuration:0.00}");
             Check("Defeat grants no achievement/ending", !PoliceArchive.Current.HasAchievement(PoliceArchive.TempFirstVictory)
@@ -53,7 +53,7 @@ public partial class TopDownSmokeTest
             yield return ClickSessionButton("ResultContinue");
             yield return Frames(3);
             Check("Main Menu shows latest officer/build", StrictText("Value_OFFICER #") == "1" && StrictText("Value_STATUS") == "MISSION FAILED"
-                && StrictText("Value_TORSO") == LoadoutRules.ItemLabel(LoadoutRules.TorsoSlow) && StrictText("Value_WEAPON") == "Basic Gun",
+                && StrictText("Value_TORSO") == LoadoutRules.ItemLabel(LoadoutRules.TorsoSlow) && StrictText("Value_WEAPON") == "Assault Rifle",
                 "latest real run");
             yield return ClickSessionButton("PoliceArchive");
             Check("Police Records shows saved record", GameObject.Find("Records").transform.childCount == 1

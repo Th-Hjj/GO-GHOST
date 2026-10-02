@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-10-02 — Rifle-only weapon removal
+
+- **Baseline/scope:** clean `main` at `1218d86`, equal to fetched `origin/main`; Unity **6000.6.0f1**. Thomas requested complete Sniper/Shotgun removal and explicitly waived old-save compatibility. Only Assault Rifle remains; no old-ID alias, fallback or migration. No Archive data wipe.
+- **Implemented/files:** `LoadoutState` now offers and validates only `assault_rifle`; removed the obsolete Basic Gun alias and multi-weapon profile fields. `PlayerShooting` uses one real projectile per accepted rifle shot, retaining ammo, automatic reload, cadence, sound, muzzle, accuracy and actual Player/InnerAI attribution. Formal Upgrade and F8 already read the same catalogue. Rifle values remain **12 damage / .25 s / 10 rounds / 1.2 s reload**. Updated existing Thomas fixtures and obsolete comments so removed symbols no longer compile into tests; synchronized AGENTS/CLAUDE, current design/test-profile pointers and README.
+- **Verification: PASS.** Live compile succeeded. Focused `weapons`: **14 PASS / 0 FAIL**, covering sole UI choice, rejection of retired IDs, held fire, ammo/reload/movement, practice refill, real damage/accuracy, normal failure/Continue and developer Rapid Fire/reset. Existing `s02-delta-dev`: **25 PASS / 0 FAIL**, including all permission tiers, T2 veto/new Fire, T3 real ammo/projectile/chandelier attribution, pause clocks, legal P2/P3 jumps, upgrades, death and restart cleanup. Fixtures used isolated Archive, virtual input and controlled Boss/death conditions; they prove mechanics/flow, not balance. Evidence: ignored `Logs/GO_GHOST_VS/{weapons,s02-delta-dev}.txt` and `Logs/RifleOnly/upgrade-rifle.png`.
+- **Final checks:** `git diff --check` passes; AGENTS/CLAUDE are identical. Retired weapon strings occur in Assets only as negative-test inputs. Editor returned to clean Edit Mode, time scale **1**, no compilation failure and **0 current console errors**. No scene, prefab, serialized asset, package, project setting or narrative JSON changed.
+- **Known issues / NOT RUN:** no blocking issue found. Physical input replay on the other computer, balance, old full test matrix and standalone Build/package are **NOT RUN**. Deliver through the standing main commit/push authorization and stop.
+
 ## 2026-10-02 — S02 local deltas and F8 developer route / upgrade selection
 
 - **Baseline/scope:** clean `main` at `2c59a61`, Unity **6000.6.0f1**. Thomas requested the 50F/camera deltas, then a developer route jump menu with permission and existing-upgrade selection. No new progression framework, formal NPC story, P3 moves, ending content, packages/settings or build. One writer, existing live Editor; original local implementation preserved.

@@ -114,11 +114,11 @@ public partial class TopDownSmokeTest
             bool picked=menu.SelectUpgrade(LoadoutSlot.LeftArm,LoadoutRules.DetachedDroneArm)
                 && menu.SelectUpgrade(LoadoutSlot.RightArm,LoadoutRules.ArmFireRate)
                 && menu.SelectUpgrade(LoadoutSlot.LeftLeg,LoadoutRules.LegDoubleJump)
-                && menu.SelectUpgrade(LoadoutSlot.Weapon,LoadoutRules.Sniper);
+                && menu.SelectUpgrade(LoadoutSlot.Weapon,LoadoutRules.AssaultRifle);
             menu.RestartCurrent(); yield return WeaponsWait(()=>flow.TowerStageId=="boss_p3",4f); yield return Frames(3);
             Check("restart applies upgrades via fresh snapshot, no Archive unlock",picked && !ReferenceEquals(flow.Deployment,oldSnapshot) && flow.ActiveFight.Player!=oldPlayer
-                && flow.Deployment.HasDetachedDrone && flow.Deployment.HasDoubleJump && flow.Deployment.WeaponId==LoadoutRules.Sniper
-                && flow.ActiveFight.Player.GetComponent<PlayerShooting>().MagazineSize==4 && flow.Deployment.BrainPermissionTier==0
+                && flow.Deployment.HasDetachedDrone && flow.Deployment.HasDoubleJump && flow.Deployment.WeaponId==LoadoutRules.AssaultRifle
+                && flow.ActiveFight.Player.GetComponent<PlayerShooting>().MagazineSize==10 && flow.Deployment.BrainPermissionTier==0
                 && !PoliceArchive.Current.HasHiddenAugmentation(LoadoutRules.DetachedDroneArm),flow.Deployment.WeaponId);
 
             yield return DevJump(flow,"floor50",2);

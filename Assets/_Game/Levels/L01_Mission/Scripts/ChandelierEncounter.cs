@@ -52,7 +52,7 @@ public sealed class ChandelierEncounter : MonoBehaviour, IProjectileReceiver
     {
         if (IsHanging && contact == suspension && projectile.Damage > 0 && Includes(releaseLayers, projectile.OwnerLayer))
         {
-            // First actual contact wins. Pellets arriving afterwards cannot release or record it again.
+            // First actual contact wins. Later projectiles cannot release or record it again.
             IsHanging = false;
             LastActor = projectile.Actor;
             LastPermissionTier = projectile.PermissionTier;

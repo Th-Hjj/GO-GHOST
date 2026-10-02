@@ -60,7 +60,7 @@ public sealed partial class GameSessionFlow : MonoBehaviour
         if (Camera.main != null) { view = Camera.main.transform; arenaView = view.position; }
     }
 
-    // Launch goes straight to the practice room with the default human / Basic Gun build. The Archive is only read.
+    // Launch goes straight to the practice room with the default human / Assault Rifle build. The Archive is only read.
     private void Start()
     {
         if (RequestNewGame()) RequestDeploy();

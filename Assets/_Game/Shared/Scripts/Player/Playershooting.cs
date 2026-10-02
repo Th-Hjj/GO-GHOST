@@ -6,7 +6,7 @@ using UnityEngine;
 /// The muzzle is the player's position offset along the aim by the FirePoint
 /// child's original distance, so aiming is independent of the movement direction.
 /// Deployed officers use the weapon in their locked snapshot (LoadoutRules.Weapon):
-/// Assault Rifle fires while Attack is held, Sniper and Shotgun once per press. Each trigger pull
+/// Assault Rifle fires while Attack is held. Each trigger pull
 /// spends one round from a finite magazine; an empty magazine reloads by itself (unlimited reserve,
 /// no manual reload, no cancel). Nothing fires while reloading.
 /// Without a deployment the legacy behaviour remains: hold Attack to fire at stats.fireRate.
@@ -16,7 +16,7 @@ using UnityEngine;
 // FUNCTION SUMMARY
 // Update()            — keeps the FirePoint child on the muzzle; runs reload and the weapon trigger (or the legacy fire paths).
 // GetMuzzlePosition() — world-space spawn point for a given aim direction.
-// FireWeapon()        — one trigger pull: spends one round and launches the weapon's pellet(s) in a fixed fan.
+// FireWeapon()        — one trigger pull: spends one round and launches one rifle bullet.
 // Fire()              — legacy single bullet without a deployment.
 // FireVolleyRoutine()  — fires stats.volleyShotCount shots stats.volleyShotDelay apart, re-reading aim each shot.
 public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
@@ -38,7 +38,7 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
     private bool HasDeployment => officer != null && officer.Deployment != null;
     public int BulletDamage => HasDeployment ? officer.Deployment.BulletDamage : stats.gunDamage;
     public float FireInterval => HasDeployment ? officer.Deployment.FireInterval : stats.fireRate;
-    /// <summary>Player gun projectiles launched / that hit a living enemy. A Shotgun pull adds one per pellet.</summary>
+    /// <summary>Player gun projectiles launched / that hit a living enemy.</summary>
     public int ShotsFired { get; private set; }
     public int ShotsHit { get; private set; }
     /// <summary>Successful trigger pulls: one round spent, one shot sound and one muzzle flash each.</summary>
@@ -99,9 +99,9 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
                 IsReloading = false;
                 AmmoInMagazine = weapon.MagazineSize;
             }
-            // Held Attack resumes an automatic weapon after the reload; Sniper and Shotgun need a new press.
+            // Held Attack resumes the rifle after automatic reload; the permission input gate still owns consent.
             bool autonomous = input.AutomaticFireRequested;
-            bool trigger = autonomous || (weapon.Automatic ? input.AttackHeld : input.AttackPressedThisFrame);
+            bool trigger = autonomous || input.AttackHeld;
             if (trigger && !IsReloading && AmmoInMagazine > 0 && Time.time >= nextFireTime
                 && FireWeapon(aim, weapon, autonomous ? ProjectileActor.InnerAI : ProjectileActor.Player))
                 nextFireTime = Time.time + FireInterval;
@@ -134,7 +134,7 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
         return (Vector2)transform.position + aimDirection * firePointRadius;
     }
 
-    // One trigger pull = one round, one shot sound and one muzzle flash, however many pellets leave the barrel.
+    // One trigger pull = one round, one projectile, one shot sound and one muzzle flash.
     private bool FireWeapon(Vector2 direction, WeaponProfile weapon, ProjectileActor actor)
     {
         if (!isActiveAndEnabled || !input.GameplayInputEnabled || input.NarrativePaused || bulletPrefab == null || !officer.Deployment.CanUseWeapon) return false;
@@ -142,22 +142,13 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
         AmmoInMagazine--;
         Vector2 spawn = GetMuzzlePosition(direction);
         float facing = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-        for (int i = 0; i < weapon.Pellets; i++)
-        {
-            // Fixed, evenly spaced fan; no random spread.
-            float angle = weapon.Pellets > 1
-                ? facing + Mathf.Lerp(-weapon.SpreadDegrees * .5f, weapon.SpreadDegrees * .5f, i / (float)(weapon.Pellets - 1))
-                : facing;
-            var pelletDirection = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
-            Projectile bullet = Instantiate(bulletPrefab, spawn, Quaternion.Euler(0f, 0f, angle));
-            bullet.Launch(pelletDirection, stats.bulletSpeed, weapon.Damage, gameObject, accuracyOwner: this,
-                actor: actor, permissionTier: Mathf.Max(0, officer.Deployment.BrainPermissionTier));
-            ShotsFired++;
-        }
+        Projectile bullet = Instantiate(bulletPrefab, spawn, Quaternion.Euler(0f, 0f, facing));
+        bullet.Launch(direction, stats.bulletSpeed, weapon.Damage, gameObject, accuracyOwner: this,
+            actor: actor, permissionTier: Mathf.Max(0, officer.Deployment.BrainPermissionTier));
+        ShotsFired++;
         TriggerPulls++;
         if (sfx != null) sfx.Play(Sfx.Shot);
-        // One flash per accepted pull; only the Sniper's visual length differs.
-        if (vfx != null) vfx.Muzzle(spawn, direction, officer.Deployment.WeaponId == LoadoutRules.Sniper ? 1.25f : 1f);
+        if (vfx != null) vfx.Muzzle(spawn, direction);
         return true;
     }
 

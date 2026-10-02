@@ -111,6 +111,7 @@ public partial class TopDownSmokeTest : MonoBehaviour
             case "boss-phases": yield return BossPhases(); break;
             case "blackout": yield return Blackout(); break;
             case "blackout-dodge": yield return BlackoutDodgeOnly(); break;
+            case "terminal-ui": yield return TerminalUi(); break;
             case "boss-contact": yield return BossContact(); break;
             // Earlier numerical gates are historical; TEST-v2 uses combat-v2.
             case "movement": yield return Movement(); break;

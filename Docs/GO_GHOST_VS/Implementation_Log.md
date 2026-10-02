@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-10-01 — B batch 05a: police terminal look for Main Menu / Archive / Result
+
+- Applied Agent B's `05a.patch` unchanged (hash matches B's manifest; `git apply --check` first): `MissionUI` becomes partial, new `MissionUITerminal` and `MissionTerminalFrame`. Main Menu, Archive and Mission Result get dark panels with blue edge frames, pale text, stacked label/value records and a tinted hover; no new text, buttons or pages. Upgrade, practice, combat HUD and Ending are unchanged. 05b was not applied.
+- Compile PASS. `terminal-ui` look-check in editor Play Mode at 2560x1440 (isolated Archive): Result, Main Menu and Archive opened once each; no overflowing or truncated text; CONTINUE, START MISSION, the three Archive tabs, list scroll and BACK all work; 3 PASS / 0 FAIL; screenshots `Logs/GO_GHOST_VS/terminal-*.png` checked by eye.
+- **NOT TESTED:** 1280x720 and other aspect ratios (the canvas scales uniformly at 16:9, not captured separately); hover fade by hand; the standalone. No gameplay smoke was re-run. The older `ui-polish` fixture still expects white inverted Archive tabs and would now fail on that check; not updated.
+
 ## 2026-10-01 — Final Boss integration: B batches 04a + 04b, transition presentation, base speed, final build
 
 - **B 04a (new BLACKOUT) and 04b (normal Phase 2 camouflage move + .55 s visible tell, finite combos, P1 recoveries, transition presentation, unsafe-placement cancel)** applied unchanged on the current tree (patch hashes match B's manifests; `git apply --check` first). `GameSessionFlow` binds the real scene colliders through `BindBlackoutArena` after restoring High C/D/E. `BossFight` feeds B's `PresentPhaseTransition(progress)` from the real transition clock each frame; A still owns health, immunity, the phase change and death.

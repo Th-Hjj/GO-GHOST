@@ -5,8 +5,8 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 
-/// <summary>The explicitly specified monochrome screens. GameSessionFlow owns every gameplay transition.</summary>
-public sealed class MissionUI : MonoBehaviour
+/// <summary>Existing screens with scoped terminal presentation. GameSessionFlow owns every gameplay transition.</summary>
+public sealed partial class MissionUI : MonoBehaviour
 {
     [SerializeField] private GameSessionFlow flow;
     [SerializeField] private InputActionAsset inputActions;
@@ -41,6 +41,7 @@ public sealed class MissionUI : MonoBehaviour
 
     private static void Highlight(UnityEngine.UI.Button button, bool on)
     {
+        if (TerminalContext(button.transform)) { TerminalButtonStyle(button, on); return; }
         button.targetGraphic.color = on ? Color.white : Color.black;
         var label = button.GetComponentInChildren<TMP_Text>();
         if (label != null) label.color = on ? Color.black : Color.white;
@@ -122,6 +123,8 @@ public sealed class MissionUI : MonoBehaviour
     private void BuildMain(RectTransform root)
     {
         main = Screen(root, "MainMenu");
+        TerminalRule(main.transform, "TitleRule", new Vector2(960, 918), new Vector2(620, 1));
+        TerminalRule(main.transform, "CommandRule", new Vector2(960, 330), new Vector2(160, 2));
         Text(main.transform, "Title", "GO GHOST", new Vector2(960, 980), new Vector2(640, 100), 64);
         Button(main.transform, "StartMission", "START MISSION", new Vector2(960, 570), new Vector2(500, 90), () => flow.RequestNewGame());
         Button(main.transform, "PoliceArchive", "POLICE ARCHIVE", new Vector2(960, 440), new Vector2(500, 90), () => flow.RequestArchive());
@@ -216,10 +219,13 @@ public sealed class MissionUI : MonoBehaviour
     private void BuildResult(RectTransform root)
     {
         result = Screen(root, "MissionResult");
+        Panel(result.transform, "ResultSummary", new Vector2(960, 500), new Vector2(900, 490));
+        TerminalRule(result.transform, "ResultRule", new Vector2(960, 805), new Vector2(720, 1));
         resultHeading = Text(result.transform, "ResultHeading", "", new Vector2(960, 890), new Vector2(1280, 120), 64);
         var values = new TMP_Text[4];
         for (int i = 0; i < 4; i++)
         {
+            TerminalRule(result.transform, "StatisticRule" + i, new Vector2(960, 618 - i * 110), new Vector2(790, 1));
             Text(result.transform, "StatisticLabel" + i, ResultLabels[i], new Vector2(760, 660 - i * 110), new Vector2(390, 70), 32, TextAlignmentOptions.Left);
             values[i] = Text(result.transform, "StatisticValue" + i, "", new Vector2(1190, 660 - i * 110), new Vector2(360, 70), 32, TextAlignmentOptions.Right);
         }
@@ -421,6 +427,21 @@ public sealed class MissionUI : MonoBehaviour
     {
         float width = ((RectTransform)parent).sizeDelta.x;
         var valueTexts = new TMP_Text[names.Length];
+        if (TerminalContext(parent))
+        {
+            // Stacked labels/values keep long stored names readable within the existing card bounds.
+            bool compact = spacing < 60;
+            for (int i = 0; i < names.Length; i++)
+            {
+                float y = top - i * spacing;
+                Text(parent, "Field_" + names[i], names[i], new Vector2(width * .5f, y),
+                    new Vector2(width - 56, compact ? 18 : 28), compact ? 14 : 18, TextAlignmentOptions.Left);
+                valueTexts[i] = Text(parent, "Value_" + names[i], "", new Vector2(width * .5f, y - (compact ? 20 : 34)),
+                    new Vector2(width - 56, compact ? 25 : 36), compact ? 22 : 26, TextAlignmentOptions.Left);
+            }
+            SetValues(valueTexts, values);
+            return valueTexts;
+        }
         for (int i = 0; i < names.Length; i++)
         {
             Text(parent, "Field_" + names[i], names[i], new Vector2(width * .39f, top - i * spacing), new Vector2(width * .7f, 45), 23, TextAlignmentOptions.Left);
@@ -467,6 +488,7 @@ public sealed class MissionUI : MonoBehaviour
         var rect = Rect(parent, name, position, size);
         var image = rect.gameObject.AddComponent<UnityEngine.UI.Image>();
         image.color = Color.black; image.raycastTarget = false;
+        if (TerminalContext(parent)) { TerminalPanelStyle(rect); return rect; }
         Edge(rect, "Top", new Vector2(.5f, 1), new Vector2(1, 0), new Vector2(0, 2));
         Edge(rect, "Bottom", new Vector2(.5f, 0), new Vector2(1, 0), new Vector2(0, 2));
         Edge(rect, "Left", new Vector2(0, .5f), new Vector2(0, 1), new Vector2(2, 0));
@@ -503,6 +525,7 @@ public sealed class MissionUI : MonoBehaviour
     {
         button.transition = UnityEngine.UI.Selectable.Transition.None;
         button.navigation = new UnityEngine.UI.Navigation { mode = UnityEngine.UI.Navigation.Mode.None };
+        if (TerminalContext(button.transform)) TerminalButtonStyle(button, false);
     }
     private TMP_Text Text(Transform parent, string name, string value, Vector2 position, Vector2 size, float fontSize, TextAlignmentOptions alignment = TextAlignmentOptions.Center)
     {
@@ -511,6 +534,7 @@ public sealed class MissionUI : MonoBehaviour
         text.font = font; text.fontSize = fontSize; text.color = Color.white;
         text.alignment = alignment; text.text = value; text.raycastTarget = false;
         text.textWrappingMode = TextWrappingModes.NoWrap;
+        if (TerminalContext(parent)) TerminalTextStyle(text, name);
         return text;
     }
     private RectTransform HealthBar(Transform parent, string name, Vector2 position, Vector2 size)

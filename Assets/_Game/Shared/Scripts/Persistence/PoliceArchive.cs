@@ -191,10 +191,24 @@ public static class PoliceArchive
 {
     // TEMP / placeholder condition: defeat the Boss once. Replace when the real challenge is designed.
     public const string TempFirstVictory = "TEMP_FIRST_VICTORY";
-    // TEMP placeholder endings and TEST threshold only. Replaceable; not final names, routing or design.
-    public const string TempEndingUnder50 = "TEMP_ENDING_UNDER_50";
-    public const string TempEnding50OrMore = "TEMP_ENDING_50_OR_MORE";
-    public const float TempEndingThresholdPercent = 50f;
+    // CONFIRMED 2026-10-01 ending design: Boss defeated with Cyberization < 50% -> Human Ending; >= 50% -> AI Ending.
+    public const string HumanEnding = "HUMAN_ENDING";
+    public const string AiEnding = "AI_ENDING";
+    public const float EndingThresholdPercent = 50f;
+
+    /// <summary>Player-facing ending name; also the Case Closure Records entry. Unknown (older) IDs are shown as stored.</summary>
+    public static string EndingTitle(string endingId) => endingId switch
+    {
+        HumanEnding => "HUMAN ENDING", AiEnding => "AI ENDING", _ => endingId
+    };
+
+    /// <summary>The team's exact ending text. Do not rewrite or extend.</summary>
+    public static string EndingText(string endingId) => endingId switch
+    {
+        HumanEnding => "Cyber Psycho is defeated, Humanity lives to see another day! AI shall no longer threaten our existence!",
+        AiEnding => "Cyber Psycho\u2026 and now, AI requires a new savior! Humanity is doomed, and it\u2019s all thanks to us!",
+        _ => ""
+    };
     public static string LastSaveError { get; private set; }
     private static PoliceArchiveStore store;
     private static PoliceArchiveProfile current;
@@ -214,9 +228,12 @@ public static class PoliceArchive
         if (!string.IsNullOrEmpty(store.LastError)) Debug.LogWarning("Police Archive: " + store.LastError);
     }
 
-    /// <summary>TEMP routing: only the winning deployment's Body Modification % decides the placeholder ending.</summary>
-    public static string TempEndingFor(float bodyModificationPercent) =>
-        bodyModificationPercent < TempEndingThresholdPercent ? TempEndingUnder50 : TempEnding50OrMore;
+    /// <summary>
+    /// Only the winning deployment's frozen Cyberization % (BodyModificationPercent, 0-100) decides the ending;
+    /// exactly 50% is the AI Ending. Never the editable draft, earlier officers or the weapon.
+    /// </summary>
+    public static string EndingFor(float bodyModificationPercent) =>
+        bodyModificationPercent < EndingThresholdPercent ? HumanEnding : AiEnding;
 
     /// <summary>
     /// Call exactly once per resolved combat attempt (victory or defeat). Adds the frozen record, evaluates the
@@ -236,7 +253,7 @@ public static class PoliceArchive
         // TEMP_FIRST_VICTORY: any Boss victory. Its existing reward unlocks the Detached Drone Arm. Both are idempotent.
         profile.CompleteAchievement(TempFirstVictory);
         profile.UnlockHiddenAugmentation(LoadoutRules.DetachedDroneArm);
-        profile.UnlockEnding(TempEndingFor(run.BodyModificationPercent));
+        profile.UnlockEnding(EndingFor(run.BodyModificationPercent));
     }
 
     public static bool Save(out string error)

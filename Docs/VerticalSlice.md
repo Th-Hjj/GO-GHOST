@@ -1,6 +1,16 @@
 # GO GHOST — Current Design and MSP Strategy
 
-**Latest confirmed override — strict UI and flow:** Thomas's post-reset specification permits only the following monochrome interface. It supersedes automatic combat entry, first-defeat upgrade gating and all older session/Continue UI requirements below. Gameplay values and existing controls stay unchanged. Evidence is in [Implementation_Log](GO_GHOST_VS/Implementation_Log.md).
+**Latest confirmed override — 2026-10-01 playtest sprint (Thomas).** Where it conflicts with anything below, this block wins:
+
+- Flow: Launch -> practice room -> walk through the door -> Boss fight. Later missions: Main Menu -> START MISSION -> Upgrade -> BEGIN OPERATION -> practice room -> door -> Boss. The first launch uses the default human / Basic Gun build. Defeat saves its run record and returns straight to Main Menu (no failure Result page). Victory: Mission Result -> CONTINUE -> Ending -> CONTINUE -> Main Menu.
+- Practice room: black/white greybox, ground, bounds and a door frame only; no enemies, targets, tasks or interact key. Formal player control with the locked deployment. The Boss does not exist for gameplay until the door; practice time and shots never enter TIME / ACCURACY; no run record. At the door only: practice bullets cleared, running effects ended, cooldowns cleared, jumps/Hover refilled, full HP, statistics zeroed, then combat starts with the same officer and build.
+- Practice controls text (exact, no title): `A / D — MOVE`, `MOUSE — AIM` (or `AIM — AUTOMATIC` with Targeting AI), `LEFT MOUSE — SHOOT`, `SPACE — JUMP`, `LEFT SHIFT — DODGE`, then per equipped ability `SPACE AGAIN — DOUBLE JUMP`, `HOLD SPACE — HOVER`, `E — COUNTER`, `Q — TIME SLOW`. Shown for the whole practice stay, hidden in the Boss room.
+- All bullets (player, Boss, Drone) pass through walls and platforms; they end on a hostile target or by lifetime. Platforms keep their character collision.
+- Cyberization % (0–100) is the existing Body Modification %: the six currently equipped body slots (TEST weights 10/10/10/10/20/40), Weapon 0. No screen displays it yet.
+- Endings: Boss defeated with Cyberization < 50% -> HUMAN ENDING; >= 50% -> AI ENDING (50% is AI), read only from the winning officer's immutable snapshot. Ending screen shows the ending name, the team's exact ending text and CONTINUE. Case Closure Records lists the unlocked ending names only. These replace the TEMP ending IDs; `TEMP_FIRST_VICTORY` / Drone unlock remain TEMP.
+- Audio Batch 01 (ten approved Kenney CC0 cues), VFX A–H (white line effects, Boss echoes) and PP02 (very weak Bloom) are integrated as feedback only; gameplay stays the authority.
+
+**Earlier confirmed override — strict UI and flow:** Thomas's post-reset specification permits only the following monochrome interface. It supersedes automatic combat entry, first-defeat upgrade gating and all older session/Continue UI requirements below. Gameplay values and existing controls stay unchanged. Evidence is in [Implementation_Log](GO_GHOST_VS/Implementation_Log.md).
 
 - Black backgrounds; white text, lines and outlines; black rectangular buttons with white outlines. No other UI colors, effects, icons, instructions or polish.
 - Launch -> Main Menu (`GO GHOST`, `START MISSION`, `POLICE ARCHIVE`). Left record fields: OFFICER #, AGE, RANK, YEARS OF SERVICE, MISSIONS COMPLETED, MISSION SUCCESS RATE, STATUS. Right rows: HEAD, TORSO, LEFT ARM, RIGHT ARM, LEFT LEG, RIGHT LEG, WEAPON. Values show the latest completed Police Archive run record, or `—` before any run exists.

@@ -28,11 +28,15 @@ public class PlayerShooting : MonoBehaviour
 
     private PlayerInputReader input;
     private OfficerIdentity officer;
+    private SfxSet sfx;
+    private AttemptPresentationVfx vfx;
     public int BulletDamage => officer != null && officer.Deployment != null ? officer.Deployment.BulletDamage : stats.gunDamage;
     public float FireInterval => officer != null && officer.Deployment != null ? officer.Deployment.FireInterval : stats.fireRate;
     public int ShotsFired { get; private set; }
     public int ShotsHit { get; private set; }
     internal void RegisterHit() => ShotsHit++;
+    /// <summary>Called when the real combat starts so earlier practice shots never count.</summary>
+    public void ResetShotCounters() { ShotsFired = 0; ShotsHit = 0; }
     private float nextFireTime;
     private float firePointRadius = 0.5f;
     private bool isFiringVolley;
@@ -41,6 +45,8 @@ public class PlayerShooting : MonoBehaviour
     {
         input = GetComponent<PlayerInputReader>();
         officer = GetComponent<OfficerIdentity>();
+        sfx = GetComponentInParent<SfxSet>();
+        vfx = GetComponentInParent<AttemptPresentationVfx>();
         if (input == null)
         {
             Debug.LogError("PlayerShooting requires a PlayerInputReader on the same GameObject. Add it to the Player prefab.", this);
@@ -90,6 +96,8 @@ public class PlayerShooting : MonoBehaviour
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         Projectile bullet = Instantiate(bulletPrefab, spawn, Quaternion.Euler(0f, 0f, angle));
         bullet.Launch(direction, stats.bulletSpeed, BulletDamage, gameObject, accuracyOwner: this);
+        if (sfx != null) sfx.Play(Sfx.Shot);
+        if (vfx != null) vfx.Muzzle(spawn, direction);
         ShotsFired++;
     }
 

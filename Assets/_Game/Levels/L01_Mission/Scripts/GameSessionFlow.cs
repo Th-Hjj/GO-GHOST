@@ -5,9 +5,11 @@ using UnityEngine;
 /// <summary>One scene-local session. Each deployment owns a fresh combat prefab; no static/persistent session state.</summary>
 public sealed class GameSessionFlow : MonoBehaviour
 {
-    public enum FlowState { NewGameInitialization, Deployment, Combat, DefeatTransition, Loadout, Result, NextOfficerTransition, VictoryTransition, MainMenu, Archive }
+    public enum FlowState { NewGameInitialization, Deployment, Combat, DefeatTransition, Loadout, Result, NextOfficerTransition, VictoryTransition, MainMenu, Archive, Practice, Ending }
     [SerializeField] private BossFight attemptPrefab;
     [SerializeField] private GameObject highCPlatform;
+    [Tooltip("Practice room root. Its position is the room's offset from the Boss arena (same layout, same fixed camera framing).")]
+    [SerializeField] private Transform practiceRoom;
     public FlowState State { get; private set; }
     public int OfficerIndex { get; private set; }
     public bool AugmentationsUnlocked { get; private set; }
@@ -25,10 +27,14 @@ public sealed class GameSessionFlow : MonoBehaviour
     public float HoldRemaining => 0f;
     public bool CanDeploy => State == FlowState.Loadout;
     public bool CanNewGame => State == FlowState.MainMenu || State == FlowState.Result || State == FlowState.Loadout;
-    public bool CanContinue => State == FlowState.Result;
+    public bool CanContinue => State == FlowState.Result || State == FlowState.Ending;
+    /// <summary>The ending earned by the winning officer's immutable deployment; null without a victory.</summary>
+    public string EndingId => Victory != null ? PoliceArchive.EndingFor(Victory.BodyModificationPercent) : null;
 
     private Action<BossFight.Outcome> outcomeHandler;
     private int generation;
+    private Transform view;
+    private Vector3 arenaView;
 
     private void Awake()
     {
@@ -44,6 +50,13 @@ public sealed class GameSessionFlow : MonoBehaviour
         ActiveFight = null;
         generation = 0;
         stateEnteredAt = Time.unscaledTime;
+        if (Camera.main != null) { view = Camera.main.transform; arenaView = view.position; }
+    }
+
+    // Launch goes straight to the practice room with the default human / Basic Gun build. The Archive is only read.
+    private void Start()
+    {
+        if (RequestNewGame()) RequestDeploy();
     }
 
     public bool RequestNewGame()
@@ -68,6 +81,25 @@ public sealed class GameSessionFlow : MonoBehaviour
     public bool RequestContinue()
     {
         if (!CanContinue) return false;
+        // Victory: Mission Result -> Ending -> Main Menu. Defeat never reaches either page.
+        if (State == FlowState.Result && Victory != null) SetState(FlowState.Ending);
+        else ReturnToMainMenu();
+        return true;
+    }
+
+    /// <summary>The practice door calls this when the officer walks through: the one real combat start of this deployment.</summary>
+    public bool RequestEnterBossRoom()
+    {
+        if (State != FlowState.Practice || ActiveFight == null) return false;
+        ActiveFight.PlacePlayer(Vector2.zero);
+        SetView(Vector2.zero);
+        ActiveFight.BeginCombat();
+        SetState(FlowState.Combat);
+        return true;
+    }
+
+    private void ReturnToMainMenu()
+    {
         StopAllCoroutines();
         generation++;
         DisposeAttempt();
@@ -76,7 +108,6 @@ public sealed class GameSessionFlow : MonoBehaviour
         Deployment = null;
         Officer = null;
         SetState(FlowState.MainMenu);
-        return true;
     }
 
     public bool RequestArchive()
@@ -123,11 +154,22 @@ public sealed class GameSessionFlow : MonoBehaviour
         outcomeHandler = outcome => ResolveAttempt(fight, token, outcome);
         fight.OnResolved += outcomeHandler;
 
-        // Settle the existing gravity-driven bodies before allowing input or starting the Boss timer.
+        // Every deployment starts in the practice room; the Boss room, its timer and statistics wait for the door.
+        Vector2 practiceOffset = practiceRoom.position;
+        fight.PlacePlayer(practiceOffset);
+        SetView(practiceOffset);
+
+        // Settle the existing gravity-driven bodies before allowing input.
         for (int i = 0; i < 6; i++) yield return new WaitForFixedUpdate();
         if (token != generation || fight != ActiveFight || State != FlowState.Deployment) yield break;
-        fight.BeginCombat();
-        SetState(FlowState.Combat);
+        fight.BeginPractice();
+        SetState(FlowState.Practice);
+    }
+
+    // Hard cut of the existing fixed camera between the two rooms; no transition.
+    private void SetView(Vector2 offsetFromArena)
+    {
+        if (view != null) view.position = arenaView + (Vector3)offsetFromArena;
     }
 
     private void ResolveAttempt(BossFight source, int token, BossFight.Outcome outcome)
@@ -141,6 +183,8 @@ public sealed class GameSessionFlow : MonoBehaviour
             source.CombatDuration, source.ResultBossHealth, source.ResultPlayerHealth, source.AccuracyPercent);
         if (!PoliceArchive.RecordCompletedRun(LastRunRecord, out string archiveError))
             Debug.LogWarning("Police Archive run save failed: " + archiveError, this);
+        // Defeat: the record is saved, then combat is cleaned up and the Main Menu shows it. No failure Result page.
+        if (outcome == BossFight.Outcome.Died) { ReturnToMainMenu(); return; }
         SetState(FlowState.Result);
     }
 
@@ -153,6 +197,7 @@ public sealed class GameSessionFlow : MonoBehaviour
         ActiveFight.gameObject.SetActive(false);
         Destroy(ActiveFight.gameObject);
         ActiveFight = null;
+        SetView(Vector2.zero);
     }
 
     private void SetState(FlowState state)

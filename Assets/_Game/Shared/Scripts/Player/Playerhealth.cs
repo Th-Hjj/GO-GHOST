@@ -49,10 +49,12 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     public event Action OnLastStandTriggered;
 
     private PlayerDodge dodge;
+    private SfxSet sfx;
 
     private void Awake()
     {
         dodge = GetComponent<PlayerDodge>();
+        sfx = GetComponentInParent<SfxSet>();
         CurrentHealth = stats.maxHealth;
     }
 
@@ -70,6 +72,7 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         }
 
         CurrentHealth = Mathf.Max(projectedHealth, 0);
+        if (sfx != null) sfx.Play(Sfx.PlayerHurt); // real HP loss only; invulnerable/dodged hits returned above
         OnHealthChanged?.Invoke(CurrentHealth, stats.maxHealth);
 
         if (CurrentHealth <= 0)

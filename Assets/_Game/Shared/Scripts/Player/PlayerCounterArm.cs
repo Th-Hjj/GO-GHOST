@@ -10,6 +10,7 @@ public sealed class PlayerCounterArm : MonoBehaviour, IAttemptAugmentation
     private float windowUntil, readyAt, feedbackUntil;
     private bool equipped;
     private SpriteRenderer feedback;
+    private SfxSet sfx;
     public bool IsEquipped => equipped && isActiveAndEnabled;
     public bool IsWindowOpen => IsEquipped && input.GameplayInputEnabled && !health.IsDead && Time.unscaledTime < windowUntil;
     public int CountersSucceeded { get; private set; }
@@ -21,6 +22,7 @@ public sealed class PlayerCounterArm : MonoBehaviour, IAttemptAugmentation
     {
         input = GetComponent<PlayerInputReader>();
         health = GetComponent<PlayerHealth>();
+        sfx = GetComponentInParent<SfxSet>();
     }
 
     public void ApplyDeployment(DeploymentSnapshot snapshot)
@@ -63,6 +65,7 @@ public sealed class PlayerCounterArm : MonoBehaviour, IAttemptAugmentation
         windowUntil = 0;
         feedbackUntil = Time.unscaledTime + .3f;
         CountersSucceeded++;
+        if (sfx != null) sfx.Play(Sfx.Counter);
         return true;
     }
 

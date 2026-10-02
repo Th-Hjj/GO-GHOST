@@ -16,18 +16,34 @@ public sealed class MissionUI : MonoBehaviour
     private static readonly string[] Regions = { "HEAD", "TORSO", "LEFT ARM", "RIGHT ARM", "LEFT LEG", "RIGHT LEG", "WEAPON" };
     private static readonly string[] ResultLabels = { "TIME", "BOSS HP", "PLAYER HP", "ACCURACY" };
     private static readonly LoadoutSlot[] Slots = { LoadoutSlot.Brain, LoadoutSlot.Torso, LoadoutSlot.LeftArm, LoadoutSlot.RightArm, LoadoutSlot.LeftLeg, LoadoutSlot.RightLeg, LoadoutSlot.Weapon };
-    private GameObject main, upgrade, combat, result, archive;
+    private GameObject main, upgrade, combat, result, archive, practice, ending;
     private RectTransform choices, archiveContent;
     private RectTransform bossFill, playerFill;
-    private TMP_Text resultHeading, timeValue, bossValue, playerValue, accuracyValue;
+    private TMP_Text resultHeading, timeValue, bossValue, playerValue, accuracyValue, practiceControls, endingTitle, endingText;
     private TMP_Text[] previousOfficerValues, previousEquipmentValues;
     private GameSessionFlow.FlowState shown = (GameSessionFlow.FlowState)(-1);
     public int SelectedRegion { get; private set; } = -1;
     public int ArchiveTab { get; private set; }
     private readonly List<InputActionReference> uiReferences = new List<InputActionReference>();
+    private SfxSet sfx; // menu/result scope, separate from the combat attempt's voices
+
+    private void Start()
+    {
+        if (sfx != null) sfx.BeginScope();
+    }
+
+    private void Play(Sfx id) { if (sfx != null) sfx.Play(id); }
+
+    // S08 only when the draft actually changes; an unchanged or rejected choice stays silent.
+    private void Equip(LoadoutSlot slot, string id)
+    {
+        string before = flow.Draft.GetSlot(slot).ItemId;
+        if (flow.TrySetDraftSlot(slot, id) && flow.Draft.GetSlot(slot).ItemId != before) Play(Sfx.Equip);
+    }
 
     private void Awake()
     {
+        sfx = GetComponent<SfxSet>();
         var canvasObject = new GameObject("MissionCanvas", typeof(RectTransform), typeof(Canvas), typeof(UnityEngine.UI.CanvasScaler), typeof(UnityEngine.UI.GraphicRaycaster));
         canvasObject.transform.SetParent(transform, false);
         canvasObject.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
@@ -41,6 +57,11 @@ public sealed class MissionUI : MonoBehaviour
         BuildCombat(root);
         BuildResult(root);
         BuildArchive(root);
+        BuildEnding(root);
+        // Practice room only: the approved controls lines, shown for the whole stay and hidden at the door.
+        practice = Rect(root, "PracticeControls", Vector2.zero, Vector2.zero).gameObject;
+        Stretch((RectTransform)practice.transform);
+        practiceControls = Text(practice.transform, "Controls", "", new Vector2(540, 590), new Vector2(700, 380), 26, TextAlignmentOptions.TopLeft);
         var events = new GameObject("MissionEventSystem", typeof(UnityEngine.EventSystems.EventSystem), typeof(InputSystemUIInputModule));
         events.transform.SetParent(transform, false);
         var module = events.GetComponent<InputSystemUIInputModule>();
@@ -98,7 +119,7 @@ public sealed class MissionUI : MonoBehaviour
         var button = rect.gameObject.AddComponent<UnityEngine.UI.Button>();
         button.targetGraphic = graphic;
         ConfigureButton(button);
-        button.onClick.AddListener(() => SelectRegion(index));
+        button.onClick.AddListener(() => { Play(Sfx.Click); SelectRegion(index); });
     }
 
     private void SelectRegion(int index)
@@ -113,7 +134,7 @@ public sealed class MissionUI : MonoBehaviour
         if (slot == LoadoutSlot.Weapon)
         {
             if (flow.Draft.CanUseWeapon)
-                Button(choices, "Choice_" + LoadoutRules.BasicGun, LoadoutRules.WeaponLabel(LoadoutRules.BasicGun), new Vector2(250, 374), new Vector2(450, 72), () => flow.TrySetDraftSlot(slot, LoadoutRules.BasicGun));
+                Button(choices, "Choice_" + LoadoutRules.BasicGun, LoadoutRules.WeaponLabel(LoadoutRules.BasicGun), new Vector2(250, 374), new Vector2(450, 72), () => Equip(slot, LoadoutRules.BasicGun), false);
             return;
         }
         int row = 0;
@@ -122,7 +143,7 @@ public sealed class MissionUI : MonoBehaviour
             if (!definition.Occupies(slot)) continue;
             if (definition.ItemId == LoadoutRules.DetachedDroneArm && !PoliceArchive.Current.HasHiddenAugmentation(definition.ItemId)) continue;
             string id = definition.ItemId;
-            Button(choices, "Choice_" + id, LoadoutRules.ItemLabel(id), new Vector2(250, 374 - row * 90), new Vector2(450, 72), () => flow.TrySetDraftSlot(slot, id));
+            Button(choices, "Choice_" + id, LoadoutRules.ItemLabel(id), new Vector2(250, 374 - row * 90), new Vector2(450, 72), () => Equip(slot, id), false);
             row++;
         }
     }
@@ -155,6 +176,16 @@ public sealed class MissionUI : MonoBehaviour
         Button(result.transform, "ResultContinue", "CONTINUE", new Vector2(960, 100), new Vector2(420, 90), () => flow.RequestContinue());
     }
 
+    // Only the ending name, the team's exact ending text and CONTINUE.
+    private void BuildEnding(RectTransform root)
+    {
+        ending = Screen(root, "Ending");
+        endingTitle = Text(ending.transform, "EndingTitle", "", new Vector2(960, 800), new Vector2(1280, 120), 64);
+        endingText = Text(ending.transform, "EndingText", "", new Vector2(960, 540), new Vector2(1400, 300), 36);
+        endingText.textWrappingMode = TextWrappingModes.Normal;
+        Button(ending.transform, "EndingContinue", "CONTINUE", new Vector2(960, 100), new Vector2(420, 90), () => flow.RequestContinue());
+    }
+
     private void BuildArchive(RectTransform root)
     {
         archive = Screen(root, "Archive");
@@ -182,10 +213,10 @@ public sealed class MissionUI : MonoBehaviour
         }
         else if (tab == 2)
         {
-            // TEMP ending IDs only: no descriptions, lore or reward information.
+            // Unlocked ending names only: no ending text, descriptions or reward information.
             var endings = PoliceArchive.Current.UnlockedEndings;
             for (int i = 0; i < endings.Count; i++)
-                Text(archiveContent, "Content_Ending" + i, endings[i], new Vector2(880, 690 - i * 100), new Vector2(1500, 70), 32);
+                Text(archiveContent, "Content_Ending" + i, PoliceArchive.EndingTitle(endings[i]), new Vector2(880, 690 - i * 100), new Vector2(1500, 70), 32);
         }
     }
 
@@ -258,12 +289,24 @@ public sealed class MissionUI : MonoBehaviour
 
     private void Refresh()
     {
+        var previous = shown;
         shown = flow.State;
+        // One result cue per resolved attempt: defeat now lands on the Main Menu, victory on the Result page.
+        if (shown == GameSessionFlow.FlowState.MainMenu && previous == GameSessionFlow.FlowState.Combat) Play(Sfx.Defeat);
+        if (shown == GameSessionFlow.FlowState.Result) Play(Sfx.Victory);
         main.SetActive(shown == GameSessionFlow.FlowState.MainMenu);
         upgrade.SetActive(shown == GameSessionFlow.FlowState.Loadout);
         combat.SetActive(shown == GameSessionFlow.FlowState.Combat);
         result.SetActive(shown == GameSessionFlow.FlowState.Result);
         archive.SetActive(shown == GameSessionFlow.FlowState.Archive);
+        practice.SetActive(shown == GameSessionFlow.FlowState.Practice);
+        ending.SetActive(shown == GameSessionFlow.FlowState.Ending);
+        if (shown == GameSessionFlow.FlowState.Ending)
+        {
+            endingTitle.text = PoliceArchive.EndingTitle(flow.EndingId);
+            endingText.text = PoliceArchive.EndingText(flow.EndingId);
+        }
+        if (shown == GameSessionFlow.FlowState.Practice) practiceControls.text = ControlsText(flow.Deployment);
         if (shown == GameSessionFlow.FlowState.MainMenu)
         {
             // The latest completed run is the previous officer. Before any run exists, values stay "—".
@@ -282,6 +325,21 @@ public sealed class MissionUI : MonoBehaviour
             playerValue.text = fight.ResultPlayerHealth.ToString();
             accuracyValue.text = FormatAccuracy(fight.AccuracyPercent);
         }
+    }
+
+    // Thomas's approved wording. Only what the locked build actually supports; no title, icons or legacy inputs.
+    private static string ControlsText(DeploymentSnapshot build)
+    {
+        var lines = new List<string>
+        {
+            "A / D — MOVE", build.Aim == AimControl.AI ? "AIM — AUTOMATIC" : "MOUSE — AIM",
+            "LEFT MOUSE — SHOOT", "SPACE — JUMP", "LEFT SHIFT — DODGE"
+        };
+        if (build.HasDoubleJump) lines.Add("SPACE AGAIN — DOUBLE JUMP");
+        if (build.HasHover) lines.Add("HOLD SPACE — HOVER");
+        if (build.HasCounterArm) lines.Add("E — COUNTER");
+        if (build.HasTimeSlow) lines.Add("Q — TIME SLOW");
+        return string.Join("\n", lines);
     }
 
     private TMP_Text[] RecordFields(Transform parent, string[] names, string[] values, float top, float spacing)
@@ -347,13 +405,14 @@ public sealed class MissionUI : MonoBehaviour
         rect.gameObject.AddComponent<UnityEngine.UI.Image>().color = Color.white;
         rect.GetComponent<UnityEngine.UI.Image>().raycastTarget = false;
     }
-    private UnityEngine.UI.Button Button(Transform parent, string name, string label, Vector2 position, Vector2 size, UnityEngine.Events.UnityAction click)
+    private UnityEngine.UI.Button Button(Transform parent, string name, string label, Vector2 position, Vector2 size, UnityEngine.Events.UnityAction click, bool clickSound = true)
     {
         var rect = Panel(parent, name, position, size);
         rect.GetComponent<UnityEngine.UI.Image>().raycastTarget = true;
         var button = rect.gameObject.AddComponent<UnityEngine.UI.Button>();
         button.targetGraphic = rect.GetComponent<UnityEngine.UI.Image>();
         ConfigureButton(button);
+        if (clickSound) button.onClick.AddListener(() => Play(Sfx.Click));
         button.onClick.AddListener(click);
         Text(rect, "Text", label, size * .5f, size - new Vector2(24, 10), 30);
         return button;

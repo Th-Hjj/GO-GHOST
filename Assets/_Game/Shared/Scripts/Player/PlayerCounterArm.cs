@@ -78,12 +78,12 @@ public sealed class PlayerCounterArm : MonoBehaviour, IAttemptAugmentation
                 struck.Clear();
                 SlashesStarted++;
                 if (sfx != null) sfx.Play(Sfx.BladeSwing);
-                if (vfx != null) vfx.BladeSlash(transform.position, slashDirection, BladeReach);
+                if (vfx != null) vfx.ArmBladeSwing(transform.position, slashDirection, BladeReach);
             }
         }
         if (feedback == null) return;
         bool success = Time.unscaledTime < feedbackUntil;
-        feedback.enabled = IsEquipped && (IsWindowOpen || success);
+        feedback.enabled = !blade && IsEquipped && (IsWindowOpen || success); // Arm-Blade shows its white swing line instead
         feedback.color = success ? new Color(.3f, 1f, .45f, .9f) : new Color(.2f, 1f, 1f, .7f);
         feedback.transform.localPosition = new Vector3(input.AimDirection.x < 0 ? -.75f : .75f, 0, 0);
         feedback.transform.localScale = new Vector3(.15f, 1.25f, 1);

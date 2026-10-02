@@ -1009,11 +1009,38 @@ public partial class TopDownSmokeTest : MonoBehaviour
     {
         if (kb != null && kb.added) InputSystem.RemoveDevice(kb);
         if (ms != null && ms.added) InputSystem.RemoveDevice(ms);
-        foreach (var d in disabledDevices) if (d != null && d.added) InputSystem.EnableDevice(d);
         disabledDevices.Clear();
+        RestoreRealDevices();
         InputSystem.settings.backgroundBehavior = prevBackground;
         InputSystem.settings.editorInputBehaviorInPlayMode = prevEditorBehavior;
         Application.runInBackground = prevRunInBackground;
+    }
+
+    // A scenario mutes the operator's keyboard/mouse. An aborted run once left them disabled, and the next Setup then
+    // skipped them (already disabled), so normal Play Mode had no input at all. Re-enable every real device
+    // unconditionally here, and again on each play-mode transition that is not a smoke launch.
+    private static void RestoreRealDevices()
+    {
+        var stale = new List<InputDevice>();
+        foreach (var d in InputSystem.devices)
+        {
+            if (d.name.StartsWith("Smoke")) stale.Add(d);
+            else if (d is Keyboard || d is Pointer) InputSystem.EnableDevice(d);
+        }
+        foreach (var d in stale) InputSystem.RemoveDevice(d);
+    }
+
+    [UnityEditor.InitializeOnLoadMethod]
+    private static void GuardRealDevices()
+    {
+        UnityEditor.EditorApplication.playModeStateChanged -= OnPlayModeGuard;
+        UnityEditor.EditorApplication.playModeStateChanged += OnPlayModeGuard;
+    }
+
+    private static void OnPlayModeGuard(UnityEditor.PlayModeStateChange state)
+    {
+        if (state == UnityEditor.PlayModeStateChange.EnteredEditMode) { Running = false; RestoreRealDevices(); }
+        else if (state == UnityEditor.PlayModeStateChange.ExitingEditMode && !Running) RestoreRealDevices();
     }
 
     private void Update()

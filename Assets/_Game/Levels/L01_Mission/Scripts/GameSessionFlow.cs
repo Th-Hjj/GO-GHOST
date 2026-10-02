@@ -78,7 +78,7 @@ public sealed class GameSessionFlow : MonoBehaviour
         Draft = new LoadoutDraft(true);
         Deployment = null;
         Victory = null;
-        // One generated profile per new mission, before its deployment. Numbering follows persistent Archive history.
+        // One generated profile per new mission, before its deployment. Numbering follows this session's Archive records.
         Officer = OfficerProfile.Generate(PoliceArchive.Current.NextOfficerNumber);
         SetState(FlowState.Loadout);
         return true;

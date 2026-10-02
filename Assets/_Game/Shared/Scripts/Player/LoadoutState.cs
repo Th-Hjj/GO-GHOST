@@ -307,7 +307,7 @@ public sealed class DeploymentSnapshot
     // Rapid Fire scales the equipped weapon's own base interval (Assault Rifle: 4 -> 7 -> 10 shots/s as before).
     public float ShotsPerSecond => (1f + .75f * ArmCount) / Weapon.FireInterval;
     public float FireInterval => 1f / ShotsPerSecond;
-    public float MoveSpeed => 6f + 2f * LegCount;
+    public float MoveSpeed => 7f + 2f * LegCount; // TEST: base raised from 6 after Thomas's hands-on play
     public bool HasTimeSlow => GetSlot(LoadoutSlot.Torso).ItemId == LoadoutRules.TorsoSlow;
     public bool HasDetachedDrone => GetSlot(LoadoutSlot.LeftArm).ItemId == LoadoutRules.DetachedDroneArm;
     public bool HasCounterArm => GetSlot(LoadoutSlot.LeftArm).ItemId == LoadoutRules.CounterArm;

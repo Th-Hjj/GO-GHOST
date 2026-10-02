@@ -20,6 +20,7 @@ public class BossFight : MonoBehaviour
     private bool subscribed;
     private bool started;
     private bool practicing;
+    private float transitionDuration;
     private Vector2 playerSpawn;
     private float combatStartedAt;
     public float CombatDuration { get; private set; }
@@ -115,6 +116,12 @@ public class BossFight : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (combatRunning && boss.Phase == CyberpsychoBoss.BossPhase.PhaseTransition)
+        {
+            // B's transition presentation only follows the real transition clock; it never drives the phase.
+            if (transitionDuration <= 0f) transitionDuration = Mathf.Max(.01f, boss.PhaseTimeRemaining);
+            boss.PresentPhaseTransition(1f - boss.PhaseTimeRemaining / transitionDuration);
+        }
         if (combatRunning && bossHealth.AwaitingSecondPhase)
         {
             // Phase 1 health is spent. Until the Boss's own transition ends it is immune (Enemy rejects all damage) and

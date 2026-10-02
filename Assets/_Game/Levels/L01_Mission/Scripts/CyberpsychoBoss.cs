@@ -14,7 +14,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
         CrosscutWarning, CrosscutFirst, CrosscutGap, CrosscutSecond, CrosscutRecovery,
         DropWarning, DropTarget, DropExecute, DropImpact, DropRecovery,
         BlackoutSignal, BlackoutRun, BlackoutGap, BlackoutMark, BlackoutFinalWarning,
-        BlackoutFinalSlash, BlackoutBreakDelay, BlackoutRecovery }
+        BlackoutFinalSlash, BlackoutBreakDelay, BlackoutRecovery, CamoReposition, BladeComboRecovery }
 
     [SerializeField] private PlayerHealth player;
     [SerializeField] private Projectile bulletPrefab;
@@ -328,7 +328,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
                 break;
             case AttackState.MarkedLock:
                 Fire(shotDirection, markedBulletSpeed, markedDamage);
-                Enter(AttackState.MarkedRecovery, markedRecovery);
+                Enter(AttackState.MarkedRecovery, .75f);
                 break;
             case AttackState.MarkedRecovery:
                 repositionTarget = rb.position.x >= 0 ? -repositionX : repositionX;
@@ -352,7 +352,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
                     Vector2.right * chargeDirection, spreadSpeed, spreadDamage);
                 volleyCount++;
                 Enter(volleyCount < sweepShots ? AttackState.SweepFire : AttackState.SweepRecovery,
-                    volleyCount < sweepShots ? burstInterval : spreadRecovery);
+                    volleyCount < sweepShots ? burstInterval : highSweep ? .75f : spreadRecovery);
                 break;
             case AttackState.SweepRecovery:
                 if (!highSweep) { highSweep = true; BeginSweep(); }
@@ -361,12 +361,14 @@ public partial class CyberpsychoBoss : MonoBehaviour
         }
     }
 
-    private void BeginSlash()
+    private void BeginSlash() => BeginCamoReposition();
+
+    private void LockSlashWarning()
     {
         // Lock horizontal direction at telegraph entry; no execution homing or platform navigation.
         chargeDirection = player.transform.position.x < rb.position.x ? -1f : 1f;
         slashHit = false;
-        Enter(AttackState.SlashWarning, slashWindup);
+        Enter(AttackState.SlashWarning, .55f);
     }
 
     private void TickSlash()
@@ -375,9 +377,10 @@ public partial class CyberpsychoBoss : MonoBehaviour
         float dt = Time.fixedDeltaTime * SimulationRate;
         // Interrupt only a completed normal move; never strand a drop or half of Crosscut.
         if (arenaBound && timer <= dt && !BlackoutUsed && health.CurrentHealth <= health.MaxHealth * blackoutHealthThreshold
-            && (State == AttackState.SlashRecovery || State == AttackState.CrosscutRecovery || State == AttackState.DropRecovery))
+            && (State == AttackState.SlashRecovery || State == AttackState.CrosscutRecovery || State == AttackState.DropRecovery || State == AttackState.BladeComboRecovery))
             BeginBlackout();
         if (BlackoutActive) { TickBlackout(dt); return; }
+        if (State == AttackState.CamoReposition) { TickCamoReposition(dt); return; }
         rb.linearVelocity = new Vector2(State == AttackState.SlashExecute ? chargeDirection * slashSpeed * SimulationRate
             : CrosscutExecuting ? chargeDirection * crosscutSpeed * SimulationRate
             : BlackoutMoving ? chargeDirection * blackoutSpeed * SimulationRate : 0f, scriptedDrop ? 0f : rb.linearVelocity.y);
@@ -436,8 +439,17 @@ public partial class CyberpsychoBoss : MonoBehaviour
                     Enter(AttackState.SlashRecovery, slashRecovery);
                     break;
                 case AttackState.SlashRecovery:
-                    LockCrosscut();
-                    Enter(AttackState.CrosscutWarning, crosscutWindup);
+                    if (playerCollider != null && bossCollider != null && playerCollider.bounds.min.y > bossCollider.bounds.min.y + .8f)
+                        Enter(AttackState.DropWarning, dropWindup);
+                    else if (Mathf.Abs(player.transform.position.x - rb.position.x) > 3f)
+                    {
+                        LockCrosscut();
+                        Enter(AttackState.CrosscutWarning, crosscutWindup);
+                    }
+                    else Enter(AttackState.BladeComboRecovery, Mathf.Max(0, .9f - slashRecovery));
+                    break;
+                case AttackState.BladeComboRecovery:
+                    BeginSlash();
                     break;
                 case AttackState.CrosscutWarning:
                     StartCrosscut(AttackState.CrosscutFirst);
@@ -446,7 +458,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
                     rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
                     // Re-sample once after slash 1; slash 2 does not track during execution.
                     LockCrosscut();
-                    Enter(AttackState.CrosscutGap, crosscutGap);
+                    Enter(AttackState.CrosscutGap, .45f);
                     break;
                 case AttackState.CrosscutGap:
                     StartCrosscut(AttackState.CrosscutSecond);
@@ -454,10 +466,10 @@ public partial class CyberpsychoBoss : MonoBehaviour
                 case AttackState.CrosscutSecond:
                     rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
                     RestorePlayerCollision();
-                    Enter(AttackState.CrosscutRecovery, crosscutRecovery);
+                    Enter(AttackState.CrosscutRecovery, .9f);
                     break;
                 case AttackState.CrosscutRecovery:
-                    Enter(AttackState.DropWarning, dropWindup);
+                    BeginSlash();
                     break;
                 case AttackState.DropWarning:
                     BeginDrop();
@@ -468,10 +480,10 @@ public partial class CyberpsychoBoss : MonoBehaviour
                     break;
                 case AttackState.DropExecute:
                     RestoreDropBody();
-                    Enter(AttackState.DropRecovery, dropRecovery);
+                    Enter(AttackState.DropRecovery, .9f);
                     break;
                 case AttackState.DropImpact:
-                    Enter(AttackState.DropRecovery, dropRecovery);
+                    Enter(AttackState.DropRecovery, .9f);
                     break;
                 case AttackState.DropRecovery:
                     RestorePlayerCollision();
@@ -610,16 +622,14 @@ public partial class CyberpsychoBoss : MonoBehaviour
         if (vfx != null) vfx.Muzzle(origin, direction);
         ShotsFired++;
         var sprite = bullet.GetComponent<SpriteRenderer>();
-        if (sprite != null) sprite.color = State == AttackState.MarkedLock ? Color.yellow : Color.white;
+        if (sprite != null) sprite.color = Color.white;
     }
 
     private void ShowWarnings()
     {
-        // P1 has brief, steady transparency. P2 stays translucent with an uneven cyan/pink flicker.
-        // Keep the blade and telegraph bright; never change physics transforms for this effect.
+        // Normal P2: white body/blade cues during concealed movement, full reveal before execution.
+        // BLACKOUT alone uses full concealment; it never disables the target or its colliders.
         bool p2Camo = combatEnabled && Phase == BossPhase.Phase2;
-        float flicker = Mathf.Sin(camouflageClock * 19f) * Mathf.Sin(camouflageClock * 7f);
-        bool glitch = Mathf.FloorToInt(camouflageClock * 13f) % 5 == 0;
         if (visualParts != null)
             for (int i = 0; i < visualParts.Length; i++)
             {
@@ -636,9 +646,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
                 else if (p2Camo)
                 {
                     bool blade = bladeVisual != null && part.transform.IsChildOf(bladeVisual.transform);
-                    color = Color.Lerp(color, glitch ? new Color(1f, .35f, .8f) : new Color(.2f, .9f, 1f), blade ? .45f : BlackoutActive ? .65f : .2f);
-                    color.a = blade ? .95f : BlackoutActive ? .4f + flicker * .1f : .6f + flicker * .12f;
-                    if (blade && (State == AttackState.SlashWarning || CrosscutTelling || DropTelling || BlackoutActive)) color = new Color(1f, .45f, .8f, 1f);
+                    color = new Color(1f, 1f, 1f, visualColors[i].a * NormalCamoAlpha(blade));
                 }
                 else color.a *= IsGhosting ? ghostAlpha : 1f;
                 part.color = color;
@@ -652,7 +660,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
         if (shotWarning != null)
         {
             shotWarning.enabled = State == AttackState.BurstWarning || marked;
-            shotWarning.color = marked ? new Color(1f, .3f, .15f, .9f) : new Color(1, 1, 1, .7f);
+            shotWarning.color = marked ? new Color(1f, 1f, 1f, .9f) : new Color(1, 1, 1, .7f);
             SetRay(shotWarning, shotDirection);
         }
         if (spreadWarnings != null)
@@ -667,15 +675,15 @@ public partial class CyberpsychoBoss : MonoBehaviour
             bool slashWarning = State == AttackState.SlashWarning;
             chargeWarning.enabled = Sweeping || slashWarning || CrosscutTelling || State == AttackState.DropTarget
                 || State == AttackState.DropExecute || State == AttackState.DropImpact || HighCMarked;
-            chargeWarning.color = slashWarning || CrosscutTelling ? new Color(1f, .35f, .8f, .85f)
-                : new Color(1f, .65f, .15f, State == AttackState.SweepWarning ? .75f : .25f);
+            chargeWarning.color = slashWarning || CrosscutTelling ? new Color(1f, 1f, 1f, .85f)
+                : new Color(1f, 1f, 1f, State == AttackState.SweepWarning ? .75f : .25f);
             float end = slashWarning ? Mathf.Clamp(rb.position.x + chargeDirection * slashSpeed * slashDuration,
                 -arenaHalfWidth, arenaHalfWidth) : CrosscutTelling ? crosscutEndX : chargeDirection * arenaHalfWidth;
             chargeWarning.transform.position = new Vector3((rb.position.x + end) * .5f, slashWarning || CrosscutTelling ? rb.position.y : SweepY, 0);
             chargeWarning.transform.localScale = new Vector3(Mathf.Max(.1f, Mathf.Abs(end - rb.position.x)) / transform.lossyScale.x, .10f / transform.lossyScale.y, 1);
             if (State == AttackState.DropTarget || State == AttackState.DropExecute || State == AttackState.DropImpact)
             {
-                chargeWarning.color = new Color(1f, .65f, .15f, .9f);
+                chargeWarning.color = new Color(1f, 1f, 1f, .9f);
                 chargeWarning.transform.position = new Vector3(dropPoint.x, dropPoint.y + .08f, 0);
                 chargeWarning.transform.localScale = new Vector3(3.6f / transform.lossyScale.x, .16f / transform.lossyScale.y, 1);
             }
@@ -767,6 +775,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
     private void ClearAttack()
     {
         ClearBlackout();
+        ClearCamoPresentation();
         PredictionCue = "";
         if (predictionLine != null) predictionLine.enabled = false;
         RestoreDropBody();

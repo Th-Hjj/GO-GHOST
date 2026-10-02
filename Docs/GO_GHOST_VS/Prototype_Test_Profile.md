@@ -4,7 +4,7 @@
 
 ## Health and arena — TEST values, 2026-10-01 (supersede the table below)
 
-Player HP 150. Boss Phase 1 HP 600, Phase 2 HP 600 (independent pools; immune ~3 s transition between them). BLACKOUT at <= 35% of Phase 2 HP (210). High platforms C (0, 1.15, width 4), D (-9, 1.15, width 3), E (9, 1.15, width 3), thickness .3.
+Player HP 150, base move speed 7 (was 6). Boss Phase 1 HP 600, Phase 2 HP 600 (independent pools; immune ~3 s transition between them). BLACKOUT at <= 35% of Phase 2 HP (210). High platforms C (0, 1.15, width 4), D (-9, 1.15, width 3), E (9, 1.15, width 3), thickness .3.
 
 ## Weapons and Arm-Blade — TEST values, 2026-10-01
 

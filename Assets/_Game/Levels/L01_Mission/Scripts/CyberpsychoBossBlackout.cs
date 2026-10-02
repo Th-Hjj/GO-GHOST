@@ -19,6 +19,7 @@ public partial class CyberpsychoBoss
     private Collider2D[] breakableHigh = new Collider2D[0], permanentGround = new Collider2D[0];
     private Bounds blackoutArena;
     private bool arenaBound, platformsBroken;
+    public bool BlackoutPlacementFailed { get; private set; }
     private float blackoutClock, finalEnd;
     public float BlackoutElapsed => blackoutClock;
     public int BlackoutCutsExecuted { get; private set; }
@@ -68,6 +69,7 @@ public partial class CyberpsychoBoss
         blackoutClock = 0f;
         finalEnd = 6.48f;
         platformsBroken = false;
+        BlackoutPlacementFailed = false;
         for (int i = 0; i < 3; i++) breakBounds[i] = breakableHigh[i].bounds;
         highCBounds = breakBounds[0];
         redCuts[0] = MakeCut(.7f, 1.6f, 1.72f, 32, 0);
@@ -86,6 +88,13 @@ public partial class CyberpsychoBoss
     {
         blackoutClock += dt;
         rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+        if (BlackoutPlacementFailed)
+        {
+            timer -= dt;
+            if (timer <= 0) BeginSlash();
+            else ShowWarnings();
+            return;
+        }
         for (int i = 0; i < redCuts.Length; i++)
         {
             var cut = redCuts[i];
@@ -100,6 +109,7 @@ public partial class CyberpsychoBoss
                     SetCut(cut, new Vector2(blackoutArena.center.x, highCBounds.max.y), Vector2.right);
                     cut.locked = true;
                 }
+                if (BlackoutPlacementFailed) return;
                 // Curtain geometry was locked as a group; later tells only reveal their saved lines.
                 if (!cut.locked) continue;
             }
@@ -195,9 +205,7 @@ public partial class CyberpsychoBoss
                 SetCut(cut, aim + Vector2.up * offset, new Vector2(Mathf.Cos(radians), Mathf.Sin(radians)));
                 if (HasHumanEscape(cut, false, .9f)) { cut.locked = true; return; }
             }
-        // Safe upper diagonal for unusual airborne positions; still the same visible/hit geometry.
-        SetCut(cut, new Vector2(blackoutArena.center.x, blackoutArena.max.y), new Vector2(1f, sign * .4663077f).normalized);
-        cut.locked = true;
+        AbortUnsafePlacement();
     }
 
     private void LockCurtain()
@@ -210,9 +218,23 @@ public partial class CyberpsychoBoss
         {
             for (int i = 0; i < 4; i++)
                 SetCut(redCuts[i + 2], centre + normal * ((i - 1.5f) * 3.8f + shift * .475f), direction);
-            if (HasHumanEscape(null, true, 1f)) break;
+            if (HasHumanEscape(null, true, 1f))
+            {
+                for (int i = 2; i < 6; i++) redCuts[i].locked = true;
+                return;
+            }
         }
-        for (int i = 2; i < 6; i++) redCuts[i].locked = true;
+        AbortUnsafePlacement();
+    }
+
+    private void AbortUnsafePlacement()
+    {
+        BlackoutPlacementFailed = true;
+        platformsBroken = true; // Cancel pending break; no platform is actually changed here.
+        finalEnd = blackoutClock - .5f;
+        if (vfx != null) vfx.ClearBossEffects();
+        Enter(AttackState.BlackoutRecovery, 1.3f);
+        Debug.LogWarning("BLACKOUT cancelled: no conservative 0% walk/fall corridor found. Check the bound arena with the real player controller.", this);
     }
 
     private void SetCut(RedCut cut, Vector2 centre, Vector2 direction)

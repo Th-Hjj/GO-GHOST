@@ -25,7 +25,7 @@ The current interface follows Thomas's strict post-reset specification: black ba
 
 Combat balance, arena, P1/P2/BLACKOUT, abilities, gameplay effects and Archive persistence remain unchanged. Values are provisional: [Prototype_Test_Profile](Docs/GO_GHOST_VS/Prototype_Test_Profile.md). The version-2 profile (version-1 files migrate with empty run history) lives at `Application.persistentDataPath/PoliceArchive/archive.json`; new missions do not delete it. Tests use isolated profiles. Officer profiles and the two endings are TEMP placeholders; no ending screen, new rewards, new guidance or polish is included.
 
-The current playtest output is `Builds/Windows-Playtest-AirDash/GO-GHOST.exe` (2026-10-01; status in Implementation_Log). Earlier outputs `Windows-Playtest`, `Windows-Playtest-Weapons` and `Windows-Playtest-Polish` are kept as fallbacks. `Builds/Windows/GO-GHOST.exe` is the historical Phase 10 build and predates the reset/new UI. Build and log folders are ignored local output and are not included in a Git pull; a runnable build requires its complete runtime folder. Current Play Mode evidence and untested scope are recorded in Implementation_Log.
+The current playtest output is `Builds/Windows-Playtest-Final/GO-GHOST.exe` (2026-10-01; status in Implementation_Log). Earlier outputs `Windows-Playtest`, `Windows-Playtest-Weapons`, `Windows-Playtest-Polish` and `Windows-Playtest-AirDash` are kept as fallbacks. `Builds/Windows/GO-GHOST.exe` is the historical Phase 10 build and predates the reset/new UI. Build and log folders are ignored local output and are not included in a Git pull; a runnable build requires its complete runtime folder. Current Play Mode evidence and untested scope are recorded in Implementation_Log.
 
 ## Layout
 ```

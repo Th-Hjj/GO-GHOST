@@ -4,6 +4,13 @@ Read this file first in every session, then the docs listed at the bottom for th
 
 `CLAUDE.md` (read by Claude) and `AGENTS.md` (read by Codex) hold the same rules. When you change one, make the same change in the other.
 
+## 2026-10-02 Tower override (Thomas confirmed)
+- Read `Docs/GO_GHOST_VS/Tower_Design_Override.md` and `Docs/GO_GHOST_VS/Narrative_Content_Contract.md` first for Tower work. This override replaces conflicting older design statements below, including the Project summary; it is a target design, not an implementation claim.
+- Short linear tower, three separate-room Boss encounters, seven equipment slots with three cumulative body tiers combining benefit and authority. T1 advises; after dialogue T2 locks aim for three seconds while retaining the player's fire veto; T3 executes within prior authorization through real weapon fire. A genuinely shot-down chandelier becomes bullet cover and a standing surface.
+- Actual actions and outcomes determine P3 and endings, never BodyModificationPercent alone. The 99F guard has no self-awareness and normally obeys attack orders. Death still means a new officer and a fresh mission from the beginning; no checkpoints.
+- Retire the single-arena target, automatic same-room P1/P2 target, universal terrain pass-through, percentage-based ending rule and independent upgrade catalogue as constraints on Tower work. Existing code/save IDs remain until their specifically authorized migration; do not erase history or Archive data.
+- Preserve Unity 6000.6.0f1, existing input/shooting/deployment ownership and all engineering/Git safety rules. Do only the requested stage. S00 is documentation/static audit only; S01 and later require their own instruction. Do not invent missing body tiers, hidden upgrades, Boss moves or narrative branches. Implementation evidence stays in `Implementation_Log.md`.
+
 ## Project
 - GO GHOST: single-player **2D side-view** shooter. One arena, one cyberpsycho Boss. The player controls a succession of police officers who take over the same mission. Theme: power versus free will, meaning how much body augmentation and control you give up to win. USC CTIN 489.
 - Unity **6000.6.0f1**, URP 2D renderer, Windows PC, keyboard + mouse. Never upgrade or downgrade the Unity version.
@@ -53,6 +60,7 @@ Read this file first in every session, then the docs listed at the bottom for th
 - Enter Play Mode Options are on with Domain Reload disabled: static state persists between play sessions, so anything with state must reset itself explicitly.
 
 ## Git safety
+- Standing authorization (Thomas, 2026-10-02): after each requested stage is completed and its necessary checks pass, commit the stage's relevant changes and push directly to `main` so Thomas can test on another computer. No repeated confirmation is needed. Report the pushed commit and validation limits. Preserve unrelated local work; this does not authorize starting another stage or destructive Git operations.
 - Never commit, push, merge, rebase, reset, clean, stash, discard, or force-push without explicit authorization for that specific action. Creating a local branch to hold work for review is fine when asked.
 - A clean local tree does not mean the other developer has no work in progress.
 - Never print credentials or remote URLs that contain them.

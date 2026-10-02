@@ -1,6 +1,12 @@
 # GO GHOST — Codex Astra 执行指南
 
-## Current entry point — 2026-10-01 source audit
+## Current entry point — 2026-10-02 Tower S01
+
+Read [AGENTS](../../AGENTS.md), [Tower_Design_Override](Tower_Design_Override.md), the frozen [Narrative_Content_Contract](Narrative_Content_Contract.md), and the newest [Implementation_Log](Implementation_Log.md) entry. The Tower override is the current design authority where older documents conflict. Local source and existing work take precedence over the static GitHub audit at `6a4e7b72e4913dfd3b048ab672d8c6d4e6c3f77a`; that SHA is not a rollback request.
+
+S01 adds the requested permission intervention prototype in the existing arena, with the single JSON loader, minimal dialogue and physical chandelier. See the newest Implementation_Log entry for the development tier selector, targeted evidence and limits. The wider runtime remains the pre-Tower slice. S01 completion does not authorize S02 or the older verification queue. Keep all progress and NOT RUN evidence in the existing Implementation_Log.
+
+## Historical entry point — 2026-10-01 source audit
 
 Read AGENTS.md, the latest override at the top of [VerticalSlice](../VerticalSlice.md), and the newest [Implementation_Log](Implementation_Log.md) entries. Current source checkpoint: 68f5bcf on main (Camo Rush), following e421a76 (Archive final).
 

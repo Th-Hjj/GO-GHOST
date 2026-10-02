@@ -52,6 +52,7 @@ public sealed partial class MissionUI : MonoBehaviour
         for (int i = 0; i < bodyRegions.Length; i++)
         {
             bodyRegions[i].Selected = i == index;
+            bodyRegions[i].Equipped = !string.IsNullOrEmpty(flow.Draft.GetSlot(Slots[i]).ItemId);
             bodyRegions[i].SetVerticesDirty();
         }
         Highlight(weaponRegion, index == 6);
@@ -138,13 +139,15 @@ public sealed partial class MissionUI : MonoBehaviour
     {
         upgrade = Screen(root, "Upgrade");
         BackButton(upgrade.transform, "UpgradeBack");
-        BodyRegion(0, new Vector2(960, 866), new Vector2(124, 140), true);
-        BodyRegion(1, new Vector2(960, 628), new Vector2(240, 292));
-        BodyRegion(2, new Vector2(782, 623), new Vector2(95, 300));
-        BodyRegion(3, new Vector2(1138, 623), new Vector2(95, 300));
-        BodyRegion(4, new Vector2(886, 315), new Vector2(100, 300));
-        BodyRegion(5, new Vector2(1034, 315), new Vector2(100, 300));
-        weaponRegion = Button(upgrade.transform, "Region_WEAPON", "WEAPON", new Vector2(570, 628), new Vector2(220, 72), () => SelectRegion(6));
+        var guide = Rect(upgrade.transform, "AugmentationGuide", new Vector2(860, 570), new Vector2(810, 810));
+        guide.gameObject.AddComponent<MissionAugmentationGuide>().raycastTarget = false;
+        BodyRegion(0, new Vector2(860, 821), new Vector2(72, 88), true);
+        BodyRegion(1, new Vector2(860, 645), new Vector2(146, 222));
+        BodyRegion(2, new Vector2(663, 757.5f), new Vector2(264, 117));
+        BodyRegion(3, new Vector2(1057, 757.5f), new Vector2(264, 117));
+        BodyRegion(4, new Vector2(801.5f, 364), new Vector2(103, 334));
+        BodyRegion(5, new Vector2(918.5f, 364), new Vector2(103, 334));
+        weaponRegion = Button(upgrade.transform, "Region_WEAPON", "WEAPON", new Vector2(245, 565), new Vector2(250, 72), () => SelectRegion(6));
         choices = Panel(upgrade.transform, "UpgradeChoices", new Vector2(1565, 580), new Vector2(500, 450));
         choices.gameObject.SetActive(false);
         Button(upgrade.transform, "BeginOperation", "BEGIN OPERATION", new Vector2(1585, 78), new Vector2(520, 90), () => flow.RequestDeploy());
@@ -156,6 +159,7 @@ public sealed partial class MissionUI : MonoBehaviour
         var graphic = rect.gameObject.AddComponent<MissionBodyRegion>();
         graphic.color = Color.white;
         graphic.Round = round;
+        graphic.Contour = BodyContour(index);
         bodyRegions[index] = graphic;
         var button = rect.gameObject.AddComponent<UnityEngine.UI.Button>();
         button.targetGraphic = graphic;
@@ -525,7 +529,8 @@ public sealed partial class MissionUI : MonoBehaviour
     {
         button.transition = UnityEngine.UI.Selectable.Transition.None;
         button.navigation = new UnityEngine.UI.Navigation { mode = UnityEngine.UI.Navigation.Mode.None };
-        if (TerminalContext(button.transform)) TerminalButtonStyle(button, false);
+        if (TerminalContext(button.transform) && button.targetGraphic is UnityEngine.UI.Image)
+            TerminalButtonStyle(button, false);
     }
     private TMP_Text Text(Transform parent, string name, string value, Vector2 position, Vector2 size, float fontSize, TextAlignmentOptions alignment = TextAlignmentOptions.Center)
     {
@@ -552,36 +557,80 @@ public sealed partial class MissionUI : MonoBehaviour
     private void OnDestroy() { foreach (var reference in uiReferences) if (reference != null) Destroy(reference); }
 }
 
-/// <summary>Only the requested body silhouette: black polygon with a white outline, no texture or effects.</summary>
+/// <summary>Six existing clickable regions, redrawn as a minimal geometric expanded pose.</summary>
 [RequireComponent(typeof(CanvasRenderer))]
-public sealed class MissionBodyRegion : UnityEngine.UI.MaskableGraphic
+public sealed class MissionBodyRegion : UnityEngine.UI.MaskableGraphic, ICanvasRaycastFilter
 {
     public bool Round;
-    public bool Selected; // selected region is filled white instead of black
+    public bool Selected;
+    public bool Equipped;
+    public Vector2[] Contour;
+
+    private int PointCount => Round ? 32 : Contour != null ? Contour.Length : 4;
+    private Vector2 Point(int index)
+    {
+        var r = rectTransform.rect;
+        Vector2 p;
+        if (Round)
+        {
+            float angle = index * Mathf.PI * 2 / PointCount;
+            p = new Vector2(Mathf.Cos(angle) * .5f, Mathf.Sin(angle) * .5f);
+        }
+        else if (Contour != null) p = Contour[index];
+        else p = new Vector2(index == 0 || index == 3 ? -.5f : .5f, index < 2 ? -.5f : .5f);
+        return new Vector2(p.x * r.width, p.y * r.height) + r.center;
+    }
+
     protected override void OnPopulateMesh(UnityEngine.UI.VertexHelper mesh)
     {
         mesh.Clear();
-        var rect = rectTransform.rect;
-        int count = Round ? 32 : 4;
-        Vector2[] points = Round ? null : new[] { new Vector2(-1, -1), new Vector2(1, -1), new Vector2(1, 1), new Vector2(-1, 1) };
-        Color fill = Selected ? Color.white : Color.black;
-        mesh.AddVert(Vector2.zero, fill, Vector2.zero);
-        for (int i = 0; i < count; i++)
-        {
-            Vector2 p = Round ? new Vector2(Mathf.Cos(i * Mathf.PI * 2 / count), Mathf.Sin(i * Mathf.PI * 2 / count)) : points[i];
-            mesh.AddVert(new Vector2(p.x * rect.width * .5f, p.y * rect.height * .5f), fill, Vector2.zero);
-        }
+        int count = PointCount;
+        var center = rectTransform.rect.center;
+        Color outline = Selected ? new Color(.52f, .85f, 1f)
+            : Equipped ? new Color(.30f, .68f, 1f) : new Color(.86f, .91f, .94f);
+        Color fill = Selected ? new Color(.045f, .19f, .29f)
+            : Equipped ? new Color(.025f, .065f, .095f) : new Color(.012f, .018f, .024f);
+        mesh.AddVert(center, fill, Vector2.zero);
+        for (int i = 0; i < count; i++) mesh.AddVert(Point(i), fill, Vector2.zero);
         for (int i = 0; i < count; i++) mesh.AddTriangle(0, i + 1, (i + 1) % count + 1);
         for (int i = 0; i < count; i++)
         {
-            Vector2 a = Round ? new Vector2(Mathf.Cos(i * Mathf.PI * 2 / count), Mathf.Sin(i * Mathf.PI * 2 / count)) : points[i];
-            Vector2 b = Round ? new Vector2(Mathf.Cos((i + 1) * Mathf.PI * 2 / count), Mathf.Sin((i + 1) * Mathf.PI * 2 / count)) : points[(i + 1) % count];
-            int start = mesh.currentVertCount;
-            mesh.AddVert(new Vector2(a.x * rect.width * .5f, a.y * rect.height * .5f), Color.white, Vector2.zero);
-            mesh.AddVert(new Vector2(b.x * rect.width * .5f, b.y * rect.height * .5f), Color.white, Vector2.zero);
-            mesh.AddVert(new Vector2(b.x * (rect.width * .5f - 2), b.y * (rect.height * .5f - 2)), Color.white, Vector2.zero);
-            mesh.AddVert(new Vector2(a.x * (rect.width * .5f - 2), a.y * (rect.height * .5f - 2)), Color.white, Vector2.zero);
-            mesh.AddTriangle(start, start + 1, start + 2); mesh.AddTriangle(start, start + 2, start + 3);
+            Vector2 a = Point(i), b = Point((i + 1) % count);
+            if (Selected || Equipped)
+            {
+                Color glow = outline; glow.a = Selected ? .10f : .05f;
+                Segment(mesh, a, b, 9, glow);
+            }
+            Segment(mesh, a, b, Selected ? 3 : 2, outline);
+            if (Equipped) Segment(mesh, Vector2.Lerp(center, a, .88f), Vector2.Lerp(center, b, .88f), 1,
+                new Color(outline.r, outline.g, outline.b, .40f));
         }
+    }
+
+    private static void Segment(UnityEngine.UI.VertexHelper mesh, Vector2 a, Vector2 b, float width, Color c)
+    {
+        var delta = b - a;
+        if (delta.sqrMagnitude < .0001f) return;
+        var normal = new Vector2(-delta.y, delta.x).normalized * width * .5f;
+        int start = mesh.currentVertCount;
+        mesh.AddVert(a - normal, c, Vector2.zero); mesh.AddVert(a + normal, c, Vector2.zero);
+        mesh.AddVert(b + normal, c, Vector2.zero); mesh.AddVert(b - normal, c, Vector2.zero);
+        mesh.AddTriangle(start, start + 1, start + 2); mesh.AddTriangle(start, start + 2, start + 3);
+    }
+
+    public bool IsRaycastLocationValid(Vector2 screenPoint, Camera eventCamera)
+    {
+        // Do not let an expanded limb's empty bounding-box corners steal adjacent region clicks.
+        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, screenPoint, eventCamera, out var p)) return false;
+        bool inside = false;
+        int count = PointCount;
+        for (int i = 0, j = count - 1; i < count; j = i++)
+        {
+            Vector2 a = Point(i), b = Point(j), segment = b - a;
+            float t = Mathf.Clamp01(Vector2.Dot(p - a, segment) / Mathf.Max(.0001f, segment.sqrMagnitude));
+            if ((p - a - segment * t).sqrMagnitude <= 64) return true;
+            if ((a.y > p.y) != (b.y > p.y) && p.x < (b.x - a.x) * (p.y - a.y) / (b.y - a.y) + a.x) inside = !inside;
+        }
+        return inside;
     }
 }

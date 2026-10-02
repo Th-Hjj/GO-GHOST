@@ -21,9 +21,15 @@ public sealed partial class GameSessionFlow
             else if (!ActiveFight.NarrativePaused && !ActiveFight.Player.GetComponent<PlayerInputReader>().HasTemporaryAimOverride)
                 interventionActive = false;
         }
+        if (towerPrototypeEnabled) { TickTowerOpportunity(); return; }
         // One authored opportunity on entering the existing arena, not a planner or repeating tutorial.
         if (interventionOffered || Deployment.BrainPermissionTier < 0 || StateAge < 1f) return;
         interventionOffered = true;
+        OfferChandelierIntervention();
+    }
+
+    private void OfferChandelierIntervention()
+    {
         int tier = Deployment.BrainPermissionTier;
         if (tier == 0 || chandelier == null || !chandelier.IsHanging) return;
         string sequence = tier == 1 ? "intervention.chandelier.advice"
@@ -56,5 +62,5 @@ public sealed partial class GameSessionFlow
     }
 
     private void OnApplicationFocus(bool focused) { if (!focused) CancelIntervention(); }
-    private void OnDisable() => CancelIntervention();
+    private void OnDisable() { CancelIntervention(); ClearTowerWorld(); }
 }

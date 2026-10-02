@@ -77,3 +77,10 @@ Dialogue suspends combat while UI remains usable. Close dialogue before starting
 ## Minimum validation
 
 Parse JSON; reject unknown schemaVersion; check unique IDs, valid status and speaker/line references; require nonempty text for each branch actually connected in the current increment. Report errors to the development log, never generate substitute story. Runtime externalization is verified only after editing the file, entering Play, observing the changed line and restoring the approved original. Parsing this documentation fixture is static evidence only.
+
+## S02 runtime binding extension (no JSON/schema/text change)
+
+- `GameSessionTower` receives room-entry, encounter-end, prop-result and exit callbacks. Instance once keys are independent: `boss_p1.chandelier` and the explicitly unfinished `dev.floor50.chandelier`. Both use the existing three sequences. Only actual projectile release / physical landing appends `released` / `landed` facts with the projectile actor/tier; DEV scope travels with the fact. No NPC death follows from these records.
+- Facts and once keys belong to the current mission, survive room changes, and clear on death/new deployment. P3 receives an entry copy; DEV exit retains a read-only completion copy. Player identity, snapshot and permission do not change between rooms.
+- `TowerNarrativeState` exposes the three newly approved finite interfaces summarized in [Tower_Design_Override](Tower_Design_Override.md). Knowledge is updated only by report-delivered callbacks; unknown/unconnected content cannot manufacture an action or a president/core state. The P3 decision freezes once. Transfer has one committed administrator/order state; exit freezes the actual bound disposition and working A–E result once, with D held until its risk has been delivered and another exit requested.
+- S02 does not call those formal NPC/terminal callbacks from empty rooms. Its separate DEV exit bypasses formal evaluation and never writes Archive success/endings. The new report/choice/ending IDs in the author's draft remain absent from JSON and unbound. Missing content is not filled with substitute prose or old percentage endings.

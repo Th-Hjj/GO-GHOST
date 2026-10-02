@@ -78,6 +78,7 @@ public partial class TopDownSmokeTest : MonoBehaviour
 
         switch (scenario)
         {
+            case "s02-tower": yield return S02Tower(); break;
             case "s01-permission": yield return S01Permission(); break;
             case "sideview": yield return SideView(); break;
             case "session-flow": yield return SessionPaths(); break;

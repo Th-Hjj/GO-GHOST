@@ -361,8 +361,10 @@ public sealed partial class MissionUI : MonoBehaviour
         }
         if (flow.State == GameSessionFlow.FlowState.Combat && flow.ActiveFight != null)
         {
-            Fill(bossFill, (float)flow.ActiveFight.BossHealth.CurrentHealth / flow.ActiveFight.BossHealth.MaxHealth);
-            bossFillImage.color = flow.ActiveFight.BossHealth.PhaseIndex == 2 ? BossPhase2Fill : Color.white; // same bar, second health pool
+            var target = flow.ActiveFight.BossHealth;
+            bossFill.parent.gameObject.SetActive(target != null && (!flow.ActiveFight.TowerMission || flow.ActiveFight.EncounterActive));
+            if (target != null) Fill(bossFill, (float)target.CurrentHealth / target.MaxHealth);
+            bossFillImage.color = target != null && target.PhaseIndex == 2 ? BossPhase2Fill : Color.white; // same bar, second health pool
             Fill(playerFill, (float)flow.ActiveFight.Player.CurrentHealth / flow.ActiveFight.Player.MaxHealth);
         }
     }

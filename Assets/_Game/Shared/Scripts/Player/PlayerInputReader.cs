@@ -69,6 +69,13 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     {
         if (targetBound) throw new System.InvalidOperationException("Aim target is assigned once per officer.");
         targetBound = true;
+        SetEncounterAimTarget(target);
+    }
+
+    // Room target changes never reapply the deployment or change its permission.
+    public void SetEncounterAimTarget(Enemy target)
+    {
+        EndAimOverride();
         aimTarget = target;
         aimTargetCollider = target != null ? target.GetComponent<Collider2D>() : null;
     }

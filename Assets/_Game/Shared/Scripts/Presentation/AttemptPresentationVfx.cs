@@ -343,6 +343,8 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
         foreach (var line in blackoutMarks) if (line != null) line.enabled = false;
     }
 
+    public void BindBossParts(SpriteRenderer[] parts) => bossParts = parts;
+
     public void ClearBossEffects()
     {
         ghosting = false;

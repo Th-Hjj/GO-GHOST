@@ -45,8 +45,9 @@ public sealed partial class GameSessionFlow : MonoBehaviour
     private void Awake()
     {
         // Explicit instance initialization also works with Domain Reload disabled.
+        InitializeTowerRooms();
         State = FlowState.MainMenu;
-        OfficerIndex = 1;
+        OfficerIndex = PoliceArchive.Current.NextOfficerNumber;
         AugmentationsUnlocked = false;
         Draft = null;
         Deployment = null;
@@ -72,8 +73,9 @@ public sealed partial class GameSessionFlow : MonoBehaviour
         StopAllCoroutines();
         generation++;
         DisposeAttempt();
+        ResetTowerRun();
         Draft?.Lock();
-        OfficerIndex = 1;
+        OfficerIndex = PoliceArchive.Current.NextOfficerNumber;
         AugmentationsUnlocked = true;
         Draft = new LoadoutDraft(true);
         Deployment = null;
@@ -97,6 +99,7 @@ public sealed partial class GameSessionFlow : MonoBehaviour
     public bool RequestEnterBossRoom()
     {
         if (State != FlowState.Practice || ActiveFight == null) return false;
+        if (towerPrototypeEnabled) return BeginTowerRoute();
         ActiveFight.PlacePlayer(Vector2.zero);
         SetView(Vector2.zero);
         ActiveFight.BeginCombat();
@@ -109,6 +112,7 @@ public sealed partial class GameSessionFlow : MonoBehaviour
         StopAllCoroutines();
         generation++;
         DisposeAttempt();
+        ResetTowerRun();
         Draft?.Lock();
         Draft = null;
         Deployment = null;
@@ -160,6 +164,7 @@ public sealed partial class GameSessionFlow : MonoBehaviour
         ActiveFight = fight;
         fight.name = "CombatAttempt_Officer_" + OfficerIndex;
         fight.Prepare(Deployment);
+        if (towerPrototypeEnabled) fight.EnableTowerMission();
         fight.Boss.BindHighC(highCPlatform);
         // An empty platform list intentionally leaves the old platform-dependent BLACKOUT unbound.
         // Configured platform arenas still receive the existing strict validation.
@@ -188,7 +193,13 @@ public sealed partial class GameSessionFlow : MonoBehaviour
 
     private void ResolveAttempt(BossFight source, int token, BossFight.Outcome outcome)
     {
-        if (State != FlowState.Combat || token != generation || source != ActiveFight) return;
+        if ((State != FlowState.Combat && !(towerPrototypeEnabled && State == FlowState.Practice)) || token != generation || source != ActiveFight) return;
+        if (towerPrototypeEnabled)
+        {
+            if (outcome != BossFight.Outcome.Died || towerTerminal) return;
+            towerTerminal = true;
+            ClearTowerWorld();
+        }
         if (outcome != BossFight.Outcome.Won && outcome != BossFight.Outcome.Died) return;
         if (outcome == BossFight.Outcome.Won) Victory = new VictoryRecord(source.Deployment);
         // Exactly one frozen record per resolved attempt: this officer, the immutable deployment and BossFight's frozen values.
@@ -205,6 +216,7 @@ public sealed partial class GameSessionFlow : MonoBehaviour
     {
         CancelIntervention();
         if (ActiveFight == null) return;
+        ActiveFight.OnEncounterEnded -= TowerEncounterEnded;
         ActiveFight.OnResolved -= outcomeHandler;
         outcomeHandler = null;
         ActiveFight.CancelCombat();

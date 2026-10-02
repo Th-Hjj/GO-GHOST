@@ -79,7 +79,9 @@ public class BossFight : MonoBehaviour
             practicing = false;
             // Practice -> combat boundary only. Practice shots never reach the Boss room or the result statistics.
             foreach (var bullet in GetComponentsInChildren<Projectile>(true)) bullet.Retire();
-            player.GetComponent<PlayerShooting>().ResetShotCounters();
+            var shooting = player.GetComponent<PlayerShooting>();
+            shooting.ResetShotCounters();
+            shooting.ApplyDeployment(Deployment); // ends an unfinished reload and refills the magazine
             // Same officer and locked build: end running effects, clear cooldowns, refill air resources and HP.
             player.GetComponent<PlayerDodge>().ResetCooldown();
             player.GetComponent<PlayerTimeSlow>().ApplyDeployment(Deployment);

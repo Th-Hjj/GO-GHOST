@@ -24,10 +24,43 @@ public readonly struct LoadoutEntry
     }
 }
 
+/// <summary>TEST weapon parameters, replaceable in one place (LoadoutRules.Weapon). Not final balance.</summary>
+public readonly struct WeaponProfile
+{
+    public int Damage { get; }           // per projectile
+    public float FireInterval { get; }   // seconds between trigger pulls before Rapid Fire
+    public int MagazineSize { get; }
+    public float ReloadSeconds { get; }
+    public int Pellets { get; }          // projectiles per trigger pull
+    public float SpreadDegrees { get; }  // total fixed fan for Pellets > 1
+    public bool Automatic { get; }       // true: hold to fire; false: one pull per press
+
+    public WeaponProfile(int damage, float fireInterval, int magazineSize, float reloadSeconds, int pellets, float spreadDegrees, bool automatic)
+    {
+        Damage = damage; FireInterval = fireInterval; MagazineSize = magazineSize; ReloadSeconds = reloadSeconds;
+        Pellets = pellets; SpreadDegrees = spreadDegrees; Automatic = automatic;
+    }
+}
+
 public static class LoadoutRules
 {
     public const int SlotCount = 7;
+    // Legacy weapon ID kept for older run records and fixtures; at runtime it behaves as the Assault Rifle.
     public const string BasicGun = "basic_gun";
+    public const string AssaultRifle = "assault_rifle";
+    public const string Sniper = "sniper";
+    public const string Shotgun = "shotgun";
+    /// <summary>The Weapon slot choices offered before deployment, in display order.</summary>
+    public static readonly string[] OfferedWeapons = { AssaultRifle, Sniper, Shotgun };
+    public static bool IsWeapon(string id) => id == AssaultRifle || id == Sniper || id == Shotgun || id == BasicGun;
+
+    // TEST values. Assault Rifle keeps the previous gun numbers (12 damage, 4 shots/s).
+    public static WeaponProfile Weapon(string id) => id switch
+    {
+        Sniper => new WeaponProfile(45, 1f, 4, 1.8f, 1, 0f, false),
+        Shotgun => new WeaponProfile(6, .8f, 5, 1.6f, 6, 25f, false),
+        _ => new WeaponProfile(12, .25f, 24, 1.2f, 1, 0f, true)
+    };
     public const string ArmFireRate = "test_v2_arm_rate";
     public const string LegMoveSpeed = "test_v2_leg_speed";
     public const string LegDoubleJump = "test_leg_double_jump";
@@ -107,7 +140,10 @@ public static class LoadoutRules
         return string.IsNullOrEmpty(current) ? ModuleForSlot(slot) : "";
     }
 
-    public static string WeaponLabel(string id) => id == BasicGun ? "Basic Gun" : id;
+    public static string WeaponLabel(string id) => id switch
+    {
+        AssaultRifle => "Assault Rifle", Sniper => "Sniper", Shotgun => "Shotgun", BasicGun => "Basic Gun", _ => id
+    };
     public static string SlotLabel(LoadoutSlot slot) => slot switch
     {
         LoadoutSlot.LeftArm => "Left Arm", LoadoutSlot.RightArm => "Right Arm",
@@ -160,7 +196,7 @@ public sealed class LoadoutDraft
         }
         AugmentationsAvailable = augmentationsAvailable;
         for (int i = 0; i < slots.Length; i++)
-            slots[i] = new LoadoutEntry((LoadoutSlot)i, i == (int)LoadoutSlot.Weapon ? LoadoutRules.BasicGun : "", 0f);
+            slots[i] = new LoadoutEntry((LoadoutSlot)i, i == (int)LoadoutSlot.Weapon ? LoadoutRules.AssaultRifle : "", 0f);
     }
 
     public LoadoutDraft(DeploymentSnapshot previous, bool augmentationsAvailable)
@@ -177,7 +213,7 @@ public sealed class LoadoutDraft
         if (IsLocked || (int)slot < 0 || (int)slot >= slots.Length) return false;
         if (slot == LoadoutSlot.Weapon)
         {
-            if (!CanUseWeapon || itemId != LoadoutRules.BasicGun) return false;
+            if (!CanUseWeapon || !LoadoutRules.IsWeapon(itemId)) return false;
             slots[(int)slot] = new LoadoutEntry(slot, itemId, 0f);
             return true;
         }
@@ -238,14 +274,16 @@ public sealed class DeploymentSnapshot
     public bool CanUseWeapon => WeaponCompatibility != WeaponCompatibility.Disabled;
     public AimControl Aim => GetSlot(LoadoutSlot.Brain).ItemId == LoadoutRules.BrainAI ? AimControl.AI : AimControl.Manual;
     // TEST slice parameters, recomputed from this deployment only. Shared PlayerStats stays untouched.
-    public int BulletDamage => 12;
+    public WeaponProfile Weapon => LoadoutRules.Weapon(WeaponId);
+    public int BulletDamage => Weapon.Damage;
     public float DodgeStartInterval => 0.8f;
     public bool HasModule(LoadoutSlot slot) => !string.IsNullOrEmpty(GetSlot(slot).ItemId);
     public int ArmCount => (GetSlot(LoadoutSlot.LeftArm).ItemId == LoadoutRules.ArmFireRate ? 1 : 0)
         + (GetSlot(LoadoutSlot.RightArm).ItemId == LoadoutRules.ArmFireRate ? 1 : 0);
     public int LegCount => (GetSlot(LoadoutSlot.LeftLeg).ItemId == LoadoutRules.LegMoveSpeed ? 1 : 0)
         + (GetSlot(LoadoutSlot.RightLeg).ItemId == LoadoutRules.LegMoveSpeed ? 1 : 0);
-    public float ShotsPerSecond => 4f + 3f * ArmCount;
+    // Rapid Fire scales the equipped weapon's own base interval (Assault Rifle: 4 -> 7 -> 10 shots/s as before).
+    public float ShotsPerSecond => (1f + .75f * ArmCount) / Weapon.FireInterval;
     public float FireInterval => 1f / ShotsPerSecond;
     public float MoveSpeed => 6f + 2f * LegCount;
     public bool HasTimeSlow => GetSlot(LoadoutSlot.Torso).ItemId == LoadoutRules.TorsoSlow;

@@ -101,6 +101,7 @@ public partial class TopDownSmokeTest : MonoBehaviour
             case "ui-corrections": yield return StrictUICorrections(); break;
             case "run-archive": yield return RunArchive(); break;
             case "practice-flow": yield return PracticeFlow(); break;
+            case "weapons": yield return Weapons(); break;
             case "boss-contact": yield return BossContact(); break;
             // Earlier numerical gates are historical; TEST-v2 uses combat-v2.
             case "movement": yield return Movement(); break;

@@ -1,17 +1,20 @@
 # GO GHOST — Codex Astra 执行指南
 
-## Current entry point — 2026-09-25 MSP handoff
+## Current entry point — 2026-10-01 source audit
 
-**Latest override: strict UI and flow after the reset.** Main Menu -> START MISSION -> Upgrade -> BEGIN OPERATION -> Combat -> Mission Result (success or failure) -> CONTINUE -> Main Menu. Only the specified black/white UI, seven body regions, two unlabeled HP bars and four result statistics are permitted. Police Archive contains the three specified tabs with a top-left BACK; Police Records lists frozen run records, Case Closure lists TEMP ending IDs, and hidden rewards are never shown there (2026-10-01). Start with the newest [Implementation_Log](Implementation_Log.md) entry and AGENTS/VerticalSlice. Current targeted scenarios: `run-archive`, `strict-ui`; reset and Phase 10 UI scenarios are historical. The old standalone build predates this UI.
+Read AGENTS.md, the latest override at the top of [VerticalSlice](../VerticalSlice.md), and the newest [Implementation_Log](Implementation_Log.md) entries. Current source checkpoint: 68f5bcf on main (Camo Rush), following e421a76 (Archive final).
 
-Start with [../../AGENTS.md](../../AGENTS.md), [../VerticalSlice.md](../VerticalSlice.md), [../ProjectMap.md](../ProjectMap.md) and [Implementation_Log.md](Implementation_Log.md). The current checkpoint is Phase 10 MSP integration and Windows demo build, committed in `e5fa166` on `main`. It includes the platform arena/leg movement, complete two-phase Boss/BLACKOUT, Counter Arm, Targeting AI/Predictive Cortex, and Session Police Archive with TEMP_FIRST_VICTORY -> persistent Detached Drone Arm unlock. No final endings or final achievement condition. Temporary inputs: Shift Dodge, E Counter, Q Torso Time Slow; Drone is autonomous. No later phase has started.
+Launch -> human/Assault Rifle practice -> door -> Boss. Later missions pass through Upgrade and practice. Both outcomes stop on Result; defeat continues to Main Menu, victory continues to the snapshot-selected Human/AI Ending and then Main Menu. Three weapons, Arm-Blade, Air Dash, two independent Boss health phases, BLACKOUT and Camo Rush are implemented. Police Records restart each application launch; endings, MARKSMAN PROTOCOL and hidden unlocks persist.
 
-Phase 10 records editor integration, a successful Windows x64 build and a limited standalone P1/death/redeployment smoke path. Physical keyboard/mouse confirmation, standalone P2/full progression and a natural 0% complete victory remain pending. Exact results, warnings and the final test-teardown verification limit belong in [Implementation_Log.md](Implementation_Log.md). Build folders and runtime evidence are ignored local output, not included in a Git pull. Await Thomas's playtest feedback or an explicitly scoped next task.
+The integrated blue terminal UI conflicts with the still-written black/white restriction. This is an unresolved documentation/design discrepancy, not authority to roll back or extend either version.
 
-Use the latest explicitly requested phase. MSP verification is compile + targeted Play Mode happy path + short core-flow smoke; known balance/polish limits do not block progress. Runtime details are in the current section of [Prototype_Test_Profile.md](Prototype_Test_Profile.md).
+Verification boundary: this audit was static only. Compile, current-head Play Mode, Camo Rush, full outcome paths and Windows build are NOT RUN. October runtime evidence/build folders described by the log are not present on this machine; local ignored output does not arrive with a Git pull. The archive-final fixture's count expectation was corrected after 16 PASS / 1 FAIL and has not been re-run.
 
-**The rest of this page and `Prompts/00–08` are the historical 2026-09-24 migration package, not the current phase numbering or automatic next-task queue.** They must not restore Spine/Shift Time Slow, single-phase scope, blanket no-persistence rules or exhaustive gates. The original Chinese baseline and Macro are preserved with later overrides summarized in VerticalSlice. Evidence is recorded only in Implementation_Log; local Logs are ignored. Do not copy this package over the existing repository or rerun the old migration.
+Proposed next verification: compile, one focused Camo Rush trigger (damage, Dodge/parry and interruption), then practice door -> combat -> each outcome -> Continue -> next deployment reset. Use an isolated Archive profile. Historical strict-ui/reset/phase scenarios contain obsolete expectations and are not current acceptance suites without review.
 
+Use only the explicitly requested task. MSP gate: compile + targeted Play Mode happy path + short core-flow smoke. Keep evidence and NOT_RUN items in Implementation_Log; numbers in Prototype_Test_Profile; paths in ProjectMap.
+
+**The rest of this page and Prompts/00–08 are the historical 2026-09-24 migration package, not a current phase queue.** Do not use them to restore retired flow, controls or exhaustive gates.
 ## Historical execution guide
 
 日期：2026-09-24  

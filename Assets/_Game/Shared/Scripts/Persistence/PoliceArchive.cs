@@ -2,7 +2,10 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>Persistent unlock facts plus one frozen record per resolved combat attempt. No live session/combat state.</summary>
+/// <summary>
+/// Persistent unlock facts (endings, achievements, hidden augmentations) plus one frozen record per resolved combat
+/// attempt of the current application session. No live session/combat state.
+/// </summary>
 public sealed class PoliceArchiveProfile
 {
     private readonly List<string> endings = new List<string>();
@@ -15,7 +18,7 @@ public sealed class PoliceArchiveProfile
     /// <summary>Oldest first. Records are frozen copies; later loadouts never change them.</summary>
     public IReadOnlyList<PoliceRunRecord> RunRecords => runs.AsReadOnly();
     public PoliceRunRecord LatestRun => runs.Count > 0 ? runs[runs.Count - 1] : null;
-    /// <summary>Sequential and persistent: never reuses a number from completed history.</summary>
+    /// <summary>Sequential within one application session: 1, 2, 3... Restarts at 1 when the session's records are cleared.</summary>
     public int NextOfficerNumber
     {
         get
@@ -26,6 +29,7 @@ public sealed class PoliceArchiveProfile
         }
     }
 
+    public bool HasEnding(string id) => endings.Contains(id);
     public bool HasAchievement(string id) => achievements.Contains(id);
     public bool HasHiddenAugmentation(string id) => hiddenAugmentations.Contains(id);
 
@@ -37,6 +41,9 @@ public sealed class PoliceArchiveProfile
         if (record == null || !record.IsValid) throw new ArgumentException("A complete run record is required.");
         runs.Add(record);
     }
+
+    /// <summary>Run history only. Endings, achievements and hidden augmentation unlocks are untouched.</summary>
+    public void ClearRunRecords() => runs.Clear();
 
     private static bool Add(List<string> list, string id)
     {
@@ -186,11 +193,19 @@ public sealed class PoliceRunRecord
     }
 }
 
-/// <summary>One local profile, independent of session New Game. TEMP victory reward is not final design.</summary>
+/// <summary>
+/// One local profile, independent of session New Game. Unlocks persist across launches; Police Records (run history
+/// and officer numbering) start empty with every application session.
+/// </summary>
 public static class PoliceArchive
 {
-    // TEMP / placeholder condition: defeat the Boss once. Replace when the real challenge is designed.
+    // Legacy test ID. Older saves may still hold it; it is never shown, never completed again and never counts as Marksman Protocol.
     public const string TempFirstVictory = "TEMP_FIRST_VICTORY";
+    // CONFIRMED 2026-10-01: the vertical slice's one achievement. Its reward (not shown to the player) is the Detached Drone Arm.
+    public const string MarksmanProtocol = "MARKSMAN_PROTOCOL";
+    public const string MarksmanProtocolTitle = "MARKSMAN PROTOCOL";
+    public const string MarksmanProtocolCondition = "Defeat the Cyber Psycho with at least 70% accuracy.";
+    public const float MarksmanAccuracyPercent = 70f;
     // CONFIRMED 2026-10-01 ending design: Boss defeated with Cyberization < 50% -> Human Ending; >= 50% -> AI Ending.
     public const string HumanEnding = "HUMAN_ENDING";
     public const string AiEnding = "AI_ENDING";
@@ -224,8 +239,20 @@ public static class PoliceArchive
     {
         if (current != null) return;
         store = new PoliceArchiveStore(SavePath);
-        current = store.Load();
+        current = BeginSession(store);
         if (!string.IsNullOrEmpty(store.LastError)) Debug.LogWarning("Police Archive: " + store.LastError);
+    }
+
+    /// <summary>
+    /// CONFIRMED 2026-10-01: the one per-application-session load. Police Records do not accumulate across launches, so
+    /// the loaded run history is dropped here (officer numbering restarts at 1) while every unlock is kept. START MISSION /
+    /// New Game never comes through here. Nothing is written until the next resolved attempt saves the Archive.
+    /// </summary>
+    internal static PoliceArchiveProfile BeginSession(PoliceArchiveStore source)
+    {
+        var profile = source.Load();
+        profile.ClearRunRecords();
+        return profile;
     }
 
     /// <summary>
@@ -237,7 +264,7 @@ public static class PoliceArchive
 
     /// <summary>
     /// Call exactly once per resolved combat attempt (victory or defeat). Adds the frozen record, evaluates the
-    /// placeholder achievement and ending from that record, then writes the Archive once.
+    /// achievement and ending from that record, then writes the Archive once.
     /// </summary>
     public static bool RecordCompletedRun(PoliceRunRecord run, out string error)
     {
@@ -250,10 +277,11 @@ public static class PoliceArchive
     private static void EvaluateCompletedRun(PoliceArchiveProfile profile, PoliceRunRecord run)
     {
         if (!run.Success) return;
-        // TEMP_FIRST_VICTORY: any Boss victory. Its existing reward unlocks the Detached Drone Arm. Both are idempotent.
-        profile.CompleteAchievement(TempFirstVictory);
-        profile.UnlockHiddenAugmentation(LoadoutRules.DetachedDroneArm);
         profile.UnlockEnding(EndingFor(run.BodyModificationPercent));
+        // Marksman Protocol reads only the frozen record: a victory with accuracy >= 70 (exactly 70 counts). The reward
+        // is granted once, with the first completion, and is saved by the same Archive write as the record.
+        if (run.AccuracyPercent >= MarksmanAccuracyPercent && profile.CompleteAchievement(MarksmanProtocol))
+            profile.UnlockHiddenAugmentation(LoadoutRules.DetachedDroneArm);
     }
 
     public static bool Save(out string error)

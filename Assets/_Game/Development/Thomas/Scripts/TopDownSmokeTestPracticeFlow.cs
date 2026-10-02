@@ -212,8 +212,7 @@ public partial class TopDownSmokeTest
             yield return Frames(3);
             var victory = PoliceArchive.Current.LatestRun;
             Check("Victory keeps Result, record and TEMP rewards", StrictTexts().Contains("MISSION SUCCESS") && PoliceArchive.Current.RunRecords.Count == 2
-                && victory.Success && PoliceArchive.Current.HasAchievement(PoliceArchive.TempFirstVictory)
-                && PoliceArchive.Current.HasHiddenAugmentation(LoadoutRules.DetachedDroneArm)
+                && victory.Success && !PoliceArchive.Current.HasAchievement(PoliceArchive.TempFirstVictory)
                 && PoliceArchive.Current.UnlockedEndings.SequenceEqual(new[] { PoliceArchive.EndingFor(body) }), $"body={body}% ending={PoliceArchive.EndingFor(body)}");
             Check("Combat VFX removed at resolution", f.transform.Find("AttemptVfx_Transient") == null, "EndAttempt");
             Check("Victory cue once, combat voices stopped", uiSfx.Requested(Sfx.Victory) == 1 && uiSfx.Requested(Sfx.Defeat) == 1
@@ -263,14 +262,14 @@ public partial class TopDownSmokeTest
                 && PoliceArchive.Current.RunRecords.Count == 3, string.Join(",", PoliceArchive.Current.UnlockedEndings));
             yield return ClickSessionButton("PoliceArchive");
             yield return ClickSessionButton("ArchiveTab2");
-            Check("Case Closure lists ending names only", StrictTexts().Contains("AI ENDING") && StrictTexts().Contains("HUMAN ENDING") && StrictTexts().Length == 6,
+            Check("Case Closure shows both ending cards", StrictTexts().Contains("AI ENDING") && StrictTexts().Contains("HUMAN ENDING") && StrictTexts().Length == 8,
                 string.Join(" | ", StrictTexts()));
             yield return ClickSessionButton("ArchiveBack");
 
             var reloaded = new PoliceArchiveStore(store.FilePath).Load();
             Check("Archive reload keeps records and endings", reloaded.RunRecords.Count == 3 && !reloaded.RunRecords[0].Success && reloaded.RunRecords[1].Success
                 && reloaded.UnlockedEndings.SequenceEqual(new[] { PoliceArchive.AiEnding, PoliceArchive.HumanEnding })
-                && reloaded.HasAchievement(PoliceArchive.TempFirstVictory) && reloaded.HasHiddenAugmentation(LoadoutRules.DetachedDroneArm), store.FilePath);
+                && !reloaded.HasAchievement(PoliceArchive.TempFirstVictory), store.FilePath);
             Check("Normal profile untouched", (File.Exists(PoliceArchive.SavePath) ? File.ReadAllText(PoliceArchive.SavePath) : null) == officialBefore
                 && store.FilePath != PoliceArchive.SavePath, "isolated store");
         }

@@ -269,20 +269,23 @@ public sealed partial class MissionUI : MonoBehaviour
         if (tab == 0) BuildRunRecords();
         else if (tab == 1)
         {
-            Text(archiveContent, "Content_Achievement", PoliceArchive.TempFirstVictory, new Vector2(880, 690), new Vector2(1500, 70), 32);
-            Text(archiveContent, "Content_Condition", "Defeat the Boss once.", new Vector2(880, 590), new Vector2(1500, 70), 30);
-            Text(archiveContent, "Content_Completion", PoliceArchive.Current.HasAchievement(PoliceArchive.TempFirstVictory) ? "COMPLETED" : "INCOMPLETE", new Vector2(880, 490), new Vector2(1500, 70), 30);
+            // Title, condition and completion only; the reward is never named here.
+            Text(archiveContent, "Content_Achievement", PoliceArchive.MarksmanProtocolTitle, new Vector2(880, 690), new Vector2(1500, 70), 32);
+            Text(archiveContent, "Content_Condition", PoliceArchive.MarksmanProtocolCondition, new Vector2(880, 590), new Vector2(1500, 70), 30);
+            Text(archiveContent, "Content_Completion", PoliceArchive.Current.HasAchievement(PoliceArchive.MarksmanProtocol) ? "COMPLETED" : "INCOMPLETE", new Vector2(880, 490), new Vector2(1500, 70), 30);
         }
         else if (tab == 2)
         {
-            // Unlocked formal ending names only: no ending text or descriptions. Older TEMP IDs stay in the save, unlisted.
-            var endings = PoliceArchive.Current.UnlockedEndings;
-            int listed = 0;
-            for (int i = 0; i < endings.Count; i++)
+            // Two fixed, equal cards (left = Human slot, right = AI slot). A locked card is completely blank: no name,
+            // hint or condition. Older TEMP ending IDs stay in the save and fill nothing.
+            string[] slots = { PoliceArchive.HumanEnding, PoliceArchive.AiEnding };
+            for (int i = 0; i < slots.Length; i++)
             {
-                if (endings[i] != PoliceArchive.HumanEnding && endings[i] != PoliceArchive.AiEnding) continue;
-                Text(archiveContent, "Content_Ending" + listed, PoliceArchive.EndingTitle(endings[i]), new Vector2(880, 690 - listed * 100), new Vector2(1500, 70), 32);
-                listed++;
+                var card = Panel(archiveContent, "Content_EndingCard" + i, new Vector2(450 + i * 860, 410), new Vector2(820, 740));
+                if (!PoliceArchive.Current.HasEnding(slots[i])) continue;
+                Text(card, "CardTitle", PoliceArchive.EndingTitle(slots[i]), new Vector2(410, 590), new Vector2(720, 90), 44);
+                var body = Text(card, "CardText", PoliceArchive.EndingText(slots[i]), new Vector2(410, 330), new Vector2(680, 320), 30);
+                body.textWrappingMode = TextWrappingModes.Normal;
             }
         }
     }

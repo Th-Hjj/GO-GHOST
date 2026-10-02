@@ -132,7 +132,7 @@ public partial class TopDownSmokeTest
             PoliceArchive.Current.UnlockEnding("TEMP_ENDING_UNDER_50"); // an older save entry: kept, never listed
             yield return ClickSessionButton("PoliceArchive");
             yield return ClickSessionButton("ArchiveTab2");
-            Check("Case Closure lists formal endings only", StrictTexts().Contains("AI ENDING") && StrictTexts().Length == 5
+            Check("Case Closure lists formal endings only", StrictTexts().Contains("AI ENDING") && StrictTexts().Length == 6
                 && PoliceArchive.Current.UnlockedEndings.Count == 2, string.Join(" | ", StrictTexts()));
             yield return ClickSessionButton("ArchiveBack");
         }

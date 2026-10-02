@@ -41,7 +41,7 @@ public partial class TopDownSmokeTest
     private IEnumerator FlowFinalChoice(GameSessionFlow flow, TowerCharacter target, int index)
     {
         yield return FlowNear(flow,target); yield return FlowKey(Key.F);
-        for(int i=0;i<index;i++) yield return FlowKey(Key.DownArrow);
+        for(int i=0;i<index;i++) yield return FlowKey(Key.S);
         yield return FlowKey(Key.F);
     }
 
@@ -70,7 +70,7 @@ public partial class TopDownSmokeTest
             yield return S02WalkExit(flow);
             yield return FlowNear(flow,flow.CurrentRoom.Character); yield return FlowKey(Key.F); yield return FlowClose(ui);
             yield return Seconds(2.5f); yield return FlowNear(flow,flow.CurrentRoom.Character); yield return FlowKey(Key.F);
-            yield return FlowKey(Key.DownArrow); yield return FlowKey(Key.F);
+            yield return FlowKey(Key.S); yield return FlowKey(Key.F);
             Check("Real 1F path/cancel is recorded alive",flow.Narrative.MaintenanceResetDecision==TowerNarrativeState.ResetDecision.Cancelled && flow.Narrative.MaintenanceAlive==true,"floor01");
             yield return S02WalkExit(flow); yield return FlowClose(ui);
             Check("P1 response accepts live gameplay",ui.ChoicesVisible && flow.ReplyOrAttackActive && !flow.ActiveFight.NarrativePaused,"p1");
@@ -85,7 +85,7 @@ public partial class TopDownSmokeTest
             Check("Normal guard fight preserves unhit receptionist",flow.CurrentRoom.Receptionist.IsAlive && flow.CurrentRoom.Prop.IsHanging,$"player={player.transform.position}, npc={flow.CurrentRoom.Receptionist.transform.position}, cause={flow.Narrative.ReceptionistLethalCause}");
             yield return S02WalkExit(flow); yield return new WaitForSecondsRealtime(2);
             Check("Tier zero P2 has only curiosity line",ui.CurrentNarrativeId=="boss.p2.intro.no_ai" && !flow.HasInnerAI,ui.CurrentNarrativeId);
-            yield return FlowClose(ui); yield return FlowKey(Key.DownArrow); yield return FlowKey(Key.F);
+            yield return FlowClose(ui); yield return FlowKey(Key.S); yield return FlowKey(Key.F);
             Check("Selecting denial alone is not delivery",!flow.Narrative.AntiAiLifeHostility && ui.CurrentNarrativeId=="boss.p2.reply.deny_ai_consciousness",ui.CurrentNarrativeId);
             yield return FlowClose(ui); yield return FlowShootBoss(flow); yield return S02WalkExit(flow);
             Check("99F actual command before fight",ui.CurrentNarrativeId=="npc.floor99.security",ui.CurrentNarrativeId);
@@ -139,14 +139,14 @@ public partial class TopDownSmokeTest
                 Check("DEV final has a defeated carrier "+pair.Item1,flow.ActiveFight.BossHealth.IsDead,"local prerequisite only");
                 yield return FlowNear(flow,flow.ContinuingCore);yield return FlowKey(Key.F);
                 Check("Control unavailable before explicit Spare "+pair.Item1,ui.SelectedChoiceId=="office.final.puppeteer.preserve","core first");
-                yield return FlowKey(Key.DownArrow);yield return FlowKey(Key.DownArrow);
+                yield return FlowKey(Key.S);yield return FlowKey(Key.S);
                 Check("Core cycles two legal early choices "+pair.Item1,ui.SelectedChoiceId=="office.final.puppeteer.preserve",ui.SelectedChoiceId);
                 yield return FlowKey(Key.Escape);
                 yield return FlowFinalChoice(flow,flow.President,pair.Item2);
                 Check("First final decision does not complete "+pair.Item1,flow.State==GameSessionFlow.FlowState.Combat && flow.TowerCompletionCount==0,"first only");
                 yield return FlowNear(flow,flow.ContinuingCore);yield return FlowKey(Key.F);
                 if(pair.Item1=="D") Check("D cue before fresh commitment",ui.DisplayedConsequence==ui.NarrativeEntry("office.final.restore_queued") && flow.TowerCompletionCount==0,ui.DisplayedConsequence);
-                for(int i=0;i<pair.Item3;i++)yield return FlowKey(Key.DownArrow);
+                for(int i=0;i<pair.Item3;i++)yield return FlowKey(Key.S);
                 yield return FlowKey(Key.F);
                 Check("Final F result "+pair.Item1,flow.State==GameSessionFlow.FlowState.Result && flow.TowerEndingId=="ending."+pair.Item1 && flow.TowerCompletionCount==1,flow.TowerEndingId);
             }
@@ -204,7 +204,7 @@ public partial class TopDownSmokeTest
             Check("Office dialogue reaches real default P3",flow.TowerStageId=="boss_p3" && flow.ActiveFight.EncounterActive && flow.P3DevelopmentMode==GameSessionFlow.DevelopmentP3Mode.FullForce,"default profile");
 
             yield return FlowJump(flow,"final_disposition",0);yield return FlowFinalChoice(flow,flow.ContinuingCore,0);
-            yield return FlowNear(flow,flow.President);yield return FlowKey(Key.F);yield return FlowKey(Key.DownArrow);
+            yield return FlowNear(flow,flow.President);yield return FlowKey(Key.F);yield return FlowKey(Key.S);
             Check("D cue also precedes CEO-second commitment",ui.DisplayedConsequence==ui.NarrativeEntry("office.final.restore_queued") && flow.TowerCompletionCount==0,"reverse order");
             yield return FlowKey(Key.F);Check("Reverse order finishes D once",flow.TowerEndingId=="ending.D" && flow.TowerCompletionCount==1,"D");
             yield return FlowJump(flow,"final_disposition",0);yield return FlowNear(flow,flow.President);

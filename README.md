@@ -17,7 +17,8 @@ Route: practice -> entrance worker -> 1F Maintenance AI -> P1 -> 50F Receptionis
 | Space / Left Shift | Jump and equipped leg ability / Dodge or equipped Air Dash |
 | E / Q | Existing Arm-Blade slash/deflect / equipped prototype Time Slow |
 | F | Near the single overhead F: interact; advance/close dialogue |
-| Up/Down then fresh F | Select/commit a dialogue or final disposition choice |
+| W/S then fresh F, or hover + left-click | Select/commit a dialogue or final disposition choice |
+| Left-click | Advance an ordinary dialogue page; a held click never advances repeatedly |
 | Escape | Cancel a voluntary interaction/choice |
 | F8 | Editor/Development-only route testing |
 

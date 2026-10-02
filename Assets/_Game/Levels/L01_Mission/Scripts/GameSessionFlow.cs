@@ -3,7 +3,7 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>One scene-local session. Each deployment owns a fresh combat prefab; no static/persistent session state.</summary>
-public sealed class GameSessionFlow : MonoBehaviour
+public sealed partial class GameSessionFlow : MonoBehaviour
 {
     public enum FlowState { NewGameInitialization, Deployment, Combat, DefeatTransition, Loadout, Result, NextOfficerTransition, VictoryTransition, MainMenu, Archive, Practice, Ending }
     [SerializeField] private BossFight attemptPrefab;
@@ -148,7 +148,10 @@ public sealed class GameSessionFlow : MonoBehaviour
     private IEnumerator DeployRoutine()
     {
         SetState(FlowState.Deployment); // Reject duplicate deployment requests.
-        Deployment = Draft.Deploy(OfficerIndex);
+        CancelIntervention();
+        interventionOffered = false;
+        if (chandelier != null) chandelier.ResetEncounter();
+        Deployment = Draft.Deploy(OfficerIndex, permissionPrototypeEnabled ? developmentPermissionTier : -1);
         int token = ++generation;
         // Restore the breakable scene platforms at every deployment; never persist terrain in Police Archive.
         if (highCPlatform != null) highCPlatform.SetActive(true);
@@ -158,8 +161,9 @@ public sealed class GameSessionFlow : MonoBehaviour
         fight.name = "CombatAttempt_Officer_" + OfficerIndex;
         fight.Prepare(Deployment);
         fight.Boss.BindHighC(highCPlatform);
-        // B's single arena bind for BLACKOUT: actual interior bounds, the three breakable high platforms, the permanent supports.
-        if (!fight.Boss.BindBlackoutArena(playableBounds, breakableHighPlatforms, permanentSupports))
+        // An empty platform list intentionally leaves the old platform-dependent BLACKOUT unbound.
+        // Configured platform arenas still receive the existing strict validation.
+        if (breakableHighPlatforms.Length > 0 && !fight.Boss.BindBlackoutArena(playableBounds, breakableHighPlatforms, permanentSupports))
             Debug.LogError("BLACKOUT arena bind failed; check the GameSession platform references.", this);
         outcomeHandler = outcome => ResolveAttempt(fight, token, outcome);
         fight.OnResolved += outcomeHandler;
@@ -199,6 +203,7 @@ public sealed class GameSessionFlow : MonoBehaviour
 
     private void DisposeAttempt()
     {
+        CancelIntervention();
         if (ActiveFight == null) return;
         ActiveFight.OnResolved -= outcomeHandler;
         outcomeHandler = null;
@@ -211,6 +216,7 @@ public sealed class GameSessionFlow : MonoBehaviour
 
     private void SetState(FlowState state)
     {
+        if (state != FlowState.Combat) CancelIntervention();
         State = state;
         stateEnteredAt = Time.unscaledTime;
         Debug.Log($"[Session] {state} / Officer #{OfficerIndex}", this);
@@ -219,6 +225,7 @@ public sealed class GameSessionFlow : MonoBehaviour
 
     private void OnDestroy()
     {
+        CancelIntervention();
         generation++;
         StopAllCoroutines();
         if (ActiveFight != null) ActiveFight.OnResolved -= outcomeHandler;

@@ -12,14 +12,17 @@ public sealed class PlayerTimeSlow : MonoBehaviour, IAttemptAugmentation
     private float activeUntil;
     private float readyAt;
     private bool attemptActive;
+    private bool narrativePaused;
+    private float pauseStartedAt;
+    private float Clock => narrativePaused ? pauseStartedAt : Time.unscaledTime;
     private SfxSet sfx;
     private AttemptPresentationVfx vfx;
 
     public bool IsEquipped => attemptActive && officer != null && officer.Deployment != null && officer.Deployment.HasTimeSlow;
-    public bool IsActive => isActiveAndEnabled && IsEquipped && Time.unscaledTime < activeUntil;
+    public bool IsActive => isActiveAndEnabled && IsEquipped && Clock < activeUntil;
     public float WorldRate => IsActive ? SlowRate : 1f;
-    public float ActiveRemaining => IsActive ? activeUntil - Time.unscaledTime : 0f;
-    public float CooldownRemaining => Mathf.Max(0f, readyAt - Time.unscaledTime);
+    public float ActiveRemaining => IsActive ? activeUntil - Clock : 0f;
+    public float CooldownRemaining => Mathf.Max(0f, readyAt - Clock);
     public string Cue => IsActive ? $"TIME SLOW ACTIVE {ActiveRemaining:0.0}s / WORLD 25%"
         : CooldownRemaining > 0 ? $"TIME SLOW COOLDOWN {CooldownRemaining:0.0}s" : "TIME SLOW READY [Q]";
 
@@ -46,7 +49,7 @@ public sealed class PlayerTimeSlow : MonoBehaviour, IAttemptAugmentation
 
     public bool TryActivate()
     {
-        if (!isActiveAndEnabled || !IsEquipped || !input.GameplayInputEnabled || health.IsDead || CooldownRemaining > 0f) return false;
+        if (!isActiveAndEnabled || !IsEquipped || narrativePaused || !input.GameplayInputEnabled || health.IsDead || CooldownRemaining > 0f) return false;
         activeUntil = Time.unscaledTime + Duration;
         readyAt = Time.unscaledTime + StartInterval;
         if (sfx != null) sfx.Play(Sfx.Glitch);
@@ -55,10 +58,25 @@ public sealed class PlayerTimeSlow : MonoBehaviour, IAttemptAugmentation
 
     public void CleanupAttempt()
     {
+        narrativePaused = false;
+        pauseStartedAt = 0f;
         attemptActive = false;
         activeUntil = 0f;
         readyAt = 0f;
         if (vfx != null) vfx.SetTimeSlow(false, null);
+    }
+
+    public void SetNarrativePaused(bool paused)
+    {
+        if (narrativePaused == paused) return;
+        if (paused) pauseStartedAt = Time.unscaledTime;
+        else
+        {
+            float duration = Time.unscaledTime - pauseStartedAt;
+            activeUntil += duration;
+            readyAt += duration;
+        }
+        narrativePaused = paused;
     }
 
     private void OnDisable() => CleanupAttempt();

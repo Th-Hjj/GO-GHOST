@@ -61,7 +61,7 @@ public sealed class PlayerDetachedDroneArm : MonoBehaviour, IAttemptAugmentation
 
     private void Update()
     {
-        if (!equipped || Unit == null || health.IsDead) return;
+        if (!equipped || Unit == null || health.IsDead || input.NarrativePaused) return;
         Unit.position = Vector2.MoveTowards(Unit.position, (Vector2)transform.position + offset, FollowSpeed * Time.deltaTime);
         if (!input.GameplayInputEnabled || target == null || target.IsDead || !target.isActiveAndEnabled) return;
         Vector2 point = targetCollider != null ? targetCollider.bounds.center : target.transform.position;

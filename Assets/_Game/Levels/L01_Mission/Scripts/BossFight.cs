@@ -24,6 +24,10 @@ public class BossFight : MonoBehaviour
     private Vector2 playerSpawn;
     private float combatStartedAt;
     public float CombatDuration { get; private set; }
+    public bool NarrativePaused { get; private set; }
+    public float CombatElapsed => !started ? 0f : !combatRunning ? CombatDuration
+        : Mathf.Max(0f, (NarrativePaused ? pauseStartedAt : Time.unscaledTime) - combatStartedAt - pausedSeconds);
+    private float pauseStartedAt, pausedSeconds, previousTimeScale;
     public int ResultBossHealth { get; private set; }
     public int ResultPlayerHealth { get; private set; }
     public float AccuracyPercent { get; private set; }
@@ -104,6 +108,7 @@ public class BossFight : MonoBehaviour
 
     private void OnDisable()
     {
+        SetNarrativePaused(false);
         combatRunning = false;
         if (!subscribed) return;
         if (player != null) player.OnDeath -= PlayerDied;
@@ -116,6 +121,7 @@ public class BossFight : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (NarrativePaused && !deathPending) return;
         if (combatRunning && boss.Phase == CyberpsychoBoss.BossPhase.PhaseTransition)
         {
             // B's transition presentation only follows the real transition clock; it never drives the phase.
@@ -135,7 +141,7 @@ public class BossFight : MonoBehaviour
         // Resolve after damage callbacks for this frame. TEST rule: mutual death is failure.
         Result = player.IsDead ? Outcome.Died : Outcome.Won;
         // Freeze the four requested result values before actor/projectile cleanup.
-        CombatDuration = Time.unscaledTime - combatStartedAt;
+        CombatDuration = CombatElapsed;
         ResultBossHealth = bossHealth.CurrentHealth;
         ResultPlayerHealth = player.CurrentHealth;
         var shooting = player.GetComponent<PlayerShooting>();
@@ -147,6 +153,7 @@ public class BossFight : MonoBehaviour
 
     public void CancelCombat()
     {
+        SetNarrativePaused(false);
         combatRunning = false;
         var sfx = GetComponent<SfxSet>();
         if (sfx != null) sfx.EndScope(); // no combat voice survives death, victory or disposal
@@ -157,5 +164,29 @@ public class BossFight : MonoBehaviour
         bossHealth.StopCombat();
         bossHealth.GetComponent<Rigidbody2D>().simulated = false;
         foreach (var bullet in GetComponentsInChildren<Projectile>(true)) bullet.Retire();
+    }
+
+    /// <summary>Reversible dialogue pause. No actor disable, terminal cleanup or ability reset.</summary>
+    public void SetNarrativePaused(bool paused)
+    {
+        if (NarrativePaused == paused || (paused && !combatRunning)) return;
+        if (paused)
+        {
+            pauseStartedAt = Time.unscaledTime;
+            previousTimeScale = Time.timeScale;
+            Time.timeScale = 0f;
+        }
+        else
+        {
+            pausedSeconds += Time.unscaledTime - pauseStartedAt;
+            Time.timeScale = previousTimeScale;
+        }
+        NarrativePaused = paused;
+        if (player != null)
+        {
+            player.GetComponent<PlayerInputReader>().SetNarrativePaused(paused);
+            player.GetComponent<PlayerTimeSlow>()?.SetNarrativePaused(paused);
+            player.GetComponent<PlayerCounterArm>()?.SetNarrativePaused(paused);
+        }
     }
 }

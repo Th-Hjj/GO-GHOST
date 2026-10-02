@@ -111,6 +111,7 @@ public sealed partial class MissionUI : MonoBehaviour
         module.submit = Action("UI/Submit");
         module.cancel = Action("UI/Cancel");
         module.scrollWheel = Action("UI/ScrollWheel"); // Existing UI action; only scrolls the Police Records list.
+        BuildDialogue(root);
         Refresh();
     }
 
@@ -557,7 +558,7 @@ public sealed partial class MissionUI : MonoBehaviour
         return fill;
     }
     private static void Fill(RectTransform fill, float amount) { fill.localScale = new Vector3(Mathf.Clamp01(amount), 1, 1); fill.gameObject.SetActive(amount > 0); }
-    private void OnDestroy() { foreach (var reference in uiReferences) if (reference != null) Destroy(reference); }
+    private void OnDestroy() { HideDialogue(); foreach (var reference in uiReferences) if (reference != null) Destroy(reference); }
 }
 
 /// <summary>Six existing clickable regions, redrawn as a minimal geometric expanded pose.</summary>

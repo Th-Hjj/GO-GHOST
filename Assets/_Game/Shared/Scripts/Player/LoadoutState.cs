@@ -276,11 +276,11 @@ public sealed class LoadoutDraft
 
     internal void Lock() => IsLocked = true;
 
-    internal DeploymentSnapshot Deploy(int officerIndex)
+    internal DeploymentSnapshot Deploy(int officerIndex, int brainPermissionTier = -1)
     {
         if (IsLocked) throw new InvalidOperationException("This draft was already deployed.");
         Lock();
-        return new DeploymentSnapshot(officerIndex, slots, catalog);
+        return new DeploymentSnapshot(officerIndex, slots, catalog, brainPermissionTier);
     }
 }
 
@@ -290,11 +290,13 @@ public sealed class DeploymentSnapshot
     private readonly LoadoutEntry[] slots;
     private readonly AugmentationDefinition[] catalog;
     public int OfficerIndex { get; }
+    /// <summary>S01 DEV: -1 keeps legacy Brain behaviour; 0..3 selects the permission prototype, with manual base aim.</summary>
+    public int BrainPermissionTier { get; }
     public float BodyModificationPercent { get; }
     public string WeaponId => GetSlot(LoadoutSlot.Weapon).ItemId;
     public WeaponCompatibility WeaponCompatibility => LoadoutRules.WeaponPolicy(slots);
     public bool CanUseWeapon => WeaponCompatibility != WeaponCompatibility.Disabled;
-    public AimControl Aim => GetSlot(LoadoutSlot.Brain).ItemId == LoadoutRules.BrainAI ? AimControl.AI : AimControl.Manual;
+    public AimControl Aim => BrainPermissionTier < 0 && GetSlot(LoadoutSlot.Brain).ItemId == LoadoutRules.BrainAI ? AimControl.AI : AimControl.Manual;
     // TEST slice parameters, recomputed from this deployment only. Shared PlayerStats stays untouched.
     public WeaponProfile Weapon => LoadoutRules.Weapon(WeaponId);
     public int BulletDamage => Weapon.Damage;
@@ -318,10 +320,12 @@ public sealed class DeploymentSnapshot
     public bool HasHover => HasLegOption(LoadoutRules.LegHover);
     public bool HasAirDash => HasLegOption(LoadoutRules.LegAirDash);
 
-    internal DeploymentSnapshot(int officerIndex, LoadoutEntry[] source, AugmentationDefinition[] definitions = null)
+    internal DeploymentSnapshot(int officerIndex, LoadoutEntry[] source, AugmentationDefinition[] definitions = null, int brainPermissionTier = -1)
     {
         if (officerIndex < 1) throw new ArgumentOutOfRangeException(nameof(officerIndex));
+        if (brainPermissionTier < -1 || brainPermissionTier > 3) throw new ArgumentOutOfRangeException(nameof(brainPermissionTier));
         OfficerIndex = officerIndex;
+        BrainPermissionTier = brainPermissionTier;
         slots = (LoadoutEntry[])source.Clone();
         catalog = (AugmentationDefinition[])(definitions ?? LoadoutRules.PrototypeCatalog).Clone();
         BodyModificationPercent = LoadoutRules.BodyModification(slots);
@@ -329,7 +333,7 @@ public sealed class DeploymentSnapshot
 
     public LoadoutEntry GetSlot(LoadoutSlot slot) => slots[LoadoutRules.Index(slot)];
     internal AugmentationDefinition[] CopyCatalog() => (AugmentationDefinition[])catalog.Clone();
-    internal DeploymentSnapshot Copy() => new DeploymentSnapshot(OfficerIndex, slots, catalog);
+    internal DeploymentSnapshot Copy() => new DeploymentSnapshot(OfficerIndex, slots, catalog, BrainPermissionTier);
 }
 
 public sealed class VictoryRecord

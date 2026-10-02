@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "contentRevision": "template-2026-10-02",
+  "language": "zh-CN",
+  "speakers": [
+    { "id": "inner_ai", "displayName": "脑内 AI" }
+  ],
+  "entries": [
+    {
+      "id": "intervention.chandelier.plan",
+      "speakerId": "inner_ai",
+      "text": "将吊灯击落，然后踩上去，获取地形优势",
+      "status": "approved",
+      "notes": "Approved user original for the core demo; not a complete script."
+    },
+    {
+      "id": "intervention.chandelier.execute",
+      "speakerId": "inner_ai",
+      "text": "系统已批准，执行射击",
+      "status": "approved",
+      "notes": "T3 sequence only. Display does not commit a world outcome."
+    }
+  ],
+  "sequences": [
+    { "id": "intervention.chandelier.advice", "lineIds": ["intervention.chandelier.plan"] },
+    { "id": "intervention.chandelier.aim", "lineIds": ["intervention.chandelier.plan"] },
+    { "id": "intervention.chandelier.full", "lineIds": ["intervention.chandelier.plan", "intervention.chandelier.execute"] }
+  ]
+}

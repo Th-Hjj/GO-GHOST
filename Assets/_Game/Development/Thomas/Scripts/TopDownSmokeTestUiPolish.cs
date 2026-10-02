@@ -28,7 +28,7 @@ public partial class TopDownSmokeTest
             Keys(); yield return Frames(3);
             flow.ActiveFight.Player.IsInvulnerable = false;
             flow.ActiveFight.Player.TakeDamage(10000, flow.ActiveFight.Boss.gameObject);
-            yield return Phase8Until(() => flow.State == GameSessionFlow.FlowState.MainMenu, "defeat", 3);
+            yield return DefeatToMenu(flow);
             yield return ClickSessionButton("StartMission");
             yield return ClickSessionButton("Region_LEFT_LEG");
             bool humanFirst = Inverted("Choice_Human");

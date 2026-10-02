@@ -8,6 +8,12 @@ public sealed class GameSessionFlow : MonoBehaviour
     public enum FlowState { NewGameInitialization, Deployment, Combat, DefeatTransition, Loadout, Result, NextOfficerTransition, VictoryTransition, MainMenu, Archive, Practice, Ending }
     [SerializeField] private BossFight attemptPrefab;
     [SerializeField] private GameObject highCPlatform;
+    [Tooltip("The three high platforms BLACKOUT may break (High C, D, E). All are restored at every deployment.")]
+    [SerializeField] private Collider2D[] breakableHighPlatforms = new Collider2D[0];
+    [Tooltip("Ground and the two low platforms. Never broken.")]
+    [SerializeField] private Collider2D[] permanentSupports = new Collider2D[0];
+    [Tooltip("World-space interior between the arena walls, floor surface and ceiling (not the camera).")]
+    [SerializeField] private Bounds playableBounds;
     [Tooltip("Practice room root. Its position is the room's offset from the Boss arena (same layout, same fixed camera framing).")]
     [SerializeField] private Transform practiceRoom;
     public FlowState State { get; private set; }
@@ -81,7 +87,7 @@ public sealed class GameSessionFlow : MonoBehaviour
     public bool RequestContinue()
     {
         if (!CanContinue) return false;
-        // Victory: Mission Result -> Ending -> Main Menu. Defeat never reaches either page.
+        // Victory: Mission Result -> Ending -> Main Menu. Defeat: Mission Result -> Main Menu. The record was saved at resolution.
         if (State == FlowState.Result && Victory != null) SetState(FlowState.Ending);
         else ReturnToMainMenu();
         return true;
@@ -144,13 +150,17 @@ public sealed class GameSessionFlow : MonoBehaviour
         SetState(FlowState.Deployment); // Reject duplicate deployment requests.
         Deployment = Draft.Deploy(OfficerIndex);
         int token = ++generation;
-        // Restore only this scene platform at deployment; never persist terrain in Police Archive.
+        // Restore the breakable scene platforms at every deployment; never persist terrain in Police Archive.
         if (highCPlatform != null) highCPlatform.SetActive(true);
+        foreach (var platform in breakableHighPlatforms) if (platform != null) platform.gameObject.SetActive(true);
         var fight = Instantiate(attemptPrefab, transform);
         ActiveFight = fight;
         fight.name = "CombatAttempt_Officer_" + OfficerIndex;
         fight.Prepare(Deployment);
         fight.Boss.BindHighC(highCPlatform);
+        // B's single arena bind for BLACKOUT: actual interior bounds, the three breakable high platforms, the permanent supports.
+        if (!fight.Boss.BindBlackoutArena(playableBounds, breakableHighPlatforms, permanentSupports))
+            Debug.LogError("BLACKOUT arena bind failed; check the GameSession platform references.", this);
         outcomeHandler = outcome => ResolveAttempt(fight, token, outcome);
         fight.OnResolved += outcomeHandler;
 
@@ -183,8 +193,7 @@ public sealed class GameSessionFlow : MonoBehaviour
             source.CombatDuration, source.ResultBossHealth, source.ResultPlayerHealth, source.AccuracyPercent);
         if (!PoliceArchive.RecordCompletedRun(LastRunRecord, out string archiveError))
             Debug.LogWarning("Police Archive run save failed: " + archiveError, this);
-        // Defeat: the record is saved, then combat is cleaned up and the Main Menu shows it. No failure Result page.
-        if (outcome == BossFight.Outcome.Died) { ReturnToMainMenu(); return; }
+        // Both outcomes stop on Mission Result (the attempt stays alive for its frozen values) and wait for CONTINUE.
         SetState(FlowState.Result);
     }
 

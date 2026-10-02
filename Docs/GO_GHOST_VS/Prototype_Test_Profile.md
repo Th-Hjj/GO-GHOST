@@ -2,6 +2,10 @@
 
 **Strict UI/flow override after the reset:** Combat values below remain unchanged. Launch opens Main Menu; START MISSION opens the editable Upgrade screen; BEGIN OPERATION deploys; both outcomes open Mission Result; CONTINUE returns to Main Menu. UI uses black/white only, with exactly two unlabeled combat HP bars and four frozen result values (elapsed time, remaining Boss/Player HP, player bullet accuracy). HEAD maps to Brain; TORSO remains the core body slot; WEAPON is the seventh, separate equipment slot with the existing Basic Gun choice. Archive uses the three specified tabs; top-left BACK on Archive and Upgrade returns to Main Menu. TEMP officer generation, run records and two TEMP ending IDs (see Archive row). See [../VerticalSlice.md](../VerticalSlice.md) for the exact permitted content and [Implementation_Log](Implementation_Log.md) for executed checks. The Phase 10 standalone predates this UI.
 
+## Health and arena — TEST values, 2026-10-01 (supersede the table below)
+
+Player HP 150. Boss Phase 1 HP 600, Phase 2 HP 600 (independent pools; immune ~3 s transition between them). BLACKOUT at <= 35% of Phase 2 HP (210). High platforms C (0, 1.15, width 4), D (-9, 1.15, width 3), E (9, 1.15, width 3), thickness .3.
+
 ## Weapons and Arm-Blade — TEST values, 2026-10-01
 
 Supersedes the single-gun numbers below. All values live in `LoadoutRules.Weapon` / `PlayerCounterArm` and are replaceable.

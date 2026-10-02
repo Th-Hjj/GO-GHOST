@@ -107,6 +107,9 @@ public partial class TopDownSmokeTest : MonoBehaviour
             case "perf-input": yield return PerfInput(); break;
             case "air-dash": yield return AirDash(); break;
             case "ui-polish": yield return UiPolish(); break;
+            case "result-arena": yield return ResultArena(); break;
+            case "boss-phases": yield return BossPhases(); break;
+            case "blackout": yield return Blackout(); break;
             case "boss-contact": yield return BossContact(); break;
             // Earlier numerical gates are historical; TEST-v2 uses combat-v2.
             case "movement": yield return Movement(); break;
@@ -969,10 +972,22 @@ public partial class TopDownSmokeTest : MonoBehaviour
         Mouse(screen.x / Screen.width, screen.y / Screen.height, leftButton);
     }
 
-    private void Keys(params Key[] keys) => InputSystem.QueueStateEvent(kb, new KeyboardState(keys));
+    // The last virtual state is remembered so KeepVirtualFocus can re-send it: a real editor focus change makes the
+    // Input System reset devices that cannot sync, which silently released held virtual keys mid-scenario.
+    private Key[] heldKeys = new Key[0];
+    private Vector3 heldMouse = new Vector3(.5f, .5f, 0f); // x, y fractions; z = 1 while the left button is held
+    private void Keys(params Key[] keys) { heldKeys = keys; InputSystem.QueueStateEvent(kb, new KeyboardState(keys)); }
+    private void ResendVirtualState()
+    {
+        if (kb == null || ms == null || !kb.added || !ms.added) return;
+        InputSystem.QueueStateEvent(kb, new KeyboardState(heldKeys));
+        var state = new MouseState { position = new Vector2(Screen.width * heldMouse.x, Screen.height * heldMouse.y) };
+        InputSystem.QueueStateEvent(ms, state.WithButton(MouseButton.Left, heldMouse.z > .5f));
+    }
     private void MouseTo(float fx, float fy) => Mouse(fx, fy, false);
     private void Mouse(float fx, float fy, bool leftButton)
     {
+        heldMouse = new Vector3(fx, fy, leftButton ? 1f : 0f);
         var state = new MouseState { position = new Vector2(Screen.width * fx, Screen.height * fy) };
         state = state.WithButton(MouseButton.Left, leftButton);
         InputSystem.QueueStateEvent(ms, state);

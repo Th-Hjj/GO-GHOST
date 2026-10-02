@@ -19,6 +19,8 @@ public class Enemy : MonoBehaviour, IDamageable
 {
     [Header("Health")]
     [SerializeField] private int maxHealth = 30;
+    [Tooltip("0 = one life (default). Above 0: when the first health pool reaches 0 the enemy does not die; it is immune until BeginSecondPhase refills this second, independent pool. TEST value on the Boss.")]
+    [SerializeField] private int secondPhaseMaxHealth = 0;
 
     [Header("Behaviour ownership")]
     [Tooltip("Disable when a level-specific boss controls movement and attacks. Health and damage remain active.")]
@@ -40,9 +42,14 @@ public class Enemy : MonoBehaviour, IDamageable
     [Tooltip("Distance from the enemy centre where bullets spawn. Keep it larger than the enemy's half size plus the bullet radius.")]
     [SerializeField] private float bulletSpawnOffset = 1.1f;
 
+    /// <summary>Health of the current phase only.</summary>
     public int CurrentHealth { get; private set; }
-    public int MaxHealth => maxHealth;
+    public int MaxHealth => PhaseIndex == 2 ? secondPhaseMaxHealth : maxHealth;
     public bool IsDead { get; private set; }
+    /// <summary>1, or 2 after BeginSecondPhase.</summary>
+    public int PhaseIndex { get; private set; } = 1;
+    /// <summary>First pool spent: alive, still targetable, every damage source is rejected until BeginSecondPhase.</summary>
+    public bool AwaitingSecondPhase { get; private set; }
 
     /// <summary>Fired once on death; optional destruction happens afterwards.</summary>
     public event Action<Enemy> OnDied;
@@ -109,11 +116,22 @@ public class Enemy : MonoBehaviour, IDamageable
 
     public void TakeDamage(int amount, GameObject source)
     {
-        if (IsDead || amount <= 0) return;
+        if (IsDead || AwaitingSecondPhase || amount <= 0) return;
 
         CurrentHealth = Mathf.Max(CurrentHealth - amount, 0);
-        if (CurrentHealth <= 0)
-            Die();
+        if (CurrentHealth > 0) return;
+        // The first pool ending is not a death: no OnDied, no victory. Only the last pool kills.
+        if (PhaseIndex == 1 && secondPhaseMaxHealth > 0) AwaitingSecondPhase = true;
+        else Die();
+    }
+
+    /// <summary>Called by the owner of the phase change once its transition is over: full second pool, damage allowed again.</summary>
+    public void BeginSecondPhase()
+    {
+        if (IsDead || !AwaitingSecondPhase) return;
+        AwaitingSecondPhase = false;
+        PhaseIndex = 2;
+        CurrentHealth = secondPhaseMaxHealth;
     }
 
     public void StopCombat()

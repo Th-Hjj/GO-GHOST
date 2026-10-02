@@ -34,10 +34,14 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
     {
         EndAttempt();
         running = isActiveAndEnabled;
+        PrepareBlackoutLines();
     }
 
     public void EndAttempt()
     {
+        ClearBlackoutLines();
+        for (int i = 0; i < blackoutLines.Length; i++) blackoutLines[i] = null;
+        for (int i = 0; i < blackoutMarks.Length; i++) blackoutMarks[i] = null;
         running = ghosting = false;
         nextEcho = 0f;
         slowAnchor = null;
@@ -276,6 +280,77 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
         if (go != null) { go.SetActive(false); Destroy(go); }
         flashes.RemoveAt(index);
     }
+
+    private readonly LineRenderer[][] blackoutLines = new LineRenderer[4][];
+    private readonly LineRenderer[] blackoutMarks = new LineRenderer[3];
+
+    private void PrepareBlackoutLines()
+    {
+        if (!CanDraw || lineMaterial == null || blackoutLines[0] != null) return;
+        for (int i = 0; i < 4; i++)
+        {
+            var group = Child("BlackoutLine_" + i);
+            blackoutLines[i] = new LineRenderer[3];
+            for (int j = 0; j < 3; j++)
+            {
+                var line = Line(group, new Vector3[2], .018f, Color.white);
+                line.enabled = false;
+                blackoutLines[i][j] = line;
+            }
+        }
+        for (int i = 0; i < 3; i++)
+        {
+            blackoutMarks[i] = Line(Child("BlackoutPlatform_" + i), new Vector3[2], .035f, Color.white);
+            blackoutMarks[i].enabled = false;
+        }
+    }
+
+    // Caller owns timing and world-space hit geometry. Four reused tracks, three renderers each.
+    public void SetBlackoutLine(int slot, Vector2 from, Vector2 to, float width, float alpha, bool executing)
+    {
+        if (!CanDraw || slot < 0 || slot >= blackoutLines.Length || width <= 0) return;
+        var lines = blackoutLines[slot];
+        if (lines == null) return;
+        Vector2 delta = (to - from).normalized;
+        Vector2 normal = new Vector2(-delta.y, delta.x) * (width * .5f);
+        for (int i = 0; i < 3; i++)
+        {
+            var line = lines[i];
+            Vector2 offset = i == 0 ? Vector2.zero : i == 1 ? normal : -normal;
+            line.SetPosition(0, from + offset);
+            line.SetPosition(1, to + offset);
+            line.startWidth = line.endWidth = i == 0 ? width : .018f;
+            float opacity = alpha * (i == 0 ? executing ? .8f : .12f : 1f);
+            line.startColor = line.endColor = new Color(1f, .18f, .2f, opacity);
+            line.enabled = alpha > 0;
+        }
+    }
+
+    public void SetBlackoutPlatformMark(int slot, Bounds bounds)
+    {
+        if (!CanDraw || slot < 0 || slot >= blackoutMarks.Length || blackoutMarks[slot] == null) return;
+        var line = blackoutMarks[slot];
+        line.SetPosition(0, new Vector3(bounds.min.x, bounds.max.y, bounds.center.z));
+        line.SetPosition(1, new Vector3(bounds.max.x, bounds.max.y, bounds.center.z));
+        line.startColor = line.endColor = new Color(1f, .18f, .2f, .65f);
+        line.enabled = true;
+    }
+
+    public void ClearBlackoutLines()
+    {
+        foreach (var lines in blackoutLines)
+            if (lines != null) foreach (var line in lines) if (line != null) line.enabled = false;
+        foreach (var line in blackoutMarks) if (line != null) line.enabled = false;
+    }
+
+    public void ClearBossEffects()
+    {
+        ghosting = false;
+        ClearBlackoutLines();
+        // At encounter cancellation all transient feedback must disappear before deferred destruction.
+        for (int i = flashes.Count - 1; i >= 0; i--) RemoveFlash(i);
+    }
+
 
     private void OnEnable() => EndAttempt();
     private void OnDisable() => EndAttempt();

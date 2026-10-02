@@ -91,8 +91,8 @@ public partial class TopDownSmokeTest
             Keys(); yield return Frames(3);
             f.Player.IsInvulnerable = true; // observation protection only
             yield return SampleFrames("Boss P1", 5f);
-            f.BossHealth.TakeDamage(f.BossHealth.CurrentHealth - f.BossHealth.MaxHealth * 45 / 100, f.Player.gameObject);
-            yield return WeaponsWait(() => f.Boss.Phase == CyberpsychoBoss.BossPhase.Phase2, 4);
+            f.BossHealth.TakeDamage(100000, f.Player.gameObject); // spend Phase 1; the Boss then runs its own transition
+            yield return WeaponsWait(() => f.Boss.Phase == CyberpsychoBoss.BossPhase.Phase2, 8);
             AimAtWorld(f.BossHealth.GetComponent<Collider2D>().bounds.center, true);
             yield return SampleFrames("Boss P2 while firing", 8f);
             Mouse(.5f, .5f, false);

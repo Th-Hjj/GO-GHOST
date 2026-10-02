@@ -115,6 +115,15 @@ public class BossFight : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (combatRunning && bossHealth.AwaitingSecondPhase)
+        {
+            // Phase 1 health is spent. Until the Boss's own transition ends it is immune (Enemy rejects all damage) and
+            // no Phase 1 bullet may still land; then Phase 2 starts with its own full health. Same fight, same statistics.
+            int hostileLayer = bossHealth.gameObject.layer;
+            foreach (var bullet in GetComponentsInChildren<Projectile>())
+                if (bullet.OwnerLayer == hostileLayer) bullet.Retire();
+            if (boss.Phase == CyberpsychoBoss.BossPhase.Phase2) bossHealth.BeginSecondPhase();
+        }
         if (!combatRunning || !deathPending || Result != Outcome.Fighting) return;
         // Resolve after damage callbacks for this frame. TEST rule: mutual death is failure.
         Result = player.IsDead ? Outcome.Died : Outcome.Won;

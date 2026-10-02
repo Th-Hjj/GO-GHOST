@@ -2616,7 +2616,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 255533988286645315, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
       propertyPath: maxHealth
-      value: 800
+      value: 600
       objectReference: {fileID: 0}
     - target: {fileID: 255533988286645315, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
       propertyPath: destroyOnDeath
@@ -2625,6 +2625,10 @@ PrefabInstance:
     - target: {fileID: 255533988286645315, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
       propertyPath: automaticCombat
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 255533988286645315, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
+      propertyPath: secondPhaseMaxHealth
+      value: 600
       objectReference: {fileID: 0}
     - target: {fileID: 2867931007630196828, guid: 9b0665bfb8517d442bcb9a73560551df, type: 3}
       propertyPath: m_Mass
@@ -2783,8 +2787,8 @@ MonoBehaviour:
   - {fileID: 8057627852751589627}
   - {fileID: 4109825266093481272}
   - {fileID: 2995669546545734343}
-  phase2HealthThreshold: 0.5
-  weaponChangeSeconds: 0.35
+  phase2HealthThreshold: 0
+  weaponChangeSeconds: 3
   weaponRig: {fileID: 8911777960751016205}
   gunVisual: {fileID: 6560905836163595247}
   bladeVisual: {fileID: 812500735638247333}
@@ -2840,7 +2844,7 @@ MonoBehaviour:
   dropSpeed: 26
   dropRecovery: 0.7
   dropDamage: 26
-  blackoutHealthThreshold: 0.25
+  blackoutHealthThreshold: 0.35
   blackoutSignalSeconds: 0.7
   blackoutSpeed: 36
   blackoutDamage: 32

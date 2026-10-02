@@ -112,10 +112,10 @@ public partial class TopDownSmokeTest
             yield return Seconds(.6f);
             f.Player.IsInvulnerable = false;
             f.Player.TakeDamage(10000, f.Boss.gameObject);
-            yield return Phase8Until(() => flow.State == GameSessionFlow.FlowState.MainMenu, "defeat to Main Menu", 3);
+            yield return DefeatToMenu(flow);
             yield return Frames(3);
             var defeat = PoliceArchive.Current.LatestRun;
-            Check("Defeat skips Result and saves one record", !states.Contains(GameSessionFlow.FlowState.Result) && PoliceArchive.Current.RunRecords.Count == 1
+            Check("Defeat shows Result and saves one record", states.Contains(GameSessionFlow.FlowState.Result) && PoliceArchive.Current.RunRecords.Count == 1
                 && !defeat.Success && defeat.OfficerNumber == officer.OfficerNumber && flow.ActiveFight == null, string.Join(">", states));
             Check("Defeat TIME excludes practice", defeat.CombatDuration > 0 && defeat.CombatDuration < Time.unscaledTime - doorAt + .1f
                 && defeat.CombatDuration < doorAt - practiceStarted, $"time={defeat.CombatDuration:0.00}s practiceWalk={doorAt - practiceStarted:0.00}s");
@@ -132,7 +132,7 @@ public partial class TopDownSmokeTest
             yield return ClickSessionButton("Choice_" + LoadoutRules.TorsoSlow);
             yield return ClickSessionButton("Choice_" + LoadoutRules.TorsoSlow);
             Check("UI cues: click on buttons, equip only on a real change", flow.Draft.GetSlot(LoadoutSlot.Torso).ItemId == LoadoutRules.TorsoSlow
-                && uiSfx.Requested(Sfx.Click) == 2 && uiSfx.Requested(Sfx.Equip) == 1, $"click={uiSfx.Requested(Sfx.Click)} equip={uiSfx.Requested(Sfx.Equip)}");
+                && uiSfx.Requested(Sfx.Click) == 3 && uiSfx.Requested(Sfx.Equip) == 1, $"click={uiSfx.Requested(Sfx.Click)} equip={uiSfx.Requested(Sfx.Equip)}");
             flow.TrySetDraftSlot(LoadoutSlot.Brain, LoadoutRules.BrainAI);
             flow.TrySetDraftSlot(LoadoutSlot.LeftLeg, LoadoutRules.LegDoubleJump);
             yield return ClickSessionButton("BeginOperation");
@@ -200,14 +200,14 @@ public partial class TopDownSmokeTest
             f.Player.IsInvulnerable = true;
             yield return Phase8Until(() => f.Boss.ShotsFired > 0, "Boss P1 shot", 10);
             Check("Boss shot cue", sfx.Requested(Sfx.Shot) >= f.Boss.ShotsFired && sfx.Requested(Sfx.Glitch) >= 1, $"boss shots={f.Boss.ShotsFired} cues={sfx.Requested(Sfx.Shot)}");
-            f.BossHealth.TakeDamage(f.BossHealth.CurrentHealth - f.BossHealth.MaxHealth * 45 / 100, f.Player.gameObject);
+            f.BossHealth.TakeDamage(100000, f.Player.gameObject); // spend Phase 1; the Boss then runs its own transition
             yield return Phase8Until(() => f.Boss.SlashesStarted > 0 && f.Boss.State == CyberpsychoBoss.AttackState.SlashExecute, "P2 blade strike", 15);
             Check("P2 blade cue", f.Boss.Phase == CyberpsychoBoss.BossPhase.Phase2 && sfx.Requested(Sfx.BladeSwing) >= 1, $"blade cues={sfx.Requested(Sfx.BladeSwing)}");
             yield return Frames(2);
 
             // 6. Controlled victory keeps the existing Result path.
             float body = flow.Deployment.BodyModificationPercent;
-            f.BossHealth.TakeDamage(10000, f.Player.gameObject);
+            yield return ControlledVictory(f);
             yield return Phase8Until(() => flow.State == GameSessionFlow.FlowState.Result, "MISSION SUCCESS", 3);
             yield return Frames(3);
             var victory = PoliceArchive.Current.LatestRun;
@@ -245,7 +245,7 @@ public partial class TopDownSmokeTest
             Keys(Key.D);
             yield return Phase8Until(() => flow.State == GameSessionFlow.FlowState.Combat, "third door", 20);
             Keys(); yield return Frames(3);
-            f.BossHealth.TakeDamage(10000, f.Player.gameObject);
+            yield return ControlledVictory(f);
             yield return Phase8Until(() => flow.State == GameSessionFlow.FlowState.Result, "second victory", 3);
             yield return ClickSessionButton("ResultContinue");
             yield return Frames(3);

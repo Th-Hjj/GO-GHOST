@@ -47,8 +47,8 @@ public sealed partial class MissionUI
         dialoguePanel = Panel(dialogue.transform, "DialoguePanel", new Vector2(960, 260), new Vector2(1440, 350));
         dialoguePanel.GetComponent<UnityEngine.UI.Image>().color = new Color(0, 0, 0, .6f);
         speakerText = DialogueLabel(dialoguePanel, "SpeakerName", new Vector2(720, 310), new Vector2(1340, 46));
-        dialogueText = DialogueLabel(dialoguePanel, "DialogueLine", new Vector2(720, 173), new Vector2(1340, 210));
-        dialogueText.alignment = TextAlignmentOptions.TopLeft;
+        dialogueText = DialogueLabel(dialoguePanel, "DialogueLine", new Vector2(720, 175), new Vector2(1340, 210));
+        dialogueText.alignment = TextAlignmentOptions.Center;
         for (int i = 0; i < choiceLabels.Length; i++)
         {
             var row = Rect(dialoguePanel, "NarrativeChoiceRow" + i, new Vector2(720, 242-i*65), new Vector2(1360, 62));

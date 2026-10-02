@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-10-02 — Center dialogue body
+
+- Thomas requested centered dialogue body text with the speaker left in place. From clean `e0ab6e3`, changed only `MissionUIDialogue` body alignment to Center and its center to `(720, 175)` in the existing 1440 x 350 panel. Speaker remains left-aligned at `(720, 310)`; choices/input/content/flow are unchanged.
+- Compile PASS; DEV 50F Play Mode preview and screenshot confirm centered body and unchanged speaker position. Returned to Edit Mode. No new tests, broad suite or Build; evidence: ignored `Logs/DialogueUX/centered-body.png`. Delivered through the standing main-push authorization.
+
 ## 2026-10-02 — Dialogue UI / input UX only
 
 - **Baseline/scope:** clean `main` at `9776172`; Unity **6000.6.0f1**, idle clean Editor and compile baseline. Thomas's dialogue UX request supersedes the old arrow-key/keyboard-only presentation contract. No route, narrative sequence, story text/JSON, combat rules, endings, scene, prefab, settings, package or balance changes.

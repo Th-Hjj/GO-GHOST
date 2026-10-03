@@ -1,3 +1,5 @@
+> Historical tower document. The 2026-10-03 [Duel specification](Duel_Implementation_Spec.md) supersedes conflicting design and runtime instructions. See [README](../../README.md) for the current entry.
+
 # GO GHOST — Narrative Content Contract v1
 
 **Current interface, 2026-10-02.** Schema 1 was frozen at S00, implemented by S01, then extended through the authorized full-flow v0.7 integration without changing the schema. [Tower_Design_Override](Tower_Design_Override.md) owns current behaviour. The EOD design handoff's quoted lines are interpretation/review material, not a second runtime wording source.

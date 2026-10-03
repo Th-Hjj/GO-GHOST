@@ -1,27 +1,11 @@
 # GO GHOST — Start Here
 
-## Current authority — 2026-10-02 end of day
+The current confirmed design is [Duel_Implementation_Spec.md](Duel_Implementation_Spec.md), Thomas's complete 2026-10-03 implementation instruction. It supersedes the tower route, seven slots, narrative contracts and old staged tasks wherever they conflict. Thomas separately authorized committing and pushing the completed work to `main`.
 
-1. Read [AGENTS.md](../../AGENTS.md) / [CLAUDE.md](../../CLAUDE.md) for engineering, Unity and Git rules.
-2. Read [Tower_Design_Override.md](Tower_Design_Override.md): **the canonical current design**, incorporating Thomas's EOD decisions and the non-conflicting full-flow v0.7 rules.
-3. Read [Narrative_Content_Contract.md](Narrative_Content_Contract.md) for the single runtime JSON, stable bindings, F/input/pause and actual-fact boundary. Exact English draft wording belongs in that JSON, not a second script in documentation.
-4. Read the newest [Implementation_Log.md](Implementation_Log.md) entry for what actually ran, assists, mismatches and NOT_RUN items. Use [ProjectMap](../ProjectMap.md) for paths, [TEST profile](Prototype_Test_Profile.md) for provisional numbers and [README](../../README.md) to play.
+Read repository [AGENTS.md](../../AGENTS.md) / [CLAUDE.md](../../CLAUDE.md), then the specification and the newest [Implementation_Log.md](Implementation_Log.md) entry. [README](../../README.md) is the short current run guide.
 
-Current code connects a normal Loadout/practice -> short Tower -> real P1/P2/P3 -> two final F decisions -> A–E flow. S01/S02 are reused, F8 uses the real route/snapshot path, and Assault Rifle is the sole current weapon. Full body-tier design and final Boss/art work are still Open. A design requirement is not proof of implementation; a prototype is not final design approval.
+Current entry: `Assets/_Game/Levels/L02_Duel/Scenes/GO GHOST Duel.unity`. Unity stays **6000.6.0f1**. The new active path is one arena, three waves, and three binary control permissions; there is no old tower or Archive entry.
 
-The post-73cd72b confirmed increment retains bubbles/T2 manual aim/P1 laser-cover, adds directional attack-source arcs without predicted paths, exact two-line T3 one-shot interventions, Security-arrival-first 50F sequencing, explicit P2 name introduction, two-step mouse choice confirmation and final-state evaluation on leaving. CEO Office waits for F and its guaranteed summon is now `Puppeteer, protect me.` Thomas still defers the replacement 50F observation; normal Restrained has no runtime veto producer. No next-stage body or P2/P3 redesign is authorized.
+Keep Confirmed design, implemented code, current runtime evidence, historical evidence and NOT TESTED work distinct. The sole combat-result check is a representative normal all-AI third-wave fight whose loss must follow real observation/deception; do not create permission win matrices, manual-win gates, large simulations or a new testing framework. Controlled flow fixtures are not combat evidence.
 
-No next task is implied by this page. Do only Thomas's authorized scope. For documentation-only work, record implementation differences and do not fix code/assets. Preserve the current worktree; the old GitHub static-review SHA is not a rollback target. Stay on Unity **6000.6.0f1**.
-
-## Status language and verification
-
-- **Confirmed:** Thomas approved the design; **Implemented:** inspected code exists; **TEST:** replaceable tuning.
-- **Open:** undecided; **Proposed:** not approved; **Historical:** superseded context.
-- Compile, focused Play Mode path and a short core-flow check are the MSP default for code changes. Mark unexecuted checks **NOT RUN**. Controlled invulnerability/positioning/forced outcomes are not balance or physical-input proof.
-- Do not rerun the old broad matrix or Build/package without a scoped request. [Playtest_Checklist](Playtest_Checklist.md) is a focused worksheet, not an automatic task queue.
-
-## Historical package
-
-The original [Chinese baseline](GO_GHOST_Design_Baseline_ZH.md), [Macro extract](Macro_Readable_Extract.md), companion spreadsheet and `Prompts/00–08` preserve earlier work. Their single-arena, percentage-ending, old catalogue, report-tree and exhaustive-gate assumptions are **not current instructions**. [Execution_Contract](Execution_Contract.md) retains engineering history; its current authority notice takes precedence. Do not execute its numbered phase queue unless Thomas explicitly requests a reviewed scope.
-
-S00/S01/S02 and prior iteration evidence remains dated in the one Implementation Log. Ignored `Logs/` and `Builds/` do not travel to another machine through Git. Physical Play Mode testing on another computer is separate from local virtual-input evidence.
+Tower_Design_Override, Narrative_Content_Contract, Prototype_Test_Profile, old ProjectMap/VerticalSlice entries and staged prompts remain historical references for disconnected assets. They cannot override the current duel specification. Implementation_Log remains the only progress log.

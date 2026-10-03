@@ -237,7 +237,6 @@ public static class PoliceArchive
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetRuntimeCache() { store = null; current = null; LastSaveError = null; } // Domain Reload can be disabled; disk is untouched.
 
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void EnsureLoaded()
     {
         if (current != null) return;

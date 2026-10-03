@@ -6,7 +6,8 @@ public partial class CyberpsychoBoss
     [SerializeField, Min(.1f)] private float openingLaserChargeSeconds = 3.2f;
     [SerializeField, Min(.05f)] private float openingLaserFireSeconds = .22f;
     [SerializeField, Min(1)] private int openingLaserDamage = 28;
-    private LineRenderer openingLaser;
+    private LineRenderer openingLaser, openingCharge;
+    public bool OpeningLaserVisible => openingLaser != null && openingLaser.enabled;
     private Material laserMaterial;
     private bool openingLaserUsed;
     private Vector2 laserDirection, laserOrigin;
@@ -27,6 +28,10 @@ public partial class CyberpsychoBoss
             laserMaterial = new Material(Shader.Find("Sprites/Default"));
             openingLaser.sharedMaterial = laserMaterial; openingLaser.useWorldSpace = true;
             openingLaser.positionCount = 2; openingLaser.sortingOrder = 18;
+            var charge = new GameObject("OpeningLaserCharge"); charge.transform.SetParent(transform, false);
+            openingCharge = charge.AddComponent<LineRenderer>();
+            openingCharge.sharedMaterial = laserMaterial; openingCharge.useWorldSpace = true;
+            openingCharge.positionCount = 17; openingCharge.sortingOrder = 19;
         }
         laserDirection = AimAtPlayer();
         Enter(AttackState.OpeningLaserCharge, openingLaserChargeSeconds);
@@ -84,13 +89,28 @@ public partial class CyberpsychoBoss
     private void DrawOpeningLaser(bool firing)
     {
         if (openingLaser == null) return;
+        openingLaser.enabled = firing;
+        openingCharge.enabled = !firing;
+        if (!firing)
+        {
+            // A local charge at the actual weapon muzzle, with no drawn aim/damage path.
+            Vector2 muzzle = rb.position + laserDirection * bulletSpawnOffset;
+            float radius = .12f + .2f * (1 - Mathf.Clamp01(timer / openingLaserChargeSeconds));
+            openingCharge.widthMultiplier = .045f + .02f * Mathf.Abs(Mathf.Sin(timer * 18));
+            openingCharge.startColor = openingCharge.endColor = Color.white;
+            for (int i = 0; i < 17; i++)
+            {
+                float angle = i * Mathf.PI * 2 / 16;
+                openingCharge.SetPosition(i, muzzle + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius);
+            }
+            return;
+        }
         TraceOpeningLaser();
-        openingLaser.enabled = true;
         openingLaser.SetPosition(0, laserOrigin); openingLaser.SetPosition(1, OpeningLaserEnd);
-        openingLaser.widthMultiplier = firing ? .18f : .035f + .025f * Mathf.Abs(Mathf.Sin(timer * 14));
-        openingLaser.startColor = openingLaser.endColor = new Color(1,1,1, firing ? 1 : .65f);
+        openingLaser.widthMultiplier = .18f;
+        openingLaser.startColor = openingLaser.endColor = Color.white;
     }
 
-    private void ClearOpeningLaser() { if (openingLaser != null) openingLaser.enabled = false; }
+    private void ClearOpeningLaser() { if (openingLaser != null) openingLaser.enabled = false; if (openingCharge != null) openingCharge.enabled = false; }
     private void OnDestroy() { if (laserMaterial != null) Destroy(laserMaterial); }
 }

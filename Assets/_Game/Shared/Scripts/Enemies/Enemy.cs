@@ -100,8 +100,8 @@ public class Enemy : MonoBehaviour, IDamageable
         fireRemaining -= Time.deltaTime * (hostileClock != null ? hostileClock.WorldRate : 1f);
 
         Vector2 toPlayer = (Vector2)player.transform.position - rb.position;
-        if (toPlayer.magnitude <= attackRange && fireRemaining <= .6f && !dangerSignalled)
-        { InnerAIDangerSense.Signal(player); dangerSignalled = true; }
+        if (toPlayer.magnitude <= attackRange && fireRemaining <= InnerAIDangerSense.LeadTimeFor(player) && !dangerSignalled)
+        { InnerAIDangerSense.Signal(player, transform, Mathf.Max(0, fireRemaining)); dangerSignalled = true; }
         if (toPlayer.magnitude <= attackRange && fireRemaining <= 0f)
         {
             Fire(toPlayer);
@@ -157,6 +157,8 @@ public class Enemy : MonoBehaviour, IDamageable
     public void StopCombat()
     {
         combatStopped = true;
+        dangerSignalled = false;
+        InnerAIDangerSense.Cancel(player, transform);
         rb.linearVelocity = Vector2.zero;
     }
 

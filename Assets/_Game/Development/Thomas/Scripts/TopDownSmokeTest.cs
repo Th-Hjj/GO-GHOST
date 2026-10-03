@@ -78,6 +78,9 @@ public partial class TopDownSmokeTest : MonoBehaviour
 
         switch (scenario)
         {
+            case "increment-50shot": yield return Increment50Shot(); break;
+            case "increment-combat": yield return IncrementCombat(); break;
+            case "increment-interaction": yield return IncrementInteraction(); break;
             case "production-p1": yield return ProductionP1(); break;
             case "production-edges": yield return ProductionEdges(); break;
             case "production-finish": yield return ProductionFinish(); break;

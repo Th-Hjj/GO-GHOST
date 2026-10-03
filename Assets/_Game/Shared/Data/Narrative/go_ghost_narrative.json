@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "contentRevision": "production-interaction-p1-2026-10-02",
+  "contentRevision": "confirmed-increment-2026-10-03",
   "language": "en",
   "speakers": [
     {
@@ -48,14 +48,14 @@
     {
       "id": "intervention.chandelier.plan",
       "speakerId": "inner_ai",
-      "text": "Shoot down the chandelier. Climb onto it for a better position.",
+      "text": "Shoot down the chandelier.",
       "status": "draft",
       "notes": ""
     },
     {
       "id": "intervention.chandelier.execute",
       "speakerId": "inner_ai",
-      "text": "System approval granted. Firing.",
+      "text": "Action confirmed.",
       "status": "draft",
       "notes": ""
     },
@@ -279,7 +279,7 @@
     {
       "id": "office.summon.01",
       "speakerId": "president",
-      "text": "傀儡师，保护我。",
+      "text": "Puppeteer, protect me.",
       "status": "draft",
       "notes": ""
     },
@@ -385,6 +385,13 @@
       "id": "boss.p1.silence.01",
       "speakerId": "puppeteer_unknown",
       "text": "......",
+      "status": "draft",
+      "notes": ""
+    },
+    {
+      "id": "boss.p2.introduction.01",
+      "speakerId": "puppeteer_unknown",
+      "text": "I am the Puppeteer.",
       "status": "draft",
       "notes": ""
     }
@@ -585,6 +592,12 @@
       "id": "boss.p1.silence",
       "lineIds": [
         "boss.p1.silence.01"
+      ]
+    },
+    {
+      "id": "boss.p2.introduction",
+      "lineIds": [
+        "boss.p2.introduction.01"
       ]
     }
   ]

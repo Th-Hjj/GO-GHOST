@@ -584,10 +584,10 @@ public partial class CyberpsychoBoss : MonoBehaviour
     {
         State = next;
         timer = duration;
-        if (next == AttackState.OpeningLaserCharge || next == AttackState.MarkedTracking
-            || next == AttackState.SlashWarning || next == AttackState.CrosscutWarning
-            || next == AttackState.DropWarning || next == AttackState.BlackoutSignal || next == AttackState.CamoRushWarning)
-            InnerAIDangerSense.Signal(player);
+        if (next == AttackState.OpeningLaserCharge || next == AttackState.BurstWarning || next == AttackState.SweepWarning
+            || next == AttackState.MarkedTracking || next == AttackState.SlashWarning || next == AttackState.CrosscutWarning
+            || next == AttackState.CrosscutGap || next == AttackState.DropTarget || next == AttackState.CamoRushWarning)
+            InnerAIDangerSense.Signal(player, transform, duration + (next == AttackState.MarkedTracking ? markedLockSeconds : 0));
         ShowWarnings();
         FacePlayer();
         // Presentation only, once per actual state entry. Never an attack, damage or timing authority.
@@ -607,7 +607,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
             case AttackState.SlashExecute: case AttackState.CrosscutFirst: case AttackState.CrosscutSecond:
             case AttackState.DropExecute: case AttackState.CamoRushExecute:
                 sfx.Play(Sfx.BladeSwing); break;
-            case AttackState.BurstWarning: case AttackState.SweepWarning: case AttackState.GhostWarning:
+            case AttackState.OpeningLaserCharge: case AttackState.BurstWarning: case AttackState.SweepWarning: case AttackState.GhostWarning:
             case AttackState.SlashWarning: case AttackState.CrosscutWarning: case AttackState.DropWarning:
             case AttackState.BlackoutSignal: case AttackState.CamoRushWarning:
                 sfx.Play(Sfx.Glitch); break;
@@ -662,100 +662,16 @@ public partial class CyberpsychoBoss : MonoBehaviour
                 p2Camo && (State == AttackState.SlashExecute || CrosscutExecuting || State == AttackState.DropExecute || State == AttackState.CamoRushExecute || BlackoutMoving) ? -75f : 0f);
         if (body != null)
             if (health != null && health.IsDead) body.color = new Color(.35f, .35f, .35f);
-        bool marked = State == AttackState.MarkedTracking || State == AttackState.MarkedLock;
-        if (shotWarning != null)
-        {
-            shotWarning.enabled = State == AttackState.BurstWarning || marked;
-            shotWarning.color = marked ? new Color(1f, 1f, 1f, .9f) : new Color(1, 1, 1, .7f);
-            SetRay(shotWarning, shotDirection);
-        }
-        if (spreadWarnings != null)
-            for (int i = 0; i < spreadWarnings.Length; i++)
-            {
-                if (spreadWarnings[i] == null) continue;
-                spreadWarnings[i].enabled = false;
-            }
-        if (chargeWarning != null)
-        {
-            if (BlackoutActive) { chargeWarning.enabled = false; return; }
-            if (State == AttackState.CamoRushWarning) { ShowCamoRushWarning(); return; }
-            bool slashWarning = State == AttackState.SlashWarning;
-            chargeWarning.enabled = Sweeping || slashWarning || CrosscutTelling || State == AttackState.DropTarget
-                || State == AttackState.DropExecute || State == AttackState.DropImpact || HighCMarked;
-            chargeWarning.color = slashWarning || CrosscutTelling ? new Color(1f, 1f, 1f, .85f)
-                : new Color(1f, 1f, 1f, State == AttackState.SweepWarning ? .75f : .25f);
-            float end = slashWarning ? Mathf.Clamp(rb.position.x + chargeDirection * slashSpeed * slashDuration,
-                ArenaLeft, ArenaRight) : CrosscutTelling ? crosscutEndX : arenaCenterX + chargeDirection * arenaHalfWidth;
-            chargeWarning.transform.position = new Vector3((rb.position.x + end) * .5f, slashWarning || CrosscutTelling ? rb.position.y : SweepY, 0);
-            chargeWarning.transform.localScale = new Vector3(Mathf.Max(.1f, Mathf.Abs(end - rb.position.x)) / transform.lossyScale.x, .10f / transform.lossyScale.y, 1);
-            if (State == AttackState.DropTarget || State == AttackState.DropExecute || State == AttackState.DropImpact)
-            {
-                chargeWarning.color = new Color(1f, 1f, 1f, .9f);
-                chargeWarning.transform.position = new Vector3(dropPoint.x, dropPoint.y + .08f, 0);
-                chargeWarning.transform.localScale = new Vector3(3.6f / transform.lossyScale.x, .16f / transform.lossyScale.y, 1);
-            }
-            if (HighCMarked && highCPlatform != null)
-            {
-                chargeWarning.color = new Color(1f, .15f, .5f, .65f + .3f * Mathf.Abs(Mathf.Sin(camouflageClock * 24f)));
-                chargeWarning.transform.position = new Vector3(highCBounds.center.x, highCBounds.max.y + .08f, 0);
-                chargeWarning.transform.localScale = new Vector3((highCBounds.size.x + .4f) / transform.lossyScale.x, .2f / transform.lossyScale.y, 1);
-            }
-        }
+        // Production combat keeps the real actor windup and attacks, never predicted damage paths.
+        if (shotWarning != null) shotWarning.enabled = false;
+        if (chargeWarning != null) chargeWarning.enabled = false;
+        if (spreadWarnings != null) foreach (var warning in spreadWarnings) if (warning != null) warning.enabled = false;
     }
 
     private void UpdatePrediction()
     {
         PredictionCue = "";
         if (predictionLine != null) predictionLine.enabled = false;
-        if (BlackoutActive || !combatEnabled || player == null || player.IsDead || playerOfficer == null
-            || playerOfficer.Deployment == null || !playerOfficer.Deployment.HasPredictiveCortex) return;
-
-        Vector2 from, to;
-        if (Phase == BossPhase.Phase1 && (State == AttackState.BurstRecovery
-            || State == AttackState.MarkedTracking || State == AttackState.MarkedLock))
-        {
-            // An early projection of the existing shot tell, not simulated player prediction.
-            var direction = State == AttackState.MarkedLock ? shotDirection : AimAtPlayer();
-            var hit = Physics2D.Raycast(rb.position, direction, warningRange, LayerMask.GetMask("Ground"));
-            from = rb.position;
-            to = from + direction * (hit.collider != null ? hit.distance : warningRange);
-            PredictionCue = "PREDICT: MARKED SHOT PATH";
-        }
-        else if (Phase == BossPhase.Phase2 && (State == AttackState.SlashWarning || CrosscutTelling))
-        {
-            from = rb.position;
-            float end = CrosscutTelling ? crosscutEndX : Mathf.Clamp(from.x + chargeDirection * slashSpeed * slashDuration,
-                ArenaLeft, ArenaRight);
-            to = new Vector2(end, from.y);
-            PredictionCue = CrosscutTelling ? "PREDICT: CROSSCUT PATH" : "PREDICT: GHOST SLASH PATH";
-        }
-        else if (Phase == BossPhase.Phase2 && (State == AttackState.BlackoutSignal
-            || State == AttackState.BlackoutRun || State == AttackState.BlackoutGap) && highCPlatform != null)
-        {
-            from = new Vector2(highCBounds.min.x, highCBounds.max.y + .28f);
-            to = new Vector2(highCBounds.max.x, from.y);
-            PredictionCue = "PREDICT: HIGH C WILL BREAK";
-        }
-        else return;
-
-        if (predictionLine == null)
-        {
-            var mark = new GameObject("Prediction_TEST");
-            mark.transform.SetParent(transform, false);
-            predictionLine = mark.AddComponent<SpriteRenderer>();
-            predictionLine.sprite = chargeWarning.sprite;
-            predictionLine.sharedMaterial = chargeWarning.sharedMaterial;
-            predictionLine.sortingLayerID = chargeWarning.sortingLayerID;
-            predictionLine.sortingOrder = chargeWarning.sortingOrder + 1;
-        }
-        // Offset from the ordinary warning so both remain visible; never outline/reveal the Boss.
-        var delta = to - from;
-        predictionLine.transform.SetPositionAndRotation((from + to) * .5f + Vector2.up * .14f,
-            Quaternion.Euler(0, 0, Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg));
-        predictionLine.transform.localScale = new Vector3(Mathf.Max(.1f, delta.magnitude) / transform.lossyScale.x,
-            .13f / transform.lossyScale.y, 1);
-        predictionLine.color = new Color(.2f, 1f, 1f, .55f);
-        predictionLine.enabled = true;
     }
 
     private void SetRay(SpriteRenderer ray, Vector2 direction)
@@ -781,6 +697,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
 
     private void ClearAttack()
     {
+        InnerAIDangerSense.Cancel(player, transform);
         ClearOpeningLaser();
         ClearCamoRush();
         ClearBlackout();

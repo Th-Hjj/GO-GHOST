@@ -70,6 +70,7 @@ public sealed partial class GameSessionFlow
         towerFacts.Clear();
         Narrative = new TowerNarrativeState(false);
         maintenancePhase = 0;
+        PuppeteerIntroduced = false;
         if (managementRoot != null) managementRoot.gameObject.SetActive(false);
         president?.ResetEncounter(); continuingCore?.ResetEncounter();
         P3EntryFacts = null;
@@ -170,11 +171,15 @@ public sealed partial class GameSessionFlow
     public bool RequestTowerExit(TowerRoom source)
     {
         if (!towerPrototypeEnabled || towerTerminal || State != FlowState.Combat || source == null || source != CurrentRoom
-            || !source.ExitOpen || ActiveFight == null || ActiveFight.Player.IsDead || ActiveFight.NarrativePaused) return false;
+            || !source.ExitOpen || ActiveFight == null || ActiveFight.Player.IsDead || ActiveFight.NarrativePaused || !StoryUI.CanLeaveWorld) return false;
+        if (source.Kind == TowerRoom.RoomKind.DevelopmentDisposition)
+        {
+            CompleteTowerIfResolved();
+            return towerTerminal;
+        }
         if (!towerEvents.Add(source.StageId + ".exit")) return false;
         Narrative.ObserveExternalOutcome(source.StageId, "exited");
         Debug.Log("[S02 exit] " + source.StageId, this);
-        if (source.Kind == TowerRoom.RoomKind.DevelopmentDisposition) return false;
         EnterTowerRoom(towerRoomIndex + 1);
         return true;
     }
@@ -211,8 +216,8 @@ public sealed partial class GameSessionFlow
         var room = CurrentRoom;
         if (room == null || StoryUI.DialogueVisible || ActiveFight.NarrativePaused || chandelier == null || !chandelier.IsHanging || Time.time < opportunityReadyAt
             || Deployment.BrainPermissionTier <= 0 || interventionOffered) return;
-        // A real, still-living threat is required in both rooms. NPC survival is not a trigger condition.
-        if (room.Kind != TowerRoom.RoomKind.Gun && room.Kind != TowerRoom.RoomKind.Security) return;
+        // P1 keeps its opening opportunity. NPC survival is not a trigger condition.
+        if (room.Kind != TowerRoom.RoomKind.Gun) return; // 50F is offered on Security arrival, before attacks.
         if (!ActiveFight.EncounterActive || ActiveFight.BossHealth == null || ActiveFight.BossHealth.IsDead) return;
         if (Mathf.Abs(ActiveFight.Player.transform.position.x - room.Offset.x) > 12f) return;
         interventionOffered = true;

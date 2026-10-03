@@ -20,7 +20,7 @@ Paths below are under `Assets/_Game/Levels/L01_Mission/Scripts/`.
 | `GameSessionFlow` | Loadout/deployment/practice/result/ending/Archive states, officer and immutable snapshot, attempt generation/disposal |
 | `GameSessionTower`, `TowerRoom`, `TowerDoor` | Existing ordered room definitions, room entry/exit, local encounter cleanup, run facts and normal mission routing |
 | `GameSessionNarrative` | Nearby focus, F callbacks, mandatory sequences, ReplyOrAttack, 1F movement/reset, Security triggers, P2/office authored greybox beats |
-| `GameSessionIntervention` | Shared chandelier advice; T3-only single paid shot/target validity/cleanup. T2 veto producer retired; replacement explicitly deferred |
+| `GameSessionIntervention` | Shared exact chandelier lines; T3 single legal shot/target cancellation, staged 50F continuation. T2 veto producer retired; replacement explicitly deferred |
 | `GameSessionDisposition` | P3 reveal, final target choices/physical result, D cue, legal A–E freeze, explicit normal result/ending |
 | `TowerNarrativeState` | Nullable/unresolved world facts, external observation pairs, frozen finite P3 mode (deleted denial has no replacement trigger), final decisions/administrator/order/result |
 | `BossFight` / `BossFightTower` | Practice refill/statistics boundary, genuine narrative pause and clock compensation, persistent player vs local actors, staged combat start, local defeat vs mission death/completion |
@@ -48,7 +48,7 @@ Paths below are under `Assets/_Game/Shared/`.
 | `Scripts/Player/Projectile.cs`, `IProjectileReceiver.cs` | Real team-filtered contacts, opt-in receivers, damage, actual actor/tier and lifetime; unmarked terrain passes bullets |
 | `Scripts/Player/PlayerTimeSlow.cs`, `PlayerCounterArm.cs`, `PlayerDetachedDroneArm.cs` | Existing prototypes; unscaled clocks compensate narrative pause; staged Drone targeting waits for combat |
 | `Scripts/Enemies/Enemy.cs` | Existing health/team/collider foundation and minimal Security pursuit/fire, staged stop/resume |
-| `Scripts/Presentation/WorldSpeechBubble.cs`, `InnerAIDangerSense.cs`, `InteractionOutline.cs` | Shared speech tracking/clamping/pointer and reusable danger/interaction feedback; `GameSessionPerception` binds actual local relevance |
+| `Scripts/Presentation/WorldSpeechBubble.cs`, `InnerAIDangerSense.cs`, `InteractionOutline.cs` | Shared speech tracking/clamping/pointer and reusable incoming-direction arcs/interaction feedback; `GameSessionPerception` binds actual local relevance |
 | `Scripts/Presentation/NarrativeContent.cs` | One instance JSON loader, stable entry/sequence lookup, explicit draft acceptance |
 | `Data/Narrative/go_ghost_narrative.json` | Sole runtime story/choice/ending text; exact supplied English draft, schema 1 |
 | `Scripts/Persistence/PoliceArchive.cs`, `PoliceArchiveStore.cs` | Existing persistent unlock collections/local store plus session records; optional explicit A–E ending on frozen run record |

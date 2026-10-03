@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -37,16 +37,26 @@ public class PlayerDodge : MonoBehaviour
     // Formal Air Dash (leg upgrade in the DeploymentSnapshot): one horizontal dash per airtime, same cooldown as the
     // ground dash. The base Human stays ground-only; the legacy airDodgeUnlocked field is not a progression path.
     private bool airDashAvailable = true;
-    public bool HasAirDash => officer != null && officer.Deployment != null && officer.Deployment.HasAirDash;
+    private bool legacyCombat;
+    public bool HasAirDash => !legacyCombat && officer != null && officer.Deployment != null && officer.Deployment.HasAirDash;
     public bool AirDashAvailable => HasAirDash && airDashAvailable;
     private OfficerIdentity officer;
-    public float DodgeStartInterval => officer != null && officer.Deployment != null ? officer.Deployment.DodgeStartInterval : stats.dodgeCooldown;
+    public float DodgeStartInterval => legacyCombat ? stats.dodgeCooldown : officer != null && officer.Deployment != null ? officer.Deployment.DodgeStartInterval : stats.dodgeCooldown;
+    public float CooldownRemaining => Mathf.Max(0f, nextDodgeTime - Time.time);
     public float LastDodgeStartedAt { get; private set; } = float.NegativeInfinity;
 
     private Rigidbody2D rb;
     private PlayerHealth health;
     private PlayerInputReader input;
     private PlayerMovement movement;
+
+    public void ConfigureLegacyCombat()
+    {
+        legacyCombat = true;
+        slashDodgeUnlocked = airDodgeUnlocked = false;
+        ResetCooldown();
+        LastDodgeStartedAt = float.NegativeInfinity;
+    }
 
     private void Awake()
     {
@@ -64,6 +74,7 @@ public class PlayerDodge : MonoBehaviour
 
     private void Update()
     {
+        if (input.NarrativePaused) return;
         // Landing restores the one air use; it never touches the shared cooldown.
         if (movement != null && movement.IsGrounded) airDashAvailable = true;
         if (input.DodgePressedThisFrame) // "Dodge" action: Left Shift
@@ -116,7 +127,8 @@ public class PlayerDodge : MonoBehaviour
 
     private void OnApplicationFocus(bool focused)
     {
-        if (!focused) CancelDodge();
+        // The three-wave flow freezes the current action on focus loss and resumes its remaining time.
+        if (!focused && !legacyCombat) CancelDodge();
     }
 
     private IEnumerator DodgeRoutine()

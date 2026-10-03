@@ -2,18 +2,18 @@
 
 ## Current entry — 2026-10-03
 
-Authority: [Duel_Implementation_Spec](GO_GHOST_VS/Duel_Implementation_Spec.md). Evidence: [Implementation_Log](GO_GHOST_VS/Implementation_Log.md). Unity remains **6000.6.0f1** with existing packages, URP 2D, Input System, uGUI/TMP and audio assets.
+Authority: [Legacy_Combat_Implementation_Spec](GO_GHOST_VS/Legacy_Combat_Implementation_Spec.md). Evidence: [Implementation_Log](GO_GHOST_VS/Implementation_Log.md). Unity remains **6000.6.0f1** with existing packages, URP 2D, Input System, uGUI/TMP and audio assets.
 
-Only enabled build scene: `Assets/_Game/Levels/L02_Duel/Scenes/GO GHOST Duel.unity`. Its camera, floor, walls, audio and `DuelGame` start the three-wave duel. Code under `Assets/_Game/Levels/L02_Duel/Scripts/`:
+Only enabled build and Editor Play scene: `Assets/_Game/Levels/L01_Mission/Scenes/GO GHOST Duel.unity`. Its fixed camera, five platforms and `DuelGame` host the restored legacy combat. `LegacyCombatAttempt.prefab` retains the original nested stickman/Boss actors. Level scripts live under `Assets/_Game/Levels/L01_Mission/Scripts/`:
 
 | Script | Responsibility |
 |---|---|
-| `DuelRules` | Shared dimensions, timing/damage, intention and public snapshot types |
-| `DuelFighter` | The common body/action executor, physical casts, dodge charges, direction lock, cancel, damage |
-| `DuelProjectile` | Actual swept shot/wave collision and lifetime |
-| `DuelControllers` | Public perception, stable built-in policy, police skill and bounded per-fight observation/deception |
-| `DuelGame` | Existing input-asset clone, independent permission routing, simultaneous-step result and lifecycle/pause |
-| `DuelUI`, `DuelVisual` | Whitelisted black/white/gray screens, HUD, bodies and timed attack feedback |
+| `DuelGame`, `DuelUI` | Three-wave lifecycle, permission configuration, pause/results and whitelisted UI |
+| `LegacyPlayerAI` | Independent input intentions through the retained shared player executors |
+| `CyberpsychoBoss` / `CyberpsychoBossLegacyPolice` | Original gun/blade moves, rig, collision and legal action dispatch |
+| `LegacyPolicePolicy`, `LegacyPolicePublicFacts` | Small public observation boundary, skill and encounter-local habits/tactics |
+
+Shared `PlayerInputReader` routes permissions into the original movement, Rifle, dodge and Arm-Blade components; `Projectile` retains real contact and deflection. The superseded `DuelFighter`, `DuelRules`, `DuelControllers`, `DuelProjectile` and `DuelVisual` were removed after a bounded dependency audit.
 
 `Assets/_Game/Development/Thomas/Editor/DuelBuild.cs` opens/builds this scene and exposes the development-only third-wave observation. The runtime scene does not reference Development assets. Reused input asset: `Assets/Settings/InputSystem_Actions.inputactions`; bindings are narrowed only on a runtime clone. Reused font: LiberationSans SDF; audio: `SfxSet`/`PresentationOneShot` and existing clips. Old Archive auto-start is removed; saved files are preserved.
 

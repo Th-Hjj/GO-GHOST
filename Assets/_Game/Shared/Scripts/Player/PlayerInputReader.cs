@@ -29,7 +29,17 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
 
     /// <summary>Final manual/AI world-space aim. All aim consumers read this output; never zero.</summary>
     public Vector2 AimDirection { get; private set; } = Vector2.right;
-    public AimControl AimMode => officer != null && officer.Deployment != null ? officer.Deployment.Aim : AimControl.Manual;
+    public AimControl AimMode => LegacyCombatActive ? (LegacyArmsAI ? AimControl.AI : AimControl.Manual)
+        : officer != null && officer.Deployment != null ? officer.Deployment.Aim : AimControl.Manual;
+    public bool LegacyCombatActive { get; private set; }
+    public bool LegacyLegsAI { get; private set; }
+    public bool LegacyArmsAI { get; private set; }
+    public bool LegacyBrainAI { get; private set; }
+    private System.Func<LegacyCombatIntent> legacyLegs;
+    private System.Func<bool, Vector2> legacyArms;
+    private System.Func<Vector2, LegacyCombatIntent> legacyBrain;
+    private InputActionAsset legacyActions;
+    private bool legacyFireHeld;
 
     // UI-only ownership predicate. The level presenter supplies it; Shared never references level UI.
     public System.Func<bool> UiBlocksManualFire { get; set; }
@@ -50,7 +60,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     public bool NarrativePaused { get; private set; }
     public bool HasTemporaryAimOverride => overrideTarget != null && overrideTarget.gameObject.activeInHierarchy && (overrideTargetValid == null || overrideTargetValid()) && Time.time < overrideEndsAt;
     public float OverrideRemaining => HasTemporaryAimOverride ? Mathf.Max(0f, overrideEndsAt - Time.time) : 0f;
-    public bool AutomaticFireRequested => HasTemporaryAimOverride && overrideFire && GameplayInputEnabled && hasFocus && !NarrativePaused;
+    public bool AutomaticFireRequested => !LegacyCombatActive && HasTemporaryAimOverride && overrideFire && GameplayInputEnabled && hasFocus && !NarrativePaused;
     private Transform overrideTarget;
     private System.Func<bool> overrideTargetValid;
     private float overrideEndsAt;
@@ -68,6 +78,45 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     private bool targetBound;
 
     private void Awake() => officer = GetComponent<OfficerIdentity>();
+
+    /// <summary>Called once on a fresh combat actor. Ownership never changes during this actor's wave.</summary>
+    public void ConfigureLegacyControls(bool legsAI, bool armsAI, bool brainAI,
+        System.Func<LegacyCombatIntent> legs, System.Func<bool, Vector2> arms,
+        System.Func<Vector2, LegacyCombatIntent> brain)
+    {
+        if (LegacyCombatActive) throw new System.InvalidOperationException("Combat permissions are already locked.");
+        if ((legsAI && legs == null) || (armsAI && arms == null) || (brainAI && brain == null))
+            throw new System.ArgumentException("An automated module requires its intent source.");
+        EndAimOverride();
+        LegacyCombatActive = true;
+        LegacyLegsAI = legsAI; LegacyArmsAI = armsAI; LegacyBrainAI = brainAI;
+        legacyLegs = legs; legacyArms = arms; legacyBrain = brain;
+        // Preserve the project action asset and its old consumers. Only this actor's clone is restricted.
+        legacyActions = Instantiate(InputSystem.actions);
+        Restrict(legacyActions.FindAction("Player/Move", true), "<Keyboard>/a", "<Keyboard>/d");
+        Restrict(legacyActions.FindAction("Player/Aim", true), "<Mouse>/position");
+        Restrict(legacyActions.FindAction("Player/Attack", true), "<Mouse>/leftButton");
+        Restrict(legacyActions.FindAction("Player/Jump", true), "<Keyboard>/space");
+        Restrict(legacyActions.FindAction("Player/Dodge", true), "<Keyboard>/leftShift");
+        Restrict(legacyActions.FindAction("Player/Ability", true), "<Keyboard>/e");
+        Restrict(legacyActions.FindAction("Player/SecondaryAbility", true));
+        Restrict(legacyActions.FindAction("Player/Previous", true));
+        Restrict(legacyActions.FindAction("Player/Next", true));
+        OnEnable();
+        SetGameplayInputEnabled(false);
+    }
+
+    private static void Restrict(InputAction action, params string[] paths)
+    {
+        for (int i = 0; i < action.bindings.Count; i++)
+            if (!action.bindings[i].isComposite && System.Array.IndexOf(paths, action.bindings[i].path) < 0)
+                action.ApplyBindingOverride(i, "");
+    }
+
+    private void OnDestroy()
+    {
+        if (legacyActions != null) { legacyActions.Disable(); Destroy(legacyActions); }
+    }
 
     // Bound exactly once by the new attempt. There is no live mode setter or global Boss lookup.
     internal void BindAimTarget(Enemy target)
@@ -98,7 +147,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     private void OnEnable()
     {
         IsReady = false;
-        InputActionAsset asset = InputSystem.actions;
+        InputActionAsset asset = legacyActions != null ? legacyActions : InputSystem.actions;
         if (asset == null)
         {
             Debug.LogError("PlayerInputReader: no project-wide Input Actions asset is assigned (Edit > Project Settings > Input System Package).", this);
@@ -210,17 +259,55 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         SecondaryAbilityPressedThisFrame = !secondaryGated && secondaryAbilityAction.WasPressedThisFrame();
         PreviousPressedThisFrame = previousAction != null && previousAction.WasPressedThisFrame();
         NextPressedThisFrame = nextAction != null && nextAction.WasPressedThisFrame();
+        if (LegacyCombatActive) ResolveLegacyIntent();
+    }
 
+    private void ResolveLegacyIntent()
+    {
+        var counter = GetComponent<PlayerCounterArm>();
+        bool manualBlade = !LegacyBrainAI && AbilityPressedThisFrame && counter != null
+            && counter.IsBlade && counter.CooldownRemaining <= 0f;
+        if (LegacyArmsAI) SetResolvedAim(legacyArms(manualBlade));
+        if (LegacyBrainAI)
+        {
+            // Brain receives the actual manual/automatic aim already selected for this frame.
+            LegacyCombatIntent decision = legacyBrain(AimDirection);
+            AbilityPressedThisFrame = decision.Blade;
+            if (LegacyArmsAI && decision.Blade && counter != null && counter.IsBlade && counter.CooldownRemaining <= 0f)
+            {
+                SetResolvedAim(legacyArms(true));
+                // Both actions share the final aim. Re-evaluate only firing after a blade redirect;
+                // keep the accepted blade request and never loop the two modules.
+                decision.Fire = legacyBrain(AimDirection).Fire;
+            }
+            AttackHeld = decision.Fire;
+            AttackPressedThisFrame = decision.Fire && !legacyFireHeld;
+            legacyFireHeld = decision.Fire;
+        }
+        if (LegacyLegsAI)
+        {
+            LegacyCombatIntent decision = legacyLegs();
+            MoveInput = new Vector2(Mathf.Clamp(decision.Move, -1f, 1f), 0f);
+            JumpPressedThisFrame = decision.Jump;
+            DodgePressedThisFrame = decision.Dodge;
+            JumpHeld = false;
+        }
+        SecondaryAbilityPressedThisFrame = PreviousPressedThisFrame = NextPressedThisFrame = false;
+    }
+
+    private void SetResolvedAim(Vector2 direction)
+    {
+        if (direction.sqrMagnitude > .0001f) AimDirection = direction.normalized;
     }
 
     private void UpdateAimDirection()
     {
         Vector2 dir;
-        if (HasTemporaryAimOverride)
+        if (!LegacyCombatActive && HasTemporaryAimOverride)
         {
             dir = (Vector2)overrideTarget.position - (Vector2)transform.position;
         }
-        else if (AimMode == AimControl.AI)
+        else if (!LegacyCombatActive && AimMode == AimControl.AI)
         {
             // Exclusive authority: an invalid/dead target holds the last aim; it never falls back to mouse.
             if (aimTarget == null || aimTarget.IsDead || !aimTarget.isActiveAndEnabled) return;
@@ -240,6 +327,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
 
     public bool BeginAimOverride(Transform target, float seconds, bool autonomousFire, System.Func<bool> targetValid = null)
     {
+        if (LegacyCombatActive) return false;
         var snapshot = officer != null ? officer.Deployment : null;
         if (snapshot == null || snapshot.BrainPermissionTier < 3
             || target == null || !target.gameObject.activeInHierarchy || seconds <= 0f || !GameplayInputEnabled) return false;
@@ -262,6 +350,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
 
     public void AimPlayerActionAt(Vector2 point)
     {
+        if (LegacyCombatActive) return;
         Vector2 dir = point - (Vector2)transform.position;
         if (dir.sqrMagnitude > .0001f) AimDirection = dir.normalized;
     }
@@ -295,6 +384,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
 
     private void ClearFrameState()
     {
+        legacyFireHeld = false;
         MoveInput = Vector2.zero;
         AttackHeld = false;
         AttackPressedThisFrame = false;

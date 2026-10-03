@@ -45,18 +45,28 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
     private PlayerDodge dodge;
     private PlayerInputReader input;
     private OfficerIdentity officer;
-    public float MoveSpeed => officer != null && officer.Deployment != null ? officer.Deployment.MoveSpeed : stats.moveSpeed;
+    private bool legacyCombat;
+    public float MoveSpeed => legacyCombat ? 7f : officer != null && officer.Deployment != null ? officer.Deployment.MoveSpeed : stats.moveSpeed;
     private SpriteRenderer spriteRenderer;
     private Vector2 moveInput;
     private int airJumpsRemaining;
     private bool attemptActive;
     private bool HasDeployment => officer != null && officer.Deployment != null;
-    public bool HasDoubleJump => HasDeployment ? attemptActive && officer.Deployment.HasDoubleJump : doubleJumpUnlocked;
-    public bool HasHover => HasDeployment && attemptActive && officer.Deployment.HasHover;
+    public bool HasDoubleJump => !legacyCombat && (HasDeployment ? attemptActive && officer.Deployment.HasDoubleJump : doubleJumpUnlocked);
+    public bool HasHover => !legacyCombat && HasDeployment && attemptActive && officer.Deployment.HasHover;
     private int ExtraJumpCapacity => HasDoubleJump ? (HasDeployment ? 1 : stats.maxAirJumps) : 0;
     public int AirJumpsRemaining => airJumpsRemaining;
     public float HoverRemaining { get; private set; }
     public bool IsHovering { get; private set; }
+
+    public void ConfigureLegacyCombat()
+    {
+        CleanupAttempt();
+        legacyCombat = true;
+        doubleJumpUnlocked = false;
+        attemptActive = true;
+        RefillAirResources();
+    }
 
     public void ApplyDeployment(DeploymentSnapshot snapshot)
     {

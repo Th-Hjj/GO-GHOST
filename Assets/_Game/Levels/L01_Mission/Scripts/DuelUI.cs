@@ -10,7 +10,7 @@ namespace GoGhost.Duel
         DuelGame game;
         TMP_FontAsset font;
         RectTransform canvas, page;
-        TMP_Text policeHealth, playerHealth, policeCharges, playerCharges;
+        TMP_Text policeHealth, playerHealth, resources;
         UnityEngine.UI.Image policeFill, playerFill;
         public void Initialize(DuelGame game, TMP_FontAsset font)
         {
@@ -55,7 +55,9 @@ namespace GoGhost.Duel
             if (canvas == null) return;
             if(page!=null){page.gameObject.SetActive(false);Destroy(page.gameObject);}
             page=Rect("Page",canvas,Vector2.zero,new Vector2(1600,900));
-            policeHealth=playerHealth=policeCharges=playerCharges=null; policeFill=playerFill=null;
+            policeHealth=playerHealth=resources=null; policeFill=playerFill=null;
+            if(game.Phase==DuelPhase.Menu||game.Phase==DuelPhase.Configure)
+                Image(page,Vector2.zero,new Vector2(4000,4000),Color.black);
             if(game.Paused)
             {
                 Image(page,Vector2.zero,new Vector2(4000,4000),new Color(0,0,0,.88f));
@@ -71,9 +73,9 @@ namespace GoGhost.Duel
             if(game.Phase==DuelPhase.Configure)
             {
                 Text("WAVE "+game.Wave,page,new Vector2(0,330),new Vector2(600,65),42);
-                if(game.FirstConfiguration)Text("An escaped AI entered your cybernetic body. The police are hunting it.",page,new Vector2(0,245),new Vector2(1300,60),25);
+
                 string[] labels={"Legs","Arms","Brain"};
-                string[] instructions={"A / D: move   Space: jump   Left Shift: dodge","Mouse in left / right half of the screen: attack direction","LMB: shot   RMB: intercept   MMB: ground wave\nPress the same attack again to cancel within its window"};
+                string[] instructions={"A / D: move   Space: jump   Left Shift: dodge","Mouse: free aim","Hold LMB: Rifle   E: Arm-Blade"};
                 bool[] settings={game.DraftLegs,game.DraftArms,game.DraftBrain};
                 for(int i=0;i<3;i++)
                 {
@@ -85,8 +87,8 @@ namespace GoGhost.Duel
                 }
                 if(game.FirstConfiguration)
                 {
-                    Text("The AI performs the controls of each module you assign to it.",page,new Vector2(0,-230),new Vector2(1250,40),23);
-                    Text("Permissions lock during combat. Reconfigure between waves or after defeat.",page,new Vector2(0,-275),new Vector2(1300,40),23);
+                    Text("AI controls the modules you delegate.",page,new Vector2(0,-230),new Vector2(1250,40),23);
+                    Text("Permissions are locked during a wave. Change them between waves or after defeat.",page,new Vector2(0,-275),new Vector2(1300,40),23);
                 }
                 Button("Start Fight",page,new Vector2(0,-360),new Vector2(360,65),game.StartFight); return;
             }
@@ -106,24 +108,25 @@ namespace GoGhost.Duel
             policeHealth=Text("",page,new Vector2(-400,345),new Vector2(300,40),24,TextAlignmentOptions.Left);
             Image(page,new Vector2(0,345),new Vector2(430,12),new Color(.18f,.18f,.18f));
             policeFill=Image(page,new Vector2(0,345),new Vector2(430,12),Color.white);
-            policeCharges=Text("",page,new Vector2(355,345),new Vector2(130,40),28);
+
             playerHealth=Text("",page,new Vector2(-400,-300),new Vector2(300,40),24,TextAlignmentOptions.Left);
             Image(page,new Vector2(0,-300),new Vector2(430,12),new Color(.18f,.18f,.18f));
             playerFill=Image(page,new Vector2(0,-300),new Vector2(430,12),Color.white);
-            playerCharges=Text("",page,new Vector2(355,-300),new Vector2(130,40),28);
+            resources=Text("",page,new Vector2(0,-337),new Vector2(1450,40),22);
             Text($"Legs: {(game.LegsAI?"AI":"Player")}     Arms: {(game.ArmsAI?"AI":"Player")}     Brain: {(game.BrainAI?"AI":"Player")}",page,new Vector2(0,-365),new Vector2(1300,40),24);
-            Text("LMB: shot    RMB: intercept    MMB: ground wave",page,new Vector2(0,-412),new Vector2(1300,40),22).color=game.BrainAI?new Color(.5f,.5f,.5f):Color.white;
+            Text("A/D: move    Space: jump    Shift: dodge    Mouse: aim    Hold LMB: Rifle    E: Arm-Blade    Esc: pause",page,new Vector2(0,-412),new Vector2(1300,40),22).color=game.BrainAI?new Color(.5f,.5f,.5f):Color.white;
             LateUpdate();
         }
         void LateUpdate()
         {
             if(playerHealth==null||game.Player==null)return;
-            playerHealth.text="YOU  "+game.Player.Health; policeHealth.text="POLICE  "+game.Police.Health;
-            // ASCII keeps the existing baked font portable, with no new font import.
-            playerCharges.text=Cells(game.Player.Charges); policeCharges.text=Cells(game.Police.Charges);
-            playerFill.rectTransform.sizeDelta=new Vector2(430f*game.Player.Health/game.Player.MaxHealth,12);
-            policeFill.rectTransform.sizeDelta=new Vector2(430f*game.Police.Health/game.Police.MaxHealth,12);
+            playerHealth.text="YOU  "+game.Player.CurrentHealth; policeHealth.text="POLICE  "+game.Police.CurrentHealth;
+
+            string ammo=game.Rifle.IsReloading?"Reloading":$"Rifle {game.Rifle.AmmoInMagazine} / {game.Rifle.MagazineSize}";
+            resources.text=$"{ammo}     Dodge: {Ready(game.Dodge.CooldownRemaining)}     Arm-Blade: {Ready(game.Blade.CooldownRemaining)}";
+            playerFill.rectTransform.sizeDelta=new Vector2(430f*game.Player.CurrentHealth/game.Player.MaxHealth,12);
+            policeFill.rectTransform.sizeDelta=new Vector2(430f*game.Police.CurrentHealth/game.Police.MaxHealth,12);
         }
-        string Cells(int n)=>n==2?"[|] [|]":n==1?"[|] [ ]":"[ ] [ ]";
+        string Ready(float remaining)=>remaining<=.01f?"Ready":$"{remaining:0.0}s";
     }
 }

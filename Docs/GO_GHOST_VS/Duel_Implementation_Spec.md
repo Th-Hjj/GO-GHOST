@@ -1,3 +1,5 @@
+> Historical: superseded where conflicting by [Legacy_Combat_Implementation_Spec.md](Legacy_Combat_Implementation_Spec.md), confirmed later on 2026-10-03.
+
 # GO GHOST — Codex Astra Ultracode 完整修改与实施 Prompt
 
 > 目标：在当前 GO GHOST Unity 工程上，完成一段接近 vertical slice 完成度、可实际游玩的三波单屏战斗。

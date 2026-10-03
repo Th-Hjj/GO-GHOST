@@ -13,7 +13,6 @@ public sealed class TowerNarrativeState
     public ResetDecision MaintenanceResetDecision { get; private set; }
     public bool? MaintenanceAlive { get; private set; }
     public bool Floor50T2VetoCompleted { get; private set; }
-    public bool AntiAiLifeHostility { get; private set; }
     public Mode FrozenP3Mode { get; private set; }
     public bool DevelopmentOnly { get; }
     public TowerNarrativeState(bool developmentOnly) => DevelopmentOnly = developmentOnly;
@@ -68,20 +67,15 @@ public sealed class TowerNarrativeState
         Floor50T2VetoCompleted = true;
         ObserveExternalOutcome("floor50.aim_window", "completed_without_fire");
     }
-    internal void DenialUtteranceCompleted()
-    {
-        if (StageId != "boss_p2") return;
-        AntiAiLifeHostility = true; ObserveExternalOutcome("boss.p2.denial", "spoken");
-    }
     public Mode FreezeP3Mode()
     {
         if (StageId != "boss_p3" || FrozenP3Mode != Mode.Unresolved) return FrozenP3Mode;
-        FrozenP3Mode = SelectP3(AntiAiLifeHostility, MaintenanceResetDecision, MaintenanceAlive == true,
+        FrozenP3Mode = SelectP3(MaintenanceResetDecision, MaintenanceAlive == true,
             Floor50T2VetoCompleted, ReceptionistAlive == true);
         return FrozenP3Mode;
     }
-    public static Mode SelectP3(bool denial, ResetDecision reset, bool maintenanceAlive, bool veto, bool receptionistAlive)
-        => denial ? Mode.Overdrive : reset == ResetDecision.Cancelled && maintenanceAlive && veto && receptionistAlive ? Mode.Restrained : Mode.FullForce;
+    public static Mode SelectP3(ResetDecision reset, bool maintenanceAlive, bool veto, bool receptionistAlive)
+        => reset == ResetDecision.Cancelled && maintenanceAlive && veto && receptionistAlive ? Mode.Restrained : Mode.FullForce;
 
     public bool DispositionConnected { get; private set; }
     public bool? PresidentAlive { get; private set; }
@@ -103,9 +97,9 @@ public sealed class TowerNarrativeState
     {
         if (!DispositionConnected || FrozenExit != ExitResult.Unresolved) return;
         PresidentAlive = ceoAlive; CoreIntact = coreIntact;
-        // A previously completed nonlethal decision cannot survive a real later killing.
-        if (!ceoAlive && CeoDisposition != CeoDecision.Unresolved) CeoDisposition = CeoDecision.Execute;
-        if (!coreIntact && CoreDisposition != CoreDecision.Unresolved) CoreDisposition = CoreDecision.Destroy;
+        // Real death itself commits the lethal disposition, including an unresolved target; never requires corpse interaction.
+        if (!ceoAlive) CeoDisposition = CeoDecision.Execute;
+        if (!coreIntact) CoreDisposition = CoreDecision.Destroy;
     }
     public bool CanControl => DispositionConnected && FrozenExit == ExitResult.Unresolved && CeoDisposition == CeoDecision.Spare
         && PresidentAlive == true && CoreIntact == true;

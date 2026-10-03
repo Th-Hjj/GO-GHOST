@@ -87,17 +87,14 @@ public partial class TopDownSmokeTest
             Check("Caption has no invented speaker",ui.DisplayedSpeaker=="",ui.DisplayedSpeaker);
             ui.HideDialogue();flow.ActiveFight.SetNarrativePaused(false);
 
-            // Real unpaused ReplyOrAttack window: option clicks must not become attack intent.
-            yield return FlowJump(flow,"boss_p2",2);yield return WeaponsWait(()=>ui.DialogueVisible,4);yield return FlowClose(ui);
-            Check("Real P2 reply window reached",ui.ChoicesVisible && flow.ReplyOrAttackActive,"existing sequencing");
+            // Local unpaused multi-choice setup: do not restore a deleted narrative branch to test UI ownership.
+            yield return FlowJump(flow,"tower_entry",0); ui.ShowChoices(ids,finish,true);yield return Frames(3);
             shots=flow.ActiveFight.Player.GetComponent<PlayerShooting>().TriggerPulls;
             DialoguePointer(ui,1,true);yield return Frames(6);
-            Check("Unpaused choice click speaks rather than shoots",ui.CurrentNarrativeId=="boss.p2.reply.deny_ai_consciousness" && ui.DisplayedSpeaker=="Officer" && flow.ActiveFight.Player.GetComponent<PlayerShooting>().TriggerPulls==shots,ui.CurrentNarrativeId);
-            MouseTo(.1f,.8f);yield return Frames(3);
-            yield return FlowJump(flow,"boss_p1",0);yield return WeaponsWait(()=>ui.DialogueVisible,3);yield return FlowClose(ui);
-            shots=flow.ActiveFight.Player.GetComponent<PlayerShooting>().TriggerPulls;
+            Check("Unpaused choice click commits rather than shoots",picked==ids[1] && !ui.DialogueVisible && flow.ActiveFight.Player.GetComponent<PlayerShooting>().TriggerPulls==shots,"local UI setup");
+            MouseTo(.1f,.8f);yield return Frames(3);ui.ShowChoices(ids,finish,true);yield return Frames(3);
             yield return DialogueClick(.1f,.8f);
-            Check("Outside reply panel retains real shooting",flow.ActiveFight.Player.GetComponent<PlayerShooting>().TriggerPulls>shots && !flow.ReplyOrAttackActive,"existing attack route");
+            Check("Outside unpaused panel retains real shooting",flow.ActiveFight.Player.GetComponent<PlayerShooting>().TriggerPulls>shots,"existing input ownership");
             yield return FlowJump(flow,"tower_entry",0);
             Check("Jump clears UI pointer ownership",flow.ActiveFight.Player.GetComponent<PlayerInputReader>().UiBlocksManualFire==null && !ui.DialogueVisible,"cleanup");
             flow.GetComponent<DeveloperRouteJump>().RestartFull();yield return Frames(3);

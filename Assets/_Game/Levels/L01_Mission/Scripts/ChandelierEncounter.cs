@@ -1,6 +1,6 @@
 using UnityEngine;
 
-/// <summary>S01 one-shot physical prop. Only projectile contacts release it; landed body is Ground + explicit hostile bullet cover.</summary>
+/// <summary>S01 one-shot physical prop. Only projectile contacts release it; landed body is Ground + explicit two-way bullet cover.</summary>
 [RequireComponent(typeof(Rigidbody2D))]
 public sealed class ChandelierEncounter : MonoBehaviour, IProjectileReceiver
 {

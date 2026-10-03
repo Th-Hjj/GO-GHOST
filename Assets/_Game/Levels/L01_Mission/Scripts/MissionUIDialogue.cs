@@ -79,6 +79,9 @@ public sealed partial class MissionUI
     private void PresentLine()
     {
         dialogueText.text = dialogueLines[dialogueIndex].Text;
+        // Reuse the baked CJK subset for authored Chinese lines; keep the normal Latin font elsewhere.
+        dialogueText.font = !font.HasCharacters(dialogueText.text) && narrativeFont != null && narrativeFont.HasCharacters(dialogueText.text)
+            ? narrativeFont : font;
         speakerText.text = dialogueLines[dialogueIndex].SpeakerName;
     }
 
@@ -241,14 +244,14 @@ public sealed partial class MissionUI
     }
     public void HideDialogue() { if (DialogueVisible) FinishDialogue(DialogueResult.Cancelled, CurrentNarrativeId); }
 
-    public void ShowInteractionKey(Transform anchor)
+    public void ShowInteractionKey(Transform anchor, Vector3 offset = default)
     {
         if (interactionKey == null) return;
         bool visible = anchor != null && !DialogueVisible && Camera.main != null;
         interactionKey.gameObject.SetActive(visible);
         if (!visible) return;
         interactionKey.text = NarrativeEntry("ui.interact.key");
-        Vector3 screen = Camera.main.WorldToScreenPoint(anchor.position);
+        Vector3 screen = Camera.main.WorldToScreenPoint(anchor.position + offset);
         RectTransformUtility.ScreenPointToLocalPointInRectangle(narrativeCanvas, screen, null, out var local);
         interactionKey.rectTransform.localPosition = local;
     }

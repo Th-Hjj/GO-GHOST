@@ -39,6 +39,8 @@ public sealed partial class GameSessionFlow
 
     private void InitializeTowerRooms()
     {
+        if (president != null) president.OnDied += RecordFinalDeath;
+        if (continuingCore != null) continuingCore.OnDied += RecordFinalDeath;
         foreach (var room in towerRooms)
         {
             if (room == null) continue;

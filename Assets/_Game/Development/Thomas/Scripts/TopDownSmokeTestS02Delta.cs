@@ -41,7 +41,7 @@ public partial class TopDownSmokeTest
                 && npc.IsAlive && Mathf.Abs(npc.transform.position.x-prop.transform.position.x)<.01f && npc.transform.position.y<prop.transform.position.y,
                 $"encounter={fight.EncounterActive}, alive={npc.IsAlive}");
             Check("skipped facts stay unknown", flow.Narrative.MaintenanceResetDecision == TowerNarrativeState.ResetDecision.Unresolved
-                && flow.Narrative.MaintenanceAlive == null && !flow.Narrative.AntiAiLifeHostility && flow.TowerFacts.Count == 0,
+                && flow.Narrative.MaintenanceAlive == null && !flow.Narrative.ObservedWorldFacts.Any(f => f.EventId == "boss.p2.denial") && flow.TowerFacts.Count == 0,
                 flow.Narrative.MaintenanceResetDecision.ToString());
             yield return WeaponsWait(()=>fight.EncounterActive,3f);
             Check("Security starts later and locks P2 exit", fight.Boss == null && fight.BossHealth != null && !flow.RequestTowerExit(room), fight.EncounterActive.ToString());
@@ -87,7 +87,7 @@ public partial class TopDownSmokeTest
                 $"landed={prop.HasLanded}, npcHP={npc.CurrentHealth}, ammo={ammo}/{gun.AmmoInMagazine}");
             Check("camera sees external death without private AI dialogue or stance",flow.Narrative.ReceptionistAlive==false
                 && flow.Narrative.ObservedWorldFacts.Any(f=>f.EventId=="floor50.receptionist" && f.OutcomeId=="dead_chandelier")
-                && !flow.Narrative.AntiAiLifeHostility && !flow.CurrentRoom.ExitOpen,
+                && !flow.Narrative.ObservedWorldFacts.Any(f => f.EventId == "boss.p2.denial") && !flow.CurrentRoom.ExitOpen,
                 $"facts={flow.TowerFacts.Count}");
             ScreenCapture.CaptureScreenshot("Logs/S02Delta/floor50-result.png"); yield return Frames(3);
 

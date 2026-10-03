@@ -22,7 +22,7 @@ Paths below are under `Assets/_Game/Levels/L01_Mission/Scripts/`.
 | `GameSessionNarrative` | Nearby focus, F callbacks, mandatory sequences, ReplyOrAttack, 1F movement/reset, Security triggers, P2/office authored greybox beats |
 | `GameSessionIntervention` | Existing S01 chandelier permission sequence, actual temporary aim request, real T2 completion reason, cleanup |
 | `GameSessionDisposition` | P3 reveal, final target choices/physical result, D cue, legal A–E freeze, explicit normal result/ending |
-| `TowerNarrativeState` | Nullable/unresolved world facts, external observation pairs, delivered denial, frozen finite P3 mode, final decisions/administrator/order/result |
+| `TowerNarrativeState` | Nullable/unresolved world facts, external observation pairs, frozen finite P3 mode (deleted denial has no replacement trigger), final decisions/administrator/order/result |
 | `BossFight` / `BossFightTower` | Practice refill/statistics boundary, genuine narrative pause and clock compensation, persistent player vs local actors, staged combat start, local defeat vs mission death/completion |
 | `CyberpsychoBoss` + encounter/attack partials | Existing P1 gun/P2 blade movement and attack owner, room bounds/target, shared real floating P3 profile; final responsive redesign absent |
 | `TowerCharacter` | Local NPC/CEO/core life, actual player projectile/attack damage, interaction anchor and death event |

@@ -1,3 +1,5 @@
+> Historical tower document. The 2026-10-03 [Duel specification](Duel_Implementation_Spec.md) supersedes conflicting design and runtime instructions. See [README](../../README.md) for the current entry.
+
 # GO GHOST — Current Design Authority
 
 **Confirmed by Thomas, 2026-10-02 EOD, with the post-73cd72b increment.** This is the canonical current design, consolidating `GO_GHOST_EOD_Documentation_Handoff_2026-10-02.md` and the non-conflicting execution details of `01_FLOW_AUTHORITY_AND_IMPLEMENTATION.md` v0.7. It supersedes the earlier single-arena baseline, S00/S02 route interfaces and v0.2–v0.6 narrative rules wherever they conflict. The old GitHub audit SHA is historical evidence, never a rollback target.

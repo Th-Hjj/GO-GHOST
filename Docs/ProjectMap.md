@@ -1,6 +1,25 @@
 # GO GHOST — Project Map
 
-Inspected source after the **2026-10-02 full-flow integration**. This maps implementation, not design approval or test results. Current authority: [Tower_Design_Override](GO_GHOST_VS/Tower_Design_Override.md). Actual progress/verification: [Implementation_Log](GO_GHOST_VS/Implementation_Log.md).
+## Current entry — 2026-10-03
+
+Authority: [Duel_Implementation_Spec](GO_GHOST_VS/Duel_Implementation_Spec.md). Evidence: [Implementation_Log](GO_GHOST_VS/Implementation_Log.md). Unity remains **6000.6.0f1** with existing packages, URP 2D, Input System, uGUI/TMP and audio assets.
+
+Only enabled build scene: `Assets/_Game/Levels/L02_Duel/Scenes/GO GHOST Duel.unity`. Its camera, floor, walls, audio and `DuelGame` start the three-wave duel. Code under `Assets/_Game/Levels/L02_Duel/Scripts/`:
+
+| Script | Responsibility |
+|---|---|
+| `DuelRules` | Shared dimensions, timing/damage, intention and public snapshot types |
+| `DuelFighter` | The common body/action executor, physical casts, dodge charges, direction lock, cancel, damage |
+| `DuelProjectile` | Actual swept shot/wave collision and lifetime |
+| `DuelControllers` | Public perception, stable built-in policy, police skill and bounded per-fight observation/deception |
+| `DuelGame` | Existing input-asset clone, independent permission routing, simultaneous-step result and lifecycle/pause |
+| `DuelUI`, `DuelVisual` | Whitelisted black/white/gray screens, HUD, bodies and timed attack feedback |
+
+`Assets/_Game/Development/Thomas/Editor/DuelBuild.cs` opens/builds this scene and exposes the development-only third-wave observation. The runtime scene does not reference Development assets. Reused input asset: `Assets/Settings/InputSystem_Actions.inputactions`; bindings are narrowed only on a runtime clone. Reused font: LiberationSans SDF; audio: `SfxSet`/`PresentationOneShot` and existing clips. Old Archive auto-start is removed; saved files are preserved.
+
+## Historical tower map — disconnected
+
+The rest of this document maps the **2026-10-02 full-flow integration**, retained to locate interconnected serialized assets safely. These scenes and scripts are outside the current entry/build path and are not a second supported game. Their design and test statements do not apply to the duel.
 
 ## Scene and environment
 

@@ -78,6 +78,10 @@ public partial class TopDownSmokeTest : MonoBehaviour
 
         switch (scenario)
         {
+            case "production-p1": yield return ProductionP1(); break;
+            case "production-edges": yield return ProductionEdges(); break;
+            case "production-finish": yield return ProductionFinish(); break;
+            case "production-ui": yield return ProductionUI(); break;
             case "manual-cover": yield return ManualPlaytestFixes(true); break;
             case "manual-fixes": yield return ManualPlaytestFixes(); break;
             case "dialogue-ux": yield return DialogueUx(); break;

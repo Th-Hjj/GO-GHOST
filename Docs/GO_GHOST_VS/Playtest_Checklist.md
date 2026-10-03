@@ -9,11 +9,12 @@ Record commit, machine, Unity version, tester and any assistance. Use PASS / FAI
 | Normal continuous run | Loadout/practice -> actual fights -> both final F decisions -> Result/ending/Main Menu; same officer/snapshot, no room refills or DEV completions | NOT RUN |
 | F / ReplyOrAttack | Single nearby F, fresh presses, cancellation distinct; sole response directly follows; 99F waits for F/actual attack; tier 0 omits Inner AI | NOT RUN |
 | 1F | Short real walk/reset, later greeting, cancellation and physical death; untouched unresolved; no exit softlock | NOT RUN |
-| 50F T2 / T3 | F call before guard, valid full T2 veto, real T3 ammo/reload/projectile/fall; actual Player/InnerAI causality and no scripted NPC death | NOT RUN |
-| P3 rule | Exact living/cancel/T2-veto requirements for restraint; otherwise Full Force; no deleted denial trigger | NOT RUN |
+| P1 permissions / cover | Player reply -> ??? silence -> tracking charged laser; T1 advice, T2 manual aim + red danger/blue outlines, T3 one paid real shot; fallen cover blocks laser/both bullet owners and supports climbing | NOT RUN |
+| 50F T2 / T3 | F call before guard, manual T2, real T3 ammo/reload/projectile/fall; actual causality and no scripted NPC death. Replacement T2 observation rule explicitly deferred | NOT RUN |
+| P3 rule | Existing selector retained; normal Restrained has no runtime producer until Thomas decides the replacement 50F observation. No substitute route or deleted denial trigger | BLOCKED: design deferred |
 | Final local setups | A–E through two F decisions, Control prerequisite, D cue in either order, actual death auto-commit without corpse F, once-only completion | NOT RUN |
 | Lifecycle | Mid-run death/new officer, F8 during pause/aim, restart/full restart, default skipped facts, no DEV Archive pollution | NOT RUN |
-| Content / UI | Exact JSON lookup including the authorized Chinese President summon after next Play; black/white minimal panel; no extra narrative help UI | NOT RUN |
+| Content / UI | Exact JSON lookup including President summon, entrance placeholder and P1 silence; speaker bubbles follow/clamp correctly; You / Voice in your head / ???; W/S/F and hover/click; no single-choice menu or leaked shots | NOT RUN |
 
 Select only checks relevant to the authorized change. Compile and a short affected continuation are the normal code gate. No old exhaustive phase matrix, standalone Build, every-upgrade campaign or generic harness required. For a documentation-only update, verify authority/links/diff and do not run gameplay tests.
 

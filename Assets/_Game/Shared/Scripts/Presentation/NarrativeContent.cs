@@ -18,8 +18,8 @@ public sealed class NarrativeContent
     [Serializable] private sealed class Sequence { public string id; public string[] lineIds; }
     public readonly struct Line
     {
-        public readonly string Text, SpeakerName;
-        public Line(string text, string speakerName) { Text = text; SpeakerName = speakerName; }
+        public readonly string Text, SpeakerName, SpeakerId;
+        public Line(string text, string speakerName, string speakerId = "") { Text = text; SpeakerName = speakerName; SpeakerId = speakerId; }
     }
     private readonly Dictionary<string, string> speakerNames = new Dictionary<string, string>();
     private readonly Dictionary<string, Entry> entries = new Dictionary<string, Entry>();
@@ -64,7 +64,7 @@ public sealed class NarrativeContent
         if (!entries.TryGetValue(id, out var entry) || string.IsNullOrWhiteSpace(entry.text)
             || (entry.status != "approved" && !allowDraft))
             throw new ArgumentException("Missing, empty or unaccepted narrative entry: " + id);
-        return new Line(entry.text, speakerNames[entry.speakerId]);
+        return new Line(entry.text, speakerNames[entry.speakerId], entry.speakerId);
     }
 
     public string[] SequenceText(string id, bool allowDraft = false)

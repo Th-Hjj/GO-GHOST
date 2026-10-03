@@ -2,7 +2,7 @@ using UnityEngine;
 
 /// <summary>S01 one-shot physical prop. Only projectile contacts release it; landed body is Ground + explicit two-way bullet cover.</summary>
 [RequireComponent(typeof(Rigidbody2D))]
-public sealed class ChandelierEncounter : MonoBehaviour, IProjectileReceiver
+public sealed class ChandelierEncounter : MonoBehaviour, IProjectileReceiver, ICombatCover
 {
     [SerializeField] private Collider2D suspension;
     [SerializeField] private BoxCollider2D body;
@@ -11,7 +11,8 @@ public sealed class ChandelierEncounter : MonoBehaviour, IProjectileReceiver
     public event System.Action<ChandelierEncounter, string> OnWorldOutcome;
     private Rigidbody2D physicsBody;
     private Vector3 initialPosition;
-    public Transform AimTarget => suspension != null ? suspension.transform : null;
+    public bool CanRelease => IsHanging && suspension != null && suspension.enabled && suspension.gameObject.activeInHierarchy;
+    public Transform AimTarget => CanRelease ? suspension.transform : null;
     public bool IsHanging { get; private set; } = true;
     public bool HasLanded { get; private set; }
     public int OutcomeCount { get; private set; }
@@ -48,6 +49,8 @@ public sealed class ChandelierEncounter : MonoBehaviour, IProjectileReceiver
         LastPermissionTier = 0;
     }
 
+    public bool BlocksCombatRay(Collider2D contact) => !IsHanging && contact == body && body.enabled && gameObject.activeInHierarchy;
+
     public bool ReceiveProjectile(Projectile projectile, Collider2D contact)
     {
         if (IsHanging && contact == suspension && projectile.Damage > 0 && Includes(releaseLayers, projectile.OwnerLayer))
@@ -64,7 +67,7 @@ public sealed class ChandelierEncounter : MonoBehaviour, IProjectileReceiver
             OnWorldOutcome?.Invoke(this, "released");
             return true;
         }
-        if (!IsHanging && contact == body && Includes(blockedProjectileLayers, projectile.OwnerLayer))
+        if (BlocksCombatRay(contact) && Includes(blockedProjectileLayers, projectile.OwnerLayer))
         {
             BlockedProjectiles++;
             return true;

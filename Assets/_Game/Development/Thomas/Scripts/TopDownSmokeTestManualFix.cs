@@ -22,8 +22,9 @@ public partial class TopDownSmokeTest
         {
             yield return FlowJump(flow,"boss_p1",0);
             yield return FlowKey(Key.F);
-            Check("P1 sole response is the next spoken line",!ui.ChoicesVisible && ui.CurrentNarrativeId=="boss.p1.reply" && ui.DisplayedSpeaker=="Officer",ui.CurrentNarrativeId);
+            Check("P1 sole response is the next spoken line",!ui.ChoicesVisible && ui.CurrentNarrativeId=="boss.p1.reply" && ui.DisplayedSpeaker=="You",ui.CurrentNarrativeId);
             yield return FlowKey(Key.F);
+            yield return FlowKey(Key.F); // New authored silence precedes the opening laser.
             Check("Sole response is not duplicated",!ui.DialogueVisible && flow.ActiveFight.EncounterActive,"P1 starts");
             flow.ActiveFight.Boss.StopCombat();
             var prop=flow.CurrentRoom.Prop;

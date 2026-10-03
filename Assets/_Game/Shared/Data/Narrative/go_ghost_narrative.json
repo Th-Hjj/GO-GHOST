@@ -1,15 +1,15 @@
 {
   "schemaVersion": 1,
-  "contentRevision": "en-flow-v0.7-review-01-2026-10-02",
+  "contentRevision": "production-interaction-p1-2026-10-02",
   "language": "en",
   "speakers": [
     {
       "id": "inner_ai",
-      "displayName": "Inner AI"
+      "displayName": "Voice in your head"
     },
     {
       "id": "player",
-      "displayName": "Officer"
+      "displayName": "You"
     },
     {
       "id": "puppeteer",
@@ -38,6 +38,10 @@
     {
       "id": "caption",
       "displayName": ""
+    },
+    {
+      "id": "puppeteer_unknown",
+      "displayName": "???"
     }
   ],
   "entries": [
@@ -58,7 +62,7 @@
     {
       "id": "npc.entry.intro.01",
       "speakerId": "entrance_worker",
-      "text": "Hi",
+      "text": "Hi.",
       "status": "draft",
       "notes": ""
     },
@@ -106,7 +110,7 @@
     },
     {
       "id": "boss.p1.intro.01",
-      "speakerId": "puppeteer",
+      "speakerId": "puppeteer_unknown",
       "text": "Hello there, officer. I'm sorry, but please turn back now.",
       "status": "draft",
       "notes": ""
@@ -183,14 +187,14 @@
     },
     {
       "id": "boss.p2.intro.01",
-      "speakerId": "puppeteer",
+      "speakerId": "puppeteer_unknown",
       "text": "I'm getting more and more interested in you, officer.",
       "status": "draft",
       "notes": ""
     },
     {
       "id": "boss.p2.intro.02",
-      "speakerId": "puppeteer",
+      "speakerId": "puppeteer_unknown",
       "text": "If I'm not mistaken, there are two minds in that head of yours.",
       "status": "draft",
       "notes": ""
@@ -369,6 +373,20 @@
       "text": "F",
       "status": "draft",
       "notes": ""
+    },
+    {
+      "id": "npc.entry.intro.02",
+      "speakerId": "entrance_worker",
+      "text": "Welcome to [COMPANY NAME TBD].",
+      "status": "draft",
+      "notes": "Explicit temporary company placeholder; name remains undecided."
+    },
+    {
+      "id": "boss.p1.silence.01",
+      "speakerId": "puppeteer_unknown",
+      "text": "......",
+      "status": "draft",
+      "notes": ""
     }
   ],
   "sequences": [
@@ -394,7 +412,8 @@
     {
       "id": "npc.entry.intro",
       "lineIds": [
-        "npc.entry.intro.01"
+        "npc.entry.intro.01",
+        "npc.entry.intro.02"
       ]
     },
     {
@@ -560,6 +579,12 @@
       "lineIds": [
         "ending.E.01",
         "ending.E.02"
+      ]
+    },
+    {
+      "id": "boss.p1.silence",
+      "lineIds": [
+        "boss.p1.silence.01"
       ]
     }
   ]

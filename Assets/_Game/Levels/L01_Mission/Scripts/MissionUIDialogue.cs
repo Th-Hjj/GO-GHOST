@@ -14,6 +14,7 @@ public sealed partial class MissionUI
     private GameObject dialogue;
     private TMP_Text dialogueText, speakerText, consequenceText, interactionKey;
     private RectTransform narrativeCanvas, dialoguePanel;
+    private WorldSpeechBubble speechBubble;
     private readonly UnityEngine.UI.Image[] choiceRows = new UnityEngine.UI.Image[3];
     private PlayerInputReader dialogueInput;
     private bool dialogueBlocksWorld, mouseReady;
@@ -48,7 +49,7 @@ public sealed partial class MissionUI
         dialoguePanel.GetComponent<UnityEngine.UI.Image>().color = new Color(0, 0, 0, .6f);
         speakerText = DialogueLabel(dialoguePanel, "SpeakerName", new Vector2(720, 310), new Vector2(1340, 46));
         dialogueText = DialogueLabel(dialoguePanel, "DialogueLine", new Vector2(720, 175), new Vector2(1340, 210));
-        dialogueText.alignment = TextAlignmentOptions.Center;
+        dialogueText.alignment = TextAlignmentOptions.Left;
         for (int i = 0; i < choiceLabels.Length; i++)
         {
             var row = Rect(dialoguePanel, "NarrativeChoiceRow" + i, new Vector2(720, 242-i*65), new Vector2(1360, 62));
@@ -57,6 +58,8 @@ public sealed partial class MissionUI
             choiceLabels[i] = DialogueLabel(row, "NarrativeChoice" + i, new Vector2(680, 31), new Vector2(1340, 62));
         }
         consequenceText = DialogueLabel(dialoguePanel, "ChoiceConsequence", new Vector2(720, 40), new Vector2(1340, 46));
+        speechBubble = dialoguePanel.gameObject.AddComponent<WorldSpeechBubble>();
+        speechBubble.Initialize(narrativeCanvas);
         interactionKey = Text(canvas, "InteractionKey", "", Vector2.zero, new Vector2(60, 60), 36);
         interactionKey.color = Color.white;
         interactionKey.raycastTarget = false;
@@ -83,6 +86,8 @@ public sealed partial class MissionUI
         dialogueText.font = !font.HasCharacters(dialogueText.text) && narrativeFont != null && narrativeFont.HasCharacters(dialogueText.text)
             ? narrativeFont : font;
         speakerText.text = dialogueLines[dialogueIndex].SpeakerName;
+        BindDialogueSpeaker(dialogueLines[dialogueIndex].SpeakerId);
+        LayoutSpeechBubble();
     }
 
     public string NarrativeEntry(string id) => narrative.EntryText(id, allowNarrativeDraft);
@@ -109,6 +114,16 @@ public sealed partial class MissionUI
         if (DialogueVisible || ids == null || ids.Length == 0 || ids.Length > choiceLabels.Length || narrative == null) return false;
         try { foreach (string id in ids) NarrativeEntry(id); }
         catch (Exception error) { Debug.LogError("Narrative choice: " + error.Message, this); return false; }
+        if (ids.Length == 1)
+        {
+            choiceIds = null;
+            dialogueLines = new[] { narrative.EntryLine(ids[0], allowNarrativeDraft) };
+            dialogueIndex = 0;
+            PresentLine();
+            OpenDialogue(ids[0], (outcome, id) => result?.Invoke(outcome == DialogueResult.Completed
+                ? DialogueResult.ChoiceCommitted : outcome, id), !replyOrAttack, true);
+            return true;
+        }
         choiceIds = (string[])ids.Clone();
         choiceConsequence = consequence;
         selectedChoice = 0;
@@ -212,9 +227,59 @@ public sealed partial class MissionUI
             choiceLabels[i].text = NarrativeEntry(choiceIds[i]);
             choiceRows[i].color = i == selectedChoice ? new Color(1, 1, 1, .18f) : Color.clear;
         }
-        speakerText.text = narrative.EntryLine(SelectedChoiceId, allowNarrativeDraft).SpeakerName;
+        var line = narrative.EntryLine(SelectedChoiceId, allowNarrativeDraft);
+        speakerText.text = line.SpeakerName;
+        BindDialogueSpeaker(line.SpeakerId);
         string cue = choiceConsequence?.Invoke(SelectedChoiceId);
         consequenceText.text = cue == null ? "" : NarrativeEntry(cue);
+        LayoutSpeechBubble();
+    }
+
+    private void BindDialogueSpeaker(string speakerId)
+    {
+        speechBubble.SetSpeaker(flow.ResolveNarrativeSpeaker(speakerId));
+    }
+
+    private void LayoutSpeechBubble()
+    {
+        float maxWidth = Mathf.Min(720, narrativeCanvas.rect.width - 40);
+        float textWidth = choiceIds == null ? Mathf.Max(speakerText.GetPreferredValues().x,
+            dialogueText.GetPreferredValues().x) : maxWidth;
+        float width = Mathf.Clamp(textWidth + 48, 300, maxWidth);
+        float contentWidth = width - 48;
+        float height = 24 + 48 + 12;
+        if (choiceIds == null) height += Mathf.Max(48, dialogueText.GetPreferredValues(dialogueText.text, contentWidth, 0).y);
+        else
+        {
+            for (int i = 0; i < choiceIds.Length; i++)
+                height += Mathf.Max(58, choiceLabels[i].GetPreferredValues(choiceLabels[i].text, contentWidth - 16, 0).y + 16);
+            if (!string.IsNullOrEmpty(consequenceText.text)) height += consequenceText.GetPreferredValues(consequenceText.text, contentWidth, 0).y + 16;
+        }
+        height += 24;
+        dialoguePanel.sizeDelta = new Vector2(width, height);
+        PlaceSpeechText(speakerText.rectTransform, 24, height - 24, contentWidth, 48);
+        float top = height - 84;
+        PlaceSpeechText(dialogueText.rectTransform, 24, top, contentWidth, height - 108);
+        if (choiceIds != null)
+        {
+            for (int i = 0; i < choiceIds.Length; i++)
+            {
+                float rowHeight = Mathf.Max(58, choiceLabels[i].GetPreferredValues(choiceLabels[i].text, contentWidth - 16, 0).y + 16);
+                PlaceSpeechText((RectTransform)choiceRows[i].transform, 16, top, width - 32, rowHeight);
+                PlaceSpeechText(choiceLabels[i].rectTransform, 8, rowHeight, contentWidth, rowHeight);
+                top -= rowHeight;
+            }
+            PlaceSpeechText(consequenceText.rectTransform, 24, top - 8, contentWidth, Mathf.Max(0, top - 24));
+        }
+        speechBubble.PositionBubble();
+    }
+
+    private static void PlaceSpeechText(RectTransform rect, float x, float top, float width, float height)
+    {
+        rect.anchorMin = rect.anchorMax = Vector2.zero;
+        rect.pivot = new Vector2(0, 1);
+        rect.anchoredPosition = new Vector2(x, top);
+        rect.sizeDelta = new Vector2(width, height);
     }
 
     private void AdvanceDialogue()
@@ -239,6 +304,7 @@ public sealed partial class MissionUI
         choiceIds = null;
         choiceConsequence = null;
         CurrentNarrativeId = null;
+        if (speechBubble != null) speechBubble.SetSpeaker(null);
         if (dialogue != null) dialogue.SetActive(false);
         callback?.Invoke(result, id);
     }

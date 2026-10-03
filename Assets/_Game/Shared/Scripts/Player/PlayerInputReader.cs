@@ -48,10 +48,11 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
 
     public bool GameplayInputEnabled { get; private set; } = true;
     public bool NarrativePaused { get; private set; }
-    public bool HasTemporaryAimOverride => overrideTarget != null && overrideTarget.gameObject.activeInHierarchy && Time.time < overrideEndsAt;
+    public bool HasTemporaryAimOverride => overrideTarget != null && overrideTarget.gameObject.activeInHierarchy && (overrideTargetValid == null || overrideTargetValid()) && Time.time < overrideEndsAt;
     public float OverrideRemaining => HasTemporaryAimOverride ? Mathf.Max(0f, overrideEndsAt - Time.time) : 0f;
     public bool AutomaticFireRequested => HasTemporaryAimOverride && overrideFire && GameplayInputEnabled && hasFocus && !NarrativePaused;
     private Transform overrideTarget;
+    private System.Func<bool> overrideTargetValid;
     private float overrideEndsAt;
     private bool overrideFire, overrideRunning, overridePlayerRequestedFire;
     public enum AimEndReason { Expired, Cancelled, TargetLost }
@@ -237,19 +238,26 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
             AimDirection = dir.normalized;
     }
 
-    public bool BeginAimOverride(Transform target, float seconds, bool autonomousFire)
+    public bool BeginAimOverride(Transform target, float seconds, bool autonomousFire, System.Func<bool> targetValid = null)
     {
         var snapshot = officer != null ? officer.Deployment : null;
-        if (snapshot == null || snapshot.BrainPermissionTier < 2 || (autonomousFire && snapshot.BrainPermissionTier < 3)
+        if (snapshot == null || snapshot.BrainPermissionTier < 3
             || target == null || !target.gameObject.activeInHierarchy || seconds <= 0f || !GameplayInputEnabled) return false;
         EndAimOverride();
         overrideRunning = true;
         overridePlayerRequestedFire = false;
         overrideTarget = target;
+        overrideTargetValid = targetValid;
         overrideEndsAt = Time.time + seconds;
         overrideFire = autonomousFire;
         UpdateAimDirection();
         return true;
+    }
+
+    // A context intervention requests one paid shot, then immediately returns aim to the mouse.
+    public void CompleteAutomaticShot()
+    {
+        if (overrideFire) EndAimOverride();
     }
 
     public void AimPlayerActionAt(Vector2 point)
@@ -264,6 +272,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         bool notify = overrideRunning, requested = overridePlayerRequestedFire;
         overrideRunning = false;
         overrideTarget = null;
+        overrideTargetValid = null;
         overrideEndsAt = 0f;
         overrideFire = false;
         if (notify) OnAimOverrideEnded?.Invoke(reason, requested);

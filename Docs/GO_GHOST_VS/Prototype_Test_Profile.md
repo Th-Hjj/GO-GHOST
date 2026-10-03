@@ -7,7 +7,8 @@
 | Weapon | Assault Rifle only: 12 damage, .25 s interval, 10 rounds, 1.2 s automatic reload, unlimited reserve; `LoadoutRules.Weapon` |
 | Rifle projectile / Rapid Fire | Speed 18; existing Right Arm interval / 1.75; no replacement weapon implied |
 | Player | Shared HP 150, jump velocity 12; movement comes from the deployment, not the obsolete tables below |
-| Permission | Snapshot 0/T1/T2/T3. T2 three scaled gameplay seconds after dialogue; existing bounded T3 request window three seconds. Pause does not spend either |
+| Permission | Snapshot 0/T1/T2/T3. T2 entirely manual aim/fire. T3 one paid context shot, bounded request window 3 scaled seconds; dialogue pause does not spend it. Replacement 50F observation rule deferred |
+| P1 opening / perception | Tracking charge 3.2 hostile seconds; final-direction damaging ray once, 28 damage, .22 s beam display. T2+ danger streak pulse .7 scaled seconds / .4 s minimum retrigger; blue contour width .055 world units. Speech body/choices 38 reference pixels, bubble maximum width 720 / padding 24, black background .6 alpha |
 | Time Slow | Existing Q prototype: 3 unscaled gameplay seconds, 10 s start interval, hostile rate .25; narrative pause compensates both deadlines |
 | Local NPC life | Worker/Maintenance/Receptionist 20 HP; falling chandelier 20 actual impact damage; CEO/core 24 HP in greybox |
 | 1F staging / focus | Authored walk 2.5 units/s; reset wait .8 s; interaction radius 2.4 units |

@@ -9,7 +9,7 @@ using GoGhost.Duel;
 
 public static class DuelBuild
 {
-    public const string ScenePath="Assets/_Game/Levels/L02_Duel/Scenes/GO GHOST Duel.unity";
+    public const string ScenePath="Assets/_Game/Levels/L01_Mission/Scenes/GO GHOST Duel.unity";
     [MenuItem("GO GHOST/Duel/Open Arena")]
     public static void Open() => EditorSceneManager.OpenScene(ScenePath);
     public static void CreateScene()
@@ -36,7 +36,7 @@ public static class DuelBuild
         data.FindProperty("inputActions").objectReferenceValue=AssetDatabase.LoadAssetAtPath<InputActionAsset>("Assets/Settings/InputSystem_Actions.inputactions");
         data.FindProperty("font").objectReferenceValue=AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset");
         data.FindProperty("sounds").objectReferenceValue=session.GetComponent<SfxSet>();data.ApplyModifiedPropertiesWithoutUndo();
-        if(!AssetDatabase.IsValidFolder("Assets/_Game/Levels/L02_Duel/Scenes"))AssetDatabase.CreateFolder("Assets/_Game/Levels/L02_Duel","Scenes");
+        if(!AssetDatabase.IsValidFolder("Assets/_Game/Levels/L01_Mission/Scenes"))AssetDatabase.CreateFolder("Assets/_Game/Levels/L02_Duel","Scenes");
         EditorSceneManager.SaveScene(scene,ScenePath);
         EditorBuildSettings.scenes=new[]{new EditorBuildSettingsScene(ScenePath,true)};
         AssetDatabase.SaveAssets();

@@ -1,27 +1,28 @@
 # GO GHOST
 
-A single-player, fixed-camera 2D duel across three police waves: basic, skilled, and adaptive/deceptive. Delegate Legs, Arms and Brain independently to a stable built-in AI, or retain their controls yourself. USC CTIN 489 — Thomas Hong and Walker Grupp.
+Single-player, fixed-camera 2D combat across three police waves: basic, skilled, adaptive/deceptive. Delegate Legs, Arms and Brain independently, or keep their controls. USC CTIN 489 — Thomas Hong and Walker Grupp.
 
 ## Open and play
 
-1. Open this project in **Unity 6000.6.0f1**. Keep the existing packages and URP 2D renderer. Thomas uses Rider.
-2. Open `Assets/_Game/Levels/L02_Duel/Scenes/GO GHOST Duel.unity`, the only enabled build scene, and press Play.
-3. Choose **New Game**, configure three permissions, then **Start Fight**. New games default all manual. Each fight locks its choices after a one-second preparation.
-4. Victory advances to the next configuration; defeat offers reconfiguration for the same wave. Both sides reset resources and observation on each start. Third-wave victory opens Complete. No save progression.
+Use **Unity 6000.6.0f1**, the existing packages and URP 2D renderer. Thomas uses Rider. The formal scene is `Assets/_Game/Levels/L01_Mission/Scenes/GO GHOST Duel.unity`; **GO GHOST > Combat > Open Arena** opens it. The Editor Play entry and Windows build use this scene, including when a different historical scene was last open.
+
+Choose **New Game**, configure permissions, then **Start Fight**. The first configuration is all manual. Choices lock for the fight; retry and next wave preserve them. Each fight has a one-second stationary preparation and resets actors, resources, projectiles and observation. Victory advances; defeat reconfigures the current wave. Third-wave victory opens Complete. Restart begins at wave one, all manual.
 
 | Module | Manual controls |
 |---|---|
-| Legs | A/D move; Space jump; Left Shift ground dodge (A/D direction, otherwise away from police) |
-| Arms | Mouse in the fixed left/right screen half chooses attack direction; height is ignored |
-| Brain | Fresh LMB: shot; RMB: intercept; MMB: ground wave. Repeat the same cancellable attack button within its window to cancel |
+| Legs | A/D move; Space jump; Left Shift cooldown dodge in current/last movement direction |
+| Arms | Mouse freely aims in world space, including height |
+| Brain | Hold LMB for Rifle; press E for Arm-Blade |
 | Pause | Escape: Resume or Main Menu |
 
-AI ownership disables that module's combat inputs. There is no weapon switching, barrier, manual reload, temporary override, tower route, Archive or upgrade screen. Colors and UI follow the black/white/gray whitelist.
+The fixed Rifle has 10 rounds and automatic reload. Arm-Blade uses real overlap, compatible projectile deflection and ordinary blade parry. Original stickman, Boss model, physics and five-platform arena are retained. No tower, upgrades, Archive, narrative route, weapon selection or permanent progression.
 
 ## Development and evidence
 
-`DuelRules.cs` holds shared physical/action values. `DuelFighter` executes both bodies; `DuelControllers` separates built-in execution from police tactics using public snapshots. Projectile sweep contacts and actual melee overlap cause damage. Police observe comparable expressed reactions, commit real/feint plans before windup, and pay normal cancellation/recovery costs.
+The retained `DuelGame`/`DuelUI` own only the three-wave shell. Existing `PlayerMovement`, `PlayerDodge`, `PlayerShooting`, `PlayerCounterArm`, `Projectile` and `CyberpsychoBoss` execute actual combat. `LegacyPlayerAI` requests independently routed inputs; the police policy receives a small public-facts snapshot. Policies cannot directly write damage or outcomes.
 
-In Play Mode, **GO GHOST > Duel > Observe Third Wave** starts the permitted all-AI diagnostic with normal third-wave HP, spawns, resources and empty memory. It has no retail menu entry. Diagnostics are otherwise off. **GO GHOST > Duel > Build Windows x64** produces `Builds/Windows/GO-GHOST.exe`.
+**GO GHOST > Combat > Observe Third Wave** in Play Mode starts the permitted normal all-AI observation, with normal resources and empty memory. It has no retail UI. **Build Windows x64** produces `Builds/Windows/GO-GHOST.exe`.
 
-See the newest [implementation log](Docs/GO_GHOST_VS/Implementation_Log.md) for actual run/build evidence and limits. The [2026-10-03 specification](Docs/GO_GHOST_VS/Duel_Implementation_Spec.md) is authoritative. Old tower scenes, prefabs and code retain their GUIDs outside the active build/startup path because their serialized dependency graph is still interconnected. They are historical assets, not a second supported game. Existing Archive files are not read or modified by the duel.
+**Open acceptance requirement:** the latest restored-combat observation still ended in an all-AI victory (17.98s, player 140 HP). Real reload inducement and approach executed, but the required third-wave defeat is not achieved. Earlier Duel loss evidence does not apply to this combat.
+
+[Legacy_Combat_Implementation_Spec.md](Docs/GO_GHOST_VS/Legacy_Combat_Implementation_Spec.md) is the confirmed R01–R22 authority, replacing conflicting earlier Duel and tower designs. See the newest [Implementation_Log.md](Docs/GO_GHOST_VS/Implementation_Log.md) entry for actual checks and NOT TESTED limits; prior Duel outcomes do not validate restored combat. Interconnected historical assets retain GUIDs outside the active path and are not a second supported mode. Existing saved data is untouched.

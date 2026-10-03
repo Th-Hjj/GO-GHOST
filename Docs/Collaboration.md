@@ -2,7 +2,7 @@
 
 Two developers, one Unity project, one GitHub repository (`Th-Hjj/GO-GHOST`). GitHub `main` is the only shared source of truth. The rules below are deliberately light. Their purpose is to avoid losing work and to avoid two people, two machines, or two agents editing the same Unity file at the same time.
 
-Last updated: 2026-10-02. Current confirmed design lives in `Docs/GO_GHOST_VS/Tower_Design_Override.md`; `START_HERE.md` gives the read order and `Docs/VerticalSlice.md` summarizes MSP strategy. The original baseline/Macro/prompts are Historical where superseded. Progress lives only in `Docs/GO_GHOST_VS/Implementation_Log.md`. Items marked **Proposed** are waiting for confirmation.
+Last updated: 2026-10-03. Current confirmed design lives in `Docs/GO_GHOST_VS/Legacy_Combat_Implementation_Spec.md`; `START_HERE.md` gives the read order and `Docs/VerticalSlice.md` summarizes scope. Earlier Duel/tower/baseline/Macro/prompts are Historical where superseded. Progress lives only in `Docs/GO_GHOST_VS/Implementation_Log.md`. Items marked **Proposed** are waiting for confirmation.
 
 ## 0. Current period: Thomas leads (from 2026-09-25)
 
@@ -59,7 +59,7 @@ Roles: both developers do design, code, and content.
 
 - Coordinate before changing shared scripts, the Player prefab, `CombatAttempt.prefab`, core UI, or the loadout or data format (`LoadoutState.cs`).
 - Customize per level through level config, separate prefabs, or Prefab Variants. Do not edit a shared asset to suit one level.
-- Do not save changing runtime state back into shared config assets. ScriptableObjects are configuration, not save data. Slice values come from the current deployment snapshot, not from edits to `PlayerStats.asset`.
+- Do not save changing runtime state back into shared config assets. ScriptableObjects are configuration, not save data. Current combat uses the confirmed fixed legacy profile and level prefab overrides, not the historical deployment/upgrade snapshot or edits to `PlayerStats.asset`.
 - Never keep two parallel implementations of the same system. Extend the existing one.
 
 ## 5. Commits and merges
@@ -136,8 +136,8 @@ Thomas works on a laptop and a Windows PC. **Proposed** rules for moving between
 1. Install Unity 6000.6.0f1 through Unity Hub.
 2. Install Git LFS and run `git lfs install` before cloning.
 3. Clone, then open the repository root as a Unity project with 6000.6.0f1. Do not upgrade the Unity version.
-4. Entry scene: Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity. Play starts at editable Loadout; BEGIN OPERATION seals the snapshot and enters practice, then the Tower route. Two final dispositions resolve victory/ending; death returns through Result/Main Menu to a new officer and fresh Loadout/practice. Current controls: README.md.
-5. Current state and what has actually been tested: `Docs/GO_GHOST_VS/Implementation_Log.md`. All numbers are TEST values (`Prototype_Test_Profile.md`).
+4. Entry scene: `Assets/_Game/Levels/L01_Mission/Scenes/GO GHOST Duel.unity` (the retained scene filename). `GO GHOST > Combat > Open Arena` opens it; the editor Play entry and Windows build use it. New Game opens wave permissions, then the restored legacy arena combat. The old Cyberpunk World/tower scene is historical. Current controls: `README.md`.
+5. Current authority: `Docs/GO_GHOST_VS/Legacy_Combat_Implementation_Spec.md`. Actual checks and limits: `Docs/GO_GHOST_VS/Implementation_Log.md`.
 
 ## 9. Before you push or merge
 

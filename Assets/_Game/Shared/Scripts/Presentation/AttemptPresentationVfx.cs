@@ -26,6 +26,16 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
     private Transform owned;
     private bool running, ghosting;
     private float nextEcho;
+    private bool paused;
+    private float pausedAt, pauseDuration;
+    private float PresentationClock => (paused ? pausedAt : Time.unscaledTime) - pauseDuration;
+    public void SetPaused(bool value)
+    {
+        if (paused == value) return;
+        if (value) pausedAt = Time.unscaledTime;
+        else pauseDuration += Time.unscaledTime - pausedAt;
+        paused = value;
+    }
     private GameObject slowRoot;
     private LineRenderer[] slowLines;
     private Transform slowAnchor;
@@ -42,7 +52,8 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
         ClearBlackoutLines();
         for (int i = 0; i < blackoutLines.Length; i++) blackoutLines[i] = null;
         for (int i = 0; i < blackoutMarks.Length; i++) blackoutMarks[i] = null;
-        running = ghosting = false;
+        running = ghosting = paused = false;
+        pauseDuration = pausedAt = 0;
         nextEcho = 0f;
         slowAnchor = null;
         slowRoot = null;
@@ -106,7 +117,7 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
             var ray = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0);
             lines[i] = Line(go, new[] { point + ray * .035f, point + ray * length }, .025f, Color.white);
         }
-        flashes.Add(new Flash { root = go, lines = lines, born = Time.unscaledTime, life = life, alpha = 1f });
+        flashes.Add(new Flash { root = go, lines = lines, born = PresentationClock, life = life, alpha = 1f });
     }
 
     // A/B: after successful Launch, never from the warning/input state.
@@ -133,7 +144,7 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
             points[i] = pivot + new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0) * visualReach;
         }
         var line = Line(go, points, .025f, Color.white);
-        flashes.Add(new Flash { root = go, lines = new[] { line }, born = Time.unscaledTime, life = .10f, alpha = 1f });
+        flashes.Add(new Flash { root = go, lines = new[] { line }, born = PresentationClock, life = .10f, alpha = 1f });
     }
 
     // Arm-Blade swing only; hit and deflection remain separate accepted gameplay events.
@@ -145,7 +156,7 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
         Vector3 forward = direction.normalized;
         var line = Line(go, new[] { pivot + forward * (visualReach * .15f),
             pivot + forward * (visualReach * .5f) }, .025f, Color.white);
-        flashes.Add(new Flash { root = go, lines = new[] { line }, born = Time.unscaledTime, life = .10f, alpha = 1f });
+        flashes.Add(new Flash { root = go, lines = new[] { line }, born = PresentationClock, life = .10f, alpha = 1f });
     }
 
     // C/G: call on state entry/exit. Repeated true calls do not restart the sampler.
@@ -154,7 +165,7 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
         active &= CanDraw;
         if (ghosting == active) return;
         ghosting = active;
-        if (active) nextEcho = Time.unscaledTime;
+        if (active) nextEcho = PresentationClock;
     }
 
     private void CaptureEcho()
@@ -189,7 +200,7 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
             copies.Add(copy);
         }
         if (group != null)
-            flashes.Add(new Flash { root = group, sprites = copies.ToArray(), born = Time.unscaledTime, life = .15f, alpha = .15f, echo = true });
+            flashes.Add(new Flash { root = group, sprites = copies.ToArray(), born = PresentationClock, life = .15f, alpha = .15f, echo = true });
     }
 
     // F: safe to synchronize each frame; allocates only on the first true call.
@@ -239,15 +250,15 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
             float x = Mathf.Lerp(previousBounds.min.x, previousBounds.max.x, (i + .5f) / 4f);
             Vector3 p = new Vector3(x, previousBounds.max.y, previousBounds.center.z);
             var line = Line(go, new[] { p, p + new Vector3(.12f, -.035f, 0) }, .025f, new Color(.6f,.6f,.6f,.7f));
-            flashes.Add(new Flash { root = go, lines = new[] { line }, born = Time.unscaledTime, life = .35f, alpha = .7f,
+            flashes.Add(new Flash { root = go, lines = new[] { line }, born = PresentationClock, life = .35f, alpha = .7f,
                 velocity = new Vector3((i - 1.5f) * .15f, -.6f, 0) });
         }
     }
 
     private void LateUpdate()
     {
-        if (!CanDraw) return;
-        float now = Time.unscaledTime;
+        if (!CanDraw || paused) return;
+        float now = PresentationClock;
         for (int i = flashes.Count - 1; i >= 0; i--)
         {
             var f = flashes[i];

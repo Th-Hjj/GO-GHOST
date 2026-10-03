@@ -141,6 +141,15 @@ public class Enemy : MonoBehaviour, IDamageable
         CurrentHealth = secondPhaseMaxHealth;
     }
 
+    /// <summary>Fresh fixed-combat actor: one life, no phase gate and no second movement writer.</summary>
+    public void ConfigureFixedSingleLife(int healthPoints)
+    {
+        if (IsDead || CurrentHealth != maxHealth) throw new InvalidOperationException("Configure a fresh enemy before damage.");
+        maxHealth = Mathf.Max(1, healthPoints);
+        secondPhaseMaxHealth = 0; PhaseIndex = 1; AwaitingSecondPhase = false;
+        CurrentHealth = maxHealth; automaticCombat = false; destroyOnDeath = false; combatStopped = false;
+    }
+
     /// <summary>Fresh Tower actor only: one existing health pool, with no automatic second life.</summary>
     public void ConfigureSingleEncounter(bool secondPhase)
     {

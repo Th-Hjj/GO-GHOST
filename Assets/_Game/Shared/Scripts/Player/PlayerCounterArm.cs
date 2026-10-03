@@ -38,6 +38,8 @@ public sealed class PlayerCounterArm : MonoBehaviour, IAttemptAugmentation
     public int BladeHits { get; private set; }
     public int Deflections { get; private set; }
     public float CooldownRemaining => Mathf.Max(0, readyAt - Clock);
+    public Vector2 ActiveBladeDirection => slashDirection;
+    public float WindowRemaining => IsWindowOpen ? Mathf.Max(0f, windowUntil - Clock) : 0f;
     public string Cue => Clock < feedbackUntil ? "COUNTERED!"
         : IsWindowOpen ? "COUNTER WINDOW [E]" : CooldownRemaining > 0 ? $"COUNTER {CooldownRemaining:0.0}s" : "COUNTER READY [E]";
 
@@ -55,6 +57,20 @@ public sealed class PlayerCounterArm : MonoBehaviour, IAttemptAugmentation
         blade = snapshot.HasArmBlade;
         equipped = blade || snapshot.HasCounterArm;
         CountersSucceeded = SlashesStarted = BladeHits = Deflections = 0;
+        EnsureFeedback();
+    }
+
+    public void ConfigureLegacyCombat()
+    {
+        CleanupAttempt();
+        equipped = blade = true;
+        CountersSucceeded = SlashesStarted = BladeHits = Deflections = 0;
+        slashDirection = Vector2.right;
+        EnsureFeedback();
+    }
+
+    private void EnsureFeedback()
+    {
         if (!equipped || feedback != null) return;
         var marker = new GameObject("CounterWindow_TEST");
         marker.transform.SetParent(transform, false);

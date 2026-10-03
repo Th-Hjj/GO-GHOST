@@ -35,17 +35,28 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
     private OfficerIdentity officer;
     private SfxSet sfx;
     private AttemptPresentationVfx vfx;
+    private OfficerVisual visual;
+    private bool legacyCombat;
+    // The existing Assault Rifle profile, fixed for every new combat actor.
+    private static readonly WeaponProfile LegacyRifle = new WeaponProfile(12, .25f, 10, 1.2f);
+    private WeaponProfile Weapon => legacyCombat ? LegacyRifle : officer.Deployment.Weapon;
     private bool HasDeployment => officer != null && officer.Deployment != null;
-    public int BulletDamage => HasDeployment ? officer.Deployment.BulletDamage : stats.gunDamage;
-    public float FireInterval => HasDeployment ? officer.Deployment.FireInterval : stats.fireRate;
+    public int BulletDamage => legacyCombat ? LegacyRifle.Damage : HasDeployment ? officer.Deployment.BulletDamage : stats.gunDamage;
+    public float FireInterval => legacyCombat ? LegacyRifle.FireInterval : HasDeployment ? officer.Deployment.FireInterval : stats.fireRate;
+    public float BulletSpeed => stats.bulletSpeed;
     /// <summary>Player gun projectiles launched / that hit a living enemy.</summary>
     public int ShotsFired { get; private set; }
     public int ShotsHit { get; private set; }
     /// <summary>Successful trigger pulls: one round spent, one shot sound and one muzzle flash each.</summary>
     public int TriggerPulls { get; private set; }
-    public int MagazineSize => HasDeployment ? officer.Deployment.Weapon.MagazineSize : 0;
+    public int MagazineSize => legacyCombat ? LegacyRifle.MagazineSize : HasDeployment ? officer.Deployment.Weapon.MagazineSize : 0;
     public int AmmoInMagazine { get; private set; }
     public bool IsReloading { get; private set; }
+    public float ReloadRemaining => IsReloading ? Mathf.Max(0f, reloadDoneAt - Time.time) : 0f;
+    public bool ReloadVisible => legacyCombat && IsReloading && visual != null && visual.ReloadVisible;
+    public event System.Action<Vector2, Vector2> ShotFired;
+    public event System.Action ReloadStarted;
+    public event System.Action ReloadFinished;
     internal void RegisterHit() => ShotsHit++;
     /// <summary>Called when the real combat starts so earlier practice shots never count.</summary>
     public void ResetShotCounters() { ShotsFired = 0; ShotsHit = 0; TriggerPulls = 0; }
@@ -60,6 +71,7 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
         officer = GetComponent<OfficerIdentity>();
         sfx = GetComponentInParent<SfxSet>();
         vfx = GetComponentInParent<AttemptPresentationVfx>();
+        visual = GetComponent<OfficerVisual>();
         if (input == null)
         {
             Debug.LogError("PlayerShooting requires a PlayerInputReader on the same GameObject. Add it to the Player prefab.", this);
@@ -78,7 +90,24 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
         nextFireTime = 0f;
     }
 
-    public void CleanupAttempt() => IsReloading = false;
+    public void ConfigureLegacyCombat()
+    {
+        legacyCombat = true;
+        volleyUnlocked = false;
+        StopAllCoroutines();
+        isFiringVolley = false;
+        IsReloading = false;
+        AmmoInMagazine = LegacyRifle.MagazineSize;
+        nextFireTime = reloadDoneAt = 0f;
+        ResetShotCounters();
+        if (visual != null) visual.SetReloading(false);
+    }
+
+    public void CleanupAttempt()
+    {
+        IsReloading = false;
+        if (legacyCombat && visual != null) visual.SetReloading(false);
+    }
 
     private void Update()
     {
@@ -91,19 +120,22 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
             firePoint.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(aim.y, aim.x) * Mathf.Rad2Deg);
         }
 
-        if (HasDeployment)
+        if (legacyCombat || HasDeployment)
         {
-            var weapon = officer.Deployment.Weapon;
+            var weapon = Weapon;
             if (IsReloading && Time.time >= reloadDoneAt)
             {
                 IsReloading = false;
                 AmmoInMagazine = weapon.MagazineSize;
+                if (legacyCombat && visual != null) visual.SetReloading(false);
+                ReloadFinished?.Invoke();
             }
             // Held Attack resumes the rifle after automatic reload; the permission input gate still owns consent.
             bool autonomous = input.AutomaticFireRequested;
             bool trigger = autonomous || input.AttackHeld;
+            var actor = autonomous || (legacyCombat && input.LegacyBrainAI) ? ProjectileActor.InnerAI : ProjectileActor.Player;
             if (trigger && !IsReloading && AmmoInMagazine > 0 && Time.time >= nextFireTime
-                && FireWeapon(aim, weapon, autonomous ? ProjectileActor.InnerAI : ProjectileActor.Player))
+                && FireWeapon(aim, weapon, actor))
             {
                 nextFireTime = Time.time + FireInterval;
                 if (autonomous) input.CompleteAutomaticShot();
@@ -113,6 +145,9 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
             {
                 IsReloading = true;
                 reloadDoneAt = Time.time + weapon.ReloadSeconds;
+                if (legacyCombat && visual != null) visual.SetReloading(true);
+                if (legacyCombat && sfx != null) sfx.Play(Sfx.Equip);
+                ReloadStarted?.Invoke();
             }
             return;
         }
@@ -140,7 +175,7 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
     // An explicit player choice can request one ordinary shot; failed cadence/reload never creates damage or free ammo.
     public bool RequestPlayerAttackAt(Vector2 point)
     {
-        if (!HasDeployment || IsReloading || AmmoInMagazine <= 0 || Time.time < nextFireTime) return false;
+        if (legacyCombat || !HasDeployment || IsReloading || AmmoInMagazine <= 0 || Time.time < nextFireTime) return false;
         input.AimPlayerActionAt(point);
         if (!FireWeapon(input.AimDirection, officer.Deployment.Weapon, ProjectileActor.Player)) return false;
         nextFireTime = Time.time + FireInterval;
@@ -150,18 +185,20 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
     // One trigger pull = one round, one projectile, one shot sound and one muzzle flash.
     private bool FireWeapon(Vector2 direction, WeaponProfile weapon, ProjectileActor actor)
     {
-        if (!isActiveAndEnabled || !input.GameplayInputEnabled || input.NarrativePaused || bulletPrefab == null || !officer.Deployment.CanUseWeapon) return false;
+        if (!isActiveAndEnabled || !input.GameplayInputEnabled || input.NarrativePaused || bulletPrefab == null
+            || (!legacyCombat && !officer.Deployment.CanUseWeapon)) return false;
 
         AmmoInMagazine--;
         Vector2 spawn = GetMuzzlePosition(direction);
         float facing = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         Projectile bullet = Instantiate(bulletPrefab, spawn, Quaternion.Euler(0f, 0f, facing));
         bullet.Launch(direction, stats.bulletSpeed, weapon.Damage, gameObject, accuracyOwner: this,
-            actor: actor, permissionTier: Mathf.Max(0, officer.Deployment.BrainPermissionTier));
+            actor: actor, permissionTier: legacyCombat ? 0 : Mathf.Max(0, officer.Deployment.BrainPermissionTier));
         ShotsFired++;
         TriggerPulls++;
         if (sfx != null) sfx.Play(Sfx.Shot);
         if (vfx != null) vfx.Muzzle(spawn, direction);
+        ShotFired?.Invoke(spawn, direction.normalized);
         return true;
     }
 
@@ -176,6 +213,7 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
         if (sfx != null) sfx.Play(Sfx.Shot);
         if (vfx != null) vfx.Muzzle(spawn, direction);
         ShotsFired++;
+        ShotFired?.Invoke(spawn, direction.normalized);
     }
 
     private void OnDisable()
@@ -183,7 +221,7 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
         StopAllCoroutines();
         isFiringVolley = false;
         nextFireTime = 0f;
-        IsReloading = false;
+        CleanupAttempt();
     }
 
     private IEnumerator FireVolleyRoutine()

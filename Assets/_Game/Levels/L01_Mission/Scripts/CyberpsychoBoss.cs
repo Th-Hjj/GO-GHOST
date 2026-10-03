@@ -240,6 +240,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
     private void OnEnable() => health.OnDied += OnDied;
     private void OnDisable()
     {
+        UnbindLegacyShots();
         health.OnDied -= OnDied;
         StopCombat();
     }
@@ -263,8 +264,9 @@ public partial class CyberpsychoBoss : MonoBehaviour
             return;
         }
 
+        if (fixedSingleWave && TickLegacyPolice()) return;
         FacePlayer();
-        if (TickOpeningLaser()) return;
+        if (!fixedSingleWave && TickOpeningLaser()) return;
         if (Phase == BossPhase.PhaseTransition)
         {
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
@@ -321,6 +323,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
                     volleyCount < burstShots ? burstInterval : shotRecovery);
                 break;
             case AttackState.BurstRecovery:
+                if (fixedSingleWave) { CompleteLegacyAction(); return; }
                 shotDirection = AimAtPlayer();
                 Enter(AttackState.MarkedTracking, markedTrackSeconds);
                 break;
@@ -332,6 +335,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
                 Enter(AttackState.MarkedRecovery, .75f);
                 break;
             case AttackState.MarkedRecovery:
+                if (fixedSingleWave) { CompleteLegacyAction(); return; }
                 repositionTarget = arenaCenterX + (rb.position.x >= arenaCenterX ? -repositionX : repositionX);
                 Enter(AttackState.GhostWarning, chargeWindup);
                 break;
@@ -343,6 +347,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
                 Enter(AttackState.GhostRecovery, chargeRecovery);
                 break;
             case AttackState.GhostRecovery:
+                if (fixedSingleWave) { CompleteLegacyAction(); return; }
                 highSweep = false;
                 BeginSweep();
                 break;
@@ -356,13 +361,14 @@ public partial class CyberpsychoBoss : MonoBehaviour
                     volleyCount < sweepShots ? burstInterval : highSweep ? .75f : spreadRecovery);
                 break;
             case AttackState.SweepRecovery:
+                if (fixedSingleWave) { CompleteLegacyAction(); return; }
                 if (!highSweep) { highSweep = true; BeginSweep(); }
                 else BeginBurst();
                 break;
         }
     }
 
-    private void BeginSlash() => BeginP2Opening();
+    private void BeginSlash() { if (fixedSingleWave) LockSlashWarning(); else BeginP2Opening(); }
 
     private void LockSlashWarning()
     {
@@ -377,11 +383,11 @@ public partial class CyberpsychoBoss : MonoBehaviour
         camouflageClock += Time.fixedDeltaTime * SimulationRate;
         float dt = Time.fixedDeltaTime * SimulationRate;
         // Interrupt only a completed normal move; never strand a drop or half of Crosscut.
-        if (arenaBound && timer <= dt && !BlackoutUsed && health.CurrentHealth <= health.MaxHealth * blackoutHealthThreshold
+        if (!fixedSingleWave && arenaBound && timer <= dt && !BlackoutUsed && health.CurrentHealth <= health.MaxHealth * blackoutHealthThreshold
             && (State == AttackState.SlashRecovery || State == AttackState.CrosscutRecovery || State == AttackState.DropRecovery || State == AttackState.BladeComboRecovery))
             BeginBlackout();
-        if (BlackoutActive) { TickBlackout(dt); return; }
-        if (CamoRushActive) { TickCamoRush(dt); return; }
+        if (!fixedSingleWave && BlackoutActive) { TickBlackout(dt); return; }
+        if (!fixedSingleWave && CamoRushActive) { TickCamoRush(dt); return; }
         if (State == AttackState.CamoReposition) { TickCamoReposition(dt); return; }
         rb.linearVelocity = new Vector2(State == AttackState.SlashExecute ? chargeDirection * slashSpeed * SimulationRate
             : CrosscutExecuting ? chargeDirection * crosscutSpeed * SimulationRate
@@ -441,6 +447,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
                     Enter(AttackState.SlashRecovery, slashRecovery);
                     break;
                 case AttackState.SlashRecovery:
+                    if (fixedSingleWave) { CompleteLegacyAction(); return; }
                     if (playerCollider != null && bossCollider != null && playerCollider.bounds.min.y > bossCollider.bounds.min.y + .8f)
                         Enter(AttackState.DropWarning, dropWindup);
                     else if (Mathf.Abs(player.transform.position.x - rb.position.x) > 3f)
@@ -451,6 +458,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
                     else Enter(AttackState.BladeComboRecovery, Mathf.Max(0, .9f - slashRecovery));
                     break;
                 case AttackState.BladeComboRecovery:
+                    if (fixedSingleWave) { CompleteLegacyAction(); return; }
                     BeginSlash();
                     break;
                 case AttackState.CrosscutWarning:
@@ -471,6 +479,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
                     Enter(AttackState.CrosscutRecovery, .9f);
                     break;
                 case AttackState.CrosscutRecovery:
+                    if (fixedSingleWave) { CompleteLegacyAction(); return; }
                     BeginSlash();
                     break;
                 case AttackState.DropWarning:
@@ -488,6 +497,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
                     Enter(AttackState.DropRecovery, .9f);
                     break;
                 case AttackState.DropRecovery:
+                    if (fixedSingleWave) { CompleteLegacyAction(); return; }
                     RestorePlayerCollision();
                     BeginSlash();
                     break;
@@ -584,9 +594,9 @@ public partial class CyberpsychoBoss : MonoBehaviour
     {
         State = next;
         timer = duration;
-        if (next == AttackState.OpeningLaserCharge || next == AttackState.BurstWarning || next == AttackState.SweepWarning
+        if (!fixedSingleWave && (next == AttackState.OpeningLaserCharge || next == AttackState.BurstWarning || next == AttackState.SweepWarning
             || next == AttackState.MarkedTracking || next == AttackState.SlashWarning || next == AttackState.CrosscutWarning
-            || next == AttackState.CrosscutGap || next == AttackState.DropTarget || next == AttackState.CamoRushWarning)
+            || next == AttackState.CrosscutGap || next == AttackState.DropTarget || next == AttackState.CamoRushWarning))
             InnerAIDangerSense.Signal(player, transform, duration + (next == AttackState.MarkedTracking ? markedLockSeconds : 0));
         ShowWarnings();
         FacePlayer();
@@ -652,7 +662,8 @@ public partial class CyberpsychoBoss : MonoBehaviour
                 else if (p2Camo)
                 {
                     bool blade = bladeVisual != null && part.transform.IsChildOf(bladeVisual.transform);
-                    color = new Color(1f, 1f, 1f, visualColors[i].a * NormalCamoAlpha(blade));
+                    color = new Color(fixedSingleWave ? visualColors[i].r : 1f, fixedSingleWave ? visualColors[i].g : 1f,
+                        fixedSingleWave ? visualColors[i].b : 1f, visualColors[i].a * NormalCamoAlpha(blade));
                 }
                 else color.a *= IsGhosting ? ghostAlpha : 1f;
                 part.color = color;
@@ -662,6 +673,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
                 p2Camo && (State == AttackState.SlashExecute || CrosscutExecuting || State == AttackState.DropExecute || State == AttackState.CamoRushExecute || BlackoutMoving) ? -75f : 0f);
         if (body != null)
             if (health != null && health.IsDead) body.color = new Color(.35f, .35f, .35f);
+        if (fixedSingleWave) { ShowLegacyWarnings(); return; }
         // Production combat keeps the real actor windup and attacks, never predicted damage paths.
         if (shotWarning != null) shotWarning.enabled = false;
         if (chargeWarning != null) chargeWarning.enabled = false;
@@ -730,6 +742,8 @@ public partial class CyberpsychoBoss : MonoBehaviour
     private void FacePlayer()
     {
         if (weaponRig == null || player == null) return;
+        if (fixedSingleWave && Phase == BossPhase.Phase1) { FaceLegacyGun(); return; }
+        if (fixedSingleWave) weaponRig.rotation = Quaternion.identity;
         var scale = weaponRig.localScale;
         bool locked = Sweeping || (Phase == BossPhase.Phase2 && chargeDirection != 0f);
         scale.x = Mathf.Abs(scale.x) * (locked ? chargeDirection : player.transform.position.x < transform.position.x ? -1f : 1f);
@@ -745,6 +759,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
 
     public void BeginCombat()
     {
+        if (fixedSingleWave) { BeginLegacyCombat(); return; }
         // A new officer owns a fresh prefab. Restarting the old actor must never rewind P2.
         if (Phase != BossPhase.Phase1 || health.IsDead || player == null || player.IsDead) return;
         combatEnabled = true;

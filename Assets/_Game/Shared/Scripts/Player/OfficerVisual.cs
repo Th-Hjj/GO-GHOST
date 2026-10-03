@@ -11,6 +11,35 @@ public sealed class OfficerVisual : MonoBehaviour
     [SerializeField] private SpriteRenderer head;
     [SerializeField] private SpriteRenderer weapon;
     [SerializeField] private SpriteRenderer weaponGrip;
+    private bool reloading;
+    public bool ReloadVisible => reloading && weapon != null && weapon.enabled && weapon.gameObject.activeInHierarchy;
+
+    public void ConfigureLegacyCombat()
+    {
+        foreach (var part in new[] { leftArm, rightArm, leftLeg, rightLeg, torso, head, weapon, weaponGrip })
+            if (part != null) part.color = Color.white;
+        SetReloading(false);
+    }
+
+    // Physical weapon feedback, shared by the player and the observer. It never changes muzzle aim.
+    public void SetReloading(bool value)
+    {
+        reloading = value;
+        UpdateReloadVisual();
+    }
+
+    private void LateUpdate()
+    {
+        if (reloading) UpdateReloadVisual();
+    }
+
+    private void UpdateReloadVisual()
+    {
+        float shade = reloading ? .32f + .18f * Mathf.Sin(Time.time * 16f) : 1f;
+        Color tint = new Color(shade, shade, shade, 1f);
+        if (weapon != null) weapon.color = tint;
+        if (weaponGrip != null) weaponGrip.color = tint;
+    }
     // The UI and actor share this palette. Brightened indigo stays readable against black.
     public static Color SlotColor(LoadoutSlot slot) => slot switch
     {

@@ -19,7 +19,10 @@ public sealed partial class MissionUI
     private PlayerInputReader dialogueInput;
     private bool dialogueBlocksWorld, mouseReady;
     private Vector2 previousDialoguePointer;
-    private int hoveredChoice = -1;
+    private int hoveredChoice = -1, mouseSelectedChoice = -1;
+    private int dialogueClosedFrame = -1;
+    private bool exitInputReleased = true;
+    public bool CanLeaveWorld => !DialogueVisible && exitInputReleased && Time.frameCount > dialogueClosedFrame;
     private const float DialogueFontSize = 38;
     private readonly TMP_Text[] choiceLabels = new TMP_Text[3];
     private NarrativeContent.Line[] dialogueLines;
@@ -85,7 +88,7 @@ public sealed partial class MissionUI
         // Reuse the baked CJK subset for authored Chinese lines; keep the normal Latin font elsewhere.
         dialogueText.font = !font.HasCharacters(dialogueText.text) && narrativeFont != null && narrativeFont.HasCharacters(dialogueText.text)
             ? narrativeFont : font;
-        speakerText.text = dialogueLines[dialogueIndex].SpeakerName;
+        speakerText.text = DisplayName(dialogueLines[dialogueIndex]);
         BindDialogueSpeaker(dialogueLines[dialogueIndex].SpeakerId);
         LayoutSpeechBubble();
     }
@@ -114,7 +117,7 @@ public sealed partial class MissionUI
         if (DialogueVisible || ids == null || ids.Length == 0 || ids.Length > choiceLabels.Length || narrative == null) return false;
         try { foreach (string id in ids) NarrativeEntry(id); }
         catch (Exception error) { Debug.LogError("Narrative choice: " + error.Message, this); return false; }
-        if (ids.Length == 1)
+        if (ids.Length == 1 && replyOrAttack)
         {
             choiceIds = null;
             dialogueLines = new[] { narrative.EntryLine(ids[0], allowNarrativeDraft) };
@@ -142,7 +145,7 @@ public sealed partial class MissionUI
         dialogueBlocksWorld = blockPointer;
         mouseReady = Mouse.current == null || !Mouse.current.leftButton.isPressed;
         previousDialoguePointer = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
-        hoveredChoice = -1;
+        hoveredChoice = mouseSelectedChoice = -1;
         dialogueInput = flow.ActiveFight != null ? flow.ActiveFight.Player.GetComponent<PlayerInputReader>() : null;
         if (dialogueInput != null) dialogueInput.UiBlocksManualFire = DialogueOwnsPointer;
         dialogue.transform.SetAsLastSibling();
@@ -176,6 +179,9 @@ public sealed partial class MissionUI
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         if (GetComponent<DeveloperRouteJump>()?.MenuVisible == true) return;
 #endif
+        if (!exitInputReleased && Time.frameCount > dialogueClosedFrame
+            && (Keyboard.current == null || (!Keyboard.current.fKey.isPressed && !Keyboard.current.wKey.isPressed && !Keyboard.current.sKey.isPressed))
+            && (Mouse.current == null || !Mouse.current.leftButton.isPressed)) exitInputReleased = true;
         if (!DialogueVisible || Time.frameCount <= shownFrame) return;
         var keys = Keyboard.current;
         var mouse = Mouse.current;
@@ -184,6 +190,7 @@ public sealed partial class MissionUI
         if (dialogueCanCancel && keys != null && keys.escapeKey.wasPressedThisFrame) { HideDialogue(); return; }
         if (choiceIds != null)
         {
+            int beforePointer = selectedChoice;
             int hit = -1;
             if (mouse != null)
             {
@@ -198,13 +205,14 @@ public sealed partial class MissionUI
             int previousChoice = selectedChoice;
             if (keys != null && keys.wKey.wasPressedThisFrame) selectedChoice = (selectedChoice + choiceIds.Length - 1) % choiceIds.Length;
             if (keys != null && keys.sKey.wasPressedThisFrame) selectedChoice = (selectedChoice + 1) % choiceIds.Length;
+            if (beforePointer != selectedChoice) mouseSelectedChoice = -1;
             RefreshNarrativeChoices();
             if (click && hit >= 0)
             {
-                selectedChoice = hit;
-                RefreshNarrativeChoices();
+                mouseReady = false;
                 ConsumeInteractionPress();
-                FinishDialogue(DialogueResult.ChoiceCommitted, SelectedChoiceId);
+                if (mouseSelectedChoice == hit) FinishDialogue(DialogueResult.ChoiceCommitted, SelectedChoiceId);
+                else mouseSelectedChoice = hit; // Hover is highlight only; first fresh click selects, second confirms.
                 return;
             }
             if (previousChoice != selectedChoice) { ConsumeInteractionPress(); return; }
@@ -228,12 +236,16 @@ public sealed partial class MissionUI
             choiceRows[i].color = i == selectedChoice ? new Color(1, 1, 1, .18f) : Color.clear;
         }
         var line = narrative.EntryLine(SelectedChoiceId, allowNarrativeDraft);
-        speakerText.text = line.SpeakerName;
+        speakerText.text = DisplayName(line);
         BindDialogueSpeaker(line.SpeakerId);
         string cue = choiceConsequence?.Invoke(SelectedChoiceId);
         consequenceText.text = cue == null ? "" : NarrativeEntry(cue);
         LayoutSpeechBubble();
     }
+
+    private string DisplayName(NarrativeContent.Line line)
+        => line.SpeakerId == "puppeteer" || line.SpeakerId == "puppeteer_unknown"
+            ? narrative.SpeakerDisplayName(flow.PuppeteerIntroduced ? "puppeteer" : "puppeteer_unknown") : line.SpeakerName;
 
     private void BindDialogueSpeaker(string speakerId)
     {
@@ -290,6 +302,8 @@ public sealed partial class MissionUI
     }
     private void FinishDialogue(DialogueResult result, string id)
     {
+        dialogueClosedFrame = Time.frameCount;
+        exitInputReleased = false;
         var callback = dialogueResult;
         dialogueResult = null;
         // A click held while the panel closes must never become a gameplay shot.

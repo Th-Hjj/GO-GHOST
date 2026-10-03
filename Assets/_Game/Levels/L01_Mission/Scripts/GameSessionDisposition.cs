@@ -52,7 +52,7 @@ public sealed partial class GameSessionFlow
             if (target == president) Narrative.ResolveCeo(target.IsAlive ? TowerNarrativeState.CeoDecision.Spare : TowerNarrativeState.CeoDecision.Execute);
             else Narrative.ResolveCore(!target.IsAlive ? TowerNarrativeState.CoreDecision.Destroy
                 : id == "office.final.puppeteer.control" ? TowerNarrativeState.CoreDecision.Control : TowerNarrativeState.CoreDecision.Preserve);
-            CompleteTowerIfResolved();
+            OpenDispositionExitIfResolved();
         }, false, FinalChoiceCue);
     }
 
@@ -63,7 +63,7 @@ public sealed partial class GameSessionFlow
         Narrative.ObserveFinalLives(president.IsAlive, continuingCore.IsAlive);
         // The same committed life-state is used by F finishers and real projectile deaths.
         if (StoryUI.DialogueVisible) CancelStory();
-        CompleteTowerIfResolved();
+        OpenDispositionExitIfResolved();
     }
 
     private string FinalChoiceCue(string id)
@@ -74,9 +74,17 @@ public sealed partial class GameSessionFlow
             ? "office.final.restore_queued" : null;
     }
 
+    private void OpenDispositionExitIfResolved()
+    {
+        if (!towerTerminal && Narrative.CeoDisposition != TowerNarrativeState.CeoDecision.Unresolved
+            && Narrative.CoreDisposition != TowerNarrativeState.CoreDecision.Unresolved) CurrentRoom.SetExitOpen(true);
+    }
+
     private void CompleteTowerIfResolved()
     {
+        Narrative.ObserveFinalLives(president.IsAlive, continuingCore.IsAlive);
         if (towerTerminal || !Narrative.TryFreezeExit(!ActiveFight.Player.IsDead)) return;
+        Narrative.ObserveExternalOutcome("final_disposition", "exited");
         towerTerminal = true;
         TowerCompletionCount++;
         towerEndingId = "ending." + Narrative.FrozenExit;

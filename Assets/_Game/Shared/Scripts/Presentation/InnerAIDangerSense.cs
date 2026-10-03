@@ -1,67 +1,102 @@
+using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>Brief, world-anchored T2+ warning. Attack code signals danger; this component only draws it.</summary>
+/// <summary>Attack preparation supplies source and timing. This T2+ display never predicts or controls attacks.</summary>
 public sealed class InnerAIDangerSense : MonoBehaviour
 {
-    private readonly LineRenderer[] streaks = new LineRenderer[9];
+    [SerializeField, Min(.05f)] private float warningLeadSeconds = .6f;
+    [SerializeField, Min(.05f)] private float arcDuration = .55f;
+    [SerializeField, Range(10, 100)] private float arcDegrees = 55;
+    [SerializeField, Min(.3f)] private float arcRadius = 1.25f;
+    private sealed class Warning
+    {
+        public Transform source;
+        public Vector2? fixedOrigin;
+        public float delay, elapsed;
+        public bool active, shown;
+        public LineRenderer line;
+    }
+    private readonly List<Warning> warnings = new List<Warning>();
     private Material material;
     private PlayerHealth player;
     private PlayerInputReader input;
-    private float remaining, clock, lastPulse = -10;
+    private PlayerTimeSlow hostileClock;
     public int PulseCount { get; private set; }
-    public bool Visible => remaining > 0 && streaks[0] != null && streaks[0].enabled;
+    public bool Visible { get; private set; }
+    public Vector2 LastDirection { get; private set; }
+    public static float LeadTimeFor(PlayerHealth target) => target != null && target.TryGetComponent<InnerAIDangerSense>(out var effect)
+        ? effect.warningLeadSeconds : .6f;
 
-    public static void Signal(PlayerHealth target)
+    public static void Signal(PlayerHealth target, Transform source, float secondsUntilAttack, Vector2? fixedOrigin = null)
     {
-        if (target == null || target.IsDead || (target.GetComponent<OfficerIdentity>()?.Deployment?.BrainPermissionTier ?? 0) < 2) return;
+        if (target == null || target.IsDead || source == null || (target.GetComponent<OfficerIdentity>()?.Deployment?.BrainPermissionTier ?? 0) < 2) return;
         var effect = target.GetComponent<InnerAIDangerSense>();
         if (effect == null) effect = target.gameObject.AddComponent<InnerAIDangerSense>();
-        effect.Pulse();
+        effect.Prepare(source, secondsUntilAttack, fixedOrigin);
+    }
+
+    public static void Cancel(PlayerHealth target, Transform source)
+    {
+        if (target == null || !target.TryGetComponent<InnerAIDangerSense>(out var effect)) return;
+        foreach (var warning in effect.warnings)
+            if (warning.source == source) { warning.active = false; warning.line.enabled = false; }
     }
 
     private void Awake()
     {
         player = GetComponent<PlayerHealth>(); input = GetComponent<PlayerInputReader>();
+        hostileClock = GetComponent<PlayerTimeSlow>();
         material = new Material(Shader.Find("Sprites/Default"));
-        for (int i = 0; i < streaks.Length; i++)
-        {
-            var go = new GameObject("DangerStreak" + i);
-            go.transform.SetParent(transform, false);
-            var line = go.AddComponent<LineRenderer>();
-            line.sharedMaterial = material; line.useWorldSpace = true; line.positionCount = 3;
-            line.startWidth = .055f; line.endWidth = .018f; line.sortingOrder = 30;
-            line.enabled = false; streaks[i] = line;
-        }
     }
 
-    private void Pulse()
+    private void Prepare(Transform source, float lead, Vector2? origin)
     {
-        if (Time.time - lastPulse < .4f) return;
-        lastPulse = Time.time; remaining = .7f; clock = 0; PulseCount++;
+        var warning = warnings.Find(w => !w.active);
+        if (warning == null)
+        {
+            var go = new GameObject("DangerArc"); go.transform.SetParent(transform, false);
+            var line = go.AddComponent<LineRenderer>();
+            line.sharedMaterial = material; line.useWorldSpace = true; line.positionCount = 17;
+            line.widthMultiplier = .07f; line.sortingOrder = 30; line.enabled = false;
+            warning = new Warning { line = line }; warnings.Add(warning);
+        }
+        warning.source = source; warning.fixedOrigin = origin;
+        warning.delay = Mathf.Max(0, lead - warningLeadSeconds);
+        warning.elapsed = 0; warning.shown = false; warning.active = true;
     }
 
     private void LateUpdate()
     {
         bool live = player != null && !player.IsDead && input != null && input.GameplayInputEnabled;
-        if (!live) remaining = 0;
-        float dt = input != null && input.NarrativePaused ? 0 : Time.deltaTime;
-        remaining = Mathf.Max(0, remaining - dt); clock += dt;
-        for (int i = 0; i < streaks.Length; i++)
+        float dt = input != null && input.NarrativePaused ? 0 : Time.deltaTime * (hostileClock != null ? hostileClock.WorldRate : 1);
+        Visible = false;
+        foreach (var warning in warnings)
         {
-            var line = streaks[i]; line.enabled = remaining > 0;
-            if (!line.enabled) continue;
-            float angle = (18 + i * 18 + Mathf.Sin(clock * 32 + i) * 5) * Mathf.Deg2Rad;
-            Vector2 direction = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
-            Vector2 perpendicular = new Vector2(-direction.y, direction.x);
-            Vector2 head = (Vector2)transform.position + Vector2.up * .35f;
-            float radius = 1 + .12f * Mathf.Sin(clock * 24 + i);
-            line.SetPosition(0, head + direction * radius);
-            line.SetPosition(1, head + direction * (radius + .23f) + perpendicular * .07f);
-            line.SetPosition(2, head + direction * (radius + .5f + .13f * Mathf.Sin(i)));
-            Color red = new Color(1, .04f, .04f, Mathf.Min(1, remaining * 4));
-            line.startColor = line.endColor = red;
+            if (!live || warning.source == null || !warning.source.gameObject.activeInHierarchy) warning.active = false;
+            warning.line.enabled = false;
+            if (!warning.active) continue;
+            if (warning.delay > 0) { warning.delay -= dt; continue; }
+            if (!warning.shown) { warning.shown = true; PulseCount++; }
+            warning.elapsed += dt;
+            if (warning.elapsed >= arcDuration) { warning.active = false; continue; }
+            Vector2 centre = (Vector2)transform.position + Vector2.up * .25f;
+            Vector2 direction = ((warning.fixedOrigin ?? (Vector2)warning.source.position) - centre).normalized;
+            LastDirection = direction; Visible = warning.line.enabled = true;
+            float angle = Mathf.Atan2(direction.y, direction.x);
+            float radius = arcRadius + .06f * Mathf.Sin(warning.elapsed * 24);
+            for (int i = 0; i < 17; i++)
+            {
+                float a = angle + (i / 16f - .5f) * arcDegrees * Mathf.Deg2Rad;
+                warning.line.SetPosition(i, centre + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * radius);
+            }
+            warning.line.startColor = warning.line.endColor = new Color(1, .04f, .04f,
+                Mathf.Min(1, (arcDuration - warning.elapsed) * 8));
         }
     }
-    private void OnDisable() { remaining = 0; foreach (var line in streaks) if (line != null) line.enabled = false; }
+    private void OnDisable()
+    {
+        Visible = false;
+        foreach (var warning in warnings) { warning.active = false; if (warning.line != null) warning.line.enabled = false; }
+    }
     private void OnDestroy() { if (material != null) Destroy(material); }
 }

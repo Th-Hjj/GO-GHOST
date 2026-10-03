@@ -9,7 +9,7 @@
 
 Current code connects a normal Loadout/practice -> short Tower -> real P1/P2/P3 -> two final F decisions -> A–E flow. S01/S02 are reused, F8 uses the real route/snapshot path, and Assault Rifle is the sole current weapon. Full body-tier design and final Boss/art work are still Open. A design requirement is not proof of implementation; a prototype is not final design approval.
 
-The production interaction/P1 pass replaces fixed dialogue with speaker bubbles, removes all T2 aiming authority, adds T2+ red danger/blue interaction feedback and opens P1 with a tracking charged laser and real chandelier cover. Thomas deferred a replacement for the old 50F observation: the retained P3 selector currently has no normal Restrained trigger. Puppeteer remains `???` until he supplies an introduction. These are explicit current boundaries, not authorization for the next design phase.
+The post-73cd72b confirmed increment retains bubbles/T2 manual aim/P1 laser-cover, adds directional attack-source arcs without predicted paths, exact two-line T3 one-shot interventions, Security-arrival-first 50F sequencing, explicit P2 name introduction, two-step mouse choice confirmation and final-state evaluation on leaving. CEO Office waits for F and its guaranteed summon is now `Puppeteer, protect me.` Thomas still defers the replacement 50F observation; normal Restrained has no runtime veto producer. No next-stage body or P2/P3 redesign is authorized.
 
 No next task is implied by this page. Do only Thomas's authorized scope. For documentation-only work, record implementation differences and do not fix code/assets. Preserve the current worktree; the old GitHub static-review SHA is not a rollback target. Stay on Unity **6000.6.0f1**.
 

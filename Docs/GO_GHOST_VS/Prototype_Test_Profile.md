@@ -7,12 +7,12 @@
 | Weapon | Assault Rifle only: 12 damage, .25 s interval, 10 rounds, 1.2 s automatic reload, unlimited reserve; `LoadoutRules.Weapon` |
 | Rifle projectile / Rapid Fire | Speed 18; existing Right Arm interval / 1.75; no replacement weapon implied |
 | Player | Shared HP 150, jump velocity 12; movement comes from the deployment, not the obsolete tables below |
-| Permission | Snapshot 0/T1/T2/T3. T2 entirely manual aim/fire. T3 one paid context shot, bounded request window 3 scaled seconds; dialogue pause does not spend it. Replacement 50F observation rule deferred |
-| P1 opening / perception | Tracking charge 3.2 hostile seconds; final-direction damaging ray once, 28 damage, .22 s beam display. T2+ danger streak pulse .7 scaled seconds / .4 s minimum retrigger; blue contour width .055 world units. Speech body/choices 38 reference pixels, bubble maximum width 720 / padding 24, black background .6 alpha |
+| Permission | Snapshot 0/T1/T2/T3. T2 entirely manual aim/fire. T3 one paid context shot, after both exact lines, waits for legal rifle reload/cadence with live target cancellation. Replacement 50F observation rule deferred |
+| P1 opening / perception | Tracking charge 3.2 hostile seconds; final-direction damaging ray once, 28 damage, .22 s beam display. T2+ directional arc: .6 hostile-second lead / .55 duration / 55-degree sector / 1.25 world-unit radius; blue contour width .055 world units. Speech body/choices 38 reference pixels, bubble maximum width 720 / padding 24, black background .6 alpha |
 | Time Slow | Existing Q prototype: 3 unscaled gameplay seconds, 10 s start interval, hostile rate .25; narrative pause compensates both deadlines |
 | Local NPC life | Worker/Maintenance/Receptionist 20 HP; falling chandelier 20 actual impact damage; CEO/core 24 HP in greybox |
 | 1F staging / focus | Authored walk 2.5 units/s; reset wait .8 s; interaction radius 2.4 units |
-| Room entry | Nine authored room roots after practice; only practice door refills. 50F radio completion or actual pre-call death activates guard; old two-second timer is unused |
+| Room entry | Nine authored room roots after practice; only practice door refills. 50F radio completion or actual pre-call death stages guard; AI advice / T3 legal shot precedes attacks; old two-second timer is unused |
 | P3 shared profiles | Restrained cadence ×1.35 / recovery ×1.6 / burst 2; Full Force ×1 / ×1 / 3; Overdrive ×.65 / ×.6 / 5. Inspector-editable multipliers on existing attacks; not final moves or balance |
 | Result | Both final F targets resolved -> exact A–E; no percentage threshold. DEV outcomes skip normal Archive |
 

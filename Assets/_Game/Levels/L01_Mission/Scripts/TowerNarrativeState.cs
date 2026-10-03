@@ -121,9 +121,8 @@ public sealed class TowerNarrativeState
     internal bool TryFreezeExit(bool playerAlive)
     {
         if (!playerAlive || !DispositionConnected || FrozenExit != ExitResult.Unresolved || CeoDisposition == CeoDecision.Unresolved || CoreDisposition == CoreDecision.Unresolved) return false;
-        if (CoreDisposition == CoreDecision.Control && (CeoDisposition != CeoDecision.Spare || PresidentAlive != true || CoreIntact != true)) return false;
         var result = CoreDisposition == CoreDecision.Destroy ? (CeoDisposition == CeoDecision.Execute ? ExitResult.B : ExitResult.C)
-            : CoreDisposition == CoreDecision.Control ? ExitResult.E : CeoDisposition == CeoDecision.Execute ? ExitResult.A : ExitResult.D;
+            : CoreDisposition == CoreDecision.Control && PresidentAlive == true ? ExitResult.E : CeoDisposition == CeoDecision.Execute ? ExitResult.A : ExitResult.D;
         if (result == ExitResult.D && !RestoreWarningDelivered) return false;
         FrozenExit = result;
         FrozenDisposition = new ExitSnapshot(PresidentAlive == true, CoreIntact == true, CurrentAdministrator, RestoreWarningDelivered);

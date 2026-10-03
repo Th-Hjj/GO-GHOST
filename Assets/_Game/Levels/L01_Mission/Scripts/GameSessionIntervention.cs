@@ -6,11 +6,12 @@ public sealed partial class GameSessionFlow
     [SerializeField] private bool permissionPrototypeEnabled;
     [Range(0, 3)] [SerializeField] private int developmentPermissionTier = 2;
     [SerializeField] private ChandelierEncounter chandelier;
-    [Tooltip("TEST bounded T3 attempt; no unlimited retries when the gun or target is unavailable.")]
+    [Tooltip("Legacy serialized tuning, retained for asset compatibility. Context shots now wait for legal rifle readiness.")]
     [Min(.1f)] [SerializeField] private float autonomousWindowSeconds = 3f;
     private bool interventionOffered;
     private bool interventionActive;
     private PlayerInputReader interventionReader;
+    private System.Action interventionFinished;
 
     private void Update()
     {
@@ -18,10 +19,10 @@ public sealed partial class GameSessionFlow
         if (towerPrototypeEnabled) { TickNarrative(); TickTowerRoom(); }
         if (interventionActive)
         {
-            if (ActiveFight.Player.IsDead || chandelier == null || !chandelier.CanRelease || (towerPrototypeEnabled && (!ActiveFight.EncounterActive || ActiveFight.BossHealth == null || ActiveFight.BossHealth.IsDead)))
-                CancelIntervention();
+            if (ActiveFight.Player.IsDead || chandelier == null || !chandelier.CanRelease || (towerPrototypeEnabled && (ActiveFight.BossHealth == null || ActiveFight.BossHealth.IsDead)))
+                CompleteIntervention();
             else if (!ActiveFight.NarrativePaused && !ActiveFight.Player.GetComponent<PlayerInputReader>().HasTemporaryAimOverride)
-                interventionActive = false;
+                CompleteIntervention();
         }
         if (towerPrototypeEnabled) { TickTowerOpportunity(); return; }
         // One authored opportunity on entering the existing arena, not a planner or repeating tutorial.
@@ -30,12 +31,13 @@ public sealed partial class GameSessionFlow
         OfferChandelierIntervention();
     }
 
-    private void OfferChandelierIntervention()
+    private void OfferChandelierIntervention(System.Action finished = null)
     {
         int tier = Deployment.BrainPermissionTier;
-        if (tier == 0 || chandelier == null || !chandelier.CanRelease) return;
-        string sequence = tier <= 2 || TowerStageId == "boss_p1" ? "intervention.chandelier.advice" : "intervention.chandelier.full";
+        if (tier == 0 || chandelier == null || !chandelier.CanRelease) { finished?.Invoke(); return; }
+        string sequence = tier <= 2 ? "intervention.chandelier.advice" : "intervention.chandelier.full";
         if (!GetComponent<MissionUI>().ShowNarrative(sequence, FinishInterventionDialogue)) return;
+        interventionFinished = finished;
         interventionActive = true;
         ActiveFight.SetNarrativePaused(true);
     }
@@ -45,12 +47,13 @@ public sealed partial class GameSessionFlow
         if (!interventionActive || State != FlowState.Combat || ActiveFight == null) { CancelIntervention(); return; }
         ActiveFight.SetNarrativePaused(false);
         int tier = Deployment.BrainPermissionTier;
-        if (tier < 3 || chandelier == null || !chandelier.CanRelease) { CancelIntervention(); return; }
+        if (tier < 3 || chandelier == null || !chandelier.CanRelease) { CompleteIntervention(); return; }
         var reader = ActiveFight.Player.GetComponent<PlayerInputReader>();
+        reader.EndAimOverride();
         interventionReader = reader;
         reader.OnAimOverrideEnded += InterventionEnded;
-        if (!reader.BeginAimOverride(chandelier.AimTarget, autonomousWindowSeconds, true, () => chandelier != null && chandelier.CanRelease))
-            CancelIntervention();
+        if (!reader.BeginAimOverride(chandelier.AimTarget, float.PositiveInfinity, true, () => chandelier != null && chandelier.CanRelease))
+            CompleteIntervention();
     }
 
     private void InterventionEnded(PlayerInputReader.AimEndReason reason, bool requestedFire)
@@ -59,11 +62,19 @@ public sealed partial class GameSessionFlow
         interventionReader = null;
         // T2 no longer owns aim. Thomas deferred the replacement 50F observation rule;
         // keep the P3 selector unchanged and do not fabricate a completed veto.
-        interventionActive = false;
+        CompleteIntervention();
+    }
+
+    private void CompleteIntervention()
+    {
+        var finished = interventionFinished;
+        CancelIntervention();
+        if (State == FlowState.Combat && ActiveFight != null && !ActiveFight.Player.IsDead) finished?.Invoke();
     }
 
     private void CancelIntervention()
     {
+        interventionFinished = null;
         if (interventionReader != null) interventionReader.OnAimOverrideEnded -= InterventionEnded;
         interventionReader = null;
         bool wasActive = interventionActive;
@@ -76,6 +87,6 @@ public sealed partial class GameSessionFlow
         }
     }
 
-    private void OnApplicationFocus(bool focused) { if (!focused && interventionActive) CancelIntervention(); }
+    private void OnApplicationFocus(bool focused) { if (!focused && interventionActive) CompleteIntervention(); }
     private void OnDisable() { CancelIntervention(); ClearTowerWorld(); }
 }

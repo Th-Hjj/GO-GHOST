@@ -37,7 +37,7 @@ public sealed partial class GameSessionFlow
             var guard = ActiveFight.BossHealth;
             Mark(guard, () => guard != null && !guard.IsDead);
         }
-        if (TowerStageId == "final_disposition")
+        if (TowerStageId == "office_intro" || TowerStageId == "final_disposition")
         {
             Mark(president, () => president.IsAlive);
             Mark(continuingCore, () => continuingCore.IsAlive);

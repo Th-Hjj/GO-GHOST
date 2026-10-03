@@ -121,6 +121,7 @@ public partial class CyberpsychoBoss
             if (!cut.warned)
             {
                 cut.warned = true;
+                InnerAIDangerSense.Signal(player, transform, cut.fire - cut.warn, cut.from);
                 float shift = Mathf.Max(0f, blackoutClock - cut.warn);
                 cut.fire += shift;
                 cut.end += shift;
@@ -190,13 +191,12 @@ public partial class CyberpsychoBoss
         vfx.ClearBlackoutLines(); // Hide/reuse existing renderers; never destroy or allocate here.
         foreach (var cut in redCuts)
         {
-            if (cut == null || !cut.locked || blackoutClock < cut.warn || blackoutClock >= cut.end + .18f) continue;
+            if (cut == null || !cut.locked || blackoutClock < cut.fire || blackoutClock >= cut.end + .18f) continue;
             bool active = blackoutClock >= cut.fire && blackoutClock < cut.end;
             float alpha = blackoutClock >= cut.end ? (1f - (blackoutClock - cut.end) / .18f) * .4f : active ? 1f : .55f;
             vfx.SetBlackoutLine(cut.slot, cut.from, cut.to, RedWidth, alpha, active);
         }
-        if (!platformsBroken && blackoutClock >= .4f)
-            for (int i = 0; i < 3; i++) vfx.SetBlackoutPlatformMark(i, breakBounds[i]);
+        // Actual cuts remain visible; advance damage paths and platform marks are not presented.
     }
 
     private void LockDiagonal(RedCut cut, int sign)

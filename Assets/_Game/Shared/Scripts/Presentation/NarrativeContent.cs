@@ -55,6 +55,8 @@ public sealed class NarrativeContent
         }
     }
 
+    public string SpeakerDisplayName(string id) => speakerNames[id];
+
     public string[] ApprovedSequence(string id) => SequenceText(id, false);
 
     public string EntryText(string id, bool allowDraft = false) => EntryLine(id, allowDraft).Text;

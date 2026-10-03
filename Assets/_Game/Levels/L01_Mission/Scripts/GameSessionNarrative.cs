@@ -5,6 +5,7 @@ using UnityEngine;
 public sealed partial class GameSessionFlow
 {
     private int storyToken;
+    public bool PuppeteerIntroduced { get; private set; }
     private Coroutine storyMotion;
     private TowerCharacter focusedCharacter;
     private bool replyWindow;
@@ -112,10 +113,7 @@ public sealed partial class GameSessionFlow
             case "floor99":
                 securityEntryHealth = ActiveFight.BossHealth.CurrentHealth;
                 break;
-            case "office_intro":
-                Say("office.intro", () => ReplyOrAttack(new[]{"office.choice.surrender"},
-                    _ => Say("office.reply.surrender", () => Say("office.dialogue", OfficeWarning)), SummonPuppeteer));
-                break;
+            case "office_intro": break; // Let the player see the room and approach the President first.
         }
     }
 
@@ -146,7 +144,6 @@ public sealed partial class GameSessionFlow
     private void StartPreparedFight()
     {
         ActiveFight.StartPreparedEncounter();
-        InnerAIDangerSense.Signal(ActiveFight.Player);
         opportunityReadyAt = Time.time + 1f;
     }
     private void OfficeWarning()
@@ -192,9 +189,13 @@ public sealed partial class GameSessionFlow
         yield return MovePresentation(actor, room.BossSpawn, .45f);
         if (token != storyToken) yield break;
         ActiveFight.SetNarrativePaused(false);
-        Say(HasInnerAI ? "boss.p2.intro" : "boss.p2.intro.no_ai", () => ReplyOrAttack(
+        Say("boss.p2.introduction", () =>
+        {
+            PuppeteerIntroduced = true; // Presentation knowledge only, after actual line completion.
+            Say(HasInnerAI ? "boss.p2.intro" : "boss.p2.intro.no_ai", () => ReplyOrAttack(
             new[]{"boss.p2.choice.why"}, _ => Say("boss.p2.reply.why", () =>
                 { if (HighAI) Say("boss.p2.ai_warning", StartPreparedFight); else StartPreparedFight(); }), StartPreparedFight));
+        });
     }
     private IEnumerator MovePresentation(Transform target, Vector3 to, float seconds)
     {
@@ -230,7 +231,7 @@ public sealed partial class GameSessionFlow
             var security = ActiveFight.BossHealth;
             // A shot elsewhere on the floor is not an attack on Security. Its real damage endpoint owns this gate.
             if (security == null || security.CurrentHealth < securityEntryHealth)
-            { StartFloor99Security(); return; }
+            { StartFloor99Security(true); return; }
             bool focus = !StoryUI.DialogueVisible && !ActiveFight.NarrativePaused && !security.IsDead
                 && Vector2.Distance(security.transform.position, ActiveFight.Player.transform.position) <= 2.4f
                 && Vector2.Dot(StoryInput.AimDirection, (Vector2)(security.transform.position - ActiveFight.Player.transform.position)) > 0;
@@ -241,17 +242,20 @@ public sealed partial class GameSessionFlow
         focusedCharacter = null;
         if (!StoryUI.DialogueVisible && !ActiveFight.NarrativePaused)
         {
-            var npc = TowerStageId == "floor50" ? CurrentRoom.Receptionist : CurrentRoom.Character;
-            bool available = npc != null && npc.IsAlive && (TowerStageId == "tower_entry"
+            var npc = TowerStageId == "office_intro" ? president : TowerStageId == "floor50" ? CurrentRoom.Receptionist : CurrentRoom.Character;
+            bool available = npc != null && npc.IsAlive && (TowerStageId == "office_intro" || TowerStageId == "tower_entry"
                 || (TowerStageId == "floor01" && maintenancePhase != 1 && maintenancePhase != 3)
                 || (TowerStageId == "floor50" && (!towerEvents.Contains("floor50.security.started") || CurrentRoom.ExitOpen)));
-            if (available && Vector2.Distance(npc.transform.position, ActiveFight.Player.transform.position) <= 2.4f) focusedCharacter = npc;
+            if (available && Vector2.Distance(npc.transform.position, ActiveFight.Player.transform.position) <= (TowerStageId == "office_intro" ? 3.25f : 2.4f)) focusedCharacter = npc;
         }
         if (TowerStageId == "final_disposition" && !StoryUI.DialogueVisible && !ActiveFight.NarrativePaused) focusedCharacter = FinalInteractionFocus();
         StoryUI.ShowInteractionKey(focusedCharacter?.InteractionAnchor);
         if (focusedCharacter == null || !StoryUI.ConsumeInteractionPress()) return;
         if (TowerStageId == "final_disposition") InteractFinal(focusedCharacter);
         else if (TowerStageId == "tower_entry") Say("npc.entry.intro", null, true);
+        else if (TowerStageId == "office_intro")
+            Say("office.intro", () => ReplyOrAttack(new[]{"office.choice.surrender"},
+                _ => Say("office.reply.surrender", () => Say("office.dialogue", OfficeWarning)), SummonPuppeteer));
         else if (TowerStageId == "floor01") InteractMaintenance();
         else if (TowerStageId == "floor50")
         {
@@ -302,20 +306,21 @@ public sealed partial class GameSessionFlow
         if (TowerStageId == "floor01" && npc == CurrentRoom.Character) { CancelStory(); Narrative.MaintenanceDied(); }
         if (TowerStageId == "tower_entry") CancelStory();
     }
-    private void StartFloor99Security()
+    private void StartFloor99Security(bool attacked = false)
     {
         if (TowerStageId != "floor99" || ActiveFight.Player.IsDead || !towerEvents.Add("floor99.security.started")) return;
-        if (ActiveFight.BossHealth == null || ActiveFight.BossHealth.IsDead) { StartPreparedFight(); return; }
+        if (attacked || ActiveFight.BossHealth == null || ActiveFight.BossHealth.IsDead) { StartPreparedFight(); return; }
         Say("npc.floor99.security", () => { if (HighAI) Say("npc.floor99.ai_warning", StartPreparedFight); else StartPreparedFight(); });
     }
 
     private void StartFloor50Security()
     {
         if (TowerStageId != "floor50" || ActiveFight.Player.IsDead || !towerEvents.Add("floor50.security.started")) return;
-        ActiveFight.BeginSecurityEncounter(CurrentRoom);
+        ActiveFight.BeginSecurityEncounter(CurrentRoom, true);
         BindRoomPerception();
-        InnerAIDangerSense.Signal(ActiveFight.Player);
-        opportunityReadyAt = Time.time + 1f;
         Narrative.ObserveExternalOutcome("floor50.security", "activated");
+        interventionOffered = true;
+        towerEvents.Add(CurrentRoom.PropEventInstanceId + ".offered");
+        OfferChandelierIntervention(StartPreparedFight);
     }
 }

@@ -78,6 +78,8 @@ public partial class TopDownSmokeTest : MonoBehaviour
 
         switch (scenario)
         {
+            case "manual-cover": yield return ManualPlaytestFixes(true); break;
+            case "manual-fixes": yield return ManualPlaytestFixes(); break;
             case "dialogue-ux": yield return DialogueUx(); break;
             case "flow-route": yield return FlowRoute(); break;
             case "flow-local": yield return FlowLocal(); break;

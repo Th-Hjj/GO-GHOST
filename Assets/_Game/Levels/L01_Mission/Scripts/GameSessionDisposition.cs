@@ -28,7 +28,7 @@ public sealed partial class GameSessionFlow
         {
             bool unresolved = npc == president ? Narrative.CeoDisposition == TowerNarrativeState.CeoDecision.Unresolved
                 : Narrative.CoreDisposition == TowerNarrativeState.CoreDecision.Unresolved;
-            if (!unresolved) continue;
+            if (!unresolved || !npc.IsAlive) continue;
             float d = Vector2.Distance(ActiveFight.Player.transform.position, npc.transform.position);
             if (d < distance) { best = npc; distance = d; }
         }
@@ -38,14 +38,7 @@ public sealed partial class GameSessionFlow
     private void InteractFinal(TowerCharacter target)
     {
         Narrative.ObserveFinalLives(president.IsAlive, continuingCore.IsAlive);
-        if (!target.IsAlive)
-        {
-            // F acknowledges an already irreversible physical act. No resurrection, corpse speech or impossible choices.
-            if (target == president) Narrative.ResolveCeo(TowerNarrativeState.CeoDecision.Execute);
-            else Narrative.ResolveCore(TowerNarrativeState.CoreDecision.Destroy);
-            CompleteTowerIfResolved();
-            return;
-        }
+        if (!target.IsAlive) { RecordFinalDeath(target); return; }
         string[] ids = target == president ? new[]{"office.final.ceo.kill","office.final.ceo.spare"}
             : Narrative.CanControl ? new[]{"office.final.puppeteer.preserve","office.final.puppeteer.destroy","office.final.puppeteer.control"}
             : new[]{"office.final.puppeteer.preserve","office.final.puppeteer.destroy"};
@@ -61,6 +54,16 @@ public sealed partial class GameSessionFlow
                 : id == "office.final.puppeteer.control" ? TowerNarrativeState.CoreDecision.Control : TowerNarrativeState.CoreDecision.Preserve);
             CompleteTowerIfResolved();
         }, false, FinalChoiceCue);
+    }
+
+    private void RecordFinalDeath(TowerCharacter target)
+    {
+        if (towerTerminal || State != FlowState.Combat || TowerStageId != "final_disposition" || ActiveFight == null
+            || ActiveFight.Player.IsDead || (target != president && target != continuingCore)) return;
+        Narrative.ObserveFinalLives(president.IsAlive, continuingCore.IsAlive);
+        // The same committed life-state is used by F finishers and real projectile deaths.
+        if (StoryUI.DialogueVisible) CancelStory();
+        CompleteTowerIfResolved();
     }
 
     private string FinalChoiceCue(string id)

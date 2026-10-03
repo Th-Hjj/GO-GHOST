@@ -203,13 +203,6 @@
       "notes": ""
     },
     {
-      "id": "boss.p2.choice.deny_ai_consciousness",
-      "speakerId": "player",
-      "text": "That's not consciousness.",
-      "status": "draft",
-      "notes": ""
-    },
-    {
       "id": "boss.p2.ai_warning.01",
       "speakerId": "inner_ai",
       "text": "Watch out. An attack is coming.",
@@ -282,7 +275,7 @@
     {
       "id": "office.summon.01",
       "speakerId": "president",
-      "text": "Puppeteer, protect me.",
+      "text": "傀儡师，保护我。",
       "status": "draft",
       "notes": ""
     },
@@ -485,12 +478,6 @@
       "id": "boss.p2.reply.why",
       "lineIds": [
         "boss.p2.choice.why"
-      ]
-    },
-    {
-      "id": "boss.p2.reply.deny_ai_consciousness",
-      "lineIds": [
-        "boss.p2.choice.deny_ai_consciousness"
       ]
     },
     {

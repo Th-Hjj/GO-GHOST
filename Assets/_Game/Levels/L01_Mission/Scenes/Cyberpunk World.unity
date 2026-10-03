@@ -3880,7 +3880,7 @@ MonoBehaviour:
     m_Bits: 256
   blockedProjectileLayers:
     serializedVersion: 2
-    m_Bits: 128
+    m_Bits: 384
 --- !u!61 &502580295
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -11715,7 +11715,7 @@ MonoBehaviour:
     m_Bits: 256
   blockedProjectileLayers:
     serializedVersion: 2
-    m_Bits: 128
+    m_Bits: 384
 --- !u!61 &1608423101
 BoxCollider2D:
   m_ObjectHideFlags: 0

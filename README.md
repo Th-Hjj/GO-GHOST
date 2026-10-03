@@ -22,7 +22,7 @@ Route: practice -> entrance worker -> 1F Maintenance AI -> P1 -> 50F Receptionis
 | Escape | Cancel a voluntary interaction/choice |
 | F8 | Editor/Development-only route testing |
 
-Boss ReplyOrAttack windows accept real manual shots; ordinary dialogue pauses gameplay. Tier 0 has no Inner AI; T1 advises; T2 temporarily aims for three seconds but allows no-fire refusal; T3 really aims/fires through ammo/reload/projectiles. Old held Fire cannot leak out of dialogue. The existing GameSession Inspector permission configuration is frozen at deployment; F8 can select all four tiers for testing.
+Single-response nodes play their response directly without choice UI; ordinary dialogue pauses gameplay. 99F waits for nearby facing F or actual attack. Fallen chandeliers block both sides' projectiles. Real President/core kills commit their disposition without corpse F; both fates still resolve before completion. Tier 0 has no Inner AI; T1 advises; T2 temporarily aims for three seconds but allows no-fire refusal; T3 really aims/fires through ammo/reload/projectiles. Old held Fire cannot leak out of dialogue. The existing GameSession Inspector permission configuration is frozen at deployment; F8 can select all four tiers for testing.
 
 Assault Rifle is the only current weapon in normal/F8 loadouts. In 50F, approach the central Receptionist beneath the chandelier and finish the F radio conversation to bring in Security; actual pre-call death also starts it. Defeat Security to reach P2. Chandelier release, fall, cover, standing surface and lethal contact are physical, with Player/InnerAI causality. No NPC death or chandelier use is required to win the guard fight.
 

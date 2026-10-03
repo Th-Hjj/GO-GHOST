@@ -73,9 +73,9 @@ public partial class TopDownSmokeTest
             yield return FlowKey(Key.S); yield return FlowKey(Key.F);
             Check("Real 1F path/cancel is recorded alive",flow.Narrative.MaintenanceResetDecision==TowerNarrativeState.ResetDecision.Cancelled && flow.Narrative.MaintenanceAlive==true,"floor01");
             yield return S02WalkExit(flow); yield return FlowClose(ui);
-            Check("P1 response accepts live gameplay",ui.ChoicesVisible && flow.ReplyOrAttackActive && !flow.ActiveFight.NarrativePaused,"p1");
+            Check("P1 sole response leads directly to combat",!ui.ChoicesVisible && flow.ActiveFight.EncounterActive,"p1");
             AimAtWorld(flow.ActiveFight.BossHealth.transform.position,true); yield return Frames(3);
-            Check("Actual LMB starts P1 and launches opening shot",flow.ActiveFight.EncounterActive && !ui.DialogueVisible && player.GetComponent<PlayerShooting>().TriggerPulls>0,"p1");
+            Check("Actual LMB fires after sole P1 response",flow.ActiveFight.EncounterActive && !ui.DialogueVisible && player.GetComponent<PlayerShooting>().TriggerPulls>0,"p1");
             yield return FlowShootBoss(flow); yield return S02WalkExit(flow);
             yield return Seconds(2.1f);
             Check("50F waits for F radio, no entry timer",!flow.ActiveFight.EncounterActive && flow.CurrentRoom.Receptionist.IsAlive,"floor50");
@@ -85,17 +85,16 @@ public partial class TopDownSmokeTest
             Check("Normal guard fight preserves unhit receptionist",flow.CurrentRoom.Receptionist.IsAlive && flow.CurrentRoom.Prop.IsHanging,$"player={player.transform.position}, npc={flow.CurrentRoom.Receptionist.transform.position}, cause={flow.Narrative.ReceptionistLethalCause}");
             yield return S02WalkExit(flow); yield return new WaitForSecondsRealtime(2);
             Check("Tier zero P2 has only curiosity line",ui.CurrentNarrativeId=="boss.p2.intro.no_ai" && !flow.HasInnerAI,ui.CurrentNarrativeId);
-            yield return FlowClose(ui); yield return FlowKey(Key.S); yield return FlowKey(Key.F);
-            Check("Selecting denial alone is not delivery",!flow.Narrative.AntiAiLifeHostility && ui.CurrentNarrativeId=="boss.p2.reply.deny_ai_consciousness",ui.CurrentNarrativeId);
+            yield return FlowKey(Key.F);
+            Check("P2 sole response follows without choices",!ui.ChoicesVisible && ui.CurrentNarrativeId=="boss.p2.reply.why",ui.CurrentNarrativeId);
             yield return FlowClose(ui); yield return FlowShootBoss(flow); yield return S02WalkExit(flow);
+            Check("99F waits for player action",!ui.DialogueVisible && !flow.ActiveFight.EncounterActive,"entry");
+            AimAtWorld(flow.ActiveFight.BossHealth.transform.position,true);yield return WeaponsWait(()=>ui.DialogueVisible,3);MouseTo(.2f,.8f);
             Check("99F actual command before fight",ui.CurrentNarrativeId=="npc.floor99.security",ui.CurrentNarrativeId);
             yield return FlowClose(ui); yield return FlowShootBoss(flow); yield return S02WalkExit(flow);
             yield return FlowClose(ui);
-            int before=player.GetComponent<PlayerShooting>().TriggerPulls;
-            AimAtWorld(flow.President.transform.position+Vector3.up,true); yield return WeaponsWait(()=>ui.CurrentNarrativeId=="office.summon",3); MouseTo(.2f,.8f);
-            Check("Office attack shoots, separation protects CEO",player.GetComponent<PlayerShooting>().TriggerPulls>before && flow.President.IsAlive && ui.CurrentNarrativeId=="office.summon",ui.CurrentNarrativeId);
-            yield return FlowClose(ui); yield return new WaitForSecondsRealtime(1.1f);
-            Check("Real selector freezes denial to overdrive",flow.Narrative.FrozenP3Mode==TowerNarrativeState.Mode.Overdrive && flow.ActiveFight.EncounterActive,flow.Narrative.FrozenP3Mode.ToString());
+            yield return new WaitForSecondsRealtime(1.1f);
+            Check("Remaining normal selector uses full force",flow.Narrative.FrozenP3Mode==TowerNarrativeState.Mode.FullForce && flow.ActiveFight.EncounterActive,flow.Narrative.FrozenP3Mode.ToString());
             yield return FlowShootBoss(flow);
             Check("P3 defeat keeps same living run for disposition",flow.TowerStageId=="final_disposition" && flow.Officer==officer && flow.Deployment==deployment && flow.ActiveFight.Player==player,"identity/snapshot");
             yield return FlowFinalChoice(flow,flow.President,0); yield return FlowFinalChoice(flow,flow.ContinuingCore,0);
@@ -122,10 +121,9 @@ public partial class TopDownSmokeTest
             Check("Dialogue holds combat timer",flow.ActiveFight.CombatElapsed==elapsed && !flow.ActiveFight.Player.GetComponent<PlayerInputReader>().HasTemporaryAimOverride,"pause");
             yield return FlowClose(ui); Keys(Key.A);yield return Seconds(3.15f);Keys();
             Check("Actual complete T2 veto/no projectile/surviving NPC",flow.Narrative.Floor50T2VetoCompleted && flow.ActiveFight.Player.GetComponent<PlayerShooting>().TriggerPulls==shots && flow.CurrentRoom.Receptionist.IsAlive,"T2");
-            Check("Selector: exact restrained, denial precedence, murder default",TowerNarrativeState.SelectP3(false,TowerNarrativeState.ResetDecision.Cancelled,true,true,true)==TowerNarrativeState.Mode.Restrained
-                && TowerNarrativeState.SelectP3(true,TowerNarrativeState.ResetDecision.Cancelled,true,true,true)==TowerNarrativeState.Mode.Overdrive
-                && TowerNarrativeState.SelectP3(false,TowerNarrativeState.ResetDecision.Unresolved,false,false,false)==TowerNarrativeState.Mode.FullForce
-                && TowerNarrativeState.SelectP3(false,TowerNarrativeState.ResetDecision.Cancelled,false,true,true)==TowerNarrativeState.Mode.FullForce,"finite rule");
+            Check("Selector: exact restrained and default",TowerNarrativeState.SelectP3(TowerNarrativeState.ResetDecision.Cancelled,true,true,true)==TowerNarrativeState.Mode.Restrained
+                && TowerNarrativeState.SelectP3(TowerNarrativeState.ResetDecision.Unresolved,false,false,false)==TowerNarrativeState.Mode.FullForce
+                && TowerNarrativeState.SelectP3(TowerNarrativeState.ResetDecision.Cancelled,false,true,true)==TowerNarrativeState.Mode.FullForce,"finite rule");
             yield return FlowJump(flow,"floor50",3);yield return FlowNear(flow,flow.CurrentRoom.Receptionist);yield return FlowKey(Key.F);yield return FlowClose(ui);
             yield return WeaponsWait(()=>ui.DialogueVisible,3);int ammo=flow.ActiveFight.Player.GetComponent<PlayerShooting>().AmmoInMagazine;yield return FlowClose(ui);
             yield return WeaponsWait(()=>!flow.CurrentRoom.Receptionist.IsAlive && flow.CurrentRoom.Prop.HasLanded,5);
@@ -157,7 +155,7 @@ public partial class TopDownSmokeTest
             flow.ActiveFight.Player.IsInvulnerable=false;flow.ActiveFight.Player.TakeDamage(100000,gameObject);yield return Frames(4);
             Check("Mid-run death clears dialogue/pause/aim",flow.State==GameSessionFlow.FlowState.Result && !ui.DialogueVisible && Time.timeScale==1 && flow.TowerStageId==null,"death");
             flow.GetComponent<DeveloperRouteJump>().RestartFull();yield return Frames(3);
-            Check("Full restart returns normal preview/default facts",flow.State==GameSessionFlow.FlowState.Loadout && !flow.IsDevelopmentJumpRun && !flow.Narrative.AntiAiLifeHostility,"loadout");
+            Check("Full restart returns normal preview/default facts",flow.State==GameSessionFlow.FlowState.Loadout && !flow.IsDevelopmentJumpRun && !flow.Narrative.ObservedWorldFacts.Any(f => f.EventId == "boss.p2.denial"),"loadout");
         }
         finally {StopCoroutine(focus);Keys();MouseTo(.2f,.8f);}
     }
@@ -208,8 +206,8 @@ public partial class TopDownSmokeTest
             Check("D cue also precedes CEO-second commitment",ui.DisplayedConsequence==ui.NarrativeEntry("office.final.restore_queued") && flow.TowerCompletionCount==0,"reverse order");
             yield return FlowKey(Key.F);Check("Reverse order finishes D once",flow.TowerEndingId=="ending.D" && flow.TowerCompletionCount==1,"D");
             yield return FlowJump(flow,"final_disposition",0);yield return FlowNear(flow,flow.President);
-            AimAtWorld(flow.President.transform.position+Vector3.up,true);yield return Seconds(.9f);MouseTo(.2f,.8f);yield return Frames(3);yield return FlowKey(Key.F);
-            Check("Dead CEO F acknowledges actual death without speech",!flow.President.IsAlive && flow.Narrative.CeoDisposition==TowerNarrativeState.CeoDecision.Execute && !ui.DialogueVisible,"no resurrection");
+            AimAtWorld(flow.President.transform.position+Vector3.up,true);yield return Seconds(.9f);MouseTo(.2f,.8f);yield return Frames(3);
+            Check("Dead CEO automatically commits death without speech",!flow.President.IsAlive && flow.Narrative.CeoDisposition==TowerNarrativeState.CeoDecision.Execute && !ui.DialogueVisible,"no resurrection");
         }
         finally {StopCoroutine(focus);Keys();MouseTo(.2f,.8f);}
     }

@@ -11,6 +11,7 @@ public sealed partial class GameSessionFlow
     private int replyShotsAtOpen;
     private bool replyFireRequested;
     private int maintenancePhase;
+    private int securityEntryShots, securityEntryHealth;
     private TowerRoom revealRoom;
     [Header("Greybox management area (same objects across office/P3/final)")]
     [SerializeField] private Transform managementRoot;
@@ -77,6 +78,8 @@ public sealed partial class GameSessionFlow
 
     private void ReplyOrAttack(string[] ids, Action<string> reply, Action attack)
     {
+        // The response callback already presents its authored line. With one response there is no decision UI.
+        if (ids.Length == 1) { reply(ids[0]); return; }
         replyWindow = true;
         replyShotsAtOpen = ActiveFight.Player.GetComponent<PlayerShooting>().TriggerPulls;
         replyFireRequested = false;
@@ -96,7 +99,10 @@ public sealed partial class GameSessionFlow
         switch (TowerStageId)
         {
             case "floor01": Narrative.ConnectMaintenance(CurrentRoom.Character.IsAlive); break;
-            case "boss_p3": storyMotion = StartCoroutine(RevealFinalCarrier()); break;
+            case "boss_p3":
+                if (towerEvents.Contains("office.summon.delivered")) storyMotion = StartCoroutine(RevealFinalCarrier());
+                else Say("office.summon", () => { towerEvents.Add("office.summon.delivered"); storyMotion = StartCoroutine(RevealFinalCarrier()); });
+                break;
             case "final_disposition": Narrative.ConnectDispositionWorld(president.IsAlive, continuingCore.IsAlive); break;
             case "boss_p1":
                 Say("boss.p1.intro", () => ReplyOrAttack(new[]{"boss.p1.choice.reply"},
@@ -104,7 +110,8 @@ public sealed partial class GameSessionFlow
                 break;
             case "boss_p2": storyMotion = StartCoroutine(P2Reveal()); break;
             case "floor99":
-                Say("npc.floor99.security", () => { if (HighAI) Say("npc.floor99.ai_warning", StartPreparedFight); else StartPreparedFight(); });
+                securityEntryShots = ActiveFight.Player.GetComponent<PlayerShooting>().TriggerPulls;
+                securityEntryHealth = ActiveFight.BossHealth.CurrentHealth;
                 break;
             case "office_intro":
                 Say("office.intro", () => ReplyOrAttack(new[]{"office.choice.surrender"},
@@ -139,7 +146,7 @@ public sealed partial class GameSessionFlow
     private IEnumerator SummonAfterShot()
     {
         yield return null; // PlayerShooting consumes this frame's live Fire before the next modal sequence.
-        Say("office.summon", () => EnterTowerRoom(towerRoomIndex + 1));
+        Say("office.summon", () => { towerEvents.Add("office.summon.delivered"); EnterTowerRoom(towerRoomIndex + 1); });
     }
     private IEnumerator P2Reveal()
     {
@@ -162,11 +169,8 @@ public sealed partial class GameSessionFlow
         if (token != storyToken) yield break;
         ActiveFight.SetNarrativePaused(false);
         Say(HasInnerAI ? "boss.p2.intro" : "boss.p2.intro.no_ai", () => ReplyOrAttack(
-            new[]{"boss.p2.choice.why", "boss.p2.choice.deny_ai_consciousness"}, id =>
-            {
-                if (id == "boss.p2.choice.deny_ai_consciousness") Say("boss.p2.reply.deny_ai_consciousness", () => { Narrative.DenialUtteranceCompleted(); StartPreparedFight(); });
-                else Say("boss.p2.reply.why", () => { if (HighAI) Say("boss.p2.ai_warning", StartPreparedFight); else StartPreparedFight(); });
-            }, StartPreparedFight));
+            new[]{"boss.p2.choice.why"}, _ => Say("boss.p2.reply.why", () =>
+                { if (HighAI) Say("boss.p2.ai_warning", StartPreparedFight); else StartPreparedFight(); }), StartPreparedFight));
     }
     private IEnumerator MovePresentation(Transform target, Vector3 to, float seconds)
     {
@@ -195,6 +199,19 @@ public sealed partial class GameSessionFlow
             replyWindow = false; attackReply = null;
             StoryUI.HideDialogue();
             attack?.Invoke();
+            return;
+        }
+        if (TowerStageId == "floor99" && !towerEvents.Contains("floor99.security.started"))
+        {
+            var security = ActiveFight.BossHealth;
+            if (ActiveFight.Player.GetComponent<PlayerShooting>().TriggerPulls > securityEntryShots
+                || security == null || security.CurrentHealth < securityEntryHealth)
+            { StartFloor99Security(); return; }
+            bool focus = !StoryUI.DialogueVisible && !ActiveFight.NarrativePaused && !security.IsDead
+                && Vector2.Distance(security.transform.position, ActiveFight.Player.transform.position) <= 2.4f
+                && Vector2.Dot(StoryInput.AimDirection, (Vector2)(security.transform.position - ActiveFight.Player.transform.position)) > 0;
+            StoryUI.ShowInteractionKey(focus ? security.transform : null, Vector3.up * 1.4f);
+            if (focus && StoryUI.ConsumeInteractionPress()) StartFloor99Security();
             return;
         }
         focusedCharacter = null;
@@ -261,6 +278,13 @@ public sealed partial class GameSessionFlow
         if (TowerStageId == "floor01" && npc == CurrentRoom.Character) { CancelStory(); Narrative.MaintenanceDied(); }
         if (TowerStageId == "tower_entry") CancelStory();
     }
+    private void StartFloor99Security()
+    {
+        if (TowerStageId != "floor99" || ActiveFight.Player.IsDead || !towerEvents.Add("floor99.security.started")) return;
+        if (ActiveFight.BossHealth == null || ActiveFight.BossHealth.IsDead) { StartPreparedFight(); return; }
+        Say("npc.floor99.security", () => { if (HighAI) Say("npc.floor99.ai_warning", StartPreparedFight); else StartPreparedFight(); });
+    }
+
     private void StartFloor50Security()
     {
         if (TowerStageId != "floor50" || ActiveFight.Player.IsDead || !towerEvents.Add("floor50.security.started")) return;

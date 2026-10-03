@@ -245,6 +245,8 @@ public sealed partial class GameSessionFlow : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (president != null) president.OnDied -= RecordFinalDeath;
+        if (continuingCore != null) continuingCore.OnDied -= RecordFinalDeath;
         CancelIntervention();
         generation++;
         StopAllCoroutines();

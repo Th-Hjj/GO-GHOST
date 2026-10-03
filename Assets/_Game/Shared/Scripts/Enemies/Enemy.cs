@@ -59,6 +59,7 @@ public class Enemy : MonoBehaviour, IDamageable
     private float fireRemaining;
     private PlayerTimeSlow hostileClock;
     private bool combatStopped;
+    private bool dangerSignalled;
 
     private void Awake()
     {
@@ -99,10 +100,13 @@ public class Enemy : MonoBehaviour, IDamageable
         fireRemaining -= Time.deltaTime * (hostileClock != null ? hostileClock.WorldRate : 1f);
 
         Vector2 toPlayer = (Vector2)player.transform.position - rb.position;
+        if (toPlayer.magnitude <= attackRange && fireRemaining <= .6f && !dangerSignalled)
+        { InnerAIDangerSense.Signal(player); dangerSignalled = true; }
         if (toPlayer.magnitude <= attackRange && fireRemaining <= 0f)
         {
             Fire(toPlayer);
             fireRemaining = fireInterval;
+            dangerSignalled = false;
         }
     }
 

@@ -11,7 +11,7 @@ public sealed partial class GameSessionFlow
     private int replyShotsAtOpen;
     private bool replyFireRequested;
     private int maintenancePhase;
-    private int securityEntryShots, securityEntryHealth;
+    private int securityEntryHealth;
     private TowerRoom revealRoom;
     [Header("Greybox management area (same objects across office/P3/final)")]
     [SerializeField] private Transform managementRoot;
@@ -106,11 +106,10 @@ public sealed partial class GameSessionFlow
             case "final_disposition": Narrative.ConnectDispositionWorld(president.IsAlive, continuingCore.IsAlive); break;
             case "boss_p1":
                 Say("boss.p1.intro", () => ReplyOrAttack(new[]{"boss.p1.choice.reply"},
-                    _ => Say("boss.p1.reply", () => { if (HasInnerAI) Say("boss.p1.ai_warning", StartPreparedFight); else StartPreparedFight(); }), StartPreparedFight));
+                    _ => Say("boss.p1.reply", () => Say("boss.p1.silence", StartP1Opening)), StartP1Opening));
                 break;
             case "boss_p2": storyMotion = StartCoroutine(P2Reveal()); break;
             case "floor99":
-                securityEntryShots = ActiveFight.Player.GetComponent<PlayerShooting>().TriggerPulls;
                 securityEntryHealth = ActiveFight.BossHealth.CurrentHealth;
                 break;
             case "office_intro":
@@ -120,16 +119,41 @@ public sealed partial class GameSessionFlow
         }
     }
 
+    // Speaker IDs bind to actual actors, never to player-facing internal names.
+    public Transform ResolveNarrativeSpeaker(string id)
+    {
+        if (ActiveFight == null) return null;
+        switch (id)
+        {
+            case "player": case "inner_ai": return ActiveFight.Player.transform;
+            case "puppeteer": case "puppeteer_unknown": return TowerStageId == "final_disposition"
+                ? continuingCore?.InteractionAnchor : ActiveFight.BossHealth?.transform;
+            case "president": return president?.InteractionAnchor;
+            case "entrance_worker": case "maintenance_ai": return CurrentRoom?.Character?.InteractionAnchor;
+            case "floor50_npc": return CurrentRoom?.Receptionist?.InteractionAnchor;
+            case "security99": return ActiveFight.BossHealth?.transform;
+            default: return null; // Deliberately unnamed ending captions remain unanchored.
+        }
+    }
+
+    private void StartP1Opening()
+    {
+        ActiveFight.StartPreparedEncounter();
+        ActiveFight.Boss.BeginOpeningLaser();
+        opportunityReadyAt = Time.time + .35f;
+    }
+
     private void StartPreparedFight()
     {
         ActiveFight.StartPreparedEncounter();
+        InnerAIDangerSense.Signal(ActiveFight.Player);
         opportunityReadyAt = Time.time + 1f;
     }
     private void OfficeWarning()
     {
         if (!HighAI) { SummonPuppeteer(); return; }
         // Local cinematic pointing only. No autonomous request or transfer of execution permission.
-        StoryInput.BeginAimOverride(president.InteractionAnchor, 3f, false);
+        if (Deployment.BrainPermissionTier == 3) StoryInput.BeginAimOverride(president.InteractionAnchor, 3f, false);
         Say("office.ai_warning", () => storyMotion = StartCoroutine(OfficeAimBeat()));
     }
     private IEnumerator OfficeAimBeat()
@@ -204,8 +228,8 @@ public sealed partial class GameSessionFlow
         if (TowerStageId == "floor99" && !towerEvents.Contains("floor99.security.started"))
         {
             var security = ActiveFight.BossHealth;
-            if (ActiveFight.Player.GetComponent<PlayerShooting>().TriggerPulls > securityEntryShots
-                || security == null || security.CurrentHealth < securityEntryHealth)
+            // A shot elsewhere on the floor is not an attack on Security. Its real damage endpoint owns this gate.
+            if (security == null || security.CurrentHealth < securityEntryHealth)
             { StartFloor99Security(); return; }
             bool focus = !StoryUI.DialogueVisible && !ActiveFight.NarrativePaused && !security.IsDead
                 && Vector2.Distance(security.transform.position, ActiveFight.Player.transform.position) <= 2.4f
@@ -289,6 +313,8 @@ public sealed partial class GameSessionFlow
     {
         if (TowerStageId != "floor50" || ActiveFight.Player.IsDead || !towerEvents.Add("floor50.security.started")) return;
         ActiveFight.BeginSecurityEncounter(CurrentRoom);
+        BindRoomPerception();
+        InnerAIDangerSense.Signal(ActiveFight.Player);
         opportunityReadyAt = Time.time + 1f;
         Narrative.ObserveExternalOutcome("floor50.security", "activated");
     }

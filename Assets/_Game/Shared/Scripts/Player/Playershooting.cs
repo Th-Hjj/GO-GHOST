@@ -104,7 +104,10 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
             bool trigger = autonomous || input.AttackHeld;
             if (trigger && !IsReloading && AmmoInMagazine > 0 && Time.time >= nextFireTime
                 && FireWeapon(aim, weapon, autonomous ? ProjectileActor.InnerAI : ProjectileActor.Player))
+            {
                 nextFireTime = Time.time + FireInterval;
+                if (autonomous) input.CompleteAutomaticShot();
+            }
             // Automatic reload the moment the magazine is empty; there is no manual reload or cancel.
             if (!IsReloading && AmmoInMagazine <= 0)
             {

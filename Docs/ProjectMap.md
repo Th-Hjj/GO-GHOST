@@ -20,16 +20,16 @@ Paths below are under `Assets/_Game/Levels/L01_Mission/Scripts/`.
 | `GameSessionFlow` | Loadout/deployment/practice/result/ending/Archive states, officer and immutable snapshot, attempt generation/disposal |
 | `GameSessionTower`, `TowerRoom`, `TowerDoor` | Existing ordered room definitions, room entry/exit, local encounter cleanup, run facts and normal mission routing |
 | `GameSessionNarrative` | Nearby focus, F callbacks, mandatory sequences, ReplyOrAttack, 1F movement/reset, Security triggers, P2/office authored greybox beats |
-| `GameSessionIntervention` | Existing S01 chandelier permission sequence, actual temporary aim request, real T2 completion reason, cleanup |
+| `GameSessionIntervention` | Shared chandelier advice; T3-only single paid shot/target validity/cleanup. T2 veto producer retired; replacement explicitly deferred |
 | `GameSessionDisposition` | P3 reveal, final target choices/physical result, D cue, legal A–E freeze, explicit normal result/ending |
 | `TowerNarrativeState` | Nullable/unresolved world facts, external observation pairs, frozen finite P3 mode (deleted denial has no replacement trigger), final decisions/administrator/order/result |
 | `BossFight` / `BossFightTower` | Practice refill/statistics boundary, genuine narrative pause and clock compensation, persistent player vs local actors, staged combat start, local defeat vs mission death/completion |
-| `CyberpsychoBoss` + encounter/attack partials | Existing P1 gun/P2 blade movement and attack owner, room bounds/target, shared real floating P3 profile; final responsive redesign absent |
+| `CyberpsychoBoss` + encounter/attack partials | P1 opening tracking laser (`CyberpsychoBossOpeningLaser`) then existing gun/P2 blade owner; room bounds/target and shared floating P3 profile |
 | `TowerCharacter` | Local NPC/CEO/core life, actual player projectile/attack damage, interaction anchor and death event |
 | `Floor50Receptionist` | Extends local life state with actual falling-chandelier contact and inherited causal actor |
 | `ChandelierEncounter` | Existing real suspension hit, Rigidbody2D drop/landing, explicit projectile blocking/standable body, separate once/actor/result |
 | `TowerManagementBarrier` | Opt-in projectile blocking plus physical separation before P3; no global terrain rule |
-| `MissionUI`, `MissionUIDialogue` and existing terminal partials | Existing screens/HUD; one JSON-bound dialogue/choice panel/F anchor, typed completed/cancelled/committed results. Legacy terminal/card styling retained |
+| `MissionUI`, `MissionUIDialogue` and existing terminal partials | Existing screens/HUD; one JSON-bound character bubble/choice/F presenter, typed completed/cancelled/committed results. Legacy terminal/card styling retained |
 | `GameSessionDevelopment`, `DeveloperRouteJump` | F8 Editor/Development UI and real fresh deployment/route jump; existing equipment/tier selection; skipped facts unknown; DEV Archive isolation |
 
 `RoomKind.DevelopmentFinal` / `DevelopmentDisposition` names remain serialized compatibility identifiers; normal P3/final behaviour is no longer a stationary DEV-completion path. `TowerRoom.securityDelay` is retained serialized data but no longer drives 50F activation. The current radio/death event does.
@@ -48,6 +48,7 @@ Paths below are under `Assets/_Game/Shared/`.
 | `Scripts/Player/Projectile.cs`, `IProjectileReceiver.cs` | Real team-filtered contacts, opt-in receivers, damage, actual actor/tier and lifetime; unmarked terrain passes bullets |
 | `Scripts/Player/PlayerTimeSlow.cs`, `PlayerCounterArm.cs`, `PlayerDetachedDroneArm.cs` | Existing prototypes; unscaled clocks compensate narrative pause; staged Drone targeting waits for combat |
 | `Scripts/Enemies/Enemy.cs` | Existing health/team/collider foundation and minimal Security pursuit/fire, staged stop/resume |
+| `Scripts/Presentation/WorldSpeechBubble.cs`, `InnerAIDangerSense.cs`, `InteractionOutline.cs` | Shared speech tracking/clamping/pointer and reusable danger/interaction feedback; `GameSessionPerception` binds actual local relevance |
 | `Scripts/Presentation/NarrativeContent.cs` | One instance JSON loader, stable entry/sequence lookup, explicit draft acceptance |
 | `Data/Narrative/go_ghost_narrative.json` | Sole runtime story/choice/ending text; exact supplied English draft, schema 1 |
 | `Scripts/Persistence/PoliceArchive.cs`, `PoliceArchiveStore.cs` | Existing persistent unlock collections/local store plus session records; optional explicit A–E ending on frozen run record |

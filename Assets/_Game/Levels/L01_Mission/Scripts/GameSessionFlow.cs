@@ -187,6 +187,7 @@ public sealed partial class GameSessionFlow : MonoBehaviour
         if (token != generation || fight != ActiveFight || State != FlowState.Deployment) yield break;
         fight.BeginPractice();
         SetState(FlowState.Practice);
+        BindPracticePerception();
     }
 
     // Hard cut of the existing fixed camera between the two rooms; no transition.

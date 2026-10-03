@@ -14,7 +14,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
         CrosscutWarning, CrosscutFirst, CrosscutGap, CrosscutSecond, CrosscutRecovery,
         DropWarning, DropTarget, DropExecute, DropImpact, DropRecovery,
         BlackoutSignal, BlackoutRun, BlackoutGap, BlackoutMark, BlackoutFinalWarning,
-        BlackoutFinalSlash, BlackoutBreakDelay, BlackoutRecovery, CamoReposition, BladeComboRecovery, CamoRushWarning, CamoRushExecute }
+        BlackoutFinalSlash, BlackoutBreakDelay, BlackoutRecovery, CamoReposition, BladeComboRecovery, CamoRushWarning, CamoRushExecute, OpeningLaserCharge, OpeningLaserFire }
 
     [SerializeField] private PlayerHealth player;
     [SerializeField] private Projectile bulletPrefab;
@@ -264,6 +264,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
         }
 
         FacePlayer();
+        if (TickOpeningLaser()) return;
         if (Phase == BossPhase.PhaseTransition)
         {
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
@@ -583,6 +584,10 @@ public partial class CyberpsychoBoss : MonoBehaviour
     {
         State = next;
         timer = duration;
+        if (next == AttackState.OpeningLaserCharge || next == AttackState.MarkedTracking
+            || next == AttackState.SlashWarning || next == AttackState.CrosscutWarning
+            || next == AttackState.DropWarning || next == AttackState.BlackoutSignal || next == AttackState.CamoRushWarning)
+            InnerAIDangerSense.Signal(player);
         ShowWarnings();
         FacePlayer();
         // Presentation only, once per actual state entry. Never an attack, damage or timing authority.
@@ -776,6 +781,7 @@ public partial class CyberpsychoBoss : MonoBehaviour
 
     private void ClearAttack()
     {
+        ClearOpeningLaser();
         ClearCamoRush();
         ClearBlackout();
         ClearCamoPresentation();

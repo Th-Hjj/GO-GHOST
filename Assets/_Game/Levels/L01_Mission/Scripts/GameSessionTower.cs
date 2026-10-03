@@ -154,6 +154,7 @@ public sealed partial class GameSessionFlow
             ActiveFight.Boss.ApplyFinalProfile(room.ProfileFor(mode));
         }
         ReceiveTowerRoomEntered();
+        BindRoomPerception();
         BeginNarrativeRoom();
         Physics2D.SyncTransforms();
     }

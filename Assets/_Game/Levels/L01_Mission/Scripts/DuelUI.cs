@@ -88,13 +88,6 @@ namespace GoGhost.Duel
                     Button("AI",page,new Vector2(-165,y),new Vector2(145,58),()=>game.SetDraft(module,true),settings[i]);
                     Text(instructions[i],page,new Vector2(335,y),new Vector2(800,90),23,TextAlignmentOptions.Left);
                 }
-                if(game.DraftLegs)
-                    for(int i=0;i<3;i++)
-                    {
-                        var preference=(LegacyDistancePreference)i;
-                        Button(preference.ToString(),page,new Vector2(-330+i*125,72),new Vector2(110,42),
-                            ()=>game.SetDistance(preference),game.DraftDistance==preference);
-                    }
                 Button("Start Fight",page,new Vector2(0,-360),new Vector2(360,65),game.StartFight); return;
             }
             if(game.Phase==DuelPhase.Failed || game.Phase==DuelPhase.Complete)

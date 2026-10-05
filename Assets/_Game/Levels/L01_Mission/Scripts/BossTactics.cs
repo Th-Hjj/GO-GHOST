@@ -11,6 +11,7 @@ namespace GoGhost.Duel
         public BossAbility Ability;
         public float Score, EstimatedRisk, CreatedAt, MaxPlanTime, TravelSeconds;
         public int TerrainVersion;
+        public float DropPrepareDelay, DropImpactDelay;
         // Start: supported arrival + resource/ray/range valid. Commit: action Locked.
         // Exit: terrain invalidation, deadline, route failure, lost contact, actor death.
     }
@@ -22,7 +23,9 @@ namespace GoGhost.Duel
         float nextTick,lastAttackAt,nextSpacing,nextAerial,avoidFailedUntil;
         Vector2 failedDestination,lastSearchPoint;
         BossAbility previousAbility;
-        BossPlan plan;
+        BossPlan plan,dropPlan;
+        bool dropCooperative,dropLeftGround;
+        float dropLaunchedAt,dropDeadline;
         public bool Enabled {get;set;}=true;
         public BossPlan Current=>plan;
         public BossTactics(BossAgent actor){this.actor=actor;}
@@ -31,11 +34,8 @@ namespace GoGhost.Duel
             if(!Enabled)return;
             var action=actor.Actions; var facts=actor.Perception.Facts;
             if(action.Busy)return;
+            if(dropPlan!=null){TickDropPlan();return;}
             if(actor.Coordinator!=null&&actor.Coordinator.HasAssignment(actor))return;
-            // A falling attack is only offered during the end of a real upward jump.
-            if(actor.Profile.Kind==BossKind.Severance&&!actor.Motor.Grounded&&actor.Velocity.y>0&&actor.Velocity.y<4
-                &&facts.Confidence>.3f&&facts.Position.y<actor.Position.y&&Mathf.Abs(facts.Position.x-actor.Position.x)<1.3f)
-            {if(action.TryStart(BossAbility.DropCut,facts.Predict(.25f))){plan=null;return;}}
             if(!actor.Motor.Grounded)return; // Finish the accepted physical air connection before replanning.
             if(plan!=null)
             {
@@ -68,6 +68,11 @@ namespace GoGhost.Duel
             if(Time.time<nextTick)return;
             nextTick=Time.time+actor.Profile.TacticTick;
             if(facts.Confidence<=0){SearchVisibleAngle();return;}
+            if(plan==null && actor.Profile.Kind==BossKind.Severance && Time.time>=nextAerial
+                && action.Ready(BossAbility.DropCut) && (Mathf.Abs(facts.Velocity.y)>.5f
+                    || Mathf.Abs(facts.Position.y-actor.Position.y)>.4f || action.ConsecutiveMeleeMisses>0)
+                && TryPlanDrop(facts,out var aerial))
+            {nextAerial=Time.time+1;StartDropPlan(aerial,false);return;}
             if(plan==null && TryBreakStalemate(facts))return;
             var options=BuildCandidates();
             if(options.Count==0){SearchVisibleAngle();return;}
@@ -77,7 +82,7 @@ namespace GoGhost.Duel
             actor.Trace($"plan {plan.Intent}/{plan.Ability} to={plan.Destination} score={plan.Score:0.00}");
             actor.Motor.SetRoute(plan.Route);
             if(plan.Route==null)actor.Motor.Brake(); // Retire the previous route when accepting an in-place attack.
-            if(actor.Profile.Kind==BossKind.Refraction&&plan.TravelSeconds>.45f&&selected.Score>.8f&&action.Ready(BossAbility.Camo))
+            if(actor.Profile.Kind==BossKind.Refraction&&plan.TravelSeconds>.45f&&Vector2.Distance(plan.Destination,actor.Position)>1.5f&&selected.Score>.8f&&action.Ready(BossAbility.Camo))
                 action.TryStart(BossAbility.Camo,plan.TargetHypothesis);
             if(actor.Profile.Kind==BossKind.Refraction&&!action.CanAfford(plan.Ability))action.RequestReload();
         }
@@ -172,6 +177,7 @@ namespace GoGhost.Duel
             {
                 if(forced!=BossAbility.None&&ability!=forced)continue;
                 if(!actor.Actions.Ready(ability))continue;
+                if(actor.Coordinator!=null&&!actor.Coordinator.CanStart(actor,ability,false))continue;
                 if(!LegalAt(ability,point,facts,out float chance))continue;
                 float distance=Vector2.Distance(point,actor.Position),targetDistance=Mathf.Abs(point.x-facts.Position.x);
                 float exposed=facts.Visible&&Vector2.Dot(facts.Aim,(point-facts.Position).normalized)>.8f?1:0;
@@ -202,7 +208,12 @@ namespace GoGhost.Duel
         {
             chance=facts.Confidence;Vector2 delta=facts.Position-point;float distance=delta.magnitude;
             if(facts.Confidence<=0)return false;
-            if(ability==BossAbility.Burst||ability==BossAbility.Sweep)
+            if(ability==BossAbility.Sweep)
+            {
+                if(distance>actor.Profile.Sweep.Range||!TrySweepBand(point,facts,out _,out _))return false;
+                chance+=Mathf.Clamp01(Mathf.Abs(facts.Velocity.x)/7)*.25f;
+            }
+            else if(ability==BossAbility.Burst)
             {
                 if(distance>actor.Profile.Settings(ability).Range||!TryGunTarget(ability,point,facts,out _))return false;
                 if(ability==BossAbility.Sweep)chance+=Mathf.Clamp01(Mathf.Abs(facts.Velocity.x)/7)*.25f;
@@ -210,12 +221,13 @@ namespace GoGhost.Duel
             else if(ability==BossAbility.Piercing)
             {if(distance<3||distance>actor.Profile.Piercing.Range||!TryGunTarget(ability,point,facts,out _))return false;chance+=facts.ReloadVisible?.35f:0;}
             else if(ability==BossAbility.Rhythm)
-            {if(distance>actor.Profile.Rhythm.Range+.1f||Mathf.Abs(delta.y)>1.5f||Projectile.TerrainHit(point,facts.Position,0,out _))return false;}
+            {if(distance>actor.Profile.RhythmReach[0]+actor.Profile.RhythmStep[0]+facts.Body.extents.x||Mathf.Abs(delta.y)>1.5f||Projectile.TerrainHit(point,facts.Position,0,out _))return false;}
             else if(ability==BossAbility.DrawDash)
             {
-                if(Mathf.Abs(delta.y)>.65f||Mathf.Abs(delta.x)<1.1f||Mathf.Abs(delta.x)>actor.Profile.DrawDash.Range)return false;
+                if(Mathf.Abs(delta.y)>.75f||Mathf.Abs(delta.x)<1.4f||Mathf.Abs(delta.x)>actor.Profile.DrawDash.Range)return false;
                 Vector2 end=point+Vector2.right*Mathf.Sign(delta.x)*Mathf.Min(actor.Profile.DrawDash.Range,Mathf.Abs(delta.x)+.7f);
-                if(!actor.Navigation.TryDash(point,end,actor.Motor.Size,out var safe)||Vector2.Distance(point,safe)<1)return false;
+                actor.Navigation.TryDash(point,end,actor.Motor.Size,out var safe);
+                if(Vector2.Distance(point,safe)<Mathf.Abs(delta.x)-facts.Body.extents.x-actor.Profile.BladeRadius-.2f)return false;
                 chance+=Mathf.Abs(facts.Velocity.x)<1?.15f:0;
             }
             else if(ability==BossAbility.Guard)
@@ -253,7 +265,7 @@ namespace GoGhost.Duel
         }
         public bool TryGunTarget(BossAbility ability,Vector2 position,BossObservation facts,out Vector2 target)
         {
-            float flight=ability==BossAbility.Piercing?.35f:Vector2.Distance(position,facts.Position)/actor.Profile.BulletSpeed;
+            float flight=ability==BossAbility.Piercing?actor.Profile.Piercing.Prepare+actor.Profile.Piercing.Lock:Vector2.Distance(position,facts.Position)/actor.Profile.BulletSpeed;
             Vector2 centre=PredictBody(facts,.16f+flight),origin=position+Vector2.up*.28f;
             target=centre;
             // All points remain on the observed body. An exposed head can be shot over a teammate.
@@ -265,6 +277,122 @@ namespace GoGhost.Duel
                 target=point;return true;
             }
             return false;
+        }
+        public bool TrySweepBand(Vector2 position,BossObservation facts,out Vector2 from,out Vector2 to)
+        {
+            from=to=default;
+            if(!facts.Visible)return false;
+            Vector2 predicted=PredictBody(facts,.35f);
+            ArenaNavigation2D.Node best=null;float cost=float.PositiveInfinity;
+            foreach(var node in actor.Navigation.Nodes)
+            {
+                Vector2 centre=node.Center(facts.Body.size);
+                float d=Vector2.Distance(centre,predicted);
+                if(d>5||node.Position.y>facts.Body.min.y+2.4f||d>=cost)continue;
+                if(!BossPerception.CanSee(position+Vector2.up*.35f,new Bounds(centre,facts.Body.size)))continue;
+                cost=d;best=node;
+            }
+            if(best==null)return false;
+            var bounds=best.Collider.bounds;
+            float left=bounds.min.x+.12f,right=bounds.max.x-.12f;
+            float width=Mathf.Min(actor.Profile.SweepWidth,right-left);
+            if(width<.5f)return false;
+            float side=actor.Perception.LearnedRetreat!=0?actor.Perception.LearnedRetreat:Mathf.Abs(facts.Velocity.x)>.5f?Mathf.Sign(facts.Velocity.x):Mathf.Sign(facts.Position.x-position.x);
+            float mid=Mathf.Clamp(predicted.x+side*width*.2f,left+width*.5f,right-width*.5f);
+            from=new Vector2(mid-side*width*.5f,best.Position.y+actor.Profile.SweepHeight);
+            to=new Vector2(mid+side*width*.5f,from.y);
+            int clear=0;
+            for(int i=0;i<actor.Profile.SweepShots;i++)
+                if(ClearGunLine(position,Vector2.Lerp(from,to,i/(float)(actor.Profile.SweepShots-1))))clear++;
+            return clear>=6;
+        }
+        public bool TryPlanDrop(BossObservation facts,out BossPlan result)
+        {
+            result=null;
+            if(!actor.Motor.Grounded||!actor.Actions.Ready(BossAbility.DropCut)||facts.Confidence<.3f)return false;
+            Vector2 predicted=PredictBody(facts,.6f);
+            var choices=new List<ArenaNavigation2D.Node>();
+            foreach(var node in actor.Navigation.Nodes)
+            {
+                Vector2 centre=node.Center(actor.Motor.Size);
+                if(Vector2.Distance(centre,predicted)>3 || Mathf.Abs(centre.x-actor.Position.x)>3
+                    || Mathf.Abs(centre.y-actor.Position.y)>2)continue;
+                choices.Add(node);
+            }
+            choices.Sort((a,b)=>Vector2.Distance(a.Center(actor.Motor.Size),predicted).CompareTo(Vector2.Distance(b.Center(actor.Motor.Size),predicted)));
+            for(int i=0;i<Mathf.Min(3,choices.Count);i++)
+            {
+                Vector2 landing=choices[i].Center(actor.Motor.Size);
+                if(!actor.Navigation.TryJumpRoute(actor.Position,landing,actor.Motor,out var route))continue;
+                // Simulate the launch and the same .28 s braking tell at FixedUpdate resolution.
+                Vector2 position=actor.Position,velocity=new Vector2(actor.Velocity.x,actor.Profile.Motion.JumpSpeed);
+                float prepare=.18f,tell=actor.Profile.DropCut.Prepare+actor.Profile.DropCut.Lock,dt=Time.fixedDeltaTime;
+                bool valid=true;
+                for(float t=0;t<prepare+tell;t+=dt)
+                {
+                    float desired=t<prepare?Mathf.Clamp((landing.x-position.x)/(actor.Profile.Motion.Speed*dt),-1,1)*actor.Profile.Motion.Speed:0;
+                    velocity.x=BossMotor2D.StepHorizontal(velocity.x,desired,false,actor.Profile.Motion,dt);
+                    velocity.y+=Physics2D.gravity.y*actor.Profile.Motion.GravityScale*dt;
+                    Vector2 next=position+velocity*dt;
+                    if(!actor.Navigation.SweepTraversal(position,next,actor.Motor.Size,out _,out _)){valid=false;break;}
+                    position=next;
+                }
+                float height=position.y-landing.y,gravity=-Physics2D.gravity.y*actor.Profile.Motion.GravityScale;
+                if(!valid||height<.25f)continue;
+                float fall=(Mathf.Sqrt(actor.Profile.DropSpeed*actor.Profile.DropSpeed+2*gravity*height)-actor.Profile.DropSpeed)/gravity;
+                if(Mathf.Abs(landing.x-position.x)>actor.Profile.Motion.Speed*fall+.12f)continue;
+                result=new BossPlan {Intent="PlannedDrop",Ability=BossAbility.DropCut,Destination=actor.Position,TargetHypothesis=landing,
+                    Route=route,CreatedAt=Time.time,MaxPlanTime=1.5f,TerrainVersion=actor.Navigation.Version,
+                    DropPrepareDelay=prepare,DropImpactDelay=prepare+tell+Time.fixedDeltaTime
+                        +(Mathf.Sqrt(actor.Profile.DropSpeed*actor.Profile.DropSpeed+2*gravity*Mathf.Max(0,position.y-actor.Profile.DropCut.Range-landing.y-facts.Body.extents.y))-actor.Profile.DropSpeed)/gravity,Score=2};
+                return true;
+            }
+            return false;
+        }
+        public bool StartDropPlan(BossPlan value,bool cooperative)
+        {
+            if(value==null||actor.Actions.Busy||!actor.Motor.Grounded)return false;
+            if(actor.Coordinator!=null&&!actor.Coordinator.CanStart(actor,BossAbility.DropCut,cooperative))return false;
+            dropPlan=value;dropCooperative=cooperative;dropLeftGround=false;dropDeadline=Time.time+1.6f;plan=null;
+            actor.Motor.SetRoute(value.Route);return true;
+        }
+        void TickDropPlan()
+        {
+            if(Time.time>dropDeadline||actor.Motor.RouteFailed||dropPlan.TerrainVersion!=actor.Navigation.Version)
+            {CancelDropPlan();return;}
+            if(!actor.Motor.Grounded&&!dropLeftGround){dropLeftGround=true;dropLaunchedAt=Time.time;}
+            if(dropLeftGround&&Time.time>=dropLaunchedAt+dropPlan.DropPrepareDelay)
+            {
+                Vector2 target=dropPlan.TargetHypothesis;
+                if(actor.Actions.TryStart(BossAbility.DropCut,target,dropCooperative)){dropPlan=null;previousAbility=BossAbility.DropCut;lastAttackAt=Time.time;}
+                else if(actor.Motor.Grounded||actor.Velocity.y<0)CancelDropPlan();
+            }
+        }
+        public bool DropPlanPending=>dropPlan!=null;
+        public void CancelDropPlan(){dropPlan=null;actor.Motor.ClearRoute();}
+        public bool CanDropFromHere(Vector2 landing,out float fall,bool atLock=false)
+        {
+            fall=0;if(actor.Motor.Grounded)return false;
+            float before=atLock?actor.Profile.DropCut.Lock:actor.Profile.DropCut.Prepare+actor.Profile.DropCut.Lock;
+            if(!PredictDropActivation(before,out var point))return false;
+            float height=point.y-landing.y,g=-Physics2D.gravity.y*actor.Profile.Motion.GravityScale;
+            if(height<.15f)return false;
+            fall=(Mathf.Sqrt(actor.Profile.DropSpeed*actor.Profile.DropSpeed+2*g*height)-actor.Profile.DropSpeed)/g;
+            if(Mathf.Abs(point.x-landing.x)>actor.Profile.Motion.Speed*fall+.15f)return false;
+            return actor.Navigation.CanStand(landing,actor.Motor.Size);
+        }
+        public bool PredictDropActivation(float before,out Vector2 point)
+        {
+            point=actor.Position;Vector2 velocity=actor.Velocity;
+            for(float t=0;t<before;t+=Time.fixedDeltaTime)
+            {
+                velocity.x=BossMotor2D.StepHorizontal(velocity.x,0,false,actor.Profile.Motion,Time.fixedDeltaTime);
+                velocity.y+=Physics2D.gravity.y*actor.Profile.Motion.GravityScale*Time.fixedDeltaTime;
+                Vector2 next=point+velocity*Time.fixedDeltaTime;
+                if(!actor.Navigation.SweepTraversal(point,next,actor.Motor.Size,out _,out _))return false;
+                point=next;
+            }
+            return true;
         }
         public bool ClearGunLine(Vector2 position,Vector2 target)=>!Projectile.TerrainHit(position+Vector2.up*.28f,target,actor.ProjectilePrefab.Radius,out _)&&!AllyBlocks(position+Vector2.up*.28f,target);
         public bool AllyBlocks(Vector2 from,Vector2 target)

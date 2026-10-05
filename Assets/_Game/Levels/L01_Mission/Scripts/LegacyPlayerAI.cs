@@ -2,15 +2,11 @@ using System.Collections.Generic;
 using GoGhost.Duel;
 using UnityEngine;
 
-public enum LegacyDistancePreference { Near, Mid, Far }
-
 /// <summary>One fixed-arena policy in every wave. Legs writes Move/Jump, Arms Aim/Fire, Spine Dodge only.</summary>
 public sealed class LegacyPlayerAI
 {
     // Prototype tuning lives here. Weapon, movement and dodge resources come from their real executors.
-    public static readonly Vector2 NearRange = new Vector2(2.5f, 4f);
     public static readonly Vector2 MidRange = new Vector2(5.3f, 8.5f);
-    public static readonly Vector2 FarRange = new Vector2(10f, 13f);
     public const float SpineThreatWindow = .20f;
     public const float DistanceHysteresis = .35f, MoveHold = .16f, ShotPositionHold = .65f;
     private const float Step = .02f, WalkLookahead = .3f, EndpointMargin = .12f;
@@ -70,30 +66,28 @@ public sealed class LegacyPlayerAI
         { Move = move; Jump = jump; DodgeDirection = dodgeDirection; }
     }
 
-    public LegacyPlayerAI(PlayerHealth player, CyberpsychoBoss boss, Collider2D[] platforms,
-        LegacyDistancePreference preference = LegacyDistancePreference.Mid)
-        : this(player, platforms, preference)
+    public LegacyPlayerAI(PlayerHealth player, CyberpsychoBoss boss, Collider2D[] platforms)
+        : this(player, platforms)
     {
         this.player = player; this.boss = boss;
         targetBody = boss.GetComponent<Rigidbody2D>(); targetShape = boss.GetComponent<Collider2D>();
     }
 
-    public LegacyPlayerAI(PlayerHealth player, IReadOnlyList<BossAgent> targets, Collider2D[] platforms,
-        LegacyDistancePreference preference = LegacyDistancePreference.Mid)
-        : this(player, platforms, preference)
+    public LegacyPlayerAI(PlayerHealth player, IReadOnlyList<BossAgent> targets, Collider2D[] platforms)
+        : this(player, platforms)
     {
         this.targets = targets;
         navigation = targets.Count > 0 ? targets[0].Navigation : null;
     }
 
-    private LegacyPlayerAI(PlayerHealth player, Collider2D[] platforms, LegacyDistancePreference preference)
+    private LegacyPlayerAI(PlayerHealth player, Collider2D[] platforms)
     {
         this.player = player;
         movement = player.GetComponent<PlayerMovement>(); dodge = player.GetComponent<PlayerDodge>();
         gun = player.GetComponent<PlayerShooting>();
         body = player.GetComponent<Rigidbody2D>(); shape = player.GetComponent<Collider2D>();
         combatRoot = player.transform.parent;
-        range = preference == LegacyDistancePreference.Near ? NearRange : preference == LegacyDistancePreference.Far ? FarRange : MidRange;
+        range = MidRange;
         foreach (var collider in Object.FindObjectsByType<Collider2D>(FindObjectsSortMode.None))
         {
             if (!collider.enabled || collider.isTrigger || collider.gameObject.layer != LayerMask.NameToLayer("Ground")) continue;

@@ -26,6 +26,7 @@ namespace GoGhost.Duel
         public bool Grounded { get; private set; }
         public bool DashActive { get; private set; }
         public bool DashBlocked { get; private set; }
+        public bool DropBlocked { get; private set; }
         public bool RouteFailed { get; private set; }
         public string RouteFailure { get; private set; }
         public bool RouteCompleted { get; private set; }
@@ -39,6 +40,9 @@ namespace GoGhost.Duel
         int stepIndex;
         bool enabledCombat, launched, leftGround, jumpRequested, dashStopPending;
         float move, speedScale = 1, dashRemaining, dashSpeed, routeAge, progressAge;
+        bool dropping, dropRequested, stepping;
+        float dropHorizontal, stepRemaining;
+        Vector2 stepPosition;
 
         void Awake()
         {
@@ -62,7 +66,7 @@ namespace GoGhost.Duel
         }
         public void SetMove(float direction, float speedScale = 1)
         { move = Mathf.Clamp(direction, -1, 1); this.speedScale = Mathf.Clamp01(speedScale); }
-        public void Brake() { route = null; BrakeMotion(); }
+        public void Brake() { route = null; stepping = false; BrakeMotion(); }
         public void ClearRoute() { route = null; launched = leftGround = false; BrakeMotion(); }
         void BrakeMotion() { move = 0; speedScale = 1; }
         public bool TryJump()
@@ -79,6 +83,15 @@ namespace GoGhost.Duel
             PreviousPosition = Position;
             DashActive = true; DashBlocked = dashStopPending = false;
         }
+        public void BeginStep(float distance)
+        { Brake(); stepping = true; stepRemaining = distance; stepPosition = Position; }
+        public void StartDrop(float horizontal)
+        {
+            if (!enabledCombat || Grounded) return;
+            Brake(); jumpRequested = false; dropping = dropRequested = true; DropBlocked = false;
+            dropHorizontal = Mathf.Clamp(horizontal, -Profile.Speed, Profile.Speed);
+        }
+        public void EndDrop() { dropping = dropRequested = DropBlocked = false; Brake(); }
         public void SetRoute(ArenaNavigation2D.Route value)
         {
             route = value; stepIndex = 0; launched = leftGround = false;
@@ -88,6 +101,8 @@ namespace GoGhost.Duel
         }
         public void Stop()
         {
+            dropping = dropRequested = stepping = false;
+            DropBlocked = false;
             route = null; DashActive = false; DashBlocked = dashStopPending = false; jumpRequested = false;
             RouteFailed = RouteCompleted = false; RouteFailure = null; launched = leftGround = false;
             Brake();
@@ -100,6 +115,12 @@ namespace GoGhost.Duel
             var here = Position;
             Grounded = body.linearVelocity.y <= .1f && navigation != null
                 && navigation.TrySupport(here, Size, out _);
+            if (dropping && !dropRequested && body.linearVelocity.y > -.2f)
+            {
+                foreach (var contact in Physics2D.BoxCastAll(here, Size-Vector2.one*.025f, 0, Vector2.down, .065f, LayerMask.GetMask("Player","Enemy")))
+                    if (contact.collider != null && !contact.collider.isTrigger && contact.collider.attachedRigidbody != body
+                        && contact.normal.y > .5f) { DropBlocked=true; break; }
+            }
             if (DashActive)
             {
                 dashRemaining -= Mathf.Max(0, Vector2.Dot(here - PreviousPosition, dashDirection));
@@ -139,12 +160,19 @@ namespace GoGhost.Duel
             }
             if (route != null) FollowRoute(dt);
             float vertical = body.linearVelocity.y;
+            if (dropRequested) { vertical = -GetComponent<BossAgent>().Profile.DropSpeed; dropRequested = false; }
             if (jumpRequested)
             {
                 vertical = Profile.JumpSpeed;
                 jumpRequested = false; Grounded = false;
             }
-            float horizontal = StepHorizontal(body.linearVelocity.x, move * Profile.Speed * speedScale, Grounded, Profile, dt);
+            float horizontal = dropping ? dropHorizontal : StepHorizontal(body.linearVelocity.x, move * Profile.Speed * speedScale, Grounded, Profile, dt);
+            if (stepping)
+            {
+                stepRemaining = Mathf.Max(0, stepRemaining - Mathf.Abs(here.x - stepPosition.x));
+                stepPosition = here;
+                horizontal = Mathf.Clamp(horizontal, -stepRemaining / dt, stepRemaining / dt);
+            }
             // Sweep uses the same full box and one-way rule as navigation, and preserves ordinary gravity.
             Vector2 next = here + new Vector2(horizontal, vertical + Physics2D.gravity.y * Profile.GravityScale * dt) * dt;
             if (navigation != null && !navigation.SweepTraversal(here, next, Size, out var hit, out _)

@@ -152,14 +152,15 @@ namespace GoGhost.Duel
             {
                 if (a != null && a.Ability != BossAbility.None) BladePose(ref p,a.Ability,a.Phase,a.PhaseProgress,a.RhythmIndex);
                 else { p.FrontHand += new Vector2(wave*motion*.10f,-Mathf.Abs(wave)*motion*.025f); p.BackHand.x -= wave*motion*.12f; }
-                if (a != null && a.Ability == BossAbility.Rhythm)
+                if (a != null && (a.Ability == BossAbility.Rhythm || a.Ability == BossAbility.DropCut))
                 {
-                    Vector2 cut = LocalDirection(a.Aim);
-                    p.WeaponAngle += Mathf.Atan2(cut.y,cut.x)*Mathf.Rad2Deg;
-                    p.FrontHand = new Vector2(.13f,.29f)+Angle(p.WeaponAngle)*.13f;
-                    p.BackHand = p.FrontHand+new Vector2(-.13f,-.05f);
+                    Vector2 cut=LocalDirection(a.Ability==BossAbility.Rhythm?a.BladeDirection(a.Phase==BossActionPhase.Active?a.PhaseProgress:a.Phase==BossActionPhase.Recovery?1:0):Vector2.down);
+                    if(a.Ability==BossAbility.DropCut&&a.Phase!=BossActionPhase.Active&&a.Phase!=BossActionPhase.Recovery)cut=Angle(105);
+                    p.WeaponAngle=Mathf.Atan2(cut.y,cut.x)*Mathf.Rad2Deg;
+                    p.FrontHand=cut*.14f;p.BackHand=p.FrontHand+new Vector2(-.12f,-.04f);
+                    p.Weapon=cut*(a.BladeReach*.5f);
                 }
-                p.Weapon = p.FrontHand + Angle(p.WeaponAngle)*.60f;
+                else p.Weapon = p.FrontHand + Angle(p.WeaponAngle)*.60f;
             }
             float hit = Mathf.Max(0,1-(clock-hitAt)/.10f);
             p.Chest.x -= hit*.035f; p.Head.x -= hit*.045f;
@@ -230,7 +231,7 @@ namespace GoGhost.Duel
             Arm(Part.BackUpperArm,Part.BackForearm,p.Chest+new Vector2(-.11f,-.045f),p.BackHand,-.10f);
             Arm(Part.FrontUpperArm,Part.FrontForearm,p.Chest+new Vector2(.08f,-.035f),p.FrontHand,.10f);
             bool gunner=visualKind==BossKind.Refraction;
-            Place(Part.Weapon,p.Weapon,gunner?new Vector2(.54f,.14f):new Vector2(1.2f,.075f),p.WeaponAngle);
+            Place(Part.Weapon,p.Weapon,gunner?new Vector2(.54f,.14f):new Vector2(actor!=null&&(actor.Actions.Ability==BossAbility.Rhythm||actor.Actions.Ability==BossAbility.DropCut)?actor.Actions.BladeReach:1.2f,.075f),p.WeaponAngle);
             // Retain the serialized slot as the gun's simple grip; the blade needs no extra outline.
             if(gunner)Place(Part.Sheath,p.Weapon+Rotate(new Vector2(-.15f,-.09f),p.WeaponAngle),new Vector2(.075f,.18f),p.WeaponAngle);
             else Hide(Part.Sheath);
@@ -274,22 +275,46 @@ namespace GoGhost.Duel
         {
             foreach(var line in tells)if(line!=null)line.enabled=false;
             if(defeated||!actor.Running)return;
-            int slot=0;
-            foreach(var threat in actor.Actions.PublicThreats)
+            var action=actor.Actions;
+            if(action.Ability==BossAbility.Rhythm)
             {
-                if(!threat.Valid||threat.Phase==BossThreatPhase.Active||threat.Phase==BossThreatPhase.Recovery||slot>=6)continue;
-                if(tells[slot]==null)tells[slot]=NewLine("BossTell",false,2);
-                Vector2 end=threat.End;
-                if(threat.TerrainBlocked&&Projectile.TerrainHit(threat.Origin,end,threat.Radius,out var wall))end=threat.Origin+(end-threat.Origin).normalized*wall.distance;
-                bool locked=threat.Phase==BossThreatPhase.Locked;
-                Color color=Color.Lerp(weaponColor,Color.white,.45f);color.a=locked?.75f:.27f;
-                float width=locked?.028f:.015f;
-                SetLine(tells[slot++],threat.Origin,end,width,color);
-                if(threat.Shape==BossThreatShape.SweptCapsule&&slot<8)
+                if(tells[0]==null)tells[0]=NewLine("BladeTell",false,25);
+                var line=tells[0];line.enabled=true;line.positionCount=25;
+                float finish=action.Phase==BossActionPhase.Active?action.PhaseProgress:1;
+                float start=action.Phase==BossActionPhase.Active?Mathf.Max(0,finish-.25f):0;
+                for(int i=0;i<25;i++)line.SetPosition(i,actor.Position+action.BladeDirection(Mathf.Lerp(start,finish,i/24f))*action.BladeReach);
+                line.startWidth=line.endWidth=action.Phase==BossActionPhase.Active?.04f:.015f;
+                float alpha=action.Phase==BossActionPhase.Recovery?0:action.Phase==BossActionPhase.Active?.85f:action.Phase==BossActionPhase.Locked?.5f:.20f;
+                line.startColor=line.endColor=new Color(weaponColor.r,weaponColor.g,weaponColor.b,alpha);
+            }
+            else if(action.Ability==BossAbility.DropCut && action.Phase!=BossActionPhase.Recovery)
+            {
+                if(tells[0]==null)tells[0]=NewLine("DropLanding",false,2);
+                Vector2 ground=action.DropTarget-Vector2.up*(actor.Motor.Size.y*.5f);
+                SetLine(tells[0],ground+Vector2.left*.35f,ground+Vector2.right*.35f,.025f,new Color(1,.8f,.25f,.6f));
+            }
+            else if(action.Ability==BossAbility.Sweep && action.Phase!=BossActionPhase.Active && action.Phase!=BossActionPhase.Recovery)
+            {
+                for(int i=0;i<2;i++)
                 {
-                    Vector2 d=(end-threat.Origin).normalized,n=new Vector2(-d.y,d.x)*threat.Radius;
-                    for(int side=-1;side<=1;side+=2)
-                    {if(tells[slot]==null)tells[slot]=NewLine("PathEdge",false,2);SetLine(tells[slot++],threat.Origin+n*side,end+n*side,.012f,new Color(color.r,color.g,color.b,color.a*.55f));}
+                    if(tells[i]==null)tells[i]=NewLine("SweepEdge",false,2);
+                    SetLine(tells[i],action.Origin,i==0?action.SweepFrom:action.SweepTo,.014f,new Color(.33f,.84f,.42f,action.Phase==BossActionPhase.Locked?.35f:.16f));
+                }
+                if(tells[2]==null)tells[2]=NewLine("SweepBand",false,2);
+                SetLine(tells[2],action.SweepFrom,action.SweepTo,.012f,new Color(.33f,.84f,.42f,.13f));
+            }
+            else
+            {
+                int slot=0;
+                foreach(var threat in action.PublicThreats)
+                {
+                    if(!threat.Valid||threat.Phase==BossThreatPhase.Active||threat.Phase==BossThreatPhase.Recovery||slot>=6)continue;
+                    if(tells[slot]==null)tells[slot]=NewLine("BossTell",false,2);
+                    Vector2 end=threat.End;
+                    if(threat.TerrainBlocked&&Projectile.TerrainHit(threat.Origin,end,threat.Radius,out var wall))end=threat.Origin+(end-threat.Origin).normalized*wall.distance;
+                    bool locked=threat.Phase==BossThreatPhase.Locked;
+                    Color color=Color.Lerp(weaponColor,Color.white,.45f);color.a=locked?.75f:.27f;
+                    SetLine(tells[slot++],threat.Origin,end,locked?.028f:.015f,color);
                 }
             }
             if(actor.Actions.Ability==BossAbility.Guard&&actor.Actions.Phase==BossActionPhase.Active)
@@ -319,6 +344,12 @@ namespace GoGhost.Duel
         public void Slash(Vector2 aim,float reach,bool dash)
         {
             if(actor==null)return;
+            if(dash)
+            {
+                var trail=NewLine("DashBlade",true,2);
+                SetLine(trail,actor.Position-aim*.7f,actor.Position+aim*.6f,.04f,new Color(1,.79f,.23f,.92f));
+                AddFlash(trail,.09f);return;
+            }
             var line=NewLine("BladeArc",true,11);float angle=Mathf.Atan2(aim.y,aim.x)*Mathf.Rad2Deg;
             for(int i=0;i<11;i++)line.SetPosition(i,actor.Position+Angle(angle+Mathf.Lerp(-48,48,i/10f))*reach);
             line.startWidth=line.endWidth=dash?.04f:.027f;line.startColor=line.endColor=new Color(1,.79f,.23f,.92f);AddFlash(line,dash?.09f:.11f);

@@ -14,7 +14,7 @@ namespace GoGhost.Duel
     }
 
     public enum BossThreatPhase { Preparation, Locked, Active, Recovery }
-    public enum BossThreatShape { Ray, SweptCapsule, Box, Projectile }
+    public enum BossThreatShape { Ray, SweptCapsule, Box, Projectile, BladeArc, FallingBlade }
 
     // Scaled absolute times and the same expressed geometry used by the attack and tell.
     // Ray End is already clipped by the emitting skill against the nearest blocking ally body.
@@ -26,6 +26,7 @@ namespace GoGhost.Duel
         public Vector2 Origin, Direction, End;
         public Bounds Area;
         public float Radius, StartsAt, EndsAt, ProjectileSpeed;
+        public float ArcFrom, ArcTo, Facing, Reach, Gravity;
         public bool TerrainBlocked, Valid;
 
         public bool IntersectsMotion(Vector2 previous, Vector2 current, Vector2 half,
@@ -37,6 +38,24 @@ namespace GoGhost.Duel
             Vector2 aPlayer = Vector2.Lerp(previous, current, (first - fromTime) / interval);
             Vector2 bPlayer = Vector2.Lerp(previous, current, (last - fromTime) / interval);
             Vector2 expanded = half + Vector2.one * Mathf.Max(0, Radius);
+            if (Shape == BossThreatShape.BladeArc || Shape == BossThreatShape.FallingBlade)
+            {
+                // Bounded samples within this .02 s prediction step use the executable arc/descent.
+                for (int sample=0;sample<=4;sample++)
+                {
+                    float t=Mathf.Lerp(first,last,sample/4f), elapsed=Mathf.Max(0,t-StartsAt);
+                    Vector2 centre=Vector2.Lerp(aPlayer,bPlayer,sample/4f), root=Origin, tip;
+                    if(Shape==BossThreatShape.BladeArc)
+                    {
+                        float angle=Mathf.Lerp(ArcFrom,ArcTo,elapsed/Mathf.Max(.001f,EndsAt-StartsAt))*Mathf.Deg2Rad;
+                        tip=root+new Vector2(Facing*Mathf.Cos(angle),Mathf.Sin(angle))*Reach;
+                    }
+                    else {root+=Direction*elapsed+Vector2.up*(Gravity*elapsed*elapsed*.5f);tip=root+Vector2.down*Reach;}
+                    if(TerrainBlocked&&Projectile.TerrainHit(root,tip,Radius,out var hit))tip=root+(tip-root).normalized*hit.distance;
+                    if(SegmentBox(root-centre,tip-centre,expanded))return true;
+                }
+                return false;
+            }
             if (Shape == BossThreatShape.Box)
             {
                 if (!SegmentBox(aPlayer - (Vector2)Area.center, bPlayer - (Vector2)Area.center,

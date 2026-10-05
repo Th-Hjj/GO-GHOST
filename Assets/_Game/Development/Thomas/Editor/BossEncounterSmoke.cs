@@ -49,7 +49,8 @@ public static class BossEncounterSmoke
     public static void RunCoordination() => Start("coordination", false);
     public static void RunCornerChecks() => Start("corner", false);
     public static void RunWaveTwoObservation() => Start("observe-wave2", false);
-    public static void RunObservation(LegacyDistancePreference preference) => Start("observe-" + preference, false);
+    public static void RunObservation() => Start("observe-fixed", false);
+    public static void RunPitchSmoke() => Start("pitch", false);
     public static void Cancel()
     { if (Running) { Record("NOT TESTED: operator cancelled unfinished checks."); Finish(false); } }
 
@@ -128,6 +129,7 @@ public static class BossEncounterSmoke
     static IEnumerator Run()
     {
         Record("Editor Play Mode; simulated focus and virtual keyboard/mouse. No physical-input or audibility claim.");
+        if (mode == "pitch") { yield return PitchSmoke(); yield break; }
         if (mode == "input-only")
         {
             yield return Fresh(1); StopPolicies();
@@ -150,12 +152,9 @@ public static class BossEncounterSmoke
             yield return TeamBlocking();
             Record("NOT TESTED: human audio audition, animation smoothness and standalone are separate checks.");
         }
-        if (mode == "all")
-            foreach (var preference in new[] { LegacyDistancePreference.Mid, LegacyDistancePreference.Near, LegacyDistancePreference.Far })
-                yield return Observe(preference);
-        else if (mode == "observe-wave2") yield return Observe(LegacyDistancePreference.Mid,2);
-        else if (mode.StartsWith("observe-"))
-            yield return Observe((LegacyDistancePreference)Enum.Parse(typeof(LegacyDistancePreference), mode.Substring(8)));
+        if (mode == "all") yield return Observe();
+        else if (mode == "observe-wave2") yield return Observe(2);
+        else if (mode == "observe-fixed") yield return Observe();
         game.MainMenu(); yield return Frames(2);
         Check("cleanup removes all actors/projectiles", Object.FindObjectsByType<BossAgent>(FindObjectsSortMode.None).Length == 0 && Projectile.Active.Count == 0);
     }
@@ -171,6 +170,42 @@ public static class BossEncounterSmoke
         game.StartFight();
         yield return Until(() => game.Phase == DuelPhase.Fight, 2.2f);
         Check("wave " + wave + " created", game.Phase == DuelPhase.Fight && game.Bosses.Count == (wave == 3 ? 2 : 1));
+    }
+    static IEnumerator PitchSmoke()
+    {
+        Record("PITCH: one W1 manual virtual-input smoke, one W2 AI sample (25s), one W3 AI sample (60s). No outcome gate or fixtures.");
+        yield return Fresh(1);
+        yield return CheckInputs(); // Real action-map events with normal Boss policy still running.
+        while(game.Phase==DuelPhase.Fight&&game.FightClock<25)
+        {
+            if(game.Bosses[0].IsAlive)MouseAt(game.Bosses[0].Position,true);
+            yield return null;
+        }
+        PitchResult();heldKeys=Array.Empty<Key>();mouseHeld=false;
+        for(int wave=2;wave<=3;wave++)
+        {
+            yield return Fresh(wave,true);
+            float next=0;
+            while(game.Phase==DuelPhase.Fight&&game.FightClock<(wave==3?60:25))
+            {
+                if(game.FightClock>=next)
+                {
+                    next+=10;
+                    Record($"PITCH position W{wave} t={game.FightClock:F1} player={game.Player.transform.position} hp={game.Player.CurrentHealth} "
+                        +string.Join(";",game.Bosses.Select(a=>$"{a.Profile.Kind}={a.Position}/{a.Actions.Ability}/{a.Actions.Phase}")));
+                }
+                yield return null;
+            }
+            PitchResult();
+        }
+        Record("NOT TESTED: physical keyboard/mouse, full regression, balance matrix, audio audition, Windows build/launch.");
+    }
+    static void PitchResult()
+    {
+        Record($"PITCH RESULT W{game.Wave} phase={game.Phase} seconds={game.FightClock:F2} playerHP={game.Player.CurrentHealth}");
+        foreach(var a in game.Bosses)Record($"PITCH actor={a.ActorId} hp={a.Health.CurrentHealth} starts={string.Join(",",a.Actions.Started)} active={string.Join(",",a.Actions.Activated)} hits={a.Actions.ConnectedHits} guard={a.Actions.Guarded}");
+        var duo=game.GetComponentInChildren<DuoCoordinator>();
+        Record($"PITCH duo started={duo.CombosStarted} completeA={duo.CrossCompleted} completeB={duo.SweepDropCompleted} abort={duo.CombosAborted}");
     }
     static void StopPolicies()
     {
@@ -203,7 +238,7 @@ public static class BossEncounterSmoke
         game.Bosses[0].Health.TakeDamage(99999, game.Player.gameObject);
         yield return Until(() => game.Phase == DuelPhase.Configure, 1.5f);
         Check("second wave advances to third; choices retained", game.Wave == 3 && game.DraftArms && !game.DraftLegs);
-        game.SetDraft(0, true); game.SetDistance(LegacyDistancePreference.Far); game.StartFight();
+        game.SetDraft(0, true); game.StartFight();
         yield return Until(() => game.Phase == DuelPhase.Fight, 2); StopPolicies();
         var first = game.Bosses[0]; var survivor = game.Bosses[1];
         first.Health.TakeDamage(99999, game.Player.gameObject); yield return Frames(2);
@@ -211,7 +246,7 @@ public static class BossEncounterSmoke
         game.Player.TakeDamage(99999, survivor.gameObject); yield return Frames(2);
         Check("player death resolves defeat", game.Phase == DuelPhase.Failed);
         game.Reconfigure();
-        Check("retry keeps wave/permissions/distance", game.Wave == 3 && game.DraftLegs && game.DraftArms && game.DraftDistance == LegacyDistancePreference.Far);
+        Check("retry keeps wave/permissions", game.Wave == 3 && game.DraftLegs && game.DraftArms);
         game.StartFight(); yield return Until(() => game.Phase == DuelPhase.Fight, 2); StopPolicies();
         Check("retry creates fresh independent resources", game.Player.CurrentHealth == game.Player.MaxHealth
             && game.Bosses.All(a => a.Health.CurrentHealth == a.Health.MaxHealth && a.Actions.Ammo == a.Profile.Magazine));
@@ -675,12 +710,12 @@ public static class BossEncounterSmoke
         Check("stationary corner remains vulnerable to real attacks",player.CurrentHealth<150,
             $"playerHP={player.CurrentHealth} swordHits={sword.Actions.ConnectedHits} gunHits={gunner.Actions.ConnectedHits}");
     }
-    static IEnumerator Observe(LegacyDistancePreference preference,int wave=3)
+    static IEnumerator Observe(int wave=3)
     {
         RestoreFixture(); heldKeys = Array.Empty<Key>(); mouseHeld = false;
         game.MainMenu(); yield return Frames(2);
-        Record("NATURAL ALL-AI W"+wave+" " + preference + ": fresh actors, normal resources, no damage/position/control interventions; limit 120 combat seconds.");
-        if(wave==3)game.ObserveThirdWave(preference);else yield return Fresh(2,true);
+        Record("NATURAL ALL-AI W"+wave+" " + "fixed policy" + ": fresh actors, normal resources, no damage/position/control interventions; limit 120 combat seconds.");
+        if(wave==3)game.ObserveThirdWave();else yield return Fresh(2,true);
         yield return Until(() => game.Phase == DuelPhase.Fight, 2);
         float corner=0,longestCorner=0,nextSnapshot=0,minX=float.MaxValue,maxX=float.MinValue;
         int jumps=0,dodges=0;bool airborne=false,dodging=false;
@@ -704,8 +739,8 @@ public static class BossEncounterSmoke
         }
         string health = string.Join(",", game.Bosses.Select(a => a.ActorId + ":" + a.Health.CurrentHealth));
         bool defeated = game.Phase == DuelPhase.Failed && game.Player.IsDead;
-        Record($"NATURAL RESULT {preference} phase={game.Phase} seconds={game.FightClock:0.00} player={game.Player.CurrentHealth} bosses={health} "
-            + (defeated ? "OBSERVED_DEFEAT" : wave==3?"ALL_AI_W3_NOT_MET":"W2_NON_DEFEAT"));
+        Record($"NATURAL RESULT fixed phase={game.Phase} seconds={game.FightClock:0.00} player={game.Player.CurrentHealth} bosses={health} "
+            + (defeated ? "OBSERVED_DEFEAT" : wave==3?"OBSERVED_NON_DEFEAT":"W2_NON_DEFEAT"));
         Record($"MOVEMENT W{wave} longestCorner={longestCorner:F2}s xRange={minX:F2}..{maxX:F2} jumps={jumps} dodges={dodges}");
         foreach (var actor in game.Bosses)
             Record($"NATURAL actor={actor.ActorId} started={string.Join(",", actor.Actions.Started)} active={string.Join(",", actor.Actions.Activated)} guard={actor.Actions.Guarded} beamAllyBlocks={actor.Actions.BeamAllyBlocks}");

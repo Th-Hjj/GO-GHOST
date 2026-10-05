@@ -1,6 +1,6 @@
 using UnityEngine;
 
-/// <summary>Static stickman parts, colored once from the sealed deployment. No animator or mutable draft.</summary>
+/// <summary>Lightweight visual-only stickman poses. Movement and weapon execution own all gameplay.</summary>
 public sealed class OfficerVisual : MonoBehaviour
 {
     [SerializeField] private SpriteRenderer leftArm;
@@ -12,6 +12,17 @@ public sealed class OfficerVisual : MonoBehaviour
     [SerializeField] private SpriteRenderer weapon;
     [SerializeField] private SpriteRenderer weaponGrip;
     private bool reloading;
+    private bool animate, wasGrounded = true;
+    private PlayerMovement movement;
+    private PlayerInputReader input;
+    private PlayerShooting shooting;
+    private PlayerDodge dodge;
+    private PlayerHealth health;
+    private Rigidbody2D body;
+    private Collider2D bodyCollider;
+    private SpriteRenderer leftForearm, rightForearm, leftCalf, rightCalf;
+    private float clock, gait, stride, landing, recoil, reloadDuration = 1.2f;
+    private int lastShots;
     public bool ReloadVisible => reloading && weapon != null && weapon.enabled && weapon.gameObject.activeInHierarchy;
 
     public void ConfigureLegacyCombat()
@@ -19,18 +30,137 @@ public sealed class OfficerVisual : MonoBehaviour
         foreach (var part in new[] { leftArm, rightArm, leftLeg, rightLeg, torso, head, weapon, weaponGrip })
             if (part != null) part.color = Color.white;
         SetReloading(false);
+        movement = GetComponent<PlayerMovement>();
+        input = GetComponent<PlayerInputReader>();
+        shooting = GetComponent<PlayerShooting>();
+        dodge = GetComponent<PlayerDodge>();
+        health = GetComponent<PlayerHealth>();
+        body = GetComponent<Rigidbody2D>();
+        bodyCollider = GetComponent<Collider2D>();
+        animate = movement != null && input != null && shooting != null && body != null
+            && leftArm != null && rightArm != null && leftLeg != null && rightLeg != null
+            && torso != null && head != null && weapon != null && weaponGrip != null;
+        if (!animate) return;
+        if (leftForearm == null) leftForearm = AddSegment(leftArm, "LeftForearm");
+        if (rightForearm == null) rightForearm = AddSegment(rightArm, "RightForearm");
+        if (leftCalf == null) leftCalf = AddSegment(leftLeg, "LeftCalf");
+        if (rightCalf == null) rightCalf = AddSegment(rightLeg, "RightCalf");
+        clock = gait = stride = landing = recoil = 0;
+        wasGrounded = true;
+        lastShots = shooting.ShotsFired;
+        Pose(true, Vector2.zero, 0);
     }
 
     // Physical weapon feedback, shared by the player and the observer. It never changes muzzle aim.
     public void SetReloading(bool value)
     {
+        if (value && !reloading && shooting != null) reloadDuration = Mathf.Max(.01f, shooting.ReloadRemaining);
         reloading = value;
         UpdateReloadVisual();
     }
 
     private void LateUpdate()
     {
+        if (animate)
+        {
+            if (Time.deltaTime <= 0 || input.NarrativePaused || (health != null && health.IsDead)) return;
+            // Preparation / results freeze the body. Keep its supported opening pose and then its last pose.
+            if (!body.simulated || !movement.isActiveAndEnabled) return;
+            float dt = Time.deltaTime;
+            clock += dt;
+            Vector2 velocity = body.linearVelocity;
+            bool grounded = movement.IsGrounded;
+            landing = Mathf.MoveTowards(landing, 0, dt / .18f);
+            if (grounded && !wasGrounded) landing = 1;
+            wasGrounded = grounded;
+            bool dodging = dodge != null && dodge.IsDodging;
+            stride = Mathf.MoveTowards(stride, grounded && !dodging ? Mathf.Clamp01(Mathf.Abs(velocity.x) / 7f) : 0, dt * 12);
+            if (grounded && !dodging) gait += velocity.x * dt * 2.8f;
+            recoil = Mathf.MoveTowards(recoil, 0, dt / .12f);
+            if (shooting.ShotsFired != lastShots) { recoil = 1; lastShots = shooting.ShotsFired; }
+            Pose(grounded, velocity, dodging ? Mathf.Sign(velocity.x) : 0);
+        }
         if (reloading) UpdateReloadVisual();
+    }
+
+    private SpriteRenderer AddSegment(SpriteRenderer source, string label)
+    {
+        var part = new GameObject(label).AddComponent<SpriteRenderer>();
+        part.transform.SetParent(source.transform.parent, false);
+        part.sprite = source.sprite;
+        part.sharedMaterial = source.sharedMaterial;
+        part.sortingLayerID = source.sortingLayerID;
+        part.sortingOrder = source.sortingOrder;
+        part.color = source.color;
+        return part;
+    }
+
+    private void Pose(bool grounded, Vector2 velocity, float dashDirection)
+    {
+        Vector2 aim = input.AimDirection.normalized;
+        int facing = movement.FacingDirection;
+        float wave = Mathf.Sin(gait), lift = Mathf.Cos(gait);
+        float crouch = landing * .12f + (dashDirection != 0 ? .17f : 0);
+        float breath = Mathf.Sin(clock * 2.4f) * .009f;
+        float lean = Mathf.Clamp(velocity.x * .009f, -.07f, .07f) + dashDirection * .15f;
+        Vector2 hip = new Vector2(0, -.12f - crouch + Mathf.Abs(wave) * stride * .025f);
+        Vector2 chest = new Vector2(lean, .34f - crouch + breath) - aim * (recoil * .035f);
+        Vector2 headPoint = new Vector2(lean * .8f, .57f - crouch + breath) - aim * (recoil * .02f);
+        float floor = bodyCollider != null ? transform.InverseTransformPoint(bodyCollider.bounds.min).y + .075f : -.87f;
+        Vector2 front = new Vector2(.15f * facing + wave * .30f * stride, floor + Mathf.Max(0, lift) * .15f * stride);
+        Vector2 back = new Vector2(-.15f * facing - wave * .30f * stride, floor + Mathf.Max(0, -lift) * .15f * stride);
+        if (!grounded)
+        {
+            float rising = Mathf.InverseLerp(-2, 3, velocity.y);
+            front = new Vector2(.25f * facing, floor + Mathf.Lerp(.10f, .34f, rising));
+            back = new Vector2(-.22f * facing, floor + Mathf.Lerp(.26f, .14f, rising));
+        }
+        if (dashDirection != 0)
+        {
+            front.x = dashDirection * .40f;
+            back.x = -dashDirection * .42f;
+            if (!grounded) { front.y = floor + .28f; back.y = floor + .18f; }
+        }
+        Segment(torso, hip, chest + Vector2.up * .035f, .17f);
+        Place(head, headPoint, new Vector2(.46f, .46f), 0);
+        Limb(leftLeg, leftCalf, hip + Vector2.left * (.075f * facing), back, new Vector2(.12f * facing, 0), .17f);
+        Limb(rightLeg, rightCalf, hip + Vector2.right * (.075f * facing), front, new Vector2(.18f * facing, 0), .17f);
+
+        // FirePoint remains entirely owned by PlayerShooting. The barrel ends at its real muzzle.
+        float reload = reloading ? Mathf.Sin(Mathf.PI * Mathf.Clamp01(1 - shooting.ReloadRemaining / reloadDuration)) : 0;
+        float angle = -35 * facing * reload;
+        Quaternion rotation = Quaternion.Euler(0, 0, angle);
+        Vector3 barrel = new Vector3(-.24f - reload * .10f, -.12f * facing * reload, 0);
+        weapon.transform.localPosition = barrel;
+        weapon.transform.localRotation = rotation;
+        weaponGrip.transform.localPosition = barrel + rotation * new Vector3(-.12f, -.08f * facing, 0);
+        weaponGrip.transform.localRotation = rotation;
+        Vector2 triggerHand = transform.InverseTransformPoint(weapon.transform.TransformPoint(new Vector3(-.28f, -.45f * facing, 0)));
+        Vector2 supportHand = transform.InverseTransformPoint(weapon.transform.TransformPoint(new Vector3(.25f, -.30f * facing, 0)));
+        supportHand = Vector2.Lerp(supportHand, chest + new Vector2(.12f * facing, -.24f), reload);
+        Limb(leftArm, leftForearm, chest + new Vector2(-.10f * facing, -.04f), supportHand, new Vector2(-.08f * facing, -.12f), .16f);
+        Limb(rightArm, rightForearm, chest + new Vector2(.08f * facing, -.04f), triggerHand, new Vector2(.06f * facing, -.12f), .16f);
+    }
+
+    private void Limb(SpriteRenderer upper, SpriteRenderer lower, Vector2 start, Vector2 end, Vector2 bend, float width)
+    {
+        Vector2 joint = (start + end) * .5f + bend;
+        Segment(upper, start, joint, width);
+        Segment(lower, joint, end, width);
+    }
+
+    private void Segment(SpriteRenderer part, Vector2 start, Vector2 end, float width)
+    {
+        Vector2 delta = end - start;
+        Place(part, (start + end) * .5f, new Vector2(delta.magnitude + .025f, width), Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
+    }
+
+    private void Place(SpriteRenderer part, Vector2 point, Vector2 size, float angle)
+    {
+        part.transform.position = transform.TransformPoint(point);
+        part.transform.rotation = transform.rotation * Quaternion.Euler(0, 0, angle);
+        Vector2 source = part.sprite.bounds.size;
+        part.transform.localScale = new Vector3(size.x / source.x, size.y / source.y, 1);
     }
 
     private void UpdateReloadVisual()

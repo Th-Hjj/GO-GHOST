@@ -39,7 +39,7 @@ public static class DuelBuild
             // Retain the original nested actors, Inspector physics overrides and model/weapon references.
             Object.DestroyImmediate(contents.GetComponent<BossFight>());
             foreach (var extra in contents.GetComponentsInChildren<MonoBehaviour>(true))
-                if (extra is PlayerAbilitySystem || extra is PlayerTimeSlow || extra is PlayerDetachedDroneArm)
+                if (extra is PlayerAbilitySystem || extra is PlayerTimeSlow || extra is PlayerDetachedDroneArm || extra is PlayerCounterArm)
                     Object.DestroyImmediate(extra);
             var health = new SerializedObject(contents.GetComponentInChildren<PlayerHealth>());
             health.FindProperty("autoRetryOnDeath").boolValue = false;

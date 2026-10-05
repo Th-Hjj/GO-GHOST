@@ -22,7 +22,7 @@ public partial class CyberpsychoBoss
         fixedSingleWave=independentEncounter=true;legacyPaused=false;legacyDiagnostics=diagnostics;
         player=target;health.SetTarget(target);health.ConfigureFixedSingleLife(maxHealth);
         timeSlow=null;playerCollider=target.GetComponent<Collider2D>();
-        playerCounter=target.GetComponent<PlayerCounterArm>();playerOfficer=null;
+        playerCounter=null;playerOfficer=null; // No player parry/counter in the formal duel.
         legacyPlayerBody=target.GetComponent<Rigidbody2D>();legacyMovement=target.GetComponent<PlayerMovement>();
         legacyDodge=target.GetComponent<PlayerDodge>();
         UnbindLegacyShots();legacyShooting=target.GetComponent<PlayerShooting>();
@@ -73,7 +73,7 @@ public partial class CyberpsychoBoss
             Position=legacyPlayerBody.position,Velocity=legacyPlayerBody.linearVelocity,Body=b,
             Grounded=grounded,OnPlatform=grounded&&b.min.y>floorY+.6f,
             Dodging=legacyDodge!=null&&legacyDodge.IsDodging,
-            BladeVisible=playerCounter!=null&&playerCounter.IsWindowOpen,
+            BladeVisible=false,
             ReloadVisible=legacyShooting!=null&&legacyShooting.ReloadVisible,
             LastDodgeAt=legacyDodge!=null?legacyDodge.LastDodgeStartedAt:-100,
             ShotSerial=legacyShots,ReloadSerial=legacyReloads,LastShotAt=legacyLastShot,LastReloadAt=legacyLastReload,
@@ -279,11 +279,12 @@ public partial class CyberpsychoBoss
         var visible=PublicThreat;if(!visible.Visible)return;
         if(visible.ProjectileSpeed>0&&shotWarning!=null)
         {
-            // The old projectiles pass through ordinary platforms/walls, so the actual warning does too.
+            float range=warningRange;
+            if(Projectile.TerrainHit(visible.Origin,visible.Origin+visible.Direction*range,.125f,out var wall)) range=wall.distance;
             shotWarning.enabled=true;shotWarning.color=new Color(1,1,1,visible.Locked?.5f:.23f);
-            shotWarning.transform.SetPositionAndRotation(visible.Origin+visible.Direction*warningRange*.5f,
+            shotWarning.transform.SetPositionAndRotation(visible.Origin+visible.Direction*range*.5f,
                 Quaternion.Euler(0,0,Mathf.Atan2(visible.Direction.y,visible.Direction.x)*Mathf.Rad2Deg));
-            shotWarning.transform.localScale=new Vector3(warningRange/Mathf.Abs(transform.lossyScale.x),.055f/Mathf.Abs(transform.lossyScale.y),1);
+            shotWarning.transform.localScale=new Vector3(range/Mathf.Abs(transform.lossyScale.x),.055f/Mathf.Abs(transform.lossyScale.y),1);
         }
         else if(chargeWarning!=null)
         {

@@ -23,21 +23,21 @@ namespace GoGhost.Duel
         public Enemy Police { get; private set; }
         public PlayerShooting Rifle { get; private set; }
         public PlayerDodge Dodge { get; private set; }
-        public PlayerCounterArm Blade { get; private set; }
         public float FightClock { get; private set; }
         public bool LegsAI => lockedLegs;
         public bool ArmsAI => lockedArms;
-        public bool BrainAI => lockedBrain;
+        public bool SpineAI => lockedSpine;
         public bool DraftLegs { get; private set; }
         public bool DraftArms { get; private set; }
-        public bool DraftBrain { get; private set; }
+        public bool DraftSpine { get; private set; }
+        public LegacyDistancePreference DraftDistance { get; private set; } = LegacyDistancePreference.Mid;
         GameObject encounter;
         DuelUI ui;
         CyberpsychoBoss boss;
         PlayerInputReader input;
         AttemptPresentationVfx effects;
         SfxSet encounterSounds;
-        bool lockedLegs, lockedArms, lockedBrain;
+        bool lockedLegs, lockedArms, lockedSpine;
         float phaseTime;
 
         void Awake()
@@ -64,7 +64,8 @@ namespace GoGhost.Duel
         {
             ClearEncounter();
             Wave = 1;
-            DraftLegs = DraftArms = DraftBrain = false;
+            DraftLegs = DraftArms = DraftSpine = false;
+            DraftDistance = LegacyDistancePreference.Mid;
             FirstConfiguration = true;
             SetPhase(DuelPhase.Configure);
         }
@@ -73,14 +74,20 @@ namespace GoGhost.Duel
             if (Phase != DuelPhase.Configure || Paused) return;
             if (module == 0) DraftLegs = automatic;
             else if (module == 1) DraftArms = automatic;
-            else if (module == 2) DraftBrain = automatic;
+            else if (module == 2) DraftSpine = automatic;
+            ui.Show();
+        }
+        public void SetDistance(LegacyDistancePreference preference)
+        {
+            if (Phase != DuelPhase.Configure || Paused || !DraftLegs) return;
+            DraftDistance = preference;
             ui.Show();
         }
         public void StartFight()
         {
             if (Phase != DuelPhase.Configure || Paused) return;
             ClearEncounter();
-            lockedLegs = DraftLegs; lockedArms = DraftArms; lockedBrain = DraftBrain;
+            lockedLegs = DraftLegs; lockedArms = DraftArms; lockedSpine = DraftSpine;
             encounter = Instantiate(combatPrefab, transform);
             encounter.name = "CombatAttempt";
             Player = encounter.GetComponentInChildren<PlayerHealth>();
@@ -90,15 +97,13 @@ namespace GoGhost.Duel
             input.SetGameplayInputEnabled(false);
             Rifle = Player.GetComponent<PlayerShooting>();
             Dodge = Player.GetComponent<PlayerDodge>();
-            Blade = Player.GetComponent<PlayerCounterArm>();
             Player.GetComponent<PlayerMovement>().ConfigureLegacyCombat();
             Rifle.ConfigureLegacyCombat();
             Dodge.ConfigureLegacyCombat();
-            Blade.ConfigureLegacyCombat();
             Player.GetComponent<OfficerVisual>()?.ConfigureLegacyCombat();
             boss.ConfigureLegacyPolice(Player, new Bounds(new Vector3(0, 3.25f), new Vector3(30, 11.5f)), Wave, 600, diagnostics);
-            var ai = new LegacyPlayerAI(Player, boss, platforms);
-            input.ConfigureLegacyControls(lockedLegs, lockedArms, lockedBrain, ai.Legs, ai.Aim, ai.Brain);
+            var ai = new LegacyPlayerAI(Player, boss, platforms, DraftDistance);
+            input.ConfigureLegacyControls(lockedLegs, lockedArms, lockedSpine, ai.Legs, ai.Arms, ai.Spine);
             foreach (var body in encounter.GetComponentsInChildren<Rigidbody2D>())
             {
                 body.linearVelocity = Vector2.zero;
@@ -108,7 +113,6 @@ namespace GoGhost.Duel
             encounterSounds?.BeginScope();
             effects = encounter.GetComponent<AttemptPresentationVfx>();
             effects?.BeginAttempt();
-            Blade.SetNarrativePaused(true);
             effects?.SetPaused(true);
             Physics2D.SyncTransforms();
             FightClock = 0;
@@ -119,7 +123,6 @@ namespace GoGhost.Duel
         void BeginCombat()
         {
             foreach (var body in encounter.GetComponentsInChildren<Rigidbody2D>()) body.simulated = true;
-            Blade.SetNarrativePaused(false);
             effects?.SetPaused(false);
             input.SetGameplayInputEnabled(true);
             boss.BeginLegacyCombat();
@@ -142,7 +145,6 @@ namespace GoGhost.Duel
             if (Paused == value) return;
             Paused = value;
             input?.SetNarrativePaused(value);
-            Blade?.SetNarrativePaused(value || Phase == DuelPhase.Prepare);
             boss?.SetLegacyPaused(value);
             effects?.SetPaused(value || Phase == DuelPhase.Prepare);
             Time.timeScale = value ? 0 : 1;
@@ -162,7 +164,6 @@ namespace GoGhost.Duel
             foreach (var projectile in encounter.GetComponentsInChildren<Projectile>()) projectile.Retire();
             boss?.StopCombat();
             Player?.StopCombat();
-            Blade?.CleanupAttempt();
             effects?.EndAttempt();
             encounterSounds?.EndScope();
         }
@@ -175,7 +176,7 @@ namespace GoGhost.Duel
             if (encounter != null) { encounter.SetActive(false); Destroy(encounter); }
             encounter = null;
             Player = null; Police = null; boss = null; input = null;
-            Rifle = null; Dodge = null; Blade = null; effects = null; encounterSounds = null;
+            Rifle = null; Dodge = null; effects = null; encounterSounds = null;
         }
         void Update()
         {
@@ -219,7 +220,7 @@ namespace GoGhost.Duel
         // Normal wave-three entry, empty observation; no test UI or outcome alteration.
         public void ObserveThirdWave()
         {
-            NewGame(); Wave = 3; DraftLegs = DraftArms = DraftBrain = true;
+            NewGame(); Wave = 3; DraftLegs = DraftArms = DraftSpine = true;
             diagnostics = true; StartFight();
         }
 #endif

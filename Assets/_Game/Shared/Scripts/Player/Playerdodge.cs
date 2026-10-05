@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Base: a grounded horizontal dash, along movement input or the last
+/// Horizontal dash (ground and air in formal combat), along movement input or the last
 /// horizontal movement facing. Mouse aim never selects the dash direction.
 /// LEGACY / TEST ONLY (slashDodgeUnlocked): longer dash that damages every enemy it
 /// passes through. Not part of the formal GO GHOST loadout architecture.
@@ -44,6 +44,12 @@ public class PlayerDodge : MonoBehaviour
     public float DodgeStartInterval => legacyCombat ? stats.dodgeCooldown : officer != null && officer.Deployment != null ? officer.Deployment.DodgeStartInterval : stats.dodgeCooldown;
     public float CooldownRemaining => Mathf.Max(0f, nextDodgeTime - Time.time);
     public float LastDodgeStartedAt { get; private set; } = float.NegativeInfinity;
+    public float Distance => stats.dodgeDistance;
+    public float Duration => Mathf.Max(.02f, stats.dodgeDuration);
+    public float InvulnerabilityDuration => stats.iFrameDuration;
+    public bool CanDodge => isActiveAndEnabled && CooldownRemaining <= 0 && !IsDodging
+        && health != null && !health.IsInvulnerable && input != null && input.GameplayInputEnabled
+        && !input.NarrativePaused && movement != null && (legacyCombat || movement.IsGrounded || AirDashAvailable);
 
     private Rigidbody2D rb;
     private PlayerHealth health;
@@ -74,6 +80,7 @@ public class PlayerDodge : MonoBehaviour
 
     private void Update()
     {
+        if (legacyCombat) return; // Formal Move/Jump/Dodge acceptance is ordered in PlayerMovement.
         if (input.NarrativePaused) return;
         // Landing restores the one air use; it never touches the shared cooldown.
         if (movement != null && movement.IsGrounded) airDashAvailable = true;
@@ -85,16 +92,21 @@ public class PlayerDodge : MonoBehaviour
 
     public void TryDodge()
     {
-        if (!isActiveAndEnabled || Time.time < nextDodgeTime || IsDodging || health.IsInvulnerable || movement == null
-            || !input.GameplayInputEnabled) return;
-        if (!movement.IsGrounded)
+        TryDodge(0f);
+    }
+
+    /// <summary>Zero uses manual facing; Spine supplies an explicit horizontal direction without changing Move.</summary>
+    public bool TryDodge(float direction)
+    {
+        if (!CanDodge) return false;
+        if (!legacyCombat && !movement.IsGrounded)
         {
-            if (!AirDashAvailable) return;
             airDashAvailable = false;
         }
         LastDodgeStartedAt = Time.time;
         nextDodgeTime = Time.time + DodgeStartInterval;
-        StartCoroutine(DodgeRoutine());
+        StartCoroutine(DodgeRoutine(Mathf.Abs(direction) > .01f ? Vector2.right * Mathf.Sign(direction) : GetDodgeDirection()));
+        return true;
     }
 
     /// <summary>Horizontal input or last movement facing. Always left or right.</summary>
@@ -131,13 +143,12 @@ public class PlayerDodge : MonoBehaviour
         if (!focused && !legacyCombat) CancelDodge();
     }
 
-    private IEnumerator DodgeRoutine()
+    private IEnumerator DodgeRoutine(Vector2 direction)
     {
         IsDodging = true;
         health.IsInvulnerable = true;
 
         float distance = stats.dodgeDistance + (slashDodgeUnlocked ? stats.slashDodgeBonusDistance : 0f);
-        Vector2 direction = GetDodgeDirection();
         float duration = Mathf.Max(0.02f, stats.dodgeDuration);
         float speed = distance / duration;
 

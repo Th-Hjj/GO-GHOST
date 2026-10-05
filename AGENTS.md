@@ -4,8 +4,8 @@ Read this file first in every session, then the docs listed at the bottom for th
 
 `CLAUDE.md` (read by Claude) and `AGENTS.md` (read by Codex) hold the same rules. When you change one, make the same change in the other.
 
-## Current design authority — 2026-10-03
-- Read `Docs/GO_GHOST_VS/START_HERE.md`, `Legacy_Combat_Implementation_Spec.md`, and the newest `Implementation_Log.md` entry. **Legacy_Combat_Implementation_Spec is the current confirmed design (R01–R22).** Thomas explicitly authorized implementation and direct main delivery on 2026-10-03. It supersedes the earlier Duel rules as well as tower/narrative/staged designs where they conflict.
+## Current design authority — 2026-10-05
+- Read `Docs/GO_GHOST_VS/START_HERE.md`, `Legacy_Combat_Implementation_Spec.md`, and the newest `Implementation_Log.md` entry. **The 2026-10-05 player AI override at the top of Legacy_Combat_Implementation_Spec is current; retained R01–R22 rules apply where compatible.** Thomas explicitly authorized implementation and direct main delivery on 2026-10-03. It supersedes the earlier Duel rules as well as tower/narrative/staged designs where they conflict.
 - Distinguish Confirmed requirements, Implemented source, actual runtime evidence, tuning and NOT TESTED work. The design requirement alone does not prove the all-AI result.
 
 ## Project
@@ -14,16 +14,16 @@ Read this file first in every session, then the docs listed at the bottom for th
 - Thomas Hong and Walker Grupp share GitHub; Thomas currently leads and can confirm decisions alone. Reply in Chinese to Chinese requests; repository documentation stays concise English.
 
 ## Confirmed constraints
-- Restore the actual legacy PlayerMovement, PlayerDodge, PlayerShooting, PlayerCounterArm, OfficerVisual, CyberpsychoBoss regular attacks and five-platform arena. No replacement DuelFighter combat or third combat framework.
-- Fixed Rifle (12 damage, 0.25 s, 10 rounds, 1.2 s auto reload), E Arm-Blade, move 7, jump 12, gravity scale 3, legacy cooldown dodge and concurrent actions. No upgrade snapshot prerequisite.
-- Three independent locked binary permissions: Legs (A/D, Space, Left Shift), Arms (free world mouse aim), Brain (held LMB, fresh E). New Game defaults all manual; retries/next waves preserve choices. No hidden input override.
+- Restore the actual legacy PlayerMovement, PlayerDodge, PlayerShooting, OfficerVisual, CyberpsychoBoss regular attacks and five-platform arena. No replacement DuelFighter combat or third combat framework.
+- Fixed Rifle (12 damage, 0.25 s, 10 rounds, 1.2 s auto reload), no player Blade/Shield/Counter/E, move 7, jump 12, gravity scale 3, legacy cooldown dodge and concurrent actions. No upgrade snapshot prerequisite.
+- Three independent locked binary permissions: Legs (A/D, Space), Arms (mouse aim, held LMB), Spine (Left Shift Dodge). Legs AI chooses Near 2.5–4, Mid 5.3–8.5 or Far 10–13 horizontal collider-centre distance. New Game defaults all Player and Mid; retries/next waves preserve both permissions and distance. No hidden input override.
 - Menu -> configuration -> one-second stationary preparation -> combat -> next configuration/current-wave defeat -> Complete after wave three. Fresh actors/resources/observation every fight. Full pause; simultaneous death is defeat and resolves once.
 - Police use their legacy gun/blade executors and real collision/timing, one HP pool per wave, legal weapon switches; no phase refill, BLACKOUT, opening laser, platform destruction or special Camo Rush.
 - Player AI is identical across waves. Police policy receives only small public body/projectile/telegraph and expressed shot/reload facts, never permissions, hidden intentions or exact player ammunition.
 - Wave three learns two comparable reactions before retreat-space, descent-route and visible-reload tactics; plans inducement before acting, follows only observed commitments, and suspends targeting after two absent expected reactions. No forced outcomes or cross-fight memory.
-- Keep the original actors/weapons, black background and concise white UI. Strict specification whitelist: player ammo/reload/dodge/blade cooldowns allowed; no enemy resource panel, tactic explanation, story, tower, upgrades, Archive or permanent progression.
+- Keep the original actors/weapons, black background and concise white UI. Strict specification whitelist: player ammo/reload/dodge cooldowns allowed; no enemy resource panel, tactic explanation, story, tower, upgrades, Archive or permanent progression.
 - Legacy tower assets stay disconnected from the current scene/build/play entry. Preserve unresolved references and saved data; remove unused assets only after a bounded Unity dependency audit.
-- Validate compile, short input/action/module/lifecycle smoke, one representative normal all-AI third-wave observation with narrowly justified reruns after fixes, and Windows build/launch. No permission win matrix, manual-win gate, batch fights, broad old suites or new testing platform. Earlier Duel outcome evidence does not validate this restoration.
+- Validate compile, short input/action/module/lifecycle smoke, one mixed and one all-AI combat smoke with narrowly justified reruns after blockers, and Windows build/launch. No permission win matrix, manual-win gate, batch fights, broad old suites or new testing platform. Do not tune player or police to force an all-AI loss. Win rate is not acceptance. Ordinary Projectile hits Ground; existing special laser penetration and one-way character platforms remain distinct. Spine predicts 0.20 s using executable motion and explicitly selects horizontal Dodge direction; ground/air use the same cooldown, with no landing refresh. Accepted Dodge owns horizontal motion and suppresses a new same-frame Jump.
 ## How to work
 1. Read the existing code before proposing anything. Reuse first: direct reuse, then minimal extension, then local refactor, then replacement only with approval.
 2. Never rewrite a working script because of naming or style. Keep class names, public APIs, serialized field names, Inspector values, prefab overrides, and assembly placement.

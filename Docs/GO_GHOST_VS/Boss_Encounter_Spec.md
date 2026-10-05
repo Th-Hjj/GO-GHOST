@@ -1,8 +1,10 @@
 # GO GHOST — Boss Encounter
 
-Current authority: Thomas's **2026-10-05 Player Legs Platform Use + Light Duo Combo Fix**, extending the focused Boss pressure pass. This specification records confirmed scope and implemented source. Runtime checks and limits belong in [Implementation_Log.md](Implementation_Log.md); controlled fixtures do not prove balance or a normal all-AI result.
+Current authority: Thomas's **2026-10-05 Optical Camo pressure upgrade**, extending Player Legs Platform Use + Light Duo and the focused Boss pressure pass. This specification records confirmed scope and implemented source. Runtime checks and limits belong in [Implementation_Log.md](Implementation_Log.md); controlled fixtures do not prove balance or a normal all-AI result.
 
 ## Confirmed scope
+
+- **Optical Camo upgrade (Thomas, 2026-10-05):** conceal body and weapon, replace periodic tracking cues with short departure/takeoff/landing/contact traces and local hit feedback, choose a meaningful physical firing-angle relocation, then use the existing gun attacks with their full tells and resource/shared-threat checks. Damage, health, player tuning and the two explicit duo pairings stay unchanged.
 
 - Wave 1: **Refraction**, a sky-blue gunner with a green firearm. Wave 2: **Severance**, a red swordsman with a gold blade. Wave 3: both actors, each with independent health/resources; both must die to advance. Simultaneous player/enemy death is defeat.
 - Preserve the legacy player executors, Rifle tuning, free aim, Legs / Arms / Spine permissions, one fixed Legs preference (5.3–8.5, below safety/routes/firing lines) and five-platform arena. Preserve configuration, stationary preparation, retry, pause, next-wave and completion flow. Compatible player rules remain in [Legacy_Combat_Implementation_Spec.md](Legacy_Combat_Implementation_Spec.md).
@@ -31,7 +33,7 @@ Refraction has 12 rounds, a 1.45 s reload and 24 units/s ordinary bullets. Every
 | Ability | Preparation + lock (s) | Damage | Recovery / cooldown (s) | Execution |
 | --- | --- | --- | --- | --- |
 | G1 Burst | 0.24 total, including first 0.08 lock | 12 per bullet | 0.26 / 1 | Up to three bullets, 0.12 s spacing; each direction separately locks for 0.08 s; final shot +0.04 s tail |
-| G2 Optical Camo | 0.14 + 0 | — | 0.12 / 7 | Up to 1.8 s on a meaningful reachable firing route; early exit after at least 0.45 s movement; alpha 0.02 and public cues |
+| G2 Optical Camo | 0.14 + 0 | — | 0.12 / 7 | Up to 1.8 s on a committed firing-angle route; early exit after at least 0.45 s movement and real arrival; body/weapon alpha 0; short event traces |
 | G3 Piercing Shot | 0.72 + 0.24 | 30 | 0.55 / 4.5 | Three rounds; locked instantaneous ray, brief active flash; beam radius 0.07 |
 | G4 Suppressive Sweep | 0.32 + 0.18 | 8 per bullet | 0.5 / 4 | Eight ordinary bullets, 0.12 s spacing / 0.84 s span +0.10 s tail; at least eight rounds and six clear starting rays |
 | G5 Tactical Jump Shot | 0.12 + 0.08 | Existing Burst damage | 0.26 after landing / 4.5 | One reachable, frozen jump route; up to three airborne Burst bullets with normal ammo/speed and a separate 0.08 s aim lock per shot |
@@ -46,6 +48,10 @@ Refraction has 12 rounds, a 1.45 s reload and 24 units/s ordinary bullets. Every
 Ordinary bullet hits damage health but do not interrupt Piercing/Sweep. Death still cancels attacks. Locked attacks retain their commitments. Guard requires a real front-side projectile contact and consumes capacity. Return Cut and the front slash share one branch opportunity: Return Cut is preferred, otherwise one first Rhythm cut may start; neither can chain into the other. The 0.18 s post-dash opportunity remains reserved until consumed or expired; cooperative Draw Dash has no follow-up. Camo exit has a minimum 1.2 s re-entry gap in addition to cooldown.
 
 The sweep commits one support band, at most 5 units long and 0.65 above its real top, with eight separate directions; only bullets damage. Its faint edge/band tells have no collision.
+
+Camo filters the existing finite destination candidates for at least half a platform-width displacement and either a 20-degree view-angle change, an executable-jump-height-relative elevation change, or an opened ally-blocked firing lane. Routes retain real traversal/collision, at most one jump/drop and a travel estimate below the concealment deadline; recently used destinations receive a penalty. Destination and intended existing attack stay fixed through movement. Losing sight does not retarget a committed route. Route failure, invalidated terrain or duration expiry exits normally without granting an attack. On physical arrival, normal Camo recovery precedes a bounded 0.45 s attack opportunity: fresh visible player facts, actual ammo/cooldown, legal firing geometry and ordinary shared-threat reservation are checked again. A blocked major may fall back to Burst; no valid attack means ordinary tactics resume. The full existing preparation/lock occurs visibly.
+
+Departure, takeoff, landing, entering close body contact and actual hits leave fixed world-space fragments; there is no periodic moving outline or per-frame proximity cue. Camo body/weapon never brighten as a whole on hit. Public hidden contacts are stationary copied snapshots whose lifetime is capped by the event (normally 0.08–0.12 s), with no hidden velocity. Departure truncates the previous visible contact. Arms uses the same expiring evidence without artificial aim error or access to a hidden live position. The serialized CamoCueInterval field remains for asset compatibility but no longer drives periodic reveals.
 
 | Rhythm cut | Prepare / lock / active | Maximum step | Blade length | Right-facing arc |
 | --- | --- | --- | --- | --- |

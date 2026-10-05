@@ -57,6 +57,9 @@ public static class BossEncounterSmoke
     public static void RunLegsPlatforms() => Start("legs-platforms", false);
     public static void RunLegsLanding() => Start("legs-landing", false);
     public static void RunLostContact() => Start("lost-contact", false);
+    public static void RunCamo() => Start("camo", false);
+    public static void RunCamoMechanics() => Start("camo-mechanics", false);
+    public static void RunCamoReview() => Start("camo-review", false);
     public static void Cancel()
     { if (Running) { Record("NOT TESTED: operator cancelled unfinished checks."); Finish(false); } }
 
@@ -135,6 +138,8 @@ public static class BossEncounterSmoke
     static IEnumerator Run()
     {
         Record("Editor Play Mode; simulated focus and virtual keyboard/mouse. No physical-input or audibility claim.");
+        if(mode=="camo-review") {yield return CamoReview();yield break;}
+        if(mode=="camo"||mode=="camo-mechanics") {yield return Camo();yield break;}
         if(mode=="lost-contact") {yield return LostContact();yield break;}
         if(mode=="legs-platforms"||mode=="legs-landing")
         {yield return LegsLanding();if(mode=="legs-platforms"){yield return LegsObservation();yield return DebugComboKeys();}yield break;}
@@ -193,6 +198,119 @@ public static class BossEncounterSmoke
         Check("wave " + wave + " created", game.Phase == DuelPhase.Fight && game.Bosses.Count == (wave == 3 ? 2 : 1));
     }
     static LegacyPlayerAI PlayerPolicy() => (LegacyPlayerAI)Private<Func<LegacyCombatIntent>>(game.Player.GetComponent<PlayerInputReader>(),"legacyLegs").Target;
+    static IEnumerator CamoReview()
+    {
+        Record("CONTROLLED visual capture with stopped policies; followed by one 8s final-source W3 sample.");
+        yield return Fresh(1);StopPolicies();var actor=game.Bosses[0];
+        yield return Seconds(.3f);
+        Check("visual camo accepted",actor.Actions.TryStart(BossAbility.Camo,actor.Perception.Facts.Position));
+        yield return Seconds(.3f);
+        Directory.CreateDirectory(Output);ScreenCapture.CaptureScreenshot(Output+"camo-hidden.png");yield return Frames(3);
+        Check("captured hidden body/weapon",actor.IsCamo&&actor.VisualAlpha==0);
+        yield return Until(()=>!actor.Actions.Busy,2);yield return Seconds(.2f);
+        ScreenCapture.CaptureScreenshot(Output+"camo-visible.png");yield return Frames(3);
+        Check("body and weapon restore after exit",actor.View.GetComponentsInChildren<SpriteRenderer>().Where(s=>s.enabled).All(s=>s.color.a>.99f));
+        yield return Fresh(3,true);var duo=game.GetComponentInChildren<DuoCoordinator>();bool overlap=false;
+        foreach(var boss in game.Bosses)typeof(BossAgent).GetProperty("Diagnostics").SetValue(boss,true);
+        while(game.Phase==DuelPhase.Fight&&game.FightClock<8)
+        {
+            if(duo.Phase==DuoPhase.Idle)overlap|=game.Bosses.Count(a=>a.Actions.HighThreat&&a.Actions.Phase==BossActionPhase.Active)>1;
+            yield return null;
+        }
+        PitchResult();Check("final W3 shared major budget retained",!overlap);
+        Record("NOT TESTED: physical input, subjective pressure/balance, audio audition, full regression or Build.");
+    }
+    static IEnumerator Camo()
+    {
+        Record("CONTROLLED camo: initial placements/stopped policies for visibility and one real bullet; no HP/tuning overrides. Then normal route selection and real physical traversal/handoff.");
+        yield return Fresh(1,true);StopPolicies();
+        var actor=game.Bosses[0];var nav=actor.Navigation;
+        game.Player.GetComponent<PlayerInputReader>().SetGameplayInputEnabled(false);
+        OnFloor(actor.gameObject,nav,-5);OnFloor(game.Player.gameObject,nav,0);
+        yield return Seconds(.3f);
+        actor.TryGetContact(out _);PlayerPolicy().Arms();
+        Check("camo accepted",actor.Actions.TryStart(BossAbility.Camo,actor.Perception.Facts.Position));
+        yield return Seconds(.3f);
+        Check("body and weapon fully hidden",actor.View.GetComponentsInChildren<SpriteRenderer>().Where(s=>s.enabled).All(s=>s.color.a<.001f));
+        Check("old public target expires",!actor.TryGetContact(out _));
+        Check("Arms stops shooting expired concealed target",!PlayerPolicy().Arms().Fire);
+        int hp=actor.Health.CurrentHealth;
+        Fire(actor,game.Player.gameObject,actor.Position+Vector2.right*.8f,Vector2.left);
+        yield return Until(()=>actor.Health.CurrentHealth<hp,.3f);
+        yield return Frames(1);
+        Check("real projectile hits concealed body once",actor.Health.CurrentHealth==hp-12);
+        Check("hit gives brief stationary public cue",actor.TryGetContact(out var hit)&&!hit.Visible&&!hit.VelocityKnown&&hit.Velocity==Vector2.zero);
+        Check("hit does not reveal whole silhouette",actor.View.GetComponentsInChildren<SpriteRenderer>().Where(s=>s.enabled).All(s=>s.color.a<.001f));
+        yield return Seconds(.18f);
+        Check("hit cue expires without automatic renewal",!actor.TryGetContact(out _));
+        yield return Until(()=>!actor.Actions.Busy,2);
+
+        yield return Fresh(1);StopPolicies();actor=game.Bosses[0];nav=actor.Navigation;
+        OnFloor(actor.gameObject,nav,-8);OnFloor(game.Player.gameObject,nav,0);
+        yield return Seconds(.3f);
+        typeof(BossAgent).GetProperty("Diagnostics").SetValue(actor,true);
+        int routeEventStart=lines.Count;
+        bool accepted=actor.Tactics.TryStartCamo();
+        Check("meaningful reachable camo route selected",accepted);
+        if(accepted)
+        {
+            Vector2 destination=actor.Tactics.Current.Destination;
+            foreach(var step in actor.Tactics.Current.Route.Steps)Record($"CAMO STEP {step.Kind} {step.Start}->{step.End} duration={step.Duration:F2}");
+            bool frozen=true,lost=false,followup=false,landed=false;float started=Time.time,prepareAt=0;
+            BossAbility followupAbility=BossAbility.None;
+            actor.Tactics.Enabled=true;
+            while(Time.time-started<5&&game.Phase==DuelPhase.Fight)
+            {
+                if(actor.IsCamo)
+                {
+                    frozen&=actor.Tactics.Current!=null&&actor.Tactics.Current.Destination==destination;
+                    lost|=!actor.TryGetContact(out _);
+                }
+                if(actor.Motor.Grounded&&Vector2.Distance(actor.Position,destination)<.45f)landed=true;
+                if(!followup&&lines.Skip(routeEventStart).Any(s=>s.Contains("camo follow-up")))
+                {
+                    followup=true;prepareAt=Time.time;followupAbility=actor.Actions.Ability;
+                    Check("handoff starts with visible preparation",!actor.IsCamo&&actor.Actions.Phase==BossActionPhase.Prepare&&actor.PublicThreats.Count>0);
+                    actor.Tactics.Enabled=false;
+                }
+                if(followup&&actor.Actions.Activated[(int)followupAbility]>0)break;
+                yield return null;
+            }
+            Check("camo destination stays frozen",frozen,destination.ToString());
+            Check("moving camo genuinely loses public contact",lost);
+            Check("physical route reaches selected support",landed,actor.Position.ToString());
+            Check("existing gun attack follows arrival",followup&&(followupAbility==BossAbility.Burst||followupAbility==BossAbility.Piercing||followupAbility==BossAbility.Sweep));
+            if(followup)
+            {
+                var settings=actor.Profile.Settings(followupAbility);
+                float tell=followupAbility==BossAbility.Burst?settings.Prepare:settings.Prepare+settings.Lock;
+                Check("follow-up retains full tell and real ammo",actor.Actions.Activated[(int)followupAbility]>0&&Time.time-prepareAt>=tell-.05f&&actor.Actions.Ammo<actor.Profile.Magazine,
+                    $"{followupAbility} elapsed={Time.time-prepareAt:F3} ammo={actor.Actions.Ammo}");
+            }
+        }
+
+        yield return Fresh(1);StopPolicies();actor=game.Bosses[0];nav=actor.Navigation;
+        OnFloor(actor.gameObject,nav,-8);OnFloor(game.Player.gameObject,nav,0);yield return Seconds(.3f);
+        accepted=actor.Tactics.TryStartCamo();Check("abort fixture selects legal route",accepted);
+        if(accepted)
+        {
+            yield return Seconds(.2f);actor.Motor.ClearRoute();yield return Seconds(.3f);
+            Check("interrupted route exits without stale attack plan",!actor.Actions.Busy&&actor.Tactics.Current==null);
+        }
+        if(mode=="camo-mechanics")yield break;
+        Record("NORMAL W1 12s / W3 20s, same all-AI permissions/resources; no outcome requirement.");
+        foreach(int wave in new[]{1,3})
+        {
+            yield return Fresh(wave,true);var duo=game.GetComponentInChildren<DuoCoordinator>();bool overlap=false;
+            while(game.Phase==DuelPhase.Fight&&game.FightClock<(wave==1?12:20))
+            {
+                if(duo.Phase==DuoPhase.Idle)overlap|=game.Bosses.Count(a=>a.Actions.HighThreat&&a.Actions.Phase==BossActionPhase.Active)>1;
+                yield return null;
+            }
+            PitchResult();Check("W"+wave+" shared major budget retained",!overlap);
+        }
+        Record("NOT TESTED: physical input, human difficulty/visual acceptance, full regression, Windows build/launch.");
+    }
     static IEnumerator LostContact()
     {
         Record("CONTROLLED lost sight: initial placements only; public memories seeded by actual visibility. No live hidden targeting, forced Jump, damage or outcome.");

@@ -34,7 +34,7 @@ MonoBehaviour:
   SweepShots: 8
   CamoMinimumMove: 0.45
   DropSpeed: 16
-  CamoAlpha: 0.02
+  CamoAlpha: 0
   CamoFade: 0.14
   RevealFade: 0.12
   CamoDuration: 1.8
@@ -168,6 +168,24 @@ MonoBehaviour:
     Range: 1.1
     Damage: 0
     Cost: 0
+  LeapSlash:
+    Prepare: 0.24
+    Lock: 0.12
+    Active: 0.1
+    Recovery: 0.55
+    Cooldown: 4.5
+    Range: 0
+    Damage: 28
+    Cost: 0
+  TacticalJumpShot:
+    Prepare: 0.12
+    Lock: 0.08
+    Active: 0.3
+    Recovery: 0.26
+    Cooldown: 4.5
+    Range: 0
+    Damage: 12
+    Cost: 1
   RhythmSecondGap: 0.16
   RhythmThirdGap: 0.38
   RhythmThirdActive: 0.12

@@ -59,6 +59,8 @@ namespace GoGhost.Duel
             body.freezeRotation = true;
             body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
             Stop();
+            // Preparation freezes physics before the first FixedUpdate; initialize the supported pose now.
+            Grounded = navigation != null && navigation.TrySupport(Position, Size, out _);
         }
         public void SetCombatEnabled(bool value)
         {

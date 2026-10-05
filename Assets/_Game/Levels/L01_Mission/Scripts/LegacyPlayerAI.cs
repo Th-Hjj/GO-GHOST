@@ -44,6 +44,15 @@ public sealed class LegacyPlayerAI
     private float routeX, routeUntil;
     private bool routeJump, airborneRoute;
     private float cornerExitUntil, nextCornerSearch;
+    private const float PlatformHold = 2.5f, RelocationCooldown = 6f, PressureHold = 1f;
+    private Collider2D currentSupport, previousSupport, relocationFrom;
+    private float supportSince, pressureSince = -1, nextRelocation, nextPlatformSearch, platformHeldUntil, jumpRequestedAt;
+    private bool relocationRoute, routeLeftGround;
+    public int PlatformRelocations { get; private set; }
+    public int PlatformLandings { get; private set; }
+    public int PlatformRouteFailures { get; private set; }
+    public Collider2D CommittedPlatform => relocationRoute ? routePlatform : null;
+    public Collider2D LastPlatformLanding { get; private set; }
     private Vector2 lastAim = Vector2.right;
 
     private struct ObservedTarget
@@ -60,10 +69,11 @@ public sealed class LegacyPlayerAI
     }
     private struct Motion
     {
-        public float Move, DodgeDirection;
+        public float Move, DodgeDirection, LandingX;
+        public bool SteerLanding => !float.IsNaN(LandingX);
         public bool Jump;
-        public Motion(float move, bool jump = false, float dodgeDirection = 0)
-        { Move = move; Jump = jump; DodgeDirection = dodgeDirection; }
+        public Motion(float move, bool jump = false, float dodgeDirection = 0, float landingX = float.NaN)
+        { Move = move; Jump = jump; DodgeDirection = dodgeDirection; LandingX = landingX; }
     }
 
     public LegacyPlayerAI(PlayerHealth player, CyberpsychoBoss boss, Collider2D[] platforms)
@@ -258,29 +268,51 @@ public sealed class LegacyPlayerAI
         var result = new LegacyCombatIntent();
         if (!Active) return result;
         Sense();
+        TrackSupportPressure();
         if (dodge.IsDodging) return result;
         // A jump has a landing target; minor enemy motion does not replace it in midair.
-        if (airborneRoute && !movement.IsGrounded)
-        { result.Move = Towards(routeX); return result; }
-        if (airborneRoute) { airborneRoute = false; routePlatform = null; }
+        if (airborneRoute && (!movement.IsGrounded || relocationRoute && routeLeftGround && currentSupport==null))
+        {
+            if(!routeLeftGround && relocationRoute) { PlatformRelocations++; TracePlatform("takeoff",routePlatform); }
+            routeLeftGround=true;
+            if(!relocationRoute || Time.time<routeUntil && routePlatform!=null && routePlatform.enabled)
+            { result.Move = relocationRoute ? LandingSteer(routeX,selfBounds.center.x) : Towards(routeX); return result; }
+        }
+        if (airborneRoute)
+        {
+            // Spine can accept a Dodge and suppress the requested Jump in the same frame.
+            if(!routeLeftGround && Time.time-jumpRequestedAt<.12f)return result;
+            if(relocationRoute)
+            {
+                bool landed=routeLeftGround&&movement.IsGrounded&&currentSupport==routePlatform;
+                if(landed){PlatformLandings++;LastPlatformLanding=currentSupport;previousSupport=relocationFrom;platformHeldUntil=Time.time+PlatformHold;}
+                else PlatformRouteFailures++;
+                nextRelocation=Time.time+(landed?RelocationCooldown:PressureHold);
+                TracePlatform(landed?"landed":"interrupted",routePlatform);
+            }
+            airborneRoute=relocationRoute=routeLeftGround=false;routePlatform=null;
+        }
         float desire = hasContact ? RangeDirection() : 0;
         bool sight = hasContact && CanShootFrom(selfBounds.center);
         if (movement.IsGrounded && hasContact) FindCornerExit();
         bool leavingCorner = Time.time < cornerExitUntil;
         if (!leavingCorner && hasContact && !sight && movement.IsGrounded && (routePlatform == null || Time.time >= routeUntil)) FindShotPosition();
+        if(!leavingCorner && routePlatform==null && movement.IsGrounded && Time.time>=nextRelocation
+            && Time.time>=platformHeldUntil && Risk(new Motion(desire),SpineThreatWindow)<=0)
+            FindPlatformRelocation();
         bool jump = false;
         if (routePlatform != null)
         {
-            if (!leavingCorner && sight && Time.time >= routeUntil) routePlatform = null;
+            if (!leavingCorner && sight && Time.time >= routeUntil) { routePlatform = null; relocationRoute=false; }
             else
             {
-                desire = Towards(routeX);
+                desire = relocationRoute ? LandingSteer(routeX,selfBounds.center.x) : Towards(routeX);
                 jump = routeJump && movement.IsGrounded && JumpHasClearHeadroom();
-                if (!jump && Mathf.Abs(routeX-selfBounds.center.x)<.2f && Time.time>=routeUntil) routePlatform=null;
+                if (!jump && Mathf.Abs(routeX-selfBounds.center.x)<.2f && Time.time>=routeUntil) { routePlatform=null; relocationRoute=false; }
             }
         }
         if (!jump && SolidTravel(desire * movement.MoveSpeed * .12f) < .06f) desire = 0;
-        var best = new Motion(desire, jump);
+        var best = new Motion(desire, jump, landingX:relocationRoute?routeX:float.NaN);
         float risk = Risk(best, WalkLookahead), bestRisk = risk;
         // Avoid imminent harm with ordinary walking first; distance is a preference, never an override.
         if (risk > 0)
@@ -304,13 +336,102 @@ public sealed class LegacyPlayerAI
                     routePlatform = support; routeX = landingX; routeJump = true;
                 }
         }
+        if(relocationRoute&&!best.SteerLanding)
+        { relocationRoute=false;if(!best.Jump)routePlatform=null;nextRelocation=Time.time+PressureHold; }
         if (!leavingCorner && bestRisk <= 0 && Time.time < moveHeldUntil && best.Move != rememberedMove && !best.Jump
             && Risk(new Motion(rememberedMove), WalkLookahead) <= 0 && SolidTravel(rememberedMove*.3f)>.1f)
             best.Move = rememberedMove;
+        // Stay to use an earned platform briefly; safety and a committed corner exit can still leave it.
+        if(!leavingCorner&&!best.Jump&&bestRisk<=0&&movement.IsGrounded&&Time.time<platformHeldUntil
+            &&currentSupport!=null&&!SupportedBy(currentSupport,(Vector2)selfBounds.center+Vector2.right*best.Move*movement.MoveSpeed*WalkLookahead)
+            &&Risk(new Motion(0),WalkLookahead)<=0)best.Move=0;
         if (best.Move != rememberedMove) { rememberedMove=best.Move; moveHeldUntil=Time.time+MoveHold; }
-        if (best.Jump) { airborneRoute=true; routeUntil=Time.time+ShotPositionHold; }
+        if (best.Jump)
+        {
+            airborneRoute=true;routeLeftGround=false;jumpRequestedAt=Time.time;
+            if(!relocationRoute)routeUntil=Time.time+ShotPositionHold;
+        }
         result.Move=best.Move; result.Jump=best.Jump;
         return result;
+    }
+
+    private float LandingSteer(float x,float from) => Mathf.Clamp((x-from)/(movement.MoveSpeed*Step),-1,1);
+    private bool SupportedBy(Collider2D support,Vector2 centre) => support!=null&&support.enabled
+        &&Mathf.Abs(centre.y-selfBounds.extents.y-support.bounds.max.y)<.15f
+        &&centre.x>support.bounds.min.x+selfBounds.extents.x&&centre.x<support.bounds.max.x-selfBounds.extents.x;
+    private void TrackSupportPressure()
+    {
+        if(movement.IsGrounded)
+        {
+            Collider2D support=null;
+            if(navigation!=null)navigation.TrySupport(selfBounds.center,selfBounds.size,out support);
+            else foreach(var item in supports)if(SupportedBy(item,selfBounds.center)){support=item;break;}
+            if(support!=currentSupport){currentSupport=support;supportSince=Time.time;}
+        }
+        bool pressured=false;
+        float width=navigation!=null?navigation.PlatformWidth:0;
+        foreach(var observed in contacts)
+        {
+            Vector2 delta=(Vector2)observed.Bounds.center-(Vector2)selfBounds.center;
+            bool closing=observed.Contact.VelocityKnown&&delta.x*observed.Contact.Velocity.x<0;
+            if(Mathf.Abs(delta.y)>selfBounds.size.y+width*.5f)continue;
+            if(Mathf.Abs(delta.x)<width || observed.Actor.Profile.Kind==BossKind.Severance
+                &&Mathf.Abs(delta.x)<navigation.SameLevelSpacing*.8f&&(closing||Mathf.Abs(delta.y)<selfBounds.size.y))pressured=true;
+        }
+        if(!pressured)pressureSince=-1;else if(pressureSince<0)pressureSince=Time.time;
+    }
+    private float PlatformSpacingScore(Vector2 point,float width,float jumpHeight)
+    {
+        float score=Mathf.Min(width,WallClearance(point.x))*.15f,nearest=float.PositiveInfinity;
+        foreach(var observed in contacts)
+        {
+            Vector2 other=observed.Bounds.center;
+            float horizontal=Mathf.Abs(point.x-other.x),vertical=Mathf.Abs(point.y-other.y);
+            nearest=Mathf.Min(nearest,horizontal);
+            float gap=horizontal-selfBounds.extents.x-observed.Bounds.extents.x;
+            if(vertical<selfBounds.size.y)score-=Mathf.Max(0,width-gap);
+            if(observed.Actor.Profile.Kind==BossKind.Severance)
+                score+=Mathf.Clamp01(vertical/jumpHeight)*width*.5f;
+        }
+        // Distance to the closest public body, independent of the gun's selected focus.
+        score-=.4f*(nearest<range.x?range.x-nearest:nearest>range.y?nearest-range.y:0);
+        return score;
+    }
+    private void FindPlatformRelocation()
+    {
+        if(navigation==null||currentSupport==null||contacts.Count==0||Time.time<nextPlatformSearch
+            ||pressureSince<0||Time.time-pressureSince<PressureHold||Time.time-supportSince<PressureHold
+            ||!JumpHasClearHeadroom())return;
+        nextPlatformSearch=Time.time+.3f;
+        float width=navigation.PlatformWidth;
+        float height=ArenaNavigation2D.ExecutableJumpHeight(new BossMotionProfile {JumpSpeed=movement.JumpSpeed,GravityScale=body.gravityScale});
+        float baseline=PlatformSpacingScore(selfBounds.center,width,height),best=baseline+width*.12f;
+        Collider2D chosen=null;float chosenX=0,chosenFlight=0;
+        foreach(var node in navigation.Nodes)
+        {
+            if(node.Collider==currentSupport||!node.Collider.enabled)continue;
+            Vector2 point=node.Center(selfBounds.size);
+            float rise=point.y-selfBounds.center.y,travel=Mathf.Abs(point.x-selfBounds.center.x);
+            if(Mathf.Abs(rise)>height||travel>navigation.SameLevelSpacing||!navigation.CanStand(point,selfBounds.size)
+                ||BodyBlocked(new Bounds(point,selfBounds.size+Vector3.one*selfBounds.extents.x*.5f)))continue;
+            float score=PlatformSpacingScore(point,width,height)-travel*.12f-(node.Collider==previousSupport?width*.4f:0);
+            if(score<=best)continue;
+            var motion=new Motion(Towards(point.x),true,landingX:point.x);
+            if(!LandingFor(motion,out var landing,out float x,out float flight)||landing!=node.Collider
+                ||Mathf.Abs(x-point.x)>selfBounds.extents.x*.5f||PointDanger(point,flight+EndpointMargin)
+                ||Risk(motion,flight+EndpointMargin)>0)continue;
+            best=score;chosen=landing;chosenX=point.x;chosenFlight=flight;
+        }
+        if(chosen==null)return;
+        routePlatform=chosen;routeX=chosenX;routeJump=relocationRoute=true;relocationFrom=currentSupport;
+        routeUntil=Time.time+chosenFlight+.6f;
+        TracePlatform("selected",chosen);
+    }
+    private void TracePlatform(string stage,Collider2D destination)
+    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"[Legs {Time.time:F2}] relocation {stage} from={relocationFrom?.name} to={destination?.name} x={routeX:F2} at={selfBounds.center}");
+#endif
     }
 
     private float RangeDirection()
@@ -405,9 +526,11 @@ public sealed class LegacyPlayerAI
     }
 
     private bool LandingFor(float move, out Collider2D landing, out float x)
+        => LandingFor(new Motion(move,true),out landing,out x,out _);
+    private bool LandingFor(Motion motion,out Collider2D landing,out float x,out float flight)
     {
-        landing=null; x=selfBounds.center.x;
-        int count=PredictPath(new Motion(move,true),1.24f);
+        landing=null; x=selfBounds.center.x;flight=0;
+        int count=PredictPath(motion,1.24f);
         for(int i=2;i<count;i++)
         {
             if(path[i].y>path[i-1].y+.001f) continue;
@@ -418,7 +541,7 @@ public sealed class LegacyPlayerAI
                 if(Mathf.Abs(path[i].y-selfBounds.extents.y-bounds.max.y)>.06f
                     || path[i].x<bounds.min.x+selfBounds.extents.x || path[i].x>bounds.max.x-selfBounds.extents.x
                     || BodyBlocked(new Bounds(path[i],selfBounds.size))) continue;
-                landing=support; x=path[i].x; return true;
+                landing=support; x=path[i].x;flight=i*Step; return true;
             }
         }
         return false;
@@ -513,7 +636,8 @@ public sealed class LegacyPlayerAI
         for(int i=1;i<count;i++)
         {
             float t=i*Step;
-            float vx=motion.DodgeDirection!=0 && t<=dodge.Duration ? motion.DodgeDirection*dodge.Distance/dodge.Duration : motion.Move*movement.MoveSpeed;
+            float vx=motion.DodgeDirection!=0 && t<=dodge.Duration ? motion.DodgeDirection*dodge.Distance/dodge.Duration
+                : (motion.SteerLanding?LandingSteer(motion.LandingX,position.x):motion.Move)*movement.MoveSpeed;
             Vector2 previous=position;
             position.x=Mathf.Clamp(position.x+vx*Step,leftEdge+selfBounds.extents.x+.01f,rightEdge-selfBounds.extents.x-.01f);
             if (targets != null)

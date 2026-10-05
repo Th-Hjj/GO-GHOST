@@ -29,6 +29,29 @@ namespace GoGhost.Duel
         bool running,paused,gunStarted,swordStarted;
         int terrainVersion;
         float occludedSince=-1;
+        string planFailure;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        DuoCombination nextDebugCombo=DuoCombination.CrossExecution;
+        public int DebugRequests {get;private set;}
+        public string LastDebugResult {get;private set;}
+        public DuoCombination LastDebugCombination {get;private set;}
+        public void RequestNextDebugCombo()
+        {
+            LastDebugCombination=nextDebugCombo;
+            nextDebugCombo=nextDebugCombo==DuoCombination.CrossExecution?DuoCombination.SweepAndDrop:DuoCombination.CrossExecution;
+            DebugRequests++;
+            string rejection=!running||paused?"combat inactive/paused":gunner==null||sword==null||!gunner.IsAlive||!sword.IsAlive?"requires two living Bosses"
+                :Phase!=DuoPhase.Idle?"existing combo/respite: "+Phase
+                :sword.Tactics.DropPlanPending?"sword has committed a Drop Cut approach"
+                :gunner.Actions.Busy&&!gunner.Actions.SafeRecovery||sword.Actions.Busy&&!sword.Actions.SafeRecovery?"actor still in preparation/commitment"
+                :!gunner.Motor.Grounded||!sword.Motor.Grounded?"actor airborne"
+                :gunner.Actions.Reloading?"gunner reloading"
+                :gunner.Perception.Facts.Confidence<.6f||sword.Perception.Facts.Confidence<.6f?"public contact insufficient":null;
+            if(rejection==null&&!Plan(LastDebugCombination))rejection=planFailure;
+            LastDebugResult=rejection==null?"accepted real assembly":"rejected: "+rejection;
+            Debug.Log($"[Duo debug] {LastDebugCombination}: {LastDebugResult}");
+        }
+#endif
         public bool NeedsFireLane(BossAgent actor) => actor==sword && Phase==DuoPhase.Idle
             && gunner!=null && gunner.IsAlive && occludedSince>=0 && Time.time-occludedSince>.6f;
         public void Configure(BossAgent[] actors,ArenaNavigation2D nav)
@@ -157,7 +180,7 @@ namespace GoGhost.Duel
             if(Phase==DuoPhase.Idle&&Time.time>=nextDecision)
             {
                 nextDecision=Time.time+decisionSeconds;
-                if(Time.time<nextCombo||gunner.Actions.Busy&&!gunner.Actions.SafeRecovery||sword.Actions.Busy&&!sword.Actions.SafeRecovery||gunner.Actions.Reloading
+                if(Time.time<nextCombo||sword.Tactics.DropPlanPending||gunner.Actions.Busy&&!gunner.Actions.SafeRecovery||sword.Actions.Busy&&!sword.Actions.SafeRecovery||gunner.Actions.Reloading
                     ||!gunner.Motor.Grounded||!sword.Motor.Grounded||gunFacts.Confidence<.6f||sword.Perception.Facts.Confidence<.6f)return;
                 var preferred=lastCombination==DuoCombination.CrossExecution?DuoCombination.SweepAndDrop:DuoCombination.CrossExecution;
                 if(!Plan(preferred)&&!Plan(lastCombination))nextCombo=Time.time+abortDelay;
@@ -166,18 +189,25 @@ namespace GoGhost.Duel
         bool Plan(DuoCombination kind)
         {
             Combination=kind;
-            if(!gunner.Actions.Ready(GunAbility)||!sword.Actions.Ready(SwordAbility)||!gunner.Actions.CanAfford(GunAbility))return false;
+            planFailure="no nearby pair passes reachability, ally lane, timing and escape checks";
+            if(!gunner.Actions.Ready(GunAbility)||!sword.Actions.Ready(SwordAbility)){planFailure="required skill cooldown";return false;}
+            if(!gunner.Actions.CanAfford(GunAbility)){planFailure="insufficient gun ammunition";return false;}
             var guns=new List<BossPlan>(gunner.Tactics.BuildCandidates(GunAbility));
             var swords=new List<BossPlan>();
             if(kind==DuoCombination.CrossExecution)swords.AddRange(sword.Tactics.BuildCandidates(SwordAbility));
             else if(sword.Tactics.TryPlanDrop(sword.Perception.Facts,out var drop))swords.Add(drop);
-            float best=float.NegativeInfinity;BossPlan gBest=null,sBest=null;
+            float best=float.NegativeInfinity,bestTravel=float.PositiveInfinity,bestBudget=assemblyLimit;
+            BossPlan gBest=null,sBest=null;
             Vector2 bestTarget=default;
             var observed=gunner.Perception.Facts;
             foreach(var g in guns)foreach(var s in swords)
             {
-                if(g.TravelSeconds+gunner.Actions.RecoveryRemaining>assemblyLimit||s.TravelSeconds+sword.Actions.RecoveryRemaining>assemblyLimit
+                if(!AssemblyTime(gunner,g,false,out float gunTravel,out float gunCap)
+                    ||!AssemblyTime(sword,s,kind==DuoCombination.SweepAndDrop,out float swordTravel,out float swordCap)
                     ||Vector2.Distance(g.Destination,s.Destination)<gunner.Motor.Size.x+sword.Motor.Size.x)continue;
+                float travel=Mathf.Max(gunTravel,swordTravel),cap=Mathf.Max(gunCap,swordCap);
+                float budget=Mathf.Max(assemblyLimit,travel+decisionSeconds+.1f);
+                if(budget>cap)continue;
                 Vector2 target=g.TargetHypothesis;
                 if(kind==DuoCombination.CrossExecution)
                 {
@@ -191,22 +221,35 @@ namespace GoGhost.Duel
                     if(BlocksLine(origin,target,s.Destination,sword.Motor.Size)||BlocksLine(origin,target,dashEnd,sword.Motor.Size))continue;
                 }
                 float score=g.Score+s.Score-Mathf.Max(g.TravelSeconds,s.TravelSeconds)*.5f;
-                if(score<=best)continue;
+                if(travel>bestTravel+.05f||Mathf.Abs(travel-bestTravel)<=.05f&&score<=best)continue;
                 var original=g.TargetHypothesis;g.TargetHypothesis=target;gunPlan=g;swordPlan=s;
                 bool valid=PrepareTiming();
                 g.TargetHypothesis=original;
                 if(!valid)continue;
-                best=score;gBest=g;sBest=s;bestTarget=target;
+                best=score;bestTravel=travel;bestBudget=budget;gBest=g;sBest=s;bestTarget=target;
             }
             if(gBest==null){gunPlan=swordPlan=null;return false;}
             gBest.TargetHypothesis=bestTarget;
             gunPlan=gBest;swordPlan=sBest;terrainVersion=nav.Version;
             // Timing and finite escape samples are rechecked at arrival using the same frozen hypotheses.
             if(!PrepareTiming()){gunPlan=swordPlan=null;return false;}
-            Phase=DuoPhase.Assemble;deadline=Time.time+assemblyLimit;gunStarted=swordStarted=false;
+            Phase=DuoPhase.Assemble;deadline=Time.time+bestBudget;gunStarted=swordStarted=false;
             if(!gunner.Actions.Busy)gunner.Motor.SetRoute(gunPlan.Route);
             if(!sword.Actions.Busy&&kind==DuoCombination.CrossExecution)sword.Motor.SetRoute(swordPlan.Route);else sword.Motor.Brake();
-            gunner.Trace("combo assemble "+Combination);return true;
+            gunner.Trace($"combo assemble {Combination} budget={bestBudget:F2}s travel={bestTravel:F2}s");return true;
+        }
+        bool AssemblyTime(BossAgent actor,BossPlan plan,bool attackJump,out float travel,out float cap)
+        {
+            var motion=actor.Motor.Profile;
+            float jumpSeconds=2*motion.JumpSpeed/Mathf.Abs(Physics2D.gravity.y*motion.GravityScale);
+            cap=Mathf.Clamp(jumpSeconds+nav.PlatformWidth/motion.Speed+motion.Speed/motion.Braking+decisionSeconds,
+                assemblyLimit,2.25f);
+            travel=actor.Actions.RecoveryRemaining+(attackJump?0:plan.TravelSeconds)
+                +Mathf.Abs(actor.Velocity.x)/motion.Braking;
+            int transitions=0;
+            if(!attackJump&&plan.Route!=null)foreach(var step in plan.Route.Steps)
+                if(step.Kind!=ArenaNavigation2D.TravelKind.Walk&&++transitions>1)return false;
+            return travel<=cap;
         }
         bool PrepareTiming()
         {
@@ -291,7 +334,7 @@ namespace GoGhost.Duel
                             float emit=gunStartAt-Time.time+gunner.Profile.Sweep.Prepare+gunner.Profile.Sweep.Lock+i*gunner.Profile.SweepInterval;
                             var threat=new BossThreat{Valid=true,Shape=BossThreatShape.Projectile,Phase=BossThreatPhase.Locked,Origin=origin,
                                 End=origin+direction*gunner.Profile.Sweep.Range,Direction=direction,Radius=gunner.ProjectilePrefab.Radius,
-                                StartsAt=emit,EndsAt=emit+1.5f,ProjectileSpeed=gunner.Profile.BulletSpeed,TerrainBlocked=true};
+                                StartsAt=emit,EndsAt=emit+1.5f,ProjectileSpeed=gunner.Profile.BulletSpeed,TerrainBlocked=false};
                             if(threat.IntersectsMotion(position,next,observation.Body.extents,t,t+dt)){safe=false;break;}
                         }
                         if(!safe)break;

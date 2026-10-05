@@ -54,6 +54,8 @@ public static class BossEncounterSmoke
     public static void RunProjectileWalls() => Start("projectile-walls", false);
     public static void RunFocusedPressure() => Start("focused-pressure", false);
     public static void RunPressureMechanics() => Start("pressure-mechanics", false);
+    public static void RunLegsPlatforms() => Start("legs-platforms", false);
+    public static void RunLegsLanding() => Start("legs-landing", false);
     public static void Cancel()
     { if (Running) { Record("NOT TESTED: operator cancelled unfinished checks."); Finish(false); } }
 
@@ -124,7 +126,7 @@ public static class BossEncounterSmoke
     }
     static void Capture(string message, string trace, LogType type)
     {
-        if (message.StartsWith("[Boss ") || message.StartsWith("[Duo") || message.StartsWith("[LegacyCombat"))
+        if (message.StartsWith("[Boss ") || message.StartsWith("[Duo") || message.StartsWith("[Legs ") || message.StartsWith("[LegacyCombat"))
             lines.Add("EVENT " + message);
         if (type == LogType.Exception || type == LogType.Error || type == LogType.Assert)
         { lines.Add("ERROR " + message + "\n" + trace); failures++; }
@@ -132,6 +134,8 @@ public static class BossEncounterSmoke
     static IEnumerator Run()
     {
         Record("Editor Play Mode; simulated focus and virtual keyboard/mouse. No physical-input or audibility claim.");
+        if(mode=="legs-platforms"||mode=="legs-landing")
+        {yield return LegsLanding();if(mode=="legs-platforms"){yield return LegsObservation();yield return DebugComboKeys();}yield break;}
         if(mode=="focused-pressure"||mode=="pressure-mechanics")
         {yield return PressureMechanics();if(mode=="focused-pressure")yield return PressureObservation();yield break;}
         if (mode == "pitch") { yield return PitchSmoke(); yield break; }
@@ -185,6 +189,67 @@ public static class BossEncounterSmoke
         game.StartFight();
         yield return Until(() => game.Phase == DuelPhase.Fight, 2.2f);
         Check("wave " + wave + " created", game.Phase == DuelPhase.Fight && game.Bosses.Count == (wave == 3 ? 2 : 1));
+    }
+    static LegacyPlayerAI PlayerPolicy() => (LegacyPlayerAI)Private<Func<LegacyCombatIntent>>(game.Player.GetComponent<PlayerInputReader>(),"legacyLegs").Target;
+    static IEnumerator LegsLanding()
+    {
+        Record("CONTROLLED Legs: initial floor placement and stationary public melee body; AI alone selects and executes relocation. No forced Jump or landing.");
+        yield return Fresh(2,true);StopPolicies();
+        var nav=game.Bosses[0].Navigation;var ai=PlayerPolicy();
+        OnFloor(game.Player.gameObject,nav,0);OnFloor(game.Bosses[0].gameObject,nav,nav.PlatformWidth*1.125f);
+        Collider2D selected=null;bool changed=false,physicalLanding=false;
+        float end=Time.time+8;
+        while(game.Phase==DuelPhase.Fight&&Time.time<end)
+        {
+            if(ai.CommittedPlatform!=null)
+            {if(selected!=null&&selected!=ai.CommittedPlatform)changed=true;selected=ai.CommittedPlatform;}
+            if(ai.PlatformLandings>0)
+            {
+                var body=game.Player.GetComponent<Collider2D>().bounds;
+                physicalLanding|=nav.TrySupport(body.center,body.size,out var support)&&support==selected
+                    &&game.Player.GetComponent<PlayerMovement>().IsGrounded;
+            }
+            yield return null;
+        }
+        Check("Legs naturally selects one reachable adjacent platform",ai.PlatformRelocations>0,$"takeoffs={ai.PlatformRelocations} landed={ai.PlatformLandings} failed={ai.PlatformRouteFailures} selected={selected?.name}");
+        Check("committed jump physically lands on selected support",physicalLanding&&!changed&&ai.PlatformRouteFailures==0,$"physical={physicalLanding} changed={changed} last={ai.LastPlatformLanding?.name}");
+        Check("short stationary-pressure sample has no relocation ping-pong",ai.PlatformRelocations==1);
+    }
+    static IEnumerator LegsObservation()
+    {
+        Record("NORMAL all-AI: one W2 sample (20s), one W3 sample (25s), no combo/outcome gate.");
+        for(int wave=2;wave<=3;wave++)
+        {
+            yield return Fresh(wave,true);var ai=PlayerPolicy();var nav=game.Bosses[0].Navigation;
+            float floating=0,floor=0;int naturalStarts=0;
+            while(game.Phase==DuelPhase.Fight&&game.FightClock<(wave==2?20:25))
+            {
+                var b=game.Player.GetComponent<Collider2D>().bounds;
+                if(nav.TrySupport(b.center,b.size,out var support))
+                {if(support.GetComponent<PlatformEffector2D>()!=null)floating+=Time.deltaTime;else floor+=Time.deltaTime;}
+                naturalStarts=game.GetComponentInChildren<DuoCoordinator>().CombosStarted;
+                yield return null;
+            }
+            PitchResult();
+            Record($"OBSERVATION W{wave} Legs takeoffs={ai.PlatformRelocations} landings={ai.PlatformLandings} interrupted={ai.PlatformRouteFailures} floating={floating:F1}s floor={floor:F1}s");
+            Check("W"+wave+" short combat keeps advancing",game.FightClock>1&&game.Phase!=DuelPhase.Prepare);
+            if(wave==3)Record((naturalStarts>0?"OBSERVED":"NOT OBSERVED")+" natural Duo combo during single normal W3 sample");
+        }
+    }
+    static IEnumerator DebugComboKeys()
+    {
+        yield return Fresh(3,true);var duo=game.GetComponentInChildren<DuoCoordinator>();
+        for(int i=0;i<2;i++)
+        {
+            int before=duo.DebugRequests;heldKeys=new[]{Key.P};yield return Frames(3);heldKeys=Array.Empty<Key>();yield return Frames(3);
+            Check("P requests real "+(i==0?"Cross Execution":"Sweep & Drop"),duo.DebugRequests==before+1
+                &&duo.LastDebugCombination==(i==0?DuoCombination.CrossExecution:DuoCombination.SweepAndDrop)
+                &&!string.IsNullOrEmpty(duo.LastDebugResult),duo.LastDebugResult);
+            yield return Seconds(.3f);
+        }
+        yield return Seconds(2.5f);
+        Check("debug request returns to ordinary combat or advances a real combo",game.FightClock>2&&!game.Paused);
+        Record("NOT TESTED: physical P key, natural combo completion, full regression, balance/outcome proof, Windows build.");
     }
     static IEnumerator PressureMechanics()
     {

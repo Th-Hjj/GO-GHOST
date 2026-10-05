@@ -11,6 +11,7 @@ Current authority: Thomas's **2026-10-05 Pitch Combat Upgrade** assignment. This
 - **Later confirmed visual correction:** Thomas requested both Bosses use the player's round-head stickman style, distinguished by color and simple limb poses. This replaces the attachment's filled anatomical silhouette/hair/clothing requirements. Modest skill effects, licensed audio and weak Bloom remain.
 - **Later confirmed AI correction:** improve Boss attack selection, positioning and ally firing lanes so corner camping is not an easy safe strategy; Legs AI should actively avoid remaining trapped at an arena wall. Retain player tuning, real collisions and honest outcomes.
 - **Later confirmed projectile correction (2026-10-05):** all player and enemy bullets pass through walls/platforms. Ally-body blocking, guards and opposing-body damage remain; firing/threat prediction follows the same penetration rule. Sight, melee and actor terrain collision are unchanged.
+- **Later confirmed HUD correction (2026-10-05):** health fills keep their left edge fixed and shrink from the right. Player health is light green; Refraction and Severance health fills match their blue/red body colors. Text stays white.
 
 ## Implemented actors and tunable baseline
 

@@ -110,12 +110,15 @@ namespace GoGhost.Duel
                 float y=345-i*40;
                 policeHealth[i]=Text("",page,new Vector2(-400,y),new Vector2(300,40),24,TextAlignmentOptions.Left);
                 Image(page,new Vector2(0,y),new Vector2(430,12),new Color(.18f,.18f,.18f));
-                policeFill[i]=Image(page,new Vector2(0,y),new Vector2(430,12),Color.white);
+                var color=game.Bosses[i].Profile.Kind==BossKind.Refraction?new Color(.333f,.788f,.953f):new Color(.91f,.298f,.298f);
+                policeFill[i]=Image(page,new Vector2(-215,y),new Vector2(430,12),color);
+                policeFill[i].rectTransform.pivot=new Vector2(0,.5f);
             }
 
             playerHealth=Text("",page,new Vector2(-400,-340),new Vector2(300,40),24,TextAlignmentOptions.Left);
             Image(page,new Vector2(0,-340),new Vector2(430,12),new Color(.18f,.18f,.18f));
-            playerFill=Image(page,new Vector2(0,-340),new Vector2(430,12),Color.white);
+            playerFill=Image(page,new Vector2(-215,-340),new Vector2(430,12),new Color(.6f,.9f,.65f));
+            playerFill.rectTransform.pivot=new Vector2(0,.5f);
             resources=Text("",page,new Vector2(0,-377),new Vector2(1450,40),22);
             Text($"Legs: {(game.LegsAI?"AI":"Player")}     Arms: {(game.ArmsAI?"AI":"Player")}     Spine: {(game.SpineAI?"AI":"Player")}",page,new Vector2(0,-405),new Vector2(1300,40),24);
             LateUpdate();

@@ -75,7 +75,7 @@ namespace GoGhost.Duel
                 Text("WAVE "+game.Wave,page,new Vector2(0,330),new Vector2(600,65),42);
 
                 string[] labels={"Legs","Arms","Brain"};
-                string[] instructions={"A / D: move   Space: jump   Left Shift: dodge","Mouse: free aim","Hold LMB: Rifle   E: Arm-Blade"};
+                string[] instructions={"A / D: move   Space: jump   Left Shift: dodge","Mouse: free aim","Hold LMB: Rifle   E: Shield"};
                 bool[] settings={game.DraftLegs,game.DraftArms,game.DraftBrain};
                 for(int i=0;i<3;i++)
                 {
@@ -84,11 +84,6 @@ namespace GoGhost.Duel
                     Button("Player",page,new Vector2(-330,y),new Vector2(145,58),()=>game.SetDraft(module,false),!settings[i]);
                     Button("AI",page,new Vector2(-165,y),new Vector2(145,58),()=>game.SetDraft(module,true),settings[i]);
                     Text(instructions[i],page,new Vector2(335,y),new Vector2(800,90),23,TextAlignmentOptions.Left);
-                }
-                if(game.FirstConfiguration)
-                {
-                    Text("AI controls the modules you delegate.",page,new Vector2(0,-230),new Vector2(1250,40),23);
-                    Text("Permissions are locked during a wave. Change them between waves or after defeat.",page,new Vector2(0,-275),new Vector2(1300,40),23);
                 }
                 Button("Start Fight",page,new Vector2(0,-360),new Vector2(360,65),game.StartFight); return;
             }
@@ -109,12 +104,11 @@ namespace GoGhost.Duel
             Image(page,new Vector2(0,345),new Vector2(430,12),new Color(.18f,.18f,.18f));
             policeFill=Image(page,new Vector2(0,345),new Vector2(430,12),Color.white);
 
-            playerHealth=Text("",page,new Vector2(-400,-300),new Vector2(300,40),24,TextAlignmentOptions.Left);
-            Image(page,new Vector2(0,-300),new Vector2(430,12),new Color(.18f,.18f,.18f));
-            playerFill=Image(page,new Vector2(0,-300),new Vector2(430,12),Color.white);
-            resources=Text("",page,new Vector2(0,-337),new Vector2(1450,40),22);
-            Text($"Legs: {(game.LegsAI?"AI":"Player")}     Arms: {(game.ArmsAI?"AI":"Player")}     Brain: {(game.BrainAI?"AI":"Player")}",page,new Vector2(0,-365),new Vector2(1300,40),24);
-            Text("A/D: move    Space: jump    Shift: dodge    Mouse: aim    Hold LMB: Rifle    E: Arm-Blade    Esc: pause",page,new Vector2(0,-412),new Vector2(1300,40),22).color=game.BrainAI?new Color(.5f,.5f,.5f):Color.white;
+            playerHealth=Text("",page,new Vector2(-400,-340),new Vector2(300,40),24,TextAlignmentOptions.Left);
+            Image(page,new Vector2(0,-340),new Vector2(430,12),new Color(.18f,.18f,.18f));
+            playerFill=Image(page,new Vector2(0,-340),new Vector2(430,12),Color.white);
+            resources=Text("",page,new Vector2(0,-377),new Vector2(1450,40),22);
+            Text($"Legs: {(game.LegsAI?"AI":"Player")}     Arms: {(game.ArmsAI?"AI":"Player")}     Brain: {(game.BrainAI?"AI":"Player")}",page,new Vector2(0,-405),new Vector2(1300,40),24);
             LateUpdate();
         }
         void LateUpdate()
@@ -123,7 +117,7 @@ namespace GoGhost.Duel
             playerHealth.text="YOU  "+game.Player.CurrentHealth; policeHealth.text="POLICE  "+game.Police.CurrentHealth;
 
             string ammo=game.Rifle.IsReloading?"Reloading":$"Rifle {game.Rifle.AmmoInMagazine} / {game.Rifle.MagazineSize}";
-            resources.text=$"{ammo}     Dodge: {Ready(game.Dodge.CooldownRemaining)}     Arm-Blade: {Ready(game.Blade.CooldownRemaining)}";
+            resources.text=$"{ammo}     Dodge: {Ready(game.Dodge.CooldownRemaining)}     Shield: {Ready(game.Blade.CooldownRemaining)}";
             playerFill.rectTransform.sizeDelta=new Vector2(430f*game.Player.CurrentHealth/game.Player.MaxHealth,12);
             policeFill.rectTransform.sizeDelta=new Vector2(430f*game.Police.CurrentHealth/game.Police.MaxHealth,12);
         }

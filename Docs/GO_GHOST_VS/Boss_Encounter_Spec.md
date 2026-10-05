@@ -9,6 +9,7 @@ Current authority: Thomas's **2026-10-05 Two Bosses + Coordinated Third Wave** a
 - Bosses use real movement, collision, resources, attack commitments and public observations. No teleport fallback, input/permission spying, hidden target tracking, forced damage or controlled loss may substitute for success.
 - Third-wave cooperation uses the same abilities and damage as the solo waves. **Cross Execution** combines Draw Dash pressure with a previously planned Piercing Shot; its aim must retain the full lock window and may miss.
 - **Later confirmed visual correction:** Thomas requested both Bosses use the player's round-head stickman style, distinguished by color and simple limb poses. This replaces the attachment's filled anatomical silhouette/hair/clothing requirements. Modest skill effects, licensed audio and weak Bloom remain.
+- **Later confirmed AI correction:** improve Boss attack selection, positioning and ally firing lanes so corner camping is not an easy safe strategy; Legs AI should actively avoid remaining trapped at an arena wall. Retain player tuning, real collisions and honest outcomes.
 
 ## Implemented actors and tunable baseline
 
@@ -49,11 +50,17 @@ Routes use duration costs. The motor executes movement and reports failed progre
 
 `BossTactics` scores finite legal candidate destinations by reachability, range/line of fire, exposure, travel, repetition and partner role. A plan carries its destination, route, target hypothesis, ability, risk, expiry and terrain version. Default decisions run at 0.2 s, hold a useful plan for at least 0.7 s and expire it after 3.2 s. The gunner repositions for firing/cover or Camo; the swordsman chooses real approach, jump/drop, rhythm, dash or guard opportunities. Low-confidence search follows reachable visible positions instead of the hidden player's live transform.
 
+The corner correction adds finite spacing resets after close contact or unsuccessful melee sequences and collision-validated real jumps for aerial pressure or ally lane release. A new in-place plan retires the old movement command. Failed destinations are briefly avoided; lost-contact search uses the last public observation and terrain visibility. Gun aim checks three observed body points and executable gravity/terrain prediction. Rhythm cuts can tilt up or down within 55 degrees, with matching stickman poses and the existing per-cut lock, reach, damage and recovery. This is attack selection and geometry, not extra damage or hidden input access.
+
 `LegacyPlayerAI` remains the same policy across waves. It now consumes copied `BossContact` observations and all active `BossThreat` entries. Arms prefers a visible, shootable body point and retains a useful focus for 0.6 s; a blocked or invalid target can be replaced immediately. Guard affects shot feasibility. Camo observations expire, and cues expose their own position without hidden velocity; there is no live concealed Rigidbody aim input. Spine retains its 0.20 s prediction and evaluates simultaneous expressed threats and ordinary projectiles.
+
+Legs prefers a supported inward walk near a threatened wall, then an executable jump and landing over an observed body if needed. Jump feasibility uses the full predicted trajectory, body clearance and terrain rather than rejecting it with a ground-only body check. A short commitment prevents distance preference from immediately reversing the escape. Normal threat avoidance and Spine's accepted-action checks remain active.
 
 ## Third-wave coordination
 
 `DuoCoordinator` reserves major-threat ownership, checks ally occupancy/fire lines, scores pressure and recovery cover, and searches reachable pairs of positions. Ordinary cooperation permits one major attack while the partner approaches, guards or uses restricted Burst. Cross Execution is the explicit two-major-attack exception, using normal 30-damage Piercing Shot and 28-damage Draw Dash.
+
+If the gunner's available body-point rays remain blocked by its partner, it seeks another firing position and can request a real jump from the idle swordsman to open a temporary lane. The swordsman finishes committed attacks first; neither bullets nor beams gain ally penetration. This ordinary lane cooperation does not bypass the shared major-threat budget or count as a completed Cross Execution.
 
 The combination progresses through Assemble, Ready, committed actions and Recover. Its follow-up delay depends on actual travel distance; both hypotheses are planned before an observed dodge response. Initial limits are 2.5 s assembly, 8 s cooldown and 0.65 s reorganization. Terrain changes, unreachable routes, resource/start rejection, interruption, timeout or death abort the plan; already locked actions keep their commitments. Candidate pairs also require a feasible public movement escape sample. This finite sampling is a planning safeguard, not proof that every possible situation is escapable.
 

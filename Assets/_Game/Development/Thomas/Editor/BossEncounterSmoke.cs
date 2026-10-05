@@ -47,6 +47,8 @@ public static class BossEncounterSmoke
     public static void RunLegalFollowup() => Start("legal-followup", false);
     public static void RunNavigationOnly() => Start("navigation-only", false);
     public static void RunCoordination() => Start("coordination", false);
+    public static void RunCornerChecks() => Start("corner", false);
+    public static void RunWaveTwoObservation() => Start("observe-wave2", false);
     public static void RunObservation(LegacyDistancePreference preference) => Start("observe-" + preference, false);
     public static void Cancel()
     { if (Running) { Record("NOT TESTED: operator cancelled unfinished checks."); Finish(false); } }
@@ -139,6 +141,7 @@ public static class BossEncounterSmoke
         }
         if (mode == "navigation-only") yield return NavigationChanges();
         if (mode == "coordination") yield return Coordination();
+        if (mode == "corner") yield return CornerChecks();
         if (mode == "all" || mode == "core")
         {
             yield return InputAndFlow();
@@ -150,19 +153,21 @@ public static class BossEncounterSmoke
         if (mode == "all")
             foreach (var preference in new[] { LegacyDistancePreference.Mid, LegacyDistancePreference.Near, LegacyDistancePreference.Far })
                 yield return Observe(preference);
+        else if (mode == "observe-wave2") yield return Observe(LegacyDistancePreference.Mid,2);
         else if (mode.StartsWith("observe-"))
             yield return Observe((LegacyDistancePreference)Enum.Parse(typeof(LegacyDistancePreference), mode.Substring(8)));
         game.MainMenu(); yield return Frames(2);
         Check("cleanup removes all actors/projectiles", Object.FindObjectsByType<BossAgent>(FindObjectsSortMode.None).Length == 0 && Projectile.Active.Count == 0);
     }
 
-    static IEnumerator Fresh(int wave, bool automatic = false)
+    static IEnumerator Fresh(int wave, bool automatic = false, bool stationaryAutomatic = false)
     {
         RestoreFixture(); heldKeys = Array.Empty<Key>(); mouseHeld = false;
         game.NewGame();
         // Controlled entry changes only the shell wave selection, never actor resources or outcomes.
         typeof(DuelGame).GetProperty("Wave").SetValue(game, wave);
         if (automatic) for (int i = 0; i < 3; i++) game.SetDraft(i, true);
+        else if (stationaryAutomatic) { game.SetDraft(1,true); game.SetDraft(2,true); }
         game.StartFight();
         yield return Until(() => game.Phase == DuelPhase.Fight, 2.2f);
         Check("wave " + wave + " created", game.Phase == DuelPhase.Fight && game.Bosses.Count == (wave == 3 ? 2 : 1));
@@ -618,18 +623,90 @@ public static class BossEncounterSmoke
         }
     }
 
-    static IEnumerator Observe(LegacyDistancePreference preference)
+    static IEnumerator CornerChecks()
+    {
+        Record("CONTROLLED corner mechanisms: initial placement only, normal resources and physics. Not natural fight evidence.");
+        yield return Fresh(2,true); StopPolicies();
+        var player=game.Player;var sword=game.Bosses[0];
+        var playerShape=player.GetComponent<Collider2D>();
+        float floor=sword.Navigation.ArenaBounds.min.y;
+        Position(player.gameObject,new Vector2(-13.7f,floor+playerShape.bounds.extents.y+.03f));
+        Position(sword.gameObject,new Vector2(-12.8f,floor+sword.Body.bounds.extents.y+.03f));
+        bool rose=false;float farthest=player.transform.position.x;
+        float until=Time.time+4;
+        while(Time.time<until&&game.Phase==DuelPhase.Fight)
+        {
+            rose|=player.GetComponent<Rigidbody2D>().linearVelocity.y>4;
+            farthest=Mathf.Max(farthest,player.transform.position.x);yield return null;
+        }
+        Check("Legs physically jumps over contact and leaves left corner",rose&&farthest>-11,
+            $"jump={rose} farthestX={farthest:F2}");
+        Check("player movement and Dodge values retained",Mathf.Approximately(player.GetComponent<PlayerMovement>().MoveSpeed,7)
+            &&Mathf.Approximately(player.GetComponent<PlayerMovement>().JumpSpeed,12)&&Mathf.Approximately(game.Dodge.Distance,3));
+
+        Record("MIXED corner: Legs stays manual with no movement input; Arms and Spine use their normal AI permissions.");
+        yield return Fresh(3,false,true);
+        var gunner=game.Bosses.First(a=>a.Profile.Kind==BossKind.Refraction);
+        sword=game.Bosses.First(a=>a.Profile.Kind==BossKind.Severance);player=game.Player;
+        playerShape=player.GetComponent<Collider2D>();floor=sword.Navigation.ArenaBounds.min.y;
+        Position(player.gameObject,new Vector2(-13.7f,floor+playerShape.bounds.extents.y+.03f));
+        Position(sword.gameObject,new Vector2(-12.8f,floor+sword.Body.bounds.extents.y+.03f));
+        Position(gunner.gameObject,new Vector2(-7,floor+gunner.Body.bounds.extents.y+.03f));
+        bool blocked=false,opened=false;int gunBefore=gunner.Actions.Activated[(int)BossAbility.Burst]+gunner.Actions.Activated[(int)BossAbility.Piercing];
+        until=Time.time+12;float snapshotAt=0;
+        while(Time.time<until&&game.Phase==DuelPhase.Fight)
+        {
+            if(Time.time>=snapshotAt)
+            {
+                snapshotAt=Time.time+1;
+                Record("LANE duo="+game.GetComponentInChildren<DuoCoordinator>().Phase+" "+string.Join(";",game.Bosses.Select(a=>
+                    $"{a.Profile.Kind} pos={a.Position} ground={a.Motor.Grounded} action={a.Actions.Ability}/{a.Actions.Phase} plan={a.Tactics.Current?.Intent}/{a.Tactics.Current?.Destination} failed={a.Motor.RouteFailure} confidence={a.Perception.Facts.Confidence:F2}")));
+            }
+            if(gunner.Perception.Facts.Confidence>.3f)
+            {
+                bool line=gunner.Tactics.TryGunTarget(BossAbility.Burst,gunner.Position,gunner.Perception.Facts,out _);
+                blocked|=!line;opened|=blocked&&line;
+            }
+            yield return null;
+        }
+        int gunAfter=gunner.Actions.Activated[(int)BossAbility.Burst]+gunner.Actions.Activated[(int)BossAbility.Piercing];
+        Check("blocked gunner obtains a physical lane and attacks",blocked&&opened&&gunAfter>gunBefore,
+            $"blocked={blocked} opened={opened} gunAttacks={gunAfter-gunBefore}");
+        Check("stationary corner remains vulnerable to real attacks",player.CurrentHealth<150,
+            $"playerHP={player.CurrentHealth} swordHits={sword.Actions.ConnectedHits} gunHits={gunner.Actions.ConnectedHits}");
+    }
+    static IEnumerator Observe(LegacyDistancePreference preference,int wave=3)
     {
         RestoreFixture(); heldKeys = Array.Empty<Key>(); mouseHeld = false;
         game.MainMenu(); yield return Frames(2);
-        Record("NATURAL ALL-AI W3 " + preference + ": fresh actors, normal resources, no damage/position/control interventions; limit 120 combat seconds.");
-        game.ObserveThirdWave(preference);
+        Record("NATURAL ALL-AI W"+wave+" " + preference + ": fresh actors, normal resources, no damage/position/control interventions; limit 120 combat seconds.");
+        if(wave==3)game.ObserveThirdWave(preference);else yield return Fresh(2,true);
         yield return Until(() => game.Phase == DuelPhase.Fight, 2);
-        while (game.Phase == DuelPhase.Fight && game.FightClock < 120) yield return null;
+        float corner=0,longestCorner=0,nextSnapshot=0,minX=float.MaxValue,maxX=float.MinValue;
+        int jumps=0,dodges=0;bool airborne=false,dodging=false;
+        while (game.Phase == DuelPhase.Fight && game.FightClock < 120)
+        {
+            var shape=game.Player.GetComponent<Collider2D>();var movement=game.Player.GetComponent<PlayerMovement>();
+            var arena=game.Bosses[0].Navigation.ArenaBounds;
+            bool nearWall=Mathf.Min(shape.bounds.min.x-arena.min.x,arena.max.x-shape.bounds.max.x)<1.5f;
+            corner=nearWall?corner+Time.deltaTime:0;longestCorner=Mathf.Max(longestCorner,corner);
+            minX=Mathf.Min(minX,shape.bounds.center.x);maxX=Mathf.Max(maxX,shape.bounds.center.x);
+            bool rising=game.Player.GetComponent<Rigidbody2D>().linearVelocity.y>2;
+            if(rising&&!airborne)jumps++;airborne=!movement.IsGrounded;
+            if(game.Dodge.IsDodging&&!dodging)dodges++;dodging=game.Dodge.IsDodging;
+            if(game.FightClock>=nextSnapshot)
+            {
+                nextSnapshot=game.FightClock+2;
+                Record($"POSITION W{wave} t={game.FightClock:F1} player={shape.bounds.center} hp={game.Player.CurrentHealth} "
+                    +string.Join(";",game.Bosses.Select(a=>$"{a.Profile.Kind}={a.Position}/{a.Actions.Ability}/{a.Tactics.Current?.Intent}")));
+            }
+            yield return null;
+        }
         string health = string.Join(",", game.Bosses.Select(a => a.ActorId + ":" + a.Health.CurrentHealth));
         bool defeated = game.Phase == DuelPhase.Failed && game.Player.IsDead;
         Record($"NATURAL RESULT {preference} phase={game.Phase} seconds={game.FightClock:0.00} player={game.Player.CurrentHealth} bosses={health} "
-            + (defeated ? "OBSERVED_DEFEAT" : "ALL_AI_W3_NOT_MET"));
+            + (defeated ? "OBSERVED_DEFEAT" : wave==3?"ALL_AI_W3_NOT_MET":"W2_NON_DEFEAT"));
+        Record($"MOVEMENT W{wave} longestCorner={longestCorner:F2}s xRange={minX:F2}..{maxX:F2} jumps={jumps} dodges={dodges}");
         foreach (var actor in game.Bosses)
             Record($"NATURAL actor={actor.ActorId} started={string.Join(",", actor.Actions.Started)} active={string.Join(",", actor.Actions.Activated)} guard={actor.Actions.Guarded} beamAllyBlocks={actor.Actions.BeamAllyBlocks}");
         var coordinator=game.GetComponentInChildren<DuoCoordinator>();

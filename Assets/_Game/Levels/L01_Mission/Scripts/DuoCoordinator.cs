@@ -20,6 +20,9 @@ namespace GoGhost.Duel
         float nextDecision,nextCombo,deadline,followupAt,recoverUntil;
         bool running,paused,gunStarted,swordStarted;
         int terrainVersion;
+        float occludedSince=-1;
+        public bool NeedsFireLane(BossAgent actor) => actor==sword && Phase==DuoPhase.Idle
+            && gunner!=null && gunner.IsAlive && occludedSince>=0 && Time.time-occludedSince>.6f;
         public void Configure(BossAgent[] actors,ArenaNavigation2D nav)
         {this.actors=actors;this.nav=nav;foreach(var a in actors)if(a.Profile.Kind==BossKind.Refraction)gunner=a;else sword=a;nextCombo=Time.time+2;}
         public void BeginCombat(){running=true;}
@@ -65,6 +68,12 @@ namespace GoGhost.Duel
             if(!running||paused||Time.deltaTime<=0)return;
             if(Phase==DuoPhase.Recover){if(Time.time>=recoverUntil)Phase=DuoPhase.Idle;return;}
             if(gunner==null||sword==null||!gunner.IsAlive||!sword.IsAlive){if(Phase!=DuoPhase.Idle)Abort("single survivor");return;}
+            var gunFacts=gunner.Perception.Facts;
+            bool blocked=gunFacts.Confidence>.3f && !gunner.Actions.Busy && !gunner.Actions.Reloading
+                && gunner.Tactics.AllyBlocks(gunner.Position+Vector2.up*.28f,gunFacts.Position)
+                && !gunner.Tactics.TryGunTarget(BossAbility.Burst,gunner.Position,gunFacts,out _)
+                && !gunner.Tactics.TryGunTarget(BossAbility.Piercing,gunner.Position,gunFacts,out _);
+            if(!blocked)occludedSince=-1;else if(occludedSince<0)occludedSince=Time.time;
             if(Phase==DuoPhase.Assemble)
             {
                 if(nav.Version!=terrainVersion||Time.time>deadline||gunner.Motor.RouteFailed||sword.Motor.RouteFailed||gunner.Perception.Facts.Confidence<.25f){Abort("assembly invalid/timeout");return;}

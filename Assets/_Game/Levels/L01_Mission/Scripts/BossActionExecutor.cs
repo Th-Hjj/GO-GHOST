@@ -27,12 +27,14 @@ namespace GoGhost.Duel
         public int Interruptions {get;private set;}
         public bool InterruptedCurrent {get;private set;}
         public float LastActiveAt {get;private set;}
+        public int ConnectedHits {get;private set;}
+        public int ConsecutiveMeleeMisses {get;private set;}
         BossAgent actor;
         BossProfile p;
         BossAbilitySettings settings;
         readonly float[] readyAt=new float[12];
         float phaseAt,phaseUntil,activeStarts,activeEnds,reloadUntil,nextShot,sweepStart,sweepEnd,lastCamoEnded=-100,returnWindowUntil;
-        int shotsRemaining,shotIndex,prepareHits;
+        int shotsRemaining,shotIndex,prepareHits,hitsAtStart;
         bool hitInWindow,comboTarget,hasReturned;
         Vector2 targetPoint,dashStart;
         CircleCollider2D guardZone;
@@ -59,6 +61,7 @@ namespace GoGhost.Duel
             if(ability==BossAbility.DropCut&&(actor.Motor.Grounded||actor.Velocity.y<-.5f))return false;
             if(IsHigh(ability)&&actor.Coordinator!=null&&!actor.Coordinator.TryReserve(actor,ability,cooperative))return false;
             Ability=ability;settings=p.Settings(ability);AttackId++;Started[(int)ability]++;
+            hitsAtStart=ConnectedHits;
             targetPoint=hypothesis;comboTarget=cooperative;RhythmIndex=0;prepareHits=0;hasReturned=false;Guarded=0;InterruptedCurrent=false;
             readyAt[(int)ability]=Time.time+settings.Cooldown;
             Aim=(hypothesis-actor.Position).normalized;if(Aim.sqrMagnitude<.1f)Aim=Vector2.right*actor.Facing;
@@ -86,7 +89,15 @@ namespace GoGhost.Duel
             if(!Busy)return;
             if(Phase==BossActionPhase.Prepare)
             {
-                if(!comboTarget && actor.Perception.Facts.Confidence>.1f)targetPoint=actor.Perception.Facts.Predict(.16f);
+                if(!comboTarget && actor.Perception.Facts.Confidence>.1f)
+                {
+                    if(p.Kind==BossKind.Refraction && Ability!=BossAbility.Camo)
+                    {
+                        if(actor.Tactics.TryGunTarget(Ability,actor.Position,actor.Perception.Facts,out var shotPoint)) targetPoint=shotPoint;
+                        else { AbortPreparation(); return; }
+                    }
+                    else targetPoint=actor.Tactics.PredictBody(actor.Perception.Facts,.16f);
+                }
                 UpdateGeometry();
                 if(Time.time>=phaseUntil)Lock();
             }
@@ -151,7 +162,13 @@ namespace GoGhost.Duel
                 actor.Navigation.TryDash(centre,centre+Aim*distance,actor.Motor.Size,out var safeEnd);End=safeEnd;
             }
             else if(Ability==BossAbility.Rhythm)
-            {Aim=new Vector2(Mathf.Sign(targetPoint.x-centre.x),0);Origin=centre;End=centre+Aim*settings.Range;}
+            {
+                // Each cut may cover a visible airborne body, with a finite arc locked before impact.
+                Vector2 delta=targetPoint-centre;
+                float facing=Mathf.Abs(delta.x)>.05f?Mathf.Sign(delta.x):actor.Facing;
+                float angle=Mathf.Clamp(Mathf.Atan2(delta.y,Mathf.Abs(delta.x))*Mathf.Rad2Deg,-55,55)*Mathf.Deg2Rad;
+                Aim=new Vector2(facing*Mathf.Cos(angle),Mathf.Sin(angle));Origin=centre;End=centre+Aim*settings.Range;
+            }
             else if(Ability==BossAbility.Piercing)End=BeamEnd(Origin,Aim);
             else if(Ability==BossAbility.Sweep)
             {
@@ -250,7 +267,7 @@ namespace GoGhost.Duel
             if(terrain&&Projectile.TerrainHit(from,point,.015f,out _))return;
             hitInWindow=true;int before=actor.Player.CurrentHealth;
             actor.Player.TakeDamage(damage,actor.gameObject);
-            if(actor.Player.CurrentHealth<before)actor.View?.Impact(point);
+            if(actor.Player.CurrentHealth<before){ConnectedHits++;actor.View?.Impact(point);}
         }
         void NextRhythm()
         {
@@ -319,6 +336,8 @@ namespace GoGhost.Duel
         { if(Phase==BossActionPhase.Prepare){actor.Trace("cancel "+Ability);actor.Sounds?.StopAttack(actor.ActorId,AttackId);Recover();} }
         void Finish()
         {
+            if(Ability==BossAbility.Rhythm||Ability==BossAbility.DrawDash||Ability==BossAbility.ReturnCut||Ability==BossAbility.DropCut)
+                ConsecutiveMeleeMisses=ConnectedHits>hitsAtStart?0:ConsecutiveMeleeMisses+1;
             actor.Coordinator?.Release(actor);Ability=BossAbility.None;Phase=BossActionPhase.Idle;PublicThreats.Clear();
         }
         public void StopCombat()

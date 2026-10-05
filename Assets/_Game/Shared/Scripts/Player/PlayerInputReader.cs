@@ -34,10 +34,11 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     public bool LegacyCombatActive { get; private set; }
     public bool LegacyLegsAI { get; private set; }
     public bool LegacyArmsAI { get; private set; }
-    public bool LegacyBrainAI { get; private set; }
+    public bool LegacySpineAI { get; private set; }
+    public float DodgeDirection { get; private set; }
     private System.Func<LegacyCombatIntent> legacyLegs;
-    private System.Func<bool, Vector2> legacyArms;
-    private System.Func<Vector2, LegacyCombatIntent> legacyBrain;
+    private System.Func<LegacyCombatIntent> legacyArms;
+    private System.Func<float, bool, LegacyCombatIntent> legacySpine;
     private InputActionAsset legacyActions;
     private bool legacyFireHeld;
 
@@ -80,17 +81,17 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     private void Awake() => officer = GetComponent<OfficerIdentity>();
 
     /// <summary>Called once on a fresh combat actor. Ownership never changes during this actor's wave.</summary>
-    public void ConfigureLegacyControls(bool legsAI, bool armsAI, bool brainAI,
-        System.Func<LegacyCombatIntent> legs, System.Func<bool, Vector2> arms,
-        System.Func<Vector2, LegacyCombatIntent> brain)
+    public void ConfigureLegacyControls(bool legsAI, bool armsAI, bool spineAI,
+        System.Func<LegacyCombatIntent> legs, System.Func<LegacyCombatIntent> arms,
+        System.Func<float, bool, LegacyCombatIntent> spine)
     {
         if (LegacyCombatActive) throw new System.InvalidOperationException("Combat permissions are already locked.");
-        if ((legsAI && legs == null) || (armsAI && arms == null) || (brainAI && brain == null))
+        if ((legsAI && legs == null) || (armsAI && arms == null) || (spineAI && spine == null))
             throw new System.ArgumentException("An automated module requires its intent source.");
         EndAimOverride();
         LegacyCombatActive = true;
-        LegacyLegsAI = legsAI; LegacyArmsAI = armsAI; LegacyBrainAI = brainAI;
-        legacyLegs = legs; legacyArms = arms; legacyBrain = brain;
+        LegacyLegsAI = legsAI; LegacyArmsAI = armsAI; LegacySpineAI = spineAI;
+        legacyLegs = legs; legacyArms = arms; legacySpine = spine;
         // Preserve the project action asset and its old consumers. Only this actor's clone is restricted.
         legacyActions = Instantiate(InputSystem.actions);
         Restrict(legacyActions.FindAction("Player/Move", true), "<Keyboard>/a", "<Keyboard>/d");
@@ -98,7 +99,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         Restrict(legacyActions.FindAction("Player/Attack", true), "<Mouse>/leftButton");
         Restrict(legacyActions.FindAction("Player/Jump", true), "<Keyboard>/space");
         Restrict(legacyActions.FindAction("Player/Dodge", true), "<Keyboard>/leftShift");
-        Restrict(legacyActions.FindAction("Player/Ability", true), "<Keyboard>/e");
+        Restrict(legacyActions.FindAction("Player/Ability", true));
         Restrict(legacyActions.FindAction("Player/SecondaryAbility", true));
         Restrict(legacyActions.FindAction("Player/Previous", true));
         Restrict(legacyActions.FindAction("Player/Next", true));
@@ -264,22 +265,10 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
 
     private void ResolveLegacyIntent()
     {
-        var counter = GetComponent<PlayerCounterArm>();
-        bool manualBlade = !LegacyBrainAI && AbilityPressedThisFrame && counter != null
-            && counter.IsBlade && counter.CooldownRemaining <= 0f;
-        if (LegacyArmsAI) SetResolvedAim(legacyArms(manualBlade));
-        if (LegacyBrainAI)
+        if (LegacyArmsAI)
         {
-            // Brain receives the actual manual/automatic aim already selected for this frame.
-            LegacyCombatIntent decision = legacyBrain(AimDirection);
-            AbilityPressedThisFrame = decision.Blade;
-            if (LegacyArmsAI && decision.Blade && counter != null && counter.IsBlade && counter.CooldownRemaining <= 0f)
-            {
-                SetResolvedAim(legacyArms(true));
-                // Both actions share the final aim. Re-evaluate only firing after a blade redirect;
-                // keep the accepted blade request and never loop the two modules.
-                decision.Fire = legacyBrain(AimDirection).Fire;
-            }
+            LegacyCombatIntent decision = legacyArms();
+            SetResolvedAim(decision.Aim);
             AttackHeld = decision.Fire;
             AttackPressedThisFrame = decision.Fire && !legacyFireHeld;
             legacyFireHeld = decision.Fire;
@@ -289,10 +278,21 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
             LegacyCombatIntent decision = legacyLegs();
             MoveInput = new Vector2(Mathf.Clamp(decision.Move, -1f, 1f), 0f);
             JumpPressedThisFrame = decision.Jump;
-            DodgePressedThisFrame = decision.Dodge;
             JumpHeld = false;
         }
-        SecondaryAbilityPressedThisFrame = PreviousPressedThisFrame = NextPressedThisFrame = false;
+        DodgeDirection = 0f; // Manual Dodge uses movement / last movement facing.
+        if (LegacySpineAI) DodgePressedThisFrame = false;
+        AbilityPressedThisFrame = SecondaryAbilityPressedThisFrame = PreviousPressedThisFrame = NextPressedThisFrame = false;
+    }
+
+    // Called after the movement component refreshes contacts, before accepting either action.
+    // Spine observes this frame's executable movement/jump; it can write only Dodge.
+    public void ResolveLegacyDodge(bool executableJump)
+    {
+        if (!LegacyCombatActive || !LegacySpineAI || !GameplayInputEnabled || NarrativePaused || !hasFocus) return;
+        var decision = legacySpine(MoveInput.x, executableJump);
+        DodgePressedThisFrame = decision.Dodge;
+        DodgeDirection = decision.DodgeDirection;
     }
 
     private void SetResolvedAim(Vector2 direction)
@@ -391,6 +391,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         JumpPressedThisFrame = false;
         JumpHeld = false;
         DodgePressedThisFrame = false;
+        DodgeDirection = 0f;
         AbilityPressedThisFrame = false;
         SecondaryAbilityPressedThisFrame = false;
         PreviousPressedThisFrame = false;

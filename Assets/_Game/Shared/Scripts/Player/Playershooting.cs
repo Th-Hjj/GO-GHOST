@@ -44,6 +44,7 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
     public int BulletDamage => legacyCombat ? LegacyRifle.Damage : HasDeployment ? officer.Deployment.BulletDamage : stats.gunDamage;
     public float FireInterval => legacyCombat ? LegacyRifle.FireInterval : HasDeployment ? officer.Deployment.FireInterval : stats.fireRate;
     public float BulletSpeed => stats.bulletSpeed;
+    public float BulletRadius => bulletPrefab != null ? bulletPrefab.Radius : .125f;
     /// <summary>Player gun projectiles launched / that hit a living enemy.</summary>
     public int ShotsFired { get; private set; }
     public int ShotsHit { get; private set; }
@@ -133,7 +134,7 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
             // Held Attack resumes the rifle after automatic reload; the permission input gate still owns consent.
             bool autonomous = input.AutomaticFireRequested;
             bool trigger = autonomous || input.AttackHeld;
-            var actor = autonomous || (legacyCombat && input.LegacyBrainAI) ? ProjectileActor.InnerAI : ProjectileActor.Player;
+            var actor = autonomous || (legacyCombat && input.LegacyArmsAI) ? ProjectileActor.InnerAI : ProjectileActor.Player;
             if (trigger && !IsReloading && AmmoInMagazine > 0 && Time.time >= nextFireTime
                 && FireWeapon(aim, weapon, actor))
             {

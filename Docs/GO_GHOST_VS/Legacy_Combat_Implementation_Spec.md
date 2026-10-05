@@ -1,3 +1,14 @@
+> **Confirmed override — Thomas, 2026-10-05:** the player AI implementation request supersedes conflicting sections below. Retained combat, arena, Rifle values and three-wave police policies stay unchanged.
+>
+> - Legs = Move + Jump; Arms = Aim + Rifle; Spine = Dodge. Each is Player/AI, locked per fight. No Brain module in the formal duel.
+> - Remove player E, Arm-Blade, Shield, Counter, parry/deflection, melee and related HUD from the active runtime. Historical code may remain disconnected.
+> - Legs AI shares one stable rule set with Near 2.5–4.0, Mid 5.3–8.5, Far 10–13 horizontal collider-centre distances. Prefer safety, legal routes, clear Rifle rays, then distance; walk before purposeful reachable jumps.
+> - Arms AI holds a valid centre/upper/lower/body candidate ray, leads visible motion and continuously fires at unchanged Rifle cadence. Fully obstructed means no fire; only Legs may reposition.
+> - Ordinary Projectile from either actor is stopped by platforms. Existing special laser penetration is separate. Preserve one-way character platforms.
+> - Manual and AI Dodge work on ground and in air with unchanged distance/duration/immunity/cooldown; no per-jump limit or landing refresh. Spine uses a 0.20 s imminent-hit window and executable motion, chooses a useful safe left/right Dodge, preferring away from the enemy. Accepted Dodge locks horizontal authority and suppresses a new same-frame Jump.
+> - New Game/Restart = all Player + Mid. Retry/Next preserve permissions and preference; each fight resets resources and AI state. Keep player health UI placement.
+> - Narrow module/action/flow smoke, one mixed fight, one all-AI fight, compile and Windows build/launch. No exhaustive matrix, outcome tuning, new police tactics or forced all-AI loss. This task does not authorize push, merge or deploy.
+
 # GO GHOST — 恢复旧战斗＋三权限＋三波警察 AI
 ## Codex Astra Ultracode 实施 Prompt · 已确认 R01—R22 · 2026-10-03
 

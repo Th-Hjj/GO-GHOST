@@ -47,6 +47,7 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
     private OfficerIdentity officer;
     private bool legacyCombat;
     public float MoveSpeed => legacyCombat ? 7f : officer != null && officer.Deployment != null ? officer.Deployment.MoveSpeed : stats.moveSpeed;
+    public float JumpSpeed => stats.jumpForce;
     private SpriteRenderer spriteRenderer;
     private Vector2 moveInput;
     private int airJumpsRemaining;
@@ -152,7 +153,15 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
             RefillAirResources();
         }
 
-        if (input.JumpPressedThisFrame && (dodge == null || !dodge.IsDodging))
+        bool executableJump = input.JumpPressedThisFrame && (IsGrounded || HasDoubleJump && airJumpsRemaining > 0)
+            && (dodge == null || !dodge.IsDodging) && input.GameplayInputEnabled;
+        bool acceptedDodge = false;
+        if (input.LegacyCombatActive)
+        {
+            input.ResolveLegacyDodge(executableJump);
+            acceptedDodge = input.DodgePressedThisFrame && dodge != null && dodge.TryDodge(input.DodgeDirection);
+        }
+        if (executableJump && !acceptedDodge)
         {
             TryJump();
         }

@@ -1,18 +1,23 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// The same player policy in every wave. It requests the existing abilities through PlayerInputReader;
-/// it never writes a body, cooldown, permission, hit or opponent plan.
-/// </summary>
+public enum LegacyDistancePreference { Near, Mid, Far }
+
+/// <summary>One fixed-arena policy in every wave. Legs writes Move/Jump, Arms Aim/Fire, Spine Dodge only.</summary>
 public sealed class LegacyPlayerAI
 {
-    private const float BulletSpeed = 18f, JumpSpeed = 12f, DodgeDistance = 3f;
-    private const float DodgeDuration = .18f, Invulnerability = .25f, Horizon = .8f, Step = .04f;
+    // Prototype tuning lives here. Weapon, movement and dodge resources come from their real executors.
+    public static readonly Vector2 NearRange = new Vector2(2.5f, 4f);
+    public static readonly Vector2 MidRange = new Vector2(5.3f, 8.5f);
+    public static readonly Vector2 FarRange = new Vector2(10f, 13f);
+    public const float SpineThreatWindow = .20f;
+    public const float DistanceHysteresis = .35f, MoveHold = .16f, ShotPositionHold = .65f;
+    private const float Step = .02f, WalkLookahead = .3f, EndpointMargin = .12f;
+    private static readonly Vector2[] AimOffsets = { Vector2.zero, new Vector2(0,.65f), new Vector2(0,-.65f), new Vector2(-.55f,0), new Vector2(.55f,0) };
+    private static readonly float[] Moves = { 0, -1, 1 };
     private readonly PlayerHealth player;
     private readonly PlayerMovement movement;
     private readonly PlayerDodge dodge;
-    private readonly PlayerCounterArm blade;
     private readonly PlayerShooting gun;
     private readonly Rigidbody2D body, targetBody;
     private readonly Collider2D shape, targetShape;
@@ -20,44 +25,42 @@ public sealed class LegacyPlayerAI
     private readonly Transform combatRoot;
     private readonly List<Collider2D> supports = new List<Collider2D>();
     private readonly List<VisibleBullet> bullets = new List<VisibleBullet>();
-    // Only an already-expressed Crosscut needs the longer two-pass forecast. Ordinary motion stays at .8s.
-    private readonly Vector2[] path = new Vector2[81];
-    private int pathCount = 21;
+    private readonly Vector2 range;
+    private readonly Vector2[] path = new Vector2[64];
     private LegacyBossThreat threat;
     private Bounds selfBounds, targetBounds;
     private Vector2 targetVelocity;
     private float gravity, leftEdge = -15f, rightEdge = 15f;
-    private int sensedFrame = -1, automaticAimFrame = -1;
-    private float rememberedMove, moveHeldUntil;
+    private int sensedFrame = -1, aimIndex;
+    private float rememberedMove, moveHeldUntil, rangeMove;
     private Collider2D routePlatform;
-    private float routeUntil;
+    private float routeX, routeUntil;
+    private bool routeJump, airborneRoute;
+    private Vector2 lastAim = Vector2.right;
 
     private struct VisibleBullet
     {
         public Vector2 Position, Velocity;
         public float Radius;
-        public bool Counterable;
     }
-
     private struct Motion
     {
-        public float Move;
-        public bool Jump, Dodge;
-        public Motion(float move, bool jump = false, bool dash = false)
-        { Move = move; Jump = jump; Dodge = dash; }
+        public float Move, DodgeDirection;
+        public bool Jump;
+        public Motion(float move, bool jump = false, float dodgeDirection = 0)
+        { Move = move; Jump = jump; DodgeDirection = dodgeDirection; }
     }
 
-    public LegacyPlayerAI(PlayerHealth player, CyberpsychoBoss boss, Collider2D[] platforms)
+    public LegacyPlayerAI(PlayerHealth player, CyberpsychoBoss boss, Collider2D[] platforms,
+        LegacyDistancePreference preference = LegacyDistancePreference.Mid)
     {
         this.player = player; this.boss = boss;
-        movement = player.GetComponent<PlayerMovement>();
-        dodge = player.GetComponent<PlayerDodge>();
-        blade = player.GetComponent<PlayerCounterArm>();
+        movement = player.GetComponent<PlayerMovement>(); dodge = player.GetComponent<PlayerDodge>();
         gun = player.GetComponent<PlayerShooting>();
         body = player.GetComponent<Rigidbody2D>(); shape = player.GetComponent<Collider2D>();
         targetBody = boss.GetComponent<Rigidbody2D>(); targetShape = boss.GetComponent<Collider2D>();
         combatRoot = player.transform.parent;
-        // Current fixed arena only. Use real colliders, including the floor, rather than invented footholds.
+        range = preference == LegacyDistancePreference.Near ? NearRange : preference == LegacyDistancePreference.Far ? FarRange : MidRange;
         foreach (var collider in Object.FindObjectsByType<Collider2D>(FindObjectsSortMode.None))
         {
             if (!collider.enabled || collider.isTrigger || collider.gameObject.layer != LayerMask.NameToLayer("Ground")) continue;
@@ -73,7 +76,6 @@ public sealed class LegacyPlayerAI
             foreach (var platform in platforms)
                 if (platform != null && !supports.Contains(platform)) supports.Add(platform);
     }
-
     private bool Active => player != null && boss != null && !player.IsDead
         && boss.gameObject.activeInHierarchy && shape.enabled && targetShape.enabled;
 
@@ -84,110 +86,56 @@ public sealed class LegacyPlayerAI
         selfBounds = shape.bounds; targetBounds = targetShape.bounds;
         targetVelocity = targetBody.linearVelocity;
         gravity = Mathf.Abs(Physics2D.gravity.y * body.gravityScale);
-        threat = boss.PublicThreat; // This struct contains only the warnings actually displayed in the scene.
+        threat = boss.PublicThreat; // Only expressed warnings, never a future combo or hidden policy.
         bullets.Clear();
         if (combatRoot == null) return;
         foreach (var projectile in combatRoot.GetComponentsInChildren<Projectile>())
         {
             if (projectile.OwnerLayer == player.gameObject.layer) continue;
-            var projectileBody = projectile.GetComponent<Rigidbody2D>();
-            var projectileShape = projectile.GetComponent<Collider2D>();
-            if (projectileBody == null || !projectileBody.simulated || projectileShape == null || !projectileShape.enabled) continue;
-            bullets.Add(new VisibleBullet { Position = projectileBody.position, Velocity = projectileBody.linearVelocity,
-                Radius = Mathf.Max(projectileShape.bounds.extents.x, projectileShape.bounds.extents.y),
-                // Arm-Blade turns around ordinary live bullets. CanBeCountered belongs only to legacy
-                // Counter Arm's on-body cancellation and must not narrow the restored blade's coverage.
-                Counterable = !projectile.Deflected });
+            var moving = projectile.GetComponent<Rigidbody2D>();
+            var hitbox = projectile.GetComponent<Collider2D>();
+            if (moving == null || !moving.simulated || hitbox == null || !hitbox.enabled) continue;
+            bullets.Add(new VisibleBullet { Position = moving.position, Velocity = moving.linearVelocity, Radius = projectile.Radius });
         }
     }
 
-    public Vector2 Aim(bool bladeRequested)
+    public LegacyCombatIntent Arms()
     {
-        if (!Active) return Vector2.right;
-        Sense();
-        automaticAimFrame = Time.frameCount;
-        Vector2 origin = selfBounds.center;
-        if (bladeRequested)
-        {
-            if (BladeThreat(out Vector2 counterDirection)) return counterDirection;
-            return ((Vector2)targetBounds.center - origin).normalized;
-        }
-        // Iterative intercept from the real muzzle and current visible velocity. No homing after Launch.
-        Vector2 point = targetBounds.center;
-        float flight = Vector2.Distance(origin, point) / BulletSpeed;
-        for (int i = 0; i < 3; i++)
-        {
-            point = PredictTarget(Mathf.Min(flight, 1.4f));
-            Vector2 direction = (point - origin).normalized;
-            flight = Vector2.Distance(gun.GetMuzzlePosition(direction), point) / BulletSpeed;
-        }
-        return (point - origin).sqrMagnitude > .001f ? (point - origin).normalized : Vector2.right;
-    }
-
-    public LegacyCombatIntent Brain(Vector2 resolvedAim)
-    {
-        var result = new LegacyCombatIntent();
+        var result = new LegacyCombatIntent { Aim = lastAim };
         if (!Active) return result;
         Sense();
-        Vector2 aim = resolvedAim.sqrMagnitude > .001f ? resolvedAim.normalized : Vector2.right;
-        result.Fire = FireOpportunity(aim);
-        if (blade == null || blade.CooldownRemaining > 0 || blade.IsWindowOpen) return result;
-        // Brain evaluates the actual resolved direction, including manual Arms. It cannot substitute an AI aim.
-        if (InsideBlade(targetBounds.center, aim, targetBounds.extents.magnitude * .55f)) result.Blade = true;
-        foreach (var bullet in bullets)
-        {
-            if (!bullet.Counterable) continue;
-            float arrival = ClosestTime(bullet.Position - (Vector2)selfBounds.center,
-                bullet.Velocity - body.linearVelocity, .18f);
-            float catchTime = Mathf.Max(0,arrival-.055f);
-            Vector2 future = bullet.Position + bullet.Velocity * catchTime;
-            Vector2 futureOrigin = (Vector2)selfBounds.center+body.linearVelocity*catchTime;
-            if (InsideBlade(future, aim, bullet.Radius, futureOrigin) && Vector2.Distance(future, futureOrigin) < 2.3f)
-                result.Blade = true;
-        }
-        // The reader has actually run the authorised automatic Arms callback this frame. A legal E request
-        // can therefore receive its blade direction in the reader's following Aim(true) step. With manual
-        // Arms this branch is unavailable: only the already-resolved direction above can authorise E.
-        bool automaticBladeAim = automaticAimFrame == Time.frameCount && BladeThreat(out _);
-        if (automaticBladeAim) result.Blade = true;
-        // Only the original compatible ordinary blade contact can parry; Drop is deliberately excluded.
-        if (threat.Visible && (threat.Kind == LegacyThreatKind.GhostSlash || threat.Kind == LegacyThreatKind.Crosscut)
-            && threat.TimeToImpact <= .28f && threat.DangerArea.Intersects(selfBounds)
-            && Vector2.Dot(aim, (Vector2)targetBounds.center - (Vector2)selfBounds.center) > 0)
-            result.Blade = true;
+        // Keep a valid body point. Reconsider the finite centre-first list only when that line fails.
+        if (AimAt(selfBounds.center, aimIndex, out var direction))
+        { result.Aim = lastAim = direction; result.Fire = true; return result; }
+        for (int i = 0; i < AimOffsets.Length; i++)
+            if (i != aimIndex && AimAt(selfBounds.center, i, out direction))
+            { aimIndex = i; result.Aim = lastAim = direction; result.Fire = true; return result; }
         return result;
     }
 
-    private bool FireOpportunity(Vector2 aim)
+    private bool AimAt(Vector2 centre, int index, out Vector2 direction)
     {
-        Vector2 muzzle = gun.GetMuzzlePosition(aim);
-        float flight = Vector2.Distance(muzzle, targetBounds.center) / BulletSpeed;
-        Vector2 expected = PredictTarget(Mathf.Min(flight, 1.4f));
-        float along = Vector2.Dot(expected-muzzle,aim), across = Mathf.Abs(Cross(expected-muzzle,aim));
-        float radius = Mathf.Abs(aim.y)*targetBounds.extents.x+Mathf.Abs(aim.x)*targetBounds.extents.y;
-        return along>0 && along<BulletSpeed*2.9f && across<radius+.12f && !ProjectileBlocked(muzzle,aim,along);
-    }
-
-    private bool BladeThreat(out Vector2 direction)
-    {
-        direction = Vector2.zero;
-        float bestTime = .3f;
-        Vector2 origin = selfBounds.center;
-        foreach (var bullet in bullets)
+        Vector2 offset = Vector2.Scale(AimOffsets[index], targetBounds.extents);
+        Vector2 origin = centre + (Vector2)player.transform.position - (Vector2)selfBounds.center;
+        Vector2 point = (Vector2)targetBounds.center + offset;
+        float flight = Vector2.Distance(origin, point) / gun.BulletSpeed;
+        for (int i = 0; i < 3; i++)
         {
-            if (!bullet.Counterable) continue;
-            Vector2 relativeVelocity = bullet.Velocity-body.linearVelocity;
-            Vector2 offset = bullet.Position-origin;
-            if (Vector2.Dot(offset,relativeVelocity)>=0) continue;
-            float arrival = ClosestTime(offset,relativeVelocity,.22f);
-            if ((offset+relativeVelocity*arrival).magnitude>selfBounds.extents.magnitude+bullet.Radius+.12f) continue;
-            // Face the bullet before it reaches the body, rather than aiming at a zero-length contact vector.
-            float catchTime = Mathf.Max(0,arrival-.055f);
-            Vector2 catchOffset = offset+relativeVelocity*catchTime;
-            if (arrival>=bestTime || catchOffset.magnitude>2.1f || catchOffset.sqrMagnitude<.01f) continue;
-            bestTime=arrival; direction=catchOffset.normalized;
+            point = PredictTarget(Mathf.Min(flight, 1.4f)) + offset;
+            direction = (point - origin).normalized;
+            Vector2 muzzle = gun.GetMuzzlePosition(direction) + origin - (Vector2)player.transform.position;
+            flight = Vector2.Distance(muzzle, point) / gun.BulletSpeed;
         }
-        return direction.sqrMagnitude>.01f;
+        direction = (point - origin).normalized;
+        Vector2 start = gun.GetMuzzlePosition(direction) + origin - (Vector2)player.transform.position;
+        // Also check the barrel segment: the muzzle cannot silently originate beyond a platform.
+        return direction.sqrMagnitude > .9f && !Projectile.TerrainHit(origin, point, gun.BulletRadius, out _)
+            && !Projectile.TerrainHit(start, point, gun.BulletRadius, out _);
+    }
+    private bool CanShootFrom(Vector2 centre)
+    {
+        for (int i = 0; i < AimOffsets.Length; i++) if (AimAt(centre, i, out _)) return true;
+        return false;
     }
 
     public LegacyCombatIntent Legs()
@@ -195,341 +143,314 @@ public sealed class LegacyPlayerAI
         var result = new LegacyCombatIntent();
         if (!Active) return result;
         Sense();
-        float desire = PositionDirection();
-        if (dodge.IsDodging) { result.Move = Mathf.Sign(body.linearVelocity.x); return result; }
-        Motion best = new Motion(desire);
-        float bestScore = Score(best, desire, out float walkingRisk);
-        foreach (float move in new[] { 0f, -1f, 1f })
+        if (dodge.IsDodging) return result;
+        // A jump has a landing target; minor enemy motion does not replace it in midair.
+        if (airborneRoute && !movement.IsGrounded)
+        { result.Move = Towards(routeX); return result; }
+        if (airborneRoute) { airborneRoute = false; routePlatform = null; }
+        float desire = RangeDirection();
+        bool sight = CanShootFrom(selfBounds.center);
+        if (!sight && movement.IsGrounded && (routePlatform == null || Time.time >= routeUntil)) FindShotPosition();
+        bool jump = false;
+        if (routePlatform != null)
         {
-            var candidate = new Motion(move);
-            float score = Score(candidate, desire, out _);
-            if (score < bestScore) { bestScore = score; best = candidate; }
-        }
-        bool grounded = movement.IsGrounded;
-        // Jump only for a real visible threat, an edge escape, or a reachable chosen platform.
-        bool needsPlatform = grounded && ChoosePlatform(desire);
-        bool nearEdge = selfBounds.center.x < leftEdge + 2.6f || selfBounds.center.x > rightEdge - 2.6f;
-        if (grounded && (walkingRisk > .1f || needsPlatform || nearEdge && Mathf.Abs(targetBounds.center.x-selfBounds.center.x)<4f))
-        {
-            foreach (float move in new[] { desire, -desire, 0f })
+            if (sight && Time.time >= routeUntil) routePlatform = null;
+            else
             {
-                var candidate = new Motion(move, true);
-                if (!JumpHasClearHeadroom()) continue;
-                float score = Score(candidate, desire, out _);
-                if (needsPlatform && routePlatform != null && move == Mathf.Sign(routePlatform.bounds.center.x-selfBounds.center.x)) score -= 1.5f;
-                if (score < bestScore) { bestScore = score; best = candidate; }
+                desire = Towards(routeX);
+                jump = routeJump && movement.IsGrounded && JumpHasClearHeadroom();
+                if (!jump && Mathf.Abs(routeX-selfBounds.center.x)<.2f && Time.time>=routeUntil) routePlatform=null;
             }
         }
-        bool canDodge = grounded && !player.IsInvulnerable && Time.time - dodge.LastDodgeStartedAt >= dodge.DodgeStartInterval;
-        if (canDodge && walkingRisk > .1f)
+        if (SolidTravel(desire * movement.MoveSpeed * .12f) < .06f) desire = 0;
+        var best = new Motion(desire, jump);
+        float risk = Risk(best, WalkLookahead), bestRisk = risk;
+        // Avoid imminent harm with ordinary walking first; distance is a preference, never an override.
+        if (risk > 0)
         {
-            // Check the entire visible stream and the endpoint after immunity, not only the closest bullet.
-            foreach (float move in new[] { -1f, 1f })
+            foreach (float move in Moves)
             {
-                if (SolidTravel(move * DodgeDistance) < 1f) continue;
-                var candidate = new Motion(move, false, true);
-                float score = Score(candidate, desire, out _);
-                if (score < bestScore) { bestScore = score; best = candidate; }
+                if (move != 0 && SolidTravel(move * movement.MoveSpeed * WalkLookahead) < .1f) continue;
+                var candidate = new Motion(move);
+                float candidateRisk = Risk(candidate, WalkLookahead);
+                if (candidateRisk < bestRisk) { best = candidate; bestRisk = candidateRisk; }
             }
+            if (bestRisk > 0 && movement.IsGrounded && JumpHasClearHeadroom())
+                foreach (float move in Moves)
+                {
+                    if (!LandingFor(move, out var support, out float landingX)) continue;
+                    var candidate = new Motion(move, true);
+                    float candidateRisk = Risk(candidate, WalkLookahead);
+                    if (candidateRisk >= bestRisk) continue;
+                    best = candidate; bestRisk = candidateRisk;
+                    routePlatform = support; routeX = landingX; routeJump = true;
+                }
         }
-        result.Move = best.Move; result.Jump = best.Jump; result.Dodge = best.Dodge;
-        if (best.Move != 0f && best.Move != rememberedMove)
-        { rememberedMove = best.Move; moveHeldUntil = Time.time + .16f; }
+        if (bestRisk <= 0 && Time.time < moveHeldUntil && best.Move != rememberedMove && !best.Jump
+            && Risk(new Motion(rememberedMove), WalkLookahead) <= 0 && SolidTravel(rememberedMove*.3f)>.1f)
+            best.Move = rememberedMove;
+        if (best.Move != rememberedMove) { rememberedMove=best.Move; moveHeldUntil=Time.time+MoveHold; }
+        if (best.Jump) { airborneRoute=true; routeUntil=Time.time+ShotPositionHold; }
+        result.Move=best.Move; result.Jump=best.Jump;
         return result;
     }
 
-    private float PositionDirection()
+    private float RangeDirection()
     {
-        float separation = targetBounds.center.x - selfBounds.center.x;
-        float distance = Mathf.Abs(separation), toward = Mathf.Sign(separation);
-        if (selfBounds.center.x < leftEdge + 2f) return 1f;
-        if (selfBounds.center.x > rightEdge - 2f) return -1f;
-        if (routePlatform != null && Time.time < routeUntil)
-        {
-            var destination=routePlatform.bounds;
-            if (movement.IsGrounded && Mathf.Abs(selfBounds.min.y-destination.max.y)<.14f)
-                routePlatform=null;
-            else
-            {
-                float delta=destination.center.x-selfBounds.center.x;
-                return Mathf.Abs(delta)<.35f?0f:Mathf.Sign(delta);
-            }
-        }
-        if (distance < 5.3f) return -toward;
-        if (distance > 8.5f) return toward;
-        return 0f;
+        float separation = targetBounds.center.x-selfBounds.center.x;
+        float distance = Mathf.Abs(separation), toward = separation < 0 ? -1 : 1;
+        if (rangeMove != 0 && distance >= range.x && distance <= range.y) rangeMove=0;
+        if (distance < range.x-DistanceHysteresis) rangeMove=-toward;
+        else if (distance > range.y+DistanceHysteresis) rangeMove=toward;
+        return rangeMove;
+    }
+    private float Towards(float x) => Mathf.Abs(x-selfBounds.center.x)<.15f ? 0 : Mathf.Sign(x-selfBounds.center.x);
+    private float RangeCost(float x)
+    {
+        float d=Mathf.Abs(x-targetBounds.center.x);
+        return d<range.x ? range.x-d : d>range.y ? d-range.y : 0;
     }
 
-    private float Score(Motion motion, float desire, out float risk)
+    private void FindShotPosition()
     {
-        PredictPath(motion);
-        risk = 0f;
-        float immunity = motion.Dodge ? Invulnerability : Mathf.Max(0, Invulnerability-(Time.time-dodge.LastDodgeStartedAt));
-        for (int i = 1; i < pathCount; i++)
+        routePlatform=null;
+        float best=float.PositiveInfinity;
+        Collider2D currentSupport=null;
+        foreach(var support in supports)
+            if(support!=null && support.enabled && Mathf.Abs(selfBounds.min.y-support.bounds.max.y)<.15f
+                && selfBounds.center.x>support.bounds.min.x && selfBounds.center.x<support.bounds.max.x)
+            { currentSupport=support; break; }
+        foreach (var support in supports)
         {
-            float t = i * Step;
-            if (t < immunity) continue;
-            Vector2 centre = path[i];
-            foreach (var bullet in bullets)
+            if (support==null || !support.enabled) continue;
+            var b=support.bounds;
+            float rise=b.max.y-selfBounds.min.y;
+            if (rise>movement.JumpSpeed*movement.JumpSpeed/(2*gravity)-.08f) continue;
+            float min=Mathf.Max(b.min.x+selfBounds.extents.x+.1f,leftEdge+selfBounds.extents.x+.1f);
+            float max=Mathf.Min(b.max.x-selfBounds.extents.x-.1f,rightEdge-selfBounds.extents.x-.1f);
+            if (min>max) continue;
+            float preferred=(range.x+range.y)*.5f;
+            float[] candidates={ selfBounds.center.x, selfBounds.center.x-1.5f, selfBounds.center.x+1.5f,
+                targetBounds.center.x-preferred, targetBounds.center.x+preferred, min, max, b.center.x };
+            foreach (float requested in candidates)
             {
-                Vector2 a = bullet.Position + bullet.Velocity * (t-Step) - path[i-1];
-                Vector2 b = bullet.Position + bullet.Velocity * t - centre;
-                if (!SegmentBox(a, b, (Vector2)selfBounds.extents + Vector2.one*(bullet.Radius+.04f))) continue;
-                // Coordination is based on an already-open real slash, never a proposed E request.
-                if (blade != null && blade.IsWindowOpen && bullet.Counterable && t < blade.WindowRemaining
-                    && InsideBlade(bullet.Position + bullet.Velocity*t, blade.ActiveBladeDirection, bullet.Radius, centre)) continue;
-                risk += 8f * Mathf.Max(.25f,1.3f-t);
+                float x=Mathf.Clamp(requested,min,max);
+                var position=new Vector2(x,b.max.y+selfBounds.extents.y+.02f);
+                float travel=Mathf.Abs(x-selfBounds.center.x);
+                bool needsJump=rise>.18f || Mathf.Abs(rise)<=.18f && currentSupport!=support;
+                // Descend by actually walking off the current support. A floor point underneath it
+                // is not a reachable walk destination, even though the eventual shot line is clear.
+                if (rise < -.18f && currentSupport!=null
+                    && x>currentSupport.bounds.min.x-selfBounds.extents.x-.1f
+                    && x<currentSupport.bounds.max.x+selfBounds.extents.x+.1f) continue;
+                if (needsJump)
+                {
+                    float flight=(movement.JumpSpeed+Mathf.Sqrt(Mathf.Max(0,movement.JumpSpeed*movement.JumpSpeed-2*gravity*rise)))/gravity;
+                    if (travel>movement.MoveSpeed*flight-.1f || SolidTravel(x-selfBounds.center.x)+.1f<travel) continue;
+                }
+                else if (SolidTravel(x-selfBounds.center.x)+.1f<travel) continue;
+                if (new Bounds(position,selfBounds.size).Intersects(targetBounds) || !CanShootFrom(position)
+                    || PointDanger(position, SpineThreatWindow)) continue;
+                float cost=RangeCost(x)*3+travel*.25f+(needsJump?1.8f:0)+Mathf.Abs(rise)*.2f;
+                if (cost>=best) continue;
+                best=cost; routePlatform=support; routeX=x; routeJump=needsJump;
             }
-            risk += WarningRisk(centre, t);
         }
-        // A later declared follow-up extends threat evaluation, not the preferred-distance lookahead.
-        Vector2 end = PathAt(Horizon);
-        float distance = Mathf.Abs(targetBounds.center.x + targetVelocity.x*.25f-end.x);
-        float positionCost = distance < 4.2f ? (4.2f-distance)*1.3f : distance>9f ? (distance-9f)*.3f : 0f;
-        float edgeSpace = Mathf.Min(end.x-leftEdge,rightEdge-end.x);
-        positionCost += Mathf.Max(0,2.2f-edgeSpace)*1.8f;
-        float change = motion.Move != desire ? .12f : 0f;
-        if (Time.time < moveHeldUntil && motion.Move != rememberedMove) change += .18f;
-        return risk + positionCost + change + (motion.Jump ? .8f : 0f) + (motion.Dodge ? 1.6f : 0f);
+        routeUntil=Time.time+ShotPositionHold;
     }
 
-    private float WarningRisk(Vector2 centre, float t)
+    private bool LandingFor(float move, out Collider2D landing, out float x)
     {
-        if (!threat.Visible) return 0f;
-        float start = Mathf.Max(0, threat.TimeToImpact);
-        float active = Mathf.Max(.08f, threat.ActiveRemaining);
-        var projected = new Bounds(centre, selfBounds.size);
-        switch (threat.Kind)
+        landing=null; x=selfBounds.center.x;
+        float bestTime=float.PositiveInfinity;
+        foreach(var support in supports)
         {
-            case LegacyThreatKind.GhostSlash:
-            case LegacyThreatKind.PredatorDrop:
-                if (t < start-.03f || t > start+active+.06f) return 0f;
-                if (!threat.DangerArea.Intersects(projected)) return 0f;
-                return threat.Kind == LegacyThreatKind.PredatorDrop ? 3.5f : 2.7f;
-            case LegacyThreatKind.Crosscut:
-                float currentPass = t >= start-.03f && t <= start+active+.06f
-                    && threat.DangerArea.Intersects(projected) ? (threat.FollowupExpected ? 3.1f : 2.7f) : 0f;
-                return Mathf.Max(currentPass, CrosscutFollowupRisk(projected,t));
-            case LegacyThreatKind.MarkedLocked:
-            case LegacyThreatKind.SweepLow:
-            case LegacyThreatKind.SweepHigh:
-            case LegacyThreatKind.Burst:
-                if (!threat.Locked && threat.Kind != LegacyThreatKind.SweepLow && threat.Kind != LegacyThreatKind.SweepHigh) return 0f;
-                Vector2 relative = centre-threat.Origin;
-                float distance = Vector2.Dot(relative, threat.Direction);
-                if (distance < 0 || threat.ProjectileSpeed <= 0) return 0f;
-                float arrival = start + distance/threat.ProjectileSpeed;
-                // The displayed sweep is a stream; reserve an exit through its whole visible active segment.
-                float width = threat.Kind == LegacyThreatKind.MarkedLocked ? .08f : active;
-                if (t < arrival-.045f || t > arrival+width) return 0f;
-                float cross = Mathf.Abs(Cross(relative,threat.Direction));
-                float half = Mathf.Abs(threat.Direction.y)*selfBounds.extents.x+Mathf.Abs(threat.Direction.x)*selfBounds.extents.y;
-                return cross < half+.13f ? 2.2f : 0f;
-            default: return 0f; // A still-tracking mark does not reveal its eventual locked line.
+            if(support==null || !support.enabled) continue;
+            float rise=support.bounds.max.y-selfBounds.min.y;
+            float discriminant=movement.JumpSpeed*movement.JumpSpeed-2*gravity*rise;
+            if(discriminant<0) continue;
+            float time=(movement.JumpSpeed+Mathf.Sqrt(discriminant))/gravity;
+            float candidate=selfBounds.center.x+move*movement.MoveSpeed*time;
+            if(candidate<support.bounds.min.x+selfBounds.extents.x || candidate>support.bounds.max.x-selfBounds.extents.x
+                || candidate<leftEdge+selfBounds.extents.x || candidate>rightEdge-selfBounds.extents.x
+                || SolidTravel(candidate-selfBounds.center.x)+.1f<Mathf.Abs(candidate-selfBounds.center.x)) continue;
+            if(time<bestTime) { bestTime=time; landing=support; x=candidate; }
         }
+        return landing!=null;
     }
 
-    private void PredictPath(Motion motion)
+    public LegacyCombatIntent Spine(float acceptedMove, bool executableJump)
     {
-        float horizon=Horizon;
-        if (threat.Visible && threat.Kind==LegacyThreatKind.Crosscut && threat.FollowupExpected
-            && threat.FollowupSpeed>0f)
+        var result=new LegacyCombatIntent();
+        if(!Active || !dodge.CanDodge) return result;
+        Sense();
+        // Current horizontal authority and only a jump that can actually execute this frame.
+        if(Risk(new Motion(acceptedMove, executableJump),SpineThreatWindow)<=0) return result;
+        float away=selfBounds.center.x<targetBounds.center.x ? -1 : 1;
+        foreach(float direction in new[]{away,-away})
         {
-            float firstEnds=threat.TimeToImpact+threat.ActiveRemaining;
-            float endpoint=CommittedCrosscutEndX();
-            // Bound the second pass using own possible movement before its re-sample. No future police target is read.
-            float returnDistance=Mathf.Abs(endpoint-selfBounds.center.x)+movement.MoveSpeed*firstEnds+2f;
-            horizon=Mathf.Clamp(firstEnds+threat.FollowupGap+returnDistance/threat.FollowupSpeed+.1f,Horizon,3.2f);
+            if(SolidTravel(direction*dodge.Distance)<dodge.Distance-.08f) continue;
+            // Trigger is short. Validate the escape through i-frame expiry and the immediate endpoint too.
+            float check=Mathf.Max(SpineThreatWindow,dodge.InvulnerabilityDuration+EndpointMargin);
+            if(Risk(new Motion(acceptedMove,false,direction),check)>0) continue;
+            result.Dodge=true; result.DodgeDirection=direction; break;
         }
-        pathCount=Mathf.Min(path.Length,Mathf.CeilToInt(horizon/Step)+1);
-        Vector2 position = selfBounds.center;
-        float vy = motion.Jump ? JumpSpeed : body.linearVelocity.y;
-        bool grounded = movement.IsGrounded && !motion.Jump;
-        path[0] = position;
-        for (int i = 1; i < pathCount; i++)
+        return result;
+    }
+
+    private float Risk(Motion motion,float horizon)
+    {
+        int count=PredictPath(motion,horizon);
+        float immunity=motion.DodgeDirection!=0 ? dodge.InvulnerabilityDuration
+            : Mathf.Max(0,dodge.InvulnerabilityDuration-(Time.time-dodge.LastDodgeStartedAt));
+        float risk=0;
+        for(int i=1;i<count;i++)
         {
-            float t = i*Step;
-            float vx = motion.Move*(motion.Dodge && t<=DodgeDuration ? DodgeDistance/DodgeDuration : movement.MoveSpeed);
-            Vector2 previous = position;
-            position.x = Mathf.Clamp(position.x+vx*Step,leftEdge+selfBounds.extents.x+.02f,rightEdge-selfBounds.extents.x-.02f);
-            // Ordinary body collision can stop a dash; immunity is not permission to phase through the police.
-            var opponent = targetBounds;
-            opponent.center += (Vector3)(targetVelocity*Mathf.Min(t,.2f));
-            bool verticalOverlap = position.y-selfBounds.extents.y < opponent.max.y && position.y+selfBounds.extents.y > opponent.min.y;
-            if (verticalOverlap && !Physics2D.GetIgnoreCollision(shape,targetShape))
+            float t=i*Step;
+            if(t<immunity) continue;
+            foreach(var bullet in bullets)
             {
-                if (previous.x+selfBounds.extents.x <= opponent.min.x && position.x+selfBounds.extents.x > opponent.min.x)
-                    position.x = opponent.min.x-selfBounds.extents.x-.01f;
-                if (previous.x-selfBounds.extents.x >= opponent.max.x && position.x-selfBounds.extents.x < opponent.max.x)
-                    position.x = opponent.max.x+selfBounds.extents.x+.01f;
+                Vector2 from=bullet.Position+bullet.Velocity*(t-Step), to=bullet.Position+bullet.Velocity*t;
+                if(Projectile.TerrainHit(bullet.Position,to,bullet.Radius,out var wall))
+                {
+                    // A blocker after contact cannot protect the player. Limit this step to the hit point.
+                    float blockedAt=wall.distance/Mathf.Max(.001f,bullet.Velocity.magnitude);
+                    if(blockedAt<=t-Step) continue;
+                    to=bullet.Position+bullet.Velocity*blockedAt;
+                }
+                if(SegmentBox(from-path[i-1],to-path[i],(Vector2)selfBounds.extents+Vector2.one*bullet.Radius)) risk+=1;
             }
-            if (grounded && !SupportedAt(position)) grounded = false;
-            if (!grounded)
+            if(WarningHits(path[i-1],path[i],t)) risk+=1;
+        }
+        return risk;
+    }
+    private bool PointDanger(Vector2 centre,float time)
+    {
+        foreach(var bullet in bullets)
+        {
+            Vector2 to=bullet.Position+bullet.Velocity*time;
+            if(!Projectile.TerrainHit(bullet.Position,to,bullet.Radius,out _)
+                && SegmentBox(bullet.Position-centre,to-centre,(Vector2)selfBounds.extents+Vector2.one*bullet.Radius)) return true;
+        }
+        return WarningHits(centre,centre,time);
+    }
+    private bool WarningHits(Vector2 previous,Vector2 centre,float time)
+    {
+        if(!threat.Visible || !threat.Locked) return false;
+        float start=threat.TimeToImpact;
+        float active=Mathf.Max(.02f,threat.ActiveRemaining);
+        if(threat.ProjectileSpeed>0)
+        {
+            if(time<start) return false;
+            float along=Vector2.Dot(centre-threat.Origin,threat.Direction);
+            float arrival=start+along/threat.ProjectileSpeed;
+            float width=threat.Kind==LegacyThreatKind.MarkedLocked ? Step : active;
+            if(along<0 || time<arrival-Step || time>arrival+width) return false;
+            var to=threat.Origin+threat.Direction*Mathf.Max(0,along);
+            if(Projectile.TerrainHit(threat.Origin,to,.125f,out _)) return false;
+            float across=Mathf.Abs(Cross(centre-threat.Origin,threat.Direction));
+            float half=Mathf.Abs(threat.Direction.y)*selfBounds.extents.x+Mathf.Abs(threat.Direction.x)*selfBounds.extents.y;
+            return across<half+.125f;
+        }
+        if(time<start || time>start+active) return false;
+        if(threat.Kind==LegacyThreatKind.PredatorDrop) return threat.DangerArea.Intersects(new Bounds(centre,selfBounds.size));
+        if(threat.Kind!=LegacyThreatKind.GhostSlash && threat.Kind!=LegacyThreatKind.Crosscut) return false;
+        // The shown lane is swept over time, not an instantaneous arena-sized hitbox. Only this committed pass.
+        float travel=Mathf.Max(0,threat.DangerArea.size.x-1.8f);
+        float speed=travel/active;
+        float now=Mathf.Clamp(time-start,0,active), before=Mathf.Clamp(time-Step-start,0,active);
+        Vector2 a=threat.Origin+threat.Direction*(.85f+speed*before);
+        Vector2 b=threat.Origin+threat.Direction*(.85f+speed*now);
+        return SegmentBox(a-previous,b-centre,(Vector2)selfBounds.extents+new Vector2(.9f,.65f));
+    }
+
+    private int PredictPath(Motion motion,float horizon)
+    {
+        int count=Mathf.Min(path.Length,Mathf.CeilToInt(horizon/Step)+1);
+        Vector2 position=selfBounds.center;
+        float vy=motion.Jump ? movement.JumpSpeed : body.linearVelocity.y;
+        bool grounded=movement.IsGrounded && !motion.Jump;
+        path[0]=position;
+        for(int i=1;i<count;i++)
+        {
+            float t=i*Step;
+            float vx=motion.DodgeDirection!=0 && t<=dodge.Duration ? motion.DodgeDirection*dodge.Distance/dodge.Duration : motion.Move*movement.MoveSpeed;
+            Vector2 previous=position;
+            position.x=Mathf.Clamp(position.x+vx*Step,leftEdge+selfBounds.extents.x+.01f,rightEdge-selfBounds.extents.x-.01f);
+            var opponent=targetBounds; opponent.center+=(Vector3)(targetVelocity*Mathf.Min(t,SpineThreatWindow));
+            if(position.y-selfBounds.extents.y<opponent.max.y && position.y+selfBounds.extents.y>opponent.min.y && !Physics2D.GetIgnoreCollision(shape,targetShape))
             {
-                vy -= gravity*Step; position.y += vy*Step;
-                if (vy<=0)
-                    foreach (var support in supports)
+                if(previous.x+selfBounds.extents.x<=opponent.min.x && position.x+selfBounds.extents.x>opponent.min.x) position.x=opponent.min.x-selfBounds.extents.x-.01f;
+                if(previous.x-selfBounds.extents.x>=opponent.max.x && position.x-selfBounds.extents.x<opponent.max.x) position.x=opponent.max.x+selfBounds.extents.x+.01f;
+            }
+            if(grounded && !SupportedAt(position)) grounded=false;
+            if(!grounded)
+            {
+                vy-=gravity*Step; position.y+=vy*Step;
+                if(vy<=0)
+                    foreach(var support in supports)
                     {
-                        if (support == null || !support.enabled || !support.gameObject.activeInHierarchy) continue;
-                        var bounds = support.bounds;
-                        if (position.x+selfBounds.extents.x*.5f<bounds.min.x || position.x-selfBounds.extents.x*.5f>bounds.max.x) continue;
-                        float previousFoot=previous.y-selfBounds.extents.y, foot=position.y-selfBounds.extents.y;
-                        if (previousFoot>=bounds.max.y-.03f && foot<=bounds.max.y)
-                        { position.y=bounds.max.y+selfBounds.extents.y; vy=0; grounded=true; }
+                        if(support==null || !support.enabled) continue;
+                        var b=support.bounds;
+                        if(position.x+selfBounds.extents.x*.5f<b.min.x || position.x-selfBounds.extents.x*.5f>b.max.x) continue;
+                        if(previous.y-selfBounds.extents.y>=b.max.y-.03f && position.y-selfBounds.extents.y<=b.max.y)
+                        { position.y=b.max.y+selfBounds.extents.y; vy=0; grounded=true; }
                     }
             }
             path[i]=position;
         }
+        return count;
     }
-
-    private float CommittedCrosscutEndX()
-    {
-        // The current lane's far end is already displayed. Its .85 offset / 1.8 blade width are the original hitbox.
-        float direction=Mathf.Sign(threat.Direction.x);
-        return threat.DangerArea.center.x-direction*.85f
-            +direction*Mathf.Max(0,threat.DangerArea.size.x-1.8f)*.5f;
-    }
-
-    private float CrosscutFollowupRisk(Bounds projected,float time)
-    {
-        if (!threat.FollowupExpected || threat.FollowupSpeed<=0f) return 0f;
-        float firstEnds=threat.TimeToImpact+threat.ActiveRemaining;
-        float secondStarts=firstEnds+threat.FollowupGap;
-        if (time<secondStarts-.03f) return 0f;
-        float fromX=CommittedCrosscutEndX();
-        // Crosscut publicly re-samples only after its first pass. Predict that sample from this candidate's own
-        // trajectory; it can be wrong. At CrosscutGap the actual second lock replaces this forecast automatically.
-        float expectedSelfX=PathAt(firstEnds).x;
-        float direction=expectedSelfX<fromX?-1f:1f;
-        float toX=Mathf.Clamp(expectedSelfX+direction*2f,leftEdge+.9f,rightEdge-.9f);
-        float duration=Mathf.Max(.1f,Mathf.Abs(toX-fromX)/threat.FollowupSpeed);
-        if (time>secondStarts+duration+.04f) return 0f;
-        float progress=Mathf.Clamp(time-secondStarts,0,duration);
-        float previousProgress=Mathf.Clamp(time-Step-secondStarts,0,duration);
-        float currentX=Mathf.MoveTowards(fromX,toX,threat.FollowupSpeed*progress);
-        float previousX=Mathf.MoveTowards(fromX,toX,threat.FollowupSpeed*previousProgress);
-        // Preserve the original swept blade geometry and the visible body's gravity/support prediction.
-        float height=PredictTarget(firstEnds).y;
-        var returnBlade=new Bounds(new Vector2((currentX+previousX)*.5f+direction*.85f,height),
-            new Vector3(1.8f+Mathf.Abs(currentX-previousX),1.3f,1f));
-        return returnBlade.Intersects(projected)?2.7f:0f;
-    }
-
-    private Vector2 PathAt(float seconds)
-    {
-        float sample=Mathf.Clamp(seconds/Step,0,pathCount-1);
-        int index=Mathf.FloorToInt(sample);
-        return Vector2.Lerp(path[index],path[Mathf.Min(pathCount-1,index+1)],sample-index);
-    }
-
     private bool SupportedAt(Vector2 centre)
     {
-        float foot=centre.y-selfBounds.extents.y;
-        foreach (var support in supports)
-        {
-            if (support==null || !support.enabled) continue;
-            var bounds=support.bounds;
-            if (Mathf.Abs(foot-bounds.max.y)<.12f && centre.x>bounds.min.x-selfBounds.extents.x*.5f
-                && centre.x<bounds.max.x+selfBounds.extents.x*.5f) return true;
-        }
+        foreach(var support in supports)
+            if(support!=null && support.enabled && Mathf.Abs(centre.y-selfBounds.extents.y-support.bounds.max.y)<.12f
+                && centre.x>support.bounds.min.x-selfBounds.extents.x*.5f && centre.x<support.bounds.max.x+selfBounds.extents.x*.5f) return true;
         return false;
     }
-
-    private bool ChoosePlatform(float desire)
-    {
-        if (routePlatform!=null && Time.time<routeUntil)
-            return selfBounds.min.y<routePlatform.bounds.max.y-.15f;
-        routePlatform=null;
-        bool pressure=threat.Visible && (threat.Kind==LegacyThreatKind.SweepLow || threat.Kind==LegacyThreatKind.GhostSlash
-            || threat.Kind==LegacyThreatKind.Crosscut);
-        bool edge=Mathf.Min(selfBounds.center.x-leftEdge,rightEdge-selfBounds.center.x)<3.3f;
-        if (!pressure && !edge) return false;
-        float best=float.PositiveInfinity;
-        foreach(var platform in supports)
-        {
-            var bounds=platform.bounds;
-            float rise=bounds.max.y-selfBounds.min.y;
-            if(rise<.4f || rise>JumpSpeed*JumpSpeed/(2f*gravity)-.08f || bounds.size.x>10f) continue;
-            float landing=(JumpSpeed+Mathf.Sqrt(JumpSpeed*JumpSpeed-2f*gravity*rise))/gravity;
-            float landingX=Mathf.Clamp(selfBounds.center.x+desire*movement.MoveSpeed*landing,bounds.min.x+.5f,bounds.max.x-.5f);
-            float reach=Mathf.Abs(landingX-selfBounds.center.x);
-            if(reach>movement.MoveSpeed*landing-.1f) continue;
-            float cost=reach+Mathf.Abs(Mathf.Abs(landingX-targetBounds.center.x)-6f)*.3f;
-            if(cost<best) {best=cost;routePlatform=platform;}
-        }
-        routeUntil=Time.time+1.25f;
-        return routePlatform!=null;
-    }
-
     private bool JumpHasClearHeadroom()
     {
         foreach(var hit in Physics2D.BoxCastAll(selfBounds.center,selfBounds.size*.9f,0,Vector2.up,.3f,LayerMask.GetMask("Ground")))
             if(hit.collider!=null && !hit.collider.isTrigger && hit.collider.GetComponent<PlatformEffector2D>()==null && hit.distance>.01f) return false;
         return true;
     }
-
     private float SolidTravel(float distance)
     {
-        float available=Mathf.Abs(distance),direction=Mathf.Sign(distance);
-        available=Mathf.Min(available,direction>0?rightEdge-selfBounds.max.x:selfBounds.min.x-leftEdge);
+        if(Mathf.Abs(distance)<.001f) return 0;
+        float direction=Mathf.Sign(distance),available=Mathf.Min(Mathf.Abs(distance),direction>0?rightEdge-selfBounds.max.x:selfBounds.min.x-leftEdge);
         if(selfBounds.max.y>targetBounds.min.y && selfBounds.min.y<targetBounds.max.y && !Physics2D.GetIgnoreCollision(shape,targetShape))
         {
-            float gap=direction>0?targetBounds.min.x-selfBounds.max.x:selfBounds.min.x-targetBounds.max.x;
+            float gap=direction>0 ? targetBounds.min.x-selfBounds.max.x : selfBounds.min.x-targetBounds.max.x;
             if(gap>=0) available=Mathf.Min(available,gap);
         }
-        return available;
+        return Mathf.Max(0,available);
     }
-
     private Vector2 PredictTarget(float seconds)
     {
         Vector2 point=(Vector2)targetBounds.center+targetVelocity*seconds;
         if(targetBody.bodyType==RigidbodyType2D.Dynamic && Mathf.Abs(targetVelocity.y)>.1f)
         {
-            float g=Mathf.Abs(Physics2D.gravity.y*targetBody.gravityScale);
-            point.y-=.5f*g*seconds*seconds;
+            point.y-=.5f*Mathf.Abs(Physics2D.gravity.y*targetBody.gravityScale)*seconds*seconds;
             float floor=-2.5f+targetBounds.extents.y;
             foreach(var support in supports)
                 if(support!=null && support.enabled && support.bounds.max.y<=targetBounds.min.y+.12f
-                    && point.x>=support.bounds.min.x && point.x<=support.bounds.max.x)
-                    floor=Mathf.Max(floor,support.bounds.max.y+targetBounds.extents.y);
+                    && point.x>=support.bounds.min.x && point.x<=support.bounds.max.x) floor=Mathf.Max(floor,support.bounds.max.y+targetBounds.extents.y);
             point.y=Mathf.Max(point.y,floor);
         }
         point.x=Mathf.Clamp(point.x,leftEdge+targetBounds.extents.x,rightEdge-targetBounds.extents.x);
         return point;
     }
-
-    private bool ProjectileBlocked(Vector2 origin,Vector2 direction,float distance)
-    {
-        foreach(var hit in Physics2D.RaycastAll(origin,direction,distance))
-        {
-            if(hit.collider==null || hit.collider==shape || hit.collider==targetShape) continue;
-            // Ground alone passes old bullets. Only a real receiver in the current arena changes that rule.
-            if(hit.collider.GetComponentInParent<IProjectileReceiver>()!=null) return true;
-        }
-        return false;
-    }
-
-    private bool InsideBlade(Vector2 point,Vector2 direction,float radius,Vector2? origin=null)
-    {
-        Vector2 offset=point-(origin??(Vector2)selfBounds.center);
-        float along=Vector2.Dot(offset,direction),across=Mathf.Abs(Cross(offset,direction));
-        return along>.2f-radius && along<1.9f+radius && across<.85f+radius;
-    }
-
-    private static float ClosestTime(Vector2 offset,Vector2 velocity,float maximum)
-        => velocity.sqrMagnitude<.001f?0f:Mathf.Clamp(-Vector2.Dot(offset,velocity)/velocity.sqrMagnitude,0,maximum);
-    private static float Cross(Vector2 a,Vector2 b)=>a.x*b.y-a.y*b.x;
-
+    private static float Cross(Vector2 a,Vector2 b) => a.x*b.y-a.y*b.x;
     private static bool SegmentBox(Vector2 from,Vector2 to,Vector2 half)
     {
         Vector2 delta=to-from;
         float first=0,last=1;
         for(int axis=0;axis<2;axis++)
         {
-            if(Mathf.Abs(delta[axis])<.0001f) {if(Mathf.Abs(from[axis])>half[axis]) return false;continue;}
+            if(Mathf.Abs(delta[axis])<.0001f) { if(Mathf.Abs(from[axis])>half[axis]) return false; continue; }
             float a=(-half[axis]-from[axis])/delta[axis],b=(half[axis]-from[axis])/delta[axis];
-            if(a>b) {float swap=a;a=b;b=swap;}
-            first=Mathf.Max(first,a);last=Mathf.Min(last,b);
+            if(a>b) { float swap=a; a=b; b=swap; }
+            first=Mathf.Max(first,a); last=Mathf.Min(last,b);
             if(first>last) return false;
         }
         return true;

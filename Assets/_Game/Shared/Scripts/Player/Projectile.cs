@@ -4,7 +4,8 @@ using UnityEngine;
 /// Simple straight-line bullet. Requires a Rigidbody2D and a Collider2D
 /// marked "Is Trigger" on the prefab. Used by the player and by enemies:
 /// it never hits its shooter or anything on the shooter's layer (same team).
-/// Unmarked walls/platforms pass bullets. Explicit IProjectileReceiver objects may consume a real contact.
+/// Ordinary bullets stop at Ground, independently of one-way character platform contacts.
+/// Penetrating laser attacks have their own ray executor and do not use Projectile.
 /// </summary>
 // FUNCTION SUMMARY
 // Launch()          — sets the bullet's velocity, damage, and owner (layer cached), and schedules it to self-destruct after its lifetime.
@@ -13,7 +14,7 @@ using UnityEngine;
 public class Projectile : MonoBehaviour
 {
     [SerializeField] private float lifetime = 3f;
-    [Tooltip("UNUSED since 2026-10-01: bullets pass through walls and platforms. Kept only so the Bullet prefab's serialized value survives.")]
+    [Tooltip("Ordinary projectile terrain blockers. Ground is always included.")]
     [SerializeField] private LayerMask blockingLayers;
 
     /// <summary>Layer of the shooter at launch time (-1 if none). Same-layer objects are never hit.</summary>
@@ -38,6 +39,24 @@ public class Projectile : MonoBehaviour
     private SfxSet sfx;
     private AttemptPresentationVfx vfx;
     public float SimulationRate => timeSlow != null ? timeSlow.WorldRate : 1f;
+    public float Radius
+    {
+        get
+        {
+            var circle = GetComponent<CircleCollider2D>();
+            return circle != null ? circle.radius * Mathf.Max(Mathf.Abs(transform.lossyScale.x), Mathf.Abs(transform.lossyScale.y)) : .125f;
+        }
+    }
+
+    // Shared by real bullets and player sight/threat checks; queries do not change PlatformEffector2D.
+    public static bool TerrainHit(Vector2 from, Vector2 to, float radius, out RaycastHit2D blocker)
+    {
+        Vector2 delta = to - from;
+        foreach (var hit in Physics2D.CircleCastAll(from, radius, delta.normalized, delta.magnitude, LayerMask.GetMask("Ground")))
+            if (hit.collider != null && !hit.collider.isTrigger) { blocker = hit; return true; }
+        blocker = default;
+        return false;
+    }
 
     private void Awake()
     {
@@ -98,6 +117,15 @@ public class Projectile : MonoBehaviour
     {
         if (!launched || spent) return;
         rb.linearVelocity = fullVelocity * SimulationRate;
+        // Sweep in contact order before the physics step. A fast trigger / one-way underside cannot
+        // skip a thin platform, and an actor in front of that platform still receives the real hit.
+        Vector2 travel = rb.linearVelocity * Time.fixedDeltaTime;
+        foreach (var hit in Physics2D.CircleCastAll(rb.position, Radius, travel.normalized, travel.magnitude))
+        {
+            if (hit.collider == null || hit.collider.gameObject == gameObject) continue;
+            OnTriggerEnter2D(hit.collider);
+            if (spent) return;
+        }
         remainingLife -= Time.fixedDeltaTime * SimulationRate;
         if (remainingLife <= 0f) Retire();
     }
@@ -108,6 +136,13 @@ public class Projectile : MonoBehaviour
         // Unity's overloaded == makes this safe even after the owner was destroyed; never dereference owner here.
         if (other.gameObject == owner) return;
         if (other.gameObject.layer == ownerLayer) return; // same team (e.g. enemy bullets pass through other enemies)
+
+        if (!other.isTrigger && (((1 << other.gameObject.layer) & blockingLayers.value) != 0
+            || other.gameObject.layer == LayerMask.NameToLayer("Ground")))
+        {
+            Retire();
+            return;
+        }
 
         var receiver = other.GetComponentInParent<IProjectileReceiver>();
         if (receiver != null && receiver.ReceiveProjectile(this, other))
@@ -120,7 +155,8 @@ public class Projectile : MonoBehaviour
         if (damageable != null)
         {
             spent = true; // Destroy is deferred; reject all additional contacts this step.
-            var counter = CanBeCountered && damageable is PlayerHealth
+            var playerInput = other.GetComponentInParent<PlayerInputReader>();
+            var counter = CanBeCountered && damageable is PlayerHealth && (playerInput == null || !playerInput.LegacyCombatActive)
                 ? other.GetComponentInParent<PlayerCounterArm>() : null;
             Vector2 contact = other.ClosestPoint(transform.position);
             // Legacy Counter Arm cancels a compatible bullet on contact. Arm-Blade never does: it deflects inside its slash.
@@ -140,7 +176,7 @@ public class Projectile : MonoBehaviour
             }
             Retire();
         }
-        // Anything else (walls, platforms, triggers) is passed through.
+        // Unrelated triggers are passed through.
     }
 
     public void Retire()

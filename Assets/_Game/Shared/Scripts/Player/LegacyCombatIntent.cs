@@ -4,6 +4,7 @@ public struct LegacyCombatIntent
     public float Move;
     public bool Jump;
     public bool Dodge;
+    public float DodgeDirection;
+    public UnityEngine.Vector2 Aim;
     public bool Fire;
-    public bool Blade;
 }

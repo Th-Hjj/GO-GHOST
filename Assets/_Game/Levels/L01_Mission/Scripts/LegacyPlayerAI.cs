@@ -232,10 +232,8 @@ public sealed class LegacyPlayerAI
         }
         direction = (point - origin).normalized;
         Vector2 start = gun.GetMuzzlePosition(direction) + origin - (Vector2)player.transform.position;
-        // Also check the barrel segment: the muzzle cannot silently originate beyond a platform.
-        return direction.sqrMagnitude > .9f && !Projectile.TerrainHit(origin, point, gun.BulletRadius, out _)
-            && !Projectile.TerrainHit(start, point, gun.BulletRadius, out _)
-            && !GuardBlocksShot(start, point);
+        // Terrain does not block bullets; known body points still respect active guards.
+        return direction.sqrMagnitude > .9f && !GuardBlocksShot(start, point);
     }
     private bool GuardBlocksShot(Vector2 origin, Vector2 point)
     {
@@ -459,13 +457,6 @@ public sealed class LegacyPlayerAI
             foreach(var bullet in bullets)
             {
                 Vector2 from=bullet.Position+bullet.Velocity*(t-Step), to=bullet.Position+bullet.Velocity*t;
-                if(Projectile.TerrainHit(bullet.Position,to,bullet.Radius,out var wall))
-                {
-                    // A blocker after contact cannot protect the player. Limit this step to the hit point.
-                    float blockedAt=wall.distance/Mathf.Max(.001f,bullet.Velocity.magnitude);
-                    if(blockedAt<=t-Step) continue;
-                    to=bullet.Position+bullet.Velocity*blockedAt;
-                }
                 if(SegmentBox(from-path[i-1],to-path[i],(Vector2)selfBounds.extents+Vector2.one*bullet.Radius)) risk+=1;
             }
             if(WarningHits(path[i-1],path[i],t)) risk+=1;
@@ -477,8 +468,7 @@ public sealed class LegacyPlayerAI
         foreach(var bullet in bullets)
         {
             Vector2 to=bullet.Position+bullet.Velocity*time;
-            if(!Projectile.TerrainHit(bullet.Position,to,bullet.Radius,out _)
-                && SegmentBox(bullet.Position-centre,to-centre,(Vector2)selfBounds.extents+Vector2.one*bullet.Radius)) return true;
+            if(SegmentBox(bullet.Position-centre,to-centre,(Vector2)selfBounds.extents+Vector2.one*bullet.Radius)) return true;
         }
         return WarningHits(centre,centre,time);
     }
@@ -497,8 +487,6 @@ public sealed class LegacyPlayerAI
             float arrival=start+along/threat.ProjectileSpeed;
             float width=threat.Kind==LegacyThreatKind.MarkedLocked ? Step : active;
             if(along<0 || time<arrival-Step || time>arrival+width) return false;
-            var to=threat.Origin+threat.Direction*Mathf.Max(0,along);
-            if(Projectile.TerrainHit(threat.Origin,to,.125f,out _)) return false;
             float across=Mathf.Abs(Cross(centre-threat.Origin,threat.Direction));
             float half=Mathf.Abs(threat.Direction.y)*selfBounds.extents.x+Mathf.Abs(threat.Direction.x)*selfBounds.extents.y;
             return across<half+.125f;

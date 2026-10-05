@@ -51,6 +51,7 @@ public static class BossEncounterSmoke
     public static void RunWaveTwoObservation() => Start("observe-wave2", false);
     public static void RunObservation() => Start("observe-fixed", false);
     public static void RunPitchSmoke() => Start("pitch", false);
+    public static void RunProjectileWalls() => Start("projectile-walls", false);
     public static void Cancel()
     { if (Running) { Record("NOT TESTED: operator cancelled unfinished checks."); Finish(false); } }
 
@@ -130,6 +131,16 @@ public static class BossEncounterSmoke
     {
         Record("Editor Play Mode; simulated focus and virtual keyboard/mouse. No physical-input or audibility claim.");
         if (mode == "pitch") { yield return PitchSmoke(); yield break; }
+        if (mode == "projectile-walls")
+        {
+            yield return TeamBlocking();
+            yield return Fresh(1);
+            MouseAt(game.Bosses[0].Position, true);
+            yield return Seconds(4);
+            Check("short normal combat fires real player shots", game.Rifle.ShotsFired > 0,
+                $"shots={game.Rifle.ShotsFired} bossBurst={game.Bosses[0].Actions.Activated[(int)BossAbility.Burst]} phase={game.Phase}");
+            mouseHeld = false;
+        }
         if (mode == "input-only")
         {
             yield return Fresh(1); StopPolicies();
@@ -587,7 +598,9 @@ public static class BossEncounterSmoke
     }
     static IEnumerator TeamBlocking()
     {
+        Record("CONTROLLED projectile fixture: repositioned actors and temporary cover; mechanism evidence only.");
         yield return Fresh(3); StopPolicies();
+        foreach (var shot in Projectile.Active.ToArray()) shot.Retire();
         var gunner = game.Bosses[0]; var sword = game.Bosses[1];
         game.Player.GetComponent<PlayerInputReader>().SetGameplayInputEnabled(false);
         Position(gunner.gameObject, new Vector2(-6, -1.65f)); Position(sword.gameObject, new Vector2(-1, -1.65f));
@@ -597,7 +610,11 @@ public static class BossEncounterSmoke
         yield return Seconds(.65f);
         Check("ally body blocks ordinary bullet with zero friendly damage", game.Player.CurrentHealth == playerHp
             && sword.Health.CurrentHealth == swordHp && Projectile.Active.Count == 0);
-        gunner.Actions.TryStart(BossAbility.Piercing, game.Player.GetComponent<Collider2D>().bounds.center, true);
+        Position(sword.gameObject, new Vector2(7, -1.65f));
+        yield return Seconds(.3f);
+        Check("beam starts through normal solo reservation", gunner.Actions.TryStart(BossAbility.Piercing, game.Player.GetComponent<Collider2D>().bounds.center));
+        yield return Until(() => gunner.Actions.Phase == BossActionPhase.Locked, 1.2f);
+        Position(sword.gameObject, new Vector2(-1, -1.65f));
         yield return Until(() => gunner.Actions.Activated[(int)BossAbility.Piercing] > 0, 2);
         yield return Seconds(.12f);
         Check("ally body blocks beam with zero friendly damage", gunner.Actions.Activated[(int)BossAbility.Piercing] > 0
@@ -610,16 +627,36 @@ public static class BossEncounterSmoke
         Physics2D.SyncTransforms();
         int gunnerHp = gunner.Health.CurrentHealth;
         Fire(gunner, gunner.gameObject, gunner.Position + Vector2.right, Vector2.right);
-        Fire(gunner, game.Player.gameObject, (Vector2)game.Player.transform.position + Vector2.left, Vector2.left);
+        var playerShot = Object.Instantiate(Private<Projectile>(game.Rifle, "bulletPrefab"),
+            (Vector2)game.Player.transform.position + Vector2.left, Quaternion.identity);
+        playerShot.Launch(Vector2.left, game.Rifle.BulletSpeed, game.Rifle.BulletDamage, game.Player.gameObject);
         yield return Seconds(.6f);
-        Check("ordinary bullets from both owners hit Ground", game.Player.CurrentHealth == playerHp
-            && gunner.Health.CurrentHealth == gunnerHp && Projectile.Active.Count == 0);
+        Check("player and Boss bullets cross Ground and damage opposing bodies once", game.Player.CurrentHealth == playerHp - 12
+            && gunner.Health.CurrentHealth == gunnerHp - game.Rifle.BulletDamage && Projectile.Active.Count == 0);
+        Check("Boss firing line crosses cover while geometric terrain query still blocks", gunner.Tactics.ClearGunLine(gunner.Position, game.Player.transform.position)
+            && Projectile.TerrainHit(gunner.Position, game.Player.transform.position, .06f, out _));
         yield return Until(() => !gunner.Actions.Busy && gunner.Actions.Ready(BossAbility.Piercing), 5);
+        playerHp = game.Player.CurrentHealth;
         int activations = gunner.Actions.Activated[(int)BossAbility.Piercing];
-        gunner.Actions.TryStart(BossAbility.Piercing, game.Player.GetComponent<Collider2D>().bounds.center, true);
+        Check("beam through cover starts normally", gunner.Actions.TryStart(BossAbility.Piercing, game.Player.GetComponent<Collider2D>().bounds.center));
         yield return Until(() => gunner.Actions.Activated[(int)BossAbility.Piercing] > activations, 2);
         Check("special beam penetrates Ground via real hit", gunner.Actions.Activated[(int)BossAbility.Piercing] > activations
             && game.Player.CurrentHealth < playerHp);
+        cover.transform.position = new Vector2(0, 3);
+        var platform = cover.GetComponent<BoxCollider2D>();
+        platform.size = new Vector2(4, .3f);
+        var effector = cover.AddComponent<PlatformEffector2D>(); effector.useOneWay = true;
+        platform.usedByEffector = true;
+        Physics2D.SyncTransforms();
+        var upward = Object.Instantiate(Private<Projectile>(game.Rifle, "bulletPrefab"), new Vector2(-.5f, 2), Quaternion.identity);
+        var downward = Object.Instantiate(gunner.ProjectilePrefab, new Vector2(.5f, 4), Quaternion.identity);
+        upward.Launch(Vector2.up, 4, 12, game.Player.gameObject);
+        downward.Launch(Vector2.down, 4, 12, gunner.gameObject);
+        yield return Seconds(.4f);
+        Check("bullets cross both sides of a one-way platform", upward != null && downward != null
+            && upward.transform.position.y > 3.3f && downward.transform.position.y < 2.7f);
+        if (upward != null) upward.Retire();
+        if (downward != null) downward.Retire();
         RestoreFixture(); Physics2D.SyncTransforms();
     }
 

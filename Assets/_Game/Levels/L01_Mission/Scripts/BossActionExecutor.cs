@@ -311,8 +311,7 @@ namespace GoGhost.Duel
             }
             actor.Face(direction);
             Vector2 muzzle=actor.Position+Vector2.up*.28f+direction*.52f;
-            if(!Projectile.TerrainHit(actor.Position+Vector2.up*.28f,muzzle,.06f,out _)
-                && !actor.Tactics.AllyBlocks(actor.Position+Vector2.up*.28f,muzzle))
+            if(!actor.Tactics.AllyBlocks(actor.Position+Vector2.up*.28f,muzzle))
             {
                 var shot=Instantiate(actor.ProjectilePrefab,muzzle,Quaternion.identity);
                 shot.Launch(direction,p.BulletSpeed,settings.Damage,actor.gameObject);
@@ -488,7 +487,7 @@ namespace GoGhost.Duel
                 if(Ability==BossAbility.Piercing){shape=BossThreatShape.Ray;radius=p.BeamRadius;terrain=false;}
                 else if(Ability==BossAbility.Burst||Ability==BossAbility.Sweep)
                 {
-                    shape=BossThreatShape.Projectile;radius=actor.ProjectilePrefab.Radius;speed=p.BulletSpeed;
+                    shape=BossThreatShape.Projectile;radius=actor.ProjectilePrefab.Radius;speed=p.BulletSpeed;terrain=false;
                     if(Ability==BossAbility.Burst)
                     {
                         // Only the current round has an expressed direction. Later rounds have not been selected.

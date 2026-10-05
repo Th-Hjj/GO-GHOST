@@ -4,21 +4,21 @@ using UnityEngine;
 /// <summary>
 /// Simple straight-line bullet. Requires a Rigidbody2D and a Collider2D
 /// marked "Is Trigger" on the prefab. Used by the player and by enemies:
-/// it never hits its shooter or anything on the shooter's layer (same team).
-/// Ordinary bullets stop at Ground, independently of one-way character platform contacts.
+/// it never damages its shooter or team, but living allied Boss bodies stop it.
+/// All bullets pass through walls/platforms, independently of character terrain contacts.
 /// Penetrating laser attacks have their own ray executor and do not use Projectile.
 /// </summary>
 // FUNCTION SUMMARY
 // Launch()          — sets the bullet's velocity, damage, and owner (layer cached), and schedules it to self-destruct after its lifetime.
-// OnTriggerEnter2D() — damages whatever it hits (if damageable) and destroys the bullet; ignores the shooter, its team, walls and platforms.
+// OnTriggerEnter2D() — resolves guards, opposing damage and allied body blocking; ignores the shooter and terrain.
 [RequireComponent(typeof(Rigidbody2D))]
 public class Projectile : MonoBehaviour
 {
     [SerializeField] private float lifetime = 3f;
-    [Tooltip("Ordinary projectile terrain blockers. Ground is always included.")]
+    [Tooltip("Legacy terrain layers, now passed through by every projectile. Ground is always included.")]
     [SerializeField] private LayerMask blockingLayers;
 
-    /// <summary>Layer of the shooter at launch time (-1 if none). Same-layer objects are never hit.</summary>
+    /// <summary>Layer of the shooter at launch time (-1 if none). Same-layer objects never take damage.</summary>
     public int OwnerLayer => ownerLayer;
     public GameObject Owner => owner;
     private static readonly List<Projectile> active = new List<Projectile>();
@@ -52,7 +52,7 @@ public class Projectile : MonoBehaviour
         }
     }
 
-    // Shared by real bullets and player sight/threat checks; queries do not change PlatformEffector2D.
+    // Geometric terrain query for sight, melee and navigation. Bullets do not use terrain as cover.
     public static bool TerrainHit(Vector2 from, Vector2 to, float radius, out RaycastHit2D blocker)
     {
         Vector2 delta = to - from;
@@ -126,8 +126,8 @@ public class Projectile : MonoBehaviour
     {
         if (!launched || spent) return;
         rb.linearVelocity = fullVelocity * SimulationRate;
-        // Sweep in contact order before the physics step. A fast trigger / one-way underside cannot
-        // skip a thin platform, and an actor in front of that platform still receives the real hit.
+        // Sweep in contact order before the physics step so fast bullets cannot skip actor bodies.
+        // Terrain contacts are ignored, including either side of a one-way platform.
         Vector2 travel = rb.linearVelocity * Time.fixedDeltaTime;
         foreach (var hit in Physics2D.CircleCastAll(rb.position, Radius, travel.normalized, travel.magnitude))
         {
@@ -163,7 +163,7 @@ public class Projectile : MonoBehaviour
         if (!other.isTrigger && (((1 << other.gameObject.layer) & blockingLayers.value) != 0
             || other.gameObject.layer == LayerMask.NameToLayer("Ground")))
         {
-            Retire();
+            // All bullets cross walls/platforms; keep the serialized layer field for existing assets.
             return;
         }
 

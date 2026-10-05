@@ -4,7 +4,7 @@ using UnityEngine;
 namespace GoGhost.Duel
 {
     public enum BossKind { Refraction, Severance }
-    public enum BossAbility { None, Burst, Camo, Piercing, Sweep, Rhythm, DrawDash, ReturnCut, DropCut, Guard, Reload }
+    public enum BossAbility { None, Burst, Camo, Piercing, Sweep, Rhythm, DrawDash, ReturnCut, DropCut, Guard, Reload, LeapSlash, TacticalJumpShot, DashFollowup }
     public enum BossActionPhase { Idle, Prepare, Locked, Active, Recovery }
     [Serializable]
     public sealed class BossAbilitySettings
@@ -39,10 +39,12 @@ namespace GoGhost.Duel
         public float[] RhythmPrepare={.16f,.08f,.24f}, RhythmLock={.12f,.12f,.14f}, RhythmActive={.10f,.12f,.14f};
         public float[] RhythmStep={.60f,.45f,.75f}, RhythmReach={2.10f,2.20f,2.40f};
         public float[] RhythmArcFrom={25,-25,85}, RhythmArcTo={-25,95,-45};
-        public BossAbilitySettings DrawDash=new BossAbilitySettings(.3f,.18f,.28f,.5f,3,7,28);
+        public BossAbilitySettings DrawDash=new BossAbilitySettings(.3f,.18f,.28f,.5f,3,7,28); // Legacy Range retained; navigation supplies actual travel.
         public BossAbilitySettings ReturnCut=new BossAbilitySettings(.18f,.16f,.2f,.65f,5,4,24);
         public BossAbilitySettings DropCut=new BossAbilitySettings(.12f,.16f,.5f,.55f,4,1.9f,32);
         public BossAbilitySettings Guard=new BossAbilitySettings(.18f,0,.70f,.18f,3.5f,1.1f,0);
+        public BossAbilitySettings LeapSlash=new BossAbilitySettings(.24f,.12f,.10f,.55f,4.5f,0,28);
+        public BossAbilitySettings TacticalJumpShot=new BossAbilitySettings(.12f,.08f,.3f,.26f,4.5f,0,12,1);
         public float RhythmSecondGap=.16f, RhythmThirdGap=.38f, RhythmThirdActive=.12f;
         public float ReturnBranchWindow=.18f;
         public int RhythmThirdDamage=26;
@@ -54,7 +56,9 @@ namespace GoGhost.Duel
                 case BossAbility.Piercing:return Piercing; case BossAbility.Sweep:return Sweep;
                 case BossAbility.Rhythm:return Rhythm; case BossAbility.DrawDash:return DrawDash;
                 case BossAbility.ReturnCut:return ReturnCut; case BossAbility.DropCut:return DropCut;
-                case BossAbility.Guard:return Guard; default:return Burst;
+                case BossAbility.Guard:return Guard; case BossAbility.LeapSlash:return LeapSlash;
+                case BossAbility.TacticalJumpShot:return TacticalJumpShot; case BossAbility.DashFollowup:return Rhythm;
+                default:return Burst;
             }
         }
     }

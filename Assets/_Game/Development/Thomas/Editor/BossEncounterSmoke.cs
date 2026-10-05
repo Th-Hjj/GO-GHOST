@@ -52,6 +52,8 @@ public static class BossEncounterSmoke
     public static void RunObservation() => Start("observe-fixed", false);
     public static void RunPitchSmoke() => Start("pitch", false);
     public static void RunProjectileWalls() => Start("projectile-walls", false);
+    public static void RunFocusedPressure() => Start("focused-pressure", false);
+    public static void RunPressureMechanics() => Start("pressure-mechanics", false);
     public static void Cancel()
     { if (Running) { Record("NOT TESTED: operator cancelled unfinished checks."); Finish(false); } }
 
@@ -130,6 +132,8 @@ public static class BossEncounterSmoke
     static IEnumerator Run()
     {
         Record("Editor Play Mode; simulated focus and virtual keyboard/mouse. No physical-input or audibility claim.");
+        if(mode=="focused-pressure"||mode=="pressure-mechanics")
+        {yield return PressureMechanics();if(mode=="focused-pressure")yield return PressureObservation();yield break;}
         if (mode == "pitch") { yield return PitchSmoke(); yield break; }
         if (mode == "projectile-walls")
         {
@@ -181,6 +185,87 @@ public static class BossEncounterSmoke
         game.StartFight();
         yield return Until(() => game.Phase == DuelPhase.Fight, 2.2f);
         Check("wave " + wave + " created", game.Phase == DuelPhase.Fight && game.Bosses.Count == (wave == 3 ? 2 : 1));
+    }
+    static IEnumerator PressureMechanics()
+    {
+        Record("CONTROLLED geometry/action mechanisms: initial fixture placement only; no balance/outcome evidence.");
+        yield return Fresh(2);StopPolicies();
+        var sword=game.Bosses[0];var nav=sword.Navigation;
+        var supports=nav.Nodes.Where(n=>n.Collider.GetComponent<PlatformEffector2D>()!=null)
+            .GroupBy(n=>n.Collider).Select(g=>g.First()).OrderBy(n=>n.Collider.bounds.center.x).ToArray();
+        var first=supports[0];var next=supports.First(n=>n.Collider!=first.Collider&&Mathf.Abs(n.Position.y-first.Position.y)<.05f);
+        Vector2 from=new Vector2(first.Collider.bounds.center.x,first.Position.y+sword.Motor.Size.y*.5f+.025f);
+        Vector2 to=new Vector2(next.Collider.bounds.center.x,next.Position.y+sword.Motor.Size.y*.5f+.025f);
+        Position(sword.gameObject,from);OnFloor(game.Player.gameObject,nav,nav.Bounds.max.x-2);
+        yield return Seconds(.25f);from=sword.Position;
+        bool planned=nav.TryHorizontalAttack(from,to,sword.Motor.Size,out var end);
+        Check("king metrics read actual supports",Mathf.Abs(nav.SameLevelSpacing-Mathf.Abs(to.x-from.x))<.1f,
+            $"platformWidth={nav.PlatformWidth:F3} spacing={nav.SameLevelSpacing:F3} jumpHeight={ArenaNavigation2D.ExecutableJumpHeight(sword.Motor.Profile):F3}");
+        if(planned)sword.Motor.StartDash(Vector2.right,Vector2.Distance(from,end),sword.Profile.DashSpeed);
+        yield return Until(()=>!sword.Motor.DashActive,1);yield return Seconds(.15f);
+        Check("same-height full dash physically reaches supported platform",planned&&sword.Motor.Grounded
+            &&Vector2.Distance(sword.Position,to)<.2f,$"from={from} wanted={to} end={sword.Position} blocked={sword.Motor.DashBlocked}");
+
+        yield return Fresh(2);StopPolicies();sword=game.Bosses[0];nav=sword.Navigation;
+        OnFloor(sword.gameObject,nav,-nav.PlatformWidth*.75f);OnFloor(game.Player.gameObject,nav,nav.PlatformWidth*.25f);
+        yield return Seconds(.3f);
+        bool accepted=sword.Actions.TryStart(BossAbility.DrawDash,sword.Perception.Facts.Position);
+        yield return Until(()=>!sword.Actions.Busy,3);
+        Check("Draw Dash has one front follow-up and exits",accepted&&!sword.Actions.Busy
+            &&sword.Actions.Activated[(int)BossAbility.DashFollowup]==1&&sword.Actions.Started[(int)BossAbility.ReturnCut]==0,
+            $"started={string.Join(",",sword.Actions.Started)} active={string.Join(",",sword.Actions.Activated)}");
+
+        for(int wave=2;wave>=1;wave--)
+        {
+            yield return Fresh(wave);StopPolicies();var actor=game.Bosses[0];nav=actor.Navigation;
+            var low=nav.Nodes.Where(n=>n.Collider.GetComponent<PlatformEffector2D>()!=null).OrderBy(n=>n.Position.y).ThenBy(n=>Mathf.Abs(n.Position.x+nav.SameLevelSpacing*.5f)).First();
+            var high=nav.Nodes.Where(n=>n.Collider.GetComponent<PlatformEffector2D>()!=null).OrderByDescending(n=>n.Position.y).ThenBy(n=>Mathf.Abs(n.Position.x)).First();
+            Position(actor.gameObject,new Vector2(low.Collider.bounds.center.x,low.Position.y+actor.Motor.Size.y*.5f+.025f));
+            var playerSize=(Vector2)game.Player.GetComponent<Collider2D>().bounds.size;
+            Position(game.Player.gameObject,new Vector2(high.Collider.bounds.center.x,high.Position.y+playerSize.y*.5f+.025f));
+            yield return Seconds(.3f);
+            BossAbility ability=wave==2?BossAbility.LeapSlash:BossAbility.TacticalJumpShot;
+            bool legal=actor.Tactics.TryPlanMobility(ability,actor.Perception.Facts,out var plan);
+            accepted=legal&&actor.Actions.TryStartMobility(plan);
+            float startY=actor.Position.y,peak=startY,deadlineAt=Time.time+3;
+            bool airborne=false,tell=false;int ammo=actor.Actions.Ammo;var bullets=new HashSet<Projectile>();bool normalBullets=true;
+            while(actor.Actions.Busy&&Time.time<deadlineAt)
+            {
+                peak=Mathf.Max(peak,actor.Position.y);airborne|=!actor.Motor.Grounded;
+                tell|=actor.PublicThreats.Any(t=>t.Valid&&(wave==1||t.Shape==BossThreatShape.BladeArc&&t.OriginPath!=null));
+                foreach(var shot in Projectile.Active)
+                    if(shot!=null&&shot.Owner==actor.gameObject&&bullets.Add(shot))
+                        normalBullets&=shot.Damage==actor.Profile.Burst.Damage
+                            &&Mathf.Abs(shot.GetComponent<Rigidbody2D>().linearVelocity.magnitude-actor.Profile.BulletSpeed)<.05f&&!actor.Motor.Grounded;
+                yield return null;
+            }
+            Check(ability+" executes physical jump and finishes",accepted&&airborne&&actor.Motor.Grounded&&!actor.Actions.Busy
+                &&peak-startY<=ArenaNavigation2D.ExecutableJumpHeight(actor.Motor.Profile)+.12f&&tell,
+                $"legal={legal} accepted={accepted} airborne={airborne} tell={tell} peakDelta={peak-startY:F3} end={actor.Position} planned={plan?.Destination}");
+            if(wave==1)Check("Jump Shot limited normal airborne Burst/ammo",bullets.Count>0&&bullets.Count<=3&&normalBullets
+                &&ammo-actor.Actions.Ammo==bullets.Count,$"shots={bullets.Count} ammo={ammo}->{actor.Actions.Ammo}");
+        }
+    }
+    static IEnumerator PressureObservation()
+    {
+        Record("NORMAL bounded W2 (25s) / W3 (35s); unchanged all-AI policy/resources. No win/loss requirement.");
+        for(int wave=2;wave<=3;wave++)
+        {
+            yield return Fresh(wave,true);var duo=game.GetComponentInChildren<DuoCoordinator>();bool overlap=false;
+            while(game.Phase==DuelPhase.Fight&&game.FightClock<(wave==2?25:35))
+            {
+                if(duo.Phase==DuoPhase.Idle)
+                    overlap|=game.Bosses.Count(a=>a.Actions.HighThreat&&a.Actions.Phase==BossActionPhase.Active)>1;
+                yield return null;
+            }
+            PitchResult();
+            Check("W"+wave+" no illegal ordinary major-active overlap",!overlap);
+            Record("OBSERVATION recovery handoffs="+duo.RecoveryHandoffs);
+            foreach(var ability in new[]{BossAbility.DrawDash,BossAbility.LeapSlash,BossAbility.DashFollowup,BossAbility.TacticalJumpShot})
+                Record((game.Bosses.Any(a=>a.Actions.Activated[(int)ability]>0)?"OBSERVED ":"NOT OBSERVED ")+"W"+wave+" "+ability);
+            Record($"OBSERVATION pair starts={duo.CombosStarted} Cross={duo.CrossCompleted} SweepDrop={duo.SweepDropCompleted}");
+        }
+        Record("NOT TESTED: physical input, full regression, exhaustive navigation, balance, Windows build/launch.");
     }
     static IEnumerator PitchSmoke()
     {

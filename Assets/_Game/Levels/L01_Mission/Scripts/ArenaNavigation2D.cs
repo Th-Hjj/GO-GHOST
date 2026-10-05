@@ -69,6 +69,8 @@ namespace GoGhost.Duel
         public IReadOnlyList<Node> Nodes => nodes;
         public Bounds Bounds => arena;
         public Bounds ArenaBounds => arena;
+        public float PlatformWidth { get; private set; }
+        public float SameLevelSpacing { get; private set; }
 
         public void Initialize(Bounds legalBounds)
         {
@@ -113,6 +115,7 @@ namespace GoGhost.Duel
                     foreach (var node in surface.Nodes) { node.Version = Version; nodes.Add(node); validIds.Add(node.Id); }
                 }
             nodes.Sort((a, b) => a.Id.CompareTo(b.Id));
+            ReadCombatScale();
             // Unchanged geometry keeps its nodes and link cache. Only corridors near changed geometry are rejected.
             var stale = new List<Key>();
             foreach (var pair in links)
@@ -123,6 +126,41 @@ namespace GoGhost.Duel
             }
             foreach (var key in stale) links.Remove(key);
             blocked.Clear();
+        }
+        void ReadCombatScale()
+        {
+            // Floating supports define the scale; floor/walls are not platform-spacing samples.
+            PlatformWidth = SameLevelSpacing = float.PositiveInfinity;
+            foreach (var a in surfaces)
+            {
+                if (!OneWay(a.Collider, out _) || Mathf.Abs(a.A.y-a.B.y) > .05f) continue;
+                PlatformWidth = Mathf.Min(PlatformWidth, a.B.x-a.A.x);
+                foreach (var b in surfaces)
+                {
+                    if (a == b || !OneWay(b.Collider, out _) || Mathf.Abs(a.A.y-b.A.y) > .05f) continue;
+                    float spacing = Mathf.Abs((a.A.x+a.B.x-b.A.x-b.B.x)*.5f);
+                    if (spacing > (a.B.x-a.A.x+b.B.x-b.A.x)*.5f)
+                        SameLevelSpacing = Mathf.Min(SameLevelSpacing, spacing);
+                }
+            }
+            if (float.IsInfinity(PlatformWidth)) PlatformWidth = 0;
+            if (float.IsInfinity(SameLevelSpacing)) SameLevelSpacing = PlatformWidth;
+        }
+        public bool TryHorizontalAttack(Vector2 from, Vector2 target, Vector2 size, out Vector2 end)
+        {
+            end = from;
+            if (SameLevelSpacing <= 0 || !TrySupport(from,size,out var source)) return false;
+            float side = Mathf.Sign(target.x-from.x);
+            float distance = Mathf.Min(SameLevelSpacing, Mathf.Abs(target.x-from.x)+size.x);
+            Vector2 desired = from+Vector2.right*side*distance;
+            // Cross-support dashes preserve the source's local offset on the corresponding platform.
+            if (!TrySupport(desired,size,out var support) || support != source)
+            {
+                Vector2 full = from+Vector2.right*side*SameLevelSpacing;
+                if (CanStand(full,size)) desired = full;
+            }
+            if (!TryDash(from,desired,size,out end)) return Vector2.Distance(from,end)>size.x;
+            return CanStand(end,size); // An unblocked full dash must have a real landing support.
         }
         int Fingerprint(Collider2D collider)
         {
@@ -377,7 +415,7 @@ namespace GoGhost.Duel
             links[key] = new Link { Step = step, Corridor = corridor };
             return step;
         }
-        static float ExecutableJumpHeight(BossMotionProfile profile)
+        public static float ExecutableJumpHeight(BossMotionProfile profile)
         {
             float dt = Time.fixedDeltaTime, gravity = Mathf.Abs(Physics2D.gravity.y * profile.GravityScale);
             if (dt <= 0 || gravity <= 0) return 0;
@@ -390,11 +428,49 @@ namespace GoGhost.Duel
             }
             return peak;
         }
-        bool Simulate(Vector2 start, Vector2 end, BossMotionProfile profile, Vector2 size, bool jump, Collider2D destination, out float duration)
+        public bool TryJumpTrajectory(Vector2 from, Vector2 destination, BossMotor2D motor, out Route route, out Vector2[] trajectory)
+        {
+            route = null; trajectory = null;
+            var samples = new List<Vector2>();
+            if (!CanStand(destination,motor.Size) || !TrySupport(destination,motor.Size,out var support)
+                || !Simulate(from,destination,motor.Profile,motor.Size,true,support,out float flight,samples)) return false;
+            route = new Route { Version=Version, Duration=flight+.3f };
+            route.Steps.Add(new RouteStep { Kind=TravelKind.Jump, Start=from, Launch=from,
+                End=destination, Support=support, Duration=flight+.3f });
+            trajectory = samples.ToArray(); return true;
+        }
+        public Vector2[] PredictAirPath(Vector2 point, Vector2 velocity, Vector2 destination,
+            BossMotionProfile profile, Vector2 size, float seconds)
+        {
+            float dt=Time.fixedDeltaTime;
+            var points=new Vector2[Mathf.CeilToInt(seconds/dt)+1]; points[0]=point;
+            bool stopped=false;
+            for(int i=1;i<points.Length;i++)
+            {
+                if(!stopped)
+                {
+                    velocity.x=BossMotor2D.StepHorizontal(velocity.x,Mathf.Clamp((destination.x-point.x)/dt,-profile.Speed,profile.Speed),false,profile,dt);
+                    velocity.y+=Physics2D.gravity.y*profile.GravityScale*dt;
+                    Vector2 next=point+velocity*dt;
+                    if(!SweepTraversal(point,next,size,out var hit,out var safe))
+                    {
+                        point=safe;
+                        if(hit.normal.y>.5f&&velocity.y<=0)stopped=true;
+                        else if(Mathf.Abs(hit.normal.x)>.5f)velocity.x=0;
+                        else velocity.y=0;
+                    }
+                    else point=next;
+                }
+                points[i]=point;
+            }
+            return points;
+        }
+        bool Simulate(Vector2 start, Vector2 end, BossMotionProfile profile, Vector2 size, bool jump, Collider2D destination, out float duration, List<Vector2> samples=null)
         {
             duration = 0;
             float dt = Time.fixedDeltaTime, gravity = Physics2D.gravity.y*profile.GravityScale;
             Vector2 point = start;
+            samples?.Add(point);
             float vx = 0, vy = jump ? profile.JumpSpeed : 0;
             int max = Mathf.CeilToInt(2.5f/dt);
             for (int i = 0; i < max; i++)
@@ -407,6 +483,7 @@ namespace GoGhost.Duel
                     if (vy <= 0 && hit.normal.y > .7f)
                     {
                         duration = (i+1)*dt;
+                        samples?.Add(safe);
                         return hit.collider == destination && Mathf.Abs(safe.x-end.x) < .30f
                             && Mathf.Abs(safe.y-end.y) < .12f && CanStand(end,size);
                     }
@@ -414,6 +491,7 @@ namespace GoGhost.Duel
                 }
                 if (next.x-size.x*.5f < arena.min.x || next.x+size.x*.5f > arena.max.x || next.y-size.y*.5f < arena.min.y-.1f) return false;
                 point = next;
+                samples?.Add(point);
             }
             return false;
         }

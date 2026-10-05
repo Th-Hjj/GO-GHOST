@@ -32,6 +32,7 @@ namespace GoGhost.Duel
         public bool RouteCompleted { get; private set; }
         public bool HasRoute => route != null;
         public ArenaNavigation2D Navigation => navigation;
+        public float JumpStartedAt { get; private set; } = -1;
         Rigidbody2D body;
         BoxCollider2D shape;
         Vector2 centreOffset, dashDirection, progressPosition;
@@ -83,6 +84,14 @@ namespace GoGhost.Duel
             PreviousPosition = Position;
             DashActive = true; DashBlocked = dashStopPending = false;
         }
+        public bool StartCommittedJump(ArenaNavigation2D.Route value)
+        {
+            if(!enabledCombat || !Grounded || DashActive || value==null || value.Version!=navigation.Version
+                || value.Steps.Count!=1 || value.Steps[0].Kind!=ArenaNavigation2D.TravelKind.Jump
+                || Mathf.Abs(Velocity.x)>.15f || !navigation.ValidateStep(value.Steps[0],this))return false;
+            SetRoute(value); launched=true; jumpRequested=true; JumpStartedAt=-1;
+            return true;
+        }
         public void BeginStep(float distance)
         { Brake(); stepping = true; stepRemaining = distance; stepPosition = Position; }
         public void StartDrop(float horizontal)
@@ -101,6 +110,7 @@ namespace GoGhost.Duel
         }
         public void Stop()
         {
+            JumpStartedAt=-1;
             dropping = dropRequested = stepping = false;
             DropBlocked = false;
             route = null; DashActive = false; DashBlocked = dashStopPending = false; jumpRequested = false;
@@ -137,8 +147,8 @@ namespace GoGhost.Duel
                 {
                     float travel = Mathf.Min(dashRemaining, dashSpeed * dt);
                     Vector2 desired = here + dashDirection * travel;
-                    if (Mathf.Abs(dashDirection.y) < .01f)
-                        desired.y += (body.linearVelocity.y + Physics2D.gravity.y * Profile.GravityScale * dt) * dt;
+                    // A horizontal dash drives a straight swept Rigidbody path across a platform gap.
+                    // Counter gravity only during that finite drive; ordinary gravity resumes on exit.
                     bool clear = navigation == null || navigation.TryDash(here, desired, Size, out _);
                     Vector2 end = desired;
                     if (!clear)
@@ -164,6 +174,7 @@ namespace GoGhost.Duel
             if (jumpRequested)
             {
                 vertical = Profile.JumpSpeed;
+                JumpStartedAt = Time.fixedTime;
                 jumpRequested = false; Grounded = false;
             }
             float horizontal = dropping ? dropHorizontal : StepHorizontal(body.linearVelocity.x, move * Profile.Speed * speedScale, Grounded, Profile, dt);

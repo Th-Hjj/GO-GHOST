@@ -1,0 +1,306 @@
+{
+  "schema": 1,
+  "purpose": "Two Boss encounter sound selection; original ten cue indices and approval manifest are retained.",
+  "license_checked_date": "2026-10-05",
+  "license_evidence": "Official creator source pages and the License.txt in each downloaded zip agree on CC0. Audio bytes have valid OggS/Vorbis headers and lengths; Unity import/playback must be checked separately.",
+  "new_file_count": 13,
+  "existing_file_reused_count": 1,
+  "files": [
+    {
+      "file": "Assets/_Game/Shared/Audio/laserSmall_002.ogg",
+      "cues": [
+        "BossBurst"
+      ],
+      "author": "Kenney (Kenney Vleugels)",
+      "package": "Sci-fi Sounds",
+      "original_file": "Audio/laserSmall_002.ogg",
+      "source": "https://kenney.nl/assets/sci-fi-sounds",
+      "download": "https://kenney.nl/media/pages/assets/sci-fi-sounds/6b296f9ecf-1677589334/kenney_sci-fi-sounds.zip",
+      "license": "CC0-1.0",
+      "license_file": "Assets/_Game/Shared/Audio/Licenses/Kenney-scifi-License.txt",
+      "modifications": "Unmodified original Ogg file. Playback gain is configured by cue; only ordinary Boss shots and footsteps use up to 3 percent pitch variation.",
+      "selected_date": "2026-10-05",
+      "selection": "Selected by implementation agent under Thomas's 2026-10-05 free-SFX authorization; not individually user-auditioned",
+      "existing_asset_reused": false,
+      "bytes": 8973,
+      "sha256": "e70139466c3e801358c9041ee17db7ff82c0e9a9cdf44647ad0ea6b9f8458f63",
+      "duration_seconds_from_ogg_granule": 0.344263,
+      "audibility": "NOT TESTED"
+    },
+    {
+      "file": "Assets/_Game/Shared/Audio/forceField_000.ogg",
+      "cues": [
+        "BeamCharge"
+      ],
+      "author": "Kenney (Kenney Vleugels)",
+      "package": "Sci-fi Sounds",
+      "original_file": "Audio/forceField_000.ogg",
+      "source": "https://kenney.nl/assets/sci-fi-sounds",
+      "download": "https://kenney.nl/media/pages/assets/sci-fi-sounds/6b296f9ecf-1677589334/kenney_sci-fi-sounds.zip",
+      "license": "CC0-1.0",
+      "license_file": "Assets/_Game/Shared/Audio/Licenses/Kenney-scifi-License.txt",
+      "modifications": "Unmodified original Ogg file. Playback gain is configured by cue; only ordinary Boss shots and footsteps use up to 3 percent pitch variation.",
+      "selected_date": "2026-10-05",
+      "selection": "Selected by implementation agent under Thomas's 2026-10-05 free-SFX authorization; not individually user-auditioned",
+      "existing_asset_reused": false,
+      "bytes": 25672,
+      "sha256": "c2916f2a062c8ddd1aca2826d134fe90847037db31342726ffb0f9097afe339c",
+      "duration_seconds_from_ogg_granule": 0.954014,
+      "audibility": "NOT TESTED"
+    },
+    {
+      "file": "Assets/_Game/Shared/Audio/laserLarge_000.ogg",
+      "cues": [
+        "BeamFire"
+      ],
+      "author": "Kenney (Kenney Vleugels)",
+      "package": "Sci-fi Sounds",
+      "original_file": "Audio/laserLarge_000.ogg",
+      "source": "https://kenney.nl/assets/sci-fi-sounds",
+      "download": "https://kenney.nl/media/pages/assets/sci-fi-sounds/6b296f9ecf-1677589334/kenney_sci-fi-sounds.zip",
+      "license": "CC0-1.0",
+      "license_file": "Assets/_Game/Shared/Audio/Licenses/Kenney-scifi-License.txt",
+      "modifications": "Unmodified original Ogg file. Playback gain is configured by cue; only ordinary Boss shots and footsteps use up to 3 percent pitch variation.",
+      "selected_date": "2026-10-05",
+      "selection": "Selected by implementation agent under Thomas's 2026-10-05 free-SFX authorization; not individually user-auditioned",
+      "existing_asset_reused": false,
+      "bytes": 25566,
+      "sha256": "a56d95794cd732d6c2d66ce488c14cf557fe526c282897c9a77675c2bd9b77e6",
+      "duration_seconds_from_ogg_granule": 0.676644,
+      "audibility": "NOT TESTED"
+    },
+    {
+      "file": "Assets/_Game/Shared/Audio/doorClose_000.ogg",
+      "cues": [
+        "CamoEnter"
+      ],
+      "author": "Kenney (Kenney Vleugels)",
+      "package": "Sci-fi Sounds",
+      "original_file": "Audio/doorClose_000.ogg",
+      "source": "https://kenney.nl/assets/sci-fi-sounds",
+      "download": "https://kenney.nl/media/pages/assets/sci-fi-sounds/6b296f9ecf-1677589334/kenney_sci-fi-sounds.zip",
+      "license": "CC0-1.0",
+      "license_file": "Assets/_Game/Shared/Audio/Licenses/Kenney-scifi-License.txt",
+      "modifications": "Unmodified original Ogg file. Playback gain is configured by cue; only ordinary Boss shots and footsteps use up to 3 percent pitch variation.",
+      "selected_date": "2026-10-05",
+      "selection": "Selected by implementation agent under Thomas's 2026-10-05 free-SFX authorization; not individually user-auditioned",
+      "existing_asset_reused": false,
+      "bytes": 20369,
+      "sha256": "c9134651ebbd7c016f90393aee495ff8120bd343bb7569b689a7506987ebd6c2",
+      "duration_seconds_from_ogg_granule": 0.53161,
+      "audibility": "NOT TESTED"
+    },
+    {
+      "file": "Assets/_Game/Shared/Audio/doorOpen_000.ogg",
+      "cues": [
+        "CamoExit"
+      ],
+      "author": "Kenney (Kenney Vleugels)",
+      "package": "Sci-fi Sounds",
+      "original_file": "Audio/doorOpen_000.ogg",
+      "source": "https://kenney.nl/assets/sci-fi-sounds",
+      "download": "https://kenney.nl/media/pages/assets/sci-fi-sounds/6b296f9ecf-1677589334/kenney_sci-fi-sounds.zip",
+      "license": "CC0-1.0",
+      "license_file": "Assets/_Game/Shared/Audio/Licenses/Kenney-scifi-License.txt",
+      "modifications": "Unmodified original Ogg file. Playback gain is configured by cue; only ordinary Boss shots and footsteps use up to 3 percent pitch variation.",
+      "selected_date": "2026-10-05",
+      "selection": "Selected by implementation agent under Thomas's 2026-10-05 free-SFX authorization; not individually user-auditioned",
+      "existing_asset_reused": false,
+      "bytes": 19616,
+      "sha256": "5b7e07eccd4413ad9ef3720c2d14f9cc699f4c50111e9b2f48bd60e6f1a164c3",
+      "duration_seconds_from_ogg_granule": 0.53161,
+      "audibility": "NOT TESTED"
+    },
+    {
+      "file": "Assets/_Game/Shared/Audio/footstep_concrete_000.ogg",
+      "cues": [
+        "Footstep"
+      ],
+      "author": "Kenney (Kenney Vleugels)",
+      "package": "Impact Sounds",
+      "original_file": "Audio/footstep_concrete_000.ogg",
+      "source": "https://kenney.nl/assets/impact-sounds",
+      "download": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip",
+      "license": "CC0-1.0",
+      "license_file": "Assets/_Game/Shared/Audio/Licenses/Kenney-impact-License.txt",
+      "modifications": "Unmodified original Ogg file. Playback gain is configured by cue; only ordinary Boss shots and footsteps use up to 3 percent pitch variation.",
+      "selected_date": "2026-10-05",
+      "selection": "Selected by implementation agent under Thomas's 2026-10-05 free-SFX authorization; not individually user-auditioned",
+      "existing_asset_reused": false,
+      "bytes": 5808,
+      "sha256": "d7267e183067757c92c169de2a379abea592cfca6b39bb2e8feea15221ad79fe",
+      "duration_seconds_from_ogg_granule": 0.105918,
+      "audibility": "NOT TESTED"
+    },
+    {
+      "file": "Assets/_Game/Shared/Audio/impactSoft_heavy_000.ogg",
+      "cues": [
+        "Land",
+        "BossDefeat"
+      ],
+      "author": "Kenney (Kenney Vleugels)",
+      "package": "Impact Sounds",
+      "original_file": "Audio/impactSoft_heavy_000.ogg",
+      "source": "https://kenney.nl/assets/impact-sounds",
+      "download": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip",
+      "license": "CC0-1.0",
+      "license_file": "Assets/_Game/Shared/Audio/Licenses/Kenney-impact-License.txt",
+      "modifications": "Unmodified original Ogg file. Playback gain is configured by cue; only ordinary Boss shots and footsteps use up to 3 percent pitch variation.",
+      "selected_date": "2026-10-05",
+      "selection": "Selected by implementation agent under Thomas's 2026-10-05 free-SFX authorization; not individually user-auditioned",
+      "existing_asset_reused": false,
+      "bytes": 6570,
+      "sha256": "49e7ca88743fca974bb8676ea138b751cfd8f9033b5e7af8736c2a215d6edbc1",
+      "duration_seconds_from_ogg_granule": 0.505102,
+      "audibility": "NOT TESTED"
+    },
+    {
+      "file": "Assets/_Game/Shared/Audio/impactMetal_heavy_000.ogg",
+      "cues": [
+        "GuardBlock"
+      ],
+      "author": "Kenney (Kenney Vleugels)",
+      "package": "Impact Sounds",
+      "original_file": "Audio/impactMetal_heavy_000.ogg",
+      "source": "https://kenney.nl/assets/impact-sounds",
+      "download": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip",
+      "license": "CC0-1.0",
+      "license_file": "Assets/_Game/Shared/Audio/Licenses/Kenney-impact-License.txt",
+      "modifications": "Unmodified original Ogg file. Playback gain is configured by cue; only ordinary Boss shots and footsteps use up to 3 percent pitch variation.",
+      "selected_date": "2026-10-05",
+      "selection": "Selected by implementation agent under Thomas's 2026-10-05 free-SFX authorization; not individually user-auditioned",
+      "existing_asset_reused": true,
+      "bytes": 6110,
+      "sha256": "e07045693e4a2b3d165c424e3dab4c781d9ff8880a386880ac89a51315d7f831",
+      "duration_seconds_from_ogg_granule": 0.167664,
+      "audibility": "NOT TESTED"
+    },
+    {
+      "file": "Assets/_Game/Shared/Audio/metalClick.ogg",
+      "cues": [
+        "BeamLock"
+      ],
+      "author": "Kenney (Kenney Vleugels)",
+      "package": "RPG Audio",
+      "original_file": "Audio/metalClick.ogg",
+      "source": "https://kenney.nl/assets/rpg-audio",
+      "download": "https://kenney.nl/media/pages/assets/rpg-audio/8e99002d76-1677590336/kenney_rpg-audio.zip",
+      "license": "CC0-1.0",
+      "license_file": "Assets/_Game/Shared/Audio/Licenses/Kenney-rpg-License.txt",
+      "modifications": "Unmodified original Ogg file. Playback gain is configured by cue; only ordinary Boss shots and footsteps use up to 3 percent pitch variation.",
+      "selected_date": "2026-10-05",
+      "selection": "Selected by implementation agent under Thomas's 2026-10-05 free-SFX authorization; not individually user-auditioned",
+      "existing_asset_reused": false,
+      "bytes": 13615,
+      "sha256": "9851a69d0c613e13bceef08060ecc4148f098ef487927cbebe270d642398a3b3",
+      "duration_seconds_from_ogg_granule": 0.445833,
+      "audibility": "NOT TESTED"
+    },
+    {
+      "file": "Assets/_Game/Shared/Audio/knifeSlice.ogg",
+      "cues": [
+        "BladeLight"
+      ],
+      "author": "Kenney (Kenney Vleugels)",
+      "package": "RPG Audio",
+      "original_file": "Audio/knifeSlice.ogg",
+      "source": "https://kenney.nl/assets/rpg-audio",
+      "download": "https://kenney.nl/media/pages/assets/rpg-audio/8e99002d76-1677590336/kenney_rpg-audio.zip",
+      "license": "CC0-1.0",
+      "license_file": "Assets/_Game/Shared/Audio/Licenses/Kenney-rpg-License.txt",
+      "modifications": "Unmodified original Ogg file. Playback gain is configured by cue; only ordinary Boss shots and footsteps use up to 3 percent pitch variation.",
+      "selected_date": "2026-10-05",
+      "selection": "Selected by implementation agent under Thomas's 2026-10-05 free-SFX authorization; not individually user-auditioned",
+      "existing_asset_reused": false,
+      "bytes": 15532,
+      "sha256": "4cd96dc630bed9840c15f1dd2306da2cc56a4da26a5d3f1a03c5a7265ac5e54f",
+      "duration_seconds_from_ogg_granule": 0.599542,
+      "audibility": "NOT TESTED"
+    },
+    {
+      "file": "Assets/_Game/Shared/Audio/knifeSlice2.ogg",
+      "cues": [
+        "BladeHeavy",
+        "DashCut"
+      ],
+      "author": "Kenney (Kenney Vleugels)",
+      "package": "RPG Audio",
+      "original_file": "Audio/knifeSlice2.ogg",
+      "source": "https://kenney.nl/assets/rpg-audio",
+      "download": "https://kenney.nl/media/pages/assets/rpg-audio/8e99002d76-1677590336/kenney_rpg-audio.zip",
+      "license": "CC0-1.0",
+      "license_file": "Assets/_Game/Shared/Audio/Licenses/Kenney-rpg-License.txt",
+      "modifications": "Unmodified original Ogg file. Playback gain is configured by cue; only ordinary Boss shots and footsteps use up to 3 percent pitch variation.",
+      "selected_date": "2026-10-05",
+      "selection": "Selected by implementation agent under Thomas's 2026-10-05 free-SFX authorization; not individually user-auditioned",
+      "existing_asset_reused": false,
+      "bytes": 15099,
+      "sha256": "6c2064d0ef988d1ec3d56868e823ea8823a5cac00f2742560052633529407def",
+      "duration_seconds_from_ogg_granule": 0.568792,
+      "audibility": "NOT TESTED"
+    },
+    {
+      "file": "Assets/_Game/Shared/Audio/drawKnife1.ogg",
+      "cues": [
+        "DrawPrepare"
+      ],
+      "author": "Kenney (Kenney Vleugels)",
+      "package": "RPG Audio",
+      "original_file": "Audio/drawKnife1.ogg",
+      "source": "https://kenney.nl/assets/rpg-audio",
+      "download": "https://kenney.nl/media/pages/assets/rpg-audio/8e99002d76-1677590336/kenney_rpg-audio.zip",
+      "license": "CC0-1.0",
+      "license_file": "Assets/_Game/Shared/Audio/Licenses/Kenney-rpg-License.txt",
+      "modifications": "Unmodified original Ogg file. Playback gain is configured by cue; only ordinary Boss shots and footsteps use up to 3 percent pitch variation.",
+      "selected_date": "2026-10-05",
+      "selection": "Selected by implementation agent under Thomas's 2026-10-05 free-SFX authorization; not individually user-auditioned",
+      "existing_asset_reused": false,
+      "bytes": 11134,
+      "sha256": "276403e72c3b71c47bc24db3083970c23f8e5551ffa78f436f83483c56f3f0bb",
+      "duration_seconds_from_ogg_granule": 0.399708,
+      "audibility": "NOT TESTED"
+    },
+    {
+      "file": "Assets/_Game/Shared/Audio/drawKnife2.ogg",
+      "cues": [
+        "ReturnPrepare"
+      ],
+      "author": "Kenney (Kenney Vleugels)",
+      "package": "RPG Audio",
+      "original_file": "Audio/drawKnife2.ogg",
+      "source": "https://kenney.nl/assets/rpg-audio",
+      "download": "https://kenney.nl/media/pages/assets/rpg-audio/8e99002d76-1677590336/kenney_rpg-audio.zip",
+      "license": "CC0-1.0",
+      "license_file": "Assets/_Game/Shared/Audio/Licenses/Kenney-rpg-License.txt",
+      "modifications": "Unmodified original Ogg file. Playback gain is configured by cue; only ordinary Boss shots and footsteps use up to 3 percent pitch variation.",
+      "selected_date": "2026-10-05",
+      "selection": "Selected by implementation agent under Thomas's 2026-10-05 free-SFX authorization; not individually user-auditioned",
+      "existing_asset_reused": false,
+      "bytes": 12395,
+      "sha256": "d5df6a4130cbb016f97b4883769a418917b9629cb4c21717030b186e0c73281a",
+      "duration_seconds_from_ogg_granule": 0.445833,
+      "audibility": "NOT TESTED"
+    },
+    {
+      "file": "Assets/_Game/Shared/Audio/metalLatch.ogg",
+      "cues": [
+        "Reload"
+      ],
+      "author": "Kenney (Kenney Vleugels)",
+      "package": "RPG Audio",
+      "original_file": "Audio/metalLatch.ogg",
+      "source": "https://kenney.nl/assets/rpg-audio",
+      "download": "https://kenney.nl/media/pages/assets/rpg-audio/8e99002d76-1677590336/kenney_rpg-audio.zip",
+      "license": "CC0-1.0",
+      "license_file": "Assets/_Game/Shared/Audio/Licenses/Kenney-rpg-License.txt",
+      "modifications": "Unmodified original Ogg file. Playback gain is configured by cue; only ordinary Boss shots and footsteps use up to 3 percent pitch variation.",
+      "selected_date": "2026-10-05",
+      "selection": "Selected by implementation agent under Thomas's 2026-10-05 free-SFX authorization; not individually user-auditioned",
+      "existing_asset_reused": false,
+      "bytes": 10208,
+      "sha256": "ba9ba60b172b3ebc131a940f25793cd2e207aca7af73dc80d637277f060f1708",
+      "duration_seconds_from_ogg_granule": 0.261333,
+      "audibility": "NOT TESTED"
+    }
+  ]
+}

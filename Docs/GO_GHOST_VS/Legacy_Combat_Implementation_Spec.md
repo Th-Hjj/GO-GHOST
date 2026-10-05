@@ -1,4 +1,6 @@
-> **Confirmed override — Thomas, 2026-10-05:** the player AI implementation request supersedes conflicting sections below. Retained combat, arena, Rifle values and three-wave police policies stay unchanged.
+> **Boss assignment override — Thomas, 2026-10-05:** the Two Bosses + Coordinated Third Wave assignment supersedes conflicting single-enemy, old enemy visuals/attacks and result-validation restrictions below. Preserve the player override and fixed player tuning. Refraction / Severance / both replace the old three police waves; real navigation, public multi-target perception and legal cooperation are required. Bounded Mid/Near/Far all-AI third-wave observations and checked main delivery are authorized. See START_HERE for authority and Implementation_Log for actual evidence.
+
+> **Retained player override — Thomas, 2026-10-05:** the player AI implementation request supersedes conflicting sections below. Player combat, arena and Rifle values stay unchanged; enemy-specific restrictions are superseded above.
 >
 > - Legs = Move + Jump; Arms = Aim + Rifle; Spine = Dodge. Each is Player/AI, locked per fight. No Brain module in the formal duel.
 > - Remove player E, Arm-Blade, Shield, Counter, parry/deflection, melee and related HUD from the active runtime. Historical code may remain disconnected.
@@ -7,7 +9,7 @@
 > - Ordinary Projectile from either actor is stopped by platforms. Existing special laser penetration is separate. Preserve one-way character platforms.
 > - Manual and AI Dodge work on ground and in air with unchanged distance/duration/immunity/cooldown; no per-jump limit or landing refresh. Spine uses a 0.20 s imminent-hit window and executable motion, chooses a useful safe left/right Dodge, preferring away from the enemy. Accepted Dodge locks horizontal authority and suppresses a new same-frame Jump.
 > - New Game/Restart = all Player + Mid. Retry/Next preserve permissions and preference; each fight resets resources and AI state. Keep player health UI placement.
-> - Narrow module/action/flow smoke, one mixed fight, one all-AI fight, compile and Windows build/launch. No exhaustive matrix, outcome tuning, new police tactics or forced all-AI loss. This task does not authorize push, merge or deploy.
+> - Retained checks: narrow module/action/flow smoke, mixed combat, compile and Windows build/launch. The subsequent [dual Boss assignment](Boss_Encounter_Spec.md) adds bounded Mid/Near/Far observations and explicitly authorizes ordinary checked commit/push. No exhaustive matrix or forced all-AI loss.
 
 # GO GHOST — 恢复旧战斗＋三权限＋三波警察 AI
 ## Codex Astra Ultracode 实施 Prompt · 已确认 R01—R22 · 2026-10-03

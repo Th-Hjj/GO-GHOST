@@ -10,8 +10,10 @@ namespace GoGhost.Duel
         DuelGame game;
         TMP_FontAsset font;
         RectTransform canvas, page;
-        TMP_Text policeHealth, playerHealth, resources;
-        UnityEngine.UI.Image policeFill, playerFill;
+        TMP_Text playerHealth, resources;
+        TMP_Text[] policeHealth = System.Array.Empty<TMP_Text>();
+        UnityEngine.UI.Image[] policeFill = System.Array.Empty<UnityEngine.UI.Image>();
+        UnityEngine.UI.Image playerFill;
         public void Initialize(DuelGame game, TMP_FontAsset font)
         {
             this.game = game; this.font = font;
@@ -55,7 +57,8 @@ namespace GoGhost.Duel
             if (canvas == null) return;
             if(page!=null){page.gameObject.SetActive(false);Destroy(page.gameObject);}
             page=Rect("Page",canvas,Vector2.zero,new Vector2(1600,900));
-            policeHealth=playerHealth=resources=null; policeFill=playerFill=null;
+            playerHealth=resources=null; playerFill=null;
+            policeHealth=System.Array.Empty<TMP_Text>(); policeFill=System.Array.Empty<UnityEngine.UI.Image>();
             if(game.Phase==DuelPhase.Menu||game.Phase==DuelPhase.Configure)
                 Image(page,Vector2.zero,new Vector2(4000,4000),Color.black);
             if(game.Paused)
@@ -107,9 +110,15 @@ namespace GoGhost.Duel
                 return;
             }
             Text("WAVE "+game.Wave,page,new Vector2(0,400),new Vector2(280,50),30);
-            policeHealth=Text("",page,new Vector2(-400,345),new Vector2(300,40),24,TextAlignmentOptions.Left);
-            Image(page,new Vector2(0,345),new Vector2(430,12),new Color(.18f,.18f,.18f));
-            policeFill=Image(page,new Vector2(0,345),new Vector2(430,12),Color.white);
+            policeHealth = new TMP_Text[game.Bosses.Count];
+            policeFill = new UnityEngine.UI.Image[game.Bosses.Count];
+            for (int i=0; i<game.Bosses.Count; i++)
+            {
+                float y=345-i*40;
+                policeHealth[i]=Text("",page,new Vector2(-400,y),new Vector2(300,40),24,TextAlignmentOptions.Left);
+                Image(page,new Vector2(0,y),new Vector2(430,12),new Color(.18f,.18f,.18f));
+                policeFill[i]=Image(page,new Vector2(0,y),new Vector2(430,12),Color.white);
+            }
 
             playerHealth=Text("",page,new Vector2(-400,-340),new Vector2(300,40),24,TextAlignmentOptions.Left);
             Image(page,new Vector2(0,-340),new Vector2(430,12),new Color(.18f,.18f,.18f));
@@ -121,12 +130,18 @@ namespace GoGhost.Duel
         void LateUpdate()
         {
             if(playerHealth==null||game.Player==null)return;
-            playerHealth.text="YOU  "+game.Player.CurrentHealth; policeHealth.text="POLICE  "+game.Police.CurrentHealth;
+            playerHealth.text="YOU  "+game.Player.CurrentHealth;
+            for (int i=0; i<policeHealth.Length && i<game.Bosses.Count; i++)
+            {
+                var actor=game.Bosses[i];
+                if(actor==null)continue;
+                policeHealth[i].text=(actor.ActorId==1?"GUNNER  ":"SWORDSMAN  ")+actor.Health.CurrentHealth;
+                policeFill[i].rectTransform.sizeDelta=new Vector2(430f*actor.Health.CurrentHealth/actor.Health.MaxHealth,12);
+            }
 
             string ammo=game.Rifle.IsReloading?"Reloading":$"Rifle {game.Rifle.AmmoInMagazine} / {game.Rifle.MagazineSize}";
             resources.text=$"{ammo}     Dodge: {Ready(game.Dodge.CooldownRemaining)}";
             playerFill.rectTransform.sizeDelta=new Vector2(430f*game.Player.CurrentHealth/game.Player.MaxHealth,12);
-            policeFill.rectTransform.sizeDelta=new Vector2(430f*game.Police.CurrentHealth/game.Police.MaxHealth,12);
         }
         string Ready(float remaining)=>remaining<=.01f?"Ready":$"{remaining:0.0}s";
     }

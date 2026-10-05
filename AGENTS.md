@@ -4,26 +4,29 @@ Read this file first in every session, then the docs listed at the bottom for th
 
 `CLAUDE.md` (read by Claude) and `AGENTS.md` (read by Codex) hold the same rules. When you change one, make the same change in the other.
 
+> **Current assignment — 2026-10-05:** Thomas's Two Bosses + Coordinated Third Wave assignment supersedes conflicting single-enemy, old enemy appearance/attacks and outcome restrictions below. Preserve the Legs / Arms / Spine player override and fixed player tuning. Refraction, Severance and the coordinated third wave require real terrain navigation, public multi-target perception, player-style stickmen and complete licensed presentation. Bounded Mid/Near/Far third-wave observations and normal checked commit/push to main are authorized. All engineering, asset, collaboration and Git safety rules remain in force.
+
 ## Current design authority — 2026-10-05
-- Read `Docs/GO_GHOST_VS/START_HERE.md`, `Legacy_Combat_Implementation_Spec.md`, and the newest `Implementation_Log.md` entry. **The 2026-10-05 player AI override at the top of Legacy_Combat_Implementation_Spec is current; retained R01–R22 rules apply where compatible.** Thomas explicitly authorized implementation and direct main delivery on 2026-10-03. It supersedes the earlier Duel rules as well as tower/narrative/staged designs where they conflict.
+- **Later visual correction — Thomas, 2026-10-05:** both Bosses use the same round-head stickman style as the player, distinguished by body/weapon colors. Simple limb and body poses replace filled anatomical silhouettes, hair and clothing. Gameplay requirements remain unchanged.
+- Read `Docs/GO_GHOST_VS/START_HERE.md`, `Boss_Encounter_Spec.md`, the compatible player override in `Legacy_Combat_Implementation_Spec.md`, and the newest `Implementation_Log.md` entry. The 2026-10-05 dual Boss assignment is current. Thomas explicitly authorized implementation and ordinary checked main delivery. It supersedes conflicting police, Duel and tower designs.
 - Distinguish Confirmed requirements, Implemented source, actual runtime evidence, tuning and NOT TESTED work. The design requirement alone does not prove the all-AI result.
 
 ## Project
-- GO GHOST is a single-player 2D side-view, fixed-camera, single-arena duel against three successive police opponents: basic, skilled, adaptive/deceptive.
+- GO GHOST is a single-player 2D side-view, fixed-camera arena: Refraction, Severance, then both together.
 - Unity **6000.6.0f1**, URP 2D, New Input System, Windows keyboard/mouse. Never change Unity or packages for this task. Thomas uses Rider.
 - Thomas Hong and Walker Grupp share GitHub; Thomas currently leads and can confirm decisions alone. Reply in Chinese to Chinese requests; repository documentation stays concise English.
 
 ## Confirmed constraints
-- Restore the actual legacy PlayerMovement, PlayerDodge, PlayerShooting, OfficerVisual, CyberpsychoBoss regular attacks and five-platform arena. No replacement DuelFighter combat or third combat framework.
+- Retain actual legacy PlayerMovement, PlayerDodge, PlayerShooting, player visual and five-platform arena. Refraction and Severance use local Boss executors, real collider-derived navigation and player-style colored stickmen. No replacement player combat or broad framework.
 - Fixed Rifle (12 damage, 0.25 s, 10 rounds, 1.2 s auto reload), no player Blade/Shield/Counter/E, move 7, jump 12, gravity scale 3, legacy cooldown dodge and concurrent actions. No upgrade snapshot prerequisite.
 - Three independent locked binary permissions: Legs (A/D, Space), Arms (mouse aim, held LMB), Spine (Left Shift Dodge). Legs AI chooses Near 2.5–4, Mid 5.3–8.5 or Far 10–13 horizontal collider-centre distance. New Game defaults all Player and Mid; retries/next waves preserve both permissions and distance. No hidden input override.
 - Menu -> configuration -> one-second stationary preparation -> combat -> next configuration/current-wave defeat -> Complete after wave three. Fresh actors/resources/observation every fight. Full pause; simultaneous death is defeat and resolves once.
-- Police use their legacy gun/blade executors and real collision/timing, one HP pool per wave, legal weapon switches; no phase refill, BLACKOUT, opening laser, platform destruction or special Camo Rush.
-- Player AI is identical across waves. Police policy receives only small public body/projectile/telegraph and expressed shot/reload facts, never permissions, hidden intentions or exact player ammunition.
-- Wave three learns two comparable reactions before retreat-space, descent-route and visible-reload tactics; plans inducement before acting, follows only observed commitments, and suspends targeting after two absent expected reactions. No forced outcomes or cross-fight memory.
-- Keep the original actors/weapons, black background and concise white UI. Strict specification whitelist: player ammo/reload/dodge cooldowns allowed; no enemy resource panel, tactic explanation, story, tower, upgrades, Archive or permanent progression.
+- Boss skills use real collision/timing and independent HP pools; third-wave victory requires both dead. Ordinary shots stop at terrain/allies; the piercing beam crosses terrain and stops at allies. No friendly damage, phase refill, old BLACKOUT or platform destruction.
+- Player AI is identical across waves, with public multi-target/multi-threat adaptation. Boss policy receives delayed public body/projectile/telegraph and expressed shot/reload facts, never permissions, hidden intentions or exact player ammunition.
+- Third-wave coordination has finite assembly, readiness, commitment, follow-up and recovery; preserve a real escape option and a shared high-threat budget. Habit-based targeting needs two comparable reactions and stops after two misses. No forced outcomes or cross-fight memory.
+- Keep the original player/weapon, black background and concise white UI. Bosses use the player's round-head stickman model, distinct body/weapon colors, readable poses, licensed audio and weak Bloom. Two independent Boss health bars in wave three; no enemy resource/tactic panel, story, tower, upgrades, Archive or permanent progression.
 - Legacy tower assets stay disconnected from the current scene/build/play entry. Preserve unresolved references and saved data; remove unused assets only after a bounded Unity dependency audit.
-- Validate compile, short input/action/module/lifecycle smoke, one mixed and one all-AI combat smoke with narrowly justified reruns after blockers, and Windows build/launch. No permission win matrix, manual-win gate, batch fights, broad old suites or new testing platform. Do not tune player or police to force an all-AI loss. Win rate is not acceptance. Ordinary Projectile hits Ground; existing special laser penetration and one-way character platforms remain distinct. Spine predicts 0.20 s using executable motion and explicitly selects horizontal Dodge direction; ground/air use the same cooldown, with no landing refresh. Accepted Dodge owns horizontal motion and suppresses a new same-frame Jump.
+- Validate compile, short input/action/navigation/lifecycle checks, one mixed smoke, normal Mid/Near/Far third-wave observations and Windows build/launch. Rerun narrowly after blockers. No permission win matrix, manual-win gate, batch fights, broad old suites or new testing platform. Report an unmet natural defeat target as ALL_AI_W3_NOT_MET; never weaken the player or fake a result. Ordinary Projectile hits Ground; existing special laser penetration and one-way character platforms remain distinct. Spine predicts 0.20 s using executable motion and explicitly selects horizontal Dodge direction; ground/air use the same cooldown, with no landing refresh. Accepted Dodge owns horizontal motion and suppresses a new same-frame Jump.
 ## How to work
 1. Read the existing code before proposing anything. Reuse first: direct reuse, then minimal extension, then local refactor, then replacement only with approval.
 2. Never rewrite a working script because of naming or style. Keep class names, public APIs, serialized field names, Inspector values, prefab overrides, and assembly placement.
@@ -70,7 +73,8 @@ Read this file first in every session, then the docs listed at the bottom for th
 - Record the Windows build result explicitly when a build is made.
 
 ## Docs
-- `Docs/GO_GHOST_VS/Legacy_Combat_Implementation_Spec.md` - current confirmed self-contained specification.
+- `Docs/GO_GHOST_VS/Boss_Encounter_Spec.md` - current confirmed dual Boss specification.
+- `Docs/GO_GHOST_VS/Legacy_Combat_Implementation_Spec.md` - compatible retained player rules and historical restoration specification.
 - `README.md` - current entry and short controls/run guide.
 - `Docs/GO_GHOST_VS/START_HERE.md` - current authority pointer.
 - `Docs/GO_GHOST_VS/Implementation_Log.md` - the only progress log; actual checks and NOT TESTED limits.

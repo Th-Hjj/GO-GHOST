@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using GoGhost.Duel;
 using UnityEngine;
 
 public enum LegacyDistancePreference { Near, Mid, Far }
@@ -19,9 +20,18 @@ public sealed class LegacyPlayerAI
     private readonly PlayerMovement movement;
     private readonly PlayerDodge dodge;
     private readonly PlayerShooting gun;
-    private readonly Rigidbody2D body, targetBody;
-    private readonly Collider2D shape, targetShape;
+    private readonly Rigidbody2D body;
+    private Rigidbody2D targetBody;
+    private readonly Collider2D shape;
+    private Collider2D targetShape;
     private readonly CyberpsychoBoss boss;
+    private readonly IReadOnlyList<BossAgent> targets;
+    private readonly List<ObservedTarget> contacts = new List<ObservedTarget>(2);
+    private readonly List<BossThreat> threats = new List<BossThreat>(4);
+    private BossAgent focus;
+    private BossContact targetContact;
+    private bool hasContact;
+    private float focusSince;
     private readonly Transform combatRoot;
     private readonly List<Collider2D> supports = new List<Collider2D>();
     private readonly List<VisibleBullet> bullets = new List<VisibleBullet>();
@@ -38,6 +48,13 @@ public sealed class LegacyPlayerAI
     private bool routeJump, airborneRoute;
     private Vector2 lastAim = Vector2.right;
 
+    private struct ObservedTarget
+    {
+        public BossAgent Actor;
+        public BossContact Contact;
+        public Bounds Bounds;
+    }
+
     private struct VisibleBullet
     {
         public Vector2 Position, Velocity;
@@ -53,12 +70,25 @@ public sealed class LegacyPlayerAI
 
     public LegacyPlayerAI(PlayerHealth player, CyberpsychoBoss boss, Collider2D[] platforms,
         LegacyDistancePreference preference = LegacyDistancePreference.Mid)
+        : this(player, platforms, preference)
     {
         this.player = player; this.boss = boss;
+        targetBody = boss.GetComponent<Rigidbody2D>(); targetShape = boss.GetComponent<Collider2D>();
+    }
+
+    public LegacyPlayerAI(PlayerHealth player, IReadOnlyList<BossAgent> targets, Collider2D[] platforms,
+        LegacyDistancePreference preference = LegacyDistancePreference.Mid)
+        : this(player, platforms, preference)
+    {
+        this.targets = targets;
+    }
+
+    private LegacyPlayerAI(PlayerHealth player, Collider2D[] platforms, LegacyDistancePreference preference)
+    {
+        this.player = player;
         movement = player.GetComponent<PlayerMovement>(); dodge = player.GetComponent<PlayerDodge>();
         gun = player.GetComponent<PlayerShooting>();
         body = player.GetComponent<Rigidbody2D>(); shape = player.GetComponent<Collider2D>();
-        targetBody = boss.GetComponent<Rigidbody2D>(); targetShape = boss.GetComponent<Collider2D>();
         combatRoot = player.transform.parent;
         range = preference == LegacyDistancePreference.Near ? NearRange : preference == LegacyDistancePreference.Far ? FarRange : MidRange;
         foreach (var collider in Object.FindObjectsByType<Collider2D>(FindObjectsSortMode.None))
@@ -76,21 +106,45 @@ public sealed class LegacyPlayerAI
             foreach (var platform in platforms)
                 if (platform != null && !supports.Contains(platform)) supports.Add(platform);
     }
-    private bool Active => player != null && boss != null && !player.IsDead
-        && boss.gameObject.activeInHierarchy && shape.enabled && targetShape.enabled;
+    private bool Active => player != null && !player.IsDead && shape.enabled;
 
     private void Sense()
     {
         if (sensedFrame == Time.frameCount) return;
         sensedFrame = Time.frameCount;
-        selfBounds = shape.bounds; targetBounds = targetShape.bounds;
-        targetVelocity = targetBody.linearVelocity;
+        selfBounds = shape.bounds;
         gravity = Mathf.Abs(Physics2D.gravity.y * body.gravityScale);
-        threat = boss.PublicThreat; // Only expressed warnings, never a future combo or hidden policy.
+        threats.Clear(); contacts.Clear();
+        hasContact = false;
+        if (targets != null)
+        {
+            foreach (var actor in targets)
+            {
+                if (actor == null || !actor.IsAlive) continue;
+                foreach (var expressed in actor.PublicThreats)
+                    if (expressed.Valid && expressed.EndsAt >= Time.time) threats.Add(expressed);
+                if (!actor.TryGetContact(out var contact) || !contact.IsFresh) continue;
+                var observed = contact.Bounds;
+                // Cues expose their own position only; they do not imply exact hidden body velocity.
+                if (contact.VelocityKnown)
+                    observed.center += (Vector3)(contact.Velocity * Mathf.Min(.35f, Mathf.Max(0, Time.time - contact.ObservedAt)));
+                contacts.Add(new ObservedTarget { Actor = actor, Contact = contact, Bounds = observed });
+            }
+            SelectFocus();
+        }
+        else if (boss != null && boss.gameObject.activeInHierarchy && targetShape != null && targetShape.enabled
+            && !boss.GetComponent<Enemy>().IsDead)
+        {
+            hasContact = true;
+            targetBounds = targetShape.bounds; targetVelocity = targetBody.linearVelocity;
+            threat = boss.PublicThreat; // Historical single-boss fixture compatibility.
+        }
+        else threat = default;
         bullets.Clear();
         if (combatRoot == null) return;
-        foreach (var projectile in combatRoot.GetComponentsInChildren<Projectile>())
+        foreach (var projectile in Projectile.Active)
         {
+            if (projectile == null || !projectile.transform.IsChildOf(combatRoot)) continue;
             if (projectile.OwnerLayer == player.gameObject.layer) continue;
             var moving = projectile.GetComponent<Rigidbody2D>();
             var hitbox = projectile.GetComponent<Collider2D>();
@@ -99,11 +153,62 @@ public sealed class LegacyPlayerAI
         }
     }
 
+    private void UseContact(ObservedTarget observed)
+    {
+        targetBounds = observed.Bounds;
+        targetContact = observed.Contact;
+        targetVelocity = observed.Contact.VelocityKnown ? observed.Contact.Velocity : Vector2.zero;
+        targetShape = observed.Actor.Body;
+        // Never retain a hidden actor's live Rigidbody as an aim/prediction input.
+        targetBody = null;
+        focus = observed.Actor;
+        hasContact = true;
+    }
+
+    private void SelectFocus()
+    {
+        var previous = focus;
+        int current = -1, best = -1, latest = -1;
+        bool bestVisible = false;
+        float bestDistance = float.PositiveInfinity, newest = float.NegativeInfinity;
+        for (int i = 0; i < contacts.Count; i++)
+        {
+            var observed = contacts[i];
+            if (observed.Actor == previous) current = i;
+            if (observed.Contact.ObservedAt > newest)
+            { newest = observed.Contact.ObservedAt; latest = i; }
+            UseContact(observed);
+            if (!CanShootFrom(selfBounds.center)) continue;
+            if (bestVisible && !observed.Contact.Visible) continue;
+            float distance = ((Vector2)targetBounds.center - (Vector2)selfBounds.center).sqrMagnitude;
+            if (observed.Contact.Visible && !bestVisible || distance < bestDistance - .001f || Mathf.Abs(distance - bestDistance) <= .001f
+                && (best < 0 || observed.Contact.ActorId < contacts[best].Contact.ActorId))
+            { best = i; bestDistance = distance; bestVisible = observed.Contact.Visible; }
+        }
+        // Keep a useful focus. Only a materially better target after the minimum hold can replace it.
+        if (current >= 0)
+        {
+            UseContact(contacts[current]);
+            if (CanShootFrom(selfBounds.center) && (targetContact.Visible || !bestVisible))
+            {
+                float currentDistance = ((Vector2)targetBounds.center - (Vector2)selfBounds.center).sqrMagnitude;
+                if (Time.time - focusSince < .6f || best < 0 || bestDistance >= currentDistance * .65f)
+                    best = current;
+            }
+        }
+        int selected = best >= 0 ? best : latest;
+        if (selected < 0) { focus = null; hasContact = false; return; }
+        UseContact(contacts[selected]);
+        if (focus != previous)
+        { focusSince = Time.time; aimIndex = 0; rangeMove = 0; }
+    }
+
     public LegacyCombatIntent Arms()
     {
         var result = new LegacyCombatIntent { Aim = lastAim };
         if (!Active) return result;
         Sense();
+        if (!hasContact) return result;
         // Keep a valid body point. Reconsider the finite centre-first list only when that line fails.
         if (AimAt(selfBounds.center, aimIndex, out var direction))
         { result.Aim = lastAim = direction; result.Fire = true; return result; }
@@ -115,6 +220,8 @@ public sealed class LegacyPlayerAI
 
     private bool AimAt(Vector2 centre, int index, out Vector2 direction)
     {
+        if (targets != null && !targetContact.Visible && Time.time - targetContact.ObservedAt > .35f)
+        { direction = lastAim; return false; }
         Vector2 offset = Vector2.Scale(AimOffsets[index], targetBounds.extents);
         Vector2 origin = centre + (Vector2)player.transform.position - (Vector2)selfBounds.center;
         Vector2 point = (Vector2)targetBounds.center + offset;
@@ -130,7 +237,20 @@ public sealed class LegacyPlayerAI
         Vector2 start = gun.GetMuzzlePosition(direction) + origin - (Vector2)player.transform.position;
         // Also check the barrel segment: the muzzle cannot silently originate beyond a platform.
         return direction.sqrMagnitude > .9f && !Projectile.TerrainHit(origin, point, gun.BulletRadius, out _)
-            && !Projectile.TerrainHit(start, point, gun.BulletRadius, out _);
+            && !Projectile.TerrainHit(start, point, gun.BulletRadius, out _)
+            && !GuardBlocksShot(start, point);
+    }
+    private bool GuardBlocksShot(Vector2 origin, Vector2 point)
+    {
+        if (focus != null && focus.GuardBlocksRay(origin, point)) return true;
+        foreach (var observed in contacts)
+        {
+            if (observed.Actor == focus || !observed.Contact.Visible) continue;
+            if (SegmentBox(origin - (Vector2)observed.Bounds.center, point - (Vector2)observed.Bounds.center,
+                (Vector2)observed.Bounds.extents + Vector2.one * gun.BulletRadius)
+                && observed.Actor.GuardBlocksRay(origin, point)) return true;
+        }
+        return false;
     }
     private bool CanShootFrom(Vector2 centre)
     {
@@ -148,9 +268,9 @@ public sealed class LegacyPlayerAI
         if (airborneRoute && !movement.IsGrounded)
         { result.Move = Towards(routeX); return result; }
         if (airborneRoute) { airborneRoute = false; routePlatform = null; }
-        float desire = RangeDirection();
-        bool sight = CanShootFrom(selfBounds.center);
-        if (!sight && movement.IsGrounded && (routePlatform == null || Time.time >= routeUntil)) FindShotPosition();
+        float desire = hasContact ? RangeDirection() : 0;
+        bool sight = hasContact && CanShootFrom(selfBounds.center);
+        if (hasContact && !sight && movement.IsGrounded && (routePlatform == null || Time.time >= routeUntil)) FindShotPosition();
         bool jump = false;
         if (routePlatform != null)
         {
@@ -249,7 +369,7 @@ public sealed class LegacyPlayerAI
                     if (travel>movement.MoveSpeed*flight-.1f || SolidTravel(x-selfBounds.center.x)+.1f<travel) continue;
                 }
                 else if (SolidTravel(x-selfBounds.center.x)+.1f<travel) continue;
-                if (new Bounds(position,selfBounds.size).Intersects(targetBounds) || !CanShootFrom(position)
+                if (BodyBlocked(new Bounds(position,selfBounds.size)) || !CanShootFrom(position)
                     || PointDanger(position, SpineThreatWindow)) continue;
                 float cost=RangeCost(x)*3+travel*.25f+(needsJump?1.8f:0)+Mathf.Abs(rise)*.2f;
                 if (cost>=best) continue;
@@ -286,7 +406,8 @@ public sealed class LegacyPlayerAI
         Sense();
         // Current horizontal authority and only a jump that can actually execute this frame.
         if(Risk(new Motion(acceptedMove, executableJump),SpineThreatWindow)<=0) return result;
-        float away=selfBounds.center.x<targetBounds.center.x ? -1 : 1;
+        float away=hasContact ? (selfBounds.center.x<targetBounds.center.x ? -1 : 1)
+            : (bullets.Count>0 && selfBounds.center.x<bullets[0].Position.x ? -1 : 1);
         foreach(float direction in new[]{away,-away})
         {
             if(SolidTravel(direction*dodge.Distance)<dodge.Distance-.08f) continue;
@@ -336,6 +457,9 @@ public sealed class LegacyPlayerAI
     }
     private bool WarningHits(Vector2 previous,Vector2 centre,float time)
     {
+        foreach (var expressed in threats)
+            if (expressed.IntersectsMotion(previous, centre, selfBounds.extents,
+                Time.time + Mathf.Max(0, time - Step), Time.time + time)) return true;
         if(!threat.Visible || !threat.Locked) return false;
         float start=threat.TimeToImpact;
         float active=Mathf.Max(.02f,threat.ActiveRemaining);
@@ -377,11 +501,18 @@ public sealed class LegacyPlayerAI
             float vx=motion.DodgeDirection!=0 && t<=dodge.Duration ? motion.DodgeDirection*dodge.Distance/dodge.Duration : motion.Move*movement.MoveSpeed;
             Vector2 previous=position;
             position.x=Mathf.Clamp(position.x+vx*Step,leftEdge+selfBounds.extents.x+.01f,rightEdge-selfBounds.extents.x-.01f);
-            var opponent=targetBounds; opponent.center+=(Vector3)(targetVelocity*Mathf.Min(t,SpineThreatWindow));
-            if(position.y-selfBounds.extents.y<opponent.max.y && position.y+selfBounds.extents.y>opponent.min.y && !Physics2D.GetIgnoreCollision(shape,targetShape))
+            if (targets != null)
+                foreach (var observed in contacts)
+                {
+                    var opponent = observed.Bounds;
+                    if (observed.Contact.VelocityKnown)
+                        opponent.center += (Vector3)(observed.Contact.Velocity * Mathf.Min(t, SpineThreatWindow));
+                    ClampAgainstBody(ref position, previous, opponent, observed.Actor.Body);
+                }
+            else if (hasContact)
             {
-                if(previous.x+selfBounds.extents.x<=opponent.min.x && position.x+selfBounds.extents.x>opponent.min.x) position.x=opponent.min.x-selfBounds.extents.x-.01f;
-                if(previous.x-selfBounds.extents.x>=opponent.max.x && position.x-selfBounds.extents.x<opponent.max.x) position.x=opponent.max.x+selfBounds.extents.x+.01f;
+                var opponent = targetBounds; opponent.center += (Vector3)(targetVelocity * Mathf.Min(t, SpineThreatWindow));
+                ClampAgainstBody(ref position, previous, opponent, targetShape);
             }
             if(grounded && !SupportedAt(position)) grounded=false;
             if(!grounded)
@@ -418,19 +549,51 @@ public sealed class LegacyPlayerAI
     {
         if(Mathf.Abs(distance)<.001f) return 0;
         float direction=Mathf.Sign(distance),available=Mathf.Min(Mathf.Abs(distance),direction>0?rightEdge-selfBounds.max.x:selfBounds.min.x-leftEdge);
-        if(selfBounds.max.y>targetBounds.min.y && selfBounds.min.y<targetBounds.max.y && !Physics2D.GetIgnoreCollision(shape,targetShape))
-        {
-            float gap=direction>0 ? targetBounds.min.x-selfBounds.max.x : selfBounds.min.x-targetBounds.max.x;
-            if(gap>=0) available=Mathf.Min(available,gap);
-        }
+        if (targets != null)
+            foreach (var observed in contacts)
+                available = BodyTravel(available, direction, observed.Bounds, observed.Actor.Body);
+        else if (hasContact) available = BodyTravel(available, direction, targetBounds, targetShape);
         return Mathf.Max(0,available);
+    }
+
+    private float BodyTravel(float available, float direction, Bounds opponent, Collider2D other)
+    {
+        if (other != null && !Physics2D.GetIgnoreCollision(shape, other)
+            && selfBounds.max.y > opponent.min.y && selfBounds.min.y < opponent.max.y)
+        {
+            float gap = direction > 0 ? opponent.min.x - selfBounds.max.x : selfBounds.min.x - opponent.max.x;
+            if (gap >= 0) available = Mathf.Min(available, gap);
+        }
+        return available;
+    }
+
+    private void ClampAgainstBody(ref Vector2 position, Vector2 previous, Bounds opponent, Collider2D other)
+    {
+        if (other == null || Physics2D.GetIgnoreCollision(shape, other)
+            || position.y - selfBounds.extents.y >= opponent.max.y || position.y + selfBounds.extents.y <= opponent.min.y) return;
+        if (previous.x + selfBounds.extents.x <= opponent.min.x && position.x + selfBounds.extents.x > opponent.min.x)
+            position.x = opponent.min.x - selfBounds.extents.x - .01f;
+        if (previous.x - selfBounds.extents.x >= opponent.max.x && position.x - selfBounds.extents.x < opponent.max.x)
+            position.x = opponent.max.x + selfBounds.extents.x + .01f;
+    }
+
+    private bool BodyBlocked(Bounds proposed)
+    {
+        if (targets != null)
+        { foreach (var observed in contacts) if (proposed.Intersects(observed.Bounds)) return true; return false; }
+        return hasContact && proposed.Intersects(targetBounds);
     }
     private Vector2 PredictTarget(float seconds)
     {
         Vector2 point=(Vector2)targetBounds.center+targetVelocity*seconds;
-        if(targetBody.bodyType==RigidbodyType2D.Dynamic && Mathf.Abs(targetVelocity.y)>.1f)
+        bool dynamic = targets != null ? targetContact.Dynamic : targetBody != null && targetBody.bodyType == RigidbodyType2D.Dynamic;
+        float targetGravity = targets != null ? targetContact.Gravity : targetBody != null ? Mathf.Abs(Physics2D.gravity.y * targetBody.gravityScale) : 0;
+        if (targets != null && !targetContact.Visible)
+            seconds = Mathf.Min(seconds, Mathf.Max(0, Mathf.Min(.35f - (Time.time - targetContact.ObservedAt), targetContact.ExpiresAt - Time.time)));
+        point = (Vector2)targetBounds.center + targetVelocity * seconds;
+        if(dynamic && Mathf.Abs(targetVelocity.y)>.1f)
         {
-            point.y-=.5f*Mathf.Abs(Physics2D.gravity.y*targetBody.gravityScale)*seconds*seconds;
+            point.y-=.5f*targetGravity*seconds*seconds;
             float floor=-2.5f+targetBounds.extents.y;
             foreach(var support in supports)
                 if(support!=null && support.enabled && support.bounds.max.y<=targetBounds.min.y+.12f

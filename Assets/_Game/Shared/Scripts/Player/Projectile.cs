@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -19,6 +20,9 @@ public class Projectile : MonoBehaviour
 
     /// <summary>Layer of the shooter at launch time (-1 if none). Same-layer objects are never hit.</summary>
     public int OwnerLayer => ownerLayer;
+    public GameObject Owner => owner;
+    private static readonly List<Projectile> active = new List<Projectile>();
+    public static IReadOnlyList<Projectile> Active => active;
     public int Damage => damage;
     public ProjectileActor Actor { get; private set; }
     public int PermissionTier { get; private set; }
@@ -63,6 +67,10 @@ public class Projectile : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
     }
 
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetRegistry() => active.Clear();
+    private void OnDestroy() => active.Remove(this);
+
     public void Launch(Vector2 direction, float speed, int dmg, GameObject shooter, PlayerTimeSlow hostileClock = null, bool counterable = false, PlayerShooting accuracyOwner = null,
         ProjectileActor actor = ProjectileActor.Environment, int permissionTier = 0)
     {
@@ -82,6 +90,7 @@ public class Projectile : MonoBehaviour
         rb.linearVelocity = fullVelocity * SimulationRate;
         remainingLife = lifetime;
         launched = true;
+        if (!active.Contains(this)) active.Add(this);
     }
 
     /// <summary>
@@ -134,8 +143,22 @@ public class Projectile : MonoBehaviour
     {
         if (spent) return;
         // Unity's overloaded == makes this safe even after the owner was destroyed; never dereference owner here.
-        if (other.gameObject == owner) return;
-        if (other.gameObject.layer == ownerLayer) return; // same team (e.g. enemy bullets pass through other enemies)
+        if (owner != null && (other.gameObject == owner || other.transform.IsChildOf(owner.transform))) return;
+
+        // Owner, team and solid body blocking are separate. Same-team weapons/tells are not bodies.
+        var bodyHealth = other.GetComponentInParent<Enemy>();
+        bool sameTeam = bodyHealth != null ? bodyHealth.gameObject.layer == ownerLayer
+            : other.gameObject.layer == ownerLayer;
+        if (sameTeam)
+        {
+            if (!other.isTrigger && bodyHealth != null && !bodyHealth.IsDead
+                && other == bodyHealth.GetComponent<Collider2D>())
+            {
+                if (vfx != null) vfx.BulletHit(other.ClosestPoint(transform.position), -fullVelocity.normalized);
+                Retire();
+            }
+            return;
+        }
 
         if (!other.isTrigger && (((1 << other.gameObject.layer) & blockingLayers.value) != 0
             || other.gameObject.layer == LayerMask.NameToLayer("Ground")))
@@ -150,6 +173,10 @@ public class Projectile : MonoBehaviour
             Retire();
             return;
         }
+
+        // Guard/tell trigger volume is not a hurtbox when it declines this projectile.
+        if (other.isTrigger && other.GetComponentInParent<Enemy>() != null
+            && other != other.GetComponentInParent<Enemy>().GetComponent<Collider2D>()) return;
 
         IDamageable damageable = other.GetComponentInParent<IDamageable>();
         if (damageable != null)
@@ -182,6 +209,7 @@ public class Projectile : MonoBehaviour
     public void Retire()
     {
         spent = true;
+        active.Remove(this);
         if (rb != null) rb.simulated = false;
         var hitbox = GetComponent<Collider2D>();
         if (hitbox != null) hitbox.enabled = false;

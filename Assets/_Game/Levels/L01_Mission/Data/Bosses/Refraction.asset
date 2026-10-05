@@ -23,9 +23,17 @@ MonoBehaviour:
     AirControl: 0.45
   Magazine: 12
   ReloadSeconds: 1.45
-  BulletSpeed: 18
+  BulletSpeed: 24
   BurstInterval: 0.12
-  SweepInterval: 0.14
+  SweepInterval: 0.12
+  BurstShotLock: 0.08
+  BurstTail: 0.04
+  SweepTail: 0.1
+  SweepWidth: 5
+  SweepHeight: 0.65
+  SweepShots: 8
+  CamoMinimumMove: 0.45
+  DropSpeed: 16
   CamoAlpha: 0.02
   CamoFade: 0.14
   RevealFade: 0.12
@@ -40,8 +48,8 @@ MonoBehaviour:
   DashSpeed: 25
   ReturnSpeed: 24
   GuardArc: 120
-  GuardWalkScale: 0.25
-  GuardCapacity: 3
+  GuardWalkScale: 0.6
+  GuardCapacity: 5
   PiercingInterruptHits: 3
   SweepInterruptHits: 2
   InterruptRecovery: 0.3
@@ -54,7 +62,7 @@ MonoBehaviour:
   Burst:
     Prepare: 0.24
     Lock: 0
-    Active: 0.24
+    Active: 0.28
     Recovery: 0.26
     Cooldown: 1
     Range: 24
@@ -81,28 +89,56 @@ MonoBehaviour:
   Sweep:
     Prepare: 0.32
     Lock: 0.18
-    Active: 0.7
+    Active: 0.94
     Recovery: 0.5
     Cooldown: 4
     Range: 24
     Damage: 8
-    Cost: 6
+    Cost: 8
   Rhythm:
     Prepare: 0.16
     Lock: 0.12
     Active: 0.1
-    Recovery: 0.45
-    Cooldown: 2
-    Range: 1.7
+    Recovery: 0.65
+    Cooldown: 2.4
+    Range: 2.1
     Damage: 18
     Cost: 0
+  RhythmPrepare:
+  - 0.16
+  - 0.08
+  - 0.24
+  RhythmLock:
+  - 0.12
+  - 0.12
+  - 0.14
+  RhythmActive:
+  - 0.1
+  - 0.12
+  - 0.14
+  RhythmStep:
+  - 0.6
+  - 0.45
+  - 0.75
+  RhythmReach:
+  - 2.1
+  - 2.2
+  - 2.4
+  RhythmArcFrom:
+  - 25
+  - -25
+  - 85
+  RhythmArcTo:
+  - -25
+  - 95
+  - -45
   DrawDash:
     Prepare: 0.3
     Lock: 0.18
-    Active: 0.24
+    Active: 0.28
     Recovery: 0.5
     Cooldown: 3
-    Range: 5.6
+    Range: 7
     Damage: 28
     Cost: 0
   ReturnCut:
@@ -126,8 +162,8 @@ MonoBehaviour:
   Guard:
     Prepare: 0.18
     Lock: 0
-    Active: 0.55
-    Recovery: 0.3
+    Active: 0.7
+    Recovery: 0.18
     Cooldown: 3.5
     Range: 1.1
     Damage: 0

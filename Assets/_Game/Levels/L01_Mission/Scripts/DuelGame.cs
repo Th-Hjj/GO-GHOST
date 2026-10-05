@@ -37,7 +37,6 @@ namespace GoGhost.Duel
         public bool DraftLegs { get; private set; }
         public bool DraftArms { get; private set; }
         public bool DraftSpine { get; private set; }
-        public LegacyDistancePreference DraftDistance { get; private set; } = LegacyDistancePreference.Mid;
         GameObject encounter;
         DuelUI ui;
         BossAgent[] actors = System.Array.Empty<BossAgent>();
@@ -74,7 +73,6 @@ namespace GoGhost.Duel
             ClearEncounter();
             Wave = 1;
             DraftLegs = DraftArms = DraftSpine = false;
-            DraftDistance = LegacyDistancePreference.Mid;
             FirstConfiguration = true;
             SetPhase(DuelPhase.Configure);
         }
@@ -84,12 +82,6 @@ namespace GoGhost.Duel
             if (module == 0) DraftLegs = automatic;
             else if (module == 1) DraftArms = automatic;
             else if (module == 2) DraftSpine = automatic;
-            ui.Show();
-        }
-        public void SetDistance(LegacyDistancePreference preference)
-        {
-            if (Phase != DuelPhase.Configure || Paused || !DraftLegs) return;
-            DraftDistance = preference;
             ui.Show();
         }
         public void StartFight()
@@ -117,7 +109,7 @@ namespace GoGhost.Duel
             actors = activeActors.ToArray();
             Police = actors[0].Health; // Historical development consumers; gameplay uses the full actor list.
             coordinator.Configure(actors, navigation);
-            var ai = new LegacyPlayerAI(Player, actors, platforms, DraftDistance);
+            var ai = new LegacyPlayerAI(Player, actors, platforms);
             input.ConfigureLegacyControls(lockedLegs, lockedArms, lockedSpine, ai.Legs, ai.Arms, ai.Spine);
             foreach (var body in encounter.GetComponentsInChildren<Rigidbody2D>())
             {
@@ -240,7 +232,7 @@ namespace GoGhost.Duel
             foreach (var actor in actors) if (actor != null && actor.IsAlive) { allDead = false; break; }
             if (!Player.IsDead && !allDead) return;
             bool defeat = Player.IsDead;
-            Trace($"result wave={Wave} distance={DraftDistance} player={Player.CurrentHealth} bosses={HealthSummary()} elapsed={FightClock:0.00}");
+            Trace($"result wave={Wave} player={Player.CurrentHealth} bosses={HealthSummary()} elapsed={FightClock:0.00}");
             StopCombat();
             sounds?.Play(defeat ? Sfx.Defeat : Sfx.Victory);
             SetPhase(defeat ? DuelPhase.Failed : Wave == 3 ? DuelPhase.Complete : DuelPhase.Between);
@@ -252,13 +244,15 @@ namespace GoGhost.Duel
 #endif
         }
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        // Normal wave-three entry, empty observation; no test UI or outcome alteration.
-        public void ObserveThirdWave()
-        { ObserveThirdWave(LegacyDistancePreference.Mid); }
-        public void ObserveThirdWave(LegacyDistancePreference distance)
+        // Entry selects only the normal configuration; no fight-state injection.
+        public void ConfigurePlaytestWave(int wave)
         {
-            NewGame(); Wave = 3; DraftLegs = DraftArms = DraftSpine = true;
-            DraftDistance = distance;
+            NewGame(); Wave = Mathf.Clamp(wave, 1, 3); ui.Show();
+        }
+        public void ObserveThirdWave()
+        {
+            ConfigurePlaytestWave(3);
+            for (int i=0;i<3;i++) SetDraft(i,true);
             diagnostics = true; StartFight();
         }
 #endif

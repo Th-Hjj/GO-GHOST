@@ -31,9 +31,11 @@ namespace GoGhost.Duel
         public SfxSet Sounds {get;private set;}
         public bool Diagnostics {get;private set;}
         BossContact lastContact;
-        float cueUntil, nextCamoCue, previousFootstep, hitRevealUntil;
-        bool wasGrounded;
-        public float VisualAlpha=>!IsCamo ? 1 : Time.time<hitRevealUntil ? .48f : profile.CamoAlpha;
+        float previousFootstep;
+        Vector2 projectileContact;
+        float projectileContactAt=-100;
+        bool wasGrounded, wasClose;
+        public float VisualAlpha=>!IsCamo ? 1 : profile.CamoAlpha;
         public void Configure(PlayerHealth player,ArenaNavigation2D navigation,DuoCoordinator coordinator,int actorId,bool diagnostics)
         {
             Player=player;Navigation=navigation;Coordinator=coordinator;ActorId=actorId;Diagnostics=diagnostics;
@@ -69,7 +71,10 @@ namespace GoGhost.Duel
         void OnDamaged(int amount,GameObject source)
         {
             if(!IsAlive)return;
-            hitRevealUntil=Time.time+.1f; PublishCue(.12f);View?.Hit();
+            Vector2 point=Time.time-projectileContactAt<=Time.fixedDeltaTime+.001f?projectileContact
+                :source!=null?Body.ClosestPoint(source.transform.position):Position;
+            projectileContactAt=-100;
+            PublishCue(.08f,point);View?.Hit();
             Actions.OnDamaged(source);
         }
         public void Face(Vector2 direction)
@@ -88,13 +93,14 @@ namespace GoGhost.Duel
             bool grounded=Motor.Grounded;
             if(grounded&&!wasGrounded)
             {View?.Landing();Sounds?.Play(Sfx.Land,ActorId);PublishCue(.12f);}
-            if(grounded&&Mathf.Abs(Velocity.x)>.7f&&Time.time>=previousFootstep)
+            if(!grounded&&wasGrounded&&IsCamo)PublishCue(.10f);
+            if(!IsCamo&&grounded&&Mathf.Abs(Velocity.x)>.7f&&Time.time>=previousFootstep)
             {previousFootstep=Time.time+.28f;Sounds?.Play(Sfx.Footstep,ActorId);}
             wasGrounded=grounded;
-            if(IsCamo&&Velocity.sqrMagnitude>.4f&&Time.time>=nextCamoCue)
-            {nextCamoCue=Time.time+profile.CamoCueInterval;PublishCue(.1f);}
-            if(IsCamo&&Player!=null&&Vector2.Distance(Player.transform.position,Position)<Body.bounds.size.y)
-                PublishCue(.08f);
+            // A body-contact event is a clue, not an every-frame proximity radar.
+            bool close=IsCamo&&Player!=null&&Body.bounds.SqrDistance(Player.transform.position)<.16f;
+            if(close&&!wasClose)PublishCue(.08f);
+            wasClose=close;
         }
         void PublishContact(bool visible)
         {
@@ -102,10 +108,23 @@ namespace GoGhost.Duel
                 VelocityKnown=visible,Visible=visible,Dynamic=true,Gravity=Mathf.Abs(Physics2D.gravity.y*profile.Motion.GravityScale),
                 ObservedAt=Time.time,ExpiresAt=Time.time+(IsCamo?profile.CamoContactMemory:profile.SightMemory)};
         }
-        public void PublishCue(float duration)
+        public void BeginCamo()
         {
-            cueUntil=Time.time+duration;View?.CamoCue(duration);
-            if(Player!=null&&BossPerception.CanSee(Player.transform.position,Body.bounds))PublishContact(false);
+            // Retire the old visible velocity/memory even if departure is behind terrain.
+            lastContact.Visible=false;lastContact.VelocityKnown=false;lastContact.Velocity=Vector2.zero;
+            lastContact.ExpiresAt=Mathf.Min(lastContact.ExpiresAt,Time.time+.10f);
+            PublishCue(.10f);
+        }
+        public void PublishCue(float duration) => PublishCue(duration,null);
+        void PublishCue(float duration,Vector2? point)
+        {
+            View?.CamoCue(duration,point);
+            if(Player!=null&&BossPerception.CanSee(Player.transform.position,Body.bounds))
+            {
+                PublishContact(false);
+                // A concealed cue exposes only a stationary snapshot for its visible lifetime.
+                if(IsCamo)lastContact.ExpiresAt=Time.time+Mathf.Min(duration,profile.CamoContactMemory);
+            }
         }
         public bool TryGetContact(out BossContact contact)
         {
@@ -117,7 +136,12 @@ namespace GoGhost.Duel
             return Time.time<=contact.ExpiresAt;
         }
         public bool GuardBlocksRay(Vector2 origin,Vector2 point)=>Actions.GuardBlocksRay(origin,point);
-        public bool ReceiveProjectile(Projectile shot,Collider2D contact)=>Actions.ReceiveProjectile(shot,contact);
+        public bool ReceiveProjectile(Projectile shot,Collider2D contact)
+        {
+            if(Actions.ReceiveProjectile(shot,contact))return true;
+            if(contact==Body){projectileContact=contact.ClosestPoint(shot.transform.position);projectileContactAt=Time.time;}
+            return false;
+        }
         public void Trace(string message)
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD

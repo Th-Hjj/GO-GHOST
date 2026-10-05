@@ -29,10 +29,17 @@ namespace GoGhost.Duel
         float searchDeadline;
         BossAbility previousAbility;
         BossPlan plan,dropPlan;
+        BossPlan camoPlan;
+        Vector2 lastCamoDestination;
+        float camoFollowupUntil,lastCamoAt=-100;
+        bool camoTravelling;
         bool dropCooperative,dropLeftGround;
         float dropLaunchedAt,dropDeadline;
         public bool Enabled {get;set;}=true;
         public BossPlan Current=>plan;
+        public bool CamoRouteInvalid=>camoTravelling&&(camoPlan==null
+            ||camoPlan.TerrainVersion!=actor.Navigation.Version||actor.Motor.RouteFailed
+            ||!actor.Motor.HasRoute&&!actor.Motor.RouteCompleted);
         public float EngagementDistance=>actor.Profile.Kind==BossKind.Refraction?actor.Navigation.SameLevelSpacing*.8f:actor.Navigation.PlatformWidth*.4f;
         public BossTactics(BossAgent actor){this.actor=actor;}
         public void Tick()
@@ -41,8 +48,10 @@ namespace GoGhost.Duel
             var action=actor.Actions; var facts=actor.Perception.Facts;
             if(action.Busy)return;
             if(dropPlan!=null){TickDropPlan();return;}
-            if(actor.Coordinator!=null&&actor.Coordinator.HasAssignment(actor))return;
+            if(actor.Coordinator!=null&&actor.Coordinator.HasAssignment(actor))
+            {if(camoPlan!=null){if(plan==camoPlan)plan=null;camoPlan=null;}return;}
             if(!actor.Motor.Grounded)return; // Finish the accepted physical air connection before replanning.
+            if(TickCamoFollowup(facts))return;
             if(facts.Visible&&facts.Confidence>.3f)
             {searchedSupports.Clear();searchSupport=null;}
             // Attack from here as soon as a legal closing lane exists; do not finish an ideal walk first.
@@ -52,6 +61,8 @@ namespace GoGhost.Duel
             {plan=null;previousAbility=BossAbility.DrawDash;lastAttackAt=Time.time;return;}
             if(Time.time>=nextTick && facts.Confidence>.3f)
             {
+                if(TryStartCamo())
+                {nextTick=Time.time+actor.Profile.TacticTick;return;}
                 if(actor.Profile.Kind==BossKind.Severance && actor.Position.y-facts.Position.y>ArenaNavigation2D.ExecutableJumpHeight(actor.Motor.Profile)*.3f
                     && action.Ready(BossAbility.DropCut)&&TryPlanDrop(facts,out var descent)&&StartDropPlan(descent,false))
                 {nextTick=Time.time+actor.Profile.TacticTick;return;}
@@ -104,9 +115,66 @@ namespace GoGhost.Duel
             actor.Trace($"plan {plan.Intent}/{plan.Ability} to={plan.Destination} score={plan.Score:0.00}");
             actor.Motor.SetRoute(plan.Route);
             if(plan.Route==null)actor.Motor.Brake(); // Retire the previous route when accepting an in-place attack.
-            if(actor.Profile.Kind==BossKind.Refraction&&plan.TravelSeconds>.45f&&Vector2.Distance(plan.Destination,actor.Position)>1.5f&&selected.Score>.8f&&action.Ready(BossAbility.Camo))
-                action.TryStart(BossAbility.Camo,plan.TargetHypothesis);
             if(actor.Profile.Kind==BossKind.Refraction&&!action.CanAfford(plan.Ability))action.RequestReload();
+        }
+        public bool TryStartCamo()
+        {
+            var action=actor.Actions;var facts=actor.Perception.Facts;
+            if(actor.Profile.Kind!=BossKind.Refraction||action.Busy||!actor.Motor.Grounded
+                ||!facts.Visible||facts.Confidence<.3f||!action.Ready(BossAbility.Camo)
+                ||actor.Coordinator!=null&&actor.Coordinator.HasAssignment(actor))return false;
+            var options=BuildCandidates(BossAbility.None,true);
+            if(options.Count==0)return false;
+            var chosen=options[0];
+            if(!action.TryStart(BossAbility.Camo,chosen.TargetHypothesis))return false;
+            camoPlan=plan=chosen;camoTravelling=true;camoFollowupUntil=0;
+            plan.Intent="CamoAngle";plan.CreatedAt=Time.time;
+            actor.Motor.SetRoute(plan.Route);
+            lastCamoDestination=plan.Destination;lastCamoAt=Time.time;
+            actor.Trace($"camo route {plan.Ability} to={plan.Destination} travel={plan.TravelSeconds:0.00}");
+            return true;
+        }
+        public void EndCamoRoute()
+        {
+            if(!camoTravelling)return;
+            bool arrived=!CamoRouteInvalid&&actor.Motor.RouteCompleted&&actor.Motor.Grounded
+                &&Vector2.Distance(actor.Position,camoPlan.Destination)<.45f;
+            camoTravelling=false;
+            actor.Trace(arrived?"camo arrived; prepare follow-up":$"camo route ended without attack setup pos={actor.Position} failure={actor.Motor.RouteFailure} completed={actor.Motor.RouteCompleted}");
+            if(arrived)camoFollowupUntil=Time.time+actor.Profile.Camo.Recovery+.45f;
+            else {if(plan==camoPlan)plan=null;camoPlan=null;}
+        }
+        bool TickCamoFollowup(BossObservation facts)
+        {
+            if(camoPlan==null||camoTravelling)return false;
+            if(Time.time>camoFollowupUntil||camoPlan.TerrainVersion!=actor.Navigation.Version
+                ||!facts.Visible||facts.Confidence<.3f||Vector2.Distance(actor.Position,camoPlan.Destination)>.6f)
+            {if(plan==camoPlan)plan=null;camoPlan=null;return false;}
+            // Full existing tells, ammunition, cooldown and shared-threat reservation apply again.
+            // A blocked major may use Burst; there is no invisible shot or extra simultaneous major.
+            var action=actor.Actions;
+            foreach(var ability in new[]{camoPlan.Ability,BossAbility.Burst})
+                if(action.Ready(ability)&&action.CanAfford(ability)&&!action.Reloading
+                    &&LegalAt(ability,actor.Position,facts,out _)
+                    &&TryGunTarget(ability,actor.Position,facts,out var target)&&action.TryStart(ability,target))
+                {
+                    actor.Trace("camo follow-up "+ability);previousAbility=ability;lastAttackAt=Time.time;
+                    plan=null;camoPlan=null;return true;
+                }
+            actor.Motor.Brake();return true; // Bounded wait, then resume ordinary tactics.
+        }
+        float CamoAngleBenefit(Vector2 point,BossObservation facts)
+        {
+            float width=actor.Navigation.PlatformWidth;
+            if(Vector2.Distance(point,actor.Position)<width*.5f)return 0;
+            float angle=Vector2.Angle(actor.Position-facts.Position,point-facts.Position);
+            float height=Mathf.Abs(point.y-actor.Position.y);
+            bool opensLane=!TryGunTarget(BossAbility.Burst,actor.Position,facts,out _)
+                &&TryGunTarget(BossAbility.Burst,point,facts,out _);
+            if(angle<20&&height<ArenaNavigation2D.ExecutableJumpHeight(actor.Motor.Profile)*.3f&&!opensLane)return 0;
+            float benefit=.65f+Mathf.Min(angle/90,1)*.5f+(opensLane?.5f:0);
+            if(Time.time-lastCamoAt<20&&Vector2.Distance(point,lastCamoDestination)<width*.5f)benefit-=.5f;
+            return benefit;
         }
         void SearchVisibleAngle()
         {
@@ -173,7 +241,8 @@ namespace GoGhost.Duel
                 TravelSeconds=route.Duration,MaxPlanTime=route.Duration+1.2f };
             actor.Motor.SetRoute(route);actor.Trace("plan "+intent+" to="+destination);
         }
-        public List<BossPlan> BuildCandidates(BossAbility forced=BossAbility.None)
+        public List<BossPlan> BuildCandidates(BossAbility forced=BossAbility.None)=>BuildCandidates(forced,false);
+        List<BossPlan> BuildCandidates(BossAbility forced,bool camo)
         {
             ranked.Clear();candidates.Clear();var facts=actor.Perception.Facts;
             if(facts.Confidence<=0)return candidates;
@@ -185,6 +254,15 @@ namespace GoGhost.Duel
                 if(forced!=BossAbility.None && (Mathf.Abs(point.x-actor.Position.x)>actor.Navigation.PlatformWidth
                     || Mathf.Abs(point.y-actor.Position.y)>ArenaNavigation2D.ExecutableJumpHeight(actor.Motor.Profile)))continue;
                 AddAt(point,facts,forced,false);
+            }
+            if(camo)
+            {
+                for(int i=ranked.Count-1;i>=0;i--)
+                {
+                    var candidate=ranked[i];float benefit=CamoAngleBenefit(candidate.Destination,facts);
+                    if(benefit<=0||!actor.Actions.CanAfford(candidate.Ability))ranked.RemoveAt(i);
+                    else candidate.Score+=benefit;
+                }
             }
             ranked.Sort((a,b)=>forced==BossAbility.None?b.Score.CompareTo(a.Score)
                 : Vector2.Distance(a.Destination,actor.Position).CompareTo(Vector2.Distance(b.Destination,actor.Position)));
@@ -201,8 +279,19 @@ namespace GoGhost.Duel
                 }
                 attempts++;
                 bool near=Vector2.Distance(candidate.Destination,actor.Position)<.25f;
-                if(!near&&!actor.Navigation.TryRoute(actor.Position,candidate.Destination,actor.Motor,out candidate.Route))continue;
+                // Camo needs a short executable relocation, not a graph launch point at the jump limit.
+                // Reuse the physical-position jump solver before walking to an approximate graph node.
+                bool directCamoJump=camo&&Mathf.Abs(candidate.Destination.y-actor.Position.y)>.3f
+                    &&actor.Navigation.TryJumpRoute(actor.Position,candidate.Destination,actor.Motor,out candidate.Route);
+                if(!near&&!directCamoJump&&!actor.Navigation.TryRoute(actor.Position,candidate.Destination,actor.Motor,out candidate.Route))continue;
                 candidate.TravelSeconds=candidate.Route!=null?candidate.Route.Duration:0;
+                if(camo)
+                {
+                    if(candidate.Route==null||candidate.TravelSeconds>actor.Profile.CamoDuration-.15f)continue;
+                    int transitions=0;
+                    foreach(var step in candidate.Route.Steps)if(step.Kind!=ArenaNavigation2D.TravelKind.Walk)transitions++;
+                    if(transitions>1)continue;
+                }
                 candidate.Score-=candidate.TravelSeconds*.22f;
                 candidate.MaxPlanTime=Mathf.Max(actor.Profile.PlanTimeout,candidate.TravelSeconds+1.2f);
                 if(support!=null){perSupport.TryGetValue(support,out int used);perSupport[support]=used+1;}

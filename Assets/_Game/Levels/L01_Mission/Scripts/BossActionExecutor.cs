@@ -109,7 +109,7 @@ namespace GoGhost.Duel
             Aim=(hypothesis-actor.Position).normalized;if(Aim.sqrMagnitude<.1f)Aim=Vector2.right*actor.Facing;
             actor.Face(Aim);SetPhase(BossActionPhase.Prepare,ability==BossAbility.Burst?settings.Prepare-p.BurstShotLock:settings.Prepare);
             cutFacing=actor.Facing;
-            if(ability==BossAbility.Camo){dashStart=actor.Position;camoMovingSeconds=0;}
+            if(ability==BossAbility.Camo){dashStart=actor.Position;camoMovingSeconds=0;actor.BeginCamo();}
             if(ability!=BossAbility.Camo)actor.Motor.Brake();
             if(ability==BossAbility.Rhythm)actor.Motor.BeginStep(p.RhythmStep[0]);
             var prepareCue=PrepareCue(ability);
@@ -186,7 +186,7 @@ namespace GoGhost.Duel
                 else if(Ability==BossAbility.Camo)
                 {
                     if(actor.Velocity.sqrMagnitude>.1f)camoMovingSeconds+=Time.deltaTime;
-                    if(Time.time>=phaseUntil || camoMovingSeconds>=p.CamoMinimumMove
+                    if(actor.Tactics.CamoRouteInvalid || Time.time>=phaseUntil || camoMovingSeconds>=p.CamoMinimumMove
                         && Vector2.Distance(actor.Position,dashStart)>.4f && actor.Motor.RouteCompleted)Recover();
                 }
                 else if(Ability==BossAbility.Guard)
@@ -526,7 +526,11 @@ namespace GoGhost.Duel
         {
             if(guardZone!=null)guardZone.enabled=false;
             if(Ability==BossAbility.DropCut)actor.Motor.EndDrop();
-            if(Ability==BossAbility.Camo){lastCamoEnded=Time.time;actor.Sounds?.Play(Sfx.CamoExit,actor.ActorId,AttackId);actor.PublishCue(.15f);}
+            if(Ability==BossAbility.Camo)
+            {
+                actor.Tactics.EndCamoRoute();lastCamoEnded=Time.time;
+                actor.Sounds?.Play(Sfx.CamoExit,actor.ActorId,AttackId);actor.PublishCue(.15f);
+            }
             actor.Motor.Brake();PublicThreats.Clear();SetPhase(BossActionPhase.Recovery,settings.Recovery);
         }
         public void AbortPreparation()

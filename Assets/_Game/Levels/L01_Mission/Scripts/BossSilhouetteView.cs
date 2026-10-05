@@ -78,8 +78,7 @@ namespace GoGhost.Duel
             if (reloading && !lastReload) reloadAt = clock;
             lastReload = reloading;
             float targetAlpha = defeated ? 1 : actor.VisualAlpha;
-            if (actor.IsCamo && targetAlpha > .1f) alpha = targetAlpha;
-            else alpha = Mathf.MoveTowards(alpha, targetAlpha, dt / Mathf.Max(.02f,
+            alpha = Mathf.MoveTowards(alpha, targetAlpha, dt / Mathf.Max(.02f,
                 targetAlpha < alpha ? actor.Profile.CamoFade : actor.Profile.RevealFade));
             transform.position = actor.Position;
             transform.localScale = new Vector3(actor.Facing >= 0 ? 1 : -1, 1, 1);
@@ -387,12 +386,20 @@ namespace GoGhost.Duel
                 SetLine(line,at+d*.035f,at+d*reach,glow?.024f:.017f,c);AddFlash(line,glow?.09f:.16f);
             }
         }
-        public void CamoCue(float duration)
+        public void CamoCue(float duration) => CamoCue(duration,null);
+        public void CamoCue(float duration,Vector2? contact)
         {
             if(actor==null||!actor.IsCamo)return;
+            // Fixed world-space fragments mark an event, never the moving silhouette.
+            Vector2 point=contact??(actor.Position+Vector2.down*actor.Motor.Size.y*.5f);
             for(int i=0;i<2;i++)
-            {var line=NewLine("CamoContour",false,2);Vector2 p=actor.Position+new Vector2(i==0?-.19f:.15f,i==0?.40f:-.38f);
-                SetLine(line,p,p+new Vector2(.065f,.12f),.018f,new Color(bodyColor.r,bodyColor.g,bodyColor.b,.34f));AddFlash(line,Mathf.Min(.12f,duration));}
+            {
+                var line=NewLine(contact.HasValue?"CamoHit":"CamoTrace",false,2);
+                Vector2 offset=new Vector2(i==0?-.08f:.03f,0);
+                SetLine(line,point+offset,point+offset+new Vector2(.05f,.045f),.016f,
+                    new Color(bodyColor.r,bodyColor.g,bodyColor.b,contact.HasValue?.48f:.22f));
+                AddFlash(line,Mathf.Min(.12f,duration));
+            }
         }
         void CaptureEcho()
         {

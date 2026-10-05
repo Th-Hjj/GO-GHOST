@@ -173,14 +173,23 @@ namespace GoGhost.Duel
             ranked.Sort((a,b)=>forced==BossAbility.None?b.Score.CompareTo(a.Score)
                 : Vector2.Distance(a.Destination,actor.Position).CompareTo(Vector2.Distance(b.Destination,actor.Position)));
             int attempts=0;
+            var perSupport=new Dictionary<Collider2D,int>();
             foreach(var candidate in ranked)
             {
-                if(candidates.Count>=8||attempts++>=12)break;
+                if(candidates.Count>=8||attempts>=12)break;
+                Collider2D support=null;
+                if(forced!=BossAbility.None)
+                {
+                    if(!actor.Navigation.TrySupport(candidate.Destination,actor.Motor.Size,out support))continue;
+                    if(perSupport.TryGetValue(support,out int used)&&used>=2)continue;
+                }
+                attempts++;
                 bool near=Vector2.Distance(candidate.Destination,actor.Position)<.25f;
                 if(!near&&!actor.Navigation.TryRoute(actor.Position,candidate.Destination,actor.Motor,out candidate.Route))continue;
                 candidate.TravelSeconds=candidate.Route!=null?candidate.Route.Duration:0;
                 candidate.Score-=candidate.TravelSeconds*.22f;
                 candidate.MaxPlanTime=Mathf.Max(actor.Profile.PlanTimeout,candidate.TravelSeconds+1.2f);
+                if(support!=null){perSupport.TryGetValue(support,out int used);perSupport[support]=used+1;}
                 candidates.Add(candidate);
             }
             candidates.Sort((a,b)=>b.Score.CompareTo(a.Score));return candidates;

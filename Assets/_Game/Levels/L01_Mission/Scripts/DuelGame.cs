@@ -207,6 +207,10 @@ namespace GoGhost.Duel
         {
             if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) SetPause(!Paused);
             if (Paused) return;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if(Phase==DuelPhase.Fight&&Wave==3&&Player!=null&&!Player.IsDead
+                &&Keyboard.current!=null&&Keyboard.current.pKey.wasPressedThisFrame)coordinator?.RequestNextDebugCombo();
+#endif
             if (Phase == DuelPhase.Prepare || Phase == DuelPhase.Between)
             {
                 phaseTime += Time.deltaTime;

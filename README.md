@@ -17,6 +17,8 @@ Choose **New Game**, configure permissions, then **Start Fight**. The first conf
 
 The fixed Rifle has 8 rounds and automatic reload. Arms AI selects a visible, shootable target; Spine evaluates threats from both enemies. Camo leaves only brief last-seen memory and expressed cues. All player and enemy bullets pass through walls/platforms; bullets and the locked piercing beam still stop at allied Boss bodies. Each Boss has independent health. Both must die to clear wave three; simultaneous player death is defeat.
 
+Legs may use a nearby reachable platform to improve spacing under sustained pressure, committing to its landing and briefly holding safe ground. In Editor/development Wave 3, **P** requests alternating Cross Execution / Sweep & Drop attempts; the Console records legal rejection reasons. It does not force placement, resources or hits.
+
 The original player controls, tuning, stickman and five-platform arena are retained. The Bosses reuse the player's round head and bar limbs in blue/red, with simple limb animation, green/gold weapons, timed effects, restrained Bloom and CC0 Kenney audio. No player Arm-Blade, Shield, Counter or E; no tower, upgrades, narrative route or permanent progression.
 
 ## Development and evidence

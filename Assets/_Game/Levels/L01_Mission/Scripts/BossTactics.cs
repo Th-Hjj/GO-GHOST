@@ -272,8 +272,7 @@ namespace GoGhost.Duel
             for(int i=0;i<3;i++)
             {
                 Vector2 point=centre+Vector2.up*facts.Body.extents.y*(i==0?0:i==1?.72f:-.72f);
-                if(AllyBlocks(origin,point) || ability!=BossAbility.Piercing
-                    && Projectile.TerrainHit(origin,point,actor.ProjectilePrefab.Radius,out _))continue;
+                if(AllyBlocks(origin,point))continue;
                 target=point;return true;
             }
             return false;
@@ -394,7 +393,7 @@ namespace GoGhost.Duel
             }
             return true;
         }
-        public bool ClearGunLine(Vector2 position,Vector2 target)=>!Projectile.TerrainHit(position+Vector2.up*.28f,target,actor.ProjectilePrefab.Radius,out _)&&!AllyBlocks(position+Vector2.up*.28f,target);
+        public bool ClearGunLine(Vector2 position,Vector2 target)=>!AllyBlocks(position+Vector2.up*.28f,target);
         public bool AllyBlocks(Vector2 from,Vector2 target)
         {
             if(actor.Coordinator==null)return false;

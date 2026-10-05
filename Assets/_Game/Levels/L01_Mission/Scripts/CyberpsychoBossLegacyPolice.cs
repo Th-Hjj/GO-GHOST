@@ -280,7 +280,6 @@ public partial class CyberpsychoBoss
         if(visible.ProjectileSpeed>0&&shotWarning!=null)
         {
             float range=warningRange;
-            if(Projectile.TerrainHit(visible.Origin,visible.Origin+visible.Direction*range,.125f,out var wall)) range=wall.distance;
             shotWarning.enabled=true;shotWarning.color=new Color(1,1,1,visible.Locked?.5f:.23f);
             shotWarning.transform.SetPositionAndRotation(visible.Origin+visible.Direction*range*.5f,
                 Quaternion.Euler(0,0,Mathf.Atan2(visible.Direction.y,visible.Direction.x)*Mathf.Rad2Deg));

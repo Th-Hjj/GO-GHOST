@@ -10,6 +10,7 @@ Current authority: Thomas's **2026-10-05 Pitch Combat Upgrade** assignment. This
 - Third-wave cooperation uses the same abilities and damage as the solo waves. **Cross Execution** combines Draw Dash pressure with a previously planned Piercing Shot; its aim must retain the full lock window and may miss.
 - **Later confirmed visual correction:** Thomas requested both Bosses use the player's round-head stickman style, distinguished by color and simple limb poses. This replaces the attachment's filled anatomical silhouette/hair/clothing requirements. Modest skill effects, licensed audio and weak Bloom remain.
 - **Later confirmed AI correction:** improve Boss attack selection, positioning and ally firing lanes so corner camping is not an easy safe strategy; Legs AI should actively avoid remaining trapped at an arena wall. Retain player tuning, real collisions and honest outcomes.
+- **Later confirmed projectile correction (2026-10-05):** all player and enemy bullets pass through walls/platforms. Ally-body blocking, guards and opposing-body damage remain; firing/threat prediction follows the same penetration rule. Sight, melee and actor terrain collision are unchanged.
 
 ## Implemented actors and tunable baseline
 
@@ -24,7 +25,7 @@ Values below are initial tuning, not balance guarantees. The serialized `Refract
 | Jump / gravity scale / air control | 12 / 3 / 0.45 | 12 / 3 / 0.55 |
 | Preferred horizontal distance | 7 | 1.6 |
 
-Refraction has 12 rounds, a 1.45 s reload and 24 units/s ordinary bullets. Every attack publishes preparation, lock, active and recovery information from its action clock. Real hits are limited per attack window; visuals never apply damage. Ordinary bullets hit Ground. Piercing Shot ignores Ground but stops at a living ally; dash movement stops at terrain and bodies.
+Refraction has 12 rounds, a 1.45 s reload and 24 units/s ordinary bullets. Every attack publishes preparation, lock, active and recovery information from its action clock. Real hits are limited per attack window; visuals never apply damage. All bullets and Piercing Shot ignore Ground but stop at a living allied Boss body; dash movement stops at terrain and bodies.
 
 | Ability | Preparation + lock (s) | Damage | Recovery / cooldown (s) | Execution |
 | --- | --- | --- | --- | --- |

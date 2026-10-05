@@ -60,6 +60,7 @@ public static class BossEncounterSmoke
     public static void RunCamo() => Start("camo", false);
     public static void RunCamoMechanics() => Start("camo-mechanics", false);
     public static void RunCamoReview() => Start("camo-review", false);
+    public static void RunPlayerAnimation() => Start("player-animation", false);
     public static void Cancel()
     { if (Running) { Record("NOT TESTED: operator cancelled unfinished checks."); Finish(false); } }
 
@@ -138,6 +139,7 @@ public static class BossEncounterSmoke
     static IEnumerator Run()
     {
         Record("Editor Play Mode; simulated focus and virtual keyboard/mouse. No physical-input or audibility claim.");
+        if(mode=="player-animation") {yield return PlayerAnimation();yield break;}
         if(mode=="camo-review") {yield return CamoReview();yield break;}
         if(mode=="camo"||mode=="camo-mechanics") {yield return Camo();yield break;}
         if(mode=="lost-contact") {yield return LostContact();yield break;}
@@ -196,6 +198,64 @@ public static class BossEncounterSmoke
         game.StartFight();
         yield return Until(() => game.Phase == DuelPhase.Fight, 2.2f);
         Check("wave " + wave + " created", game.Phase == DuelPhase.Fight && game.Bosses.Count == (wave == 3 ? 2 : 1));
+    }
+    static IEnumerator PlayerAnimation()
+    {
+        Record("CONTROLLED animation/input: stopped Boss policies, real virtual input and physics; no injected player motion or outcomes.");
+        yield return Fresh(1); StopPolicies(); yield return Seconds(.15f);
+        var visual = game.Player.GetComponent<OfficerVisual>();
+        var movement = game.Player.GetComponent<PlayerMovement>();
+        var body = game.Player.GetComponent<Rigidbody2D>();
+        var reader = game.Player.GetComponent<PlayerInputReader>();
+        var head = visual.Part(LoadoutSlot.Brain).transform;
+        var gun = visual.Part(LoadoutSlot.Weapon).transform;
+        var calf = visual.transform.Find("Stickman/RightCalf");
+        Check("four runtime limb segments", new[]{"LeftForearm","RightForearm","LeftCalf","RightCalf"}.All(n=>visual.transform.Find("Stickman/"+n)!=null));
+        Vector3 colliderSize = game.Player.GetComponent<Collider2D>().bounds.size;
+        Vector3 idleHead = head.localPosition; yield return Seconds(.25f);
+        Check("idle breath with grounded support", movement.IsGrounded && Vector3.Distance(idleHead,head.localPosition)>.0001f);
+        float startX = body.position.x; Quaternion leg = calf.localRotation;
+        MouseAt(body.position+new Vector2(8,2),true); heldKeys=new[]{Key.A};
+        yield return Seconds(.18f);
+        Check("backward move plus independent paid shot", body.position.x<startX-.4f && reader.AimDirection.x>0 && game.Rifle.ShotsFired>0);
+        Check("walking limbs change pose", Quaternion.Angle(leg,calf.localRotation)>1);
+        Check("barrel meets real muzzle", Vector2.Distance(gun.TransformPoint(new Vector3(.5f,0,0)),game.Rifle.GetMuzzlePosition(reader.AimDirection))<.005f);
+        Directory.CreateDirectory(Output); ScreenCapture.CaptureScreenshot(Output+"player-run.png"); yield return Frames(3);
+        heldKeys=Array.Empty<Key>(); mouseHeld=false; yield return Seconds(.18f);
+        yield return CheckInputs();
+        yield return Until(()=>movement.IsGrounded,2); yield return Until(()=>game.Dodge.CanDodge,2);
+        heldKeys=new[]{Key.D,Key.LeftShift}; yield return Until(()=>game.Dodge.IsDodging,.3f); yield return Frames(2);
+        Check("ground dodge lowers head", game.Dodge.IsDodging && head.localPosition.y<.48f);
+        ScreenCapture.CaptureScreenshot(Output+"player-dodge.png"); yield return Frames(2);
+        heldKeys=Array.Empty<Key>(); yield return Until(()=>game.Dodge.CanDodge,2);
+        heldKeys=new[]{Key.Space}; yield return Seconds(.14f);
+        Check("jump folds legs", !movement.IsGrounded && calf.localPosition.y>-.65f);
+        ScreenCapture.CaptureScreenshot(Output+"player-jump.png"); yield return Frames(2);
+        heldKeys=new[]{Key.LeftShift}; yield return Until(()=>game.Dodge.IsDodging,.3f); yield return Frames(2);
+        Check("air dodge uses low pose", !movement.IsGrounded && game.Dodge.IsDodging && head.localPosition.y<.48f);
+        heldKeys=Array.Empty<Key>(); yield return Until(()=>movement.IsGrounded,2); yield return Frames(2);
+        Check("real landing compresses pose", movement.IsGrounded && head.localPosition.y<.53f);
+        yield return Seconds(.25f);
+        Check("landing recovers without collider change", head.localPosition.y>.54f && Vector3.Distance(colliderSize,game.Player.GetComponent<Collider2D>().bounds.size)<.001f);
+        MouseAt(body.position+new Vector2(-8,3),true); yield return Until(()=>game.Rifle.IsReloading,3);
+        mouseHeld=false; yield return Seconds(.45f);
+        Check("real auto reload folds gun", game.Rifle.IsReloading && game.Rifle.ReloadVisible && Quaternion.Angle(gun.localRotation,Quaternion.identity)>15);
+        ScreenCapture.CaptureScreenshot(Output+"player-reload.png"); yield return Frames(2);
+        checkingPause=true; game.SetPause(true); Vector3 pausedHead=head.position; Quaternion pausedGun=gun.localRotation;
+        float reloadRemaining=game.Rifle.ReloadRemaining;
+        yield return RealSeconds(.2f);
+        Check("pause freezes pose and reload", head.position==pausedHead && gun.localRotation==pausedGun && Mathf.Approximately(reloadRemaining,game.Rifle.ReloadRemaining));
+        game.SetPause(false); checkingPause=false; yield return Until(()=>!game.Rifle.IsReloading,2); yield return Frames(2);
+        Check("reload restores real aim and eight rounds", game.Rifle.AmmoInMagazine==8 && Quaternion.Angle(gun.localRotation,Quaternion.identity)<.01f
+            && Vector2.Distance(gun.TransformPoint(new Vector3(.5f,0,0)),game.Rifle.GetMuzzlePosition(reader.AimDirection))<.005f);
+        game.NewGame(); game.StartFight(); yield return Frames(2);
+        Check("fresh preparation supported and reset", game.Phase==DuelPhase.Prepare && game.Player.GetComponent<OfficerVisual>().Part(LoadoutSlot.Brain).transform.localPosition.y>.54f
+            && game.Player.transform.Find("Stickman").childCount==10);
+        yield return Fresh(2); yield return Seconds(2);
+        Check("short W2 entry", game.Phase==DuelPhase.Fight);
+        yield return Fresh(3,true); yield return Seconds(6);
+        Check("short W3 all AI fires", game.Rifle.ShotsFired>0); PitchResult();
+        Record("NOT TESTED: hardware input, subjective animation quality across resolutions, full lifecycle regression, Windows Build/launch.");
     }
     static LegacyPlayerAI PlayerPolicy() => (LegacyPlayerAI)Private<Func<LegacyCombatIntent>>(game.Player.GetComponent<PlayerInputReader>(),"legacyLegs").Target;
     static IEnumerator CamoReview()

@@ -250,6 +250,16 @@ namespace GoGhost.Duel
             bool clear = SweepTraversal(start, clipped, size, out _, out safeEnd);
             return clear && Vector2.Distance(clipped, end) < .005f;
         }
+        public bool TryJumpRoute(Vector2 from, Vector2 destination, BossMotor2D motor, out Route route)
+        {
+            route = null;
+            if (!CanStand(destination,motor.Size) || !TrySupport(destination,motor.Size,out var support)
+                || !Simulate(from,destination,motor.Profile,motor.Size,true,support,out float flight)) return false;
+            route = new Route { Version=Version, Duration=flight+.3f };
+            route.Steps.Add(new RouteStep { Kind=TravelKind.Jump, Start=from, Launch=from,
+                End=destination, Support=support, Duration=route.Duration });
+            return true;
+        }
         Surface SurfaceAt(Vector2 center, Vector2 size)
         {
             if (!TrySupport(center, size, out var support)) return null;

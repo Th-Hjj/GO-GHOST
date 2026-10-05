@@ -26,6 +26,7 @@ public sealed class LegacyPlayerAI
     private Collider2D targetShape;
     private readonly CyberpsychoBoss boss;
     private readonly IReadOnlyList<BossAgent> targets;
+    private readonly ArenaNavigation2D navigation;
     private readonly List<ObservedTarget> contacts = new List<ObservedTarget>(2);
     private readonly List<BossThreat> threats = new List<BossThreat>(4);
     private BossAgent focus;
@@ -46,6 +47,7 @@ public sealed class LegacyPlayerAI
     private Collider2D routePlatform;
     private float routeX, routeUntil;
     private bool routeJump, airborneRoute;
+    private float cornerExitUntil, nextCornerSearch;
     private Vector2 lastAim = Vector2.right;
 
     private struct ObservedTarget
@@ -81,6 +83,7 @@ public sealed class LegacyPlayerAI
         : this(player, platforms, preference)
     {
         this.targets = targets;
+        navigation = targets.Count > 0 ? targets[0].Navigation : null;
     }
 
     private LegacyPlayerAI(PlayerHealth player, Collider2D[] platforms, LegacyDistancePreference preference)
@@ -270,11 +273,13 @@ public sealed class LegacyPlayerAI
         if (airborneRoute) { airborneRoute = false; routePlatform = null; }
         float desire = hasContact ? RangeDirection() : 0;
         bool sight = hasContact && CanShootFrom(selfBounds.center);
-        if (hasContact && !sight && movement.IsGrounded && (routePlatform == null || Time.time >= routeUntil)) FindShotPosition();
+        if (movement.IsGrounded && hasContact) FindCornerExit();
+        bool leavingCorner = Time.time < cornerExitUntil;
+        if (!leavingCorner && hasContact && !sight && movement.IsGrounded && (routePlatform == null || Time.time >= routeUntil)) FindShotPosition();
         bool jump = false;
         if (routePlatform != null)
         {
-            if (sight && Time.time >= routeUntil) routePlatform = null;
+            if (!leavingCorner && sight && Time.time >= routeUntil) routePlatform = null;
             else
             {
                 desire = Towards(routeX);
@@ -282,7 +287,7 @@ public sealed class LegacyPlayerAI
                 if (!jump && Mathf.Abs(routeX-selfBounds.center.x)<.2f && Time.time>=routeUntil) routePlatform=null;
             }
         }
-        if (SolidTravel(desire * movement.MoveSpeed * .12f) < .06f) desire = 0;
+        if (!jump && SolidTravel(desire * movement.MoveSpeed * .12f) < .06f) desire = 0;
         var best = new Motion(desire, jump);
         float risk = Risk(best, WalkLookahead), bestRisk = risk;
         // Avoid imminent harm with ordinary walking first; distance is a preference, never an override.
@@ -301,12 +306,13 @@ public sealed class LegacyPlayerAI
                     if (!LandingFor(move, out var support, out float landingX)) continue;
                     var candidate = new Motion(move, true);
                     float candidateRisk = Risk(candidate, WalkLookahead);
-                    if (candidateRisk >= bestRisk) continue;
+                    if (candidateRisk > bestRisk || candidateRisk == bestRisk
+                        && (!best.Jump || WallClearance(landingX) <= WallClearance(routeX) + .2f)) continue;
                     best = candidate; bestRisk = candidateRisk;
                     routePlatform = support; routeX = landingX; routeJump = true;
                 }
         }
-        if (bestRisk <= 0 && Time.time < moveHeldUntil && best.Move != rememberedMove && !best.Jump
+        if (!leavingCorner && bestRisk <= 0 && Time.time < moveHeldUntil && best.Move != rememberedMove && !best.Jump
             && Risk(new Motion(rememberedMove), WalkLookahead) <= 0 && SolidTravel(rememberedMove*.3f)>.1f)
             best.Move = rememberedMove;
         if (best.Move != rememberedMove) { rememberedMove=best.Move; moveHeldUntil=Time.time+MoveHold; }
@@ -329,6 +335,33 @@ public sealed class LegacyPlayerAI
     {
         float d=Mathf.Abs(x-targetBounds.center.x);
         return d<range.x ? range.x-d : d>range.y ? d-range.y : 0;
+    }
+
+    private float WallClearance(float x) => Mathf.Min(x-leftEdge, rightEdge-x)-selfBounds.extents.x;
+
+    private void FindCornerExit()
+    {
+        if (Time.time < cornerExitUntil || Time.time < nextCornerSearch
+            || WallClearance(selfBounds.center.x) > 2f
+            || Mathf.Abs(targetBounds.center.x-selfBounds.center.x) > 7f) return;
+        nextCornerSearch = Time.time + .25f;
+        float inward = selfBounds.center.x < (leftEdge+rightEdge)*.5f ? 1 : -1;
+        // Prefer a real walk. If a body closes that lane, evaluate the whole jump including landing.
+        if (SolidTravel(inward*3f) > 2.8f)
+        {
+            foreach (var support in supports)
+            {
+                if (support == null || !support.enabled || Mathf.Abs(selfBounds.min.y-support.bounds.max.y) > .15f) continue;
+                float x = selfBounds.center.x+inward*3f;
+                if (x < support.bounds.min.x+selfBounds.extents.x || x > support.bounds.max.x-selfBounds.extents.x) continue;
+                routePlatform=support; routeX=x; routeJump=false;
+                cornerExitUntil=routeUntil=Time.time+1.1f; return;
+            }
+        }
+        if (!JumpHasClearHeadroom() || !LandingFor(inward,out var landing,out float landingX)
+            || WallClearance(landingX) < WallClearance(selfBounds.center.x)+1.2f) return;
+        routePlatform=landing; routeX=landingX; routeJump=true;
+        cornerExitUntil=routeUntil=Time.time+1.25f;
     }
 
     private void FindShotPosition()
@@ -382,21 +415,21 @@ public sealed class LegacyPlayerAI
     private bool LandingFor(float move, out Collider2D landing, out float x)
     {
         landing=null; x=selfBounds.center.x;
-        float bestTime=float.PositiveInfinity;
-        foreach(var support in supports)
+        int count=PredictPath(new Motion(move,true),1.24f);
+        for(int i=2;i<count;i++)
         {
-            if(support==null || !support.enabled) continue;
-            float rise=support.bounds.max.y-selfBounds.min.y;
-            float discriminant=movement.JumpSpeed*movement.JumpSpeed-2*gravity*rise;
-            if(discriminant<0) continue;
-            float time=(movement.JumpSpeed+Mathf.Sqrt(discriminant))/gravity;
-            float candidate=selfBounds.center.x+move*movement.MoveSpeed*time;
-            if(candidate<support.bounds.min.x+selfBounds.extents.x || candidate>support.bounds.max.x-selfBounds.extents.x
-                || candidate<leftEdge+selfBounds.extents.x || candidate>rightEdge-selfBounds.extents.x
-                || SolidTravel(candidate-selfBounds.center.x)+.1f<Mathf.Abs(candidate-selfBounds.center.x)) continue;
-            if(time<bestTime) { bestTime=time; landing=support; x=candidate; }
+            if(path[i].y>path[i-1].y+.001f) continue;
+            foreach(var support in supports)
+            {
+                if(support==null || !support.enabled) continue;
+                var bounds=support.bounds;
+                if(Mathf.Abs(path[i].y-selfBounds.extents.y-bounds.max.y)>.06f
+                    || path[i].x<bounds.min.x+selfBounds.extents.x || path[i].x>bounds.max.x-selfBounds.extents.x
+                    || BodyBlocked(new Bounds(path[i],selfBounds.size))) continue;
+                landing=support; x=path[i].x; return true;
+            }
         }
-        return landing!=null;
+        return false;
     }
 
     public LegacyCombatIntent Spine(float acceptedMove, bool executableJump)
@@ -527,6 +560,12 @@ public sealed class LegacyPlayerAI
                         if(previous.y-selfBounds.extents.y>=b.max.y-.03f && position.y-selfBounds.extents.y<=b.max.y)
                         { position.y=b.max.y+selfBounds.extents.y; vy=0; grounded=true; }
                     }
+            }
+            if(navigation!=null && !navigation.SweepTraversal(previous,position,selfBounds.size,out var terrain,out var safe))
+            {
+                if(Mathf.Abs(terrain.normal.y)>.5f)
+                { position=safe; vy=0; grounded=terrain.normal.y>.5f; }
+                else position.x=safe.x;
             }
             path[i]=position;
         }

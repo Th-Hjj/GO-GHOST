@@ -1,5 +1,23 @@
 # GO GHOST slice implementation
 
+## 2026-10-05 — Corner escape, Boss pressure and ally firing lanes
+
+- **Baseline / authority:** `main` at `61270d3ea7793cf78968af57152ec574282df579`, matching fetched `origin/main`; no tracked local changes and the same 34 untracked obsolete-art files preserved. Thomas requested stronger Boss decisions and player avoidance of corner stagnation, then explicitly permitted this pass's C# hot recompilation with Unity open. No scene, prefab, profile, player tuning, package or project-setting changes are intended.
+- **Implemented:** Legs evaluates actual jump/landing trajectories over observed bodies and commits briefly to a supported inward escape. Severance can reset spacing, perform a collision-validated pressure/lane-opening jump and tilt each rhythm cut within its existing reach/lock window, with matching limb poses. Refraction checks visible body points, predicts expressed motion through terrain and seeks useful firing angles. The coordinator requests finite ally lane release; ordinary bullets and beams still stop at allies. In-place plans and cancelled routes retire old movement commands. Last-known-position search and temporary failed-destination avoidance replace the nearest-node search loop.
+- **Compile / focused evidence:** both offline assemblies compiled with the current Unity response files; live Unity compilation passed. A controlled corner placement verified a physical player jump over the solid swordsman and departure from the wall. The initial seven-second gun-lane fixture failed to observe an attack; tracing exposed retained movement commands. After correcting command retirement, the bounded fixture passed: a real lane opened, both actors hit a stationary player, and normal damage defeated that player. This initial-placement fixture is mechanism evidence only, not a natural all-AI defeat.
+- **Normal observations:** fresh resources and unchanged player tuning; no in-fight relocation, injected damage, invulnerability, forced actions or random tuning. The table records the final runtime source. Corner duration means continuous player collider clearance below 1.5 units from an arena boundary, sampled each frame. Zero means the threshold was not entered, not that the player never approached an edge.
+
+| Fight / distance | Result | Seconds | Player HP | Longest corner stay | Jump / Dodge starts | Natural completed Cross Execution |
+| --- | --- | --- | --- | --- | --- | --- |
+| Wave 2 / Mid | Player victory | 27.02 | 122 | 0.82 s | 4 / 1 | N/A |
+| Wave 3 / Mid | Player victory | 52.64 | 122 | 0.00 s | 18 / 3 | 1 |
+| Wave 3 / Near | Player victory | 46.54 | 150 | 0.00 s | 15 / 0 | 0 |
+| Wave 3 / Far | Player victory | 49.24 | 150 | 1.62 s | 15 / 1 | 1 |
+
+- **Final focused / mixed check:** **7 PASS / 0 FAIL**, live Unity compile passed and `git diff --check` passed. The mixed corner fixture kept Legs manual with no movement input while Arms/Spine used their normal AI: the gunner opened a real firing lane and activated Burst; the swordsman connected six melee hit windows and defeated the stationary player. No damage, invulnerability, cooldown or input-intent overrides were used. The fixture still proves only the mechanism from its controlled initial positions. The test-owned Play session was stopped and its virtual devices/settings restored.
+- **Acceptance limit:** **ALL_AI_W3_NOT_MET** for all three normal observations. The original perpetual corner/body-screen state is no longer observed in these samples, and Mid/Far each completed one natural coordinated attack, but Near/Far still won without damage. A small observation set is not a win-rate or balance guarantee. Separate manual-input regression, physical keyboard playthrough and broad regression are **NOT TESTED** in this pass.
+- **Build / delivery:** Thomas subsequently requested direct main delivery without a build. Windows build and launch for this revision are **NOT TESTED**; the existing executable predates this correction. Only the eight relevant C# files and two English documents are delivered; existing metas remain unchanged, and obsolete untracked art, shared player assets and project settings are preserved.
+
 ## 2026-10-05 — Two Bosses, coordinated wave and stickman correction
 
 - **Baseline / authority:** clean `main` at `00de5b5786a6c5d9ab821832b23d37bd3ad95021`, matching fetched `origin/main`; the real project directory and its single Unity 6000.6.0f1 Editor were checked. Thomas authorized continuous implementation and ordinary checked main delivery. His later visual request replaces the attachment's anatomical silhouettes with the player's round-head stickman style. Unity/packages, fixed player tuning and original player executors remain unchanged.

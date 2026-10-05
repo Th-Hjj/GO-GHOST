@@ -152,6 +152,13 @@ namespace GoGhost.Duel
             {
                 if (a != null && a.Ability != BossAbility.None) BladePose(ref p,a.Ability,a.Phase,a.PhaseProgress,a.RhythmIndex);
                 else { p.FrontHand += new Vector2(wave*motion*.10f,-Mathf.Abs(wave)*motion*.025f); p.BackHand.x -= wave*motion*.12f; }
+                if (a != null && a.Ability == BossAbility.Rhythm)
+                {
+                    Vector2 cut = LocalDirection(a.Aim);
+                    p.WeaponAngle += Mathf.Atan2(cut.y,cut.x)*Mathf.Rad2Deg;
+                    p.FrontHand = new Vector2(.13f,.29f)+Angle(p.WeaponAngle)*.13f;
+                    p.BackHand = p.FrontHand+new Vector2(-.13f,-.05f);
+                }
                 p.Weapon = p.FrontHand + Angle(p.WeaponAngle)*.60f;
             }
             float hit = Mathf.Max(0,1-(clock-hitAt)/.10f);

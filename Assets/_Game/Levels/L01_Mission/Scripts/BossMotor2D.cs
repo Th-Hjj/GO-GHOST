@@ -63,7 +63,7 @@ namespace GoGhost.Duel
         public void SetMove(float direction, float speedScale = 1)
         { move = Mathf.Clamp(direction, -1, 1); this.speedScale = Mathf.Clamp01(speedScale); }
         public void Brake() { route = null; BrakeMotion(); }
-        public void ClearRoute() { route = null; launched = leftGround = false; }
+        public void ClearRoute() { route = null; launched = leftGround = false; BrakeMotion(); }
         void BrakeMotion() { move = 0; speedScale = 1; }
         public bool TryJump()
         {

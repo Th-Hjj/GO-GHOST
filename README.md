@@ -15,7 +15,7 @@ Choose **New Game**, configure permissions, then **Start Fight**. The first conf
 | Spine | Left Shift horizontal Dodge, on ground or in air, in current/last movement direction |
 | Pause | Escape: Resume or Main Menu |
 
-The fixed Rifle has 10 rounds and automatic reload. Arms AI selects a visible, shootable target; Spine evaluates threats from both enemies. Camo leaves only brief last-seen memory and expressed cues. All player and enemy bullets pass through walls/platforms; bullets and the locked piercing beam still stop at allied Boss bodies. Each Boss has independent health. Both must die to clear wave three; simultaneous player death is defeat.
+The fixed Rifle has 8 rounds and automatic reload. Arms AI selects a visible, shootable target; Spine evaluates threats from both enemies. Camo leaves only brief last-seen memory and expressed cues. All player and enemy bullets pass through walls/platforms; bullets and the locked piercing beam still stop at allied Boss bodies. Each Boss has independent health. Both must die to clear wave three; simultaneous player death is defeat.
 
 The original player controls, tuning, stickman and five-platform arena are retained. The Bosses reuse the player's round head and bar limbs in blue/red, with simple limb animation, green/gold weapons, timed effects, restrained Bloom and CC0 Kenney audio. No player Arm-Blade, Shield, Counter or E; no tower, upgrades, narrative route or permanent progression.
 

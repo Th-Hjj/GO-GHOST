@@ -38,7 +38,7 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
     private OfficerVisual visual;
     private bool legacyCombat;
     // The existing Assault Rifle profile, fixed for every new combat actor.
-    private static readonly WeaponProfile LegacyRifle = new WeaponProfile(12, .25f, 10, 1.2f);
+    private static readonly WeaponProfile LegacyRifle = new WeaponProfile(12, .25f, 8, 1.2f);
     private WeaponProfile Weapon => legacyCombat ? LegacyRifle : officer.Deployment.Weapon;
     private bool HasDeployment => officer != null && officer.Deployment != null;
     public int BulletDamage => legacyCombat ? LegacyRifle.Damage : HasDeployment ? officer.Deployment.BulletDamage : stats.gunDamage;

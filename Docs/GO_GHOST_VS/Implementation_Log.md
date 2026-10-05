@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-10-05 — Health bar direction and actor colors
+
+- **Baseline / request:** main at c26e7a8, no tracked local changes; 34 existing untracked art/meta files preserved. Player and Boss fills all used a centered pivot while their width changed, shrinking both ends. Thomas requested single-direction depletion and light-green player / body-matching blue gunner / red swordsman bars.
+- **Implemented / files:** DuelUI places health fills at the existing track's left edge (-215) with pivot x=0. Width continues to follow actual current/max HP. Player is #99E6A6, Refraction #55C9F3, Severance #E84C4C; Boss values match BossSilhouetteView body colors. Existing positions, sizes, labels and combat rules stay unchanged. Current spec and AGENTS/CLAUDE record the confirmed HUD rule.
+- **Editor checks:** live Unity compile passed. A temporary W3 HUD fixture sampled full, half and approximately quarter HP using TakeDamage; all nine actor/value measurements retained the same left edge and proportional width. Actual composited Game View visually confirmed all three colors and left-aligned fills at player HP 38. Screenshot: Logs/HealthHud/health-bars-quarter.png (ignored); generated capture assets were removed through Unity. This is UI evidence only.
+- **Core flow / limitations:** a fresh ordinary W3 reached defeat while the idle player was taking damage, before the next tool query; the query's assumed Fight state failed, not gameplay. A separate immediate preparation/pause/resume/menu check passed and verified all three recreated fills/colors. No broader combat rerun. Physical input, other resolutions, full gameplay regression and Windows build/launch **NOT TESTED / NOT RUN**. Editor returned to clean Edit Mode; no gameplay or delivery blocker found.
+
 ## 2026-10-05 — All bullets pass through walls
 
 - **Baseline / authority:** Thomas requested wall penetration for all bullets, overriding ordinary Ground blocking. Main at 769ac21 matched remote main; no tracked local changes, 34 existing untracked art/meta files preserved. Live Unity 6000.6.0f1: formal Duel scene, clean Edit Mode, compilation passed.

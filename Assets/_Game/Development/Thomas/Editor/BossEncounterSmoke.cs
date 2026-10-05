@@ -56,6 +56,7 @@ public static class BossEncounterSmoke
     public static void RunPressureMechanics() => Start("pressure-mechanics", false);
     public static void RunLegsPlatforms() => Start("legs-platforms", false);
     public static void RunLegsLanding() => Start("legs-landing", false);
+    public static void RunLostContact() => Start("lost-contact", false);
     public static void Cancel()
     { if (Running) { Record("NOT TESTED: operator cancelled unfinished checks."); Finish(false); } }
 
@@ -134,6 +135,7 @@ public static class BossEncounterSmoke
     static IEnumerator Run()
     {
         Record("Editor Play Mode; simulated focus and virtual keyboard/mouse. No physical-input or audibility claim.");
+        if(mode=="lost-contact") {yield return LostContact();yield break;}
         if(mode=="legs-platforms"||mode=="legs-landing")
         {yield return LegsLanding();if(mode=="legs-platforms"){yield return LegsObservation();yield return DebugComboKeys();}yield break;}
         if(mode=="focused-pressure"||mode=="pressure-mechanics")
@@ -191,6 +193,64 @@ public static class BossEncounterSmoke
         Check("wave " + wave + " created", game.Phase == DuelPhase.Fight && game.Bosses.Count == (wave == 3 ? 2 : 1));
     }
     static LegacyPlayerAI PlayerPolicy() => (LegacyPlayerAI)Private<Func<LegacyCombatIntent>>(game.Player.GetComponent<PlayerInputReader>(),"legacyLegs").Target;
+    static IEnumerator LostContact()
+    {
+        Record("CONTROLLED lost sight: initial placements only; public memories seeded by actual visibility. No live hidden targeting, forced Jump, damage or outcome.");
+        yield return Fresh(2,true);StopPolicies();
+        var sword=game.Bosses[0];var nav=sword.Navigation;
+        var reader=game.Player.GetComponent<PlayerInputReader>();reader.SetGameplayInputEnabled(false);
+        OnFloor(game.Player.gameObject,nav,-4);OnFloor(sword.gameObject,nav,-1.6f);
+        yield return Seconds(.3f);
+        PlayerPolicy().Arms(); // Copy a genuinely visible public contact before the occlusion.
+        var low=nav.Nodes.First(n=>n.Collider.name=="Low A");
+        var playerSize=(Vector2)game.Player.GetComponent<Collider2D>().bounds.size;
+        Position(game.Player.gameObject,new Vector2(-4,low.Center(playerSize).y));
+        yield return Seconds(1);
+        reader.SetGameplayInputEnabled(true);
+        float initialX=game.Player.transform.position.x;
+        bool playerLost=false,playerMoved=false,playerReacquired=false;
+        float end=Time.time+7;
+        while(Time.time<end&&game.Phase==DuelPhase.Fight)
+        {
+            bool contact=sword.TryGetContact(out var copied)&&copied.IsFresh;
+            playerLost|=!contact;
+            if(playerLost)
+            {playerMoved|=Mathf.Abs(game.Player.transform.position.x-initialX)>.3f;playerReacquired|=copied.Visible;}
+            yield return null;
+        }
+        Check("player loses platform-occluded public contact",playerLost);
+        Check("Legs seeks a supported view after contact expires",playerMoved,$"x={initialX:F2}->{game.Player.transform.position.x:F2}");
+        Check("player reacquires stationary Boss without hidden aim",playerReacquired);
+
+        yield return Fresh(2);StopPolicies();sword=game.Bosses[0];nav=sword.Navigation;
+        OnFloor(game.Player.gameObject,nav,-4);OnFloor(sword.gameObject,nav,-1.6f);
+        yield return Seconds(.3f);
+        low=nav.Nodes.First(n=>n.Collider.name=="Low A");
+        playerSize=game.Player.GetComponent<Collider2D>().bounds.size;
+        Position(game.Player.gameObject,new Vector2(-4,low.Center(playerSize).y));
+        yield return Seconds(1);
+        Check("Boss memory expires behind actual platform",sword.Perception.Facts.Confidence==0&&!sword.Perception.Facts.Visible);
+        sword.Tactics.Enabled=true;
+        bool leftFloor=false,reacquired=false;end=Time.time+9;
+        while(Time.time<end&&game.Phase==DuelPhase.Fight)
+        {
+            leftFloor|=!sword.Motor.Grounded||sword.Position.y>-.8f;
+            reacquired|=sword.Perception.Facts.Visible&&sword.Perception.Facts.Confidence>.3f;
+            yield return null;
+        }
+        Check("Boss search leaves repeated floor destinations",leftFloor);
+        Check("Boss search reacquires player on platform",reacquired);
+        for(int wave=2;wave<=3;wave++)
+        {
+            yield return Fresh(wave,true);
+            int shots=game.Rifle.ShotsFired;
+            while(game.Phase==DuelPhase.Fight&&game.FightClock<(wave==2?20:15))yield return null;
+            PitchResult();
+            Check("W"+wave+" short normal combat fires and progresses",game.Rifle.ShotsFired>shots&&game.FightClock>1);
+        }
+        game.MainMenu();yield return Frames(2);
+        Check("lost-contact cleanup removes actors/projectiles",Object.FindObjectsByType<BossAgent>(FindObjectsSortMode.None).Length==0&&Projectile.Active.Count==0);
+    }
     static IEnumerator LegsLanding()
     {
         Record("CONTROLLED Legs: initial floor placement and stationary public melee body; AI alone selects and executes relocation. No forced Jump or landing.");

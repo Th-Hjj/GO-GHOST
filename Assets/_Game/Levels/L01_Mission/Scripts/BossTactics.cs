@@ -24,6 +24,9 @@ namespace GoGhost.Duel
         readonly List<BossPlan> ranked=new List<BossPlan>(64);
         float nextTick,lastAttackAt,nextSpacing,nextAerial,avoidFailedUntil;
         Vector2 failedDestination,lastSearchPoint;
+        readonly HashSet<Collider2D> searchedSupports=new HashSet<Collider2D>();
+        Collider2D searchSupport;
+        float searchDeadline;
         BossAbility previousAbility;
         BossPlan plan,dropPlan;
         bool dropCooperative,dropLeftGround;
@@ -40,6 +43,8 @@ namespace GoGhost.Duel
             if(dropPlan!=null){TickDropPlan();return;}
             if(actor.Coordinator!=null&&actor.Coordinator.HasAssignment(actor))return;
             if(!actor.Motor.Grounded)return; // Finish the accepted physical air connection before replanning.
+            if(facts.Visible&&facts.Confidence>.3f)
+            {searchedSupports.Clear();searchSupport=null;}
             // Attack from here as soon as a legal closing lane exists; do not finish an ideal walk first.
             if(facts.Confidence>.3f && actor.Profile.Kind==BossKind.Severance
                 && action.Ready(BossAbility.DrawDash) && LegalAt(BossAbility.DrawDash,actor.Position,facts,out _)
@@ -106,19 +111,30 @@ namespace GoGhost.Duel
         void SearchVisibleAngle()
         {
             // Keep seeking a real visible angle after memory expires, without reading the player's Transform.
-            if(actor.Motor.HasRoute)return;
+            if(searchSupport!=null)
+            {
+                if(actor.Motor.HasRoute&&Time.time<searchDeadline)return;
+                searchedSupports.Add(searchSupport);searchSupport=null;
+                actor.Motor.ClearRoute();
+            }
+            else if(actor.Motor.HasRoute)return;
+            if(actor.Navigation.TrySupport(actor.Position,actor.Motor.Size,out var currentSupport))
+                searchedSupports.Add(currentSupport);
             float best=float.MaxValue;ArenaNavigation2D.Route route=null;
+            Collider2D chosen=null;
             foreach(var node in actor.Navigation.Nodes)
             {
                 Vector2 point=node.Center(actor.Motor.Size);float distance=Vector2.Distance(point,actor.Position);
-                if(distance<actor.Motor.Size.x||distance>actor.Navigation.SameLevelSpacing*1.5f||Vector2.Distance(point,lastSearchPoint)<actor.Motor.Size.x)continue;
+                if(searchedSupports.Contains(node.Collider)||distance<actor.Motor.Size.x||distance>actor.Navigation.SameLevelSpacing*1.5f||Vector2.Distance(point,lastSearchPoint)<actor.Motor.Size.x)continue;
                 var facts=actor.Perception.Facts;
                 float cost=Vector2.Distance(point,facts.Position)*.6f+distance*.2f;
                 if(BossPerception.CanSee(point+Vector2.up*.35f,facts.Body))cost-=4;
                 if(cost>=best)continue;
-                if(actor.Navigation.TryRoute(actor.Position,point,actor.Motor,out var path)) {best=cost;route=path;}
+                if(actor.Navigation.TryRoute(actor.Position,point,actor.Motor,out var path)) {best=cost;route=path;chosen=node.Collider;}
             }
-            if(route!=null){lastSearchPoint=route.Steps[route.Steps.Count-1].End;actor.Motor.SetRoute(route);}
+            if(route!=null)
+            {lastSearchPoint=route.Steps[route.Steps.Count-1].End;searchSupport=chosen;searchDeadline=Time.time+route.Duration+2.5f;actor.Motor.SetRoute(route);}
+            else searchedSupports.Clear(); // A finished finite sweep can retry, rather than wait forever.
         }
         bool TryBreakStalemate(BossObservation facts)
         {

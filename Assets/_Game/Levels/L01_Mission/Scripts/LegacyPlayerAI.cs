@@ -29,6 +29,9 @@ public sealed class LegacyPlayerAI
     private BossContact targetContact;
     private bool hasContact;
     private float focusSince;
+    private Bounds lastSeenBounds;
+    private bool hasSearchMemory, searchingContact;
+    private float searchX, searchUntil, nextContactSearch;
     private readonly Transform combatRoot;
     private readonly List<Collider2D> supports = new List<Collider2D>();
     private readonly List<VisibleBullet> bullets = new List<VisibleBullet>();
@@ -206,6 +209,8 @@ public sealed class LegacyPlayerAI
         int selected = best >= 0 ? best : latest;
         if (selected < 0) { focus = null; hasContact = false; return; }
         UseContact(contacts[selected]);
+        if(targetContact.Visible)
+        {lastSeenBounds=targetBounds;hasSearchMemory=true;searchingContact=false;}
         if (focus != previous)
         { focusSince = Time.time; aimIndex = 0; rangeMove = 0; }
     }
@@ -293,6 +298,7 @@ public sealed class LegacyPlayerAI
             airborneRoute=relocationRoute=routeLeftGround=false;routePlatform=null;
         }
         float desire = hasContact ? RangeDirection() : 0;
+        if(!hasContact&&movement.IsGrounded&&routePlatform==null)desire=SearchContactDirection();
         bool sight = hasContact && CanShootFrom(selfBounds.center);
         if (movement.IsGrounded && hasContact) FindCornerExit();
         bool leavingCorner = Time.time < cornerExitUntil;
@@ -356,6 +362,37 @@ public sealed class LegacyPlayerAI
     }
 
     private float LandingSteer(float x,float from) => Mathf.Clamp((x-from)/(movement.MoveSpeed*Step),-1,1);
+    private float SearchContactDirection()
+    {
+        // Lost sight retires Arms' target, not Legs' ability to inspect a legal nearby angle.
+        // The search uses only the last copied public bounds, never the hidden actor's body.
+        if(!hasSearchMemory||currentSupport==null)return 0;
+        if(searchingContact)
+        {
+            if(Time.time<searchUntil&&Mathf.Abs(searchX-selfBounds.center.x)>.15f)
+                return Towards(searchX);
+            searchingContact=false;
+        }
+        if(Time.time<nextContactSearch)return 0;
+        nextContactSearch=Time.time+.5f;
+        var support=currentSupport.bounds;
+        float margin=selfBounds.extents.x+.1f;
+        float best=float.PositiveInfinity;
+        foreach(float x in new[]{support.min.x+margin,support.max.x-margin})
+        {
+            float travel=Mathf.Abs(x-selfBounds.center.x);
+            var point=new Vector2(x,selfBounds.center.y);
+            if(travel<.2f||travel>movement.MoveSpeed||!SupportedBy(currentSupport,point)
+                ||!BossPerception.CanSee(point,lastSeenBounds)||SolidTravel(x-selfBounds.center.x)<travel-.05f
+                ||Risk(new Motion(Mathf.Sign(x-selfBounds.center.x)),WalkLookahead)>0)continue;
+            if(navigation!=null&&!navigation.SweepTraversal(selfBounds.center,point,selfBounds.size,out _,out _))continue;
+            if(travel>=best)continue;
+            best=travel;searchX=x;
+        }
+        if(float.IsPositiveInfinity(best))return 0;
+        searchingContact=true;searchUntil=Time.time+best/movement.MoveSpeed+.5f;
+        return Towards(searchX);
+    }
     private bool SupportedBy(Collider2D support,Vector2 centre) => support!=null&&support.enabled
         &&Mathf.Abs(centre.y-selfBounds.extents.y-support.bounds.max.y)<.15f
         &&centre.x>support.bounds.min.x+selfBounds.extents.x&&centre.x<support.bounds.max.x-selfBounds.extents.x;

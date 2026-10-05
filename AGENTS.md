@@ -18,7 +18,7 @@ Read this file first in every session, then the docs listed at the bottom for th
 
 ## Confirmed constraints
 - Retain actual legacy PlayerMovement, PlayerDodge, PlayerShooting, player visual and five-platform arena. Refraction and Severance use local Boss executors, real collider-derived navigation and player-style colored stickmen. No replacement player combat or broad framework.
-- Fixed Rifle (12 damage, 0.25 s, 10 rounds, 1.2 s auto reload), no player Blade/Shield/Counter/E, move 7, jump 12, gravity scale 3, legacy cooldown dodge and concurrent actions. No upgrade snapshot prerequisite.
+- Fixed Rifle (12 damage, 0.25 s, 8 rounds, 1.2 s auto reload), no player Blade/Shield/Counter/E, move 7, jump 12, gravity scale 3, legacy cooldown dodge and concurrent actions. No upgrade snapshot prerequisite.
 - Three independent locked binary permissions: Legs (A/D, Space), Arms (mouse aim, held LMB), Spine (Left Shift Dodge). Legs AI retains only the 5.3–8.5 horizontal collider-centre preference, below safety/routes/firing lanes; no distance selector. New Game defaults all Player; retries/next waves preserve permissions. No hidden input override.
 - Menu -> configuration -> one-second stationary preparation -> combat -> next configuration/current-wave defeat -> Complete after wave three. Fresh actors/resources/observation every fight. Full pause; simultaneous death is defeat and resolves once.
 - Boss skills use real collision/timing and independent HP pools; third-wave victory requires both dead. Thomas's later 2026-10-05 correction: all bullets cross walls/platforms; bullets and the piercing beam still stop at allied Boss bodies. No friendly damage, phase refill, old BLACKOUT or platform destruction.

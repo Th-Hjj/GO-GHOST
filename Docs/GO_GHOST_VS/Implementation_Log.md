@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-10-05 — Eight-round player magazine
+
+- **Baseline / implemented:** main at b1000cc, no tracked local changes. Thomas requested 10 -> 8 player rounds. Changed only the current PlayerShooting LegacyRifle magazine parameter; damage 12, interval 0.25 s and auto-reload 1.2 s remain. Initialization, refill and HUD use the same magazine value. Updated AGENTS/CLAUDE, README and the retained-player spec override; historical loadouts and Boss magazines unchanged.
+- **Checks / limits:** live Unity compile passed. Fresh W1 Play Mode reported magazine/ammo 8 and HUD `Ammo 8 / 8`; runtime profile confirmed 12 damage, 0.25 s interval and 1.2 s reload. Refill assignment was checked in source; a full firing/reload cycle, physical input, balance and Windows build/launch were **NOT RUN**. Returned to menu and Edit Mode; existing untracked art preserved. No blocker for Editor review.
+
 ## 2026-10-05 — Minimal combat footer
 
 - **Baseline / implemented:** main at 99126e1, no tracked local changes. In DuelUI, removed the combat Legs/Arms/Spine status row, renamed Rifle to Ammo and lowered the Ammo/Dodge row 20 reference UI units (y -377 to -397). Configuration choices and gameplay remain unchanged; existing untracked art preserved.

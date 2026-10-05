@@ -1,3 +1,5 @@
+> **Magazine correction — Thomas, 2026-10-05:** the player's current Rifle magazine holds 8 rounds, overriding historical 10-round values below. Damage, fire interval and automatic reload duration remain 12 / 0.25 s / 1.2 s.
+
 > **Pitch override — Thomas, 2026-10-05:** use the fixed 5.3–8.5 Legs preference without a selector; platform geometry, Boss skills, two pairings and Editor-only short validation follow Boss_Encounter_Spec. Near/Far, distance matrices, Build and required all-AI-loss instructions below are historical. Fixed player executors/tuning and engineering safety remain in force.
 
 > **Boss assignment override — Thomas, 2026-10-05:** the Two Bosses + Coordinated Third Wave assignment supersedes conflicting single-enemy, old enemy visuals/attacks and result-validation restrictions below. Preserve the player override and fixed player tuning. Refraction / Severance / both replace the old three police waves; real navigation, public multi-target perception and legal cooperation are required. Bounded Mid/Near/Far all-AI third-wave observations and checked main delivery are authorized. See START_HERE for authority and Implementation_Log for actual evidence.

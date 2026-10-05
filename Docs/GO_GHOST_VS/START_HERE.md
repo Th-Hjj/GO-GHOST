@@ -1,5 +1,7 @@
 # GO GHOST — Start Here
 
+Latest authority: Thomas's **2026-10-05 focused Boss pressure pass**. Platform spacing and executable jump height set combat scale; Leap Slash, a single front dash follow-up, Tactical Jump Shot and recovery handoff extend the existing actors. All bullets still cross walls, per the latest correction. See the current Boss specification and newest implementation-log evidence. Only compile, short W2/W3 smoke and focused movement checks are required; no Build or all-AI outcome gate.
+
 > **Current assignment — 2026-10-05:** Thomas's Pitch Combat Upgrade overrides old distance choices, platform sizes, skill/coordination rules and Build/outcome gates. Deliver a playable Editor scene with upgraded existing skills and both Cross Execution and Sweep & Drop. Preserve fixed player tuning, real collision/public perception, one writer and targeted Unity asset saves. Ordinary checked main delivery is authorized.
 
 Read [Boss_Encounter_Spec.md](Boss_Encounter_Spec.md) for the current pitch implementation and [Legacy_Combat_Implementation_Spec.md](Legacy_Combat_Implementation_Spec.md) for compatible player rules. They replace conflicting old police, Duel and tower designs. Ordinary checked commit/push to main is explicitly authorized for this assignment.

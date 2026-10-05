@@ -28,6 +28,16 @@ namespace GoGhost.Duel
         public float Radius, StartsAt, EndsAt, ProjectileSpeed;
         public float ArcFrom, ArcTo, Facing, Reach, Gravity;
         public bool TerrainBlocked, Valid;
+        // Copied executable jump samples. They never read a live target during prediction.
+        public Vector2[] OriginPath;
+        public float PathStartsAt, PathStep;
+        public Vector2 OriginAt(float time)
+        {
+            if(OriginPath==null||OriginPath.Length==0)return Origin;
+            float frame=Mathf.Clamp((time-PathStartsAt)/Mathf.Max(.001f,PathStep),0,OriginPath.Length-1);
+            int i=Mathf.FloorToInt(frame);
+            return Vector2.Lerp(OriginPath[i],OriginPath[Mathf.Min(i+1,OriginPath.Length-1)],frame-i);
+        }
 
         public bool IntersectsMotion(Vector2 previous, Vector2 current, Vector2 half,
             float fromTime, float toTime)
@@ -47,6 +57,7 @@ namespace GoGhost.Duel
                     Vector2 centre=Vector2.Lerp(aPlayer,bPlayer,sample/4f), root=Origin, tip;
                     if(Shape==BossThreatShape.BladeArc)
                     {
+                        root=OriginAt(t);
                         float angle=Mathf.Lerp(ArcFrom,ArcTo,elapsed/Mathf.Max(.001f,EndsAt-StartsAt))*Mathf.Deg2Rad;
                         tip=root+new Vector2(Facing*Mathf.Cos(angle),Mathf.Sin(angle))*Reach;
                     }

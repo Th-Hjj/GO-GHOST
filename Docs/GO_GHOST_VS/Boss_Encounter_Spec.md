@@ -1,6 +1,6 @@
 # GO GHOST — Boss Encounter
 
-Current authority: Thomas's **2026-10-05 Pitch Combat Upgrade** assignment. This specification records confirmed scope and the implemented baseline. Runtime checks, outstanding acceptance and build evidence belong in [Implementation_Log.md](Implementation_Log.md); source code or controlled fixtures do not prove a normal all-AI result.
+Current authority: Thomas's **2026-10-05 focused Boss pressure pass**, extending the Pitch Combat Upgrade. This specification records confirmed scope and implemented source. Runtime checks and limits belong in [Implementation_Log.md](Implementation_Log.md); controlled fixtures do not prove balance or a normal all-AI result.
 
 ## Confirmed scope
 
@@ -24,7 +24,7 @@ Values below are initial tuning, not balance guarantees. The serialized `Refract
 | Health | 720 | 840 |
 | Run / acceleration / braking | 5.8 / 45 / 55 | 7.5 / 55 / 65 |
 | Jump / gravity scale / air control | 12 / 3 / 0.45 | 12 / 3 / 0.55 |
-| Preferred horizontal distance | 7 | 1.6 |
+| Preferred horizontal distance | 0.8 x same-height spacing (currently 7) | 0.4 x platform width (currently 1.6) |
 
 Refraction has 12 rounds, a 1.45 s reload and 24 units/s ordinary bullets. Every attack publishes preparation, lock, active and recovery information from its action clock. Real hits are limited per attack window; visuals never apply damage. All bullets and Piercing Shot ignore Ground but stop at a living allied Boss body; dash movement stops at terrain and bodies.
 
@@ -34,13 +34,16 @@ Refraction has 12 rounds, a 1.45 s reload and 24 units/s ordinary bullets. Every
 | G2 Optical Camo | 0.14 + 0 | — | 0.12 / 7 | Up to 1.8 s on a meaningful reachable firing route; early exit after at least 0.45 s movement; alpha 0.02 and public cues |
 | G3 Piercing Shot | 0.72 + 0.24 | 30 | 0.55 / 4.5 | Three rounds; locked instantaneous ray, brief active flash; beam radius 0.07 |
 | G4 Suppressive Sweep | 0.32 + 0.18 | 8 per bullet | 0.5 / 4 | Eight ordinary bullets, 0.12 s spacing / 0.84 s span +0.10 s tail; at least eight rounds and six clear starting rays |
+| G5 Tactical Jump Shot | 0.12 + 0.08 | Existing Burst damage | 0.26 after landing / 4.5 | One reachable, frozen jump route; up to three airborne Burst bullets with normal ammo/speed and a separate 0.08 s aim lock per shot |
 | S1 Broken Rhythm | Per-cut table below | 18 / 18 / 26 | 0.65 / 2.4 | Independent preparation, bounded physical step, facing lock and rotating blade sweep per cut |
-| S2 Draw Dash | 0.30 + 0.18 | 28 | 0.50 / 3 | Range 7, speed 25; actual swept movement/hit path |
+| S2 Draw Dash | 0.30 + 0.18 | 28 | 0.50 / 3 | Maximum intended travel is actual same-height platform spacing (currently 8.75), speed 25; swept horizontal Rigidbody drive, normal gravity after exit |
 | S3 Return Cut | 0.18 + 0.16 | 24 | 0.65 / 5 | One optional Draw Dash follow-up; range 4, speed 24, separate cooldown |
 | S4 Aerial Drop Cut | 0.12 + 0.16 | 32 | 0.55 / 4 | Planned real jump; full 0.28 s tell under gravity; one downward 16-speed request, fixed horizontal speed capped at 7.5; one hit window |
 | S5 Blade Guard | 0.18 + 0 | — | 0.18 / 3.5 | 0.70 s front 120-degree arc, five bullets, 60% walking speed; eligible early recovery after 0.18 s |
+| S6 Leap Slash | 0.24 + 0.12 | 28 | 0.55 after landing / 4.5 | One validated physical jump toward a public predicted approach; frozen landing route, one first-cut blade arc during approach; terrain blocks the sword |
+| Draw Dash front follow-up | 0.16 + 0.12 | 18 | 0.65 | Reuses only Rhythm cut 1; Return Cut has priority, otherwise a front target within real step/blade reach; then recovery, with no further branch |
 
-Ordinary bullet hits damage health but do not interrupt Piercing/Sweep. Death still cancels attacks. Locked attacks retain their commitments. Guard requires a real front-side projectile contact and consumes capacity. Return Cut is available only in the 0.18 s post-dash branch window; it cannot start independently, chain repeatedly or follow a cooperative Draw Dash. Camo exit has a minimum 1.2 s re-entry gap in addition to cooldown.
+Ordinary bullet hits damage health but do not interrupt Piercing/Sweep. Death still cancels attacks. Locked attacks retain their commitments. Guard requires a real front-side projectile contact and consumes capacity. Return Cut and the front slash share one branch opportunity: Return Cut is preferred, otherwise one first Rhythm cut may start; neither can chain into the other. The 0.18 s post-dash opportunity remains reserved until consumed or expired; cooperative Draw Dash has no follow-up. Camo exit has a minimum 1.2 s re-entry gap in addition to cooldown.
 
 The sweep commits one support band, at most 5 units long and 0.65 above its real top, with eight separate directions; only bullets damage. Its faint edge/band tells have no collision.
 
@@ -53,6 +56,12 @@ The sweep commits one support band, at most 5 units long and 0.65 above its real
 Each subsequent preparation starts at the previous active end, with no old extra gap. Left-facing arcs mirror x only. Continuation uses the next step/reach, not the old 1.7-unit gate. Body motion stays in BossMotor2D, and public arc/descent threats use the same executable geometry as hits and visuals.
 
 Five floating platforms are each 4.0 x 0.30 world units. In left-to-right order, centres are (-8.75, 1.15), (-4.375, -0.55), (0, 1.15), (4.375, -0.55), (8.75, 1.15); the projected adjacent gap is 0.375. Visible and collider sizes match; one-way traversal, floor/walls/ceiling, player and camera sizes are preserved.
+
+**King metrics:** navigation measures floating support width and nearest same-height centre spacing from real collider surfaces, currently 4 and 8.75. The standard jump's executable rise is 2.328 at jump speed 12, gravity 29.43 and fixed step 0.02; the analytic parabola is not sufficient. Jump candidates must pass the existing full-body trajectory simulation, including acceleration, air control and one-way terrain. Leap range is the feasible trajectory, never a new fixed distance. The first blade reach remains 2.1 at width 4, expressed as that platform-width fraction. Existing DrawDash.Range stays serialized for compatibility but no longer defines travel.
+
+An unobstructed horizontal dash selects a supported endpoint; crossing between matching platforms preserves the source's horizontal offset at one same-height spacing. The Rigidbody counters gravity only during its finite horizontal drive and sweeps terrain and actor bodies every step. A collision can stop it early, followed by normal gravity; no transform snap or teleport is used. Tactics may attack immediately from a legal closing lane without completing an ideal walking destination.
+
+Leap Slash and Jump Shot brake during their tell and revalidate at commitment. Their physical route endpoint is frozen before takeoff, with no live target steering in flight. Leap's single scheduled blade arc publishes copied executable origin samples and a matching faint route/arc tell; a miss still lands and recovers. Jump Shot is the only new bounded airborne gun action, using normal Burst aim locks and ammunition; it does not unlock other gun abilities in the air. **Latest correction: all bullets, including Jump Shot, pass through walls/platforms and stop at allied Boss bodies.**
 
 ## Navigation, perception and tactics
 
@@ -78,6 +87,8 @@ If the gunner's available body-point rays remain blocked by its partner, it seek
 
 Both combinations progress through Assemble, Ready, committed actions and Recover. Assembly is limited to 1.2 s; evaluation starts 2 s into combat. After both full recoveries, a successful pair has 0.75 s common respite and a 6 s shared cooldown. Failure releases pending work, permits normal combat and retries after 1 s. Locked attacks remain committed; a death immediately releases future cooperation. A legal alternative to the last successful type is preferred, without forcing alternation.
 
+Ordinary major-threat reservations now release their blocking role during safe recovery, allowing a partner's full preparation to overlap that recovery. A dash still eligible for a follow-up is not safe recovery. Preparation/lock/active remain exclusive outside the two explicit pairings; actor collision, aim locks and readable tells remain. Combo search retains current/nearby candidates within one platform width and executable jump height, tries bounded alternate pairs when timing/escape validation rejects a higher score, and may plan during safe recovery without cancelling it. Assembly still expires after 1.2 s, so an unavailable combination cannot indefinitely stop ordinary combat. The two combinations retain their full recovery and common respite.
+
 Cross Execution freezes its retreat hypothesis before either response. With A = full dash tell + estimated first body contact, B = full beam tell and delta = 0.40 s, sword delay is max(0, B-A-delta), gun delay max(0, A+delta-B). Return Cut is disabled for this dash. Sweep & Drop considers up to three real supports, validates a normal jump, and schedules the downward blade about 0.45 s after the first sweep bullet's estimated arrival (target window 0.35–0.60 s). Travel, braking, full tells, bullet speed, blade length and descent enter these estimates; collisions can cause misses or aborts.
 
 Finite left/right walk/jump samples reject obvious sealed routes using the new attack geometry and schedule. They are a local safeguard, not proof of universal escapability. Runtime appearance and timing remain evidence-dependent; unobserved combinations are recorded in Implementation_Log.
@@ -93,4 +104,4 @@ Audio uses Kenney's [Sci-fi Sounds](https://kenney.nl/assets/sci-fi-sounds), [RP
 
 ## Evidence boundary
 
-Confirmed requirements and source/tuning do not claim full acceptance. This pitch pass requires normal Unity compile, brief W1/W2 action/input smoke and one fixed-policy W3 observation of at most 60 seconds. No Build, old exe, full suites, matrices or required all-AI loss. Record **NOT TESTED** / **NOT OBSERVED** in [Implementation_Log.md](Implementation_Log.md); controlled checks prove only their mechanism.
+Confirmed requirements and source/tuning do not claim full acceptance. This focused pass requires normal Unity compile, short W2/W3 smoke and narrow dash/jump/action checks. No Build, old exe, full suites, matrices or required all-AI loss. Record **NOT TESTED** / **NOT OBSERVED** in [Implementation_Log.md](Implementation_Log.md); controlled checks prove only their mechanism.

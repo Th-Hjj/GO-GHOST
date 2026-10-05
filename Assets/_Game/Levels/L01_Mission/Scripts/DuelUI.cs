@@ -119,8 +119,7 @@ namespace GoGhost.Duel
             Image(page,new Vector2(0,-340),new Vector2(430,12),new Color(.18f,.18f,.18f));
             playerFill=Image(page,new Vector2(-215,-340),new Vector2(430,12),new Color(.6f,.9f,.65f));
             playerFill.rectTransform.pivot=new Vector2(0,.5f);
-            resources=Text("",page,new Vector2(0,-377),new Vector2(1450,40),22);
-            Text($"Legs: {(game.LegsAI?"AI":"Player")}     Arms: {(game.ArmsAI?"AI":"Player")}     Spine: {(game.SpineAI?"AI":"Player")}",page,new Vector2(0,-405),new Vector2(1300,40),24);
+            resources=Text("",page,new Vector2(0,-397),new Vector2(1450,40),22);
             LateUpdate();
         }
         void LateUpdate()
@@ -135,7 +134,7 @@ namespace GoGhost.Duel
                 policeFill[i].rectTransform.sizeDelta=new Vector2(430f*actor.Health.CurrentHealth/actor.Health.MaxHealth,12);
             }
 
-            string ammo=game.Rifle.IsReloading?"Reloading":$"Rifle {game.Rifle.AmmoInMagazine} / {game.Rifle.MagazineSize}";
+            string ammo=game.Rifle.IsReloading?"Reloading":$"Ammo {game.Rifle.AmmoInMagazine} / {game.Rifle.MagazineSize}";
             resources.text=$"{ammo}     Dodge: {Ready(game.Dodge.CooldownRemaining)}";
             playerFill.rectTransform.sizeDelta=new Vector2(430f*game.Player.CurrentHealth/game.Player.MaxHealth,12);
         }

@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-10-05 — Minimal combat footer
+
+- **Baseline / implemented:** main at 99126e1, no tracked local changes. In DuelUI, removed the combat Legs/Arms/Spine status row, renamed Rifle to Ammo and lowered the Ammo/Dodge row 20 reference UI units (y -377 to -397). Configuration choices and gameplay remain unchanged; existing untracked art preserved.
+- **Checks / limits:** live Unity compile, Play Mode HUD text/position, pause/resume reconstruction and actual Game View inspection passed. Returned through menu to clean Edit Mode. Screenshot: Logs/HealthHud/footer.png (ignored). Physical-input/full combat regression and Windows build/launch **NOT RUN**; no blocker for Editor review.
+
 ## 2026-10-05 — Health bar direction and actor colors
 
 - **Baseline / request:** main at c26e7a8, no tracked local changes; 34 existing untracked art/meta files preserved. Player and Boss fills all used a centered pivot while their width changed, shrinking both ends. Thomas requested single-direction depletion and light-green player / body-matching blue gunner / red swordsman bars.

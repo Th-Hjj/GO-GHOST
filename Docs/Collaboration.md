@@ -137,7 +137,7 @@ Thomas works on a laptop and a Windows PC. **Proposed** rules for moving between
 2. Install Git LFS and run `git lfs install` before cloning.
 3. Clone, then open the repository root as a Unity project with 6000.6.0f1. Do not upgrade the Unity version.
 4. Entry scene: `Assets/_Game/Levels/L01_Mission/Scenes/GO GHOST Duel.unity` (the retained scene filename). `GO GHOST > Combat > Open Arena` opens it; the editor Play entry and Windows build use it. New Game opens wave permissions, then the restored legacy arena combat. The old Cyberpunk World/tower scene is historical. Current controls: `README.md`.
-5. Current authority: `Docs/GO_GHOST_VS/Legacy_Combat_Implementation_Spec.md`. Actual checks and limits: `Docs/GO_GHOST_VS/Implementation_Log.md`.
+5. Current authority: `Docs/GO_GHOST_VS/Boss_Encounter_Spec.md`; compatible player rules remain in `Legacy_Combat_Implementation_Spec.md`. Actual checks and limits: `Docs/GO_GHOST_VS/Implementation_Log.md`.
 
 ## 9. Before you push or merge
 

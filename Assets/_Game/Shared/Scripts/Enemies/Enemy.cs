@@ -53,6 +53,8 @@ public class Enemy : MonoBehaviour, IDamageable
 
     /// <summary>Fired once on death; optional destruction happens afterwards.</summary>
     public event Action<Enemy> OnDied;
+    /// <summary>Actual health loss only; level actors may interrupt an uncommitted prepare.</summary>
+    public event Action<int, GameObject> OnDamaged;
 
     private Rigidbody2D rb;
     private PlayerHealth player;
@@ -125,7 +127,9 @@ public class Enemy : MonoBehaviour, IDamageable
     {
         if (IsDead || AwaitingSecondPhase || amount <= 0) return;
 
+        int lost = Mathf.Min(CurrentHealth, amount);
         CurrentHealth = Mathf.Max(CurrentHealth - amount, 0);
+        OnDamaged?.Invoke(lost, source);
         if (CurrentHealth > 0) return;
         // The first pool ending is not a death: no OnDied, no victory. Only the last pool kills.
         if (PhaseIndex == 1 && secondPhaseMaxHealth > 0) AwaitingSecondPhase = true;

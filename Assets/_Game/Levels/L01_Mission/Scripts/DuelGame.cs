@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -14,6 +15,11 @@ namespace GoGhost.Duel
         [SerializeField] SfxSet sounds;
         [SerializeField] bool diagnostics;
         [SerializeField] GameObject combatPrefab;
+        [SerializeField] GameObject gunnerPrefab;
+        [SerializeField] GameObject swordsmanPrefab;
+        [SerializeField] Bounds arenaBounds = new Bounds(new Vector3(0, 3.25f), new Vector3(30, 11.5f));
+        [SerializeField] Vector2 gunnerSpawn = new Vector2(7, -1.6f);
+        [SerializeField] Vector2 swordsmanSpawn = new Vector2(3, -1.6f);
         [SerializeField] Collider2D[] platforms;
         public DuelPhase Phase { get; private set; }
         public int Wave { get; private set; } = 1;
@@ -21,6 +27,7 @@ namespace GoGhost.Duel
         public bool FirstConfiguration { get; private set; }
         public PlayerHealth Player { get; private set; }
         public Enemy Police { get; private set; }
+        public IReadOnlyList<BossAgent> Bosses => actors;
         public PlayerShooting Rifle { get; private set; }
         public PlayerDodge Dodge { get; private set; }
         public float FightClock { get; private set; }
@@ -33,7 +40,9 @@ namespace GoGhost.Duel
         public LegacyDistancePreference DraftDistance { get; private set; } = LegacyDistancePreference.Mid;
         GameObject encounter;
         DuelUI ui;
-        CyberpsychoBoss boss;
+        BossAgent[] actors = System.Array.Empty<BossAgent>();
+        ArenaNavigation2D navigation;
+        DuoCoordinator coordinator;
         PlayerInputReader input;
         AttemptPresentationVfx effects;
         SfxSet encounterSounds;
@@ -91,8 +100,6 @@ namespace GoGhost.Duel
             encounter = Instantiate(combatPrefab, transform);
             encounter.name = "CombatAttempt";
             Player = encounter.GetComponentInChildren<PlayerHealth>();
-            boss = encounter.GetComponentInChildren<CyberpsychoBoss>();
-            Police = boss.GetComponent<Enemy>();
             input = Player.GetComponent<PlayerInputReader>();
             input.SetGameplayInputEnabled(false);
             Rifle = Player.GetComponent<PlayerShooting>();
@@ -101,8 +108,16 @@ namespace GoGhost.Duel
             Rifle.ConfigureLegacyCombat();
             Dodge.ConfigureLegacyCombat();
             Player.GetComponent<OfficerVisual>()?.ConfigureLegacyCombat();
-            boss.ConfigureLegacyPolice(Player, new Bounds(new Vector3(0, 3.25f), new Vector3(30, 11.5f)), Wave, 600, diagnostics);
-            var ai = new LegacyPlayerAI(Player, boss, platforms, DraftDistance);
+            navigation = encounter.AddComponent<ArenaNavigation2D>();
+            navigation.Initialize(arenaBounds);
+            coordinator = encounter.AddComponent<DuoCoordinator>();
+            var activeActors = new List<BossAgent>(2);
+            if (Wave == 1 || Wave == 3) activeActors.Add(CreateBoss(gunnerPrefab, gunnerSpawn, 1));
+            if (Wave == 2 || Wave == 3) activeActors.Add(CreateBoss(swordsmanPrefab, swordsmanSpawn, 2));
+            actors = activeActors.ToArray();
+            Police = actors[0].Health; // Historical development consumers; gameplay uses the full actor list.
+            coordinator.Configure(actors, navigation);
+            var ai = new LegacyPlayerAI(Player, actors, platforms, DraftDistance);
             input.ConfigureLegacyControls(lockedLegs, lockedArms, lockedSpine, ai.Legs, ai.Arms, ai.Spine);
             foreach (var body in encounter.GetComponentsInChildren<Rigidbody2D>())
             {
@@ -118,14 +133,29 @@ namespace GoGhost.Duel
             FightClock = 0;
             FirstConfiguration = false;
             SetPhase(DuelPhase.Prepare);
-            Trace($"start wave={Wave} hp={Player.CurrentHealth}/{Police.CurrentHealth} observation=empty");
+            Trace($"start wave={Wave} player={Player.CurrentHealth} bosses={HealthSummary()} observation=empty");
+        }
+        BossAgent CreateBoss(GameObject prefab, Vector2 spawn, int actorId)
+        {
+            var instance = Instantiate(prefab, (Vector3)spawn, Quaternion.identity, encounter.transform);
+            var actor = instance.GetComponent<BossAgent>();
+            actor.Configure(Player, navigation, coordinator, actorId, diagnostics);
+            return actor;
+        }
+        string HealthSummary()
+        {
+            string summary = "";
+            foreach (var actor in actors)
+                if (actor != null) summary += (summary.Length == 0 ? "" : ",") + actor.ActorId + ":" + actor.Health.CurrentHealth;
+            return summary;
         }
         void BeginCombat()
         {
             foreach (var body in encounter.GetComponentsInChildren<Rigidbody2D>()) body.simulated = true;
             effects?.SetPaused(false);
             input.SetGameplayInputEnabled(true);
-            boss.BeginLegacyCombat();
+            foreach (var actor in actors) actor.StartCombat();
+            coordinator.BeginCombat();
             SetPhase(DuelPhase.Fight);
         }
         public void Reconfigure()
@@ -145,7 +175,8 @@ namespace GoGhost.Duel
             if (Paused == value) return;
             Paused = value;
             input?.SetNarrativePaused(value);
-            boss?.SetLegacyPaused(value);
+            foreach (var actor in actors) if (actor != null) actor.SetPaused(value);
+            coordinator?.SetPaused(value);
             effects?.SetPaused(value || Phase == DuelPhase.Prepare);
             Time.timeScale = value ? 0 : 1;
             AudioListener.pause = value;
@@ -162,7 +193,8 @@ namespace GoGhost.Duel
             if (encounter == null) return;
             // All contacts from this rendered frame finish before this LateUpdate boundary.
             foreach (var projectile in encounter.GetComponentsInChildren<Projectile>()) projectile.Retire();
-            boss?.StopCombat();
+            coordinator?.StopCombat();
+            foreach (var actor in actors) if (actor != null) actor.StopCombat();
             Player?.StopCombat();
             effects?.EndAttempt();
             encounterSounds?.EndScope();
@@ -175,7 +207,8 @@ namespace GoGhost.Duel
             AudioListener.pause = false;
             if (encounter != null) { encounter.SetActive(false); Destroy(encounter); }
             encounter = null;
-            Player = null; Police = null; boss = null; input = null;
+            Player = null; Police = null; input = null;
+            actors = System.Array.Empty<BossAgent>(); navigation = null; coordinator = null;
             Rifle = null; Dodge = null; effects = null; encounterSounds = null;
         }
         void Update()
@@ -202,10 +235,12 @@ namespace GoGhost.Duel
         {
             var camera = Camera.main;
             if (camera != null) camera.orthographicSize = Mathf.Max(10, 16.8f / Mathf.Max(.3f, camera.aspect));
-            if (Phase != DuelPhase.Fight || Paused || Player == null || Police == null) return;
-            if (!Player.IsDead && !Police.IsDead) return;
+            if (Phase != DuelPhase.Fight || Paused || Player == null || actors.Length == 0) return;
+            bool allDead = true;
+            foreach (var actor in actors) if (actor != null && actor.IsAlive) { allDead = false; break; }
+            if (!Player.IsDead && !allDead) return;
             bool defeat = Player.IsDead;
-            Trace($"result wave={Wave} player={Player.CurrentHealth} police={Police.CurrentHealth} elapsed={FightClock:0.00}");
+            Trace($"result wave={Wave} distance={DraftDistance} player={Player.CurrentHealth} bosses={HealthSummary()} elapsed={FightClock:0.00}");
             StopCombat();
             sounds?.Play(defeat ? Sfx.Defeat : Sfx.Victory);
             SetPhase(defeat ? DuelPhase.Failed : Wave == 3 ? DuelPhase.Complete : DuelPhase.Between);
@@ -219,8 +254,11 @@ namespace GoGhost.Duel
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         // Normal wave-three entry, empty observation; no test UI or outcome alteration.
         public void ObserveThirdWave()
+        { ObserveThirdWave(LegacyDistancePreference.Mid); }
+        public void ObserveThirdWave(LegacyDistancePreference distance)
         {
             NewGame(); Wave = 3; DraftLegs = DraftArms = DraftSpine = true;
+            DraftDistance = distance;
             diagnostics = true; StartFight();
         }
 #endif

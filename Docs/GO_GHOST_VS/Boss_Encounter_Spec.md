@@ -14,6 +14,8 @@ Runtime evidence and NOT TESTED limits belong in Implementation_Log.
 
 ## Confirmed scope
 
+- **Solo opening (Thomas, 2026-10-05):** Wave 1/2 Boss horizontal positions mirror the actual fresh player position across the arena centre (currently player x=-9, solo Boss x=9). Keep supported Boss heights and the authored Wave 3 x=9/x=3 arrangement. Windows/macOS builds and ZIP delivery are explicitly authorized after a bounded serious-performance/flow check.
+
 - **Opening correction (Thomas, 2026-10-05):** fresh player spawns rest on the actual nearby ground, with grounded feet reaching the floor. Stationary preparation lasts three seconds with a visible countdown; physics, player combat input and Boss actions remain frozen until it ends. Full performance optimization/precomputation is outside this narrowed pass.
 
 - **Health tuning (Thomas, 2026-10-05):** Refraction starts each fresh solo/duo attempt at 666 HP; Severance starts at 999 HP. This supersedes earlier health-preservation requirements for these two pools only.

@@ -69,6 +69,9 @@ public static class BossEncounterSmoke
     public static void RunPlayerOpening() => Start("player-opening", false);
     public static void RunPlayerGunPose() => Start("player-gun-pose", false);
     public static void RunWaveMusic() => Start("wave-music", false);
+    public static void RunPursuitFlank() => Start("pursuit-flank", false);
+    public static void RunPursuitMechanics() => Start("pursuit-mechanics", false);
+    public static void RunPursuitObservation() => Start("pursuit-observation", false);
     public static void Cancel()
     { if (Running) { Record("NOT TESTED: operator cancelled unfinished checks."); Finish(false); } }
 
@@ -147,6 +150,9 @@ public static class BossEncounterSmoke
     static IEnumerator Run()
     {
         Record("Editor Play Mode; simulated focus and virtual keyboard/mouse. No physical-input or audibility claim.");
+        if(mode=="pursuit-flank") {yield return PursuitFlank();yield break;}
+        if(mode=="pursuit-mechanics") {yield return PursuitMechanics();yield break;}
+        if(mode=="pursuit-observation") {yield return PursuitObservation();yield break;}
         if(mode=="wave-music") {yield return WaveMusic();yield break;}
         if(mode=="player-opening") {yield return PlayerOpening();yield break;}
         if(mode=="solo-pressure-mechanics"||mode=="solo-drop-mechanics") {yield return SoloPressureMechanics();yield break;}
@@ -202,7 +208,7 @@ public static class BossEncounterSmoke
         Check("cleanup removes all actors/projectiles", Object.FindObjectsByType<BossAgent>(FindObjectsSortMode.None).Length == 0 && Projectile.Active.Count == 0);
     }
 
-    static IEnumerator Fresh(int wave, bool automatic = false, bool stationaryAutomatic = false)
+    static IEnumerator Fresh(int wave, bool automatic = false, bool stationaryAutomatic = false, bool manualPursuit = false)
     {
         RestoreFixture(); heldKeys = Array.Empty<Key>(); mouseHeld = false;
         game.NewGame();
@@ -210,9 +216,116 @@ public static class BossEncounterSmoke
         typeof(DuelGame).GetProperty("Wave").SetValue(game, wave);
         if (automatic) for (int i = 0; i < 3; i++) game.SetDraft(i, true);
         else if (stationaryAutomatic) { game.SetDraft(1,true); game.SetDraft(2,true); }
+        else if(manualPursuit)game.SetDraft(1,true);
         game.StartFight();
         yield return Until(() => game.Phase == DuelPhase.Fight, DuelGame.PreparationSeconds + 1.2f);
         Check("wave " + wave + " created", game.Phase == DuelPhase.Fight && game.Bosses.Count == (wave == 3 ? 2 : 1));
+    }
+    static IEnumerator PursuitMechanics()
+    {
+        Record("CONTROLLED pursuit mechanisms: initial positions only, real physics/tells/cooldowns. No balance proof.");
+        yield return Fresh(1);StopPolicies();var nav=game.Bosses[0].Navigation;
+        OnFloor(game.Player.gameObject,nav,-4);OnFloor(game.Bosses[0].gameObject,nav,8);yield return Seconds(.2f);
+        var dodge=game.Dodge;var body=game.Player.GetComponent<Rigidbody2D>();float x=body.position.x;
+        bool accepted=dodge.TryDodge(1);float start=dodge.LastDodgeStartedAt;
+        Check("Dodge approved values",Mathf.Abs(dodge.Distance-3)<.001f&&Mathf.Abs(dodge.Duration-.18f)<.001f
+            &&Mathf.Abs(dodge.InvulnerabilityDuration-.2f)<.001f&&Mathf.Abs(dodge.DodgeStartInterval-1.2f)<.001f);
+        yield return Seconds(.1f);int hp=game.Player.CurrentHealth;game.Player.TakeDamage(1,game.Bosses[0].gameObject);
+        Check("Dodge first .1s blocks actual damage",accepted&&game.Player.CurrentHealth==hp);
+        yield return Until(()=>Time.time>=start+.24f,.3f);
+        Check("Dodge movement unchanged and immunity expires",!dodge.IsDodging&&!game.Player.IsInvulnerable
+            &&Mathf.Abs(body.position.x-x-3)<.18f,$"travel={body.position.x-x:F3} elapsed={Time.time-start:F3}");
+        game.Player.TakeDamage(1,game.Bosses[0].gameObject);
+        Check("Dodge .24s accepts actual damage",game.Player.CurrentHealth==hp-1);
+        heldKeys=new[]{Key.Space};yield return Frames(2);heldKeys=Array.Empty<Key>();yield return Seconds(.12f);
+        Check("airborne Dodge retains start cooldown",!game.Player.GetComponent<PlayerMovement>().IsGrounded&&!dodge.TryDodge(-1));
+        yield return Until(()=>Time.time>=start+1.03f,1);
+        Check("landing does not refresh Dodge",dodge.CooldownRemaining>0&&!dodge.TryDodge(-1));
+        yield return Until(()=>Time.time>=start+1.22f,.4f);
+        Check("Dodge ready after 1.2s",dodge.TryDodge(-1));yield return Seconds(.25f);
+
+        yield return PursuitFlank();
+
+        yield return Fresh(2);StopPolicies();var sword=game.Bosses[0];nav=sword.Navigation;
+        var supports=nav.Nodes.Where(n=>n.Collider.GetComponent<PlatformEffector2D>()!=null).GroupBy(n=>n.Collider).Select(g=>g.First()).OrderBy(n=>n.Collider.bounds.center.x).ToArray();
+        var low=supports[1];var high=supports[2];var size=(Vector2)game.Player.GetComponent<Collider2D>().bounds.size;
+        Position(sword.gameObject,new Vector2(low.Collider.bounds.center.x,low.Position.y+sword.Motor.Size.y*.5f+.025f));
+        Position(game.Player.gameObject,new Vector2(high.Collider.bounds.center.x,high.Position.y+size.y*.5f+.025f));yield return Seconds(.3f);
+        bool legal=sword.Tactics.TryPlanMobility(BossAbility.LeapSlash,sword.Perception.Facts,out var leap);
+        accepted=legal&&sword.Actions.TryStartMobility(leap);bool locked=false;float slash=-1;bool frozen=true;float end=Time.time+3.5f;
+        while(sword.Actions.Busy&&Time.time<end)
+        {
+            if(sword.Actions.Ability==BossAbility.LeapSlash&&sword.Actions.Phase==BossActionPhase.Locked&&!locked){locked=true;slash=leap.SlashOffset;}
+            if(locked&&sword.Actions.Ability==BossAbility.LeapSlash)frozen&=Mathf.Abs(slash-leap.SlashOffset)<.001f;
+            yield return null;
+        }
+        Check("Leap intercept locks and physically lands",accepted&&locked&&frozen&&sword.Motor.Grounded&&!sword.Actions.Busy,
+            $"legal={legal} destination={leap?.Destination} end={sword.Position}");
+        Check("Leap has one paid follow-up",sword.Actions.Started[(int)BossAbility.LeapFollowup]==1
+            &&sword.Actions.Started[(int)BossAbility.Rhythm]==0,$"followup={sword.Actions.Activated[(int)BossAbility.LeapFollowup]}");
+        Record("NOT TESTED: physical controls, exhaustive routes, subjective pursuit feel, Windows Build.");
+    }
+    static IEnumerator PursuitFlank()
+    {
+        yield return Fresh(2,manualPursuit:true);StopPolicies();var sword=game.Bosses[0];var nav=sword.Navigation;
+        OnFloor(sword.gameObject,nav,-3);OnFloor(game.Player.gameObject,nav,0);yield return Seconds(.3f);
+        yield return Seconds(.5f);
+        var facts=sword.Perception.Facts;
+        bool legal=sword.Tactics.TryPlanFlank(facts,out var flank);
+        Record($"FLANK facts position={facts.Position} velocity={facts.Velocity} aim={facts.Aim} visible={facts.Visible} confidence={facts.Confidence:F3} grounded={sword.Motor.Grounded}");
+        bool accepted=legal&&sword.Actions.TryStartMobility(flank);int before=game.Player.CurrentHealth;
+        float cutPrepare=-1,cutActive=-1,peak=sword.Position.y,startY=peak,lastX=sword.Position.x;
+        bool airborne=false,frozen=true,noTravelDamage=true,finiteMotion=true,tell=false;
+        float end=Time.time+3.5f;
+        while(sword.Actions.Busy&&Time.time<end)
+        {
+            var a=sword.Actions;peak=Mathf.Max(peak,sword.Position.y);airborne|=!sword.Motor.Grounded;
+            finiteMotion&=Mathf.Abs(sword.Position.x-lastX)<=sword.Profile.FlankMotion.Speed*Mathf.Max(Time.deltaTime,Time.fixedDeltaTime)*2+.1f;lastX=sword.Position.x;
+            if(a.Ability==BossAbility.FlankLeap){frozen&=Vector2.Distance(a.JumpDestination,flank.Destination)<.001f;noTravelDamage&=game.Player.CurrentHealth==before;}
+            if(a.Ability==BossAbility.FlankCut&&a.Phase==BossActionPhase.Prepare&&cutPrepare<0)cutPrepare=Time.time;
+            if(a.Ability==BossAbility.FlankCut&&a.Phase==BossActionPhase.Active&&cutActive<0)cutActive=Time.time;
+            tell|=a.Ability==BossAbility.FlankCut&&a.PublicThreats.Any(t=>t.Valid&&t.Shape==BossThreatShape.BladeArc);
+            yield return null;
+        }
+        Check("Flank physically crosses and lands behind",accepted&&airborne&&sword.Motor.Grounded&&sword.Position.x>game.Player.transform.position.x
+            &&peak-startY<=ArenaNavigation2D.ExecutableJumpHeight(sword.Motor.Profile)+.12f,$"legal={legal} from=-3 target={flank?.Destination} end={sword.Position} peak={peak-startY:F3}");
+        Check("Flank freezes landing and has no travel damage",accepted&&frozen&&noTravelDamage&&finiteMotion);
+        Check("Flank arrival exposes full independent tell",tell&&cutPrepare>=0&&cutActive-cutPrepare>=.34f,$"prepare={cutPrepare:F3} active={cutActive:F3}");
+        Check("Flank one real cut then full recovery",!sword.Actions.Busy&&sword.Actions.Activated[(int)BossAbility.FlankCut]==1
+            &&before-game.Player.CurrentHealth==sword.Profile.Rhythm.Damage,$"hp={before}->{game.Player.CurrentHealth} cut={sword.Actions.Activated[(int)BossAbility.FlankCut]}");
+        Check("Flank consumes cooldown and restores normal motion",!sword.Actions.Ready(BossAbility.FlankLeap)
+            &&sword.Motor.TraversalProfile==sword.Motor.Profile&&!sword.Actions.TryStart(BossAbility.FlankCut,sword.Position));
+
+    }
+    static IEnumerator PursuitObservation()
+    {
+        Record("W2 controlled initial platform positions; virtual manual Legs repeatedly traverse platforms; normal Arms AI, Spine Player (no Dodge).");
+        yield return Fresh(2,manualPursuit:true);var sword=game.Bosses[0];var nav=sword.Navigation;
+        var supports=nav.Nodes.Where(n=>n.Collider.GetComponent<PlatformEffector2D>()!=null).GroupBy(n=>n.Collider).Select(g=>g.First()).OrderBy(n=>n.Collider.bounds.center.x).ToArray();
+        var size=(Vector2)game.Player.GetComponent<Collider2D>().bounds.size;
+        Position(game.Player.gameObject,new Vector2(supports[0].Collider.bounds.center.x,supports[0].Position.y+size.y*.5f+.025f));
+        Position(sword.gameObject,new Vector2(supports[1].Collider.bounds.center.x,supports[1].Position.y+sword.Motor.Size.y*.5f+.025f));
+        int destination=1,direction=1,jumps=0;bool flying=false;float nextJump=Time.time+.2f,end=Time.time+12;
+        while(game.Phase==DuelPhase.Fight&&Time.time<end)
+        {
+            var move=game.Player.GetComponent<PlayerMovement>();float dx=supports[destination].Collider.bounds.center.x-game.Player.transform.position.x;
+            if(!move.IsGrounded)flying=true;
+            if(flying&&move.IsGrounded){flying=false;destination+=direction;if(destination>=supports.Length){direction=-1;destination=supports.Length-2;}else if(destination<0){direction=1;destination=1;}nextJump=Time.time+.12f;}
+            var keys=new List<Key>();if(Mathf.Abs(dx)>.15f)keys.Add(dx>0?Key.D:Key.A);
+            if(move.IsGrounded&&Time.time>=nextJump){keys.Add(Key.Space);nextJump=Time.time+.4f;jumps++;}
+            heldKeys=keys.ToArray();yield return null;
+        }
+        heldKeys=Array.Empty<Key>();PitchResult();Record($"W2 traversal jumpRequests={jumps} interceptPlans={sword.Tactics.InterceptPlansUsed} hits={sword.Actions.ConnectedHits}");
+        yield return Fresh(3,true);var duo=game.GetComponentInChildren<DuoCoordinator>();bool overlap=false;end=Time.time+12;
+        while(game.Phase==DuelPhase.Fight&&Time.time<end)
+        {
+            if(duo.Phase==DuoPhase.Idle)overlap|=game.Bosses.Count(a=>a.Actions.HighThreat&&a.Actions.Busy&&!a.Actions.SafeRecovery)>1;
+            yield return null;
+        }
+        PitchResult();Check("W3 keeps ordinary major-threat budget",!overlap);
+        foreach(var ability in new[]{BossAbility.FlankLeap,BossAbility.FlankCut,BossAbility.LeapSlash,BossAbility.LeapFollowup})
+            Record((game.Bosses.Any(a=>a.Actions.Activated[(int)ability]>0)?"OBSERVED ":"NOT OBSERVED ")+"W3 "+ability);
+        Record("No outcome gate. W2 is a repeatable virtual-input fixture, not human skill/balance evidence. Build NOT RUN.");
     }
     static IEnumerator WaveMusic()
     {

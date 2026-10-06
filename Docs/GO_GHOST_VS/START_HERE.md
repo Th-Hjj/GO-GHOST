@@ -1,5 +1,7 @@
 # GO GHOST — Start Here
 
+Latest authority: Thomas approved **relentless sword pursuit / Dodge nerf (2026-10-05)**: Dodge distance 3 / movement .18 s / immunity .20 s / start cooldown 1.2 s; arrival-aware interception, Leap landing follow-up and physical Flank Leap with a separate arrival cut. Preserve full tells, real collisions, W3 threat limits and damage/health. Compile, focused mechanisms and short W2/W3 only. Actual results belong in Implementation_Log.
+
 Opening correction (Thomas, 2026-10-05): align the player's fresh spawn to real floor support and use a three-second stationary countdown before combat. Thomas later narrowed this task to the opening fix; full performance optimization and route precomputation are deferred. Preserve the separately delivered Boss pressure, health and player gun-pose changes.
 
 Latest extension: Thomas's **2026-10-05 solo Boss pressure / Refraction mobility** approval. Drop Cut gains physical interception, one correction before its full lock, a real-hit player push with fixed sword landing, and one conditional landing slash outside cooperative Sweep/Drop. Sword selection/recovery planning and gun aim/rhythm/ammo/footwork extend the current executors. Preserve Optical Camo and player animation `adc44c1`, health/damage/player tuning, physical collision and shared threats. Compile, focused mechanisms and short W1/W2/W3 only; no Build or outcome gate. Actual evidence belongs in Implementation_Log.

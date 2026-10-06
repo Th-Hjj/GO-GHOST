@@ -429,11 +429,13 @@ namespace GoGhost.Duel
             return peak;
         }
         public bool TryJumpTrajectory(Vector2 from, Vector2 destination, BossMotor2D motor, out Route route, out Vector2[] trajectory)
+            => TryJumpTrajectory(from,destination,motor.Profile,motor.Size,out route,out trajectory);
+        public bool TryJumpTrajectory(Vector2 from, Vector2 destination, BossMotionProfile motion, Vector2 size, out Route route, out Vector2[] trajectory)
         {
             route = null; trajectory = null;
             var samples = new List<Vector2>();
-            if (!CanStand(destination,motor.Size) || !TrySupport(destination,motor.Size,out var support)
-                || !Simulate(from,destination,motor.Profile,motor.Size,true,support,out float flight,samples)) return false;
+            if (!CanStand(destination,size) || !TrySupport(destination,size,out var support)
+                || !Simulate(from,destination,motion,size,true,support,out float flight,samples)) return false;
             route = new Route { Version=Version, Duration=flight+.3f };
             route.Steps.Add(new RouteStep { Kind=TravelKind.Jump, Start=from, Launch=from,
                 End=destination, Support=support, Duration=flight+.3f });
@@ -449,7 +451,7 @@ namespace GoGhost.Duel
             {
                 if(!stopped)
                 {
-                    velocity.x=BossMotor2D.StepHorizontal(velocity.x,Mathf.Clamp((destination.x-point.x)/dt,-profile.Speed,profile.Speed),false,profile,dt);
+                    velocity.x=BossMotor2D.StepHorizontal(velocity.x,BossMotor2D.JumpHorizontalTarget(destination.x-point.x,profile,dt),false,profile,dt);
                     velocity.y+=Physics2D.gravity.y*profile.GravityScale*dt;
                     Vector2 next=point+velocity*dt;
                     if(!SweepTraversal(point,next,size,out var hit,out var safe))
@@ -475,7 +477,7 @@ namespace GoGhost.Duel
             int max = Mathf.CeilToInt(2.5f/dt);
             for (int i = 0; i < max; i++)
             {
-                float desired = Mathf.Clamp((end.x-point.x)/dt,-profile.Speed,profile.Speed);
+                float desired = BossMotor2D.JumpHorizontalTarget(end.x-point.x,profile,dt);
                 vx = BossMotor2D.StepHorizontal(vx,desired,false,profile,dt); vy += gravity*dt;
                 Vector2 next = point + new Vector2(vx,vy)*dt;
                 if (!SweepTraversal(point,next,size,out var hit,out var safe))

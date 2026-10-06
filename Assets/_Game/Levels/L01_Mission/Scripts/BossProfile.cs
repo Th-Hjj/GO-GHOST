@@ -4,7 +4,7 @@ using UnityEngine;
 namespace GoGhost.Duel
 {
     public enum BossKind { Refraction, Severance }
-    public enum BossAbility { None, Burst, Camo, Piercing, Sweep, Rhythm, DrawDash, ReturnCut, DropCut, Guard, Reload, LeapSlash, TacticalJumpShot, DashFollowup, DropFollowup }
+    public enum BossAbility { None, Burst, Camo, Piercing, Sweep, Rhythm, DrawDash, ReturnCut, DropCut, Guard, Reload, LeapSlash, TacticalJumpShot, DashFollowup, DropFollowup, FlankLeap, FlankCut, LeapFollowup }
     public enum BossActionPhase { Idle, Prepare, Locked, Active, Recovery }
     [Serializable]
     public sealed class BossAbilitySettings
@@ -45,6 +45,9 @@ namespace GoGhost.Duel
         public BossAbilitySettings DropCut=new BossAbilitySettings(.12f,.16f,.5f,.55f,4,1.9f,32);
         public BossAbilitySettings Guard=new BossAbilitySettings(.18f,0,.70f,.18f,3.5f,1.1f,0);
         public BossAbilitySettings LeapSlash=new BossAbilitySettings(.24f,.12f,.10f,.55f,4.5f,0,28);
+        public BossAbilitySettings FlankLeap=new BossAbilitySettings(.22f,.14f,0,.65f,6,0,0);
+        public BossMotionProfile FlankMotion => new BossMotionProfile { Speed=13, Acceleration=80, Braking=Motion.Braking,
+            JumpSpeed=Motion.JumpSpeed, GravityScale=Motion.GravityScale, AirControl=.8f, ArrivalBraking=true };
         public BossAbilitySettings TacticalJumpShot=new BossAbilitySettings(.12f,.08f,.3f,.26f,4.5f,0,12,1);
         public float RhythmSecondGap=.16f, RhythmThirdGap=.38f, RhythmThirdActive=.12f;
         public float ReturnBranchWindow=.18f;
@@ -58,7 +61,8 @@ namespace GoGhost.Duel
                 case BossAbility.Rhythm:return Rhythm; case BossAbility.DrawDash:return DrawDash;
                 case BossAbility.ReturnCut:return ReturnCut; case BossAbility.DropCut:return DropCut;
                 case BossAbility.Guard:return Guard; case BossAbility.LeapSlash:return LeapSlash;
-                case BossAbility.TacticalJumpShot:return TacticalJumpShot; case BossAbility.DashFollowup:case BossAbility.DropFollowup:return Rhythm;
+                case BossAbility.TacticalJumpShot:return TacticalJumpShot; case BossAbility.FlankLeap:return FlankLeap;
+                case BossAbility.DashFollowup:case BossAbility.DropFollowup:case BossAbility.FlankCut:case BossAbility.LeapFollowup:return Rhythm;
                 default:return Burst;
             }
         }

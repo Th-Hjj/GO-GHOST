@@ -13,6 +13,8 @@ Choose **New Game**, configure permissions, then **Start Fight**. The first conf
 | Legs | A/D move; Space jump |
 | Arms | Mouse freely aims; hold LMB for Rifle |
 | Spine | Left Shift horizontal Dodge, on ground or in air, in current/last movement direction |
+
+Dodge: distance 3, movement .18 s, immunity .20 s, start cooldown 1.2 s; landing does not refresh it. Severance can intercept platform jumps, follow a landed Leap with one cut, and use a telegraphed physical Flank Leap with a separate arrival slash.
 | Pause | Escape: Resume or Main Menu |
 
 The fixed Rifle has 8 rounds and automatic reload. Arms AI selects a visible, shootable target; Spine evaluates threats from both enemies. Camo leaves only brief last-seen memory and expressed cues. All player and enemy bullets pass through walls/platforms; bullets and the locked piercing beam still stop at allied Boss bodies. Each Boss has independent health. Both must die to clear wave three; simultaneous player death is defeat.

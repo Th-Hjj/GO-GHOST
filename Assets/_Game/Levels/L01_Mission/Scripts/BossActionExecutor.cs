@@ -18,14 +18,16 @@ namespace GoGhost.Duel
         public bool SafeRecovery=>Phase==BossActionPhase.Recovery
             && !((Ability==BossAbility.DrawDash||Ability==BossAbility.DropCut)&&!comboTarget&&!hasReturned&&Time.time<=returnWindowUntil);
         public float RecoveryRemaining=>Phase==BossActionPhase.Recovery?Mathf.Max(0,phaseUntil-Time.time):0;
-        bool SingleCut=>Ability==BossAbility.DashFollowup||Ability==BossAbility.DropFollowup;
+        bool SingleCut=>Ability==BossAbility.DashFollowup||Ability==BossAbility.DropFollowup||Ability==BossAbility.FlankCut||Ability==BossAbility.LeapFollowup;
         public bool UsesBladeArc=>Ability==BossAbility.Rhythm||SingleCut||Ability==BossAbility.LeapSlash;
         public float AimDelay=>Phase==BossActionPhase.Prepare?Mathf.Max(0,phaseUntil-Time.time)+LockSeconds
             :BurstAction&&Phase==BossActionPhase.Active?Mathf.Max(p.BurstShotLock,nextShot-Time.time):LockSeconds;
         public bool StaggeredBurst {get;private set;}
         public int DropCorrections {get;private set;}
         bool BurstAction=>Ability==BossAbility.Burst||Ability==BossAbility.TacticalJumpShot;
-        bool JumpAction=>Ability==BossAbility.LeapSlash||Ability==BossAbility.TacticalJumpShot;
+        bool JumpAction=>Ability==BossAbility.LeapSlash||Ability==BossAbility.TacticalJumpShot||Ability==BossAbility.FlankLeap;
+        public bool FlankTravelling=>Ability==BossAbility.FlankLeap&&Phase==BossActionPhase.Active;
+        public Vector2[] CommittedJumpPath=>jumpPlan?.JumpPath;
         public float CutProgress=>Ability==BossAbility.LeapSlash?Mathf.Clamp01((Time.time-slashAt)/p.LeapSlash.Active):PhaseProgress;
         public Vector2 JumpDestination=>jumpPlan!=null?jumpPlan.Destination:actor.Position;
         public float PhaseProgress=>Mathf.Clamp01((Time.time-phaseAt)/Mathf.Max(.001f,phaseUntil-phaseAt));
@@ -83,7 +85,8 @@ namespace GoGhost.Duel
         public bool TryStartMobility(BossPlan value)
         {
             if(value==null||Busy || value.TerrainVersion!=actor.Navigation.Version
-                || value.Ability!=(p.Kind==BossKind.Severance?BossAbility.LeapSlash:BossAbility.TacticalJumpShot))return false;
+                || (p.Kind==BossKind.Severance?value.Ability!=BossAbility.LeapSlash&&value.Ability!=BossAbility.FlankLeap
+                    :value.Ability!=BossAbility.TacticalJumpShot))return false;
             jumpPlan=value;
             if(TryStart(value.Ability,value.TargetHypothesis))return true;
             jumpPlan=null;return false;
@@ -99,8 +102,8 @@ namespace GoGhost.Duel
             if(!actor.Running||!actor.IsAlive||Busy||!Ready(ability))return false;
             if(actor.Coordinator!=null&&!actor.Coordinator.CanStart(actor,ability,cooperative))return false;
             if(ability!=BossAbility.Camo&&p.Kind==BossKind.Refraction&&(!actor.Motor.Grounded||Reloading))return false;
-            if(ability==BossAbility.ReturnCut||ability==BossAbility.DashFollowup||ability==BossAbility.DropFollowup)return false;
-            if((ability==BossAbility.LeapSlash||ability==BossAbility.TacticalJumpShot)
+            if(ability==BossAbility.ReturnCut||ability==BossAbility.DashFollowup||ability==BossAbility.DropFollowup||ability==BossAbility.FlankCut||ability==BossAbility.LeapFollowup)return false;
+            if((ability==BossAbility.LeapSlash||ability==BossAbility.TacticalJumpShot||ability==BossAbility.FlankLeap)
                 && (jumpPlan==null||!actor.Motor.Grounded))return false;
             if(!CanAfford(ability)){RequestReload();return false;}
             if((ability==BossAbility.DrawDash||ability==BossAbility.Guard||ability==BossAbility.Rhythm)&&!actor.Motor.Grounded)return false;
@@ -130,7 +133,7 @@ namespace GoGhost.Duel
             actor.Trace($"prepare {ability} attack={AttackId}");
             UpdateGeometry();Publish();return true;
         }
-        public static bool IsHigh(BossAbility a)=>a==BossAbility.Piercing||a==BossAbility.Sweep||a==BossAbility.Rhythm||a==BossAbility.DrawDash||a==BossAbility.ReturnCut||a==BossAbility.DropCut||a==BossAbility.LeapSlash||a==BossAbility.DashFollowup||a==BossAbility.DropFollowup;
+        public static bool IsHigh(BossAbility a)=>a==BossAbility.Piercing||a==BossAbility.Sweep||a==BossAbility.Rhythm||a==BossAbility.DrawDash||a==BossAbility.ReturnCut||a==BossAbility.DropCut||a==BossAbility.LeapSlash||a==BossAbility.DashFollowup||a==BossAbility.DropFollowup||a==BossAbility.FlankLeap||a==BossAbility.FlankCut||a==BossAbility.LeapFollowup;
         public bool TryStartSweep(Vector2 from,Vector2 to)
         {
             int clear=0;
@@ -141,7 +144,7 @@ namespace GoGhost.Duel
         Sfx? PrepareCue(BossAbility ability)
         {
             switch(ability){case BossAbility.Piercing:return Sfx.BeamCharge;case BossAbility.Camo:return Sfx.CamoEnter;
-                case BossAbility.DrawDash:case BossAbility.LeapSlash:return Sfx.DrawPrepare;case BossAbility.ReturnCut:return Sfx.ReturnPrepare;
+                case BossAbility.DrawDash:case BossAbility.LeapSlash:case BossAbility.FlankLeap:return Sfx.DrawPrepare;case BossAbility.ReturnCut:return Sfx.ReturnPrepare;
                 default:return null;}
         }
         void SetPhase(BossActionPhase phase,float seconds)
@@ -243,10 +246,23 @@ namespace GoGhost.Duel
             if(JumpAction)
             {
                 if(jumpPlan.TerrainVersion!=actor.Navigation.Version || !actor.Motor.Grounded
-                    || !actor.Navigation.TryJumpTrajectory(actor.Position,jumpPlan.Destination,actor.Motor,out var route,out var path))
+                    || !actor.Navigation.TryJumpTrajectory(actor.Position,jumpPlan.Destination,jumpPlan.JumpMotion??p.Motion,actor.Motor.Size,out var route,out var path))
                 {Recover();return;}
                 jumpPlan.Route=route;jumpPlan.JumpPath=path;
                 jumpPlan.SlashOffset=Mathf.Min(jumpPlan.SlashOffset,Mathf.Max(.12f,(path.Length-1)*Time.fixedDeltaTime-p.LeapSlash.Active));
+                if(Ability==BossAbility.LeapSlash)
+                {
+                    float best=float.PositiveInfinity;
+                    for(int i=6;i<path.Length-Mathf.CeilToInt(p.LeapSlash.Active/Time.fixedDeltaTime);i+=3)
+                    {
+                        Vector2 predicted=actor.Tactics.PredictSwordBody(actor.Perception.Facts,LockSeconds+i*Time.fixedDeltaTime);
+                        Vector2 delta=predicted-path[i];
+                        if(Mathf.Sign(delta.x)!=Mathf.Sign(jumpPlan.TargetHypothesis.x-actor.Position.x)
+                            ||Mathf.Abs(delta.y)>Mathf.Abs(delta.x)*.55f+actor.Perception.Facts.Body.extents.y)continue;
+                        float distance=Vector2.Distance(path[i],predicted);
+                        if(distance<best){best=distance;jumpPlan.SlashOffset=i*Time.fixedDeltaTime;targetPoint=predicted;}
+                    }
+                }
                 cutFacing=Mathf.Sign(targetPoint.x-actor.Position.x);
             }
             UpdateGeometry();
@@ -311,7 +327,7 @@ namespace GoGhost.Duel
         }
         void Activate()
         {
-            if(JumpAction && !actor.Motor.StartCommittedJump(jumpPlan.Route)){Recover();return;}
+            if(JumpAction && !actor.Motor.StartCommittedJump(jumpPlan.Route,jumpPlan.JumpMotion)){Recover();return;}
             SetPhase(BossActionPhase.Active,Ability==BossAbility.Camo?p.CamoDuration:ActiveSeconds);
             Activated[(int)Ability]++;LastActiveAt=Time.time;hitInWindow=false;activeStarts=Time.time;
             activeEnds=Ability==BossAbility.Piercing?Time.time+.0001f:phaseUntil;actor.Trace($"active {Ability} attack={AttackId}");
@@ -366,8 +382,14 @@ namespace GoGhost.Duel
                 if(BurstAction)nextShot=Time.time+p.BurstShotLock;
             }
             if(jumpAirborne && actor.Motor.Grounded || Time.time>jumpDeadline || actor.Motor.RouteFailed)
-            {if(slashStarted&&!slashFinished)SweepBlade(CutProgress);Recover();return;}
+            {
+                if(slashStarted&&!slashFinished)SweepBlade(CutProgress);
+                if(jumpAirborne&&actor.Motor.Grounded&&!actor.Motor.RouteFailed
+                    &&Vector2.Distance(actor.Position,jumpPlan.Destination)<.4f&&TryJumpFollowup())return;
+                Recover();return;
+            }
             if(!jumpAirborne)return;
+            if(Ability==BossAbility.FlankLeap)return; // Movement alone never deals damage.
             if(BurstAction)
             {
                 if(shotsRemaining>0 && !bulletLocked)
@@ -502,6 +524,24 @@ namespace GoGhost.Duel
             if(TryDashFollowup())return;
             returnWindowUntil=Time.time+p.ReturnBranchWindow;Recover();
         }
+        bool TryJumpFollowup()
+        {
+            var facts=actor.Perception.Facts;
+            if(Ability!=BossAbility.LeapSlash&&Ability!=BossAbility.FlankLeap)return false;
+            var next=Ability==BossAbility.FlankLeap?BossAbility.FlankCut:BossAbility.LeapFollowup;
+            if(comboTarget||hasReturned||!facts.Visible||facts.Confidence<.3f||!Ready(BossAbility.Rhythm)
+                ||!actor.Tactics.LegalAt(BossAbility.Rhythm,actor.Position,facts,out _)
+                ||actor.Coordinator!=null&&!actor.Coordinator.TryReserve(actor,next,false))return false;
+            hasReturned=true;Ability=next;settings=p.Rhythm;RhythmIndex=0;
+            AttackId++;Started[(int)Ability]++;targetPoint=facts.Position;cutFacing=Mathf.Sign(targetPoint.x-actor.Position.x);
+            actor.Face(Vector2.right*cutFacing);actor.Motor.Brake();
+            readyAt[(int)BossAbility.Rhythm]=Time.time+p.Rhythm.Cooldown;
+            actor.Motor.BeginStep(p.RhythmStep[0]);
+            // Arrival has its own full tell; no damage on the frame a flank lands.
+            SetPhase(BossActionPhase.Prepare,next==BossAbility.FlankCut?.24f:p.RhythmPrepare[0]);
+            actor.Sounds?.Play(Sfx.ReturnPrepare,actor.ActorId,AttackId);
+            UpdateGeometry();Publish();actor.Trace("prepare "+Ability+" attack="+AttackId);return true;
+        }
         bool TryDropFollowup()
         {
             var facts=actor.Perception.Facts;
@@ -520,8 +560,10 @@ namespace GoGhost.Duel
             if(TryReturn())return true;
             var facts=actor.Perception.Facts;
             if(Ability!=BossAbility.DrawDash||comboTarget||hasReturned||!actor.Motor.Grounded||facts.Confidence<.3f
+                ||!Ready(BossAbility.Rhythm)
                 || Mathf.Sign(facts.Position.x-actor.Position.x)!=Mathf.Sign(Aim.x)
-                || !actor.Tactics.LegalAt(BossAbility.Rhythm,actor.Position,facts,out _))return false;
+                || !actor.Tactics.LegalAt(BossAbility.Rhythm,actor.Position,facts,out _)
+                ||actor.Coordinator!=null&&!actor.Coordinator.TryReserve(actor,BossAbility.DashFollowup,false))return false;
             hasReturned=true;Ability=BossAbility.DashFollowup;settings=p.Rhythm;RhythmIndex=0;
             AttackId++;Started[(int)Ability]++;targetPoint=facts.Position;cutFacing=Mathf.Sign(Aim.x);
             readyAt[(int)BossAbility.Rhythm]=Time.time+p.Rhythm.Cooldown;
@@ -611,7 +653,7 @@ namespace GoGhost.Duel
         void Publish()
         {
             PublicThreats.Clear();
-            if(!Busy||Phase==BossActionPhase.Recovery||Ability==BossAbility.Camo||Ability==BossAbility.Guard)return;
+            if(!Busy||Phase==BossActionPhase.Recovery||Ability==BossAbility.Camo||Ability==BossAbility.Guard||Ability==BossAbility.FlankLeap)return;
             if(Ability==BossAbility.LeapSlash){PublishLeap();return;}
             var phase=Phase==BossActionPhase.Prepare?BossThreatPhase.Preparation:Phase==BossActionPhase.Locked?BossThreatPhase.Locked:BossThreatPhase.Active;
             int count=Ability==BossAbility.Sweep?p.SweepShots:1;

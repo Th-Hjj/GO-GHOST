@@ -8,9 +8,10 @@ namespace GoGhost.Duel
     {
         public float Speed = 5.8f, Acceleration = 45f, Braking = 55f;
         public float JumpSpeed = 12f, GravityScale = 3f, AirControl = .45f;
+        [NonSerialized] public bool ArrivalBraking;
         public int Fingerprint => Speed.GetHashCode() ^ Acceleration.GetHashCode() * 31
             ^ Braking.GetHashCode() * 47 ^ JumpSpeed.GetHashCode() * 71
-            ^ GravityScale.GetHashCode() * 101 ^ AirControl.GetHashCode() * 137;
+            ^ GravityScale.GetHashCode() * 101 ^ AirControl.GetHashCode() * 137 ^ (ArrivalBraking?173:0);
     }
 
     /// <summary>The sole writer of a Boss Rigidbody. Visuals and skills submit requests.</summary>
@@ -19,6 +20,8 @@ namespace GoGhost.Duel
     public sealed class BossMotor2D : MonoBehaviour
     {
         public BossMotionProfile Profile { get; private set; }
+        BossMotionProfile routeMotion;
+        public BossMotionProfile TraversalProfile => routeMotion ?? Profile;
         public Vector2 Position => body != null ? body.position + centreOffset : (Vector2)transform.position;
         public Vector2 PreviousPosition { get; private set; }
         public Vector2 Velocity => body != null ? body.linearVelocity : Vector2.zero;
@@ -70,8 +73,8 @@ namespace GoGhost.Duel
         }
         public void SetMove(float direction, float speedScale = 1)
         { move = Mathf.Clamp(direction, -1, 1); this.speedScale = Mathf.Clamp01(speedScale); }
-        public void Brake() { route = null; stepping = false; BrakeMotion(); }
-        public void ClearRoute() { route = null; launched = leftGround = false; BrakeMotion(); }
+        public void Brake() { route = null; routeMotion = null; stepping = false; BrakeMotion(); }
+        public void ClearRoute() { route = null; routeMotion = null; launched = leftGround = false; BrakeMotion(); }
         void BrakeMotion() { move = 0; speedScale = 1; }
         public bool TryJump()
         {
@@ -87,12 +90,15 @@ namespace GoGhost.Duel
             PreviousPosition = Position;
             DashActive = true; DashBlocked = dashStopPending = false;
         }
-        public bool StartCommittedJump(ArenaNavigation2D.Route value)
+        public bool StartCommittedJump(ArenaNavigation2D.Route value, BossMotionProfile motion=null)
         {
             if(!enabledCombat || !Grounded || DashActive || value==null || value.Version!=navigation.Version
                 || value.Steps.Count!=1 || value.Steps[0].Kind!=ArenaNavigation2D.TravelKind.Jump
-                || Mathf.Abs(Velocity.x)>.15f || !navigation.ValidateStep(value.Steps[0],this))return false;
+                || Mathf.Abs(Velocity.x)>.15f)return false;
+            if(motion==null ? !navigation.ValidateStep(value.Steps[0],this)
+                : !navigation.TryJumpTrajectory(Position,value.Steps[0].End,motion,Size,out _,out _))return false;
             SetRoute(value); launched=true; jumpRequested=true; JumpStartedAt=-1;
+            routeMotion=motion;
             return true;
         }
         public void BeginStep(float distance)
@@ -109,7 +115,7 @@ namespace GoGhost.Duel
         public void EndDrop() { dropping = dropRequested = DropBlocked = fixedDropLanding = false; Brake(); }
         public void SetRoute(ArenaNavigation2D.Route value)
         {
-            route = value; stepIndex = 0; launched = leftGround = false;
+            route = value; routeMotion=null; stepIndex = 0; launched = leftGround = false;
             RouteFailed = false; RouteFailure = null; RouteCompleted = value == null || value.Steps.Count == 0;
             routeAge = progressAge = 0; progressPosition = Position;
             if (RouteCompleted) route = null;
@@ -185,7 +191,8 @@ namespace GoGhost.Duel
                 JumpStartedAt = Time.fixedTime;
                 jumpRequested = false; Grounded = false;
             }
-            float horizontal = dropping ? dropHorizontal : StepHorizontal(body.linearVelocity.x, move * Profile.Speed * speedScale, Grounded, Profile, dt);
+            var motion=TraversalProfile;
+            float horizontal = dropping ? dropHorizontal : StepHorizontal(body.linearVelocity.x, move * motion.Speed * speedScale, Grounded, motion, dt);
             if(dropping&&fixedDropLanding)
             {
                 float remaining=dropLandingX-here.x;
@@ -259,7 +266,14 @@ namespace GoGhost.Duel
             if (progressAge > .6f) FailRoute("no physical progress");
             else if (routeAge > step.Duration + 2.5f) FailRoute("step deadline");
         }
-        float SteerTo(float x) => Mathf.Clamp((x - Position.x) / Mathf.Max(.01f, Profile.Speed * Time.fixedDeltaTime), -1, 1);
+        float SteerTo(float x) => JumpHorizontalTarget(x-Position.x,TraversalProfile,Time.fixedDeltaTime)/TraversalProfile.Speed;
+        public static float JumpHorizontalTarget(float delta,BossMotionProfile motion,float dt)
+        {
+            float speed=Mathf.Min(motion.Speed,Mathf.Abs(delta)/dt);
+            if(motion.ArrivalBraking)
+                speed=Mathf.Min(speed,Mathf.Sqrt(2*motion.Acceleration*motion.AirControl*Mathf.Max(0,Mathf.Abs(delta)-.04f)));
+            return Mathf.Sign(delta)*speed;
+        }
         bool SweepBodies(Vector2 from, Vector2 to, out Vector2 safeEnd)
         {
             safeEnd = to;

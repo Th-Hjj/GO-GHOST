@@ -83,7 +83,7 @@ namespace GoGhost.Duel
             transform.position = actor.Position;
             transform.localScale = new Vector3(actor.Facing >= 0 ? 1 : -1, 1, 1);
             ApplyPose(BuildPose()); UpdateTells(); UpdateFlashes();
-            if (!defeated && actor.Running && actor.Motor.DashActive && clock >= nextEcho)
+            if (!defeated && actor.Running && (actor.Motor.DashActive||actor.Actions.FlankTravelling) && clock >= nextEcho)
             { nextEcho = clock + .055f; CaptureEcho(); }
         }
         Pose BuildPose()
@@ -183,7 +183,8 @@ namespace GoGhost.Duel
             bool active = phase == BossActionPhase.Active, recover = phase == BossActionPhase.Recovery;
             float returnWeight = recover ? 1-t : 1;
             p.FrontFoot.x = .35f; p.BackFoot.x = -.38f;
-            if (ability == BossAbility.Rhythm || ability == BossAbility.DashFollowup || ability == BossAbility.DropFollowup || ability == BossAbility.LeapSlash)
+            if (ability == BossAbility.Rhythm || ability == BossAbility.DashFollowup || ability == BossAbility.DropFollowup || ability == BossAbility.LeapSlash
+                ||ability==BossAbility.FlankCut||ability==BossAbility.LeapFollowup)
             {
                 float wind = slash == 0 ? 85 : slash == 1 ? -105 : 142;
                 float cut = slash == 1 ? 55 : -50;
@@ -195,7 +196,7 @@ namespace GoGhost.Duel
                 if(ability==BossAbility.LeapSlash&&!active&&!recover)
                 {p.Hip.y-=.18f;p.Chest.y-=.16f;p.Head.y-=.14f;p.FrontFoot.x=.25f;}
             }
-            else if (ability == BossAbility.DrawDash || ability == BossAbility.ReturnCut)
+            else if (ability == BossAbility.DrawDash || ability == BossAbility.ReturnCut||ability==BossAbility.FlankLeap)
             {
                 bool returning = ability == BossAbility.ReturnCut;
                 p.Hip.y -= .19f*returnWeight; p.Chest.y -= .17f*returnWeight; p.Head.y -= .15f*returnWeight;
@@ -279,6 +280,21 @@ namespace GoGhost.Duel
             foreach(var line in tells)if(line!=null)line.enabled=false;
             if(defeated||!actor.Running)return;
             var action=actor.Actions;
+            if(action.Ability==BossAbility.FlankLeap&&action.Phase!=BossActionPhase.Recovery)
+            {
+                var path=action.CommittedJumpPath;
+                if(path!=null&&path.Length>1)
+                {
+                    if(tells[0]==null)tells[0]=NewLine("FlankRoute",false,path.Length);
+                    var route=tells[0];route.enabled=true;route.positionCount=path.Length;
+                    for(int i=0;i<path.Length;i++)route.SetPosition(i,path[i]);
+                    route.startWidth=route.endWidth=.018f;route.startColor=route.endColor=new Color(1,.35f,.25f,.3f);
+                    if(tells[1]==null)tells[1]=NewLine("FlankLanding",false,2);
+                    Vector2 ground=action.JumpDestination-Vector2.up*actor.Motor.Size.y*.5f;
+                    SetLine(tells[1],ground+Vector2.left*.35f,ground+Vector2.right*.35f,.025f,new Color(1,.8f,.25f,.65f));
+                }
+                return;
+            }
             if(action.UsesBladeArc)
             {
                 if(tells[0]==null)tells[0]=NewLine("BladeTell",false,25);

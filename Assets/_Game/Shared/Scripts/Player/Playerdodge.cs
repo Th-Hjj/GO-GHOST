@@ -41,12 +41,12 @@ public class PlayerDodge : MonoBehaviour
     public bool HasAirDash => !legacyCombat && officer != null && officer.Deployment != null && officer.Deployment.HasAirDash;
     public bool AirDashAvailable => HasAirDash && airDashAvailable;
     private OfficerIdentity officer;
-    public float DodgeStartInterval => legacyCombat ? stats.dodgeCooldown : officer != null && officer.Deployment != null ? officer.Deployment.DodgeStartInterval : stats.dodgeCooldown;
+    public float DodgeStartInterval => legacyCombat ? 1.2f : officer != null && officer.Deployment != null ? officer.Deployment.DodgeStartInterval : stats.dodgeCooldown;
     public float CooldownRemaining => Mathf.Max(0f, nextDodgeTime - Time.time);
     public float LastDodgeStartedAt { get; private set; } = float.NegativeInfinity;
     public float Distance => stats.dodgeDistance;
     public float Duration => Mathf.Max(.02f, stats.dodgeDuration);
-    public float InvulnerabilityDuration => stats.iFrameDuration;
+    public float InvulnerabilityDuration => legacyCombat ? .2f : stats.iFrameDuration;
     public bool CanDodge => isActiveAndEnabled && CooldownRemaining <= 0 && !IsDodging
         && health != null && !health.IsInvulnerable && input != null && input.GameplayInputEnabled
         && !input.NarrativePaused && movement != null && (legacyCombat || movement.IsGrounded || AirDashAvailable);
@@ -167,13 +167,14 @@ public class PlayerDodge : MonoBehaviour
 
             yield return new WaitForFixedUpdate();
             elapsed += Time.fixedDeltaTime;
+            if (elapsed >= InvulnerabilityDuration) health.IsInvulnerable = false;
         }
 
         rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
         IsDodging = false;
 
-        // Keep i-frames slightly beyond the physical dash for a forgiving dodge window.
-        float remainingIFrames = stats.iFrameDuration - stats.dodgeDuration;
+        // Immunity has its own deadline; it need not cover the entire movement.
+        float remainingIFrames = InvulnerabilityDuration - elapsed;
         if (remainingIFrames > 0f)
             yield return new WaitForSeconds(remainingIFrames);
 

@@ -1,3 +1,5 @@
+> **Dodge correction — Thomas, 2026-10-05:** formal Dodge now uses a 1.2 s start cooldown and .20 s immunity, retaining distance 3 and .18 s movement. Manual/AI and ground/air share these values; landing never refreshes cooldown. This supersedes older unchanged-Dodge requirements below.
+
 > **Platform-use correction — Thomas, 2026-10-05:** Legs can choose an adjacent, one-jump-reachable support when sustained public melee/body pressure makes the new landing better for spacing. This is independent of Rifle visibility. Safety and corner escape remain higher priority; a selected landing stays fixed in flight, followed by a short hold, relocation cooldown and previous-support penalty. Real support width/spacing and executable player jump trajectories define candidates. Preserve all player tuning and bullet penetration. Validate only short W2/W3 observations and focused landing/P-request checks; no Build or required outcome.
 
 > **Magazine correction — Thomas, 2026-10-05:** the player's current Rifle magazine holds 8 rounds, overriding historical 10-round values below. Damage, fire interval and automatic reload duration remain 12 / 0.25 s / 1.2 s.

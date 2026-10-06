@@ -2,6 +2,16 @@
 
 Current authority: Thomas's **2026-10-05 solo Boss pressure / gunner mobility upgrade**, including his correction that Drop Cut pushes the player while the sword keeps its locked landing. It extends Optical Camo, Player Legs Platform Use + Light Duo and the focused Boss pressure pass. This specification records confirmed scope and implemented source. Runtime checks and limits belong in [Implementation_Log.md](Implementation_Log.md); controlled fixtures do not prove balance or a normal all-AI result.
 
+## Relentless sword pursuit — confirmed 2026-10-05
+
+Thomas approved a more aggressive swordsman with a physical rear-position pursuit cut. Formal Dodge remains distance 3 / movement .18 s, but uses a 1.2 s start cooldown and .20 s immunity, identically for manual/AI and ground/air. The formal PlayerDodge accessors own this override; shared PlayerStats and historical loadouts are unchanged.
+
+Sword approach candidates compare the player's delayed public trajectory against actual route arrival plus the blade tell. An obsolete movement plan may retire after newly observed movement; accepted airborne routes remain fixed. Sword prediction is terrain-aware and bounded to 1.25 s, without inventing another jump or reading controls. Leap Slash ranks potential blade contacts and landing pressure, rechecks slash time before commitment, then freezes it. Cooldown is 3.2 s. A real landing may transition once into a paid single Rhythm-strength cut, with complete preparation/lock and recovery.
+
+Flank Leap has a 6 s cooldown and chooses a supported back-side point from public weapon facing. A .22 s preparation and .14 s lock precede a physical route. Temporary horizontal motion is speed 13, acceleration 80 and air control .8; jump height/gravity stay normal. Planning and execution share early arrival braking, terrain collision and solid actor contacts. Path/landing tells, crouched pose and fading echoes express the movement, which deals no damage. Successful arrival may begin one Flank Cut with .24 s preparation plus the existing .12 s blade lock, normal first-cut damage and .65 s recovery. No reachable route or legal arrival cut means rejection/recovery, never teleportation or a forced hit. Both stages count as major threats in W3; existing cooperative pairings are unchanged. Branches require public facts, existing Rhythm availability and shared threat permission.
+
+Runtime evidence and NOT TESTED limits belong in Implementation_Log.
+
 ## Confirmed scope
 
 - **Opening correction (Thomas, 2026-10-05):** fresh player spawns rest on the actual nearby ground, with grounded feet reaching the floor. Stationary preparation lasts three seconds with a visible countdown; physics, player combat input and Boss actions remain frozen until it ends. Full performance optimization/precomputation is outside this narrowed pass.

@@ -15,6 +15,7 @@ namespace GoGhost.Duel
         [SerializeField] InputActionAsset inputActions;
         [SerializeField] TMP_FontAsset font;
         [SerializeField] SfxSet sounds;
+        [SerializeField] WaveMusicPlayer music;
         [SerializeField] bool diagnostics;
         [SerializeField] GameObject combatPrefab;
         [SerializeField] GameObject gunnerPrefab;
@@ -54,6 +55,7 @@ namespace GoGhost.Duel
         {
             Time.timeScale = 1;
             AudioListener.pause = false;
+            music?.StopMusic(true);
             Application.runInBackground = true;
             ui = gameObject.AddComponent<DuelUI>();
             ui.Initialize(this, font);
@@ -63,6 +65,7 @@ namespace GoGhost.Duel
         void Start() { if (sounds != null) sounds.BeginScope(); }
         void OnDestroy()
         {
+            music?.StopMusic(true);
             Time.timeScale = 1;
             AudioListener.pause = false;
         }
@@ -128,6 +131,7 @@ namespace GoGhost.Duel
             FightClock = 0;
             FirstConfiguration = false;
             SetPhase(DuelPhase.Prepare);
+            music?.PlayWave(Wave);
             Trace($"start wave={Wave} player={Player.CurrentHealth} bosses={HealthSummary()} observation=empty");
         }
         void AlignPlayerOpeningSupport()
@@ -202,6 +206,7 @@ namespace GoGhost.Duel
         }
         void StopCombat()
         {
+            music?.StopMusic();
             if (encounter == null) return;
             // All contacts from this rendered frame finish before this LateUpdate boundary.
             foreach (var projectile in encounter.GetComponentsInChildren<Projectile>()) projectile.Retire();
@@ -214,6 +219,7 @@ namespace GoGhost.Duel
         void ClearEncounter()
         {
             StopCombat();
+            music?.StopMusic(true);
             Paused = false;
             Time.timeScale = 1;
             AudioListener.pause = false;

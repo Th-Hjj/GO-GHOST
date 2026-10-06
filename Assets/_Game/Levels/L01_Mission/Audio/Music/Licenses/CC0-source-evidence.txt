@@ -1,0 +1,21 @@
+GO GHOST temporary wave music
+License review date: 2026-10-05 (America/Los_Angeles)
+
+All three original author-upload pages explicitly list CC0 and link to:
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Wave 1: Open Warfare by Ruskerdax
+https://opengameart.org/content/open-warfare
+The author's notice explicitly permits commercial use and modification.
+
+Wave 2: Boss Fight 2 by Ansimuz (Luis Zuno)
+https://opengameart.org/content/boss-fight-2
+The download includes public-license.txt, preserved alongside this file.
+
+Wave 3: Achilles by Zane Little Music
+https://opengameart.org/content/achilles
+The CC0 public WAV is used. The separately linked Deluxe package is not used.
+
+Files are unmodified originals. Local import names, SHA-256 hashes, source
+download URLs and runtime import settings are recorded in music-manifest.json.
+Artist credit is retained here even though CC0 does not require attribution.

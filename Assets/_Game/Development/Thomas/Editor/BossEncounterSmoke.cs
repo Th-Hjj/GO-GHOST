@@ -68,6 +68,7 @@ public static class BossEncounterSmoke
     public static void RunPlayerAnimation() => Start("player-animation", false);
     public static void RunPlayerOpening() => Start("player-opening", false);
     public static void RunPlayerGunPose() => Start("player-gun-pose", false);
+    public static void RunWaveMusic() => Start("wave-music", false);
     public static void Cancel()
     { if (Running) { Record("NOT TESTED: operator cancelled unfinished checks."); Finish(false); } }
 
@@ -146,6 +147,7 @@ public static class BossEncounterSmoke
     static IEnumerator Run()
     {
         Record("Editor Play Mode; simulated focus and virtual keyboard/mouse. No physical-input or audibility claim.");
+        if(mode=="wave-music") {yield return WaveMusic();yield break;}
         if(mode=="player-opening") {yield return PlayerOpening();yield break;}
         if(mode=="solo-pressure-mechanics"||mode=="solo-drop-mechanics") {yield return SoloPressureMechanics();yield break;}
         if(mode=="solo-pressure-observation") {yield return SoloPressureObservation();yield break;}
@@ -212,6 +214,90 @@ public static class BossEncounterSmoke
         yield return Until(() => game.Phase == DuelPhase.Fight, DuelGame.PreparationSeconds + 1.2f);
         Check("wave " + wave + " created", game.Phase == DuelPhase.Fight && game.Bosses.Count == (wave == 3 ? 2 : 1));
     }
+    static IEnumerator WaveMusic()
+    {
+        Record("Music lifecycle only: real streamed playback/sample time; end seeks and direct deaths are controlled flow fixtures.");
+        var music=game.GetComponentInChildren<WaveMusicPlayer>();
+        Check("one dedicated music player",music!=null&&game.GetComponentsInChildren<WaveMusicPlayer>().Length==1);
+        if(music==null)yield break;
+        var source=music.GetComponent<AudioSource>();
+        string[] names={"open_warfare","boss_fight_2","achilles"};
+        game.MainMenu();yield return Frames(2);
+        Check("menu starts silent",music.CurrentWave==0&&source.clip==null&&!source.isPlaying);
+        for(int wave=1;wave<=3;wave++)
+        {
+            game.ConfigurePlaytestWave(wave);
+            if(wave==3)for(int i=0;i<3;i++)game.SetDraft(i,true);
+            Check("W"+wave+" configuration silent",source.clip==null&&!source.isPlaying);
+            game.StartFight();
+            Check("W"+wave+" track selected at Start Fight",game.Phase==DuelPhase.Prepare&&music.CurrentWave==wave
+                &&source.clip!=null&&source.clip.name==names[wave-1]);
+            yield return Until(()=>source.isPlaying,1.5f);
+            Check("W"+wave+" streams during three-second preparation",source.isPlaying&&game.Phase==DuelPhase.Prepare
+                &&source.clip.loadType==AudioClipLoadType.Streaming&&source.loop&&!source.playOnAwake&&!source.ignoreListenerPause);
+            yield return Seconds(.45f);
+            Check("W"+wave+" fades to independent music volume",Mathf.Abs(source.volume-.18f)<.002f);
+            checkingPause=true;game.SetPause(true);float pausedTime=source.time,pausedVolume=source.volume;
+            yield return RealSeconds(.25f);
+            Check("W"+wave+" preparation pause freezes music",AudioListener.pause&&Mathf.Abs(source.time-pausedTime)<.05f
+                &&Mathf.Abs(source.volume-pausedVolume)<.001f);
+            game.SetPause(false);checkingPause=false;
+            yield return Until(()=>game.Phase==DuelPhase.Fight,DuelGame.PreparationSeconds+1);
+            float before=source.time;yield return Seconds(.25f);
+            Check("W"+wave+" continues across preparation/combat",source.isPlaying&&source.time>before+.1f&&music.CurrentWave==wave);
+            if(wave<3)
+            {
+                MouseAt(game.Bosses[0].Position,true);int shots=game.Rifle.ShotsFired;
+                yield return Seconds(.55f);mouseHeld=false;
+                Check("W"+wave+" real shots coexist with music",game.Rifle.ShotsFired>shots&&source.isPlaying
+                    &&game.Player.GetComponentInParent<PresentationOneShot>().PlayedCount>0);
+            }
+            else
+            {
+                yield return Seconds(2);
+                Check("W3 short all-AI combat coexists with music",game.Phase==DuelPhase.Fight&&game.Rifle.ShotsFired>0&&source.isPlaying,
+                    "shots="+game.Rifle.ShotsFired+" seconds="+game.FightClock);
+            }
+            StopPolicies();
+            checkingPause=true;game.SetPause(true);pausedTime=source.time;
+            yield return RealSeconds(.25f);
+            Check("W"+wave+" combat pause freezes music",Mathf.Abs(source.time-pausedTime)<.05f);
+            game.SetPause(false);checkingPause=false;
+            // Seeking only the music voice proves native looping without a full-length fight.
+            source.time=source.clip.length-.15f;yield return Seconds(.5f);
+            Check("W"+wave+" native loop restarts",source.isPlaying&&source.time<1.5f,"position="+source.time);
+            if(wave==1)
+            {
+                game.Bosses[0].Health.TakeDamage(99999,game.Player.gameObject);
+                yield return Until(()=>game.Phase==DuelPhase.Between,.5f);yield return Seconds(.45f);
+                Check("victory fades music and preserves result sound",source.clip==null&&!source.isPlaying
+                    &&game.GetComponent<SfxSet>().Requested(Sfx.Victory)>0);
+                yield return Until(()=>game.Phase==DuelPhase.Configure,1);
+                Check("next-wave configuration remains silent",game.Wave==2&&source.clip==null&&music.CurrentWave==0);
+            }
+            else if(wave==2)
+            {
+                game.Player.TakeDamage(99999,game.Bosses[0].gameObject);
+                yield return Until(()=>game.Phase==DuelPhase.Failed,.5f);yield return Seconds(.45f);
+                Check("defeat fades music and preserves result sound",source.clip==null&&!source.isPlaying
+                    &&game.GetComponent<SfxSet>().Requested(Sfx.Defeat)>0);
+                game.Reconfigure();game.StartFight();yield return Until(()=>source.isPlaying,1.5f);
+                Check("retry starts same track from beginning",music.CurrentWave==2&&source.clip!=null&&source.clip.name==names[1]
+                    &&source.time<1.5f&&game.Phase==DuelPhase.Prepare);
+            }
+            else
+            {
+                foreach(var boss in game.Bosses)boss.Health.TakeDamage(99999,game.Player.gameObject);
+                yield return Until(()=>game.Phase==DuelPhase.Complete,.5f);yield return Seconds(.45f);
+                Check("completion fades music",game.Phase==DuelPhase.Complete&&source.clip==null&&!source.isPlaying);
+            }
+            game.MainMenu();yield return Frames(2);
+            Check("W"+wave+" menu clears dedicated voice",source.clip==null&&!source.isPlaying&&music.CurrentWave==0);
+        }
+        Check("only one music voice after retries",game.GetComponentsInChildren<WaveMusicPlayer>().Length==1);
+        Record("NOT TESTED: human audition, seamless musical edits, hardware input, standalone build, balance.");
+    }
+
     static IEnumerator PlayerGunPose()
     {
         Record("CONTROLLED gun pose: stopped Boss policies, real mouse aim/fire; chest origin shared by manual/AI/spawn.");

@@ -69,6 +69,7 @@ public static class BossEncounterSmoke
     public static void RunPlayerOpening() => Start("player-opening", false);
     public static void RunPlayerGunPose() => Start("player-gun-pose", false);
     public static void RunWaveMusic() => Start("wave-music", false);
+    public static void RunMusicLevels() => Start("music-levels", false);
     public static void RunPursuitFlank() => Start("pursuit-flank", false);
     public static void RunPursuitMechanics() => Start("pursuit-mechanics", false);
     public static void RunPursuitObservation() => Start("pursuit-observation", false);
@@ -154,6 +155,7 @@ public static class BossEncounterSmoke
         if(mode=="pursuit-mechanics") {yield return PursuitMechanics();yield break;}
         if(mode=="pursuit-observation") {yield return PursuitObservation();yield break;}
         if(mode=="wave-music") {yield return WaveMusic();yield break;}
+        if(mode=="music-levels") {yield return MusicLevels();yield break;}
         if(mode=="player-opening") {yield return PlayerOpening();yield break;}
         if(mode=="solo-pressure-mechanics"||mode=="solo-drop-mechanics") {yield return SoloPressureMechanics();yield break;}
         if(mode=="solo-pressure-observation") {yield return SoloPressureObservation();yield break;}
@@ -327,6 +329,37 @@ public static class BossEncounterSmoke
             Record((game.Bosses.Any(a=>a.Actions.Activated[(int)ability]>0)?"OBSERVED ":"NOT OBSERVED ")+"W3 "+ability);
         Record("No outcome gate. W2 is a repeatable virtual-input fixture, not human skill/balance evidence. Build NOT RUN.");
     }
+    static IEnumerator MusicLevels()
+    {
+        Record("Focused music gain check: normal preparation entry, streamed playback and source gain; no human-audition claim.");
+        var music=game.GetComponentInChildren<WaveMusicPlayer>();
+        if(music==null){Check("music player exists",false);yield break;}
+        var source=music.GetComponent<AudioSource>();float original=music.Volume;
+        restoration.Add(()=>music.SetVolume(original));
+        float[] gains={1f,.524807f,.699842f};
+        for(int wave=1;wave<=3;wave++)
+        {
+            game.ConfigurePlaytestWave(wave);game.StartFight();
+            yield return Until(()=>source.isPlaying,1.5f);yield return Seconds(.45f);
+            Check("W"+wave+" normalized streamed gain",source.isPlaying&&game.Phase==DuelPhase.Prepare
+                &&music.CurrentWave==wave&&Mathf.Abs(music.CurrentTrackGain-gains[wave-1])<.00001f
+                &&Mathf.Abs(source.volume-original*gains[wave-1])<.0001f,"sourceVolume="+source.volume);
+            music.SetVolume(original*.5f);yield return Frames(2);
+            Check("W"+wave+" master volume retains track trim",Mathf.Abs(source.volume-original*.5f*gains[wave-1])<.0001f);
+            music.SetVolume(original);yield return Frames(2);
+            checkingPause=true;game.SetPause(true);float position=source.time,level=source.volume;
+            yield return RealSeconds(.15f);
+            Check("W"+wave+" pause preserves normalized playback",Mathf.Abs(source.time-position)<.05f
+                &&Mathf.Abs(source.volume-level)<.0001f);
+            game.SetPause(false);checkingPause=false;yield return Seconds(.15f);
+            Check("W"+wave+" resume preserves trim",source.isPlaying&&source.time>position
+                &&Mathf.Abs(source.volume-original*gains[wave-1])<.0001f);
+            game.MainMenu();yield return Frames(2);
+            Check("W"+wave+" cleanup still clears music",source.clip==null&&music.CurrentWave==0&&source.volume==0);
+        }
+        Record("NOT TESTED: subjective listening, all device outputs, standalone build. Full-source LUFS verification is offline.");
+    }
+
     static IEnumerator WaveMusic()
     {
         Record("Music lifecycle only: real streamed playback/sample time; end seeks and direct deaths are controlled flow fixtures.");
@@ -349,7 +382,7 @@ public static class BossEncounterSmoke
             Check("W"+wave+" streams during three-second preparation",source.isPlaying&&game.Phase==DuelPhase.Prepare
                 &&source.clip.loadType==AudioClipLoadType.Streaming&&source.loop&&!source.playOnAwake&&!source.ignoreListenerPause);
             yield return Seconds(.45f);
-            Check("W"+wave+" fades to independent music volume",Mathf.Abs(source.volume-.18f)<.002f);
+            Check("W"+wave+" fades to normalized music volume",Mathf.Abs(source.volume-.18f*music.CurrentTrackGain)<.002f);
             checkingPause=true;game.SetPause(true);float pausedTime=source.time,pausedVolume=source.volume;
             yield return RealSeconds(.25f);
             Check("W"+wave+" preparation pause freezes music",AudioListener.pause&&Mathf.Abs(source.time-pausedTime)<.05f

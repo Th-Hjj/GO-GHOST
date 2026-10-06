@@ -73,6 +73,7 @@ public static class BossEncounterSmoke
     public static void RunPursuitFlank() => Start("pursuit-flank", false);
     public static void RunPursuitMechanics() => Start("pursuit-mechanics", false);
     public static void RunPursuitObservation() => Start("pursuit-observation", false);
+    public static void RunDashMobility() => Start("dash-mobility", false);
     public static void Cancel()
     { if (Running) { Record("NOT TESTED: operator cancelled unfinished checks."); Finish(false); } }
 
@@ -154,6 +155,7 @@ public static class BossEncounterSmoke
         if(mode=="pursuit-flank") {yield return PursuitFlank();yield break;}
         if(mode=="pursuit-mechanics") {yield return PursuitMechanics();yield break;}
         if(mode=="pursuit-observation") {yield return PursuitObservation();yield break;}
+        if(mode=="dash-mobility") {yield return DashMobility();yield break;}
         if(mode=="wave-music") {yield return WaveMusic();yield break;}
         if(mode=="music-levels") {yield return MusicLevels();yield break;}
         if(mode=="player-opening") {yield return PlayerOpening();yield break;}
@@ -298,6 +300,58 @@ public static class BossEncounterSmoke
         Check("Flank consumes cooldown and restores normal motion",!sword.Actions.Ready(BossAbility.FlankLeap)
             &&sword.Motor.TraversalProfile==sword.Motor.Profile&&!sword.Actions.TryStart(BossAbility.FlankCut,sword.Position));
 
+    }
+    static IEnumerator DashMobility()
+    {
+        yield return Fresh(1);StopPolicies();var gun=game.Bosses[0];
+        OnFloor(gun.gameObject,gun.Navigation,-5);OnFloor(game.Player.gameObject,gun.Navigation,0);yield return Seconds(.3f);
+        float began=Time.time,locked=-1,active=-1;int ammo=gun.Actions.Ammo;
+        bool accepted=gun.Actions.TryStart(BossAbility.Piercing,game.Player.transform.position);
+        bool prepaid=false;float deadline=Time.time+2.5f;
+        while(gun.Actions.Busy&&Time.time<deadline)
+        {
+            if(gun.Actions.Phase==BossActionPhase.Prepare||gun.Actions.Phase==BossActionPhase.Locked)prepaid|=gun.Actions.Ammo!=ammo;
+            if(gun.Actions.Phase==BossActionPhase.Locked&&locked<0)locked=Time.time;
+            if(gun.Actions.Phase==BossActionPhase.Active&&active<0)active=Time.time;
+            yield return null;
+        }
+        Check("Piercing full longer preparation and lock",accepted&&locked-began>=.89f&&active-locked>=.23f&&active-began<1.3f,
+            $"prepare={locked-began:F3} lock={active-locked:F3}");
+        Check("Piercing pays three rounds on firing",!prepaid&&gun.Actions.Ammo==ammo-3&&gun.Actions.Activated[(int)BossAbility.Piercing]==1);
+        yield return Fresh(2,manualPursuit:true);StopPolicies();var sword=game.Bosses[0];
+        OnFloor(sword.gameObject,sword.Navigation,-4);OnFloor(game.Player.gameObject,sword.Navigation,0);yield return Seconds(.4f);
+        sword.Tactics.Enabled=true;
+        yield return Until(()=>sword.Actions.Busy,1);
+        Check("Sword chooses legal closing dash before flank/leap",sword.Tactics.PursuitDashes==1
+            &&sword.Actions.Ability==BossAbility.DrawDash&&sword.Actions.Started[(int)BossAbility.FlankLeap]==0);
+        bool supported=true;float stepAt=-1,stepX=0,stepEnd=0,recovered=-1;bool outsideRecovery=false;
+        deadline=Time.time+3;
+        while(sword.Actions.Busy&&Time.time<deadline)
+        {
+            if(sword.Actions.RecoveryStepping)
+            {
+                if(stepAt<0){stepAt=Time.time;stepX=sword.Position.x;sword.Tactics.Enabled=false;}
+                stepEnd=sword.Position.x;supported&=sword.Motor.Grounded;
+                outsideRecovery|=sword.Actions.Phase!=BossActionPhase.Recovery;
+            }
+            yield return null;
+        }
+        recovered=Time.time;sword.Tactics.Enabled=false;
+        Check("Sword recovery footwork physically moves on support",stepAt>=0&&supported&&!outsideRecovery
+            &&Mathf.Abs(stepEnd-stepX)>.3f&&Mathf.Abs(stepEnd-stepX)<=sword.Navigation.PlatformWidth*.18f+.08f,
+            $"steps={sword.Actions.RecoverySteps} distance={Mathf.Abs(stepEnd-stepX):F3}");
+        Check("Footwork retains full follow-up recovery and stops",!sword.Actions.RecoveryStepping&&recovered-stepAt>=.62f,
+            $"recovery={recovered-stepAt:F3}");
+        Check("Dash retains cooldown",!sword.Actions.Ready(BossAbility.DrawDash));
+        yield return Fresh(3,true);var duo=game.GetComponentInChildren<DuoCoordinator>();bool overlap=false;deadline=Time.time+10;
+        while(game.Phase==DuelPhase.Fight&&Time.time<deadline)
+        {
+            if(duo.Phase==DuoPhase.Idle)overlap|=game.Bosses.Count(a=>a.Actions.HighThreat&&a.Actions.Busy&&!a.Actions.SafeRecovery)>1;
+            yield return null;
+        }
+        PitchResult();Check("W3 ordinary shared threat budget",!overlap);
+        foreach(var boss in game.Bosses)Record($"{boss.Profile.Kind}: pursuitDashes={boss.Tactics.PursuitDashes} recoverySteps={boss.Actions.RecoverySteps}");
+        Record("Controlled initial W1/W2 placement proves mechanisms only. Human feel, physical controls and Windows Build NOT TESTED.");
     }
     static IEnumerator PursuitObservation()
     {

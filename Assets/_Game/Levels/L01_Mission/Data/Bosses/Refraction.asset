@@ -79,7 +79,7 @@ MonoBehaviour:
     Damage: 0
     Cost: 0
   Piercing:
-    Prepare: 0.72
+    Prepare: 0.9
     Lock: 0.24
     Active: 0.09
     Recovery: 0.55
@@ -177,6 +177,15 @@ MonoBehaviour:
     Cooldown: 4.5
     Range: 0
     Damage: 28
+    Cost: 0
+  FlankLeap:
+    Prepare: 0.22
+    Lock: 0.14
+    Active: 0
+    Recovery: 0.65
+    Cooldown: 6
+    Range: 0
+    Damage: 0
     Cost: 0
   TacticalJumpShot:
     Prepare: 0.12

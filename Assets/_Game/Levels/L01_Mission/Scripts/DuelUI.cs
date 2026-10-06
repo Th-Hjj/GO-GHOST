@@ -11,6 +11,8 @@ namespace GoGhost.Duel
         TMP_FontAsset font;
         RectTransform canvas, page;
         TMP_Text playerHealth, resources;
+        TMP_Text preparationCount;
+        int lastPreparationCount;
         TMP_Text[] policeHealth = System.Array.Empty<TMP_Text>();
         UnityEngine.UI.Image[] policeFill = System.Array.Empty<UnityEngine.UI.Image>();
         UnityEngine.UI.Image playerFill;
@@ -58,6 +60,7 @@ namespace GoGhost.Duel
             if(page!=null){page.gameObject.SetActive(false);Destroy(page.gameObject);}
             page=Rect("Page",canvas,Vector2.zero,new Vector2(1600,900));
             playerHealth=resources=null; playerFill=null;
+            preparationCount=null; lastPreparationCount=-1;
             policeHealth=System.Array.Empty<TMP_Text>(); policeFill=System.Array.Empty<UnityEngine.UI.Image>();
             if(game.Phase==DuelPhase.Menu||game.Phase==DuelPhase.Configure)
                 Image(page,Vector2.zero,new Vector2(4000,4000),Color.black);
@@ -120,11 +123,18 @@ namespace GoGhost.Duel
             playerFill=Image(page,new Vector2(-215,-340),new Vector2(430,12),new Color(.6f,.9f,.65f));
             playerFill.rectTransform.pivot=new Vector2(0,.5f);
             resources=Text("",page,new Vector2(0,-397),new Vector2(1450,40),22);
+            if(game.Phase==DuelPhase.Prepare)
+                preparationCount=Text("3",page,Vector2.zero,new Vector2(300,100),72);
             LateUpdate();
         }
         void LateUpdate()
         {
             if(playerHealth==null||game.Player==null)return;
+            if(preparationCount!=null)
+            {
+                int count=Mathf.CeilToInt(game.PreparationRemaining);
+                if(count!=lastPreparationCount) {lastPreparationCount=count;preparationCount.text=count.ToString();}
+            }
             playerHealth.text="YOU  "+game.Player.CurrentHealth;
             for (int i=0; i<policeHealth.Length && i<game.Bosses.Count; i++)
             {

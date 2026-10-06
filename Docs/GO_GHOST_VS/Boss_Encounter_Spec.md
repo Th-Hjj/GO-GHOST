@@ -4,6 +4,8 @@ Current authority: Thomas's **2026-10-05 solo Boss pressure / gunner mobility up
 
 ## Confirmed scope
 
+- **Opening correction (Thomas, 2026-10-05):** fresh player spawns rest on the actual nearby ground, with grounded feet reaching the floor. Stationary preparation lasts three seconds with a visible countdown; physics, player combat input and Boss actions remain frozen until it ends. Full performance optimization/precomputation is outside this narrowed pass.
+
 - **Health tuning (Thomas, 2026-10-05):** Refraction starts each fresh solo/duo attempt at 666 HP; Severance starts at 999 HP. This supersedes earlier health-preservation requirements for these two pools only.
 
 - **Solo pressure / mobility (Thomas, 2026-10-05):** improve Drop interception and permit one preparation correction plus a conditional single landing slash; prioritize useful sword openings and plan during safe recovery; improve gun prediction, Burst rhythm, Sweep exit targeting, ammunition choices and physical footwork. A real damaging Drop hit applies a short collision-limited player push; the sword never moves itself aside to resolve that contact. Health, attack damage, player tuning and permissions remain fixed. Cooperative Sweep/Drop retains its original commitment and no landing branch.

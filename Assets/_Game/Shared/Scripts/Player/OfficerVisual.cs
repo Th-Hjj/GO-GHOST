@@ -107,7 +107,7 @@ public sealed class OfficerVisual : MonoBehaviour
         Vector2 hip = new Vector2(0, -.12f - crouch + Mathf.Abs(wave) * stride * .025f);
         Vector2 chest = new Vector2(lean, .34f - crouch + breath) - aim * (recoil * .035f);
         Vector2 headPoint = new Vector2(lean * .8f, .57f - crouch + breath) - aim * (recoil * .02f);
-        float floor = bodyCollider != null ? transform.InverseTransformPoint(bodyCollider.bounds.min).y + .075f : -.87f;
+        float floor = bodyCollider != null ? transform.InverseTransformPoint(bodyCollider.bounds.min).y + (grounded ? .025f : .075f) : -.87f;
         Vector2 front = new Vector2(.15f * facing + wave * .30f * stride, floor + Mathf.Max(0, lift) * .15f * stride);
         Vector2 back = new Vector2(-.15f * facing - wave * .30f * stride, floor + Mathf.Max(0, -lift) * .15f * stride);
         if (!grounded)

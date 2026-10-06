@@ -66,6 +66,7 @@ public static class BossEncounterSmoke
     public static void RunSoloPressureEdges() => Start("solo-pressure-edges", false);
     public static void RunSoloPressureFinal() => Start("solo-pressure-final", false);
     public static void RunPlayerAnimation() => Start("player-animation", false);
+    public static void RunPlayerOpening() => Start("player-opening", false);
     public static void RunPlayerGunPose() => Start("player-gun-pose", false);
     public static void Cancel()
     { if (Running) { Record("NOT TESTED: operator cancelled unfinished checks."); Finish(false); } }
@@ -145,6 +146,7 @@ public static class BossEncounterSmoke
     static IEnumerator Run()
     {
         Record("Editor Play Mode; simulated focus and virtual keyboard/mouse. No physical-input or audibility claim.");
+        if(mode=="player-opening") {yield return PlayerOpening();yield break;}
         if(mode=="solo-pressure-mechanics"||mode=="solo-drop-mechanics") {yield return SoloPressureMechanics();yield break;}
         if(mode=="solo-pressure-observation") {yield return SoloPressureObservation();yield break;}
         if(mode=="solo-pressure-final") {yield return SoloPressureObservation();yield break;}
@@ -207,7 +209,7 @@ public static class BossEncounterSmoke
         if (automatic) for (int i = 0; i < 3; i++) game.SetDraft(i, true);
         else if (stationaryAutomatic) { game.SetDraft(1,true); game.SetDraft(2,true); }
         game.StartFight();
-        yield return Until(() => game.Phase == DuelPhase.Fight, 2.2f);
+        yield return Until(() => game.Phase == DuelPhase.Fight, DuelGame.PreparationSeconds + 1.2f);
         Check("wave " + wave + " created", game.Phase == DuelPhase.Fight && game.Bosses.Count == (wave == 3 ? 2 : 1));
     }
     static IEnumerator PlayerGunPose()
@@ -249,6 +251,56 @@ public static class BossEncounterSmoke
         Record("NOT TESTED: hardware input, exhaustive angles/poses, balance, Windows Build/launch.");
     }
 
+    static IEnumerator PlayerOpening()
+    {
+        foreach(int wave in new[]{1,2,3})
+        {
+            RestoreFixture(); heldKeys=Array.Empty<Key>(); mouseHeld=false;
+            game.ConfigurePlaytestWave(wave); game.StartFight();
+            var player=game.Player; var movement=player.GetComponent<PlayerMovement>();
+            var body=player.GetComponent<Rigidbody2D>(); var shape=player.GetComponent<Collider2D>();
+            var nav=game.GetComponentInChildren<ArenaNavigation2D>();
+            bool supported=nav.TrySupport(shape.bounds.center,shape.bounds.size,out var support);
+            float floor=supported?support.bounds.max.y:float.NaN;
+            float startY=body.position.y;
+            float preparationAt=Time.time;
+            var calf=player.transform.Find("Stickman/RightCalf").GetComponent<SpriteRenderer>();
+            Check("W"+wave+" preparation physically supported",supported&&!body.simulated
+                &&Mathf.Abs(shape.bounds.min.y-floor-.015f)<.002f,
+                $"y={startY:F5} colliderGap={shape.bounds.min.y-floor:F5} calfGap={calf.bounds.min.y-floor:F5}");
+            Check("W"+wave+" opening feet reach ground",supported&&Mathf.Abs(calf.bounds.min.y-floor)<.015f);
+            if(wave==1)
+            {
+                checkingPause=true; game.SetPause(true); yield return RealSeconds(.12f);
+                Check("preparation pause preserves support",game.Phase==DuelPhase.Prepare&&body.position.y==startY&&!body.simulated);
+                game.SetPause(false); checkingPause=false;
+            }
+            yield return Seconds(1.1f);
+            Check("W"+wave+" three-second preparation stays stationary",game.Phase==DuelPhase.Prepare
+                &&!body.simulated&&!player.GetComponent<PlayerInputReader>().GameplayInputEnabled&&body.position.y==startY
+                &&game.Bosses.All(a=>!a.Running));
+            yield return Until(()=>game.Phase==DuelPhase.Fight,DuelGame.PreparationSeconds+1.2f);
+            Check("W"+wave+" waits full three seconds",Time.time-preparationAt>=DuelGame.PreparationSeconds-.025f
+                ,$"duration={Time.time-preparationAt:F3}");
+            StopPolicies(); yield return Seconds(.25f);
+            Check("W"+wave+" opens without falling or false landing",movement.IsGrounded
+                &&Mathf.Abs(body.position.y-startY)<.003f&&Mathf.Abs(body.linearVelocity.y)<.01f,
+                $"drift={body.position.y-startY:F6}");
+            if(wave==1)
+            {
+                heldKeys=new[]{Key.Space}; yield return Until(()=>body.linearVelocity.y>1,.3f);
+                heldKeys=Array.Empty<Key>(); yield return Seconds(.18f);
+                Check("real Jump leaves opening support",!movement.IsGrounded&&body.position.y>startY+1);
+                yield return Until(()=>movement.IsGrounded,2); yield return Seconds(.25f);
+                Check("real landing returns to aligned support",movement.IsGrounded&&Mathf.Abs(body.position.y-startY)<.003f);
+            }
+        }
+        yield return Fresh(3,true); yield return Seconds(5);
+        Check("short normal W3 advances with real shots",game.Phase==DuelPhase.Fight&&game.Rifle.ShotsFired>0); PitchResult();
+        game.MainMenu(); yield return Frames(2);
+        Check("opening smoke cleanup",Projectile.Active.Count==0&&Object.FindObjectsByType<BossAgent>(FindObjectsSortMode.None).Length==0);
+        Record("NOT TESTED: physical input, subjective smoothness on other hardware, full lifecycle regression, Windows Build/launch.");
+    }
     static IEnumerator PlayerAnimation()
     {
         Record("CONTROLLED animation/input: stopped Boss policies, real virtual input and physics; no injected player motion or outcomes.");

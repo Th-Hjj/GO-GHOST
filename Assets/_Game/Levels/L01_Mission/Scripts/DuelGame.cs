@@ -10,6 +10,8 @@ namespace GoGhost.Duel
     // Retained three-wave shell. The legacy components own every physical action and hit.
     public sealed class DuelGame : MonoBehaviour
     {
+        public const float PreparationSeconds = 3f;
+        public float PreparationRemaining => Phase == DuelPhase.Prepare ? Mathf.Max(0, PreparationSeconds - phaseTime) : 0;
         [SerializeField] InputActionAsset inputActions;
         [SerializeField] TMP_FontAsset font;
         [SerializeField] SfxSet sounds;
@@ -96,12 +98,13 @@ namespace GoGhost.Duel
             input.SetGameplayInputEnabled(false);
             Rifle = Player.GetComponent<PlayerShooting>();
             Dodge = Player.GetComponent<PlayerDodge>();
+            navigation = encounter.AddComponent<ArenaNavigation2D>();
+            navigation.Initialize(arenaBounds);
+            AlignPlayerOpeningSupport();
             Player.GetComponent<PlayerMovement>().ConfigureLegacyCombat();
             Rifle.ConfigureLegacyCombat();
             Dodge.ConfigureLegacyCombat();
             Player.GetComponent<OfficerVisual>()?.ConfigureLegacyCombat();
-            navigation = encounter.AddComponent<ArenaNavigation2D>();
-            navigation.Initialize(arenaBounds);
             coordinator = encounter.AddComponent<DuoCoordinator>();
             var activeActors = new List<BossAgent>(2);
             if (Wave == 1 || Wave == 3) activeActors.Add(CreateBoss(gunnerPrefab, gunnerSpawn, 1));
@@ -126,6 +129,23 @@ namespace GoGhost.Duel
             FirstConfiguration = false;
             SetPhase(DuelPhase.Prepare);
             Trace($"start wave={Wave} player={Player.CurrentHealth} bosses={HealthSummary()} observation=empty");
+        }
+        void AlignPlayerOpeningSupport()
+        {
+            var shape = Player.GetComponent<Collider2D>();
+            var body = Player.GetComponent<Rigidbody2D>();
+            var bounds = shape.bounds;
+            if (!navigation.TrySupport(bounds.center, bounds.size, out var support)) return;
+            // Match this arena's measured resting contact skin before freezing preparation.
+            // This is a small spawn-only correction, never a combat/landing snap.
+            float correction = support.bounds.max.y + .015f - bounds.min.y;
+            if (Mathf.Abs(correction) > .08f) return;
+            body.position += Vector2.up * correction;
+            // The prefab interpolates its Rigidbody. Update its spawn Transform as well so
+            // disabling simulation cannot restore the pre-correction interpolation pose.
+            Player.transform.position = new Vector3(body.position.x, body.position.y, Player.transform.position.z);
+            body.linearVelocity = Vector2.zero;
+            Physics2D.SyncTransforms();
         }
         BossAgent CreateBoss(GameObject prefab, Vector2 spawn, int actorId)
         {
@@ -214,7 +234,7 @@ namespace GoGhost.Duel
             if (Phase == DuelPhase.Prepare || Phase == DuelPhase.Between)
             {
                 phaseTime += Time.deltaTime;
-                if (Phase == DuelPhase.Prepare && phaseTime >= 1) BeginCombat();
+                if (Phase == DuelPhase.Prepare && phaseTime >= PreparationSeconds) BeginCombat();
                 else if (Phase == DuelPhase.Between && phaseTime >= .8f)
                 {
                     Wave++;

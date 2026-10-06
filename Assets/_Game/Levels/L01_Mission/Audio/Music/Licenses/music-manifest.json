@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "purpose": "Thomas's temporary three-wave BGM selection, confirmed and authorized for implementation on 2026-10-05.",
+  "license_checked_date": "2026-10-05",
+  "license": "CC0-1.0",
+  "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "playback": "A dedicated WaveMusicPlayer starts at Start Fight, including the three-second preparation. Native full-clip loop, volume 0.18, fade 0.35 seconds, pause with the existing AudioListener. Retry starts at zero.",
+  "import": "Stereo preserved; Streaming; Vorbis quality 0.8; original sample rate; preload metadata/audio enabled; load in background enabled. No platform override.",
+  "files": [
+    {
+      "wave": 1,
+      "title": "Open Warfare",
+      "author": "Ruskerdax",
+      "file": "Assets/_Game/Levels/L01_Mission/Audio/Music/open_warfare.mp3",
+      "original_file": "ruskerdax_-_open_warfare.mp3",
+      "source": "https://opengameart.org/content/open-warfare",
+      "download": "https://opengameart.org/sites/default/files/ruskerdax_-_open_warfare.mp3",
+      "license_evidence": "Original author upload page explicitly lists CC0 and permits commercial use and modification without restriction.",
+      "bytes": 3669348,
+      "sha256": "0a278b6d3941386ea2b8f324569dfdb0d4e8631766f7d4e0688a0b8b5f4bddcb",
+      "unity_duration_seconds": 114.5992,
+      "modifications": "Original audio bytes unchanged; local filename shortened. Original source is lossy MP3.",
+      "loop": "Repeat full recording; musical seam not auditioned."
+    },
+    {
+      "wave": 2,
+      "title": "Boss Fight 2",
+      "author": "Ansimuz (Luis Zuno)",
+      "file": "Assets/_Game/Levels/L01_Mission/Audio/Music/boss_fight_2.wav",
+      "original_file": "Boss Fight 2 Files/Boss Fight 2.wav",
+      "source": "https://opengameart.org/content/boss-fight-2",
+      "download": "https://opengameart.org/sites/default/files/boss_fight_2_files.zip",
+      "license_evidence": "Original upload explicitly lists CC0. The archive's public-license.txt permits commercial use, modification and redistribution, with optional credit.",
+      "license_file": "Ansimuz-public-license.txt",
+      "bytes": 17014302,
+      "sha256": "1ff4cd3c43cc6be81084e5e8192d3aa3094a35d80bb32ebf483b18c15337d6bb",
+      "unity_duration_seconds": 88.61539,
+      "modifications": "Original WAV bytes unchanged; local filename shortened. Other archive audio variants were not imported.",
+      "loop": "Author describes the track as looped; musical seam not auditioned."
+    },
+    {
+      "wave": 3,
+      "title": "Achilles",
+      "author": "Zane Little Music",
+      "file": "Assets/_Game/Levels/L01_Mission/Audio/Music/achilles.wav",
+      "original_file": "achilles.wav",
+      "source": "https://opengameart.org/content/achilles",
+      "download": "https://opengameart.org/sites/default/files/achilles.wav",
+      "license_evidence": "Original author upload explicitly lists CC0. This is the public full-song WAV, not the separately linked Deluxe pack.",
+      "bytes": 57242922,
+      "sha256": "ac934b5a31ad8375f66f290836015fce7f5f774259c73d850f5de173cdb5a7d2",
+      "unity_duration_seconds": 162.2512,
+      "modifications": "Original audio bytes unchanged.",
+      "loop": "Repeat full recording; a bespoke seamless loop is not included in this free download and has not been created."
+    }
+  ],
+  "audibility": "NOT TESTED: human audition, musical loop seams and subjective SFX/music balance. Native playback/sample progression is verified separately in Implementation_Log."
+}

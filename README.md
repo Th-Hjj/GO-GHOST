@@ -21,6 +21,8 @@ Legs may use a nearby reachable platform to improve spacing under sustained pres
 
 The original player controls, tuning, stickman and five-platform arena are retained. The Bosses reuse the player's round head and bar limbs in blue/red, with simple limb animation, green/gold weapons, timed effects, restrained Bloom and CC0 Kenney audio. No player Arm-Blade, Shield, Counter or E; no tower, upgrades, narrative route or permanent progression.
 
+Temporary CC0 music: Wave 1 **Open Warfare** (Ruskerdax), Wave 2 **Boss Fight 2** (Ansimuz), Wave 3 **Achilles** (Zane Little Music). Music starts when **Start Fight** is selected, continues through preparation, pauses with the game and stops at results/menu. Retry starts the recording again. The dedicated `Wave Music` child in the formal scene exposes independent volume (0.18) and fade duration (0.35 s); full-song loop seams and subjective mixing still need listening. [Music sources and licenses](Assets/_Game/Levels/L01_Mission/Audio/Music/Licenses/music-manifest.json).
+
 ## Development and evidence
 
 The retained `DuelGame`/`DuelUI` own the three-wave shell. Existing player executors and `Projectile` retain actual combat. `BossMotor2D` follows routes derived from current colliders; `BossActionExecutor` owns skill timing and hit geometry; `BossPerception`, `BossTactics` and `DuoCoordinator` use delayed public facts. `LegacyPlayerAI` requests independently routed inputs. Policies cannot write damage or outcomes.

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Refraction
   m_EditorClassIdentifier: Assembly-CSharp::GoGhost.Duel.BossProfile
   Kind: 0
-  Health: 720
+  Health: 666
   Motion:
     Speed: 5.8
     Acceleration: 45
@@ -31,6 +31,7 @@ MonoBehaviour:
   SweepTail: 0.1
   SweepWidth: 5
   SweepHeight: 0.65
+  BurstStaggerPause: 0.28
   SweepShots: 8
   CamoMinimumMove: 0.45
   DropSpeed: 16

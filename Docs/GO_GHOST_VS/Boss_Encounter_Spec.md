@@ -4,6 +4,8 @@ Current authority: Thomas's **2026-10-05 solo Boss pressure / gunner mobility up
 
 ## Confirmed scope
 
+- **Health tuning (Thomas, 2026-10-05):** Refraction starts each fresh solo/duo attempt at 666 HP; Severance starts at 999 HP. This supersedes earlier health-preservation requirements for these two pools only.
+
 - **Solo pressure / mobility (Thomas, 2026-10-05):** improve Drop interception and permit one preparation correction plus a conditional single landing slash; prioritize useful sword openings and plan during safe recovery; improve gun prediction, Burst rhythm, Sweep exit targeting, ammunition choices and physical footwork. A real damaging Drop hit applies a short collision-limited player push; the sword never moves itself aside to resolve that contact. Health, attack damage, player tuning and permissions remain fixed. Cooperative Sweep/Drop retains its original commitment and no landing branch.
 
 - **Optical Camo upgrade (Thomas, 2026-10-05):** conceal body and weapon, replace periodic tracking cues with short departure/takeoff/landing/contact traces and local hit feedback, choose a meaningful physical firing-angle relocation, then use the existing gun attacks with their full tells and resource/shared-threat checks. Damage, health, player tuning and the two explicit duo pairings stay unchanged.
@@ -25,7 +27,7 @@ Values below are initial tuning, not balance guarantees. The serialized `Refract
 
 | Parameter | Refraction | Severance |
 | --- | --- | --- |
-| Health | 720 | 840 |
+| Health | 666 | 999 |
 | Run / acceleration / braking | 5.8 / 45 / 55 | 7.5 / 55 / 65 |
 | Jump / gravity scale / air control | 12 / 3 / 0.45 | 12 / 3 / 0.55 |
 | Preferred horizontal distance | 0.8 x same-height spacing (currently 7) | 0.4 x platform width (currently 1.6) |

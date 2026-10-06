@@ -74,11 +74,16 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     private bool waitingForRelease = true;
     private bool attackGated, jumpGated, dodgeGated, abilityGated, secondaryGated;
     private OfficerIdentity officer;
+    private PlayerShooting shooting;
     private Enemy aimTarget;
     private Collider2D aimTargetCollider;
     private bool targetBound;
 
-    private void Awake() => officer = GetComponent<OfficerIdentity>();
+    private void Awake()
+    {
+        officer = GetComponent<OfficerIdentity>();
+        shooting = GetComponent<PlayerShooting>();
+    }
 
     /// <summary>Called once on a fresh combat actor. Ownership never changes during this actor's wave.</summary>
     public void ConfigureLegacyControls(bool legsAI, bool armsAI, bool spineAI,
@@ -319,7 +324,8 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
             Camera cam = aimCamera != null ? aimCamera : Camera.main;
             if (cam == null) return;
             Vector3 world = cam.ScreenToWorldPoint(new Vector3(AimScreenPosition.x, AimScreenPosition.y, 0f));
-            dir = (Vector2)world - (Vector2)transform.position;
+            Vector2 origin = LegacyCombatActive && shooting != null ? shooting.AimOrigin : (Vector2)transform.position;
+            dir = (Vector2)world - origin;
         }
         if (dir.sqrMagnitude > 0.0001f)
             AimDirection = dir.normalized;

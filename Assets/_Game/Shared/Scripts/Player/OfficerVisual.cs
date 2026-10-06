@@ -64,8 +64,9 @@ public sealed class OfficerVisual : MonoBehaviour
         if (animate)
         {
             if (Time.deltaTime <= 0 || input.NarrativePaused || (health != null && health.IsDead)) return;
-            // Preparation / results freeze the body. Keep its supported opening pose and then its last pose.
-            if (!body.simulated || !movement.isActiveAndEnabled) return;
+            if (!movement.isActiveAndEnabled) return;
+            // Preparation has frozen physics, but the weapon anchor still updates before this view.
+            if (!body.simulated) { Pose(true, Vector2.zero, 0); return; }
             float dt = Time.deltaTime;
             clock += dt;
             Vector2 velocity = body.linearVelocity;

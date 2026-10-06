@@ -35,6 +35,11 @@ namespace GoGhost.Duel
         bool camoTravelling;
         bool dropCooperative,dropLeftGround;
         float dropLaunchedAt,dropDeadline;
+        BossPlan recoveryPlan;
+        float exposedSince=-1,nextGunMove;
+        Vector2 lastGunOrigin;
+        public int RecoveryPlansUsed {get;private set;}
+        public int GunRepositions {get;private set;}
         public bool Enabled {get;set;}=true;
         public BossPlan Current=>plan;
         public bool CamoRouteInvalid=>camoTravelling&&(camoPlan==null
@@ -46,7 +51,19 @@ namespace GoGhost.Duel
         {
             if(!Enabled)return;
             var action=actor.Actions; var facts=actor.Perception.Facts;
-            if(action.Busy)return;
+            bool exposed=facts.Visible&&Time.time-facts.LastShotAt<.55f
+                &&Vector2.Dot(facts.Aim,(actor.Position-facts.Position).normalized)>.9f;
+            if(!exposed)exposedSince=-1;else if(exposedSince<0)exposedSince=Time.time;
+            if(action.Busy)
+            {
+                if(action.SafeRecovery&&actor.Motor.Grounded&&Time.time>=nextTick
+                    &&(actor.Coordinator==null||!actor.Coordinator.HasAssignment(actor)))
+                {
+                    nextTick=Time.time+actor.Profile.TacticTick;
+                    var next=BuildCandidates();recoveryPlan=next.Count>0?next[0]:null;
+                }
+                return;
+            }
             if(dropPlan!=null){TickDropPlan();return;}
             if(actor.Coordinator!=null&&actor.Coordinator.HasAssignment(actor))
             {if(camoPlan!=null){if(plan==camoPlan)plan=null;camoPlan=null;}return;}
@@ -54,13 +71,29 @@ namespace GoGhost.Duel
             if(TickCamoFollowup(facts))return;
             if(facts.Visible&&facts.Confidence>.3f)
             {searchedSupports.Clear();searchSupport=null;}
-            // Attack from here as soon as a legal closing lane exists; do not finish an ideal walk first.
-            if(facts.Confidence>.3f && actor.Profile.Kind==BossKind.Severance
-                && action.Ready(BossAbility.DrawDash) && LegalAt(BossAbility.DrawDash,actor.Position,facts,out _)
-                && action.TryStart(BossAbility.DrawDash,PredictBody(facts,.16f)))
-            {plan=null;previousAbility=BossAbility.DrawDash;lastAttackAt=Time.time;return;}
+            if(TryGunReposition(facts)){recoveryPlan=null;return;}
+            if(recoveryPlan!=null)
+            {
+                var ready=recoveryPlan;recoveryPlan=null;
+                if(ready.TerrainVersion==actor.Navigation.Version&&facts.Visible&&Time.time-ready.CreatedAt<.5f
+                    &&LegalAt(ready.Ability,actor.Position,facts,out _)&&TryImmediate(ready.Ability,facts))
+                {RecoveryPlansUsed++;return;}
+                // Rebuild a route from the actual recovered position; never reuse an old takeoff.
+                nextTick=Time.time;
+            }
+            if(plan!=null&&plan.Intent=="GunReposition"&&!actor.Motor.RouteFailed
+                &&plan.TerrainVersion==actor.Navigation.Version&&Time.time<plan.CreatedAt+plan.MaxPlanTime
+                &&actor.Motor.HasRoute&&facts.Confidence>.3f)return;
             if(Time.time>=nextTick && facts.Confidence>.3f)
             {
+                if(actor.Profile.Kind==BossKind.Severance)
+                {
+                    // Spend a real close-range opening before choosing another closing move.
+                    if(LegalAt(BossAbility.Rhythm,actor.Position,facts,out _)&&TryImmediate(BossAbility.Rhythm,facts))return;
+                    if(LegalAt(BossAbility.Guard,actor.Position,facts,out float guardChance)&&guardChance>1
+                        &&TryImmediate(BossAbility.Guard,facts))return;
+                }
+                else if(facts.Visible&&facts.ReloadVisible&&TryImmediate(BossAbility.Piercing,facts))return;
                 if(TryStartCamo())
                 {nextTick=Time.time+actor.Profile.TacticTick;return;}
                 if(actor.Profile.Kind==BossKind.Severance && actor.Position.y-facts.Position.y>ArenaNavigation2D.ExecutableJumpHeight(actor.Motor.Profile)*.3f
@@ -116,6 +149,72 @@ namespace GoGhost.Duel
             actor.Motor.SetRoute(plan.Route);
             if(plan.Route==null)actor.Motor.Brake(); // Retire the previous route when accepting an in-place attack.
             if(actor.Profile.Kind==BossKind.Refraction&&!action.CanAfford(plan.Ability))action.RequestReload();
+        }
+        bool TryImmediate(BossAbility ability,BossObservation facts)
+        {
+            if(ability==BossAbility.None||!actor.Actions.Ready(ability)||!actor.Actions.CanAfford(ability)
+                ||!LegalAt(ability,actor.Position,facts,out _))return false;
+            Vector2 target=PredictBody(facts,.16f);
+            if(actor.Profile.Kind==BossKind.Refraction&&!TryGunTarget(ability,actor.Position,facts,out target))return false;
+            if(!actor.Actions.TryStart(ability,target))return false;
+            plan=null;previousAbility=ability;lastAttackAt=Time.time;nextTick=Time.time+actor.Profile.TacticTick;return true;
+        }
+
+        public bool TryBurstStep(out float destination)
+        {
+            destination=actor.Position.x;var facts=actor.Perception.Facts;
+            if(!facts.Visible||actor.Coordinator!=null&&actor.Coordinator.Phase!=DuoPhase.Idle)return false;
+            float away=Mathf.Sign(actor.Position.x-facts.Position.x),width=actor.Navigation.PlatformWidth;
+            float distance=Mathf.Abs(actor.Position.x-facts.Position.x);
+            float preferred=distance<EngagementDistance?away:-away;
+            if(!actor.Navigation.TrySupport(actor.Position,actor.Motor.Size,out var support))return false;
+            foreach(float direction in new[]{preferred,-preferred})
+            {
+                Vector2 point=actor.Position+Vector2.right*direction*width*.25f;
+                if(!actor.Navigation.CanStand(point,actor.Motor.Size)||!actor.Navigation.TrySupport(point,actor.Motor.Size,out var other)
+                    ||other!=support||actor.Coordinator!=null&&actor.Coordinator.Occupied(actor,point)
+                    ||Mathf.Abs(point.x-facts.Position.x)<width*.75f
+                    ||!actor.Navigation.TryDash(actor.Position,point,actor.Motor.Size,out _))continue;
+                destination=point.x;return true;
+            }
+            return false;
+        }
+        bool TryGunReposition(BossObservation facts)
+        {
+            if(actor.Profile.Kind!=BossKind.Refraction||!facts.Visible||Time.time<nextGunMove||plan!=null
+                ||actor.Coordinator!=null&&actor.Coordinator.HasAssignment(actor))return false;
+            float width=actor.Navigation.PlatformWidth,distance=Mathf.Abs(facts.Position.x-actor.Position.x);
+            bool pressure=exposedSince>=0&&Time.time-exposedSince>=.65f;
+            if(!pressure&&distance>width)return false;
+            nextGunMove=Time.time+.3f;
+            BossPlan best=null;float bestScore=.25f;
+            foreach(var node in actor.Navigation.Nodes)
+            {
+                Vector2 point=node.Center(actor.Motor.Size);float travel=Vector2.Distance(point,actor.Position);
+                if(travel<width*.3f||travel>width*1.25f||!actor.Navigation.CanStand(point,actor.Motor.Size)
+                    ||Mathf.Abs(point.y-actor.Position.y)>ArenaNavigation2D.ExecutableJumpHeight(actor.Motor.Profile)
+                    ||new Bounds(point,actor.Motor.Size).Intersects(facts.Body)
+                    ||actor.Coordinator!=null&&actor.Coordinator.Occupied(actor,point))continue;
+                float separation=Mathf.Abs(point.x-facts.Position.x);
+                if(separation<width*.8f||!TryGunTarget(BossAbility.Burst,point,facts,out var target))continue;
+                float angle=Vector2.Angle(actor.Position-facts.Position,point-facts.Position);
+                float score=(Mathf.Abs(distance-EngagementDistance)-Mathf.Abs(separation-EngagementDistance))*.35f
+                    +Mathf.Min(angle/30,1)*.9f-travel*.08f;
+                if(Vector2.Distance(point,lastGunOrigin)<width*.4f)score-=.65f;
+                if(score<=bestScore)continue;
+                ArenaNavigation2D.Route route;
+                bool jump=Mathf.Abs(point.y-actor.Position.y)>.3f;
+                if(jump?!actor.Navigation.TryJumpRoute(actor.Position,point,actor.Motor,out route)
+                    :!actor.Navigation.TryRoute(actor.Position,point,actor.Motor,out route))continue;
+                int transitions=0;foreach(var step in route.Steps)if(step.Kind!=ArenaNavigation2D.TravelKind.Walk)transitions++;
+                if(transitions>1||route.Duration>1.4f)continue;
+                bestScore=score;best=new BossPlan {Intent="GunReposition",Ability=BossAbility.Burst,Destination=point,
+                    TargetHypothesis=target,Route=route,CreatedAt=Time.time,TerrainVersion=actor.Navigation.Version,
+                    TravelSeconds=route.Duration,MaxPlanTime=route.Duration+.5f,Score=score};
+            }
+            if(best==null)return false;
+            lastGunOrigin=actor.Position;nextGunMove=Time.time+3.2f;plan=best;GunRepositions++;
+            actor.Motor.SetRoute(plan.Route);actor.Trace("gun reposition to="+plan.Destination);return true;
         }
         public bool TryStartCamo()
         {
@@ -320,6 +419,19 @@ namespace GoGhost.Duel
                 float preferred=Mathf.Clamp01(1-Mathf.Abs(targetDistance-EngagementDistance)/(actor.Profile.Kind==BossKind.Refraction?actor.Navigation.SameLevelSpacing*1.4f:actor.Navigation.PlatformWidth));
                 float score=benefit+chance*.7f+preferred*.28f-distance*.055f-risk;
                 if(ability==BossAbility.Rhythm)score-=Mathf.Min(2,actor.Actions.ConsecutiveMeleeMisses)*.2f;
+                if(actor.Profile.Kind==BossKind.Refraction)
+                {
+                    if(facts.ReloadVisible)score+=ability==BossAbility.Piercing?.6f:ability==BossAbility.Burst?.3f:-.25f;
+                    // Eight-round sweep must earn the loss of immediate follow-up ammunition.
+                    if(ability==BossAbility.Sweep&&actor.Actions.Ammo-actor.Profile.Sweep.Cost<3)score-=.6f;
+                }
+                else if(ability==BossAbility.DrawDash)
+                {
+                    Vector2 intercept=PredictBody(facts,actor.Profile.DrawDash.Prepare+actor.Profile.DrawDash.Lock
+                        +Mathf.Abs(facts.Position.x-point.x)/actor.Profile.DashSpeed);
+                    if(Mathf.Abs(intercept.x-point.x)>actor.Navigation.SameLevelSpacing)score-=.8f;
+                    score-=Mathf.Min(2,actor.Actions.ConsecutiveMeleeMisses)*.3f;
+                }
                 if(ability==previousAbility&&Time.time-lastAttackAt<4)score-=actor.Profile.RepetitionWeight;
                 if(!actor.Actions.CanAfford(ability))score-=.45f;
                 if(actor.Coordinator!=null)score+=actor.Coordinator.RoleScore(actor,ability,point);
@@ -331,7 +443,11 @@ namespace GoGhost.Duel
             }
             if(forced==BossAbility.None&&actor.Profile.Kind==BossKind.Severance)
             {
-                float distance=Vector2.Distance(point,actor.Position),targetDistance=Vector2.Distance(point,facts.Predict(.35f));
+                float distance=Vector2.Distance(point,actor.Position);
+                Vector2 intercept=PredictBody(facts,Mathf.Min(.65f,distance/actor.Profile.Motion.Speed+.12f));
+                if(actor.Perception.LearnedRetreat!=0&&Mathf.Abs(facts.Velocity.x)>.5f)
+                    intercept.x+=actor.Perception.LearnedRetreat*actor.Navigation.PlatformWidth*.2f;
+                float targetDistance=Vector2.Distance(point,intercept);
                 float score=1.0f-Mathf.Min(targetDistance,15)*.12f-distance*.035f;
                 if(point.y>actor.Position.y+.5f&&facts.Position.y>actor.Position.y+.3f)score+=.3f;
                 ranked.Add(new BossPlan{Intent="Approach/Intercept",Destination=point,TargetHypothesis=facts.Position,Ability=BossAbility.None,
@@ -398,9 +514,14 @@ namespace GoGhost.Duel
             return point;
         }
         public bool TryGunTarget(BossAbility ability,Vector2 position,BossObservation facts,out Vector2 target)
+            =>TryGunTarget(ability,position,facts,out target,-1);
+        public bool TryGunTarget(BossAbility ability,Vector2 position,BossObservation facts,out Vector2 target,float remainingPreparation)
         {
-            float flight=ability==BossAbility.Piercing?actor.Profile.Piercing.Prepare+actor.Profile.Piercing.Lock:Vector2.Distance(position,facts.Position)/actor.Profile.BulletSpeed;
-            Vector2 centre=PredictBody(facts,.16f+flight),origin=position+Vector2.up*.28f;
+            float flight=ability==BossAbility.Piercing?0:Vector2.Distance(position,facts.Position)/actor.Profile.BulletSpeed;
+            float delay=remainingPreparation>=0?remainingPreparation:ability==BossAbility.Piercing
+                ?actor.Profile.Piercing.Prepare+actor.Profile.Piercing.Lock:actor.Profile.BurstShotLock;
+            float age=Mathf.Clamp(Time.time-facts.ObservedAt,0,actor.Profile.SightMemory);
+            Vector2 centre=PredictBody(facts,age+delay+flight),origin=position+Vector2.up*.28f;
             target=centre;
             // All points remain on the observed body. An exposed head can be shot over a teammate.
             for(int i=0;i<3;i++)
@@ -423,7 +544,9 @@ namespace GoGhost.Duel
             bool blocked=!TryGunTarget(BossAbility.Burst,actor.Position,facts,out _);
             if(sword)
             {
-                if(LegalAt(BossAbility.Rhythm,actor.Position,facts,out _) || LegalAt(BossAbility.DrawDash,actor.Position,facts,out _))return false;
+                if(LegalAt(BossAbility.Rhythm,actor.Position,facts,out _))return false;
+                if(LegalAt(BossAbility.DrawDash,actor.Position,facts,out _)&&actor.Actions.ConsecutiveMeleeMisses==0
+                    &&Mathf.Abs(facts.Velocity.x)<1)return false;
             }
             else if(!blocked && Mathf.Abs(delta.y)<height*.3f && Mathf.Abs(delta.x)>width*.8f
                 && (plan==null||plan.TravelSeconds<.3f))return false;
@@ -453,7 +576,8 @@ namespace GoGhost.Duel
                 {
                     float t=j*Time.fixedDeltaTime;
                     if(t<.12f || t>(path.Length-1)*Time.fixedDeltaTime-actor.Profile.LeapSlash.Active)continue;
-                    float distance=Vector2.Distance(path[j],target);
+                    Vector2 atImpact=sword?PredictBody(facts,actor.Profile.LeapSlash.Prepare+actor.Profile.LeapSlash.Lock+t):target;
+                    float distance=Vector2.Distance(path[j],atImpact);
                     if(distance<best){best=distance;slash=j;}
                     if(TryGunTarget(BossAbility.Burst,path[j],facts,out _))gunLine=true;
                 }
@@ -478,7 +602,9 @@ namespace GoGhost.Duel
         {
             from=to=default;
             if(!facts.Visible)return false;
-            Vector2 predicted=PredictBody(facts,.35f);
+            float horizon=actor.Profile.Sweep.Prepare+actor.Profile.Sweep.Lock
+                +Vector2.Distance(position,facts.Position)/actor.Profile.BulletSpeed;
+            Vector2 predicted=PredictBody(facts,horizon);
             ArenaNavigation2D.Node best=null;float cost=float.PositiveInfinity;
             foreach(var node in actor.Navigation.Nodes)
             {
@@ -507,19 +633,26 @@ namespace GoGhost.Duel
             result=null;
             if(!actor.Motor.Grounded||!actor.Actions.Ready(BossAbility.DropCut)||facts.Confidence<.3f)return false;
             Vector2 predicted=PredictBody(facts,.6f);
-            var choices=new List<ArenaNavigation2D.Node>();
+            var choices=new List<Vector2>();
             foreach(var node in actor.Navigation.Nodes)
             {
                 Vector2 centre=node.Center(actor.Motor.Size);
                 if(Vector2.Distance(centre,predicted)>actor.Navigation.PlatformWidth
                     || Mathf.Abs(centre.x-actor.Position.x)>actor.Navigation.PlatformWidth
                     || Mathf.Abs(centre.y-actor.Position.y)>ArenaNavigation2D.ExecutableJumpHeight(actor.Motor.Profile))continue;
-                choices.Add(node);
+                AddDropPoint(choices,centre);
+                // Continuous support point near the predicted body, rather than a coarse graph node.
+                centre.x=Mathf.Clamp(predicted.x,node.Collider.bounds.min.x+actor.Motor.Size.x*.5f+.03f,
+                    node.Collider.bounds.max.x-actor.Motor.Size.x*.5f-.03f);
+                if(actor.Navigation.CanStand(centre,actor.Motor.Size)
+                    &&actor.Navigation.TrySupport(centre,actor.Motor.Size,out var support)&&support==node.Collider)
+                    AddDropPoint(choices,centre);
             }
-            choices.Sort((a,b)=>Vector2.Distance(a.Center(actor.Motor.Size),predicted).CompareTo(Vector2.Distance(b.Center(actor.Motor.Size),predicted)));
-            for(int i=0;i<Mathf.Min(3,choices.Count);i++)
+            choices.Sort((a,b)=>Vector2.Distance(a,predicted).CompareTo(Vector2.Distance(b,predicted)));
+            float bestError=float.PositiveInfinity;
+            for(int i=0;i<Mathf.Min(12,choices.Count);i++)
             {
-                Vector2 landing=choices[i].Center(actor.Motor.Size);
+                Vector2 landing=choices[i];
                 if(!actor.Navigation.TryJumpRoute(actor.Position,landing,actor.Motor,out var route))continue;
                 // Simulate the launch and the same .28 s braking tell at FixedUpdate resolution.
                 Vector2 position=actor.Position,velocity=new Vector2(actor.Velocity.x,actor.Profile.Motion.JumpSpeed);
@@ -537,12 +670,67 @@ namespace GoGhost.Duel
                 float height=position.y-landing.y,gravity=-Physics2D.gravity.y*actor.Profile.Motion.GravityScale;
                 if(!valid||height<.25f)continue;
                 float fall=(Mathf.Sqrt(actor.Profile.DropSpeed*actor.Profile.DropSpeed+2*gravity*height)-actor.Profile.DropSpeed)/gravity;
-                if(Mathf.Abs(landing.x-position.x)>actor.Profile.Motion.Speed*fall+.12f)continue;
+                if(Mathf.Abs(landing.x-position.x)>actor.Profile.Motion.Speed*fall+.03f
+                    ||!DropDescentClear(position,landing))continue;
+                float contactFall=(Mathf.Sqrt(actor.Profile.DropSpeed*actor.Profile.DropSpeed+2*gravity
+                    *Mathf.Max(0,position.y-actor.Profile.DropCut.Range-landing.y-facts.Body.extents.y))-actor.Profile.DropSpeed)/gravity;
+                Vector2 intercept=PredictBody(facts,prepare+tell+contactFall);
+                float error=Mathf.Abs(landing.x-intercept.x)+Mathf.Abs(landing.y-intercept.y)*.3f;
+                if(error>=bestError||error>actor.Navigation.PlatformWidth*.6f)continue;
+                bestError=error;
                 result=new BossPlan {Intent="PlannedDrop",Ability=BossAbility.DropCut,Destination=actor.Position,TargetHypothesis=landing,
                     Route=route,CreatedAt=Time.time,MaxPlanTime=1.5f,TerrainVersion=actor.Navigation.Version,
                     DropPrepareDelay=prepare,DropImpactDelay=prepare+tell+Time.fixedDeltaTime
-                        +(Mathf.Sqrt(actor.Profile.DropSpeed*actor.Profile.DropSpeed+2*gravity*Mathf.Max(0,position.y-actor.Profile.DropCut.Range-landing.y-facts.Body.extents.y))-actor.Profile.DropSpeed)/gravity,Score=2};
-                return true;
+                        +contactFall,Score=2-error*.3f};
+            }
+            return result!=null;
+        }
+        static void AddDropPoint(List<Vector2> points,Vector2 point)
+        {foreach(var existing in points)if(Vector2.Distance(existing,point)<.1f)return;points.Add(point);}
+        public bool TryRefineDropTarget(BossObservation facts,Vector2 original,float before,out Vector2 target)
+        {
+            target=original;
+            if(!facts.Visible||facts.Confidence<.3f||!PredictDropActivation(before,out var origin))return false;
+            float gravity=-Physics2D.gravity.y*actor.Profile.Motion.GravityScale;
+            float best=float.PositiveInfinity;
+            foreach(var node in actor.Navigation.Nodes)
+            {
+                Vector2 point=node.Center(actor.Motor.Size);
+                if(Mathf.Abs(point.y-original.y)>.15f)continue;
+                float height=origin.y-point.y;
+                if(height<.15f)continue;
+                float fall=(Mathf.Sqrt(actor.Profile.DropSpeed*actor.Profile.DropSpeed+2*gravity*height)-actor.Profile.DropSpeed)/gravity;
+                float hitFall=(Mathf.Sqrt(actor.Profile.DropSpeed*actor.Profile.DropSpeed+2*gravity
+                    *Mathf.Max(0,height-actor.Profile.DropCut.Range-facts.Body.extents.y))-actor.Profile.DropSpeed)/gravity;
+                Vector2 intercept=PredictBody(facts,Mathf.Clamp(Time.time-facts.ObservedAt,0,.25f)+before+hitFall);
+                float reach=actor.Profile.Motion.Speed*fall;
+                float left=Mathf.Max(node.Collider.bounds.min.x+actor.Motor.Size.x*.5f+.03f,origin.x-reach,original.x-actor.Navigation.PlatformWidth*.5f);
+                float right=Mathf.Min(node.Collider.bounds.max.x-actor.Motor.Size.x*.5f-.03f,origin.x+reach,original.x+actor.Navigation.PlatformWidth*.5f);
+                if(left>right)continue;
+                point.x=Mathf.Clamp(intercept.x,left,right);
+                float error=Mathf.Abs(point.x-intercept.x);
+                if(error>=best||!actor.Navigation.CanStand(point,actor.Motor.Size)
+                    ||!actor.Navigation.TrySupport(point,actor.Motor.Size,out var support)||support!=node.Collider
+                    ||actor.Coordinator!=null&&actor.Coordinator.Occupied(actor,point)||!DropDescentClear(origin,point))continue;
+                best=error;target=point;
+            }
+            return best<float.PositiveInfinity&&Vector2.Distance(target,original)>.03f;
+        }
+        bool DropDescentClear(Vector2 origin,Vector2 landing)
+        {
+            if(!actor.Navigation.TrySupport(landing,actor.Motor.Size,out var support))return false;
+            float gravity=-Physics2D.gravity.y*actor.Profile.Motion.GravityScale,height=origin.y-landing.y;
+            if(height<=0)return false;
+            float fall=(Mathf.Sqrt(actor.Profile.DropSpeed*actor.Profile.DropSpeed+2*gravity*height)-actor.Profile.DropSpeed)/gravity;
+            float horizontal=(landing.x-origin.x)/Mathf.Max(.02f,fall);
+            if(Mathf.Abs(horizontal)>actor.Profile.Motion.Speed+.05f)return false;
+            Vector2 point=origin,velocity=new Vector2(horizontal,-actor.Profile.DropSpeed);
+            for(float t=0;t<fall+Time.fixedDeltaTime*2;t+=Time.fixedDeltaTime)
+            {
+                velocity.y-=gravity*Time.fixedDeltaTime;Vector2 next=point+velocity*Time.fixedDeltaTime;
+                if(!actor.Navigation.SweepTraversal(point,next,actor.Motor.Size,out var hit,out var safe))
+                    return hit.collider==support&&hit.normal.y>.5f&&Mathf.Abs(safe.x-landing.x)<.3f;
+                point=next;
             }
             return false;
         }
@@ -576,7 +764,7 @@ namespace GoGhost.Duel
             if(height<.15f)return false;
             fall=(Mathf.Sqrt(actor.Profile.DropSpeed*actor.Profile.DropSpeed+2*g*height)-actor.Profile.DropSpeed)/g;
             if(Mathf.Abs(point.x-landing.x)>actor.Profile.Motion.Speed*fall+.15f)return false;
-            return actor.Navigation.CanStand(landing,actor.Motor.Size);
+            return actor.Navigation.CanStand(landing,actor.Motor.Size)&&DropDescentClear(point,landing);
         }
         public bool PredictDropActivation(float before,out Vector2 point)
         {

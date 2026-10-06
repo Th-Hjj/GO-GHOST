@@ -16,9 +16,14 @@ namespace GoGhost.Duel
         public bool Committed=>Phase==BossActionPhase.Locked||Phase==BossActionPhase.Active||Phase==BossActionPhase.Recovery;
         public bool HighThreat=>IsHigh(Ability);
         public bool SafeRecovery=>Phase==BossActionPhase.Recovery
-            && !(Ability==BossAbility.DrawDash&&!comboTarget&&!hasReturned&&Time.time<=returnWindowUntil);
+            && !((Ability==BossAbility.DrawDash||Ability==BossAbility.DropCut)&&!comboTarget&&!hasReturned&&Time.time<=returnWindowUntil);
         public float RecoveryRemaining=>Phase==BossActionPhase.Recovery?Mathf.Max(0,phaseUntil-Time.time):0;
-        public bool UsesBladeArc=>Ability==BossAbility.Rhythm||Ability==BossAbility.DashFollowup||Ability==BossAbility.LeapSlash;
+        bool SingleCut=>Ability==BossAbility.DashFollowup||Ability==BossAbility.DropFollowup;
+        public bool UsesBladeArc=>Ability==BossAbility.Rhythm||SingleCut||Ability==BossAbility.LeapSlash;
+        public float AimDelay=>Phase==BossActionPhase.Prepare?Mathf.Max(0,phaseUntil-Time.time)+LockSeconds
+            :BurstAction&&Phase==BossActionPhase.Active?Mathf.Max(p.BurstShotLock,nextShot-Time.time):LockSeconds;
+        public bool StaggeredBurst {get;private set;}
+        public int DropCorrections {get;private set;}
         bool BurstAction=>Ability==BossAbility.Burst||Ability==BossAbility.TacticalJumpShot;
         bool JumpAction=>Ability==BossAbility.LeapSlash||Ability==BossAbility.TacticalJumpShot;
         public float CutProgress=>Ability==BossAbility.LeapSlash?Mathf.Clamp01((Time.time-slashAt)/p.LeapSlash.Active):PhaseProgress;
@@ -47,6 +52,9 @@ namespace GoGhost.Duel
         float phaseAt,phaseUntil,activeStarts,activeEnds,reloadUntil,nextShot,sweepStart,sweepEnd,lastCamoEnded=-100,returnWindowUntil;
         int shotsRemaining,shotIndex,hitsAtStart;
         bool hitInWindow,comboTarget,hasReturned,bulletLocked;
+        float burstStepX;
+        bool burstStep;
+        float dropBodyWaitUntil;
         Vector2 targetPoint,dashStart,sweepFrom,sweepTo;
         float cutFacing=1,previousCutProgress,camoMovingSeconds;
         Vector2 previousBladeOrigin;
@@ -62,8 +70,8 @@ namespace GoGhost.Duel
             float angle=Mathf.Lerp(p.RhythmArcFrom[RhythmIndex],p.RhythmArcTo[RhythmIndex],progress)*Mathf.Deg2Rad;
             return new Vector2(cutFacing*Mathf.Cos(angle),Mathf.Sin(angle));
         }
-        float LockSeconds => Ability==BossAbility.Rhythm||Ability==BossAbility.DashFollowup?p.RhythmLock[RhythmIndex]:Ability==BossAbility.Burst?p.BurstShotLock:settings.Lock;
-        float ActiveSeconds => Ability==BossAbility.Rhythm||Ability==BossAbility.DashFollowup?p.RhythmActive[RhythmIndex]:settings.Active;
+        float LockSeconds => Ability==BossAbility.Rhythm||SingleCut?p.RhythmLock[RhythmIndex]:Ability==BossAbility.Burst?p.BurstShotLock:settings.Lock;
+        float ActiveSeconds => Ability==BossAbility.Rhythm||SingleCut?p.RhythmActive[RhythmIndex]:settings.Active;
         CircleCollider2D guardZone;
         public void Configure(BossAgent owner)
         {
@@ -91,7 +99,7 @@ namespace GoGhost.Duel
             if(!actor.Running||!actor.IsAlive||Busy||!Ready(ability))return false;
             if(actor.Coordinator!=null&&!actor.Coordinator.CanStart(actor,ability,cooperative))return false;
             if(ability!=BossAbility.Camo&&p.Kind==BossKind.Refraction&&(!actor.Motor.Grounded||Reloading))return false;
-            if(ability==BossAbility.ReturnCut||ability==BossAbility.DashFollowup)return false;
+            if(ability==BossAbility.ReturnCut||ability==BossAbility.DashFollowup||ability==BossAbility.DropFollowup)return false;
             if((ability==BossAbility.LeapSlash||ability==BossAbility.TacticalJumpShot)
                 && (jumpPlan==null||!actor.Motor.Grounded))return false;
             if(!CanAfford(ability)){RequestReload();return false;}
@@ -105,6 +113,10 @@ namespace GoGhost.Duel
             hitsAtStart=ConnectedHits;
             targetPoint=hypothesis;comboTarget=cooperative;RhythmIndex=0;hasReturned=false;bulletLocked=false;Guarded=0;InterruptedCurrent=false;
             returnWindowUntil=-1;
+            dropBodyWaitUntil=0;
+            StaggeredBurst=ability==BossAbility.Burst && Started[(int)BossAbility.Burst]%2==0
+                && (actor.Coordinator==null||actor.Coordinator.Phase==DuoPhase.Idle);
+            burstStep=ability==BossAbility.Burst&&actor.Tactics.TryBurstStep(out burstStepX);
             readyAt[(int)ability]=Time.time+settings.Cooldown;
             Aim=(hypothesis-actor.Position).normalized;if(Aim.sqrMagnitude<.1f)Aim=Vector2.right*actor.Facing;
             actor.Face(Aim);SetPhase(BossActionPhase.Prepare,ability==BossAbility.Burst?settings.Prepare-p.BurstShotLock:settings.Prepare);
@@ -118,7 +130,7 @@ namespace GoGhost.Duel
             actor.Trace($"prepare {ability} attack={AttackId}");
             UpdateGeometry();Publish();return true;
         }
-        public static bool IsHigh(BossAbility a)=>a==BossAbility.Piercing||a==BossAbility.Sweep||a==BossAbility.Rhythm||a==BossAbility.DrawDash||a==BossAbility.ReturnCut||a==BossAbility.DropCut||a==BossAbility.LeapSlash||a==BossAbility.DashFollowup;
+        public static bool IsHigh(BossAbility a)=>a==BossAbility.Piercing||a==BossAbility.Sweep||a==BossAbility.Rhythm||a==BossAbility.DrawDash||a==BossAbility.ReturnCut||a==BossAbility.DropCut||a==BossAbility.LeapSlash||a==BossAbility.DashFollowup||a==BossAbility.DropFollowup;
         public bool TryStartSweep(Vector2 from,Vector2 to)
         {
             int clear=0;
@@ -145,12 +157,12 @@ namespace GoGhost.Duel
                 {
                     if(p.Kind==BossKind.Refraction && Ability!=BossAbility.Camo)
                     {
-                        if(actor.Tactics.TryGunTarget(Ability,actor.Position,actor.Perception.Facts,out var shotPoint))targetPoint=shotPoint;
+                        if(actor.Tactics.TryGunTarget(Ability,actor.Position,actor.Perception.Facts,out var shotPoint,AimDelay))targetPoint=shotPoint;
                         else {AbortPreparation();return;}
                     }
                     else targetPoint=actor.Tactics.PredictBody(actor.Perception.Facts,.16f);
                 }
-                if(Ability==BossAbility.Rhythm||Ability==BossAbility.DashFollowup)
+                if(Ability==BossAbility.Rhythm||SingleCut)
                 {
                     float delta=targetPoint.x-actor.Position.x;
                     cutFacing=Mathf.Abs(delta)>.05f?Mathf.Sign(delta):cutFacing;
@@ -169,7 +181,7 @@ namespace GoGhost.Duel
                 {
                     if(Ability==BossAbility.Burst && shotsRemaining>0 && !bulletLocked)
                     {
-                        if(actor.Tactics.TryGunTarget(Ability,actor.Position,actor.Perception.Facts,out var point))
+                        if(actor.Tactics.TryGunTarget(Ability,actor.Position,actor.Perception.Facts,out var point,AimDelay))
                         {targetPoint=point;UpdateGunAim();}
                         if(Time.time>=nextShot-p.BurstShotLock){bulletLocked=true;actor.Face(Aim);}
                     }
@@ -180,7 +192,13 @@ namespace GoGhost.Duel
                 {if(!actor.Motor.DashActive&&Time.time-phaseAt>.025f)FinishDash();}
                 else if(Ability==BossAbility.DropCut)
                 {
-                    if(actor.Motor.Grounded||actor.Motor.DropBlocked){SweepDrop();Recover();}
+                    if(actor.Motor.DropBlocked&&dropBodyWaitUntil==0)dropBodyWaitUntil=Time.time+.3f;
+                    if(actor.Motor.Grounded||actor.Motor.DropBlocked&&Time.time>=dropBodyWaitUntil)
+                    {
+                        SweepDrop();actor.Motor.EndDrop();
+                        if(!TryDropFollowup())
+                        {returnWindowUntil=!comboTarget&&Ready(BossAbility.Rhythm)?Time.time+.45f:-1;Recover();}
+                    }
                     // No arbitrary active cutoff: one descent window ends on real support.
                 }
                 else if(Ability==BossAbility.Camo)
@@ -201,15 +219,16 @@ namespace GoGhost.Duel
             }
             else if(Phase==BossActionPhase.Recovery)
             {
+                if(Ability==BossAbility.DropCut&&Time.time<=returnWindowUntil&&TryDropFollowup())return;
                 if(Ability==BossAbility.DrawDash&&Time.time<=returnWindowUntil&&TryDashFollowup())return;
                 if(Time.time>=phaseUntil)Finish();
             }
             if(Ability==BossAbility.Guard&&Phase==BossActionPhase.Active)actor.Motor.SetMove(Aim.x,p.GuardWalkScale);
             if(Ability==BossAbility.Burst&&Phase!=BossActionPhase.Recovery&&actor.Motor.Grounded)
             {
-                var observed=actor.Perception.Facts;
-                float direction=Mathf.Abs(observed.Position.x-actor.Position.x)<actor.Tactics.EngagementDistance*.6f?-Mathf.Sign(observed.Position.x-actor.Position.x):0;
+                float direction=burstStep&&Mathf.Abs(burstStepX-actor.Position.x)>.12f?Mathf.Sign(burstStepX-actor.Position.x):0;
                 if(direction!=0&&!actor.Navigation.CanStand(actor.Position+Vector2.right*direction*.45f,actor.Motor.Size))direction=0;
+                if(direction!=0&&actor.Coordinator!=null&&actor.Coordinator.Occupied(actor,actor.Position+Vector2.right*direction*.6f))direction=0;
                 actor.Motor.SetMove(direction,.5f);
             }
             if(Camouflaged&&Ammo==0)RequestReload();
@@ -217,6 +236,10 @@ namespace GoGhost.Duel
         }
         void Lock()
         {
+            // One visible correction at the end of preparation. The subsequent full lock never homes.
+            if(Ability==BossAbility.DropCut&&!comboTarget
+                &&actor.Tactics.TryRefineDropTarget(actor.Perception.Facts,targetPoint,LockSeconds,out var corrected))
+            {targetPoint=corrected;DropCorrections++;actor.Trace("drop correction to="+corrected);}
             if(JumpAction)
             {
                 if(jumpPlan.TerrainVersion!=actor.Navigation.Version || !actor.Motor.Grounded
@@ -231,7 +254,7 @@ namespace GoGhost.Duel
             if(Ability==BossAbility.DropCut&&actor.Motor.Grounded){Recover();return;}
             if(Ability==BossAbility.Guard)Aim=Vector2.right*Mathf.Sign(Aim.x);
             if(Ability==BossAbility.Burst)UpdateGunAim();
-            if(Ability==BossAbility.Rhythm||Ability==BossAbility.DashFollowup){actor.Motor.Brake();cutFacing=actor.Facing;}
+            if(Ability==BossAbility.Rhythm||SingleCut){actor.Motor.Brake();cutFacing=actor.Facing;}
             if(Ability==BossAbility.DropCut&&!actor.Tactics.CanDropFromHere(targetPoint,out _,true)){Recover();return;}
             actor.Face(Aim);SetPhase(BossActionPhase.Locked,LockSeconds);
             bulletLocked=Ability==BossAbility.Burst;
@@ -327,7 +350,7 @@ namespace GoGhost.Duel
                 float height=Mathf.Max(.01f,actor.Position.y-targetPoint.y);
                 float gravity=-Physics2D.gravity.y*p.Motion.GravityScale;
                 float fall=(Mathf.Sqrt(p.DropSpeed*p.DropSpeed+2*gravity*height)-p.DropSpeed)/gravity;
-                actor.Motor.StartDrop((targetPoint.x-actor.Position.x)/Mathf.Max(.02f,fall));
+                actor.Motor.StartDrop((targetPoint.x-actor.Position.x)/Mathf.Max(.02f,fall),targetPoint.x);
                 previousBladeOrigin=actor.Position;
                 activeEnds=Time.time+fall+Time.fixedDeltaTime;
                 actor.Sounds?.Play(Sfx.BladeHeavy,actor.ActorId,AttackId);
@@ -349,7 +372,7 @@ namespace GoGhost.Duel
             {
                 if(shotsRemaining>0 && !bulletLocked)
                 {
-                    if(!actor.Tactics.TryGunTarget(BossAbility.Burst,actor.Position,actor.Perception.Facts,out var point))return;
+                    if(!actor.Tactics.TryGunTarget(BossAbility.Burst,actor.Position,actor.Perception.Facts,out var point,AimDelay))return;
                     targetPoint=point;UpdateGunAim();
                     if(Time.time>=nextShot-p.BurstShotLock){bulletLocked=true;nextShot=Mathf.Max(nextShot,Time.time+p.BurstShotLock);actor.Face(Aim);}
                 }
@@ -391,7 +414,7 @@ namespace GoGhost.Duel
                 actor.Sounds?.Play(Sfx.BossBurst,actor.ActorId,AttackId,shotIndex);actor.View?.Muzzle(muzzle,direction);
             }
             Ammo--;shotsRemaining--;shotIndex++;bulletLocked=false;
-            nextShot=Time.time+(BurstAction?p.BurstInterval:p.SweepInterval);
+            nextShot=Time.time+(BurstAction?(StaggeredBurst&&shotIndex==1?p.BurstStaggerPause:p.BurstInterval):p.SweepInterval);
             if(shotsRemaining==0){phaseUntil=Time.time+(BurstAction?p.BurstTail:p.SweepTail);activeEnds=phaseUntil;}
             if(Ammo==0)RequestReload();
         }
@@ -447,11 +470,20 @@ namespace GoGhost.Duel
             if(terrain&&Projectile.TerrainHit(from,point,.015f,out _))return;
             hitInWindow=true;int before=actor.Player.CurrentHealth;
             actor.Player.TakeDamage(damage,actor.gameObject);
-            if(actor.Player.CurrentHealth<before){ConnectedHits++;actor.View?.Impact(point);}
+            if(actor.Player.CurrentHealth<before)
+            {
+                ConnectedHits++;actor.View?.Impact(point);
+                if(Ability==BossAbility.DropCut&&!actor.Player.IsDead)
+                {
+                    float side=body.bounds.center.x-targetPoint.x;
+                    actor.Player.GetComponent<PlayerMovement>()?.ApplyHitPush(Mathf.Abs(side)>.05f?Mathf.Sign(side):actor.Facing,
+                        actor.Navigation.PlatformWidth*.35f,.14f);
+                }
+            }
         }
         void NextRhythm()
         {
-            if(Ability==BossAbility.DashFollowup){Recover();return;}
+            if(SingleCut){Recover();return;}
             var observed=actor.Perception.Facts;int next=RhythmIndex+1;
             if(next>=3||observed.Confidence<.2f
                 || Vector2.Distance(observed.Position,actor.Position)>p.RhythmReach[next]+p.RhythmStep[next]+observed.Body.extents.x
@@ -469,6 +501,19 @@ namespace GoGhost.Duel
             End=actor.Position;PublicThreats.Clear();
             if(TryDashFollowup())return;
             returnWindowUntil=Time.time+p.ReturnBranchWindow;Recover();
+        }
+        bool TryDropFollowup()
+        {
+            var facts=actor.Perception.Facts;
+            if(comboTarget||hasReturned||!actor.Motor.Grounded||!facts.Visible||facts.Confidence<.3f
+                ||!Ready(BossAbility.Rhythm)||Mathf.Sign(facts.Position.x-actor.Position.x)!=actor.Facing
+                ||!actor.Tactics.LegalAt(BossAbility.Rhythm,actor.Position,facts,out _)
+                ||actor.Coordinator!=null&&!actor.Coordinator.TryReserve(actor,BossAbility.DropFollowup,false))return false;
+            hasReturned=true;Ability=BossAbility.DropFollowup;settings=p.Rhythm;RhythmIndex=0;
+            AttackId++;Started[(int)Ability]++;targetPoint=facts.Position;cutFacing=actor.Facing;
+            readyAt[(int)BossAbility.Rhythm]=Time.time+p.Rhythm.Cooldown;
+            actor.Motor.BeginStep(p.RhythmStep[0]);SetPhase(BossActionPhase.Prepare,p.RhythmPrepare[0]);
+            UpdateGeometry();Publish();actor.Trace("prepare DropFollowup attack="+AttackId);return true;
         }
         bool TryDashFollowup()
         {
@@ -613,6 +658,7 @@ namespace GoGhost.Duel
                 }
                 PublicThreats.Add(new BossThreat {ActorId=actor.ActorId,AttackId=AttackId,Phase=phase,Shape=shape,Origin=origin,End=end,Direction=direction,
                     Radius=radius,StartsAt=start,EndsAt=finish,ProjectileSpeed=speed,TerrainBlocked=terrain,Valid=true,
+                    HasLandingX=Ability==BossAbility.DropCut,LandingX=targetPoint.x,
                     ArcFrom=p.RhythmArcFrom[RhythmIndex],ArcTo=p.RhythmArcTo[RhythmIndex],Facing=cutFacing,Reach=BladeReach,Gravity=Physics2D.gravity.y*p.Motion.GravityScale});
             }
         }

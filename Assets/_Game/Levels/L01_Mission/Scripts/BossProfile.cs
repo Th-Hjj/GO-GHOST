@@ -4,7 +4,7 @@ using UnityEngine;
 namespace GoGhost.Duel
 {
     public enum BossKind { Refraction, Severance }
-    public enum BossAbility { None, Burst, Camo, Piercing, Sweep, Rhythm, DrawDash, ReturnCut, DropCut, Guard, Reload, LeapSlash, TacticalJumpShot, DashFollowup }
+    public enum BossAbility { None, Burst, Camo, Piercing, Sweep, Rhythm, DrawDash, ReturnCut, DropCut, Guard, Reload, LeapSlash, TacticalJumpShot, DashFollowup, DropFollowup }
     public enum BossActionPhase { Idle, Prepare, Locked, Active, Recovery }
     [Serializable]
     public sealed class BossAbilitySettings
@@ -23,6 +23,7 @@ namespace GoGhost.Duel
         public int Magazine=12;
         public float ReloadSeconds=1.45f, BulletSpeed=24, BurstInterval=.12f, SweepInterval=.12f;
         public float BurstShotLock=.08f, BurstTail=.04f, SweepTail=.10f, SweepWidth=5, SweepHeight=.65f;
+        public float BurstStaggerPause=.28f;
         public int SweepShots=8;
         public float CamoMinimumMove=.45f, DropSpeed=16;
         public float CamoAlpha=0, CamoFade=.14f, RevealFade=.12f, CamoDuration=1.8f, CamoCueInterval=.35f, CamoContactMemory=.35f;
@@ -57,7 +58,7 @@ namespace GoGhost.Duel
                 case BossAbility.Rhythm:return Rhythm; case BossAbility.DrawDash:return DrawDash;
                 case BossAbility.ReturnCut:return ReturnCut; case BossAbility.DropCut:return DropCut;
                 case BossAbility.Guard:return Guard; case BossAbility.LeapSlash:return LeapSlash;
-                case BossAbility.TacticalJumpShot:return TacticalJumpShot; case BossAbility.DashFollowup:return Rhythm;
+                case BossAbility.TacticalJumpShot:return TacticalJumpShot; case BossAbility.DashFollowup:case BossAbility.DropFollowup:return Rhythm;
                 default:return Burst;
             }
         }

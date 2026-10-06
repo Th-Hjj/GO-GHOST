@@ -183,7 +183,7 @@ namespace GoGhost.Duel
             bool active = phase == BossActionPhase.Active, recover = phase == BossActionPhase.Recovery;
             float returnWeight = recover ? 1-t : 1;
             p.FrontFoot.x = .35f; p.BackFoot.x = -.38f;
-            if (ability == BossAbility.Rhythm || ability == BossAbility.DashFollowup || ability == BossAbility.LeapSlash)
+            if (ability == BossAbility.Rhythm || ability == BossAbility.DashFollowup || ability == BossAbility.DropFollowup || ability == BossAbility.LeapSlash)
             {
                 float wind = slash == 0 ? 85 : slash == 1 ? -105 : 142;
                 float cut = slash == 1 ? 55 : -50;

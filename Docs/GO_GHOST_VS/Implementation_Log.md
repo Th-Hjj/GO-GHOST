@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-10-05 — Independent Boss health tuning
+
+- **Baseline / authority:** Thomas requested Severance 999 HP and Refraction 666 HP, initially deferred for concurrent agents, then explicitly authorized immediate modification. Baseline main `6375cf7` used 840 / 720 HP. Preserved the delivered animation/AI work and the concurrent opening-fix task; did not stop its Play session or change its files.
+- **Implemented / files:** saved only the two level-local BossProfile assets through Unity APIs and updated the specification health table. BossAgent.Configure already initializes each fresh Enemy from its profile, including Wave 3; no prefab change is necessary. Unity also serialized existing unchanged source defaults: BurstStaggerPause=.28 in both profiles and LeapSlash/TacticalJumpShot in Severance. Verified their values against BossProfile; no ability tuning, source, scene, prefab, meta or GUID change.
+- **Validation / limits:** live Unity commands succeeded, asset readback is Refraction 666 / Severance 999, and the Editor reports compiling=false / scriptCompilationFailed=false. Static runtime-path and Git whitespace checks passed. Fresh-fight HP/HUD, balance, physical input and lifecycle checks are **NOT TESTED** in this task to avoid taking over the other agent's Editor test session; Windows Build/launch **NOT RUN**. An initial guarded save detected busy Play Mode and changed nothing; the subsequent targeted configuration save left that session running. New health applies on fresh attempts; existing Enemy pools are not refilled. No known configuration blocker; ordinary checked main delivery is authorized.
+
 ## 2026-10-05 — Solo Boss pressure, gunner footwork and fixed-landing Drop push
 
 - **Baseline / authority:** Thomas approved the proposed Boss AI changes, added more Refraction mobility, then corrected Drop contact to push the player while preserving the sword's landing. Waited read-only for the concurrent player-animation chat to deliver `adc44c1`; its temporary compile failure was resolved by that chat. Took the single writer role from clean main and successful compilation, stopped the user's current Play session, and preserved the animation delivery. Fetched main before delivery; no remote divergence.

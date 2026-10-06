@@ -3,7 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// Fires Projectiles along the sole resolved aim output (PlayerInputReader.AimDirection).
-/// The muzzle is the player's position offset along the aim by the FirePoint
+/// The muzzle is the player's aim origin offset along the aim by the FirePoint
 /// child's original distance, so aiming is independent of the movement direction.
 /// Deployed officers use the weapon in their locked snapshot (LoadoutRules.Weapon):
 /// Assault Rifle fires while Attack is held. Each trigger pull
@@ -65,6 +65,10 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
     private float reloadDoneAt;
     private float firePointRadius = 0.5f;
     private bool isFiringVolley;
+
+    // The formal stickman holds its Rifle at chest height, like the gunner Boss.
+    // Aim, prediction and projectile spawning must all use this same origin.
+    public Vector2 AimOrigin => (Vector2)transform.position + (legacyCombat ? Vector2.up * .28f : Vector2.zero);
 
     private void Awake()
     {
@@ -170,7 +174,7 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
     /// <summary>World-space muzzle position for the given (normalized) aim direction.</summary>
     public Vector2 GetMuzzlePosition(Vector2 aimDirection)
     {
-        return (Vector2)transform.position + aimDirection * firePointRadius;
+        return AimOrigin + aimDirection * firePointRadius;
     }
 
     // An explicit player choice can request one ordinary shot; failed cadence/reload never creates damage or free ammo.

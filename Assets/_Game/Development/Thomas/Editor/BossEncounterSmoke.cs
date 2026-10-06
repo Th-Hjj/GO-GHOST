@@ -66,6 +66,7 @@ public static class BossEncounterSmoke
     public static void RunSoloPressureEdges() => Start("solo-pressure-edges", false);
     public static void RunSoloPressureFinal() => Start("solo-pressure-final", false);
     public static void RunPlayerAnimation() => Start("player-animation", false);
+    public static void RunPlayerGunPose() => Start("player-gun-pose", false);
     public static void Cancel()
     { if (Running) { Record("NOT TESTED: operator cancelled unfinished checks."); Finish(false); } }
 
@@ -149,6 +150,7 @@ public static class BossEncounterSmoke
         if(mode=="solo-pressure-final") {yield return SoloPressureObservation();yield break;}
         if(mode=="solo-pressure-edges") {yield return SoloPressureEdges();yield break;}
         if(mode=="player-animation") {yield return PlayerAnimation();yield break;}
+        if(mode=="player-gun-pose") {yield return PlayerGunPose();yield break;}
         if(mode=="camo-review") {yield return CamoReview();yield break;}
         if(mode=="camo"||mode=="camo-mechanics") {yield return Camo();yield break;}
         if(mode=="lost-contact") {yield return LostContact();yield break;}
@@ -208,6 +210,45 @@ public static class BossEncounterSmoke
         yield return Until(() => game.Phase == DuelPhase.Fight, 2.2f);
         Check("wave " + wave + " created", game.Phase == DuelPhase.Fight && game.Bosses.Count == (wave == 3 ? 2 : 1));
     }
+    static IEnumerator PlayerGunPose()
+    {
+        Record("CONTROLLED gun pose: stopped Boss policies, real mouse aim/fire; chest origin shared by manual/AI/spawn.");
+        yield return Fresh(1); StopPolicies(); yield return Seconds(.15f);
+        var reader=game.Player.GetComponent<PlayerInputReader>();
+        var visual=game.Player.GetComponent<OfficerVisual>();
+        var gun=visual.Part(LoadoutSlot.Weapon).transform;
+        var grip=gun.parent.Find("GunGrip");
+        var forearm=game.Player.transform.Find("Stickman/RightForearm");
+        int shots=0; bool aligned=true;
+        Action<Vector2,Vector2> onShot=(origin,direction)=>{shots++;aligned&=Vector2.Distance(origin,game.Rifle.GetMuzzlePosition(direction))<.001f;};
+        game.Rifle.ShotFired+=onShot;
+        foreach(var offset in new[]{new Vector2(6,0),new Vector2(-6,0),new Vector2(4,4),new Vector2(-4,-3)})
+        {
+            Vector2 target=game.Rifle.AimOrigin+offset;
+            MouseAt(target,false); yield return Seconds(.12f);
+            Vector2 muzzle=game.Rifle.GetMuzzlePosition(reader.AimDirection);
+            Check("barrel follows raised real muzzle "+offset,Vector2.Distance(gun.TransformPoint(new Vector3(.5f,0,0)),muzzle)<.005f);
+            Check("manual ray reaches cursor "+offset,Vector2.Dot((target-muzzle).normalized,reader.AimDirection)>.9999f);
+            Check("trigger hand meets grip "+offset,Vector2.Distance(forearm.TransformPoint(new Vector3(.5f,0,0)),grip.position)<.065f);
+            if(offset.y==0)
+            {
+                Check("gun held at chest height "+offset,Mathf.Abs(gun.position.y-game.Player.transform.position.y-.28f)<.005f);
+                Directory.CreateDirectory(Output);ScreenCapture.CaptureScreenshot(Output+(offset.x>0?"player-gun-right.png":"player-gun-left.png"));yield return Frames(2);
+            }
+            mouseHeld=true;yield return Seconds(.28f);mouseHeld=false;
+        }
+        game.Rifle.ShotFired-=onShot;
+        Check("real shots spawn at raised muzzle",shots>=4&&aligned);
+        MouseAt(game.Rifle.AimOrigin+Vector2.right*6,true);yield return Until(()=>game.Rifle.IsReloading,3);mouseHeld=false;
+        yield return Seconds(.4f);Check("reload still expressed",game.Rifle.IsReloading&&game.Rifle.ReloadVisible);
+        yield return Until(()=>!game.Rifle.IsReloading,2);yield return Frames(2);
+        Check("reload restores barrel and hands",Quaternion.Angle(gun.localRotation,Quaternion.identity)<.01f&&Vector2.Distance(gun.TransformPoint(new Vector3(.5f,0,0)),game.Rifle.GetMuzzlePosition(reader.AimDirection))<.005f);
+        yield return Fresh(1,true,true);StopPolicies();int hp=game.Bosses[0].Health.CurrentHealth;yield return Seconds(1.2f);
+        Check("AI aim hits using chest origin",game.Rifle.ShotsFired>0&&game.Bosses[0].Health.CurrentHealth<hp);
+        yield return Fresh(3,true);yield return Seconds(4);Check("short W3 firing",game.Rifle.ShotsFired>0);PitchResult();
+        Record("NOT TESTED: hardware input, exhaustive angles/poses, balance, Windows Build/launch.");
+    }
+
     static IEnumerator PlayerAnimation()
     {
         Record("CONTROLLED animation/input: stopped Boss policies, real virtual input and physics; no injected player motion or outcomes.");

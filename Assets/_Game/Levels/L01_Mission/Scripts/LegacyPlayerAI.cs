@@ -235,18 +235,19 @@ public sealed class LegacyPlayerAI
         if (targets != null && !targetContact.Visible && Time.time - targetContact.ObservedAt > .35f)
         { direction = lastAim; return false; }
         Vector2 offset = Vector2.Scale(AimOffsets[index], targetBounds.extents);
-        Vector2 origin = centre + (Vector2)player.transform.position - (Vector2)selfBounds.center;
+        Vector2 displacement = centre - (Vector2)selfBounds.center;
+        Vector2 origin = gun.AimOrigin + displacement;
         Vector2 point = (Vector2)targetBounds.center + offset;
         float flight = Vector2.Distance(origin, point) / gun.BulletSpeed;
         for (int i = 0; i < 3; i++)
         {
             point = PredictTarget(Mathf.Min(flight, 1.4f)) + offset;
             direction = (point - origin).normalized;
-            Vector2 muzzle = gun.GetMuzzlePosition(direction) + origin - (Vector2)player.transform.position;
+            Vector2 muzzle = gun.GetMuzzlePosition(direction) + displacement;
             flight = Vector2.Distance(muzzle, point) / gun.BulletSpeed;
         }
         direction = (point - origin).normalized;
-        Vector2 start = gun.GetMuzzlePosition(direction) + origin - (Vector2)player.transform.position;
+        Vector2 start = gun.GetMuzzlePosition(direction) + displacement;
         // Terrain does not block bullets; known body points still respect active guards.
         return direction.sqrMagnitude > .9f && !GuardBlocksShot(start, point);
     }

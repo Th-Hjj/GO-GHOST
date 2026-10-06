@@ -44,6 +44,8 @@ namespace GoGhost.Duel
         public float LastActiveAt {get;private set;}
         public int ConnectedHits {get;private set;}
         public int ConsecutiveMeleeMisses {get;private set;}
+        public int RecoverySteps {get;private set;}
+        public bool RecoveryStepping {get;private set;}
         BossAgent actor;
         BossProfile p;
         BossAbilitySettings settings;
@@ -619,11 +621,18 @@ namespace GoGhost.Duel
                 actor.Sounds?.Play(Sfx.CamoExit,actor.ActorId,AttackId);actor.PublishCue(.15f);
             }
             actor.Motor.Brake();PublicThreats.Clear();SetPhase(BossActionPhase.Recovery,settings.Recovery);
+            RecoveryStepping=false;
+            if(SafeRecovery&&!comboTarget&&actor.Tactics.TrySwordRecoveryStep(out float step))
+            {
+                RecoveryStepping=true;RecoverySteps++;
+                actor.Motor.BeginStep(Mathf.Abs(step));actor.Motor.SetMove(Mathf.Sign(step),.65f);
+            }
         }
         public void AbortPreparation()
         { if(Phase==BossActionPhase.Prepare){actor.Trace("cancel "+Ability);actor.Sounds?.StopAttack(actor.ActorId,AttackId);Recover();} }
         void Finish()
         {
+            if(RecoveryStepping){actor.Motor.Brake();RecoveryStepping=false;}
             if(UsesBladeArc||Ability==BossAbility.DrawDash||Ability==BossAbility.ReturnCut||Ability==BossAbility.DropCut)
                 ConsecutiveMeleeMisses=ConnectedHits>hitsAtStart?0:ConsecutiveMeleeMisses+1;
             jumpPlan=null;
@@ -631,6 +640,7 @@ namespace GoGhost.Duel
         }
         public void StopCombat()
         {
+            if(RecoveryStepping){actor.Motor.Brake();RecoveryStepping=false;}
             if(guardZone!=null)guardZone.enabled=false;reloadUntil=0;PublicThreats.Clear();jumpPlan=null;
             actor?.Coordinator?.Release(actor);Ability=BossAbility.None;Phase=BossActionPhase.Idle;
         }

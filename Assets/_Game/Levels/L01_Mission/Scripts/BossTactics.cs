@@ -37,11 +37,12 @@ namespace GoGhost.Duel
         bool dropCooperative,dropLeftGround;
         float dropLaunchedAt,dropDeadline;
         BossPlan recoveryPlan;
-        float exposedSince=-1,nextGunMove;
+        float exposedSince=-1,nextGunMove,nextRecoveryStep;
         Vector2 lastGunOrigin;
         public int RecoveryPlansUsed {get;private set;}
         public int GunRepositions {get;private set;}
         public int InterceptPlansUsed {get;private set;}
+        public int PursuitDashes {get;private set;}
         public bool Enabled {get;set;}=true;
         public BossPlan Current=>plan;
         public bool CamoRouteInvalid=>camoTravelling&&(camoPlan==null
@@ -74,6 +75,9 @@ namespace GoGhost.Duel
             if(facts.Visible&&facts.Confidence>.3f)
             {searchedSupports.Clear();searchSupport=null;}
             if(TryGunReposition(facts)){recoveryPlan=null;return;}
+            // A useful horizontal closing lane takes priority over cached guard/flank/jump choices.
+            // Busy actions, airborne routes and cooperative assignments have already returned above.
+            if(Time.time>=nextTick&&TryPursuitDash(facts)){recoveryPlan=null;return;}
             if(recoveryPlan!=null)
             {
                 var ready=recoveryPlan;recoveryPlan=null;
@@ -112,7 +116,7 @@ namespace GoGhost.Duel
                 // A new expressed jump can invalidate a ground pursuit before its old hold expires.
                 if(actor.Profile.Kind==BossKind.Severance&&plan.Intent=="Approach/Intercept"&&facts.Visible&&Time.time>=nextTick
                     &&Time.time-plan.CreatedAt>.25f
-                    &&Vector2.Distance(PredictSwordBody(facts,plan.TravelSeconds),plan.TargetHypothesis)>actor.Navigation.PlatformWidth*.6f)
+                    &&Vector2.Distance(PredictSwordBody(facts,plan.TravelSeconds),plan.TargetHypothesis)>actor.Navigation.PlatformWidth*.45f)
                 {plan=null;actor.Motor.ClearRoute();nextTick=Time.time;}
             }
             if(plan!=null)
@@ -155,13 +159,30 @@ namespace GoGhost.Duel
             var options=BuildCandidates();
             if(options.Count==0){SearchVisibleAngle();return;}
             BossPlan selected=options[0];
-            if(plan!=null&&(Time.time-plan.CreatedAt<actor.Profile.PlanHold||selected.Score<plan.Score*1.15f))return;
+            bool chasing=actor.Profile.Kind==BossKind.Severance&&plan?.Intent=="Approach/Intercept";
+            if(plan!=null&&(Time.time-plan.CreatedAt<(chasing?Mathf.Min(.35f,actor.Profile.PlanHold):actor.Profile.PlanHold)
+                ||selected.Score<plan.Score*(chasing?1.05f:1.15f)))return;
             plan=selected;plan.CreatedAt=Time.time;
             if(plan.Intent=="Approach/Intercept")InterceptPlansUsed++;
             actor.Trace($"plan {plan.Intent}/{plan.Ability} to={plan.Destination} score={plan.Score:0.00}");
             actor.Motor.SetRoute(plan.Route);
             if(plan.Route==null)actor.Motor.Brake(); // Retire the previous route when accepting an in-place attack.
             if(actor.Profile.Kind==BossKind.Refraction&&!action.CanAfford(plan.Ability))action.RequestReload();
+        }
+        bool TryPursuitDash(BossObservation facts)
+        {
+            if(actor.Profile.Kind!=BossKind.Severance||!facts.Visible||facts.Confidence<.3f
+                ||!actor.Actions.Ready(BossAbility.DrawDash)
+                ||!LegalAt(BossAbility.DrawDash,actor.Position,facts,out _))return false;
+            float delta=facts.Position.x-actor.Position.x;
+            float closeReach=actor.Profile.RhythmReach[0]+actor.Profile.RhythmStep[0]+facts.Body.extents.x;
+            bool retreating=Mathf.Abs(facts.Velocity.x)>1&&Mathf.Sign(facts.Velocity.x)==Mathf.Sign(delta);
+            Vector2 intercept=PredictSwordBody(facts,actor.Profile.DrawDash.Prepare+actor.Profile.DrawDash.Lock
+                +Mathf.Abs(delta)/actor.Profile.DashSpeed);
+            bool leavesMelee=retreating&&Mathf.Abs(intercept.x-actor.Position.x)>closeReach;
+            if(Mathf.Abs(delta)<=closeReach&&!leavesMelee)return false;
+            if(!TryImmediate(BossAbility.DrawDash,facts))return false;
+            PursuitDashes++;actor.Trace("pursuit dash: "+(retreating?"retreat lane":"closing lane"));return true;
         }
         bool TryImmediate(BossAbility ability,BossObservation facts)
         {
@@ -173,6 +194,28 @@ namespace GoGhost.Duel
             plan=null;previousAbility=ability;lastAttackAt=Time.time;nextTick=Time.time+actor.Profile.TacticTick;return true;
         }
 
+        public bool TrySwordRecoveryStep(out float displacement)
+        {
+            displacement=0;var facts=actor.Perception.Facts;
+            if(!Enabled||actor.Profile.Kind!=BossKind.Severance||!actor.Motor.Grounded
+                ||Time.time<nextRecoveryStep||!facts.Visible||facts.Confidence<.3f
+                ||actor.Coordinator!=null&&actor.Coordinator.Phase!=DuoPhase.Idle)return false;
+            float delta=facts.Position.x-actor.Position.x,distance=Mathf.Abs(delta);
+            float reach=actor.Profile.RhythmReach[0],direction=Mathf.Sign(delta);
+            if(distance<reach*.55f)direction=-direction;
+            else if(distance<=reach+facts.Body.extents.x)return false;
+            float step=actor.Navigation.PlatformWidth*.18f;
+            Vector2 point=actor.Position+Vector2.right*direction*step;
+            if(!actor.Navigation.TrySupport(actor.Position,actor.Motor.Size,out var source)
+                ||!actor.Navigation.CanStand(point,actor.Motor.Size)
+                ||!actor.Navigation.TrySupport(point,actor.Motor.Size,out var destination)||destination!=source
+                ||new Bounds(point,actor.Motor.Size+Vector2.one*.1f).Intersects(facts.Body)
+                ||actor.Coordinator!=null&&actor.Coordinator.Occupied(actor,point)
+                ||!actor.Navigation.TryDash(actor.Position,point,actor.Motor.Size,out _))return false;
+            displacement=direction*step;nextRecoveryStep=Time.time+1.3f;
+            // Any cached pursuit must be rebuilt from the actual recovered body position.
+            plan=null;return true;
+        }
         public bool TryBurstStep(out float destination)
         {
             destination=actor.Position.x;var facts=actor.Perception.Facts;

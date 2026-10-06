@@ -50,7 +50,7 @@ Refraction has 12 rounds, a 1.45 s reload and 24 units/s ordinary bullets. Every
 | --- | --- | --- | --- | --- |
 | G1 Burst | 0.24 total, including first 0.08 lock | 12 per bullet | 0.26 / 1 | Up to three bullets; alternate ordinary 0.12/0.12 and staggered 0.28/0.12 gaps outside combo assembly; each direction separately locks for 0.08 s; final shot +0.04 s tail |
 | G2 Optical Camo | 0.14 + 0 | — | 0.12 / 7 | Up to 1.8 s on a committed firing-angle route; early exit after at least 0.45 s movement and real arrival; body/weapon alpha 0; short event traces |
-| G3 Piercing Shot | 0.72 + 0.24 | 30 | 0.55 / 4.5 | Three rounds; locked instantaneous ray, brief active flash; beam radius 0.07 |
+| G3 Piercing Shot | 0.90 + 0.24 | 30 | 0.55 / 4.5 | Three rounds; locked instantaneous ray, brief active flash; beam radius 0.07 |
 | G4 Suppressive Sweep | 0.32 + 0.18 | 8 per bullet | 0.5 / 4 | Eight ordinary bullets, 0.12 s spacing / 0.84 s span +0.10 s tail; at least eight rounds and six clear starting rays |
 | G5 Tactical Jump Shot | 0.12 + 0.08 | Existing Burst damage | 0.26 after landing / 4.5 | One reachable, frozen jump route; up to three airborne Burst bullets with normal ammo/speed and a separate 0.08 s aim lock per shot |
 | S1 Broken Rhythm | Per-cut table below | 18 / 18 / 26 | 0.65 / 2.4 | Independent preparation, bounded physical step, facing lock and rotating blade sweep per cut |
@@ -61,6 +61,8 @@ Refraction has 12 rounds, a 1.45 s reload and 24 units/s ordinary bullets. Every
 | S6 Leap Slash | 0.24 + 0.12 | 28 | 0.55 after landing / 4.5 | One validated physical jump toward a public predicted approach; frozen landing route, one first-cut blade arc during approach; terrain blocks the sword |
 | Draw Dash front follow-up | 0.16 + 0.12 | 18 | 0.65 | Reuses only Rhythm cut 1; Return Cut has priority, otherwise a front target within real step/blade reach; then recovery, with no further branch |
 | Drop landing follow-up | 0.16 + 0.12 | 18 | 0.65 | One front Rhythm cut, shared Rhythm cooldown, actual ground contact and public range required; unavailable to cooperative Drop |
+
+Sword closing policy checks legal Draw Dash before cached/Flank/Leap choices when outside first-cut reach or publicly retreating beyond that reach. Readiness, height, real supported corridor and shared-threat reservation remain required; cooldown stays 3 s. Safe non-cooperative recovery can commit one .18-platform-width step on the current support at .65 move scale (at least 1.3 s between steps), approaching a distant target or backing out of body-contact range. It applies no damage and consumes the complete original recovery; branch windows and airborne commitments are retained. Ground Approach/Intercept can reconsider after .35 s for a 5% better plan, or after .25 s when the arrival prediction shifts by .45 platform width. Other route holds stay unchanged.
 
 Ordinary bullet hits damage health but do not interrupt Piercing/Sweep. Death still cancels attacks. Locked attacks retain their commitments. Guard requires a real front-side projectile contact and consumes capacity. Return Cut and the front slash share one branch opportunity: Return Cut is preferred, otherwise one first Rhythm cut may start; neither can chain into the other. The 0.18 s post-dash opportunity remains reserved until consumed or expired; cooperative Draw Dash has no follow-up. Camo exit has a minimum 1.2 s re-entry gap in addition to cooldown.
 

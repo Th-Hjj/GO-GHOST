@@ -6,7 +6,7 @@ Single-player, fixed-camera 2D combat: Refraction (gunner), Severance (swordsman
 
 Use **Unity 6000.6.0f1**, the existing packages and URP 2D renderer. Thomas uses Rider. The formal scene is `Assets/_Game/Levels/L01_Mission/Scenes/GO GHOST Duel.unity`; **GO GHOST > Combat > Open Arena** opens it. The Editor Play entry and Windows build use this scene, including when a different historical scene was last open.
 
-Choose **New Game**, configure permissions, then **Start Fight**. The first configuration is all manual. Choices lock for the fight; retry and next wave preserve them. Each fight has a one-second stationary preparation and resets actors, resources, projectiles and observation. Victory advances; defeat reconfigures the current wave. Third-wave victory opens Complete. Restart begins at wave one, all Player. Legs uses one 5.3–8.5 distance preference with no selector.
+Choose **New Game**, configure permissions, then **Start Fight**. The first configuration is all manual. Choices lock for the fight; retry and next wave preserve them. Each fight has a three-second stationary preparation and resets actors, resources, projectiles and observation. Victory advances; defeat reconfigures the current wave. Third-wave victory opens Complete. Restart begins at wave one, all Player. Legs uses one 5.3–8.5 distance preference with no selector.
 
 | Module | Manual controls |
 |---|---|

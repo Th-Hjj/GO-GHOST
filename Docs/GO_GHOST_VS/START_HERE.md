@@ -1,5 +1,7 @@
 # GO GHOST — Start Here
 
+Latest delivery request: Thomas authorized **solo opening / desktop release (2026-10-05)**: Wave 1/2 Bosses mirror the actual player horizontal opening across the arena centre; Wave 3 retains its authored arrangement. Perform a bounded serious-performance/core-flow check, then Windows x64 and macOS Apple Silicon builds and ZIP packaging. This request supersedes previous no-Build limits for this delivery. Actual build/runtime results and remaining limits belong in Implementation_Log.
+
 Latest extension: Thomas approved **dash pressure / sword footwork (2026-10-05)**: prioritize legal closing/retreat Draw Dash, bounded same-support recovery steps and faster grounded interception replanning; Piercing preparation .90 s + .24 s lock. Preserve full tells/recovery, committed jumps, collision, resources and W3 shared threats. Focused checks and short W1/W2/W3 only.
 
 Retained authority: Thomas approved **relentless sword pursuit / Dodge nerf (2026-10-05)**: Dodge distance 3 / movement .18 s / immunity .20 s / start cooldown 1.2 s; arrival-aware interception, Leap landing follow-up and physical Flank Leap with a separate arrival cut. Preserve full tells, real collisions, W3 threat limits and damage/health. Compile, focused mechanisms and short W2/W3 only. Actual results belong in Implementation_Log.

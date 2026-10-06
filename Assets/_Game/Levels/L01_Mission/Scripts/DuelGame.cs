@@ -110,8 +110,13 @@ namespace GoGhost.Duel
             Player.GetComponent<OfficerVisual>()?.ConfigureLegacyCombat();
             coordinator = encounter.AddComponent<DuoCoordinator>();
             var activeActors = new List<BossAgent>(2);
-            if (Wave == 1 || Wave == 3) activeActors.Add(CreateBoss(gunnerPrefab, gunnerSpawn, 1));
-            if (Wave == 2 || Wave == 3) activeActors.Add(CreateBoss(swordsmanPrefab, swordsmanSpawn, 2));
+            // Solo opponents mirror the actual player opening across the arena centre.
+            // Keep each Boss's supported height and the authored duo arrangement.
+            float soloX = 2 * arenaBounds.center.x - Player.transform.position.x;
+            if (Wave == 1 || Wave == 3) activeActors.Add(CreateBoss(gunnerPrefab,
+                Wave == 1 ? new Vector2(soloX, gunnerSpawn.y) : gunnerSpawn, 1));
+            if (Wave == 2 || Wave == 3) activeActors.Add(CreateBoss(swordsmanPrefab,
+                Wave == 2 ? new Vector2(soloX, swordsmanSpawn.y) : swordsmanSpawn, 2));
             actors = activeActors.ToArray();
             Police = actors[0].Health; // Historical development consumers; gameplay uses the full actor list.
             coordinator.Configure(actors, navigation);

@@ -74,6 +74,7 @@ public static class BossEncounterSmoke
     public static void RunPursuitMechanics() => Start("pursuit-mechanics", false);
     public static void RunPursuitObservation() => Start("pursuit-observation", false);
     public static void RunDashMobility() => Start("dash-mobility", false);
+    public static void RunReleaseSmoke() => Start("release", false);
     public static void Cancel()
     { if (Running) { Record("NOT TESTED: operator cancelled unfinished checks."); Finish(false); } }
 
@@ -152,6 +153,7 @@ public static class BossEncounterSmoke
     static IEnumerator Run()
     {
         Record("Editor Play Mode; simulated focus and virtual keyboard/mouse. No physical-input or audibility claim.");
+        if(mode=="release") {yield return ReleaseSmoke();yield break;}
         if(mode=="pursuit-flank") {yield return PursuitFlank();yield break;}
         if(mode=="pursuit-mechanics") {yield return PursuitMechanics();yield break;}
         if(mode=="pursuit-observation") {yield return PursuitObservation();yield break;}
@@ -537,6 +539,82 @@ public static class BossEncounterSmoke
         Record("NOT TESTED: hardware input, exhaustive angles/poses, balance, Windows Build/launch.");
     }
 
+    static IEnumerator ReleaseSmoke()
+    {
+        game.NewGame();
+        Check("New Game defaults to manual configuration",game.Phase==DuelPhase.Configure
+            &&!game.DraftLegs&&!game.DraftArms&&!game.DraftSpine);
+        for(int i=0;i<3;i++)game.SetDraft(i,true);
+        for(int wave=1;wave<=3;wave++)
+        {
+            Check("normal configuration W"+wave,game.Wave==wave&&game.Phase==DuelPhase.Configure);
+            var opening=System.Diagnostics.Stopwatch.StartNew();game.StartFight();opening.Stop();
+            Record($"PERF W{wave} synchronous StartFight={opening.Elapsed.TotalMilliseconds:F2}ms");
+            var start=game.Player.transform.position;
+            if(wave<3)Check("solo mirror W"+wave,Mathf.Abs(start.x+game.Bosses[0].Position.x
+                -2*game.Bosses[0].Navigation.ArenaBounds.center.x)<.001f,
+                $"player={start} boss={game.Bosses[0].Position}");
+            else Check("duo authored opening retained",Mathf.Abs(game.Bosses[0].Position.x-9)<.001f
+                &&Mathf.Abs(game.Bosses[1].Position.x-3)<.001f);
+            Check("preparation freezes actors",game.Phase==DuelPhase.Prepare
+                &&!game.Player.GetComponent<Rigidbody2D>().simulated&&game.Bosses.All(a=>!a.Running));
+            float prepAt=Time.time;
+            yield return Until(()=>game.Phase==DuelPhase.Fight,DuelGame.PreparationSeconds+1.2f);
+            Check("full preparation enters fight W"+wave,game.Phase==DuelPhase.Fight
+                &&Time.time-prepAt>=DuelGame.PreparationSeconds-.025f);
+            if(wave==1)
+            {
+                checkingPause=true;game.SetPause(true);float clock=game.FightClock;
+                yield return RealSeconds(.15f);
+                Check("fight pause freezes time and audio",game.Paused&&Time.timeScale==0
+                    &&game.FightClock==clock&&AudioListener.pause);
+                game.SetPause(false);checkingPause=false;
+            }
+            var frames=new List<float>(1500);int peakProjectiles=0;
+            float until=Time.time+6;
+            while(game.Phase==DuelPhase.Fight&&Time.time<until)
+            {
+                yield return null;
+                frames.Add(Time.unscaledDeltaTime*1000);
+                peakProjectiles=Mathf.Max(peakProjectiles,Projectile.Active.Count);
+            }
+            frames.Sort();
+            if(frames.Count>0)Record($"PERF W{wave} Editor frame samples={frames.Count} median={frames[frames.Count/2]:F2}ms "
+                +$"p95={frames[Mathf.Min(frames.Count-1,(int)(frames.Count*.95f))]:F2}ms max={frames[frames.Count-1]:F2}ms "
+                +$"over100ms={frames.Count(t=>t>100)} peakProjectiles={peakProjectiles}");
+            Check("normal combat advances and fires W"+wave,game.Phase==DuelPhase.Fight&&game.Rifle.ShotsFired>0);
+            PitchResult();
+            Record("CONTROLLED deaths now validate flow only, not balance or winnability.");
+            StopPolicies();game.Bosses[0].Health.TakeDamage(99999,game.Player.gameObject);
+            if(wave==3)
+            {
+                yield return Frames(2);
+                Check("one Boss death cannot complete duo",game.Phase==DuelPhase.Fight&&game.Bosses[1].IsAlive);
+                game.Bosses[1].Health.TakeDamage(99999,game.Player.gameObject);
+                yield return Frames(2);Check("both Boss deaths complete game",game.Phase==DuelPhase.Complete);
+            }
+            else
+            {
+                yield return Until(()=>game.Phase==DuelPhase.Configure,1.5f);
+                Check("next wave keeps permissions",game.Phase==DuelPhase.Configure&&game.Wave==wave+1
+                    &&game.DraftLegs&&game.DraftArms&&game.DraftSpine);
+            }
+        }
+        yield return Fresh(2);StopPolicies();
+        var previous=game.Player;game.Player.TakeDamage(99999,null);yield return Frames(2);
+        Check("death reaches defeat",game.Phase==DuelPhase.Failed);
+        game.Reconfigure();game.StartFight();
+        Check("retry creates fresh full resources",game.Wave==2&&game.Player!=previous
+            &&game.Player.CurrentHealth==game.Player.MaxHealth&&game.Bosses[0].Health.CurrentHealth==game.Bosses[0].Health.MaxHealth);
+        Check("retry keeps solo mirror",Mathf.Abs(game.Player.transform.position.x+game.Bosses[0].Position.x)<.001f);
+        yield return Until(()=>game.Phase==DuelPhase.Fight,DuelGame.PreparationSeconds+1.2f);StopPolicies();
+        game.Bosses[0].Health.TakeDamage(99999,game.Player.gameObject);game.Player.TakeDamage(99999,null);
+        yield return Frames(2);Check("simultaneous death is defeat",game.Phase==DuelPhase.Failed);
+        game.MainMenu();yield return Frames(2);
+        Check("menu cleanup releases actors and projectiles",game.Phase==DuelPhase.Menu&&Projectile.Active.Count==0
+            &&Object.FindObjectsByType<BossAgent>(FindObjectsSortMode.None).Length==0&&Time.timeScale==1&&!AudioListener.pause);
+        Record("Editor timing includes Editor overhead; long-run memory, hardware input and Mac runtime NOT TESTED.");
+    }
     static IEnumerator PlayerOpening()
     {
         foreach(int wave in new[]{1,2,3})

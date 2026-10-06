@@ -28,6 +28,8 @@ namespace GoGhost.Duel
         public float Radius, StartsAt, EndsAt, ProjectileSpeed;
         public float ArcFrom, ArcTo, Facing, Reach, Gravity;
         public bool TerrainBlocked, Valid;
+        public bool HasLandingX;
+        public float LandingX;
         // Copied executable jump samples. They never read a live target during prediction.
         public Vector2[] OriginPath;
         public float PathStartsAt, PathStep;
@@ -61,7 +63,12 @@ namespace GoGhost.Duel
                         float angle=Mathf.Lerp(ArcFrom,ArcTo,elapsed/Mathf.Max(.001f,EndsAt-StartsAt))*Mathf.Deg2Rad;
                         tip=root+new Vector2(Facing*Mathf.Cos(angle),Mathf.Sin(angle))*Reach;
                     }
-                    else {root+=Direction*elapsed+Vector2.up*(Gravity*elapsed*elapsed*.5f);tip=root+Vector2.down*Reach;}
+                    else
+                    {
+                        root+=Direction*elapsed+Vector2.up*(Gravity*elapsed*elapsed*.5f);
+                        if(HasLandingX)root.x=Mathf.Clamp(root.x,Mathf.Min(Origin.x,LandingX),Mathf.Max(Origin.x,LandingX));
+                        tip=root+Vector2.down*Reach;
+                    }
                     if(TerrainBlocked&&Projectile.TerrainHit(root,tip,Radius,out var hit))tip=root+(tip-root).normalized*hit.distance;
                     if(SegmentBox(root-centre,tip-centre,expanded))return true;
                 }

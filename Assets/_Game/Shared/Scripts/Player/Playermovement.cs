@@ -50,6 +50,11 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
     public float JumpSpeed => stats.jumpForce;
     private SpriteRenderer spriteRenderer;
     private Vector2 moveInput;
+    private Collider2D movementShape;
+    private readonly RaycastHit2D[] pushHits = new RaycastHit2D[16];
+    private float hitPushSpeed, hitPushRemaining, hitPushUntil, hitPushPreviousX;
+    public bool HitPushActive => hitPushRemaining > 0 && Time.time < hitPushUntil;
+    public int HitPushCount { get; private set; }
     private int airJumpsRemaining;
     private bool attemptActive;
     private bool HasDeployment => officer != null && officer.Deployment != null;
@@ -84,6 +89,7 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         IsHovering = false;
         moveInput = Vector2.zero;
         IsGrounded = false;
+        hitPushRemaining = 0; HitPushCount = 0;
     }
 
     private void OnDisable() => CleanupAttempt();
@@ -97,6 +103,7 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        movementShape = GetComponent<Collider2D>();
         dodge = GetComponent<PlayerDodge>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         input = GetComponent<PlayerInputReader>();
@@ -170,7 +177,30 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
     private void FixedUpdate()
     {
         IsHovering = false;
-        if (dodge != null && dodge.IsDodging) return; // dodge drives movement during a dash
+        if (dodge != null && dodge.IsDodging) { hitPushRemaining = 0; return; } // accepted dodge owns movement
+
+        if (HitPushActive)
+        {
+            float direction = Mathf.Sign(hitPushSpeed);
+            hitPushRemaining = Mathf.Max(0, hitPushRemaining - Mathf.Max(0, (rb.position.x-hitPushPreviousX)*direction));
+            hitPushPreviousX = rb.position.x;
+            float travel = Mathf.Min(hitPushRemaining, Mathf.Abs(hitPushSpeed)*Time.fixedDeltaTime);
+            var filter = new ContactFilter2D { useTriggers = false };
+            int count = movementShape.Cast(Vector2.right*direction,filter,pushHits,travel+.02f);
+            for (int i=0;i<count;i++)
+            {
+                var hit = pushHits[i];
+                if (hit.collider == null || hit.collider.isTrigger || hit.collider.attachedRigidbody == rb
+                    || Vector2.Dot(hit.normal,Vector2.right*direction) >= -.2f) continue;
+                // One-way character platforms do not acquire solid side walls during a hit reaction.
+                if (hit.collider.usedByEffector && hit.collider.GetComponent<PlatformEffector2D>() != null) continue;
+                travel = Mathf.Min(travel, Mathf.Max(0,hit.distance-.02f));
+            }
+            rb.linearVelocity = new Vector2(direction*travel/Time.fixedDeltaTime,rb.linearVelocity.y);
+            if (travel < .001f) hitPushRemaining = 0;
+            return;
+        }
+        hitPushRemaining = 0;
 
         float vertical = rb.linearVelocity.y;
         if (HasHover && input.GameplayInputEnabled && input.JumpHeld && !IsGrounded && vertical <= 0 && HoverRemaining > 0)
@@ -181,6 +211,19 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
             vertical = Mathf.Max(vertical, -HoverFallSpeed);
         }
         rb.linearVelocity = new Vector2(moveInput.x * MoveSpeed, vertical);
+    }
+
+    // A real damaging hit may request one bounded horizontal reaction. Physics and gravity still own position.
+    public bool ApplyHitPush(float direction, float distance, float duration)
+    {
+        var health = GetComponent<PlayerHealth>();
+        if (!isActiveAndEnabled || rb == null || movementShape == null || Mathf.Abs(direction)<.01f
+            || health == null || health.IsDead || health.IsInvulnerable || dodge != null && dodge.IsDodging) return false;
+        distance = Mathf.Clamp(distance,0,2); duration = Mathf.Clamp(duration,.02f,.25f);
+        if (distance<=0) return false;
+        hitPushSpeed = Mathf.Sign(direction)*distance/duration; hitPushRemaining = distance;
+        hitPushUntil = Time.time+duration; hitPushPreviousX = rb.position.x; HitPushCount++;
+        return true;
     }
 
     private void TryJump()

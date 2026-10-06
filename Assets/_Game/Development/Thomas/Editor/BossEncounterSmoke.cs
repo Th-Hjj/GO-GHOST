@@ -60,6 +60,11 @@ public static class BossEncounterSmoke
     public static void RunCamo() => Start("camo", false);
     public static void RunCamoMechanics() => Start("camo-mechanics", false);
     public static void RunCamoReview() => Start("camo-review", false);
+    public static void RunSoloPressureMechanics() => Start("solo-pressure-mechanics", false);
+    public static void RunSoloPressureObservation() => Start("solo-pressure-observation", false);
+    public static void RunSoloDropMechanics() => Start("solo-drop-mechanics", false);
+    public static void RunSoloPressureEdges() => Start("solo-pressure-edges", false);
+    public static void RunSoloPressureFinal() => Start("solo-pressure-final", false);
     public static void RunPlayerAnimation() => Start("player-animation", false);
     public static void Cancel()
     { if (Running) { Record("NOT TESTED: operator cancelled unfinished checks."); Finish(false); } }
@@ -139,6 +144,10 @@ public static class BossEncounterSmoke
     static IEnumerator Run()
     {
         Record("Editor Play Mode; simulated focus and virtual keyboard/mouse. No physical-input or audibility claim.");
+        if(mode=="solo-pressure-mechanics"||mode=="solo-drop-mechanics") {yield return SoloPressureMechanics();yield break;}
+        if(mode=="solo-pressure-observation") {yield return SoloPressureObservation();yield break;}
+        if(mode=="solo-pressure-final") {yield return SoloPressureObservation();yield break;}
+        if(mode=="solo-pressure-edges") {yield return SoloPressureEdges();yield break;}
         if(mode=="player-animation") {yield return PlayerAnimation();yield break;}
         if(mode=="camo-review") {yield return CamoReview();yield break;}
         if(mode=="camo"||mode=="camo-mechanics") {yield return Camo();yield break;}
@@ -488,6 +497,155 @@ public static class BossEncounterSmoke
         yield return Seconds(2.5f);
         Check("debug request returns to ordinary combat or advances a real combo",game.FightClock>2&&!game.Paused);
         Record("NOT TESTED: physical P key, natural combo completion, full regression, balance/outcome proof, Windows build.");
+    }
+    static IEnumerator SoloPressureMechanics()
+    {
+        Record("CONTROLLED initial placement/stopped policies; real executors, projectiles and gravity. No outcome evidence.");
+        yield return Fresh(2);StopPolicies();var sword=game.Bosses[0];
+        OnFloor(sword.gameObject,sword.Navigation,-1);OnFloor(game.Player.gameObject,sword.Navigation,.5f);
+        yield return Seconds(.3f);
+        bool planned=sword.Tactics.TryPlanDrop(sword.Perception.Facts,out var drop);
+        bool accepted=planned&&sword.Tactics.StartDropPlan(drop,false);
+        if(accepted)sword.Tactics.Enabled=true;
+        yield return Until(()=>sword.Actions.Busy||!sword.Tactics.DropPlanPending,2);
+        sword.Tactics.Enabled=false;
+        Vector2 initial=drop!=null?drop.TargetHypothesis:Vector2.zero,locked=Vector2.zero;
+        float playerStartX=game.Player.GetComponent<Rigidbody2D>().position.x;
+        Vector2 landed=Vector2.zero;bool landedObserved=false;
+        bool sawLock=false,frozen=true,sawActive=false,sawFollow=false;float lockedAt=0,activeAt=0,followAt=0,followActive=0;
+        float end=Time.time+3;
+        var previousPhase=sword.Actions.Phase;var previousAbility=sword.Actions.Ability;
+        while((sword.Actions.Busy||sword.Tactics.DropPlanPending)&&Time.time<end)
+        {
+            var a=sword.Actions;
+            if(sawActive&&!landedObserved&&sword.Motor.Grounded){landed=sword.Position;landedObserved=true;}
+            if(a.Phase!=previousPhase||a.Ability!=previousAbility)
+            {ActionProbe("focused drop transition",sword);previousPhase=a.Phase;previousAbility=a.Ability;}
+            if(a.Ability==BossAbility.DropCut)
+            {
+                if(a.Phase==BossActionPhase.Locked&&!sawLock){sawLock=true;locked=a.DropTarget;lockedAt=Time.time;}
+                if(sawLock)frozen&=Vector2.Distance(locked,a.DropTarget)<.001f;
+                if(a.Phase==BossActionPhase.Active&&!sawActive){sawActive=true;activeAt=Time.time;}
+            }
+            if(a.Ability==BossAbility.DropFollowup)
+            {
+                if(!sawFollow){sawFollow=true;followAt=Time.time;}
+                if(a.Phase==BossActionPhase.Active&&followActive==0)followActive=Time.time;
+            }
+            yield return null;
+        }
+        Check("planned Drop physically jumps, locks and lands",accepted&&sawActive&&sword.Motor.Grounded&&!sword.Actions.Busy,
+            $"planned={planned} initial={initial} locked={locked} end={sword.Position} active={sawActive}");
+        Check("Drop correction retains full fixed lock",sawLock&&frozen&&activeAt-lockedAt>=sword.Profile.DropCut.Lock-.04f,
+            $"corrections={sword.Actions.DropCorrections} lock={activeAt-lockedAt:F3} frozen={frozen}");
+        Check("Drop pushes player once while preserving sword landing",landedObserved&&Mathf.Abs(landed.x-locked.x)<.22f
+            &&game.Player.GetComponent<PlayerMovement>().HitPushCount==1
+            &&Mathf.Abs(game.Player.GetComponent<Rigidbody2D>().position.x-playerStartX)>.6f,
+            $"landing={landed} locked={locked} playerDx={game.Player.GetComponent<Rigidbody2D>().position.x-playerStartX:F3} pushes={game.Player.GetComponent<PlayerMovement>().HitPushCount}");
+        Check("landing front cut occurs once with its own tell",sawFollow&&sword.Actions.Activated[(int)BossAbility.DropFollowup]==1
+            &&followActive-followAt>=sword.Profile.RhythmPrepare[0]+sword.Profile.RhythmLock[0]-.04f,
+            $"started={sword.Actions.Started[(int)BossAbility.DropFollowup]} active={sword.Actions.Activated[(int)BossAbility.DropFollowup]} tell={followActive-followAt:F3}");
+        Check("no direct standalone Drop follow-up entry",!sword.Actions.TryStart(BossAbility.DropFollowup,sword.Perception.Facts.Position));
+        if(mode=="solo-drop-mechanics")yield break;
+
+        yield return Fresh(1);StopPolicies();var gun=game.Bosses[0];
+        OnFloor(gun.gameObject,gun.Navigation,-7);OnFloor(game.Player.gameObject,gun.Navigation,1);
+        yield return Seconds(.3f);
+        for(int burst=0;burst<2;burst++)
+        {
+            yield return Until(()=>gun.Actions.Ready(BossAbility.Burst),1.2f);
+            int ammo=gun.Actions.Ammo;float fromX=gun.Position.x;
+            accepted=gun.Actions.TryStart(BossAbility.Burst,gun.Perception.Facts.Position);
+            var shots=new HashSet<Projectile>();var times=new List<float>();bool bullets=true;end=Time.time+2;
+            while(gun.Actions.Busy&&Time.time<end)
+            {
+                foreach(var shot in Projectile.Active)if(shot!=null&&shot.Owner==gun.gameObject&&shots.Add(shot))
+                {times.Add(Time.time);bullets&=shot.Damage==gun.Profile.Burst.Damage&&Mathf.Abs(shot.GetComponent<Rigidbody2D>().linearVelocity.magnitude-gun.Profile.BulletSpeed)<.05f;}
+                yield return null;
+            }
+            Check("Burst "+burst+" uses three normal paid bullets",accepted&&times.Count==3&&bullets&&ammo-gun.Actions.Ammo==3,
+                $"times={string.Join(",",times)} ammo={ammo}->{gun.Actions.Ammo} stagger={gun.Actions.StaggeredBurst}");
+            if(burst==1)Check("staggered first gap exceeds ordinary gap",times.Count==3&&times[1]-times[0]>=gun.Profile.BurstStaggerPause-.04f
+                &&times[2]-times[1]<times[1]-times[0]-.05f);
+            Check("Burst physically strafes on safe support",gun.Motor.Grounded&&Mathf.Abs(gun.Position.x-fromX)>.15f,
+                $"x={fromX:F2}->{gun.Position.x:F2}");
+        }
+        heldKeys=new[]{Key.D};yield return Seconds(.2f);
+        var facts=gun.Perception.Facts;
+        bool early=gun.Tactics.TryGunTarget(BossAbility.Piercing,gun.Position,facts,out var earlyPoint,.96f);
+        bool late=gun.Tactics.TryGunTarget(BossAbility.Piercing,gun.Position,facts,out var latePoint,.24f);
+        Check("beam prediction uses remaining tell",early&&late&&earlyPoint.x>latePoint.x+.3f,
+            $"velocity={facts.Velocity} early={earlyPoint} late={latePoint}");
+        heldKeys=Array.Empty<Key>();yield return Seconds(.25f);
+        accepted=gun.Actions.TryStart(BossAbility.Piercing,gun.Perception.Facts.Position);
+        float prepareAt=Time.time;Vector2 lockedAim=Vector2.zero;bool beamLock=false,stable=true;
+        end=Time.time+2;
+        while(gun.Actions.Busy&&Time.time<end)
+        {
+            if(gun.Actions.Phase==BossActionPhase.Locked)
+            {if(!beamLock){beamLock=true;lockedAim=gun.Actions.Aim;}else stable&=Vector2.Distance(lockedAim,gun.Actions.Aim)<.001f;}
+            yield return null;
+        }
+        Check("Piercing preserves complete tell and fixed aim",accepted&&beamLock&&stable
+            &&gun.Actions.LastActiveAt-prepareAt>=gun.Profile.Piercing.Prepare+gun.Profile.Piercing.Lock-.04f);
+        Record("NOT TESTED here: cooperative Drop branch exclusion is source checked; natural pressure is a separate bounded sample.");
+    }
+    static IEnumerator SoloPressureEdges()
+    {
+        Record("CONTROLLED narrow late-correction and push-motor fixtures; no balance/outcome proof.");
+        yield return Fresh(2);StopPolicies();var sword=game.Bosses[0];
+        OnFloor(sword.gameObject,sword.Navigation,0);OnFloor(game.Player.gameObject,sword.Navigation,1.6f);
+        yield return Seconds(.3f);Vector2 original=sword.Position;
+        bool jumped=sword.Motor.TryJump();yield return Seconds(.18f);
+        bool accepted=sword.Actions.TryStart(BossAbility.DropCut,original);
+        yield return Until(()=>sword.Actions.Phase==BossActionPhase.Locked||!sword.Actions.Busy,.5f);
+        Vector2 target=sword.Actions.DropTarget;bool frozen=true;heldKeys=new[]{Key.D};
+        float end=Time.time+2;
+        while(sword.Actions.Busy&&Time.time<end)
+        {if(sword.Actions.Ability==BossAbility.DropCut)frozen&=Vector2.Distance(target,sword.Actions.DropTarget)<.001f;yield return null;}
+        heldKeys=Array.Empty<Key>();
+        Check("late public Drop correction is bounded and then frozen",jumped&&accepted&&sword.Actions.DropCorrections==1
+            &&Vector2.Distance(target,original)>.1f&&Mathf.Abs(target.x-original.x)<=sword.Navigation.PlatformWidth*.5f&&frozen,
+            $"original={original} corrected={target} count={sword.Actions.DropCorrections} frozen={frozen}");
+
+        yield return Fresh(2);StopPolicies();sword=game.Bosses[0];
+        var movement=game.Player.GetComponent<PlayerMovement>();var body=game.Player.GetComponent<Rigidbody2D>();
+        var shape=game.Player.GetComponent<Collider2D>();var bounds=sword.Navigation.Bounds;
+        OnFloor(sword.gameObject,sword.Navigation,-6);OnFloor(game.Player.gameObject,sword.Navigation,bounds.max.x-shape.bounds.extents.x-.15f);
+        yield return Seconds(.2f);
+        bool pushed=movement.ApplyHitPush(1,1.4f,.14f);yield return Seconds(.3f);
+        Check("hit push stops at wall and expires",pushed&&!movement.HitPushActive&&shape.bounds.max.x<=bounds.max.x+.03f,
+            $"edge={shape.bounds.max.x:F3} wall={bounds.max.x:F3}");
+        bool dodged=game.Dodge.TryDodge(-1);bool rejected=!movement.ApplyHitPush(1,1.4f,.14f);
+        yield return Seconds(.3f);
+        Check("accepted Dodge rejects hit push",dodged&&rejected&&!movement.HitPushActive);
+        OnFloor(game.Player.gameObject,sword.Navigation,0);yield return Seconds(.1f);
+        pushed=movement.ApplyHitPush(1,1.4f,.14f);yield return Frames(1);
+        checkingPause=true;game.SetPause(true);Vector2 paused=body.position;
+        yield return RealSeconds(.1f);
+        Check("pause freezes hit push",pushed&&Vector2.Distance(paused,body.position)<.001f&&movement.HitPushActive);
+        game.SetPause(false);checkingPause=false;yield return Seconds(.3f);
+        Check("hit push resumes and ends",!movement.HitPushActive&&body.position.x>paused.x);
+        yield return Fresh(2);Check("fresh player clears hit push",!game.Player.GetComponent<PlayerMovement>().HitPushActive
+            &&game.Player.GetComponent<PlayerMovement>().HitPushCount==0);
+    }
+    static IEnumerator SoloPressureObservation()
+    {
+        bool final=mode=="solo-pressure-final";
+        Record(final?"NORMAL final-source W2/W3 12s each after requested hit-push correction. Prior W1 remains unchanged.":"NORMAL all-AI W1 12s / W2 20s / W3 18s, once each. No outcome gate.");
+        for(int wave=final?2:1;wave<=3;wave++)
+        {
+            yield return Fresh(wave,true);var duo=game.GetComponentInChildren<DuoCoordinator>();bool overlap=false;
+            float duration=final?12:wave==1?12:wave==2?20:18;
+            while(game.Phase==DuelPhase.Fight&&game.FightClock<duration)
+            {
+                if(duo.Phase==DuoPhase.Idle)overlap|=game.Bosses.Count(a=>a.Actions.HighThreat&&a.Actions.Phase==BossActionPhase.Active)>1;
+                yield return null;
+            }
+            PitchResult();Check("W"+wave+" ordinary major budget",!overlap);
+            foreach(var actor in game.Bosses)Record($"PRESSURE W{wave} actor={actor.ActorId} recoveryPlans={actor.Tactics.RecoveryPlansUsed} gunMoves={actor.Tactics.GunRepositions} dropCorrections={actor.Actions.DropCorrections}");
+        }
+        Record("NOT TESTED: physical input, long-run balance, exhaustive navigation, full lifecycle, Windows build.");
     }
     static IEnumerator PressureMechanics()
     {

@@ -42,7 +42,8 @@ namespace GoGhost.Duel
         bool enabledCombat, launched, leftGround, jumpRequested, dashStopPending;
         float move, speedScale = 1, dashRemaining, dashSpeed, routeAge, progressAge;
         bool dropping, dropRequested, stepping;
-        float dropHorizontal, stepRemaining;
+        float dropHorizontal, stepRemaining,dropLandingX;
+        bool fixedDropLanding;
         Vector2 stepPosition;
 
         void Awake()
@@ -101,8 +102,11 @@ namespace GoGhost.Duel
             if (!enabledCombat || Grounded) return;
             Brake(); jumpRequested = false; dropping = dropRequested = true; DropBlocked = false;
             dropHorizontal = Mathf.Clamp(horizontal, -Profile.Speed, Profile.Speed);
+            fixedDropLanding=false;
         }
-        public void EndDrop() { dropping = dropRequested = DropBlocked = false; Brake(); }
+        public void StartDrop(float horizontal,float landingX)
+        {StartDrop(horizontal);fixedDropLanding=true;dropLandingX=landingX;}
+        public void EndDrop() { dropping = dropRequested = DropBlocked = fixedDropLanding = false; Brake(); }
         public void SetRoute(ArenaNavigation2D.Route value)
         {
             route = value; stepIndex = 0; launched = leftGround = false;
@@ -129,6 +133,7 @@ namespace GoGhost.Duel
                 && navigation.TrySupport(here, Size, out _);
             if (dropping && !dropRequested && body.linearVelocity.y > -.2f)
             {
+                DropBlocked=false;
                 foreach (var contact in Physics2D.BoxCastAll(here, Size-Vector2.one*.025f, 0, Vector2.down, .065f, LayerMask.GetMask("Player","Enemy")))
                     if (contact.collider != null && !contact.collider.isTrigger && contact.collider.attachedRigidbody != body
                         && contact.normal.y > .5f) { DropBlocked=true; break; }
@@ -173,6 +178,7 @@ namespace GoGhost.Duel
             if (route != null) FollowRoute(dt);
             float vertical = body.linearVelocity.y;
             if (dropRequested) { vertical = -GetComponent<BossAgent>().Profile.DropSpeed; dropRequested = false; }
+            else if(dropping&&!DropBlocked)vertical=Mathf.Min(vertical,-GetComponent<BossAgent>().Profile.DropSpeed);
             if (jumpRequested)
             {
                 vertical = Profile.JumpSpeed;
@@ -180,6 +186,12 @@ namespace GoGhost.Duel
                 jumpRequested = false; Grounded = false;
             }
             float horizontal = dropping ? dropHorizontal : StepHorizontal(body.linearVelocity.x, move * Profile.Speed * speedScale, Grounded, Profile, dt);
+            if(dropping&&fixedDropLanding)
+            {
+                float remaining=dropLandingX-here.x;
+                horizontal=Mathf.Sign(remaining)==Mathf.Sign(dropHorizontal)
+                    ?Mathf.Sign(dropHorizontal)*Mathf.Min(Mathf.Abs(dropHorizontal),Mathf.Abs(remaining)/dt):0;
+            }
             if (stepping)
             {
                 stepRemaining = Mathf.Max(0, stepRemaining - Mathf.Abs(here.x - stepPosition.x));

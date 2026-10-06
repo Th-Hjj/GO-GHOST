@@ -6,6 +6,21 @@
   "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
   "playback": "A dedicated WaveMusicPlayer starts at Start Fight, including the three-second preparation. Native full-clip loop, volume 0.18, fade 0.35 seconds, pause with the existing AudioListener. Retry starts at zero.",
   "import": "Stereo preserved; Streaming; Vorbis quality 0.8; original sample rate; preload metadata/audio enabled; load in background enabled. No platform override.",
+  "loudness_matching": {
+    "date": "2026-10-05",
+    "method": "FFmpeg 7.1 EBU R128 integrated LUFS scanner on original full stereo recordings; constant playback attenuation only.",
+    "method_reference": "https://ffmpeg.org/ffmpeg-filters.html#ebur128",
+    "target_before_master_lufs": -13.6,
+    "original_full_track_lufs_by_wave": [-13.6, -8.0, -10.5],
+    "trim_db_by_wave": [0.0, -5.6, -3.1],
+    "playback_gain_by_wave": [1.0, 0.524807, 0.699842],
+    "remeasured_full_track_lufs_by_wave": [-13.6, -13.6, -13.6],
+    "original_first_60_seconds_lufs_by_wave": [-14.4, -8.0, -11.0],
+    "remeasured_first_60_seconds_lufs_by_wave": [-14.4, -13.6, -14.1],
+    "remeasured_true_peak_before_master_dbfs_by_wave": [-2.7, -3.2, -3.5],
+    "master_volume": 0.18,
+    "note": "The source recordings and their internal dynamics are unchanged. Unity codec/device effects and subjective perception are not measured by the source-file scanner. Existing local importer quality edits were preserved and excluded from this change."
+  },
   "files": [
     {
       "wave": 1,

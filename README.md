@@ -25,6 +25,8 @@ The original player controls, tuning, stickman and five-platform arena are retai
 
 Temporary CC0 music: Wave 1 **Open Warfare** (Ruskerdax), Wave 2 **Boss Fight 2** (Ansimuz), Wave 3 **Achilles** (Zane Little Music). Music starts when **Start Fight** is selected, continues through preparation, pauses with the game and stops at results/menu. Retry starts the recording again. The dedicated `Wave Music` child in the formal scene exposes independent volume (0.18) and fade duration (0.35 s); full-song loop seams and subjective mixing still need listening. [Music sources and licenses](Assets/_Game/Levels/L01_Mission/Audio/Music/Licenses/music-manifest.json).
 
+Per-wave playback gains **1 / 0.524807 / 0.699842** match the full-recording average loudness to Wave 1; the music master remains independent. Original audio and musical dynamics are preserved. The same provenance file records loudness measurements; subjective matching still needs listening.
+
 ## Development and evidence
 
 The retained `DuelGame`/`DuelUI` own the three-wave shell. Existing player executors and `Projectile` retain actual combat. `BossMotor2D` follows routes derived from current colliders; `BossActionExecutor` owns skill timing and hit geometry; `BossPerception`, `BossTactics` and `DuoCoordinator` use delayed public facts. `LegacyPlayerAI` requests independently routed inputs. Policies cannot write damage or outcomes.

@@ -40,6 +40,8 @@ namespace GoGhost.Duel
         public bool DraftLegs { get; private set; }
         public bool DraftArms { get; private set; }
         public bool DraftSpine { get; private set; }
+        // UPGRADE: persistent progress (AI level, committed abilities, wave). Saved to save.json.
+        public SaveData Save { get; private set; } = new SaveData();
         GameObject encounter;
         DuelUI ui;
         BossAgent[] actors = System.Array.Empty<BossAgent>();
@@ -73,12 +75,31 @@ namespace GoGhost.Duel
         {
             if (!focus && (Phase == DuelPhase.Fight || Phase == DuelPhase.Prepare)) SetPause(true);
         }
-        public void NewGame()
+        // UPGRADE: New Game wipes the save and goes straight to boss 1 (no upgrades yet).
+        // Shared reset (no save written, no fight started). Playtest shortcuts use this directly.
+        void ResetRun()
         {
             ClearEncounter();
             Wave = 1;
             DraftLegs = DraftArms = DraftSpine = false;
             FirstConfiguration = true;
+            Save = new SaveData { wave = 1 };
+            SetPhase(DuelPhase.Configure);
+        }
+        public void NewGame()
+        {
+            ResetRun();
+            SaveSystem.Save(Save);
+            StartFight();
+        }
+        // UPGRADE: Continue loads the save and lands on the upgrade screen (the Configure phase).
+        public void ContinueGame()
+        {
+            ClearEncounter();
+            Save = SaveSystem.Load();
+            Wave = Mathf.Clamp(Save.wave, 1, 3);
+            DraftLegs = DraftArms = DraftSpine = false;
+            FirstConfiguration = false;
             SetPhase(DuelPhase.Configure);
         }
         public void SetDraft(int module, bool automatic)
@@ -108,6 +129,8 @@ namespace GoGhost.Duel
             Rifle.ConfigureLegacyCombat();
             Dodge.ConfigureLegacyCombat();
             Player.GetComponent<OfficerVisual>()?.ConfigureLegacyCombat();
+            // UPGRADE: tint the body parts the player has committed upgrades to.
+            Player.GetComponent<OfficerVisual>()?.Apply(LoadoutBridge.BuildSnapshot(Save));
             coordinator = encounter.AddComponent<DuoCoordinator>();
             var activeActors = new List<BossAgent>(2);
             // Solo opponents mirror the actual player opening across the arena centre.
@@ -249,6 +272,8 @@ namespace GoGhost.Duel
                 else if (Phase == DuelPhase.Between && phaseTime >= .8f)
                 {
                     Wave++;
+                    // UPGRADE: autosave which wave to resume at.
+                    Save.wave = Wave; SaveSystem.Save(Save);
                     ClearEncounter();
                     SetPhase(DuelPhase.Configure);
                 }
@@ -269,6 +294,9 @@ namespace GoGhost.Duel
             bool defeat = Player.IsDead;
             Trace($"result wave={Wave} player={Player.CurrentHealth} bosses={HealthSummary()} elapsed={FightClock:0.00}");
             StopCombat();
+            // UPGRADE: autosave on defeat (counts the attempt).
+            if (defeat) Save.runNumber++;
+            SaveSystem.Save(Save);
             sounds?.Play(defeat ? Sfx.Defeat : Sfx.Victory);
             SetPhase(defeat ? DuelPhase.Failed : Wave == 3 ? DuelPhase.Complete : DuelPhase.Between);
         }
@@ -282,7 +310,7 @@ namespace GoGhost.Duel
         // Entry selects only the normal configuration; no fight-state injection.
         public void ConfigurePlaytestWave(int wave)
         {
-            NewGame(); Wave = Mathf.Clamp(wave, 1, 3); ui.Show();
+            ResetRun(); Wave = Mathf.Clamp(wave, 1, 3); ui.Show();   // UPGRADE: ResetRun, not NewGame (NewGame now starts the fight)
         }
         public void ObserveThirdWave()
         {

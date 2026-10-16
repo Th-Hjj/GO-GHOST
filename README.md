@@ -10,6 +10,10 @@ Choose **New Game**, then **Add Rule → Select Condition → Select Action**. T
 
 The first configuration is empty/manual. The fight deep-copies rules and priorities; retry/next wave preserve them, New Game/Restart clears them. Each fight has a three-second stationary preparation and fresh actors/resources/observation. Victory advances; defeat opens reconfiguration; both Bosses defeated in wave three opens Complete.
 
+The formal scene includes IBM Plex Sans for UI and IBM Plex Mono for compact counters. Rule activation changes color and a narrow glow while preserving glyph positions and wrapping. Add Rule and Start Fight share the right panel's bottom row. Layout targets are 1280x720, 1920x1080, 2560x1440 and 3840x2160; see the latest [validation log](Docs/GO_GHOST_VS/Implementation_Log.md) for actual checks.
+
+Controls use closed inset frames, distinct hover/selection/keyboard-focus cues and dim disabled labels. Configuration retains five readable rule pairs, a separate body preview and fixed description area; combat action text wraps beside a fixed arrow column.
+
 Wave 1/2 Bosses mirror the player's horizontal opening across the arena centre (currently player x=-9, Boss x=9). Wave 3 keeps the original x=9/x=3 Boss arrangement.
 
 | Module | Manual controls |

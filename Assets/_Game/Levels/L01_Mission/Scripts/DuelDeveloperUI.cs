@@ -32,7 +32,7 @@ namespace GoGhost.Duel
         void BuildDeveloperTools()
         {
             Image(page,Vector2.zero,new Vector2(4000,4000),new Color(.025f,.025f,.025f,.98f)).raycastTarget=true;
-            Text("Developer tuning",page,new Vector2(-390,380),new Vector2(650,60),36,TextAlignmentOptions.Left);
+            Text("Developer tuning",page,new Vector2(-390,380),new Vector2(650,60),36,TextAlignmentOptions.Left,headingFont);
             Button("Close  [F8]",page,new Vector2(565,380),new Vector2(260,54),game.ToggleDeveloperTools);
             Text("Paused while editing  |  Session only: restart the app to discard changes",page,new Vector2(0,325),new Vector2(1400,40),22);
             string[] tabs={"Player","Weapon","Health"};
@@ -80,7 +80,7 @@ namespace GoGhost.Duel
             var root=Rect("Dev_"+id,page,new Vector2(175,y),new Vector2(180,48));
             var background=root.gameObject.AddComponent<UnityEngine.UI.Image>();background.color=new Color(.13f,.13f,.13f);background.raycastTarget=true;
             var viewport=Rect("Text Area",root,Vector2.zero,new Vector2(154,42));viewport.gameObject.AddComponent<UnityEngine.UI.RectMask2D>();
-            var text=(TextMeshProUGUI)Text("",viewport,Vector2.zero,new Vector2(154,42),25);
+            var text=(TextMeshProUGUI)Text("",viewport,Vector2.zero,new Vector2(154,42),25,face:numericFont);
             var field=root.gameObject.AddComponent<TMP_InputField>();
             field.targetGraphic=background;field.textViewport=viewport;field.textComponent=text;
             field.contentType=TMP_InputField.ContentType.DecimalNumber;field.lineType=TMP_InputField.LineType.SingleLine;

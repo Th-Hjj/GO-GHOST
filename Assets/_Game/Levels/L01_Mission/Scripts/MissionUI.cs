@@ -576,6 +576,7 @@ public sealed class MissionBodyRegion : UnityEngine.UI.MaskableGraphic, ICanvasR
     public bool NeuralStyle;
     public int NeuralRegion;
     public float NeuralSignal, NeuralFlow = -1;
+    float NeuralStrokeScale => Mathf.Max(1, canvas != null ? canvas.scaleFactor : 1);
 
     private int PointCount => Round ? 32 : Contour != null ? Contour.Length : 4;
     private Vector2 Point(int index)
@@ -618,7 +619,7 @@ public sealed class MissionBodyRegion : UnityEngine.UI.MaskableGraphic, ICanvasR
                 Color glow = outline; glow.a = Selected ? .10f : .05f;
                 Segment(mesh, a, b, 9, glow);
             }
-            float width = Monochrome ? 1.5f / Mathf.Max(.05f, rectTransform.lossyScale.x) : Selected ? 3 : 2;
+            float width = Monochrome ? 1.5f * (NeuralStyle ? NeuralStrokeScale : 1) / Mathf.Max(.05f, rectTransform.lossyScale.x) : Selected ? 3 : 2;
             Segment(mesh, a, b, width, outline);
             if (Equipped) Segment(mesh, Vector2.Lerp(center, a, .88f), Vector2.Lerp(center, b, .88f), 1,
                 new Color(outline.r, outline.g, outline.b, .40f));
@@ -637,7 +638,7 @@ public sealed class MissionBodyRegion : UnityEngine.UI.MaskableGraphic, ICanvasR
         else if(NeuralRegion==4){a=new Vector2(.28f,.42f);b=new Vector2(-.3f,-.42f);}
         else {a=new Vector2(-.28f,.42f);b=new Vector2(.3f,-.42f);}
         a=Vector2.Scale(a,r.size)+r.center;b=Vector2.Scale(b,r.size)+r.center;
-        float pixel=1/Mathf.Max(.05f,rectTransform.lossyScale.x);
+        float pixel=NeuralStrokeScale/Mathf.Max(.05f,rectTransform.lossyScale.x);
         int sections=NeuralRegion==1?6:3;
         for(int i=0;i<sections;i++)
         {

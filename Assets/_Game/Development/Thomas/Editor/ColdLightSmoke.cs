@@ -17,6 +17,39 @@ public static partial class BossEncounterSmoke
     public static void RunColdLightFinal()=>Start("cold-light-final",false);
     public static void RunColdLightProjectiles()=>Start("cold-light-projectiles",false);
     public static void RunColdLightCloseout()=>Start("cold-light-closeout",false);
+    public static void RunColdLightLayout()=>Start("cold-light-layout",false);
+    public static void RunTypography()=>Start("typography",false);
+    public static void RunTypographyFollowup()=>Start("typography-followup",false);
+    public static void RunPlexUI()=>Start("plex-ui",false);
+    public static void RunUIPolish()=>Start("ui-polish",false);
+    public static void RunUIPolishFocus()=>Start("ui-polish-focus",false);
+    public static void RunCompactRuleControls()=>Start("compact-rule-controls",false);
+    static IEnumerator CompactRuleControls()
+    {
+        game.NewGame();
+        game.EditLoadout(d=>{foreach(var r in new[]{new ConditionalRule{Condition=25,Action="F02"},new ConditionalRule{Condition=18,Action="Q02"},new ConditionalRule{Condition=43,Action="D01"},new ConditionalRule{Condition=39,Action="M09"},new ConditionalRule{Condition=28,Action="J03"}})d.TryAddRule(ConditionalCatalog.Response(r.Action).Operation,r);});
+        foreach(int width in new[]{1280,1920,2560,3840})
+        {
+            SetAlphaGameSize(width,width*9/16);yield return Frames(6);
+            Check(width+" actual render size",Screen.width==width&&Screen.height==width*9/16);
+            Check(width+" five rows and boundary controls",game.DraftLoadout.TotalRules==5&&!ConfigButtonNamed("AddRule").interactable&&!ConfigButtonNamed("MoveRuleUp0").interactable&&!ConfigButtonNamed("MoveRuleDown4").interactable);
+            Check(width+" removed hint absent",!Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<TMPro.TMP_Text>().Any(t=>t.text=="Add a rule or click a rule field to edit."));
+            for(int i=0;i<5;i++)
+            {
+                var b=ConfigButtonNamed("RemoveRule"+i);
+                Check(width+" trash icon "+i,b.transform.Find("TrashIcon")!=null&&b.GetComponent<RectTransform>().rect.width==40&&b.GetComponentInChildren<TMPro.TMP_Text>().text=="");
+            }
+            TextFits(width+" compact equipped");yield return ColdCapture("compact-equipped-"+width);
+            ClickConfig("Rule0Condition");yield return Frames(3);TextFits(width+" compact selector");yield return ColdCapture("compact-editor-"+width);
+            ClickConfig("CancelRuleEdit");yield return Frames(2);
+        }
+        var original=game.DraftLoadout.OrderedRules().Select(r=>r.Action).ToArray();
+        ClickConfig("MoveRuleDown0");yield return Frames(2);Check("compact down moves row",game.DraftLoadout.OrderedRules()[1].Action==original[0]);
+        ClickConfig("MoveRuleUp1");yield return Frames(2);Check("compact up restores order",game.DraftLoadout.OrderedRules().Select(r=>r.Action).SequenceEqual(original));
+        ClickConfig("RemoveRule2");yield return Frames(2);Check("trash removes intended rule",game.DraftLoadout.TotalRules==4&&!game.DraftLoadout.OrderedRules().Any(r=>r.Action==original[2]));
+        for(int i=0;i<4;i++){ClickConfig("RemoveRule0");yield return Frames(2);}
+        Check("last trash leaves valid empty loadout",game.DraftLoadout.TotalRules==0&&ConfigButtonNamed("AddRule").interactable&&ConfigButtonNamed("StartFight").interactable);
+    }
     static MissionBodyRegion Region(int i)=>Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<MissionBodyRegion>().Single(r=>r.NeuralRegion==i);
     static ConditionalVisualFeedback Visual(int op,int row=0)=>Feedback(op,row).Visual;
     static SpriteRenderer PlayerPart(string name)=>game.Player.GetComponentsInChildren<SpriteRenderer>().First(s=>s.name==name);
@@ -206,8 +239,8 @@ public static partial class BossEncounterSmoke
         var row0=ui.GetComponentsInChildren<RectTransform>().First(r=>r.name=="RuleFeedback_2_0");
         var row1=ui.GetComponentsInChildren<RectTransform>().First(r=>r.name=="RuleFeedback_2_1");
         Check("reordered HUD binds operation-local accepted row only",!Visual(2,0).Executing&&Visual(2,1).Executing
-            &&row0.GetComponentsInChildren<TMPro.TMP_Text>().Last().fontStyle==TMPro.FontStyles.Normal
-            &&row1.GetComponentsInChildren<TMPro.TMP_Text>().Last().fontStyle==TMPro.FontStyles.Bold);
+            &&row0.GetComponentsInChildren<TMPro.TMP_Text>().Last().color==NeuralPalette.Primary
+            &&row1.GetComponentsInChildren<TMPro.TMP_Text>().Last().color==NeuralPalette.Arms);
         var camera=Camera.main.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
         bool post=camera.renderPostProcessing;camera.renderPostProcessing=false;restoration.Add(()=>{if(camera!=null)camera.renderPostProcessing=post;});yield return Frames(3);
         Check("Bloom-off frame retains actual execution and readable HUD",Visual(2,1).Executing&&ui.GetComponentsInChildren<TMPro.TMP_Text>().All(t=>!t.isTextOverflowing));
@@ -273,6 +306,246 @@ public static partial class BossEncounterSmoke
         yield return AlphaFresh(1,d=>{Rule(d,2,33,"Q01");Rule(d,3,33,"F03");Rule(d,0,33,"M02");});AlphaPlace(-5,-2);yield return Seconds(.12f);
         Check("Bloom-off core reflects real parallel Aim Fire Move",Visual(2).Executing&&Visual(3).Executing&&Visual(0).Executing&&game.Rules.AutomaticShots>0);
         yield return ColdCapture("combat-bloom-off");
+        game.MainMenu();yield return Frames(3);
+    }
+    static string[] TextOverflow()
+    {
+        Canvas.ForceUpdateCanvases();
+        return Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<TMPro.TMP_Text>()
+            .Where(t=>{t.ForceMeshUpdate();return t.isTextOverflowing;}).Select(t=>t.text.Replace('\n',' ')).ToArray();
+    }
+    static void TextFits(string context)
+    {var errors=TextOverflow();Check(context+" text fits",errors.Length==0,string.Join(" | ",errors));}
+    static void InspectCatalogText(string context)
+    {
+        var errors=new System.Collections.Generic.HashSet<string>();
+        foreach(var option in CatalogOptions())
+        {option.GetComponent<ConditionalOptionDescription>().Inspect();foreach(var error in TextOverflow())errors.Add(error);}
+        Check(context+" labels and inspected descriptions fit",errors.Count==0,string.Join(" | ",errors));
+    }
+    static bool HudRowsFit()
+    {
+        var ui=Object.FindAnyObjectByType<DuelUI>();
+        var rows=ui.GetComponentsInChildren<RectTransform>().Where(r=>r.name.StartsWith("RuleFeedback_")).ToArray();
+        for(int i=0;i<rows.Length;i++)
+        {
+            var row=rows[i];var text=row.GetComponentsInChildren<TMPro.TMP_Text>();
+            var a=text.First(t=>t.name=="ConditionText").rectTransform;var b=text.First(t=>t.name=="ActionText").rectTransform;
+            if(a.anchoredPosition.y-a.rect.height/2 < b.anchoredPosition.y+b.rect.height/2)return false;
+            foreach(var t in text)
+            {
+                var corners=new Vector3[4];t.rectTransform.GetWorldCorners(corners);
+                if(corners.Any(c=>!row.rect.Contains(row.InverseTransformPoint(c))))return false;
+            }
+            var screenCorners=new Vector3[4];row.GetWorldCorners(screenCorners);
+            if(screenCorners.Any(c=>c.y<0||c.y>Screen.height))return false;
+            if(i+1<rows.Length&&row.position.y-row.rect.height*row.lossyScale.y/2<rows[i+1].position.y+rows[i+1].rect.height*rows[i+1].lossyScale.y/2)return false;
+        }
+        return true;
+    }
+    static IEnumerator Typography()
+    {
+        Record("Bounded typography audit: catalog copy once per category, long equipped rows, real Low Ammo Aim acceptance, menus/F8. No pair/executor matrix.");
+        foreach(int width in new[]{1280,1920})
+        {
+            RestoreFixture();game.MainMenu();SetAlphaGameSize(width,width*9/16);yield return Frames(6);TextFits(width+" Menu");
+            game.NewGame();game.EditLoadout(d=>{foreach(string action in new[]{"Q02","F05","D04","M03","J03"})d.TryAddRule((int)ConditionalCatalog.Response(action).Operation,new ConditionalRule{Condition=25,Action=action});});yield return Frames(3);
+            TextFits(width+" longest equipped rows");ColdLayout(width);
+            yield return ColdCapture("typography-equipped-"+width);
+            ClickConfig("Rule0Condition");yield return Frames(2);
+            for(int category=0;category<6;category++)
+            {ClickConfig("ConditionCategory"+category);yield return Frames(2);InspectCatalogText(width+" condition category "+category);}
+            yield return SelectEditorCondition(1);
+            foreach(int op in new[]{2,3,4,0,1})
+            {ClickConfig("ActionCategory"+op);yield return Frames(2);InspectCatalogText(width+" action category "+op);}
+            yield return ColdCapture("typography-description-"+width);
+            ClickConfig("CancelRuleEdit");yield return Frames(2);
+            game.StartFight();yield return Frames(3);TextFits(width+" five-operation HUD");Check(width+" five HUD groups stay separate/on-screen",HudRowsFit());
+            yield return ColdCapture("typography-five-hud-"+width);
+            game.NewGame();game.EditLoadout(d=>{for(int i=0;i<5;i++)d.TryAddRule(2,new ConditionalRule{Condition=25,Action="Q02"});});game.StartFight();yield return Frames(3);
+            TextFits(width+" five same-operation HUD");Check(width+" five same-operation rows fit",HudRowsFit());
+            game.NewGame();game.EditLoadout(d=>{d.TryAddRule(2,new ConditionalRule{Condition=12,Action="Q02"});d.TryAddRule(4,new ConditionalRule{Condition=27,Action="D02"});});game.StartFight();
+            yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);StopPolicies();AlphaPlace(-5,3);yield return Frames(3);
+            var root=Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<RectTransform>().First(r=>r.name=="RuleFeedback_2_0");
+            var size=root.sizeDelta;var pos=root.anchoredPosition;
+            MouseAt(game.Player.transform.position+Vector3.up*7,true);yield return Until(()=>game.Rifle.AmmoInMagazine<=2,2f);mouseHeld=false;yield return Frames(3);
+            var actionText=root.GetComponentsInChildren<TMPro.TMP_Text>().Last();
+            Check(width+" actual Low Ammo Aim emphasizes fixed-weight text without moving rows",game.Rules.Feedback(ControlOperation.Aim,0).Executing&&actionText.color==NeuralPalette.Arms&&actionText.fontStyle==TMPro.FontStyles.Normal&&root.sizeDelta==size&&root.anchoredPosition==pos);
+            TextFits(width+" active long-label HUD");Check(width+" active condition/action and frames do not overlap",HudRowsFit());
+            yield return ColdCapture("typography-active-"+width);
+            checkingPause=true;game.SetPause(true);yield return Frames(2);TextFits(width+" Pause");game.SetPause(false);
+            game.ToggleDeveloperTools();yield return Frames(2);
+            foreach(string tab in new[]{"Player","Weapon","Health"}){ClickConfig(tab);yield return Frames(2);TextFits(width+" F8 "+tab);}
+            game.ToggleDeveloperTools();checkingPause=false;game.Player.TakeDamage(99999,null);yield return Frames(3);TextFits(width+" Defeat");
+        }
+        game.MainMenu();yield return Frames(3);
+    }
+    // Character geometry, not just RectTransform size: catches weight/kerning/wrap changes.
+    static Vector3[] GlyphPositions(TMPro.TMP_Text text)
+    {
+        text.ForceMeshUpdate();
+        return text.textInfo.characterInfo.Take(text.textInfo.characterCount).SelectMany(c=>new[]{
+            new Vector3(c.origin,c.baseLine,c.lineNumber),new Vector3(c.xAdvance,c.pointSize,0),
+            c.bottomLeft,c.topRight,c.vertex_BL.position,c.vertex_TR.position}).ToArray();
+    }
+    static TMPro.TMP_Text PlexAimText()=>Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<RectTransform>()
+        .First(r=>r.name=="RuleFeedback_2_0").GetComponentsInChildren<TMPro.TMP_Text>().Last();
+    static void ControlGeometry(string context)
+    {
+        Canvas.ForceUpdateCanvases();
+        var outlines=Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<DuelButtonOutline>();
+        bool contained=true,thick=true,disabled=true;
+        foreach(var outline in outlines)
+        {
+            outline.Refresh();var rect=(RectTransform)outline.transform;
+            foreach(var edge in outline.Edges)
+            {
+                var corners=new Vector3[4];edge.rectTransform.GetWorldCorners(corners);
+                contained&=corners.All(c=>{var p=rect.InverseTransformPoint(c);return p.x>=rect.rect.xMin-.01f&&p.x<=rect.rect.xMax+.01f&&p.y>=rect.rect.yMin-.01f&&p.y<=rect.rect.yMax+.01f;});
+                thick&=Mathf.Min(edge.rectTransform.rect.width,edge.rectTransform.rect.height)*rect.lossyScale.x>=1.99f;
+            }
+            if(!outline.Button.IsInteractable())disabled&=outline.Label.color==NeuralPalette.DisabledText&&outline.Edges.All(e=>e.color==NeuralPalette.Border)&&!outline.Selection.enabled;
+        }
+        Check(context+" all four control edges lie inside their bounds",contained);
+        Check(context+" control borders retain at least two actual pixels",thick);
+        Check(context+" disabled controls immediately dim label/frame/selection",disabled);
+    }
+    static IEnumerator ConfigurationPolish(int width)
+    {
+        ControlGeometry(width+" equipped controls");
+        FocusOption("ConditionCategory0");ClickConfig("ConditionCategory0");yield return Frames(2);
+        var selected=EventSystem.current.currentSelectedGameObject;
+        Check(width+" keyboard focus survives category rebuild",selected!=null&&selected.name=="ConditionCategory0"&&selected.GetComponent<DuelButtonOutline>().KeyboardFocused);
+        var outline=ConfigButtonNamed("ConditionCategory0").GetComponent<DuelButtonOutline>();
+        outline.Refresh();float focusWidth=outline.Edges[2].rectTransform.rect.width;
+        EventSystem.current.SetSelectedGameObject(null);outline.Refresh();
+        Check(width+" selection marker persists independently of keyboard frame",outline.Selection.enabled&&outline.Edges[2].rectTransform.rect.width<focusWidth&&outline.Edges[2].color==NeuralPalette.ControlBorder);
+        yield return SelectEditorCondition(1);ClickConfig("ActionCategory1");yield return Frames(2);
+        var blocked=ConfigButtonNamed("Option","Jump Once");
+        blocked.GetComponent<ConditionalOptionDescription>().Inspect();yield return Frames(2);
+        ControlGeometry(width+" disabled Jump and Start Fight");TextFits(width+" disabled explanation");
+        Check(width+" disabled action has no body preview or committed change",!blocked.interactable&&game.DraftLoadout.TotalRules==5&&Region(4).NeuralSignal<.5f);
+        yield return ColdCapture("ui-polish-disabled-"+width);
+        ClickConfig("SelectorBack");yield return Frames(2);
+    }
+    static IEnumerator UIPolishFocus()
+    {
+        Record("Focused UI follow-up only: actual EventSystem move/submit, pointer hover and draft cancel/commit.");
+        foreach(int width in new[]{1280,1920,2560,3840})
+        {
+            RestoreFixture();game.MainMenu();SetAlphaGameSize(width,width*9/16);yield return Frames(6);
+            game.NewGame();ClickConfig("AddRule");yield return Frames(2);FocusOption("ConditionCategory0");
+            var previous=ConfigButtonNamed("ConditionCategory0").GetComponent<DuelButtonOutline>();
+            ExecuteEvents.Execute(previous.gameObject,new AxisEventData(EventSystem.current){moveDir=MoveDirection.Down,moveVector=Vector2.down},ExecuteEvents.moveHandler);
+            yield return Frames(2);
+            var selected=EventSystem.current.currentSelectedGameObject;
+            Check(width+" keyboard Down transfers one focus frame",selected!=null&&selected.name=="ConditionCategory1"&&!previous.KeyboardFocused&&selected.GetComponent<DuelButtonOutline>().KeyboardFocused);
+            ExecuteEvents.Execute(selected,new BaseEventData(EventSystem.current),ExecuteEvents.submitHandler);yield return Frames(2);
+            Check(width+" keyboard Submit keeps category focus on rebuilt page",EventSystem.current.currentSelectedGameObject!=null&&EventSystem.current.currentSelectedGameObject.name=="ConditionCategory1");
+            var hover=ConfigButtonNamed("ConditionCategory2").GetComponent<DuelButtonOutline>();
+            mousePosition=RectTransformUtility.WorldToScreenPoint(null,hover.transform.position);yield return Frames(4);
+            Check(width+" pointer hover differs from focus and selection",!hover.KeyboardFocused&&!hover.Selection.enabled&&hover.Edges[0].color==NeuralPalette.Secondary);
+            mousePosition=new Vector2(2,2);yield return Frames(3);
+            Check(width+" pointer leave restores neutral border",hover.Edges[0].color==NeuralPalette.ControlBorder);
+            FocusOption("Option","Reloading");ExecuteEvents.Execute(EventSystem.current.currentSelectedGameObject,new BaseEventData(EventSystem.current),ExecuteEvents.submitHandler);yield return Frames(2);
+            Check(width+" keyboard condition step focuses a legal action without committing",EventSystem.current.currentSelectedGameObject!=null&&EventSystem.current.currentSelectedGameObject.name=="Option"&&game.DraftLoadout.TotalRules==0&&!ConfigButtonNamed("StartFight").interactable);
+            FocusOption("Option","Aim at Lowest-Health Enemy");ExecuteEvents.Execute(EventSystem.current.currentSelectedGameObject,new BaseEventData(EventSystem.current),ExecuteEvents.submitHandler);yield return Frames(2);
+            Check(width+" keyboard legal action commits once and restores Add focus",game.DraftLoadout.TotalRules==1&&game.DraftLoadout.Operations[2].Rules[0].Action=="Q02"&&EventSystem.current.currentSelectedGameObject!=null&&EventSystem.current.currentSelectedGameObject.name=="AddRule"&&ConfigButtonNamed("StartFight").interactable);
+            ClickConfig("Rule0Condition");yield return Frames(2);FocusOption("CancelRuleEdit");ExecuteEvents.Execute(EventSystem.current.currentSelectedGameObject,new BaseEventData(EventSystem.current),ExecuteEvents.submitHandler);yield return Frames(2);
+            Check(width+" keyboard cancel retains committed rule",game.DraftLoadout.TotalRules==1&&game.DraftLoadout.Operations[2].Rules[0].Condition==9&&ConfigButtonNamed("StartFight").interactable);
+            TextFits(width+" final keyboard page");ControlGeometry(width+" final keyboard page");
+            yield return ColdCapture("ui-polish-equipped-"+width);
+        }
+        game.MainMenu();yield return Frames(3);
+    }
+    static IEnumerator PlexUI(bool polish=false)
+    {
+        string prefix=polish?"ui-polish":"plex";
+        Record("IBM Plex audit at four actual Game View sizes; real Reloading -> Aim acceptance/release. No fabricated feedback.");
+        foreach(int width in new[]{1280,1920,2560,3840})
+        {
+            RestoreFixture();game.MainMenu();SetAlphaGameSize(width,width*9/16);yield return Frames(6);
+            Check(width+" actual render size",Screen.width==width&&Screen.height==width*9/16);TextFits(width+" Plex menu");
+            game.NewGame();game.EditLoadout(d=>{foreach(string action in new[]{"Q02","F05","D04","M03","J03"})d.TryAddRule((int)ConditionalCatalog.Response(action).Operation,new ConditionalRule{Condition=25,Action=action});});yield return Frames(3);
+            ColdLayout(width);TextFits(width+" Plex equipped");
+            ClickConfig("Rule0Condition");yield return Frames(2);
+            if(polish)yield return ConfigurationPolish(width);
+            for(int category=0;category<6;category++)
+            {ClickConfig("ConditionCategory"+category);yield return Frames(2);InspectCatalogText(width+" Plex condition category "+category);}
+            if(polish){ClickConfig("ConditionCategory0");yield return Frames(2);ControlGeometry(width+" category controls");}
+            yield return ColdCapture(prefix+"-config-"+width);
+            yield return SelectEditorCondition(1);
+            foreach(int op in new[]{2,3,4,0,1})
+            {ClickConfig("ActionCategory"+op);yield return Frames(2);InspectCatalogText(width+" Plex action category "+op);}
+            ClickConfig("CancelRuleEdit");game.StartFight();yield return Frames(3);
+            TextFits(width+" Plex five-operation HUD");Check(width+" Plex HUD groups fit",HudRowsFit());
+            yield return ColdCapture(prefix+"-five-hud-"+width);
+            game.NewGame();game.EditLoadout(d=>{for(int i=0;i<5;i++)d.TryAddRule(2,new ConditionalRule{Condition=25,Action="Q02"});});game.StartFight();yield return Frames(3);
+            TextFits(width+" Plex five Aim HUD");Check(width+" Plex five Aim rows fit",HudRowsFit());
+            game.NewGame();game.EditLoadout(d=>{d.TryAddRule(2,new ConditionalRule{Condition=9,Action="Q02"});d.TryAddRule(4,new ConditionalRule{Condition=27,Action="D02"});});game.StartFight();
+            yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);StopPolicies();AlphaPlace(-5,3);yield return Frames(3);
+            var ui=Object.FindAnyObjectByType<DuelUI>();
+            var texts=ui.GetComponentsInChildren<TMPro.TMP_Text>();
+            Check(width+" assigned Plex fonts and fixed sizes",texts.All(t=>t.font.name.StartsWith("IBMPlex")&&!t.enableAutoSizing));
+            var root=ui.GetComponentsInChildren<RectTransform>().First(r=>r.name=="RuleFeedback_2_0");
+            var actionText=root.GetComponentsInChildren<TMPro.TMP_Text>().Last();
+            var before=GlyphPositions(actionText);var material=actionText.fontSharedMaterial;var pointSize=actionText.fontSize;
+            if(polish)
+            {
+                var arrow=root.GetComponentsInChildren<TMPro.TMP_Text>().First(t=>t.name=="ActionArrow");arrow.ForceMeshUpdate();
+                var info=actionText.textInfo;
+                float x=info.characterInfo[info.lineInfo[0].firstCharacterIndex].origin;
+                Check(width+" wrapped action lines have a fixed hanging indent",Enumerable.Range(0,info.lineCount).All(i=>Mathf.Abs(info.characterInfo[info.lineInfo[i].firstCharacterIndex].origin-x)<.01f));
+                float arrowBaseline=arrow.transform.TransformPoint(new Vector3(0,arrow.textInfo.characterInfo[0].baseLine)).y;
+                float actionBaseline=actionText.transform.TransformPoint(new Vector3(0,info.characterInfo[0].baseLine)).y;
+                Check(width+" arrow baseline aligns with first action line",Mathf.Abs(arrowBaseline-actionBaseline)<.1f);
+            }
+            Check(width+" starts without auto Aim",!Visual(2).Executing&&material.GetColor(TMPro.ShaderUtilities.ID_GlowColor).a==0);
+            yield return ColdCapture(prefix+"-idle-"+width);
+            MouseAt(game.Player.transform.position+Vector3.up*7,true);
+            yield return Until(()=>game.Rifle.IsReloading&&Visual(2).Executing,3f);mouseHeld=false;yield return Frames(1);
+            // Editor focus changes can rebuild Pause/Resume UI; inspect the current row after waits.
+            actionText=PlexAimText();material=actionText.fontSharedMaterial;
+            Check(width+" real reload accepts Aim",game.Rifle.IsReloading&&Visual(2).Matched&&Visual(2).Executing&&actionText.color==NeuralPalette.Arms&&material.GetColor(TMPro.ShaderUtilities.ID_GlowColor).a>0);
+            Check(width+" every glyph and wrap stays fixed at acceptance",before.SequenceEqual(GlyphPositions(actionText))&&actionText.fontSharedMaterial==material&&actionText.fontStyle==TMPro.FontStyles.Normal&&actionText.fontSize==pointSize);
+            TextFits(width+" Plex active");Check(width+" Plex active rows fit",HudRowsFit());yield return ColdCapture(prefix+"-active-"+width);
+            yield return Until(()=>!game.Rifle.IsReloading&&!Visual(2).Executing,1.6f);yield return Frames(2);
+            actionText=PlexAimText();material=actionText.fontSharedMaterial;
+            Check(width+" every glyph stays fixed at release",before.SequenceEqual(GlyphPositions(actionText))&&actionText.color==NeuralPalette.Primary&&material.GetColor(TMPro.ShaderUtilities.ID_GlowColor).a==0);
+            yield return ColdCapture(prefix+"-released-"+width);
+            checkingPause=true;game.SetPause(true);yield return Frames(2);TextFits(width+" Plex Pause");game.SetPause(false);
+            game.ToggleDeveloperTools();yield return Frames(2);
+            foreach(string tab in new[]{"Player","Weapon","Health"}){ClickConfig(tab);yield return Frames(2);TextFits(width+" Plex F8 "+tab);}
+            game.ToggleDeveloperTools();checkingPause=false;game.Player.TakeDamage(99999,null);yield return Frames(3);TextFits(width+" Plex Defeat");
+            game.ConfigurePlaytestWave(3);game.StartFight();yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);StopPolicies();TextFits(width+" Plex dual-Boss HUD");
+            foreach(var boss in game.Bosses)boss.Health.TakeDamage(99999,game.Player.gameObject);
+            yield return Until(()=>game.Phase==DuelPhase.Complete,1.2f);Check(width+" controlled Complete",game.Phase==DuelPhase.Complete);TextFits(width+" Plex Complete");
+            game.MainMenu();yield return Frames(3);Check(width+" row materials released",Resources.FindObjectsOfTypeAll<Material>().All(m=>m.name!="Rule signal"));
+        }
+        game.MainMenu();yield return Frames(3);
+    }
+    static IEnumerator TypographyFollowup()
+    {
+        Record("Targeted description fix and remaining result screen. Earlier real acceptance/HUD/menu checks are not repeated.");
+        foreach(int width in new[]{1280,1920})
+        {
+            RestoreFixture();game.NewGame();SetAlphaGameSize(width,width*9/16);yield return Frames(5);
+            foreach(var pair in new (int condition,int op)[]{(1,1),(9,3),(12,3),(4,2)})
+            {
+                ClickConfig("AddRule");yield return Frames(2);yield return SelectEditorCondition(pair.condition);
+                ClickConfig("ActionCategory"+pair.op);yield return Frames(2);InspectCatalogText(width+" unavailable description "+pair.condition+"/"+pair.op);
+                if(pair.condition==1)yield return ColdCapture("typography-description-"+width);
+                ClickConfig("CancelRuleEdit");yield return Frames(2);
+            }
+            game.EditLoadout(d=>{foreach(string action in new[]{"Q02","F05","D04","M03","J03"})d.TryAddRule((int)ConditionalCatalog.Response(action).Operation,new ConditionalRule{Condition=25,Action=action});});yield return Frames(2);
+            ClickConfig("Rule0Condition");yield return Frames(2);ColdLayout(width);TextFits(width+" revised description with five rules");
+            var categoryScroll=Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<UnityEngine.UI.ScrollRect>().First(s=>s.name=="SelectorCategories");
+            Check(width+" six categories retain visible height",categoryScroll.content.rect.height<=categoryScroll.viewport.rect.height+1);
+            yield return ColdCapture("typography-config-"+width);
+            ClickConfig("CancelRuleEdit");game.ConfigurePlaytestWave(3);game.StartFight();yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);StopPolicies();
+            foreach(var boss in game.Bosses)boss.Health.TakeDamage(99999,game.Player.gameObject);
+            yield return Until(()=>game.Phase==DuelPhase.Complete,1.2f);Check(width+" controlled result reaches Complete",game.Phase==DuelPhase.Complete);TextFits(width+" Complete");
+        }
         game.MainMenu();yield return Frames(3);
     }
 }

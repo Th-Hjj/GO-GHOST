@@ -46,17 +46,19 @@ namespace GoGhost.Duel
         {
             var r=Rect("Fill",parent,pos,size); var img=r.gameObject.AddComponent<UnityEngine.UI.Image>(); img.color=color; img.raycastTarget=false; return img;
         }
-        void Button(string title,Transform parent,Vector2 pos,Vector2 size,UnityEngine.Events.UnityAction click,bool selected=false)
+        UnityEngine.UI.Button Button(string title,Transform parent,Vector2 pos,Vector2 size,UnityEngine.Events.UnityAction click,bool selected=false)
         {
             var r=Rect(title,parent,pos,size); var image=r.gameObject.AddComponent<UnityEngine.UI.Image>();
             image.color=selected?Color.white:new Color(.12f,.12f,.12f); image.raycastTarget=true;
             var b=r.gameObject.AddComponent<UnityEngine.UI.Button>(); b.targetGraphic=image; b.onClick.AddListener(click);
             var c=b.colors; c.normalColor=Color.white; c.highlightedColor=new Color(.7f,.7f,.7f); c.pressedColor=new Color(.4f,.4f,.4f); b.colors=c;
             var t=Text(title,r,Vector2.zero,size,24); if(selected)t.color=Color.black;
+            return b;
         }
         public void Show()
         {
             if (canvas == null) return;
+            ConfigurePageScale();
             if(page!=null){page.gameObject.SetActive(false);Destroy(page.gameObject);}
             page=Rect("Page",canvas,Vector2.zero,new Vector2(1600,900));
             playerHealth=resources=null; playerFill=null;
@@ -105,17 +107,18 @@ namespace GoGhost.Duel
                 policeFill[i].rectTransform.pivot=new Vector2(0,.5f);
             }
 
-            playerHealth=Text("",page,new Vector2(-400,-340),new Vector2(300,40),24,TextAlignmentOptions.Left);
-            Image(page,new Vector2(0,-340),new Vector2(430,12),new Color(.18f,.18f,.18f));
-            playerFill=Image(page,new Vector2(-215,-340),new Vector2(430,12),new Color(.6f,.9f,.65f));
+            playerHealth=Text("",page,new Vector2(-400,-360),new Vector2(300,40),24,TextAlignmentOptions.Left);
+            Image(page,new Vector2(0,-360),new Vector2(430,12),new Color(.18f,.18f,.18f));
+            playerFill=Image(page,new Vector2(-215,-360),new Vector2(430,12),new Color(.6f,.9f,.65f));
             playerFill.rectTransform.pivot=new Vector2(0,.5f);
-            resources=Text("",page,new Vector2(0,-397),new Vector2(1450,40),22);
+            resources=Text("",page,new Vector2(0,-397),new Vector2(430,40),22);
             if(game.Phase==DuelPhase.Prepare)
                 preparationCount=Text("3",page,Vector2.zero,new Vector2(300,100),72);
             LateUpdate();
         }
         void LateUpdate()
         {
+            if (RefreshConfigurationLayout()) return;
             if(playerHealth==null||game.Player==null)return;
             if(preparationCount!=null)
             {

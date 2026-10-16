@@ -140,8 +140,6 @@ public sealed partial class MissionUI : MonoBehaviour
     {
         upgrade = Screen(root, "Upgrade");
         BackButton(upgrade.transform, "UpgradeBack");
-        var guide = Rect(upgrade.transform, "AugmentationGuide", new Vector2(860, 570), new Vector2(810, 810));
-        guide.gameObject.AddComponent<MissionAugmentationGuide>().raycastTarget = false;
         BodyRegion(0, new Vector2(860, 821), new Vector2(72, 88), true);
         BodyRegion(1, new Vector2(860, 645), new Vector2(146, 222));
         BodyRegion(2, new Vector2(663, 757.5f), new Vector2(264, 117));
@@ -161,6 +159,8 @@ public sealed partial class MissionUI : MonoBehaviour
         graphic.color = Color.white;
         graphic.Round = round;
         graphic.Contour = BodyContour(index);
+        graphic.NeuralStyle = true;
+        graphic.NeuralRegion = index;
         bodyRegions[index] = graphic;
         var button = rect.gameObject.AddComponent<UnityEngine.UI.Button>();
         button.targetGraphic = graphic;
@@ -566,7 +566,9 @@ public sealed partial class MissionUI : MonoBehaviour
 
 /// <summary>Six existing clickable regions, redrawn as a minimal geometric expanded pose.</summary>
 [RequireComponent(typeof(CanvasRenderer))]
-public sealed class MissionBodyRegion : UnityEngine.UI.MaskableGraphic, ICanvasRaycastFilter
+public sealed class MissionBodyRegion : UnityEngine.UI.MaskableGraphic, ICanvasRaycastFilter,
+    UnityEngine.EventSystems.IPointerEnterHandler, UnityEngine.EventSystems.IPointerExitHandler,
+    UnityEngine.EventSystems.ISelectHandler, UnityEngine.EventSystems.IDeselectHandler
 {
     public bool Round;
     public bool Selected;
@@ -576,7 +578,46 @@ public sealed class MissionBodyRegion : UnityEngine.UI.MaskableGraphic, ICanvasR
     public bool NeuralStyle;
     public int NeuralRegion;
     public float NeuralSignal, NeuralFlow = -1;
+    [Header("Contour pulse (local path units)")]
+    [Min(0)] public float PulseSpeed = 100;
+    [Min(8)] public float PulseLength = 90;
+    [Range(0, 2)] public float PulseIntensity = 1;
+    [Tooltip("Equally spaced pulses per closed contour. One keeps the six-region figure quiet.")]
+    [Range(1, 3)] public int PulseFrequency = 1;
+    readonly List<Vector2> pathPoints = new List<Vector2>();
+    readonly List<Vector2> pathNormals = new List<Vector2>();
+    readonly List<float> pathDistances = new List<float>();
+    Vector2[] cachedContour;
+    Rect cachedRect;
+    bool cachedRound, hovered, focused;
+    float pathLength, activity, pulseVisibility;
     float NeuralStrokeScale => Mathf.Max(1, canvas != null ? canvas.scaleFactor : 1);
+
+    void Update()
+    {
+        if (!NeuralStyle || NeuralRegion == 0) return;
+        // UI runs while configuration freezes combat time. Absolute phase survives page rebuilds.
+        float target = Mathf.Max(NeuralSignal, Selected || hovered || focused ? 1 : Equipped ? .38f : 0);
+        if (NeuralFlow >= 0 && NeuralFlow < 1)
+            target = Mathf.Max(target, Mathf.Sin(NeuralFlow * Mathf.PI));
+        float previousVisibility = pulseVisibility;
+        activity = Mathf.Lerp(activity, Mathf.Clamp01(target), 1 - Mathf.Exp(-Time.unscaledDeltaTime * 8));
+        pulseVisibility = Mathf.Lerp(pulseVisibility, target > 0 ? 1 : 0, 1 - Mathf.Exp(-Time.unscaledDeltaTime * 8));
+        if (pulseVisibility < .001f) pulseVisibility = 0;
+        if (pulseVisibility > 0 || previousVisibility > 0) SetVerticesDirty();
+    }
+
+    protected override void OnDisable()
+    {
+        hovered = focused = false;
+        activity = pulseVisibility = 0;
+        base.OnDisable();
+    }
+
+    public void OnPointerEnter(UnityEngine.EventSystems.PointerEventData data) => hovered = true;
+    public void OnPointerExit(UnityEngine.EventSystems.PointerEventData data) => hovered = false;
+    public void OnSelect(UnityEngine.EventSystems.BaseEventData data) => focused = true;
+    public void OnDeselect(UnityEngine.EventSystems.BaseEventData data) => focused = false;
 
     private int PointCount => Round ? 32 : Contour != null ? Contour.Length : 4;
     private Vector2 Point(int index)
@@ -596,6 +637,7 @@ public sealed class MissionBodyRegion : UnityEngine.UI.MaskableGraphic, ICanvasR
     protected override void OnPopulateMesh(UnityEngine.UI.VertexHelper mesh)
     {
         mesh.Clear();
+        if (NeuralStyle) { DrawContourPulse(mesh); return; }
         int count = PointCount;
         var center = rectTransform.rect.center;
         Color outline = Selected ? new Color(.52f, .85f, 1f)
@@ -607,7 +649,6 @@ public sealed class MissionBodyRegion : UnityEngine.UI.MaskableGraphic, ICanvasR
             outline = Selected ? Color.white : new Color(.55f, .55f, .55f);
             fill = Selected ? new Color(.12f, .12f, .12f) : Color.black;
         }
-        if(NeuralStyle){outline=NeuralPalette.Secondary;fill=NeuralPalette.Background;}
         mesh.AddVert(center, fill, Vector2.zero);
         for (int i = 0; i < count; i++) mesh.AddVert(Point(i), fill, Vector2.zero);
         for (int i = 0; i < count; i++) mesh.AddTriangle(0, i + 1, (i + 1) % count + 1);
@@ -624,36 +665,91 @@ public sealed class MissionBodyRegion : UnityEngine.UI.MaskableGraphic, ICanvasR
             if (Equipped) Segment(mesh, Vector2.Lerp(center, a, .88f), Vector2.Lerp(center, b, .88f), 1,
                 new Color(outline.r, outline.g, outline.b, .40f));
         }
-        if(NeuralStyle&&NeuralRegion>0&&NeuralSignal>0)DrawNeuralCircuit(mesh);
     }
 
-    void DrawNeuralCircuit(UnityEngine.UI.VertexHelper mesh)
+    void CacheContourPath()
     {
-        var r=rectTransform.rect;
-        Color identity=NeuralRegion==1?NeuralPalette.Spine:NeuralRegion<4?NeuralPalette.Arms:NeuralPalette.Legs;
-        Vector2 a,b;
-        if(NeuralRegion==1){a=new Vector2(0,.4f);b=new Vector2(0,-.4f);}
-        else if(NeuralRegion==2){a=new Vector2(.4f,-.32f);b=new Vector2(-.42f,.34f);}
-        else if(NeuralRegion==3){a=new Vector2(-.4f,-.32f);b=new Vector2(.42f,.34f);}
-        else if(NeuralRegion==4){a=new Vector2(.28f,.42f);b=new Vector2(-.3f,-.42f);}
-        else {a=new Vector2(-.28f,.42f);b=new Vector2(.3f,-.42f);}
-        a=Vector2.Scale(a,r.size)+r.center;b=Vector2.Scale(b,r.size)+r.center;
-        float pixel=NeuralStrokeScale/Mathf.Max(.05f,rectTransform.lossyScale.x);
-        int sections=NeuralRegion==1?6:3;
-        for(int i=0;i<sections;i++)
+        var rect = rectTransform.rect;
+        if (pathPoints.Count > 0 && cachedRect == rect && cachedContour == Contour && cachedRound == Round) return;
+        cachedRect = rect; cachedContour = Contour; cachedRound = Round;
+        pathPoints.Clear(); pathNormals.Clear(); pathDistances.Clear(); pathLength = 0;
+        // Subdivide the original edges, never cut across a corner or bridge the anatomical gaps.
+        for (int edge = 0; edge < PointCount; edge++)
         {
-            float from=(float)i/sections,to=(i+.82f)/sections;
-            Vector2 p=Vector2.Lerp(a,b,from),q=Vector2.Lerp(a,b,to);
-            Segment(mesh,p,q,7*pixel,NeuralPalette.Alpha(identity,NeuralSignal*.07f));
-            Segment(mesh,p,q,1.5f*pixel,NeuralPalette.Alpha(identity,NeuralSignal));
-            Segment(mesh,p-Vector2.up*1.7f*pixel,p+Vector2.up*1.7f*pixel,3.4f*pixel,NeuralPalette.Alpha(identity,NeuralSignal));
+            Vector2 a = Point(edge), b = Point((edge + 1) % PointCount);
+            float length = Vector2.Distance(a, b);
+            if (length < .001f) continue;
+            int steps = Mathf.Max(1, Mathf.CeilToInt(length / 2.5f));
+            for (int step = 0; step < steps; step++)
+            {
+                float t = (float)step / steps;
+                pathPoints.Add(Vector2.Lerp(a, b, t));
+                pathDistances.Add(pathLength + t * length);
+            }
+            pathLength += length;
         }
-        if(NeuralFlow>=0&&NeuralFlow<1)
+        for (int i = 0; i < pathPoints.Count; i++)
         {
-            var p=Vector2.Lerp(a,b,NeuralFlow);var q=Vector2.Lerp(a,b,Mathf.Max(0,NeuralFlow-.18f));
-            Segment(mesh,q,p,8*pixel,NeuralPalette.Alpha(identity,.12f));
-            Segment(mesh,q,p,2.4f*pixel,identity);
+            Vector2 incoming = (pathPoints[i] - pathPoints[(i + pathPoints.Count - 1) % pathPoints.Count]).normalized;
+            Vector2 outgoing = (pathPoints[(i + 1) % pathPoints.Count] - pathPoints[i]).normalized;
+            Vector2 normal = new Vector2(-outgoing.y, outgoing.x);
+            Vector2 join = (normal + new Vector2(-incoming.y, incoming.x)).normalized;
+            // Shared, bounded miter vertices avoid cracks and overlapping bright corner quads.
+            pathNormals.Add(join / Mathf.Max(.4f, Vector2.Dot(join, normal)));
         }
+    }
+
+    void DrawContourPulse(UnityEngine.UI.VertexHelper mesh)
+    {
+        CacheContourPath();
+        if (pathLength < .001f) return;
+        float pixel = NeuralStrokeScale / Mathf.Max(.05f, rectTransform.lossyScale.x);
+        Color outline = NeuralPalette.Alpha(NeuralPalette.Secondary, .62f);
+        Color identity = NeuralPalette.Region(NeuralRegion);
+        float spacing = pathLength / Mathf.Clamp(PulseFrequency, 1, 3);
+        float length = Mathf.Clamp(PulseLength, 8, spacing * .7f);
+        // Double precision avoids long-session phase jitter. Both ends of the trail reach zero.
+        // Paired contours already mirror one another. Shared phase preserves mirrored motion.
+        int phaseRegion = NeuralRegion == 3 ? 2 : NeuralRegion == 5 ? 4 : NeuralRegion;
+        float head = (float)((Time.unscaledTimeAsDouble * Mathf.Max(0, PulseSpeed) + phaseRegion * 97.0) % spacing);
+        float intensity = Mathf.Clamp01(PulseIntensity * Mathf.Lerp(.62f, 1, activity)) * pulseVisibility;
+        DrawContourBand(mesh, pixel, outline, identity, spacing, length, head, intensity, false);
+        // Head is reserved for its own future effect, including in the legacy Upgrade screen.
+        if (NeuralRegion != 0 && pulseVisibility > .001f)
+            DrawContourBand(mesh, pixel, outline, identity, spacing, length, head, intensity, true);
+    }
+
+    // Feathered strips use the default UI material: Overlay-compatible, no texture or Bloom needed.
+    static readonly float[] OutlineOffsets = { -1.25f, -.55f, .55f, 1.25f };
+    static readonly float[] PulseOffsets = { -4.5f, -2.2f, -1.05f, -.35f, .35f, 1.05f, 2.2f, 4.5f };
+    void DrawContourBand(UnityEngine.UI.VertexHelper mesh, float pixel, Color outline, Color identity,
+        float spacing, float length, float head, float intensity, bool pulse)
+    {
+        float[] offsets = pulse ? PulseOffsets : OutlineOffsets;
+        int start = mesh.currentVertCount, columns = offsets.Length, count = pathPoints.Count;
+        for (int i = 0; i < count; i++)
+        {
+            float behind = Mathf.Repeat(head - pathDistances[i], spacing) / length;
+            float strength = behind < 1 ? Mathf.SmoothStep(0, 1, behind / .12f) * (1 - behind) * (1 - behind) * intensity : 0;
+            for (int j = 0; j < columns; j++)
+            {
+                bool edge = j == 0 || j == columns - 1;
+                Color c = outline;
+                if (pulse)
+                {
+                    c = j == 3 || j == 4 ? Color.white : identity;
+                    c.a = edge ? 0 : (j == 1 || j == 6 ? .18f : 1) * strength;
+                }
+                else if (edge) c.a = 0;
+                mesh.AddVert(pathPoints[i] + pathNormals[i] * (offsets[j] * pixel), c, Vector2.zero);
+            }
+        }
+        for (int i = 0; i < count; i++)
+            for (int j = 0; j < columns - 1; j++)
+            {
+                int a = start + i * columns + j, b = start + ((i + 1) % count) * columns + j;
+                mesh.AddTriangle(a, a + 1, b + 1); mesh.AddTriangle(a, b + 1, b);
+            }
     }
 
     private static void Segment(UnityEngine.UI.VertexHelper mesh, Vector2 a, Vector2 b, float width, Color c)

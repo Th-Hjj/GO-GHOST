@@ -12,20 +12,22 @@ Confirmed by Thomas, 2026-10-16. This direction supersedes earlier monochrome co
 | Panel | #080E14 | UI panels |
 | Primary | #DCE7ED | Text, neutral player, weapons and player bullets |
 | Secondary | #9BABB5 | Secondary text and structure; derive darker neutral borders/terrain |
-| Arms | #55DDF0 | Aim / Fire |
-| Legs | #83E3B0 | Movement / Jump |
-| Spine | #B39AFF | Dodge only |
-| HeadReserved | #F2D58A | Future head Boss-ability integration only |
+| Arms | #35CFFF | Aim / Fire |
+| Legs | #5CF7A2 | Movement / Jump |
+| Spine | #B28CFF | Dodge only |
+| HeadReserved | #F8C85C | Reserved gold; no current head rule |
 | Refraction | #FF9A62 | Gunner, HP and sourced attacks |
 | Severance / Danger | #FF6375 | Sword Boss, HP, sourced attacks and low player HP |
 
-Action -> Operation -> Body System determines rule color. Conditions, generic selection and keyboard focus remain neutral. Both arms share cyan; both legs share mint. No historical SlotColor or left/right identity split. Head remains neutral and noninteractive: no Ultimate, Brain, upgrade or Boss-ability system is implemented.
+Action -> Operation -> Body System determines rule color. Conditions, generic selection and keyboard focus remain neutral. Both arms share blue; both legs share green. No historical SlotColor or left/right identity split. The head has no contour pulse effect at all; its gold identity is reserved for a separate future effect: no Ultimate, Brain, upgrade or Boss-ability gameplay is implemented.
 
 ## Configuration
 
 Independent body preview | Category/Options with fixed Description | complete equipped Rule List, approximately 22/41/37. Keep the existing six body contours and proportions, readable at 1280x720 and 1920x1080. The body is never a watermark or navigation menu. Preserve condition-first flow, terminology, legal grey choices, local drafts, Cancel/Escape, order and five-rule budget.
 
-Neutral contours have no active circuit when unequipped. Committed rules retain low signal. Legal action hover/focus and equipped-row hover/focus brighten only their mapped system. Commit plays one shoulder-to-hand / hip-to-foot / segmented Spine flow and a short row-edge accent; Show, resize, browsing and cancellation never start an installation. Removing the last rule disconnects that system. Text stays crisp; identity is a small edge, not a filled neon card.
+**Circuit Silhouette Pulse correction — Thomas, 2026-10-16:** preserve the original six anatomical outlines and remove internal bars, joints, inset traces and decorative guides. Thin subdued gray-white contours carry short white-centered pulses with feathered illumination and fading trails. The existing regions are separate closed paths, so each circulates locally without bridging empty space. Actual contour arc length determines travel through corners and head curves. Unequipped, unpreviewed regions have no pulses: only the static subdued outline remains. The head never renders a pulse, even when hovered or selected in the legacy screen. Equipped rules and legal action/row previews smoothly introduce the mapped region color; cancelling a preview or removing the final regional rule removes the pulses. Left/right arms share one phase and speed, as do left/right legs, so both pairs move in exact mirror symmetry. Highlighting smoothly increases only the mapped system's intensity. Commit adds a brief intensity accent to the continuously traveling pulse and retains the existing row-edge accent. Removing the last rule returns to the static outline. No text geometry changes or neon card fills.
+
+`MissionBodyRegion` renders cached contour samples with the default Overlay-compatible UI mesh/material, without Bloom, textures, particles or new dependencies. `PulseSpeed`, `PulseLength`, `PulseIntensity` and `PulseFrequency` (equally spaced pulses per closed loop) are visual parameters, separate from selection data. Absolute unscaled UI time retains phase through page rebuilds; combat feedback retains its existing scaled-time/pause rules. Legacy Upgrade uses the same renderer and existing selection callbacks; it remains disconnected from the formal Duel entry.
 
 ## Combat feedback
 
@@ -63,5 +65,7 @@ The formal Duel scene binds the four actual weights from `Assets/_Game/Shared/Fo
 Confirmed by Thomas after the UI audit. Button frames are closed, inset within their bounds and use a stronger neutral control border than structural dividers. Normal frames have an integer physical width of at least two pixels; keyboard focus is thicker and cold white. Hover brightens the frame, while selection keeps a small white marker. Disabled controls dim both text and frame and suppress the marker, including Start Fight during a draft and Add Rule at five. Body contours/circuits scale with the canvas, with a minimum stroke at small sizes; combat silhouettes are unchanged.
 
 Separate equipped rule pairs with larger gaps; keep reorder/removal controls visually secondary. Description titles use Medium and body copy Regular. Combat actions use an independent fixed arrow column and hanging text alignment; both retain fixed geometry through acceptance and release. Configuration rebuilds retain keyboard focus where possible and local scroll positions for each view. No new explanatory copy or control mode.
+
+Selector spacing follow-up, confirmed by Thomas on 2026-10-16: Category and Options share one row height (target 64 reference units, reduced uniformly to at least 56 to fit six categories) and 12-unit gaps. Titles share a baseline with 14 units before the padded list. Category keeps its 234-unit column in both Condition and Action steps; Options keeps the remaining wider column. Preserve common text padding, fixed 132-unit Description, and normal-sized rows when a category has fewer options. Do not stretch sparse lists to fill their height or change equipped-rule spacing.
 
 Research references: [Unity Mask](https://docs.unity3d.com/Packages/com.unity.ugui@2.0/manual/script-Mask.html), [clear interactive affordances](https://gameaccessibilityguidelines.com/give-a-clear-indication-that-interactive-elements-are-interactive/), and [Xbox XAG 102 contrast](https://learn.microsoft.com/en-us/xbox/accessibility/xbox-accessibility-guidelines/102). Stroke sizes are project choices, not universal accessibility thresholds or a compliance claim.

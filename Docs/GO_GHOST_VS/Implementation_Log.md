@@ -1,5 +1,37 @@
 # GO GHOST slice implementation
 
+## 2026-10-16 — Temporarily hide Aim at Detected Enemy
+
+- **Requested / implemented:** hide Q03 from the Action picker only. The three other Aim choices retain their order; existing equipped Q03 rules, catalog definitions, pair validation and execution remain unchanged. Updated the current condition-editor UI assertions and specification override.
+- **Checks:** Editor compilation PASS. Focused Play Mode checks PASS for the remaining Aim choices under Airborne and an enemy-source condition, plus preserving an existing valid Q03 rule after canceling its edit. Full smoke suite and combat regression NOT TESTED. No Build, Release, commit or push.
+
+## 2026-10-16 — Aligned selector rows and vertical spacing
+
+- **Baseline:** Category rows used 44 reference units, Options used 56, both with 8-unit gaps; the Action step also narrowed the category column. This created mismatched row positions and concentrated controls at the top. Existing uncommitted contour, compact-control and hint-removal changes were preserved.
+- **Implemented:** both selector columns share a height derived from the six-category viewport, capped at 64 with a 56-unit minimum, and 12-unit gaps. Titles keep a common baseline with 14 units before the padded list. Both editing steps retain the 234-unit Category column and wider Options column. Existing text padding, fixed 132-unit description, equipped-rule layout and all gameplay remain unchanged. Sparse lists retain normal row sizes.
+- **Files:** `DuelConditionalUI.cs`, bounded selector checks in existing `ColdLightSmoke.cs` / `BossEncounterSmoke.cs`, and Art Direction.
+- **Evidence:** normal Editor compilation PASS; focused Play Mode check **152 PASS / 0 FAIL** at actual 1280x720, 1920x1080, 2560x1440 and 3840x2160. Checked row alignment, complete category/option viewport fit, all catalog labels and inspected descriptions, fixed columns/description across steps, disabled Airborne/Jump, cancel and one-shot legal commit. Reviewed actual screenshots at all four sizes. Log: `Logs/BossEncounter/selector-spacing.txt`; captures: `Logs/ColdLight/selector-spacing-*.png`.
+- **Limits:** combat regression, physical-input/DPI and standalone NOT TESTED. Returned to Edit Mode; no Build, Release, commit or push.
+
+## 2026-10-16 — Remove empty-rule explanatory hint
+
+- Removed "No rules equipped. All controls are manual." and its 100-unit layout slot. Rules count, Add Rule, Start Fight and manual fallback are unchanged.
+- Editor compilation PASS. Focused Play Mode check PASS: zero rules, hint absent, Add Rule and Start Fight available. Combat regression NOT TESTED; no Build, commit or push.
+
+## 2026-10-16 — Remove redundant unavailable-category message
+
+- Removed the standalone unavailable-action category sentence and its layout slot; disabled actions and individual incompatibility reasons remain. Updated the matching specification and existing smoke assertion, preserving prior local changes.
+- Normal Editor compilation PASS. Focused Play Mode check: Airborne / Jump has no redundant message and both Jump options remain disabled. Full smoke suite and combat regression NOT TESTED; no Build, Release, commit or push.
+
+## 2026-10-16 — Circuit silhouette contour pulses
+
+- **Baseline / scope:** clean working tree at `5341e8e`; formal Duel running in Configure with two rules (Enemy Close / Aim at Lowest-Health Enemy, Enemy Preparing an Attack / Approach Enemy). Existing Screen Space Overlay `MissionBodyRegion` drew neutral contours plus internal segmented bars/nodes; legacy Upgrade reused that component with inset traces and a decorative guide. No scene, prefab, settings, package or gameplay-engine edits.
+- **Implemented:** reused the original six contours and dimensions. Cached arc-length samples, shared miter vertices and feathered UI mesh bands render a thin subdued outline plus a white-hot pulse/trail, without Bloom or new materials/dependencies. Speed, length, intensity and pulses-per-loop are independent visual parameters. Disconnected regions circulate locally without invisible shortcuts. Legal action hover/focus and equipped-row selection drive smooth activity; the legacy Upgrade component keeps its existing selection callbacks and no longer creates its decorative guide. Existing combat HUD and stickman feedback consume the updated shared palette without evaluator/executor changes.
+- **Thomas's final correction:** unequipped, unpreviewed regions have **no trails**, only static outlines. The head is completely excluded from the pulse effect, even under legacy selection/hover, and reserved for a separate future effect. Equipped or legally previewed systems use Arms `#35CFFF`, Legs `#5CF7A2` or Spine `#B28CFF`. Cancel/remove removes the pulses. Both arm and leg pairs share phase/speed for mirror-symmetric motion. Initial colored-idle and intermediate white-idle captures are superseded by `pulse-static-idle-*`, `pulse-active-arms-*` and `pulse-active-legs-*`.
+- **Files:** `MissionUI.cs` (shared body renderer and Upgrade wiring), `DuelConditionalUI.cs` (selected equipped-row preview), `NeuralPalette.cs`; bounded entries in existing `ColdLightSmoke.cs` / `BossEncounterSmoke.cs`; current Art Direction / Alpha spec and matching AGENTS / CLAUDE authority notes.
+- **Focused Editor evidence:** initial contour pass **62 PASS / 0 FAIL**, intermediate white-idle/mirror check **28 PASS / 0 FAIL**, and final no-idle/no-head visibility check **29 PASS / 0 FAIL**. The final check confirms no pulse geometry on unequipped parts, no head pulse under any selection state, actual mirrored motion on active arms/legs, and preview/cancel/commit/remove at all four sizes. Actual 1280x720, 1920x1080, 2560x1440 and 3840x2160 Game View captures were visually reviewed. Checks sampled changing pulse colors over fixed contour vertices, absence of internal geometry, exact mirrored path samples and pulse colors across moving frames, local hover/fade, legal commit/cancel/remove, actual accepted Aim/Fire vs a lower matched-only row, bounded actor feedback/shared color, manual movement/paid shot fallback, pause, controlled defeat/reconfigure/retry and one short normal W1/W2/W3 observation. Controlled placements/death prove mechanism/flow only. The latest correction changes only UI pulse color/phase; gameplay was not modified between the two passes.
+- **Compile / limits:** normal Unity compilation PASS; an initial Editor helper used the wrong `CanvasRenderer.GetMesh` overload and was corrected before checks. A later session-restoration command was mistakenly invoked in Edit Mode and failed before UI restoration; this was tooling, not an in-game failure. Legacy Upgrade shared-component hover was exercised, but the complete disconnected legacy Upgrade workflow was **NOT TESTED**. Physical-input/hardware, long-session performance, standalone and broad gameplay regression are **NOT TESTED**. No Build, Release, commit or push. Evidence: `Logs/BossEncounter/contour-pulse.txt`, `contour-color-correction.txt`, `contour-visibility.txt`, `Logs/ColdLight/pulse-*.png`, and `Logs/CircuitPulse/`.
+
 ## 2026-10-16 — Compact rule controls
 
 - **Requested / implemented:** replaced the Remove label with a geometric trash icon and stacked Up/Down/Delete in a 40-unit rail (previously 92). Transferred the saved 52 reference units from the rule-list region to the central Rule Editor; IF/THEN field widths remain unchanged. Removed the idle "Add a rule or click a rule field to edit." hint. Existing local UI work and gameplay are preserved.

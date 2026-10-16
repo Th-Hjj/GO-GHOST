@@ -18,25 +18,27 @@ Pending new or changed pairs remain UI-local until complete and legal. Selecting
 
 ## Formal catalog
 
-There are **21 unique conditions and 19 unique responses**. Existing IDs remain stable; player-facing menus omit them. The original 11 formal condition labels and eight responses are retained.
+There are **21 unique conditions and 19 unique responses**. Existing IDs and behavior remain stable; player-facing menus omit IDs. Labels describe the augmented body's state, visible battlefield facts and the operator's intentions. No formal entry was removed in the terminology pass.
+
+**Aim terminology:** the aim point is the operator's manually indicated world-space point. A18 Enemy Near Aim Point retains the existing 12-degree entry / 16-degree exit comparison against the direction toward that point, not a new world-distance radius or resolved muzzle check. A40 Enemy in Firing Line retains actual weapon alignment (resolved aim for Fire, committed aim for other operations). D04 Dodge Toward Aim Point retains horizontal direction toward the original manual point. Q06 Fine-Tune Aim retains limited manual-aim correction within the existing angular limits. Q03 Aim at Detected Enemy retains the visible source associated with the condition, never an arbitrary detected enemy. These are presentation changes only; no new sensors or targeting behavior.
 
 | Operation | Complete ordered B catalog |
 |---|---|
 | Move | M01 Approach Enemy; M02 Retreat from Enemy; M03 Keep Mid Range; M04 Step Back; M09 Move Toward Center |
 | Jump | J01 Jump Once; J03 Repeat Jumps |
-| Aim | Q01 Aim at Nearest Enemy; Q02 Aim at Lowest-Health Enemy; Q03 Aim at Triggering Enemy; Q06 Assist Mouse Aim |
+| Aim | Q01 Aim at Nearest Enemy; Q02 Aim at Lowest-Health Enemy; Q03 Aim at Detected Enemy; Q06 Fine-Tune Aim |
 | Fire | F01 Fire One Shot; F02 Short Burst; F03 Keep Firing; F05 Fire and Keep a Reserve |
-| Dodge | D01 Dodge Away from Threat; D02 Dodge Toward Enemy; D03 Dodge Along Movement; D04 Dodge Toward Cursor |
+| Dodge | D01 Dodge Away from Threat; D02 Dodge Toward Enemy; D03 Dodge Along Movement; D04 Dodge Toward Aim Point |
 
 The selector uses the following exact category/item order. Every formal condition belongs to one category only; IDs remain internal and are not shown to players. One-time events use natural language such as "just"; no State/Event navigation or technical labels are shown.
 
 | Category | Ordered conditions |
 |---|---|
-| Player State | A01 Airborne; A04 Low Health; A06 Took Damage |
+| Body State | A01 Airborne; A04 Low Health; A06 Took Damage |
 | Ammo & Reload | A09 Reloading; A11 Reload Finished; A12 Low Ammo |
-| Aim & Input | A17 Holding Fire; A18 Cursor Near Enemy; A40 Gun Aligned with an Enemy |
+| Weapon Control | A17 Trigger Held; A18 Enemy Near Aim Point; A40 Enemy in Firing Line |
 | Enemy State | A27 Enemy Recovering; A28 Enemy Reloading; A32 Enemy Reappeared |
-| Position & Range | A33 Enemy Close; A34 Enemy Far; A35 Enemy Approaching; A39 Enemies on Both Sides; A45 Near Arena Wall |
+| Position & Range | A33 Enemy Close; A34 Enemy Far; A35 Enemy Approaching; A39 Enemies on Both Sides; A45 Near Wall |
 | Threats | A25 Enemy Preparing an Attack; A41 Incoming Bullet; A42 Incoming Melee Attack; A43 Incoming Low Attack |
 
 | Condition | Label | Kind |
@@ -47,8 +49,8 @@ The selector uses the following exact category/item order. Every formal conditio
 | A09 | Reloading | State |
 | A11 | Reload Finished | Event |
 | A12 | Low Ammo | State |
-| A17 | Holding Fire | State |
-| A18 | Cursor Near Enemy | State |
+| A17 | Trigger Held | State |
+| A18 | Enemy Near Aim Point | State |
 | A25 | Enemy Preparing an Attack | Public preparation state/identity |
 | A27 | Enemy Recovering | State |
 | A28 | Enemy Reloading | State |
@@ -57,17 +59,17 @@ The selector uses the following exact category/item order. Every formal conditio
 | A34 | Enemy Far | State |
 | A35 | Enemy Approaching | State |
 | A39 | Enemies on Both Sides | State |
-| A40 | Gun Aligned with an Enemy | State |
+| A40 | Enemy in Firing Line | State |
 | A41 | Incoming Bullet | State |
 | A42 | Incoming Melee Attack | State |
 | A43 | Incoming Low Attack | State |
-| A45 | Near Arena Wall | State |
+| A45 | Near Wall | State |
 
 `ConditionalCatalog.IncompatibilityReason()` is the authoritative pair definition behind `IsAllowed()`, B availability, completed-rule/loadout validation, Start Fight and controller construction. Every current A has at least one legal B across the action picker, so all 21 conditions remain selectable. All formal combinations are allowed except: A01 with either Jump (requires ground); A09 with any Fire (cannot shoot during reload); A12/F05 (at most two rounds, already at reserve); Q03 with conditions that cannot supply a triggering enemy. Cooldown, collision, currently absent visible targets or ammunition are runtime availability checks and do not disable otherwise legal pairs.
 
 Q03 supports public sources from A06, A18, A25, A27, A28, A32, A33, A34, A35, A39, A40, A41, A42 and A43. A39 chooses the nearest visible matching candidate using the existing ActorId tie-break. Threats retain their actual source; unknown or hidden sources release Aim without substituting an unrelated enemy. Q03 follows changes in the current triggering source. No hidden position information is introduced.
 
-Enemy Preparing an Attack → Step Back / Aim at Triggering Enemy, Incoming Bullet → Fire One Shot, Reloading → Dodge Along Movement and Near Arena Wall → Jump Once are legal. Events can also use J03: an accepted jump consumes that row's event, so it does not queue a repeat after landing. Persistent J03 repeats legal ground jumps while the state remains true. Event-triggered Keep Firing retains its .75 s response window; Reserve also retains its current-magazine paid-shot limit. Unconventional or weak strategies remain legal.
+Enemy Preparing an Attack → Step Back / Aim at Detected Enemy, Incoming Bullet → Fire One Shot, Reloading → Dodge Along Movement and Near Wall → Jump Once are legal. Events can also use J03: an accepted jump consumes that row's event, so it does not queue a repeat after landing. Persistent J03 repeats legal ground jumps while the state remains true. Event-triggered Keep Firing retains its .75 s response window; Reserve also retains its current-magazine paid-shot limit. Unconventional or weak strategies remain legal.
 
 ## Execution and observation
 
@@ -77,7 +79,7 @@ Persistent conditions remain active while true. Finite responses consume their o
 
 A25 observes visible public attack preparation, including lock, rather than an imminent-impact prediction. Each actor's preparation has an independent identity, including successive Rhythm tells; a finite response consumes that identity only on accepted execution. Consumption prevents a new start while the accepted bounded response can finish during that same visible preparation. Repeat Jumps keeps observing the persistent preparation state. Overlapping tells cannot swallow later preparations. Guard/Camo preparation is not an attack tell. A41/A42/A43 use retained executable .20 s public-threat geometry. Low attacks intersect the lower half without covering the upper half at impact.
 
-Enemy triggers retain matching candidates/source. Tracking requires visible public BossContact facts; hidden bodies cannot be tracked. Reappearance requires a previously observed body becoming visible again. Approaching uses observed motion, not hidden intention. Lowest-health Aim selects the lowest visible remaining health fraction. Triggering-enemy Aim retains its actual public source. Mouse assist enters only within 12 degrees of raw mouse intention and releases beyond 16 degrees. Boss policy receives no rules or private player input.
+Enemy triggers retain matching candidates/source. Tracking requires visible public BossContact facts; hidden bodies cannot be tracked. Reappearance requires a previously observed body becoming visible again. Approaching uses observed motion, not hidden intention. Lowest-health Aim selects the lowest visible remaining health fraction. Aim at Detected Enemy retains its actual public source. Fine-Tune Aim enters only within 12 degrees of manual aim intention and releases beyond 16 degrees. Boss policy receives no rules or private player input.
 
 Close/Far use horizontal collider-centre distances 5.3/8.5 with .35 exit hysteresis. Keep Mid Range starts outside those thresholds and stops .35 inside the band; while idle inside the band it releases movement to the next executable row or manual input. Approach and Retreat continue throughout their condition. Step Back is one finite physical retreat, preferring a valid triggering source and otherwise a visible eligible enemy; it never follows hidden positions. Move Toward Center emits horizontal motion toward the existing arena centre and releases ownership on arrival. Blocked directions, Dodge and hit-push ownership release conditional Move.
 

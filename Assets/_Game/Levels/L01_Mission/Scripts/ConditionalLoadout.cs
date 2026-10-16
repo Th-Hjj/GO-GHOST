@@ -103,7 +103,7 @@ namespace GoGhost.Duel
             if(operation==(int)ControlOperation.Jump&&condition==1)return "Jump requires being grounded.";
             if(operation==(int)ControlOperation.Fire&&condition==9)return "Cannot fire while reloading.";
             if(action=="F05"&&condition==12)return "Low Ammo leaves no rounds above the reserve.";
-            if(action=="Q03"&&!Condition(condition).HasEnemySource)return "This condition has no triggering enemy.";
+            if(action=="Q03"&&!Condition(condition).HasEnemySource)return "No enemy is associated with this condition.";
             return null;
         }
         public static string ConditionUnavailableReason(int operation,int condition)
@@ -130,15 +130,15 @@ namespace GoGhost.Duel
             return true;
         }
         public static readonly string[] OperationLabels={"Horizontal Movement","Jump","Aim","Fire","Dodge"};
-        public static readonly string[] Categories={"Player State","Ammo & Reload","Aim & Input","Enemy State","Position & Range","Threats"};
+        public static readonly string[] Categories={"Body State","Ammo & Reload","Weapon Control","Enemy State","Position & Range","Threats"};
         public static readonly ConditionEntry[] Conditions={
             new ConditionEntry(1,"Airborne",0),new ConditionEntry(4,"Low Health",0),new ConditionEntry(6,"Took Damage",0,true,true),
             new ConditionEntry(9,"Reloading",1),new ConditionEntry(11,"Reload Finished",1,true),new ConditionEntry(12,"Low Ammo",1),
-            new ConditionEntry(17,"Holding Fire",2),new ConditionEntry(18,"Cursor Near Enemy",2,enemySource:true),
-            new ConditionEntry(40,"Gun Aligned with an Enemy",2,enemySource:true),
+            new ConditionEntry(17,"Trigger Held",2),new ConditionEntry(18,"Enemy Near Aim Point",2,enemySource:true),
+            new ConditionEntry(40,"Enemy in Firing Line",2,enemySource:true),
             new ConditionEntry(27,"Enemy Recovering",3,enemySource:true),new ConditionEntry(28,"Enemy Reloading",3,enemySource:true),new ConditionEntry(32,"Enemy Reappeared",3,true,true),
             new ConditionEntry(33,"Enemy Close",4,enemySource:true),new ConditionEntry(34,"Enemy Far",4,enemySource:true),
-            new ConditionEntry(35,"Enemy Approaching",4,enemySource:true),new ConditionEntry(39,"Enemies on Both Sides",4,enemySource:true),new ConditionEntry(45,"Near Arena Wall",4),
+            new ConditionEntry(35,"Enemy Approaching",4,enemySource:true),new ConditionEntry(39,"Enemies on Both Sides",4,enemySource:true),new ConditionEntry(45,"Near Wall",4),
             new ConditionEntry(25,"Enemy Preparing an Attack",5,enemySource:true),new ConditionEntry(41,"Incoming Bullet",5,enemySource:true),new ConditionEntry(42,"Incoming Melee Attack",5,enemySource:true),
             new ConditionEntry(43,"Incoming Low Attack",5,enemySource:true)
         };
@@ -161,11 +161,11 @@ namespace GoGhost.Duel
             new ResponseEntry("M09","Move Toward Center",ControlOperation.Movement),
             new ResponseEntry("J01","Jump Once",ControlOperation.Jump,true),new ResponseEntry("J03","Repeat Jumps",ControlOperation.Jump),
             new ResponseEntry("Q01","Aim at Nearest Enemy",ControlOperation.Aim),new ResponseEntry("Q02","Aim at Lowest-Health Enemy",ControlOperation.Aim),
-            new ResponseEntry("Q03","Aim at Triggering Enemy",ControlOperation.Aim),new ResponseEntry("Q06","Assist Mouse Aim",ControlOperation.Aim),
+            new ResponseEntry("Q03","Aim at Detected Enemy",ControlOperation.Aim),new ResponseEntry("Q06","Fine-Tune Aim",ControlOperation.Aim),
             new ResponseEntry("F01","Fire One Shot",ControlOperation.Fire,true),new ResponseEntry("F02","Short Burst",ControlOperation.Fire,true),
             new ResponseEntry("F03","Keep Firing",ControlOperation.Fire),new ResponseEntry("F05","Fire and Keep a Reserve",ControlOperation.Fire,true),
             new ResponseEntry("D01","Dodge Away from Threat",ControlOperation.Dodge,true),new ResponseEntry("D02","Dodge Toward Enemy",ControlOperation.Dodge,true),
-            new ResponseEntry("D03","Dodge Along Movement",ControlOperation.Dodge,true),new ResponseEntry("D04","Dodge Toward Cursor",ControlOperation.Dodge,true)
+            new ResponseEntry("D03","Dodge Along Movement",ControlOperation.Dodge,true),new ResponseEntry("D04","Dodge Toward Aim Point",ControlOperation.Dodge,true)
         };
         static readonly ResponseEntry[] HistoricalResponses={
             new ResponseEntry("M05","Hold Movement Direction",ControlOperation.Movement),new ResponseEntry("M06","Move to Cursor X",ControlOperation.Movement,true),
@@ -190,9 +190,9 @@ namespace GoGhost.Duel
                 case 9:return "Your Rifle is reloading.";
                 case 11:return "Your Rifle just finished reloading.";
                 case 12:return "Your Rifle has only one or two rounds left.";
-                case 17:return "You are holding the Fire button.";
-                case 18:return "You are aiming close to a visible enemy with the mouse.";
-                case 40:return "Your gun is lined up with a visible enemy.";
+                case 17:return "You are holding the weapon's trigger.";
+                case 18:return "A visible enemy is close to the direction of your intended aim point.";
+                case 40:return "Your weapon is aligned with a visible enemy.";
                 case 27:return "A visible enemy is recovering from an action.";
                 case 28:return "A visible enemy is reloading.";
                 case 32:return "An enemy you saw earlier comes back into view.";
@@ -200,7 +200,7 @@ namespace GoGhost.Duel
                 case 34:return "A visible enemy is far away from you.";
                 case 35:return "You and a visible enemy are getting closer together.";
                 case 39:return "You can see enemies on both sides of you.";
-                case 45:return "You are close to an arena wall.";
+                case 45:return "You are close to an outer wall.";
                 case 25:return "An enemy you can see is winding up an attack.";
                 case 41:return "A bullet is about to hit you.";
                 case 42:return "A melee attack is about to hit you.";
@@ -214,23 +214,23 @@ namespace GoGhost.Duel
             {
                 case "Q01":return "Aim at the nearest visible enemy.";
                 case "Q02":return "Aim at the visible enemy with the lowest health percentage.";
-                case "Q03":return "Aim at the enemy that triggered the rule, while it is visible.";
-                case "Q06":return "Help your aim stay on a visible enemy near your cursor.";
+                case "Q03":return "Aim at the visible enemy associated with the detected situation.";
+                case "Q06":return "Make small corrections toward a visible enemy close to your intended line of aim.";
                 case "F01":return "Fire a single shot in your current aim direction.";
                 case "F02":return "Fire up to three shots without reloading.";
-                case "F03":return "Keep shooting while the condition lasts. One-time events trigger a brief volley.";
+                case "F03":return "Keep firing while the situation lasts; a momentary change prompts a brief volley.";
                 case "F05":return "Shoot until only two rounds remain in the magazine.";
                 case "D01":return "Dodge away from the threat or enemy.";
                 case "D02":return "Dodge toward a visible enemy.";
                 case "D03":return "Dodge in your movement direction, or the way you face when standing still.";
-                case "D04":return "Dodge left or right toward your cursor.";
+                case "D04":return "Dodge left or right toward your intended aim point.";
                 case "M01":return "Move toward a visible enemy.";
                 case "M02":return "Move away from a visible enemy.";
                 case "M03":return "Move closer or farther away to keep a medium distance from an enemy.";
                 case "M04":return "Take one short step away from the threat or enemy.";
-                case "M09":return "Move toward the center of the arena.";
+                case "M09":return "Move toward the center of the combat area.";
                 case "J01":return "Jump once from the ground.";
-                case "J03":return "Jump again after landing while the condition lasts. One-time events trigger one jump.";
+                case "J03":return "Jump again after landing while the situation lasts. A momentary change prompts one jump.";
                 default:return "";
             }
         }

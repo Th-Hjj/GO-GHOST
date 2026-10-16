@@ -15,6 +15,8 @@ public static partial class BossEncounterSmoke
     public static void RunAlpha50()=>Start("alpha50",false);
     public static void RunAlpha50Edges()=>Start("alpha50-edges",false);
     public static void RunAlpha50Layouts()=>Start("alpha50-layouts",false);
+    public static void RunUnifiedCatalog()=>Start("unified-catalog",false);
+    public static void RunAlphaCursorChecks()=>Start("alpha50-cursor",false);
     static void Rule(ConditionalLoadout d,int op,int condition,string response)
     {d.Operations[op].Rules.Add(new ConditionalRule{Condition=condition,Action=response});}
     static IEnumerator AlphaFresh(int wave,Action<ConditionalLoadout> configure,bool stop=true)
@@ -35,6 +37,172 @@ public static partial class BossEncounterSmoke
         OnFloor(game.Player.gameObject,game.Bosses[0].Navigation,playerX);
         OnFloor(game.Bosses[0].gameObject,game.Bosses[0].Navigation,bossX);
     }
+    static UnityEngine.UI.Button[] CatalogOptions()=>Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<UnityEngine.UI.Button>().Where(b=>b.name=="Option").ToArray();
+    static string OptionLabel(UnityEngine.UI.Button b)=>b.GetComponentInChildren<TMPro.TMP_Text>().text.Split('\n')[0];
+    static IEnumerator UnifiedCatalog()
+    {
+        Record("CONDITION-FIRST EDITOR: unified rows, action categories and focused executor examples; no combination matrix.");
+        game.NewGame();yield return Frames(2);
+        int[] conditions={25,45,25,41,9};string[] responses={"M04","J01","Q03","F01","D03"};
+        for(int op=0;op<5;op++)
+        {
+            ClickConfig("AddRule");yield return Frames(2);
+            var options=CatalogOptions();
+            var headings=Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<TMPro.TMP_Text>().Where(t=>t.name.StartsWith("ConditionCategory")).ToArray();
+            Check($"new rule {op}: same 21 A in category order",options.Select(OptionLabel).SequenceEqual(ConditionalCatalog.Conditions.Select(c=>c.Label))
+                &&headings.Select(t=>t.text).SequenceEqual(ConditionalCatalog.Categories));
+            Check($"new rule {op}: conditions independent of action category",options.All(b=>b.interactable)
+                &&!Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<UnityEngine.UI.Button>().Any(b=>b.name.StartsWith("Operation")||b.name.StartsWith("ActionCategory")));
+            ClickConfig("Option",ConditionalCatalog.Condition(conditions[op]).Label);yield return Frames(2);
+            Check($"new rule {op}: action categories appear only after condition",Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<UnityEngine.UI.Button>()
+                .Where(b=>b.name.StartsWith("ActionCategory")).Select(b=>b.GetComponentInChildren<TMPro.TMP_Text>().text).SequenceEqual(new[]{"Aim","Fire","Dodge","Move","Jump"}));
+            ClickConfig("ActionCategory"+op);yield return Frames(2);
+            options=CatalogOptions();
+            Check($"operation {op}: complete ordered B catalog",options.Select(OptionLabel).SequenceEqual(ConditionalCatalog.FormalResponses[op].Select(id=>ConditionalCatalog.Response(id).Label)));
+            ClickConfig("Option",ConditionalCatalog.Response(responses[op]).Label);yield return Frames(2);
+            Check($"example {conditions[op]}/{responses[op]} immediately equips in unified list",game.DraftLoadout.TotalRules==op+1&&ConditionalCatalog.IsValid(game.DraftLoadout)
+                &&ConfigButtonNamed("Rule"+op+"Action").GetComponentInChildren<TMPro.TMP_Text>().text==ConditionalCatalog.Response(responses[op]).Label
+                &&!Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<UnityEngine.UI.Button>().Any(b=>b.name.StartsWith("ActionCategory")||b.name.StartsWith("Operation")));
+        }
+        Check("five unified rules hide Add without a mode or enable toggle",!Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<UnityEngine.UI.Button>().Any(b=>b.name=="AddRule")
+            &&Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<UnityEngine.UI.Toggle>().Length==0);
+        ClickConfig("Rule0Action");yield return Frames(1);ClickConfig("ActionCategory3");yield return Frames(1);ClickConfig("Option","Keep Firing");yield return Frames(2);
+        Check("cross-category edit at budget replaces one row in place",game.DraftLoadout.TotalRules==5&&game.DraftLoadout.Operations[0].Rules.Count==0
+            &&game.DraftLoadout.Operations[3].Rules.Select(r=>r.Action).SequenceEqual(new[]{"F03","F01"})&&ConfigButtonNamed("Rule0Action","Keep Firing")!=null);
+        ClickConfig("Rule0Action");yield return Frames(1);ClickConfig("ActionCategory0");yield return Frames(1);ClickConfig("Option","Step Back");yield return Frames(2);
+        game.StartFight();yield return Frames(3);
+        Check("Start Fight accepts all five newly legal examples",game.Phase==DuelPhase.Prepare&&Enumerable.Range(0,5).All(op=>game.Rules.RuleAt((ControlOperation)op,0).Action==responses[op]));
+        foreach(var pair in new[]{(2,4),(3,12),(1,1),(3,9)})
+        {
+            int op=pair.Item1;
+            game.NewGame();yield return Frames(2);ClickConfig("AddRule");yield return Frames(1);
+            ClickConfig("Option",ConditionalCatalog.Condition(pair.Item2).Label);yield return Frames(1);ClickConfig("ActionCategory"+op);yield return Frames(2);
+            var blocked=CatalogOptions().First(b=>!b.interactable);
+            Check($"operation {op}: incompatible B stays in original position",(op==2||pair.Item2==12)
+                ? OptionLabel(blocked)==(op==2?"Aim at Triggering Enemy":"Fire and Keep a Reserve") : CatalogOptions().All(b=>!b.interactable));
+            Check($"operation {op}: complete B with explanation",blocked.GetComponentInChildren<TMPro.TMP_Text>().color.r<.7f&&blocked.GetComponentInChildren<TMPro.TMP_Text>().text.Contains("\n")
+                &&CatalogOptions().Select(OptionLabel).SequenceEqual(ConditionalCatalog.FormalResponses[op].Select(id=>ConditionalCatalog.Response(id).Label)));
+            blocked.onClick.Invoke();game.StartFight();yield return Frames(1);
+            Check($"operation {op}: disabled B cannot equip or start",game.DraftLoadout.TotalRules==0&&game.Phase==DuelPhase.Configure);
+        }
+        foreach(var pair in new[]{(1,1,"J01"),(1,1,"J03"),(3,9,"F01"),(3,9,"F02"),(3,9,"F03"),(3,9,"F05"),(3,12,"F05"),(2,4,"Q03")})
+        {
+            var invalid=new ConditionalLoadout();Rule(invalid,pair.Item1,pair.Item2,pair.Item3);
+            Check($"structural rejection {pair.Item2}/{pair.Item3}",!ConditionalCatalog.IsValid(invalid)&&!ConditionalCatalog.IsAllowed(pair.Item1,pair.Item2,pair.Item3));
+        }
+        yield return ConditionFirstOrdering();
+        yield return AlphaFresh(1,d=>{Rule(d,0,25,"M04");Rule(d,2,25,"Q03");Rule(d,3,25,"F02");});AlphaPlace(-6,2);yield return Seconds(.1f);
+        var body=game.Player.GetComponent<Rigidbody2D>();float x=body.position.x;
+        bool prepared=game.Bosses[0].Actions.TryStart(BossAbility.Piercing,game.Player.GetComponent<Collider2D>().bounds.center);
+        yield return Seconds(.18f);
+        Check("public preparation executes Step Back and source Aim concurrently",prepared&&body.position.x<x-.5f&&Feedback(0).Glow>0&&Feedback(2).Executing&&game.Rules.CurrentTargetId==game.Bosses[0].ActorId,
+            $"prepared={prepared} x={x:F2}->{body.position.x:F2} move={Feedback(0).Glow:F2} aim={Feedback(2).Executing} target={game.Rules.CurrentTargetId} phase={game.Bosses[0].Actions.Phase}");
+        yield return Seconds(.45f);
+        Check("consumed preparation completes bounded Step Back and three paid burst shots",body.position.x<x-1.2f&&body.position.x>x-1.8f&&game.Rifle.TriggerPulls==3);
+        x=body.position.x;yield return Seconds(.15f);
+        Check("same preparation cannot restart completed finite responses",Mathf.Abs(body.position.x-x)<.08f&&game.Rifle.TriggerPulls==3);
+
+        yield return AlphaFresh(3,d=>{Rule(d,3,41,"F01");Rule(d,2,41,"Q03");});
+        var gunner=game.Bosses.First(a=>a.ActorId==1);var sword=game.Bosses.First(a=>a.ActorId==2);
+        OnFloor(game.Player.gameObject,gunner.Navigation,-6);OnFloor(gunner.gameObject,gunner.Navigation,2);OnFloor(sword.gameObject,sword.Navigation,-3);yield return Frames(4);
+        Fire(gunner,gunner.gameObject,game.Player.GetComponent<Collider2D>().bounds.center+Vector3.right*3,Vector2.left);
+        yield return Until(()=>game.Rifle.TriggerPulls>0,.25f);
+        Check("Incoming Bullet pays one shot and aims at public source over nearer enemy",game.Rifle.TriggerPulls==1&&game.Rifle.AmmoInMagazine==7&&Feedback(3).Glow>0&&Feedback(2).Glow>0&&game.Rules.CurrentTargetId==gunner.ActorId);
+        yield return Seconds(.6f);
+        Check("expired threat releases ownership without replay",game.Rifle.TriggerPulls==1&&!game.Player.GetComponent<PlayerInputReader>().ConditionalFrame.FireOwned&&!game.Player.GetComponent<PlayerInputReader>().ConditionalFrame.AimOwned);
+
+        yield return AlphaFresh(1,d=>Rule(d,4,9,"D03"));AlphaPlace(-6,3);yield return Frames(4);
+        MouseAt(game.Rifle.AimOrigin+Vector2.up*6,true);yield return Until(()=>game.Rifle.IsReloading,3);mouseHeld=false;
+        yield return Until(()=>game.Dodge.IsDodging,.2f);
+        Check("Reloading accepts original movement-facing Dodge",game.Rifle.IsReloading&&game.Dodge.IsDodging&&game.Rules.AcceptedDodges==1&&Feedback(4).Glow>0);
+
+        yield return AlphaFresh(1,d=>Rule(d,1,45,"J01"));AlphaPlace(-14,3);yield return Until(()=>game.Rules.AcceptedJumps>0,.4f);
+        Check("Near Arena Wall accepts original grounded Jump",game.Rules.AcceptedJumps==1&&game.Player.GetComponent<Rigidbody2D>().linearVelocity.y>1&&Feedback(1).Glow>0);
+        yield return Seconds(1.2f);Check("same wall occurrence does not replay finite Jump",game.Rules.AcceptedJumps==1);
+
+        yield return AlphaFresh(1,d=>{Rule(d,1,6,"J03");Rule(d,2,6,"Q03");});AlphaPlace(-6,3);yield return Frames(4);
+        game.Player.TakeDamage(1,null);yield return Until(()=>game.Rules.AcceptedJumps>0,.3f);
+        Check("event Repeat Jumps accepts once; unknown damage source cannot own Aim",game.Rules.AcceptedJumps==1&&Feedback(1).Glow>0&&!game.Player.GetComponent<PlayerInputReader>().ConditionalFrame.AimOwned);
+        yield return Seconds(1.2f);Check("event Jump expires without a queued repeat",game.Rules.AcceptedJumps==1);
+
+        foreach(int width in new[]{1280,1920})
+        {
+            RestoreFixture();game.NewGame();SetAlphaGameSize(width,width*9/16);yield return Frames(6);
+            ClickConfig("AddRule");yield return Frames(5);
+            var scroll=Object.FindAnyObjectByType<DuelUI>().GetComponentInChildren<UnityEngine.UI.ScrollRect>();
+            var handleCorners=new Vector3[4];scroll.verticalScrollbar.handleRect.GetWorldCorners(handleCorners);
+            Check($"{width}: scrollbar handle stays within track",handleCorners.All(c=>((RectTransform)scroll.verticalScrollbar.transform).rect.Contains(scroll.verticalScrollbar.transform.InverseTransformPoint(c)*.999f)));
+            Check($"{width}: category labels fit in scrollable A",Screen.width==width&&scroll.content.rect.height>scroll.viewport.rect.height
+                &&scroll.content.GetComponentsInChildren<TMPro.TMP_Text>().All(t=>!t.isTextOverflowing));
+            Directory.CreateDirectory(Output);ScreenCapture.CaptureScreenshot(Output+$"unified-A-top-{width}.png");yield return Frames(3);
+            scroll.verticalNormalizedPosition=0;yield return Frames(3);
+            var last=CatalogOptions().Last().transform as RectTransform;var corners=new Vector3[4];last.GetWorldCorners(corners);
+            Check($"{width}: Terrain final option reachable by scrolling",scroll.viewport.rect.Contains(scroll.viewport.InverseTransformPoint((corners[0]+corners[2])/2)));
+            ScreenCapture.CaptureScreenshot(Output+$"unified-A-bottom-{width}.png");yield return Frames(3);
+            ClickConfig("Option","Low Ammo");yield return Frames(1);ClickConfig("ActionCategory3");yield return Frames(5);
+            Check($"{width}: complete B and disabled explanation fit",CatalogOptions().Length==4&&CatalogOptions().All(b=>!b.GetComponentInChildren<TMPro.TMP_Text>().isTextOverflowing));
+            ScreenCapture.CaptureScreenshot(Output+$"unified-B-{width}.png");yield return Frames(3);
+            ClickConfig("Option","Fire One Shot");yield return Frames(2);
+            game.EditLoadout(d=>{Rule(d,2,25,"Q03");Rule(d,4,9,"D03");Rule(d,0,25,"M04");Rule(d,1,45,"J01");});yield return Frames(5);
+            var editor=Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<RectTransform>().First(r=>r.name=="RuleEditor");
+            Check($"{width}: unified five-category rows and Start Fight fit",editor.GetComponentsInChildren<TMPro.TMP_Text>().All(t=>!t.isTextOverflowing)
+                &&ConfigButtonNamed("Rule4Action")!=null&&ConfigButtonNamed("StartFight").interactable);
+            ScreenCapture.CaptureScreenshot(Output+$"condition-first-rules-{width}.png");yield return Frames(3);
+        }
+        RestoreFixture();game.MainMenu();yield return Frames(2);
+    }
+    static IEnumerator ConditionFirstOrdering()
+    {
+        game.NewGame();yield return Frames(2);
+        foreach(string id in new[]{"M01","F01","M02"})
+        {
+            ClickConfig("AddRule");yield return Frames(1);ClickConfig("Option","Enemy Close");yield return Frames(1);
+            ClickConfig("ActionCategory"+(int)ConditionalCatalog.Response(id).Operation);yield return Frames(1);
+            ClickConfig("Option",ConditionalCatalog.Response(id).Label);yield return Frames(2);
+        }
+        Check("mixed actions retain addition order in one list",ConfigButtonNamed("Rule0Action","Approach Enemy")!=null
+            &&ConfigButtonNamed("Rule1Action","Fire One Shot")!=null&&ConfigButtonNamed("Rule2Action","Retreat from Enemy")!=null);
+        ClickConfig("MoveRuleUp2");yield return Frames(1);ClickConfig("MoveRuleUp1");yield return Frames(2);
+        Check("unified reordering preserves operation-local priority",game.DraftLoadout.Operations[0].Rules.Select(r=>r.Action).SequenceEqual(new[]{"M02","M01"})
+            &&game.DraftLoadout.Operations[3].Rules.Count==1&&ConfigButtonNamed("Rule0Action","Retreat from Enemy")!=null);
+        ClickConfig("Rule0Condition");yield return Frames(1);ClickConfig("Option","Airborne");yield return Frames(1);
+        ClickConfig("SelectorBack");yield return Frames(2);
+        Check("pending edit does not mutate equipped data and blocks Start",game.DraftLoadout.Operations[0].Rules[0].Condition==33&&!ConfigButtonNamed("StartFight").interactable);
+        ClickConfig("Rule0Condition");yield return Frames(1);ClickConfig("Option","Enemy Close");yield return Frames(1);
+        ClickConfig("ActionCategory0");yield return Frames(1);ClickConfig("Option","Retreat from Enemy");yield return Frames(2);
+        game.StartFight();yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);StopPolicies();AlphaPlace(-5,-2);yield return Seconds(.1f);
+        var body=game.Player.GetComponent<Rigidbody2D>();float x=body.position.x;yield return Seconds(.15f);
+        Check("unified list drives original priority and actual execution feedback",body.position.x<x-.4f&&Feedback(0,0).Executing&&!Feedback(0,1).Executing
+            &&game.Rules.RuleAt(ControlOperation.Movement,0).Action=="M02");
+        game.Player.TakeDamage(99999,null);yield return Frames(3);game.Reconfigure();yield return Frames(3);
+        Check("retry retains unified order and runtime priorities",game.DraftLoadout.TotalRules==3&&ConfigButtonNamed("Rule0Action","Retreat from Enemy")!=null
+            &&ConfigButtonNamed("Rule2Action","Fire One Shot")!=null);
+        ClickConfig("RemoveRule1");yield return Frames(2);
+        Check("remove frees one slot without disturbing other categories",game.DraftLoadout.TotalRules==2&&game.DraftLoadout.Operations[0].Rules.Count==1
+            &&game.DraftLoadout.Operations[3].Rules.Count==1&&ConfigButtonNamed("AddRule")!=null);
+        yield return AlphaFresh(1,null);AlphaPlace(-5,2);heldKeys=new[]{Key.D};yield return Seconds(.12f);
+        Check("empty unified list retains manual movement fallback",!game.Player.GetComponent<PlayerInputReader>().ConditionalFrame.MovementOwned
+            &&game.Player.GetComponent<Rigidbody2D>().linearVelocity.x>1&&game.DraftLoadout.TotalRules==0);
+        heldKeys=Array.Empty<Key>();
+    }
+    static IEnumerator AlphaCursorChecks()
+    {
+        yield return AlphaFresh(1,d=>Rule(d,2,18,"Q06"));AlphaPlace(-6,0);yield return Seconds(.1f);
+        var reader=game.Player.GetComponent<PlayerInputReader>();
+        MouseAt(game.Bosses[0].Body.bounds.center+Vector3.up*.4f,false);yield return Seconds(.1f);
+        Check("cursor enters Assist Aim",Feedback(2).Executing);
+        MouseAt(game.Rifle.AimOrigin+Vector2.up*5,false);yield return Seconds(.1f);
+        Check("large mouse intention releases Assist Aim after input update",!reader.ConditionalFrame.AimOwned,
+            $"requested={mousePosition} actual={reader.AimScreenPosition} rawAim={reader.RawInput.Aim} screen={Screen.width}x{Screen.height}");
+        yield return AlphaFresh(1,d=>Rule(d,4,1,"D04"));AlphaPlace(-6,2);yield return Seconds(.1f);
+        reader=game.Player.GetComponent<PlayerInputReader>();var body=game.Player.GetComponent<Rigidbody2D>();
+        MouseAt(body.position+Vector2.left*5,false);yield return Seconds(.1f);float x=body.position.x;
+        Record($"CURSOR requested={mousePosition} actual={reader.AimScreenPosition} world={reader.RawInput.Cursor} body={body.position}");
+        heldKeys=new[]{Key.Space};yield return Until(()=>game.Dodge.IsDodging,.5f);heldKeys=Array.Empty<Key>();yield return Seconds(.06f);
+        Check("airborne Dodge follows left world cursor",game.Dodge.IsDodging&&body.position.x<x-.3f&&Feedback(4).Glow>0&&game.Dodge.CommittedHorizontalSpeed<0,
+            $"x={x:F2}->{body.position.x:F2} speed={game.Dodge.CommittedHorizontalSpeed:F2} cursor={reader.RawInput.Cursor}");
+        game.MainMenu();yield return Frames(2);
+    }
     static IEnumerator Alpha50()
     {
         Record("ALPHA RULE EXPANSION: bounded controlled fixtures, original physical executors and paid shots; virtual input only.");
@@ -42,11 +210,11 @@ public static partial class BossEncounterSmoke
         Check("empty defaults, no independent toggle",game.DraftLoadout.Operations.All(o=>o.Rules.Count==0)
             &&Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<UnityEngine.UI.Toggle>().Length==0);
         ClickConfig("AddRule");yield return Frames(2);
-        Check("Move picker contains exactly its eleven applicable conditions",Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<UnityEngine.UI.Button>().Count(b=>b.name=="Option")==11);
+        Check("Move picker contains the complete 21-condition catalog",Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<UnityEngine.UI.Button>().Count(b=>b.name=="Option")==21);
         ClickConfig("Option","Enemy Close");yield return Frames(2);
         game.StartFight();
         Check("incomplete pair remains UI-local and blocks Start Fight",game.DraftLoadout.Operations[0].Rules.Count==0&&game.Phase==DuelPhase.Configure);
-        ClickConfig("Option","Retreat from Enemy");yield return Frames(2);
+        ClickConfig("ActionCategory0");yield return Frames(1);ClickConfig("Option","Retreat from Enemy");yield return Frames(2);
         Check("complete pair equips without a switch",game.DraftLoadout.Operations[0].Rules.Count==1&&ConditionalCatalog.IsValid(game.DraftLoadout));
         Check("one rule leaves shared slots available",ConfigButtonNamed("AddRule")!=null);
         var copy=game.DraftLoadout.Copy();copy.Operations[0].Rules[0].Condition=9;
@@ -67,7 +235,7 @@ public static partial class BossEncounterSmoke
         Rule(split,1,33,"J01");Check("directly injected sixth rule remains invalid after copying",!ConditionalCatalog.IsValid(split)&&!ConditionalCatalog.IsValid(split.Copy()));
         Check("formal catalog has 21 unique A and 19 unique B",ConditionalCatalog.FormalConditions.SelectMany(c=>c).Distinct().Count()==21
             &&Enumerable.Range(0,5).SelectMany(op=>ConditionalCatalog.Responses.Where(b=>(int)b.Operation==op&&ConditionalCatalog.FormalConditions[op].Any(a=>ConditionalCatalog.IsAllowed(op,a,b.Id)))).Select(b=>b.Id).Distinct().Count()==19);
-        Check("event and source compatibility is shared and bounded",!ConditionalCatalog.IsAllowed(1,6,"J03")&&!ConditionalCatalog.IsAllowed(3,12,"F05")
+        Check("event and source compatibility is shared and bounded",ConditionalCatalog.IsAllowed(1,6,"J03")&&!ConditionalCatalog.IsAllowed(3,12,"F05")
             &&ConditionalCatalog.IsAllowed(3,6,"F03")&&ConditionalCatalog.IsAllowed(3,11,"F05")&&!ConditionalCatalog.IsAllowed(2,4,"Q03")
             &&ConditionalCatalog.IsAllowed(2,32,"Q03")&&ConditionalCatalog.IsAllowed(0,6,"M04"));
         yield return AlphaFresh(1,null);yield return CheckInputs();
@@ -142,7 +310,7 @@ public static partial class BossEncounterSmoke
         yield return AlphaFresh(1,d=>Rule(d,2,18,"Q06"));AlphaPlace(-6,0);yield return Frames(3);
         MouseAt(game.Bosses[0].Body.bounds.center+Vector3.up*.4f,false);yield return Frames(4);
         Check("near cursor enables actual Assist Mouse Aim without Fire",Feedback(2).Executing&&!game.Player.GetComponent<PlayerInputReader>().ConditionalFrame.FireOwned&&game.Rifle.TriggerPulls==0);
-        MouseAt(game.Player.transform.position+Vector3.up*5,false);yield return Frames(4);
+        MouseAt(game.Player.transform.position+Vector3.up*5,false);yield return Seconds(.1f);
         Check("large mouse intention change releases Assist Aim",!game.Player.GetComponent<PlayerInputReader>().ConditionalFrame.AimOwned);
 
         yield return AlphaFresh(1,d=>Rule(d,3,40,"F01"));AlphaPlace(-6,0);yield return Frames(3);
@@ -174,7 +342,7 @@ public static partial class BossEncounterSmoke
         yield return Until(()=>game.Dodge.IsDodging,.25f);yield return Seconds(.06f);
         Check("incoming real bullet Dodge follows final resolved movement",game.Dodge.IsDodging&&body.position.x<x-.3f&&Feedback(4).Glow>0&&game.Dodge.CommittedHorizontalSpeed<0);heldKeys=Array.Empty<Key>();
         yield return AlphaFresh(1,d=>Rule(d,4,1,"D04"));AlphaPlace(-6,2);yield return Frames(3);
-        body=game.Player.GetComponent<Rigidbody2D>();MouseAt(game.Player.transform.position+Vector3.left*5,false);yield return Frames(3);x=body.position.x;
+        body=game.Player.GetComponent<Rigidbody2D>();MouseAt(body.position+Vector2.left*5,false);yield return Seconds(.1f);x=body.position.x;
         heldKeys=new[]{Key.Space};yield return Until(()=>game.Dodge.IsDodging,.5f);heldKeys=Array.Empty<Key>();yield return Seconds(.06f);
         Check("airborne Dodge uses actual world cursor horizontal direction",game.Dodge.IsDodging&&body.position.x<x-.3f&&Feedback(4).Glow>0&&game.Dodge.CommittedHorizontalSpeed<0);
 
@@ -303,9 +471,13 @@ public static partial class BossEncounterSmoke
                     Check($"{width} count={count}: labels fit and remain mouse-transparent",labels.All(t=>!t.isTextOverflowing&&!t.raycastTarget)
                         &&sidebar.GetComponentsInChildren<UnityEngine.UI.Selectable>().Length==0);
                 }
-                MouseAt(game.Player.transform.position+new Vector3(5,2),false);yield return Frames(4);
-                var expected=((Vector2)game.Player.transform.position+new Vector2(5,2)-game.Rifle.AimOrigin).normalized;
-                Check($"{width} count={count}: manual mouse world aim",Vector2.Dot(game.Player.GetComponent<PlayerInputReader>().AimDirection,expected)>.999f);
+                // Conditional resolution runs on physics ticks; four render frames may be shorter than one tick.
+                Vector2 cursorWorld=game.Player.transform.position+new Vector3(5,2);
+                MouseAt(cursorWorld,false);yield return Seconds(.1f);
+                var expected=(cursorWorld-game.Rifle.AimOrigin).normalized;
+                var input=game.Player.GetComponent<PlayerInputReader>();
+                Check($"{width} count={count}: manual mouse world aim",Vector2.Dot(input.AimDirection,expected)>.999f,
+                    $"requested={mousePosition} actual={input.AimScreenPosition} expected={expected} aim={input.AimDirection}");
                 Directory.CreateDirectory(Output);ScreenCapture.CaptureScreenshot(Output+$"alpha50-rules-{count}-{width}.png");yield return Frames(4);
             }
         }
@@ -319,7 +491,7 @@ public static partial class BossEncounterSmoke
             ScreenCapture.CaptureScreenshot(Output+$"alpha50-config-five-{width}.png");yield return Frames(3);
         }
         RestoreFixture();game.NewGame();yield return Frames(3);
-        ClickConfig("Operation4");yield return Frames(1);ClickConfig("AddRule");yield return Frames(2);
+        ClickConfig("AddRule");yield return Frames(2);
         ScreenCapture.CaptureScreenshot(Output+"alpha50-local-picker.png");yield return Frames(3);
         game.MainMenu();yield return Frames(3);
     }

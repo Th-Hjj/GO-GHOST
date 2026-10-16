@@ -51,8 +51,9 @@ namespace GoGhost.Duel
     {
         public readonly int Id, Category;
         public readonly string Label;
-        public readonly bool Event;
-        public ConditionEntry(int id,string label,int category,bool occurrence=false) {Id=id;Label=label;Category=category;Event=occurrence;}
+        public readonly bool Event, HasEnemySource;
+        public ConditionEntry(int id,string label,int category,bool occurrence=false,bool enemySource=false)
+        {Id=id;Label=label;Category=category;Event=occurrence;HasEnemySource=enemySource;}
         public string Code => "A"+Id.ToString("00");
     }
     public readonly struct ResponseEntry
@@ -66,29 +67,34 @@ namespace GoGhost.Duel
     public static class ConditionalCatalog
     {
         public const int MaxRulesTotal = 5;
-        // Formal configuration and Start Fight share these exact pairs. Historical handlers stay private to development.
-        public static readonly int[][] FormalConditions = {
-            new[]{33,34,9,4,6,12,11,28,35,45,39},
-            new[]{33,25,43,4,6,35,39,45,32},
-            new[]{17,1,27,4,6,11,28,35,32,39,18},
-            new[]{40,1,27,11,28,32,12,18,35,39,17,6},
-            new[]{25,41,42,1,6,4,28,35,32,45,39,18}
-        };
         public static readonly string[][] FormalResponses = {
             new[]{"M01","M02","M03","M04","M09"},new[]{"J01","J03"},
             new[]{"Q01","Q02","Q03","Q06"},new[]{"F01","F02","F03","F05"},new[]{"D01","D02","D03","D04"}
         };
-        public static bool IsAllowed(int operation,int condition,string action)
+        public static bool IsAllowed(int operation,int condition,string action)=>IncompatibilityReason(operation,condition,action)==null;
+        // One definition for option availability, completed rules, Start Fight and runtime snapshots.
+        // Cooldowns, collisions, absent public targets and current resources are checked by the executors.
+        public static string IncompatibilityReason(int operation,int condition,string action)
         {
-            if(operation<0||operation>=5||Array.IndexOf(FormalConditions[operation],condition)<0
-                ||Array.IndexOf(FormalResponses[operation],action)<0)return false;
-            // Source-bound aim cannot invent an enemy for self/input-only conditions.
-            if(action=="Q03"&&condition!=27&&condition!=28&&condition!=32&&condition!=35&&condition!=18&&condition!=6)return false;
-            bool occurrence=Condition(condition).Event;
-            if(action=="J03"&&occurrence)return false;
-            // Runtime bounds event firing to its response window; reserve firing also has a paid-shot limit.
-            if(action=="F05"&&condition==12)return false;
-            return true;
+            if(operation<0||operation>=5||Array.IndexOf(SharedConditionIds,condition)<0
+                ||Array.IndexOf(FormalResponses[operation],action)<0)return "Choose a condition and an action for this operation.";
+            if(operation==(int)ControlOperation.Jump&&condition==1)return "Jump requires being grounded.";
+            if(operation==(int)ControlOperation.Fire&&condition==9)return "Cannot fire while reloading.";
+            if(action=="F05"&&condition==12)return "Low Ammo leaves no rounds above the reserve.";
+            if(action=="Q03"&&!Condition(condition).HasEnemySource)return "This condition has no triggering enemy.";
+            return null;
+        }
+        public static string ConditionUnavailableReason(int operation,int condition)
+        {
+            if(operation<0||operation>=5)return "Choose an operation.";
+            string reason=null;
+            foreach(string action in FormalResponses[operation])
+            {
+                string incompatibility=IncompatibilityReason(operation,condition,action);
+                if(incompatibility==null)return null;
+                if(reason==null)reason=incompatibility;
+            }
+            return reason;
         }
         public static bool IsValid(ConditionalLoadout loadout)
         {
@@ -104,15 +110,18 @@ namespace GoGhost.Duel
         public static readonly string[] OperationLabels={"Horizontal Movement","Jump","Aim","Fire","Dodge"};
         public static readonly string[] Categories={"Self","Input","Enemy State","Enemy Relation","Threat","Terrain"};
         public static readonly ConditionEntry[] Conditions={
-            new ConditionEntry(1,"Airborne",0),new ConditionEntry(4,"Low Health",0),new ConditionEntry(6,"Took Damage",0,true),
+            new ConditionEntry(1,"Airborne",0),new ConditionEntry(4,"Low Health",0),new ConditionEntry(6,"Took Damage",0,true,true),
             new ConditionEntry(9,"Reloading",0),new ConditionEntry(11,"Reload Finished",0,true),new ConditionEntry(12,"Low Ammo",0),
-            new ConditionEntry(17,"Holding Fire",1),new ConditionEntry(18,"Cursor Near Enemy",1),
-            new ConditionEntry(25,"Enemy Preparing an Attack",2),new ConditionEntry(27,"Enemy Recovering",2),new ConditionEntry(28,"Enemy Reloading",2),
-            new ConditionEntry(32,"Enemy Reappeared",2,true),new ConditionEntry(33,"Enemy Close",3),new ConditionEntry(34,"Enemy Far",3),
-            new ConditionEntry(35,"Enemy Approaching",3),new ConditionEntry(39,"Enemies on Both Sides",3),
-            new ConditionEntry(40,"Gun Aligned with an Enemy",4),new ConditionEntry(41,"Incoming Bullet",4),new ConditionEntry(42,"Incoming Melee Attack",4),
-            new ConditionEntry(43,"Incoming Low Attack",4),new ConditionEntry(45,"Near Arena Wall",5)
+            new ConditionEntry(17,"Holding Fire",1),new ConditionEntry(18,"Cursor Near Enemy",1,enemySource:true),
+            new ConditionEntry(25,"Enemy Preparing an Attack",2,enemySource:true),new ConditionEntry(27,"Enemy Recovering",2,enemySource:true),new ConditionEntry(28,"Enemy Reloading",2,enemySource:true),
+            new ConditionEntry(32,"Enemy Reappeared",2,true,true),new ConditionEntry(33,"Enemy Close",3,enemySource:true),new ConditionEntry(34,"Enemy Far",3,enemySource:true),
+            new ConditionEntry(35,"Enemy Approaching",3,enemySource:true),new ConditionEntry(39,"Enemies on Both Sides",3,enemySource:true),
+            new ConditionEntry(40,"Gun Aligned with an Enemy",4,enemySource:true),new ConditionEntry(41,"Incoming Bullet",4,enemySource:true),new ConditionEntry(42,"Incoming Melee Attack",4,enemySource:true),
+            new ConditionEntry(43,"Incoming Low Attack",4,enemySource:true),new ConditionEntry(45,"Near Arena Wall",5)
         };
+        static readonly int[] SharedConditionIds=Array.ConvertAll(Conditions,c=>c.Id);
+        // Preserve the existing indexed API; every operation references the same ordered catalog.
+        public static readonly int[][] FormalConditions={SharedConditionIds,SharedConditionIds,SharedConditionIds,SharedConditionIds,SharedConditionIds};
         static readonly ConditionEntry[] HistoricalConditions={
             new ConditionEntry(2,"Left Ground",0,true),new ConditionEntry(3,"Landed",0,true),new ConditionEntry(5,"Entered Low Health",0,true),
             new ConditionEntry(7,"Dodge Finished",0,true),new ConditionEntry(10,"Reload Started",0,true),new ConditionEntry(13,"Hit an Enemy",0,true),

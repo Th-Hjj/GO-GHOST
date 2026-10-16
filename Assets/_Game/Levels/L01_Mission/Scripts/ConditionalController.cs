@@ -238,6 +238,13 @@ namespace GoGhost.Duel
                     context=active.Context;
                     match=active.Accepted||Time.time<=context.ExpiresAt;
                 }
+                if(existing&&rule.Condition==25&&active.Accepted&&ConditionalCatalog.Response(rule.Action).Finite)
+                {
+                    // Consumption prevents another start, not completion of this accepted bounded response.
+                    int source=active.Context.Source;
+                    if(source>=0&&visible[source]&&contacts[source].Preparing&&contacts[source].PreparationId==active.Context.Occurrence)
+                    {context=active.Context;match=true;}
+                }
                 if(!match){if(existing)active.Row=-1;continue;}
                 if(existing)
                 {
@@ -308,6 +315,8 @@ namespace GoGhost.Duel
                 case 39:
                     bool left=false,right=false;
                     for(int i=0;i<actors.Count;i++)if(visible[i]) {left|=contacts[i].Bounds.center.x<shape.bounds.center.x;right|=contacts[i].Bounds.center.x>shape.bounds.center.x;}
+                    // Both sides supplies a public candidate set; use the normal deterministic nearest tie-break.
+                    if(left&&right){ctx.Source=Choose(ctx.Candidates,"Q01");ctx.HasPosition=true;ctx.Position=contacts[ctx.Source].Bounds.center;}
                     return left&&right;
                 case 41:case 42:case 43:
                     if(!geometry.ConditionalThreat(rule.Condition,movement.MoveInput.x,false,out var origin,out int actorId))return false;
@@ -488,6 +497,7 @@ namespace GoGhost.Duel
             if(op==1&&r.Accepted)return false;
             if(op!=1&&Time.time>=r.Deadline)return false;
             if(r.Target>=0&&(!visible[r.Target]||!actors[r.Target].IsAlive))return false;
+            if(action=="Q03"&&r.Target!=r.Context.Source)return false;
             // Enemy state filters remain bound to the selected candidate, even if another actor still matches.
             if(r.Target>=0&&!ConditionalCatalog.Condition(rule.Condition).Event
                 &&IsEnemyState(rule.Condition)&&!EnemyMatches(rule,r.Target,op))return false;

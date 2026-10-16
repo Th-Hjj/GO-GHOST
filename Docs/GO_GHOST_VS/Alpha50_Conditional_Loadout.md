@@ -1,6 +1,6 @@
 # Alpha 50% — Conditional Loadout
 
-Confirmed assignment: Thomas, 2026-10-16, Alpha Rule System Expansion. This supersedes the previous one-rule-per-operation limit and 11-condition/eight-response catalog, the historical 40-condition/30-response configuration and Manual/Rules switches. Retain the compact body configuration, original player executors, Boss combat, five-platform arena and current combat tuning, including the 2.0 s Dodge start cooldown. Confirmed design is not runtime or balance evidence; see the newest Implementation_Log entry for actual checks.
+Confirmed assignment: Thomas, 2026-10-16, Condition-First Rule Editor, extending Unified Rule Condition Catalog and Alpha Rule System Expansion. One rule creation flow selects a condition before an action; only structurally impossible pairs are rejected. This supersedes persistent operation selectors/separate rule lists, operation-exclusive A lists, the previous one-rule-per-operation limit and older catalogs/Manual switches. Retain the compact body configuration, original player executors, Boss combat, five-platform arena and current combat tuning, including the 2.0 s Dodge start cooldown. Confirmed design is not runtime or balance evidence; see the newest Implementation_Log entry for actual checks.
 
 ## Configuration and priority
 
@@ -8,21 +8,25 @@ Five independent operations: Move and Jump (Legs), Aim and Fire (Arms), Dodge (S
 
 Rules in each operation execute in displayed priority order. A row owns its operation only when its condition matches **and** its response can execute. An impossible higher row permits a lower row; no executable row means manual control for that operation. Each row keeps independent occurrence/consumption state, even when rows share a condition. An executable higher row may replace a lower response, preserving already accepted physical Dodge and completed Jump commitments. Different operations may execute together; there is no cross-operation priority.
 
-Keep the monochrome body, short operation selectors and numbered condition > action rows. Show **Rules: X/5**, Up/Down priority buttons and Remove. Hide Add when the shared budget is full; editing, removing and reordering remain available. Removing immediately frees a slot. Show only the selected operation's conditions and legal responses; the condition list may scroll. Five rows and Start Fight remain readable and accessible at 1280×720 and 1920×1080.
+Keep the monochrome body and numbered condition > action rows in **one unified list**, in addition order. There are no persistent operation buttons or body-part category navigation. **Add rule → Select Condition → Select Action** is the common creation flow. The scrollable condition picker always offers all 21 A conditions under Self, Input, Enemy State, Enemy Relation, Threat and Terrain, independently of action categories. Only the action picker has **Aim / Fire / Dodge / Move / Jump** tabs. Each tab shows its complete ordered B catalog; incompatible B remains grey and disabled in place with a short reason. Switching tabs retains the selected condition.
 
-Pending new or changed pairs remain UI-local until complete and legal. Changing a condition clears an incompatible response. Incomplete editing blocks Start Fight. `ConditionalCatalog.IsAllowed()` is the same pair definition for the picker, loadout validation and runtime. Copying preserves all rows and their order; invalid over-budget data is rejected rather than silently truncated. Historical handlers remain outside the formal selectable catalog.
+Show **Rules: X/5**, Up/Down and Remove. Up/Down moves a row in the unified list; relative order among actions controlling the same operation determines its priority. Different operations still execute independently, with no cross-operation priority. Editing an action across categories replaces the same row and costs no extra slot. Existing per-operation rule data and runtime snapshots remain unchanged; unified display order is UI-local and retained while the run draft survives retry/next wave. Hide Add at five; editing, reordering and removal remain available. Five rows and Start Fight remain readable at 1280×720 and 1920×1080.
+
+Pending new or changed pairs remain UI-local until complete and legal. Selecting a condition opens Select Action; changing it clears an incompatible response. Completing a legal pair equips it immediately without an enable step. Incomplete editing blocks Start Fight. `ConditionalCatalog.IsAllowed()` is the same pair definition for the action picker, loadout validation and runtime. Copying preserves all rows and their operation-local order; invalid over-budget data is rejected rather than silently truncated. Historical handlers remain outside the formal selectable catalog.
 
 ## Formal catalog
 
 There are **21 unique conditions and 19 unique responses**. Existing IDs remain stable; player-facing menus omit them. The original 11 formal condition labels and eight responses are retained.
 
-| Operation | Allowed condition IDs | Responses |
-|---|---|---|
-| Move | 33, 34, 9, 4, 6, 12, 11, 28, 35, 45, 39 | M01 Approach Enemy; M02 Retreat from Enemy; M03 Keep Mid Range; M04 Step Back; M09 Move Toward Center |
-| Jump | 33, 25, 43, 4, 6, 35, 39, 45, 32 | J01 Jump Once; J03 Repeat Jumps |
-| Aim | 17, 1, 27, 4, 6, 11, 28, 35, 32, 39, 18 | Q01 Aim at Nearest Enemy; Q02 Aim at Lowest-Health Enemy; Q03 Aim at Triggering Enemy; Q06 Assist Mouse Aim |
-| Fire | 40, 1, 27, 11, 28, 32, 12, 18, 35, 39, 17, 6 | F01 Fire One Shot; F02 Short Burst; F03 Keep Firing; F05 Fire and Keep a Reserve |
-| Dodge | 25, 41, 42, 1, 6, 4, 28, 35, 32, 45, 39, 18 | D01 Dodge Away from Threat; D02 Dodge Toward Enemy; D03 Dodge Along Movement; D04 Dodge Toward Cursor |
+| Operation | Complete ordered B catalog |
+|---|---|
+| Move | M01 Approach Enemy; M02 Retreat from Enemy; M03 Keep Mid Range; M04 Step Back; M09 Move Toward Center |
+| Jump | J01 Jump Once; J03 Repeat Jumps |
+| Aim | Q01 Aim at Nearest Enemy; Q02 Aim at Lowest-Health Enemy; Q03 Aim at Triggering Enemy; Q06 Assist Mouse Aim |
+| Fire | F01 Fire One Shot; F02 Short Burst; F03 Keep Firing; F05 Fire and Keep a Reserve |
+| Dodge | D01 Dodge Away from Threat; D02 Dodge Toward Enemy; D03 Dodge Along Movement; D04 Dodge Toward Cursor |
+
+Shared A order below is also the UI order. Categories: Self A01–A12; Input A17–A18; Enemy State A25–A32; Enemy Relation A33–A39; Threat A40–A43; Terrain A45. IDs in these ranges not listed below remain historical/unavailable.
 
 | Condition | Label | Kind |
 |---|---|---|
@@ -48,7 +52,11 @@ There are **21 unique conditions and 19 unique responses**. Existing IDs remain 
 | A43 | Incoming Low Attack | State |
 | A45 | Near Arena Wall | State |
 
-All combinations within the operation's sets are allowed except necessary semantic restrictions. Q03 requires A27/A28/A32/A35/A18 or A06 with an identifiable, currently visible source. J03 permits persistent states only, so excludes A06/A32. All Fire responses may use A06/A11/A32 events: event-triggered Keep Firing is bounded to its .75 s response window, and Fire and Keep a Reserve is additionally bounded by its current-magazine paid-shot limit. F05 excludes A12 because Low Ammo means one or two remaining rounds. Missing/invalid public targets reject targeted actions at runtime. Previously valid pairs remain valid; a strategically poor but executable pair is permitted.
+`ConditionalCatalog.IncompatibilityReason()` is the authoritative pair definition behind `IsAllowed()`, B availability, completed-rule/loadout validation, Start Fight and controller construction. Every current A has at least one legal B across the action picker, so all 21 conditions remain selectable. All formal combinations are allowed except: A01 with either Jump (requires ground); A09 with any Fire (cannot shoot during reload); A12/F05 (at most two rounds, already at reserve); Q03 with conditions that cannot supply a triggering enemy. Cooldown, collision, currently absent visible targets or ammunition are runtime availability checks and do not disable otherwise legal pairs.
+
+Q03 supports public sources from A06, A18, A25, A27, A28, A32, A33, A34, A35, A39, A40, A41, A42 and A43. A39 chooses the nearest visible matching candidate using the existing ActorId tie-break. Threats retain their actual source; unknown or hidden sources release Aim without substituting an unrelated enemy. Q03 follows changes in the current triggering source. No hidden position information is introduced.
+
+Enemy Preparing an Attack → Step Back / Aim at Triggering Enemy, Incoming Bullet → Fire One Shot, Reloading → Dodge Along Movement and Near Arena Wall → Jump Once are legal. Events can also use J03: an accepted jump consumes that row's event, so it does not queue a repeat after landing. Persistent J03 repeats legal ground jumps while the state remains true. Event-triggered Keep Firing retains its .75 s response window; Reserve also retains its current-magazine paid-shot limit. Unconventional or weak strategies remain legal.
 
 ## Execution and observation
 
@@ -56,7 +64,7 @@ All combinations within the operation's sets are allowed except necessary semant
 
 Persistent conditions remain active while true. Finite responses consume their occurrence only after actual acceptance and cannot repeat every frame during one uninterrupted state. Events use occurrence identities, with independent consumption per row. Rejected requests do not consume them. Took Damage remains eligible for .75 s after the actual hit, allowing Step Back to wait for temporary hit-push ownership to end. Other events retain their .25 s observation window. Accepted event-driven continuous responses last at most .75 s; finite movement/firing responses use their own bounded travel/paid-shot deadlines. There is no indefinite buffer. Airborne Dodge may wait for cooldown during the same airtime, succeeds at most once per row/occurrence and expires on landing. Repeat Jumps requests only one legal grounded jump per airborne period while its persistent condition remains true; there is no horizontal route or hidden platform navigation.
 
-A25 observes visible public attack preparation, including lock, rather than an imminent-impact prediction. Each actor's preparation has an independent identity, including successive Rhythm tells; a finite response consumes that identity only on accepted execution. Repeat Jumps keeps observing the persistent preparation state. Overlapping tells cannot swallow later preparations. Guard/Camo preparation is not an attack tell. A41/A42/A43 use retained executable .20 s public-threat geometry. Low attacks intersect the lower half without covering the upper half at impact.
+A25 observes visible public attack preparation, including lock, rather than an imminent-impact prediction. Each actor's preparation has an independent identity, including successive Rhythm tells; a finite response consumes that identity only on accepted execution. Consumption prevents a new start while the accepted bounded response can finish during that same visible preparation. Repeat Jumps keeps observing the persistent preparation state. Overlapping tells cannot swallow later preparations. Guard/Camo preparation is not an attack tell. A41/A42/A43 use retained executable .20 s public-threat geometry. Low attacks intersect the lower half without covering the upper half at impact.
 
 Enemy triggers retain matching candidates/source. Tracking requires visible public BossContact facts; hidden bodies cannot be tracked. Reappearance requires a previously observed body becoming visible again. Approaching uses observed motion, not hidden intention. Lowest-health Aim selects the lowest visible remaining health fraction. Triggering-enemy Aim retains its actual public source. Mouse assist enters only within 12 degrees of raw mouse intention and releases beyond 16 degrees. Boss policy receives no rules or private player input.
 
@@ -80,6 +88,6 @@ F8 opens the release-player tuning panel for movement/jump/Dodge, Rifle and both
 
 ## Validation and delivery
 
-Use the existing bounded harness and real action executors: normal compile; zero/five/3+2 budgets, sixth-rule rejection and freed slot; actual reordered priority and impossible-high-row fallback; the ten requested new behavior examples, independent trigger consumption and source binding; retry/next-wave retention, Restart clear, pause/F8 and accepted-execution HUD; five-row configuration/combat screenshots at 1280×720 and 1920×1080; short W1/W2/W3 observations. Controlled fixtures prove mechanisms, not natural completion or balance. No exhaustive pair matrix, long fights or win-rate gate.
+Use the existing bounded harness and real action executors: normal compile; condition-first flow with the complete 21-item/six-category A picker, action-only category tabs and full ordered B with disabled entries retained; unified addition order, cross-category editing, budget and priority/manual fallback; shared validation, five newly legal examples, source binding/consumption and execution HUD; configuration/catalog captures at 1280×720 and 1920×1080. Retain earlier lifecycle/F8/W1/W2/W3 evidence without repeating broad suites for UI-only changes. Controlled fixtures prove mechanisms, not natural completion or balance. No exhaustive pair matrix, long fights or win-rate gate.
 
 Thomas authorized an updated Windows x64 standalone, launch/shell/combat/retry smoke, complete ZIP with licenses and existing GitHub Release upload workflow, plus checked commit/push to main. Build artifacts stay outside tracked source. The newest Implementation_Log entry records exact performed checks, build/release artifacts, NOT OBSERVED and NOT TESTED limits.

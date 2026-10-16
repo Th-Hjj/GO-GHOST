@@ -8,7 +8,7 @@ namespace GoGhost.Duel
     public enum DuelPhase { Menu, Configure, Prepare, Fight, Between, Failed, Complete }
 
     // Retained three-wave shell. The legacy components own every physical action and hit.
-    public sealed class DuelGame : MonoBehaviour
+    public sealed partial class DuelGame : MonoBehaviour
     {
         public const float PreparationSeconds = 3f;
         public float PreparationRemaining => Phase == DuelPhase.Prepare ? Mathf.Max(0, PreparationSeconds - phaseTime) : 0;
@@ -61,6 +61,7 @@ namespace GoGhost.Duel
             AudioListener.pause = false;
             music?.StopMusic(true);
             Application.runInBackground = true;
+            InitializeDeveloperTuning();
             ui = gameObject.AddComponent<DuelUI>();
             ui.Initialize(this, font);
             Phase = DuelPhase.Menu;
@@ -76,6 +77,7 @@ namespace GoGhost.Duel
         }
         void OnApplicationFocus(bool focus)
         {
+            if (!focus) developerResumeOnClose = false;
             if (!focus && (Phase == DuelPhase.Fight || Phase == DuelPhase.Prepare)) SetPause(true);
         }
         public void NewGame()
@@ -123,6 +125,7 @@ namespace GoGhost.Duel
             if (Wave == 2 || Wave == 3) activeActors.Add(CreateBoss(swordsmanPrefab,
                 Wave == 2 ? new Vector2(soloX, swordsmanSpawn.y) : swordsmanSpawn, 2));
             actors = activeActors.ToArray();
+            ApplyDeveloperTuning(true);
             Police = actors[0].Health; // Historical development consumers; gameplay uses the full actor list.
             coordinator.Configure(actors, navigation);
             Rules=new ConditionalController(Player,actors,platforms,arenaBounds,DraftLoadout);
@@ -198,6 +201,7 @@ namespace GoGhost.Duel
         }
         public void SetPause(bool value)
         {
+            if (DeveloperToolsOpen && !value) return;
             if (Phase != DuelPhase.Fight && Phase != DuelPhase.Prepare) return;
             if (Paused == value) return;
             Paused = value;
@@ -231,6 +235,7 @@ namespace GoGhost.Duel
         }
         void ClearEncounter()
         {
+            DeveloperToolsOpen = developerResumeOnClose = false;
             StopCombat();
             music?.StopMusic(true);
             Paused = false;
@@ -244,8 +249,8 @@ namespace GoGhost.Duel
         }
         void Update()
         {
-            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) SetPause(!Paused);
-            if (Paused) return;
+            if (!ui.DeveloperShortcutConsumed && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) SetPause(!Paused);
+            if (Paused || DeveloperToolsOpen) return;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if(Phase==DuelPhase.Fight&&Wave==3&&Player!=null&&!Player.IsDead
                 &&Keyboard.current!=null&&Keyboard.current.pKey.wasPressedThisFrame)coordinator?.RequestNextDebugCombo();

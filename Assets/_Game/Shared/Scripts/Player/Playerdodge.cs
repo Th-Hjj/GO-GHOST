@@ -33,21 +33,29 @@ public class PlayerDodge : MonoBehaviour
     public bool airDodgeUnlocked = false;
 
     public bool IsDodging { get; private set; }
+    private float committedMovementEndsAt;
+    public float CommittedHorizontalSpeed { get; private set; }
+    public float MovementRemaining => IsDodging ? Mathf.Max(0,committedMovementEndsAt-Time.time) : 0;
     public event System.Action DodgeFinished;
     private float nextDodgeTime;
     // Formal Air Dash (leg upgrade in the DeploymentSnapshot): one horizontal dash per airtime, same cooldown as the
     // ground dash. The base Human stays ground-only; the legacy airDodgeUnlocked field is not a progression path.
     private bool airDashAvailable = true;
     private bool legacyCombat;
+    public const float LegacyCooldown = 2f, LegacyImmunity = .2f;
+    private float runtimeCooldown = -1, runtimeDistance = -1, runtimeDuration = -1, runtimeImmunity = -1;
     public bool HasAirDash => !legacyCombat && officer != null && officer.Deployment != null && officer.Deployment.HasAirDash;
     public bool AirDashAvailable => HasAirDash && airDashAvailable;
     private OfficerIdentity officer;
-    public float DodgeStartInterval => legacyCombat ? 2f : officer != null && officer.Deployment != null ? officer.Deployment.DodgeStartInterval : stats.dodgeCooldown;
+    public float DodgeStartInterval => legacyCombat ? (runtimeCooldown >= 0 ? runtimeCooldown : LegacyCooldown) : officer != null && officer.Deployment != null ? officer.Deployment.DodgeStartInterval : stats.dodgeCooldown;
     public float CooldownRemaining => Mathf.Max(0f, nextDodgeTime - Time.time);
     public float LastDodgeStartedAt { get; private set; } = float.NegativeInfinity;
-    public float Distance => stats.dodgeDistance;
-    public float Duration => Mathf.Max(.02f, stats.dodgeDuration);
-    public float InvulnerabilityDuration => legacyCombat ? .2f : stats.iFrameDuration;
+    public float Distance => legacyCombat && runtimeDistance > 0 ? runtimeDistance : stats.dodgeDistance;
+    public float Duration => Mathf.Max(.02f, legacyCombat && runtimeDuration > 0 ? runtimeDuration : stats.dodgeDuration);
+    public float InvulnerabilityDuration => legacyCombat ? (runtimeImmunity >= 0 ? runtimeImmunity : LegacyImmunity) : stats.iFrameDuration;
+    // Existing actions and their cooldown deadline stay committed; edits affect the next acceptance.
+    public void SetRuntimeDodge(float distance, float duration, float cooldown, float immunity)
+    { runtimeDistance=distance; runtimeDuration=duration; runtimeCooldown=cooldown; runtimeImmunity=immunity; }
     public bool CanDodge => isActiveAndEnabled && CooldownRemaining <= 0 && !IsDodging
         && health != null && !health.IsInvulnerable && input != null && input.GameplayInputEnabled
         && !input.NarrativePaused && movement != null && (legacyCombat || movement.IsGrounded || AirDashAvailable);
@@ -124,6 +132,7 @@ public class PlayerDodge : MonoBehaviour
     {
         StopAllCoroutines();
         IsDodging = false;
+        CommittedHorizontalSpeed = 0;
         if (health != null) health.IsInvulnerable = false;
         if (rb != null) rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
     }
@@ -147,11 +156,14 @@ public class PlayerDodge : MonoBehaviour
     private IEnumerator DodgeRoutine(Vector2 direction)
     {
         IsDodging = true;
-        health.IsInvulnerable = true;
 
-        float distance = stats.dodgeDistance + (slashDodgeUnlocked ? stats.slashDodgeBonusDistance : 0f);
-        float duration = Mathf.Max(0.02f, stats.dodgeDuration);
+        float distance = Distance + (slashDodgeUnlocked ? stats.slashDodgeBonusDistance : 0f);
+        float duration = Duration;
+        float immunity = InvulnerabilityDuration;
         float speed = distance / duration;
+        health.IsInvulnerable = immunity > 0;
+        CommittedHorizontalSpeed = direction.x * speed;
+        committedMovementEndsAt = Time.time + duration;
 
         HashSet<IDamageable> hitEnemies = new HashSet<IDamageable>();
         float elapsed = 0f;
@@ -168,14 +180,14 @@ public class PlayerDodge : MonoBehaviour
 
             yield return new WaitForFixedUpdate();
             elapsed += Time.fixedDeltaTime;
-            if (elapsed >= InvulnerabilityDuration) health.IsInvulnerable = false;
+            if (elapsed >= immunity) health.IsInvulnerable = false;
         }
 
         rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
         IsDodging = false;
 
         // Immunity has its own deadline; it need not cover the entire movement.
-        float remainingIFrames = InvulnerabilityDuration - elapsed;
+        float remainingIFrames = immunity - elapsed;
         if (remainingIFrames > 0f)
             yield return new WaitForSeconds(remainingIFrames);
 

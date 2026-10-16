@@ -5,6 +5,7 @@ using UnityEngine.InputSystem.UI;
 
 namespace GoGhost.Duel
 {
+    [DefaultExecutionOrder(-200)]
     public sealed partial class DuelUI : MonoBehaviour
     {
         DuelGame game;
@@ -61,10 +62,16 @@ namespace GoGhost.Duel
             ConfigurePageScale();
             if(page!=null){page.gameObject.SetActive(false);Destroy(page.gameObject);}
             page=Rect("Page",canvas,Vector2.zero,new Vector2(1600,900));
+            developerFields.Clear();
             ClearRuleHud();BuildRuleHud();UpdateBattleLayout();
             playerHealth=resources=null; playerFill=null;
             preparationCount=null; lastPreparationCount=-1;
             policeHealth=System.Array.Empty<TMP_Text>(); policeFill=System.Array.Empty<UnityEngine.UI.Image>();
+            if(game.DeveloperToolsOpen)
+            {
+                if(ruleSidebar!=null)ruleSidebar.gameObject.SetActive(false);
+                BuildDeveloperTools();return;
+            }
             if(game.Phase==DuelPhase.Menu||game.Phase==DuelPhase.Configure)
                 Image(page,Vector2.zero,new Vector2(4000,4000),Color.black);
             if(game.Paused)
@@ -121,6 +128,7 @@ namespace GoGhost.Duel
         }
         void LateUpdate()
         {
+            if(game==null||game.DeveloperToolsOpen)return;
             if (RefreshConfigurationLayout()) return;
             UpdateRuleHud();
             if(playerHealth==null||game.Player==null)return;

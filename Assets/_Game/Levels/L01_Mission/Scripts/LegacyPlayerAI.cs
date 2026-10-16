@@ -724,7 +724,8 @@ public sealed class LegacyPlayerAI
         for(int i=1;i<count;i++)
         {
             float t=i*Step;
-            float vx=motion.DodgeDirection!=0 && t<=dodge.Duration ? motion.DodgeDirection*dodge.Distance/dodge.Duration
+            float vx=motion.DodgeDirection!=0 && t<=(dodge.IsDodging?dodge.MovementRemaining:dodge.Duration)
+                ? (dodge.IsDodging?dodge.CommittedHorizontalSpeed:motion.DodgeDirection*dodge.Distance/dodge.Duration)
                 : (motion.SteerLanding?LandingSteer(motion.LandingX,position.x):motion.Move)*movement.MoveSpeed;
             Vector2 previous=position;
             position.x=Mathf.Clamp(position.x+vx*Step,leftEdge+selfBounds.extents.x+.01f,rightEdge-selfBounds.extents.x-.01f);

@@ -8,7 +8,9 @@ namespace GoGhost.Duel
         public int Condition;
         public string Action;
         public bool Below;
-        public ConditionalRule Copy() => new ConditionalRule { Condition=Condition, Action=Action, Below=Below };
+        // Presentation order only; execution still uses each operation's own list.
+        public int DisplayOrder = -1;
+        public ConditionalRule Copy() => new ConditionalRule { Condition=Condition, Action=Action, Below=Below, DisplayOrder=DisplayOrder };
     }
     [Serializable] public sealed class OperationRules
     {
@@ -30,10 +32,30 @@ namespace GoGhost.Duel
         {
             if(operation<0||operation>=Operations.Length||rule==null||Operations[operation]?.Rules==null
                 ||TotalRules>=ConditionalCatalog.MaxRulesTotal||!ConditionalCatalog.IsAllowed(operation,rule.Condition,rule.Action))return false;
-            Operations[operation].Rules.Add(rule.Copy());
+            var added=rule.Copy();
+            var rows=OrderedRules();
+            for(int i=0;i<rows.Count;i++)if(rows[i]!=null)rows[i].DisplayOrder=i;
+            added.DisplayOrder=rows.Count;
+            Operations[operation].Rules.Add(added);
             return true;
         }
         public bool TryAddRule(ControlOperation operation,ConditionalRule rule)=>TryAddRule((int)operation,rule);
+        public List<ConditionalRule> OrderedRules()
+        {
+            var rows=new List<ConditionalRule>();
+            foreach(var operation in Operations)
+                if(operation?.Rules!=null)rows.AddRange(operation.Rules);
+            // Stable insertion sort leaves older, unnumbered data in its existing operation order.
+            for(int i=1;i<rows.Count;i++)
+            {
+                var row=rows[i];int j=i;
+                int order=row!=null&&row.DisplayOrder>=0?row.DisplayOrder:int.MaxValue;
+                while(j>0&&(rows[j-1]!=null&&rows[j-1].DisplayOrder>=0?rows[j-1].DisplayOrder:int.MaxValue)>order)
+                {rows[j]=rows[j-1];j--;}
+                rows[j]=row;
+            }
+            return rows;
+        }
         public ConditionalLoadout Copy()
         {
             var copy=new ConditionalLoadout();
@@ -108,16 +130,17 @@ namespace GoGhost.Duel
             return true;
         }
         public static readonly string[] OperationLabels={"Horizontal Movement","Jump","Aim","Fire","Dodge"};
-        public static readonly string[] Categories={"Self","Input","Enemy State","Enemy Relation","Threat","Terrain"};
+        public static readonly string[] Categories={"Player State","Ammo & Reload","Aim & Input","Enemy State","Position & Range","Threats"};
         public static readonly ConditionEntry[] Conditions={
             new ConditionEntry(1,"Airborne",0),new ConditionEntry(4,"Low Health",0),new ConditionEntry(6,"Took Damage",0,true,true),
-            new ConditionEntry(9,"Reloading",0),new ConditionEntry(11,"Reload Finished",0,true),new ConditionEntry(12,"Low Ammo",0),
-            new ConditionEntry(17,"Holding Fire",1),new ConditionEntry(18,"Cursor Near Enemy",1,enemySource:true),
-            new ConditionEntry(25,"Enemy Preparing an Attack",2,enemySource:true),new ConditionEntry(27,"Enemy Recovering",2,enemySource:true),new ConditionEntry(28,"Enemy Reloading",2,enemySource:true),
-            new ConditionEntry(32,"Enemy Reappeared",2,true,true),new ConditionEntry(33,"Enemy Close",3,enemySource:true),new ConditionEntry(34,"Enemy Far",3,enemySource:true),
-            new ConditionEntry(35,"Enemy Approaching",3,enemySource:true),new ConditionEntry(39,"Enemies on Both Sides",3,enemySource:true),
-            new ConditionEntry(40,"Gun Aligned with an Enemy",4,enemySource:true),new ConditionEntry(41,"Incoming Bullet",4,enemySource:true),new ConditionEntry(42,"Incoming Melee Attack",4,enemySource:true),
-            new ConditionEntry(43,"Incoming Low Attack",4,enemySource:true),new ConditionEntry(45,"Near Arena Wall",5)
+            new ConditionEntry(9,"Reloading",1),new ConditionEntry(11,"Reload Finished",1,true),new ConditionEntry(12,"Low Ammo",1),
+            new ConditionEntry(17,"Holding Fire",2),new ConditionEntry(18,"Cursor Near Enemy",2,enemySource:true),
+            new ConditionEntry(40,"Gun Aligned with an Enemy",2,enemySource:true),
+            new ConditionEntry(27,"Enemy Recovering",3,enemySource:true),new ConditionEntry(28,"Enemy Reloading",3,enemySource:true),new ConditionEntry(32,"Enemy Reappeared",3,true,true),
+            new ConditionEntry(33,"Enemy Close",4,enemySource:true),new ConditionEntry(34,"Enemy Far",4,enemySource:true),
+            new ConditionEntry(35,"Enemy Approaching",4,enemySource:true),new ConditionEntry(39,"Enemies on Both Sides",4,enemySource:true),new ConditionEntry(45,"Near Arena Wall",4),
+            new ConditionEntry(25,"Enemy Preparing an Attack",5,enemySource:true),new ConditionEntry(41,"Incoming Bullet",5,enemySource:true),new ConditionEntry(42,"Incoming Melee Attack",5,enemySource:true),
+            new ConditionEntry(43,"Incoming Low Attack",5,enemySource:true)
         };
         static readonly int[] SharedConditionIds=Array.ConvertAll(Conditions,c=>c.Id);
         // Preserve the existing indexed API; every operation references the same ordered catalog.
@@ -157,6 +180,60 @@ namespace GoGhost.Duel
         {foreach(var c in Conditions)if(c.Id==id)return c;foreach(var c in HistoricalConditions)if(c.Id==id)return c;throw new ArgumentException("Unknown condition "+id);}
         public static ResponseEntry Response(string id)
         {foreach(var b in Responses)if(b.Id==id)return b;foreach(var b in HistoricalResponses)if(b.Id==id)return b;throw new ArgumentException("Unknown response "+id);}
+        public static string ConditionDescription(int id)
+        {
+            switch(id)
+            {
+                case 1:return "You are off the ground.";
+                case 4:return "Your health has dropped to 40% or less.";
+                case 6:return "You just took damage.";
+                case 9:return "Your Rifle is reloading.";
+                case 11:return "Your Rifle just finished reloading.";
+                case 12:return "Your Rifle has only one or two rounds left.";
+                case 17:return "You are holding the Fire button.";
+                case 18:return "You are aiming close to a visible enemy with the mouse.";
+                case 40:return "Your gun is lined up with a visible enemy.";
+                case 27:return "A visible enemy is recovering from an action.";
+                case 28:return "A visible enemy is reloading.";
+                case 32:return "An enemy you saw earlier comes back into view.";
+                case 33:return "A visible enemy is close to you.";
+                case 34:return "A visible enemy is far away from you.";
+                case 35:return "You and a visible enemy are getting closer together.";
+                case 39:return "You can see enemies on both sides of you.";
+                case 45:return "You are close to an arena wall.";
+                case 25:return "An enemy you can see is winding up an attack.";
+                case 41:return "A bullet is about to hit you.";
+                case 42:return "A melee attack is about to hit you.";
+                case 43:return "A low attack is about to hit your legs.";
+                default:return "";
+            }
+        }
+        public static string ResponseDescription(string id)
+        {
+            switch(id)
+            {
+                case "Q01":return "Aim at the nearest visible enemy.";
+                case "Q02":return "Aim at the visible enemy with the lowest health percentage.";
+                case "Q03":return "Aim at the enemy that triggered the rule, while it is visible.";
+                case "Q06":return "Help your aim stay on a visible enemy near your cursor.";
+                case "F01":return "Fire a single shot in your current aim direction.";
+                case "F02":return "Fire up to three shots without reloading.";
+                case "F03":return "Keep shooting while the condition lasts. One-time events trigger a brief volley.";
+                case "F05":return "Shoot until only two rounds remain in the magazine.";
+                case "D01":return "Dodge away from the threat or enemy.";
+                case "D02":return "Dodge toward a visible enemy.";
+                case "D03":return "Dodge in your movement direction, or the way you face when standing still.";
+                case "D04":return "Dodge left or right toward your cursor.";
+                case "M01":return "Move toward a visible enemy.";
+                case "M02":return "Move away from a visible enemy.";
+                case "M03":return "Move closer or farther away to keep a medium distance from an enemy.";
+                case "M04":return "Take one short step away from the threat or enemy.";
+                case "M09":return "Move toward the center of the arena.";
+                case "J01":return "Jump once from the ground.";
+                case "J03":return "Jump again after landing while the condition lasts. One-time events trigger one jump.";
+                default:return "";
+            }
+        }
     }
     public static class ConditionalDefaults
     {

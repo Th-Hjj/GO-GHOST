@@ -571,6 +571,7 @@ public sealed class MissionBodyRegion : UnityEngine.UI.MaskableGraphic, ICanvasR
     public bool Round;
     public bool Selected;
     public bool Equipped;
+    public bool Monochrome;
     public Vector2[] Contour;
 
     private int PointCount => Round ? 32 : Contour != null ? Contour.Length : 4;
@@ -597,6 +598,11 @@ public sealed class MissionBodyRegion : UnityEngine.UI.MaskableGraphic, ICanvasR
             : Equipped ? new Color(.30f, .68f, 1f) : new Color(.86f, .91f, .94f);
         Color fill = Selected ? new Color(.045f, .19f, .29f)
             : Equipped ? new Color(.025f, .065f, .095f) : new Color(.012f, .018f, .024f);
+        if (Monochrome)
+        {
+            outline = Selected ? Color.white : new Color(.55f, .55f, .55f);
+            fill = Selected ? new Color(.12f, .12f, .12f) : Color.black;
+        }
         mesh.AddVert(center, fill, Vector2.zero);
         for (int i = 0; i < count; i++) mesh.AddVert(Point(i), fill, Vector2.zero);
         for (int i = 0; i < count; i++) mesh.AddTriangle(0, i + 1, (i + 1) % count + 1);
@@ -608,7 +614,8 @@ public sealed class MissionBodyRegion : UnityEngine.UI.MaskableGraphic, ICanvasR
                 Color glow = outline; glow.a = Selected ? .10f : .05f;
                 Segment(mesh, a, b, 9, glow);
             }
-            Segment(mesh, a, b, Selected ? 3 : 2, outline);
+            float width = Monochrome ? 1.5f / Mathf.Max(.05f, rectTransform.lossyScale.x) : Selected ? 3 : 2;
+            Segment(mesh, a, b, width, outline);
             if (Equipped) Segment(mesh, Vector2.Lerp(center, a, .88f), Vector2.Lerp(center, b, .88f), 1,
                 new Color(outline.r, outline.g, outline.b, .40f));
         }

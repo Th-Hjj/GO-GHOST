@@ -13,11 +13,13 @@ namespace GoGhost.Duel
             public int Candidates, Source;
             public bool HasPosition;
             public Vector2 Position;
+            public float ExpiresAt;
         }
         sealed class RuleState
         {
             public bool WasTrue, Consumed;
             public long Occurrence, LastEvent;
+            public int RangeMode;
             public readonly Dictionary<int,int> Preparations = new Dictionary<int,int>();
         }
         public readonly struct ExecutionFeedback
@@ -53,19 +55,19 @@ namespace GoGhost.Duel
         readonly Bounds arena;
         readonly LegacyPlayerAI geometry;
         readonly ConditionalLoadout loadout;
-        readonly RuleState[,] states=new RuleState[5,ConditionalCatalog.MaxRulesPerOperation];
-        readonly bool[,] matches=new bool[5,ConditionalCatalog.MaxRulesPerOperation];
-        readonly TriggerContext[,] contexts=new TriggerContext[5,ConditionalCatalog.MaxRulesPerOperation];
+        readonly RuleState[,] states=new RuleState[5,ConditionalCatalog.MaxRulesTotal];
+        readonly bool[,] matches=new bool[5,ConditionalCatalog.MaxRulesTotal];
+        readonly TriggerContext[,] contexts=new TriggerContext[5,ConditionalCatalog.MaxRulesTotal];
         readonly int[,] factFrames=new int[51,2];
         readonly bool[,] factMatches=new bool[51,2],factWasTrue=new bool[51,2];
         readonly long[,] factOccurrences=new long[51,2];
         readonly TriggerContext[,] factContexts=new TriggerContext[51,2];
         readonly Running[] running={new Running(),new Running(),new Running(),new Running(),new Running()};
-        readonly float[,] executedAt=new float[5,ConditionalCatalog.MaxRulesPerOperation];
-        readonly int[,] executedFrame=new int[5,ConditionalCatalog.MaxRulesPerOperation];
+        readonly float[,] executedAt=new float[5,ConditionalCatalog.MaxRulesTotal];
+        readonly int[,] executedFrame=new int[5,ConditionalCatalog.MaxRulesTotal];
         readonly List<Notice> events=new List<Notice>(16);
         readonly BossContact[] contacts;
-        readonly bool[] visible,seen,hidden,lowEnemy,close,far;
+        readonly bool[] visible,seen,hidden,lowEnemy,close,far,cursorNear;
         readonly RaycastHit2D[] hits=new RaycastHit2D[24];
         RawPlayerInput raw;
         ConditionalControlFrame output;
@@ -100,20 +102,21 @@ namespace GoGhost.Duel
         void Consume(int op,Running r)
         {
             var rule=loadout.Operations[op].Rules[r.Row];var state=states[op,r.Row];
-            if(rule.Condition==25&&r.Context.Source>=0)
+            if(rule.Condition==25&&r.Context.Source>=0&&ConditionalCatalog.Response(rule.Action).Finite)
                 state.Preparations[r.Context.Source]=(int)r.Context.Occurrence;
             if(ConditionalCatalog.Response(rule.Action).Finite)state.Consumed=true;
             if(ConditionalCatalog.Condition(rule.Condition).Event)state.LastEvent=r.Context.Occurrence;
         }
         public ConditionalController(PlayerHealth player,IReadOnlyList<BossAgent> actors,Collider2D[] platforms,Bounds arena,ConditionalLoadout snapshot)
         {
+            if(!ConditionalCatalog.IsValid(snapshot))throw new ArgumentException("Invalid conditional loadout",nameof(snapshot));
             this.player=player;this.actors=actors;this.platforms=platforms;this.arena=arena;loadout=snapshot.Copy();
             movement=player.GetComponent<PlayerMovement>();gun=player.GetComponent<PlayerShooting>();dodge=player.GetComponent<PlayerDodge>();
             input=player.GetComponent<PlayerInputReader>();shape=player.GetComponent<Collider2D>();body=player.GetComponent<Rigidbody2D>();
             geometry=new LegacyPlayerAI(player,actors,platforms);
             contacts=new BossContact[actors.Count];visible=new bool[actors.Count];seen=new bool[actors.Count];hidden=new bool[actors.Count];
-            lowEnemy=new bool[actors.Count];close=new bool[actors.Count];far=new bool[actors.Count];
-            for(int op=0;op<5;op++)for(int row=0;row<ConditionalCatalog.MaxRulesPerOperation;row++)
+            lowEnemy=new bool[actors.Count];close=new bool[actors.Count];far=new bool[actors.Count];cursorNear=new bool[actors.Count];
+            for(int op=0;op<5;op++)for(int row=0;row<ConditionalCatalog.MaxRulesTotal;row++)
             {states[op,row]=new RuleState();executedAt[op,row]=float.NegativeInfinity;executedFrame[op,row]=-1;}
             gun.ReloadStarted+=ReloadStarted;gun.ReloadFinished+=ReloadFinished;gun.EnemyHit+=EnemyHit;gun.ShotFired+=Shot;
             player.DamageTaken+=Damaged;dodge.DodgeFinished+=DodgeFinished;input.ConditionalActionResolved+=ActionResolved;
@@ -148,10 +151,11 @@ namespace GoGhost.Duel
         void Record(int condition,int source=-1,Vector2? position=null)
         {
             if(!initialized||disposed)return;
-            var ctx=new TriggerContext {Occurrence=++sequence,Source=source,Candidates=source>=0?1<<source:allVisible};
+            var ctx=new TriggerContext {Occurrence=++sequence,Source=source,Candidates=source>=0?1<<source:allVisible,
+                ExpiresAt=Time.time+(condition==6?ConditionalDefaults.ResponseWindow:ConditionalDefaults.EventWindow)};
             if(position.HasValue){ctx.HasPosition=true;ctx.Position=position.Value;}
             // Damage/death identifies its source; only retain an already observed static body position.
-            else if(source>=0&&seen[source]){ctx.HasPosition=true;ctx.Position=contacts[source].Bounds.center;}
+            else if(source>=0&&visible[source]){ctx.HasPosition=true;ctx.Position=contacts[source].Bounds.center;}
             events.Add(new Notice {Condition=condition,At=Time.time,Context=ctx});
         }
         void Snapshot()
@@ -170,9 +174,11 @@ namespace GoGhost.Duel
                     float distance=Mathf.Abs(c.Bounds.center.x-shape.bounds.center.x);
                     close[i]=distance<=(close[i]?ConditionalDefaults.Close+ConditionalDefaults.Hysteresis:ConditionalDefaults.Close);
                     far[i]=distance>=(far[i]?ConditionalDefaults.Far-ConditionalDefaults.Hysteresis:ConditionalDefaults.Far);
+                    cursorNear[i]=MouseAngle(i)<=(cursorNear[i]?ConditionalDefaults.MouseExit:ConditionalDefaults.MouseEnter);
                 }
                 else if(seen[i])hidden[i]=true;
                 visible[i]=now;
+                if(!now)cursorNear[i]=false;
             }
             bool low=HysteresisLow((float)player.CurrentHealth/player.MaxHealth,lowHealth);
             if(initialized)
@@ -185,7 +191,7 @@ namespace GoGhost.Duel
             if(initialized&&raw.Jump)Record(19);
             if(initialized&&raw.Dodge)Record(20);
             initialized=true;
-            events.RemoveAll(n=>Time.time-n.At>ConditionalDefaults.EventWindow);
+            events.RemoveAll(n=>Time.time>n.Context.ExpiresAt);
         }
         static bool HysteresisLow(float ratio,bool wasLow)=>wasLow?ratio<ConditionalDefaults.LowExit:ratio<=ConditionalDefaults.LowEnter;
         public ConditionalControlFrame Resolve(RawPlayerInput frame)
@@ -193,7 +199,8 @@ namespace GoGhost.Duel
             if(disposed||player.IsDead)return default;
             raw=frame;output=default;Snapshot();
             output.Move=raw.Move;output.Aim=raw.Aim;
-            // Fixed order: Move, Jump, Aim, Fire(final muzzle recheck), Dodge(resolved movement).
+            // Data dependencies only: Fire sees final Aim and D03 sees resolved Move.
+            // Each operation arbitrates its own priority list independently.
             for(int op=0;op<5;op++)ResolveOperation(op);
             if(!output.AimOwned)currentTarget=AlignedTarget(raw.Aim,allVisible);
             previousTarget=currentTarget;
@@ -203,7 +210,7 @@ namespace GoGhost.Duel
         void ResolveOperation(int op)
         {
             var config=loadout.Operations[op];var active=running[op];
-            // Observe both rows even while the higher one owns the operation, so a lower
+            // Observe every row even while the higher one owns the operation, so a lower
             // condition's false/true transition cannot disappear behind priority arbitration.
             for(int row=0;row<config.Rules.Count;row++)
             {
@@ -229,11 +236,12 @@ namespace GoGhost.Duel
                 if(existing&&isEvent)
                 {
                     context=active.Context;
-                    match=true;
+                    match=active.Accepted||Time.time<=context.ExpiresAt;
                 }
                 if(!match){if(existing)active.Row=-1;continue;}
                 if(existing)
                 {
+                    if(!isEvent)active.Context=context;
                     if(Continue(op,rule,active))
                     {if(op==3&&active.Accepted)Executed(op,active);return;}
                     active.Row=-1;
@@ -329,7 +337,7 @@ namespace GoGhost.Duel
             var c=contacts[i];Vector2 delta=(Vector2)c.Bounds.center-(Vector2)shape.bounds.center;
             switch(r.Condition)
             {
-                case 18:return MouseAngle(i)<=ConditionalDefaults.MouseEnter;
+                case 18:return cursorNear[i];
                 case 21:return raw.Move*delta.x>.01f;
                 case 22:return raw.Move*delta.x<-.01f;
                 case 25:return c.Preparing;
@@ -371,7 +379,11 @@ namespace GoGhost.Duel
                 if(!visible[i]||(mask&(1<<i))==0)continue;
                 if((response=="Q06"||response=="Q09")&&MouseAngle(i)>ConditionalDefaults.MouseEnter)continue;
                 float score=((Vector2)contacts[i].Bounds.center-(Vector2)shape.bounds.center).sqrMagnitude;
-                if(response=="Q02")score=contacts[i].HealthFraction*100000+score*.001f;
+                if(response=="Q02"&&best>=0)
+                {
+                    if(contacts[i].HealthFraction>contacts[best].HealthFraction)continue;
+                    if(contacts[i].HealthFraction<contacts[best].HealthFraction){best=i;bestScore=score;continue;}
+                }
                 if(response=="Q04"&&actors[i].Profile.Kind==BossKind.Refraction||response=="Q05"&&actors[i].Profile.Kind==BossKind.Severance)score-=100000;
                 if(score<bestScore-.0001f||Mathf.Abs(score-bestScore)<.0001f&&(best<0||actors[i].ActorId<actors[best].ActorId)) {best=i;bestScore=score;}
             }
@@ -414,6 +426,7 @@ namespace GoGhost.Duel
             bool targetAction=op==2&&action!="Q08"||action=="M01"||action=="M02"||action=="M03"||action=="D02";
             r.Target=targetAction?Choose(r.Context.Candidates,action):-1;
             if((action=="M04"||action=="D01")&&!r.Context.HasPosition)r.Target=Choose(r.Context.Candidates,"Q01");
+            if(action=="M04"&&!r.Context.HasPosition&&r.Target<0)r.Target=Choose(allVisible,"Q01");
             if(action=="Q03")r.Target=r.Context.Source>=0&&visible[r.Context.Source]&&(r.Context.Candidates&(1<<r.Context.Source))!=0?r.Context.Source:-1;
             r.Aim=raw.CommittedAim;
             switch((ControlOperation)op)
@@ -516,12 +529,18 @@ namespace GoGhost.Duel
             {
                 case "M01":move=toward;break;
                 case "M02":move=-toward;break;
-                case "M03":move=distance<ConditionalDefaults.Close?-toward:distance>ConditionalDefaults.Far?toward:0;break;
+                case "M03":
+                    var state=states[0,r.Row];
+                    if(state.RangeMode<0&&distance>=ConditionalDefaults.Close+ConditionalDefaults.Hysteresis
+                        ||state.RangeMode>0&&distance<=ConditionalDefaults.Far-ConditionalDefaults.Hysteresis)state.RangeMode=0;
+                    if(state.RangeMode==0)state.RangeMode=distance<ConditionalDefaults.Close?-1:distance>ConditionalDefaults.Far?1:0;
+                    if(state.RangeMode==0)return false;
+                    move=state.RangeMode*toward;break;
                 case "M04":case "M06":
                     if(Mathf.Abs(r.Destination-x)<.12f||action=="M04"&&(x-r.Destination)*r.Direction>=0)return false;
                     move=Mathf.Sign(r.Destination-x);break;
                 case "M05":move=r.Direction;break;
-                case "M09":move=Mathf.Abs(arena.center.x-x)>.15f?Mathf.Sign(arena.center.x-x):0;break;
+                case "M09":if(Mathf.Abs(arena.center.x-x)<=.15f)return false;move=Mathf.Sign(arena.center.x-x);break;
                 case "M10":move=0;break;
                 default:throw new InvalidOperationException("Unknown movement response");
             }
@@ -535,6 +554,9 @@ namespace GoGhost.Duel
         }
         bool WriteAim(string action,Running r)
         {
+            // A current public candidate set, never a hidden target lock.
+            if(action=="Q02")
+            {r.Target=Choose(r.Context.Candidates,action);if(r.Target<0)return false;}
             if((action=="Q06"||action=="Q09")&&MouseAngle(r.Target)>ConditionalDefaults.MouseExit)return false;
             output.AimOwned=true;output.Aim=action=="Q08"?r.Aim:AimAt(r.Target);
             currentTarget=action=="Q08"?AlignedTarget(r.Aim,allVisible):r.Target;return true;
@@ -566,10 +588,9 @@ namespace GoGhost.Duel
             if(op==0||op==2)return;
             // A rejected same-frame request consumes no occurrence and queues no edge.
             var state=states[op,r.Row];
-            // An observed press edge is consumed even when the simultaneous Dodge wins;
-            // replaying it at the end of the .25 s event window would queue swallowed input.
+            // Formal events remain eligible only inside their bounded public window.
+            // Rejection spends nothing; raw manual edges are never stored here.
             if(!ConditionalCatalog.Condition(loadout.Operations[op].Rules[r.Row].Condition).Event)state.Consumed=false;
-            else state.LastEvent=r.Context.Occurrence;
             r.Row=-1;
         }
     }

@@ -97,6 +97,8 @@ namespace GoGhost.Duel
             float editorBottom = bottom + 82;
             ConfigButton("ConfigureBack", "Back", page, new Vector2(left + 48, top - 22), new Vector2(96, 44), game.MainMenu);
             Text("WAVE " + game.Wave, page, new Vector2(left + 195, top - 22), new Vector2(170, 44), 24, TextAlignmentOptions.Left);
+            Text("Rules: " + game.DraftLoadout.TotalRules + "/" + ConditionalCatalog.MaxRulesTotal, page,
+                new Vector2(right - 105, top - 22), new Vector2(210, 44), 24, TextAlignmentOptions.Right);
 
             if (!compact) BuildConfigurationBody(left, navigationWidth, (editorTop + editorBottom) / 2);
             int[] operations = { 2, 3, 4, 0, 1 };
@@ -155,9 +157,9 @@ namespace GoGhost.Duel
         void BuildRuleRows()
         {
             var config = game.DraftLoadout.Operations[selectedOperation];
-            float w = ruleEditor.sizeDelta.x, top = ruleEditor.sizeDelta.y / 2 - 88;
+            float w = ruleEditor.sizeDelta.x, top = ruleEditor.sizeDelta.y / 2 - 76;
             bool stacked = w < 680;
-            float step = stacked ? 126 : 94;
+            float step = stacked ? 104 : 94;
             int count = config.Rules.Count + (pendingRule != null && pendingRow == config.Rules.Count ? 1 : 0);
             for (int i = 0; i < count; i++)
             {
@@ -165,19 +167,26 @@ namespace GoGhost.Duel
                 var rule = pendingRule != null && i == pendingRow ? pendingRule : config.Rules[i];
                 float y = top - i * step;
                 Text((i + 1).ToString(), ruleEditor, new Vector2(-w / 2 + 12, y - 30), new Vector2(24, 50), 22);
-                float fieldWidth = stacked ? w - 88 : (w - 116) / 2;
+                float fieldWidth = stacked ? w - 172 : (w - 212) / 2;
                 float conditionX = -w / 2 + 32 + fieldWidth / 2;
                 float actionX = stacked ? conditionX : conditionX + fieldWidth + 28;
-                float actionY = stacked ? y - 82 : y - 30;
+                float actionY = stacked ? y - 74 : y - 30;
                 ConfigButton("Rule" + i + "Condition", ConditionLabel(rule), ruleEditor, new Vector2(conditionX, y - 30),
-                    new Vector2(fieldWidth, stacked ? 48 : 60), () => ChooseRule(row, true), false, true);
+                    new Vector2(fieldWidth, stacked ? 42 : 60), () => ChooseRule(row, true), false, true);
                 if (!stacked) Text(">", ruleEditor, new Vector2(conditionX + fieldWidth / 2 + 14, y - 30), new Vector2(28, 44), 24);
                 ConfigButton("Rule" + i + "Action", string.IsNullOrEmpty(rule.Action) ? "Choose action" : ConditionalCatalog.Response(rule.Action).Label,
-                    ruleEditor, new Vector2(actionX, actionY), new Vector2(fieldWidth, stacked ? 48 : 60), () => ChooseRule(row, false), false, true);
-                ConfigButton("RemoveRule" + i, "×", ruleEditor, new Vector2(w / 2 - 22, y - (stacked ? 56 : 30)), new Vector2(44, 44), () => RemoveRule(row));
+                    ruleEditor, new Vector2(actionX, actionY), new Vector2(fieldWidth, stacked ? 42 : 60), () => ChooseRule(row, false), false, true);
+                float rowControlsY = y - (stacked ? 52 : 30);
+                var up = ConfigButton("MoveRuleUp" + i, "▲", ruleEditor, new Vector2(w / 2 - 110, rowControlsY),
+                    new Vector2(38, 44), () => MoveRule(row, -1));
+                up.interactable = row > 0 && row < config.Rules.Count;
+                var down = ConfigButton("MoveRuleDown" + i, "▼", ruleEditor, new Vector2(w / 2 - 68, rowControlsY),
+                    new Vector2(38, 44), () => MoveRule(row, 1));
+                down.interactable = row + 1 < config.Rules.Count;
+                ConfigButton("RemoveRule" + i, "×", ruleEditor, new Vector2(w / 2 - 22, rowControlsY), new Vector2(44, 44), () => RemoveRule(row));
             }
             float controlsY = top - count * step - 20;
-            if (count < ConditionalCatalog.MaxRulesPerOperation && pendingRule == null)
+            if (game.DraftLoadout.TotalRules < ConditionalCatalog.MaxRulesTotal && pendingRule == null)
                 ConfigButton("AddRule", "+ Add rule", ruleEditor, new Vector2(-w / 2 + 90, controlsY), new Vector2(180, 44), AddRule);
         }
 
@@ -186,7 +195,7 @@ namespace GoGhost.Duel
 
         void AddRule()
         {
-            if (pendingRule != null || game.DraftLoadout.Operations[selectedOperation].Rules.Count >= ConditionalCatalog.MaxRulesPerOperation) return;
+            if (pendingRule != null || game.DraftLoadout.TotalRules >= ConditionalCatalog.MaxRulesTotal) return;
             // Incomplete choices stay UI-local; the combat loadout only receives a complete pair.
             pendingRule = new ConditionalRule();
             pendingRow = game.DraftLoadout.Operations[selectedOperation].Rules.Count;
@@ -203,6 +212,22 @@ namespace GoGhost.Duel
                 Show();
             }
             else game.EditLoadout(d => d.Operations[selectedOperation].Rules.RemoveAt(row));
+        }
+
+        void MoveRule(int row, int direction)
+        {
+            var rules = game.DraftLoadout.Operations[selectedOperation].Rules;
+            int other = row + direction;
+            if (row < 0 || row >= rules.Count || other < 0 || other >= rules.Count) return;
+            pendingRule = null;
+            pendingRow = selectorRow = -1;
+            game.EditLoadout(d =>
+            {
+                var ordered = d.Operations[selectedOperation].Rules;
+                var rule = ordered[row];
+                ordered[row] = ordered[other];
+                ordered[other] = rule;
+            });
         }
 
         ConditionalRule EditingRule => pendingRule;
@@ -240,7 +265,7 @@ namespace GoGhost.Duel
             game.EditLoadout(d =>
             {
                 var rules = d.Operations[selectedOperation].Rules;
-                if (row == rules.Count) rules.Add(complete);
+                if (row == rules.Count) d.TryAddRule(selectedOperation, complete);
                 else rules[row] = complete;
             });
         }
@@ -252,25 +277,70 @@ namespace GoGhost.Duel
             ConfigButton("SelectorBack", "<", ruleEditor, new Vector2(-w / 2 + 22, top - 92), new Vector2(44, 44), () => { selectorRow = -1; Show(); });
             string summary = ConditionLabel(rule) + " > " + (string.IsNullOrEmpty(rule.Action) ? "Choose action" : ConditionalCatalog.Response(rule.Action).Label);
             Text(summary, ruleEditor, new Vector2(34, top - 92), new Vector2(w - 76, 50), 22, TextAlignmentOptions.Left);
-            float y = top - 162;
+            var choices = BuildRuleOptions();
             if (selectingCondition)
             {
                 foreach (int id in ConditionalCatalog.FormalConditions[selectedOperation])
                 {
                     int condition = id;
-                    ConfigButton("Option", ConditionalCatalog.Condition(id).Label, ruleEditor,
-                        new Vector2(0, y), new Vector2(w, 56), () => ApplyChoice(condition, false, null), rule.Condition == id, true);
-                    y -= 66;
+                    RuleOption(ConditionalCatalog.Condition(id).Label, choices, () => ApplyChoice(condition, false, null), rule.Condition == id);
                 }
             }
             else foreach (var entry in ConditionalCatalog.Responses)
             {
                 if (!ConditionalCatalog.IsAllowed(selectedOperation, rule.Condition, entry.Id)) continue;
                 string action = entry.Id;
-                ConfigButton("Option", entry.Label, ruleEditor, new Vector2(0, y), new Vector2(w, 56),
-                    () => ApplyChoice(0, false, action), rule.Action == action, true);
-                y -= 66;
+                RuleOption(entry.Label, choices, () => ApplyChoice(0, false, action), rule.Action == action);
             }
+        }
+
+        RectTransform BuildRuleOptions()
+        {
+            float w = ruleEditor.sizeDelta.x, h = ruleEditor.sizeDelta.y - 140;
+            var root = Rect("RuleOptions", ruleEditor, new Vector2(0, -65), new Vector2(w, h));
+            var scroll = root.gameObject.AddComponent<UnityEngine.UI.ScrollRect>();
+            scroll.horizontal = false;
+            scroll.vertical = true;
+            scroll.movementType = UnityEngine.UI.ScrollRect.MovementType.Clamped;
+            scroll.scrollSensitivity = 36;
+            var viewport = Rect("Viewport", root, new Vector2(-8, 0), new Vector2(w - 20, h));
+            var maskImage = viewport.gameObject.AddComponent<UnityEngine.UI.Image>();
+            maskImage.color = Color.black;
+            viewport.gameObject.AddComponent<UnityEngine.UI.Mask>().showMaskGraphic = false;
+            var content = Rect("Content", viewport, Vector2.zero, new Vector2(w - 20, 0));
+            content.anchorMin = new Vector2(0, 1);
+            content.anchorMax = new Vector2(1, 1);
+            content.pivot = new Vector2(.5f, 1);
+            content.anchoredPosition = Vector2.zero;
+            content.sizeDelta = Vector2.zero;
+            var layout = content.gameObject.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
+            layout.spacing = 10;
+            layout.childControlWidth = layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+            var fit = content.gameObject.AddComponent<UnityEngine.UI.ContentSizeFitter>();
+            fit.verticalFit = UnityEngine.UI.ContentSizeFitter.FitMode.PreferredSize;
+            var barRoot = Rect("Scrollbar", root, new Vector2(w / 2 - 4, 0), new Vector2(8, h));
+            var track = barRoot.gameObject.AddComponent<UnityEngine.UI.Image>();
+            track.color = new Color(.12f, .12f, .12f);
+            var handle = Image(barRoot, Vector2.zero, new Vector2(8, h), new Color(.5f, .5f, .5f));
+            handle.raycastTarget = true;
+            var bar = barRoot.gameObject.AddComponent<UnityEngine.UI.Scrollbar>();
+            bar.handleRect = handle.rectTransform;
+            bar.targetGraphic = handle;
+            bar.direction = UnityEngine.UI.Scrollbar.Direction.BottomToTop;
+            scroll.viewport = viewport;
+            scroll.content = content;
+            scroll.verticalScrollbar = bar;
+            scroll.verticalScrollbarVisibility = UnityEngine.UI.ScrollRect.ScrollbarVisibility.AutoHide;
+            return content;
+        }
+
+        void RuleOption(string label, RectTransform parent, UnityEngine.Events.UnityAction click, bool selected)
+        {
+            var option = ConfigButton("Option", label, parent, Vector2.zero, new Vector2(parent.rect.width, 56), click, selected, true);
+            var layout = option.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();
+            layout.minHeight = layout.preferredHeight = 56;
         }
     }
 }

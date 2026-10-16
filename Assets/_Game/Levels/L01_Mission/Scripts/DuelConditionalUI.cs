@@ -16,7 +16,12 @@ namespace GoGhost.Duel
         // Presentation order only. Runtime priority remains the relative order within each operation.
         readonly List<ConditionalRule> displayedRules = new List<ConditionalRule>();
         Vector2Int configurationScreen;
-        RectTransform ruleEditor, ruleList;
+        RectTransform ruleEditor, ruleList, bodyPreview;
+        readonly MissionBodyRegion[] neuralRegions=new MissionBodyRegion[6];
+        readonly List<UnityEngine.UI.Image> equippedAccents=new List<UnityEngine.UI.Image>();
+        NeuralBodySystem previewSystem, installedSystem;
+        int previewRow=-1,installedRow=-1;
+        float installedAt=float.NegativeInfinity;
         TMP_Text optionDescription;
         string inspectedDescription;
         static readonly string[] ShortOperationLabels = { "Move", "Jump", "Aim", "Fire", "Dodge" };
@@ -55,6 +60,7 @@ namespace GoGhost.Duel
             {
                 CancelRuleEdit();
             }
+            UpdateConfigurationSignals();
             return true;
         }
 
@@ -100,7 +106,9 @@ namespace GoGhost.Duel
                 actionCategory = 2;
                 pendingRule = null;
                 selectorRow = -1;
+                installedAt=float.NegativeInfinity;installedRow=-1;
             }
+            previewSystem=NeuralBodySystem.None;previewRow=-1;equippedAccents.Clear();
             SyncRuleRows();
             float scale = canvas.GetComponent<Canvas>().scaleFactor;
             page.sizeDelta = new Vector2(Screen.width / scale, Screen.height / scale);
@@ -108,37 +116,37 @@ namespace GoGhost.Duel
             float left = -width / 2 + 32, right = width / 2 - 32;
             float top = height / 2 - 32, bottom = -height / 2 + 32;
             float editorTop = top - 76;
-            float editorBottom = bottom + 82;
+            float editorBottom = bottom;
             ConfigButton("ConfigureBack", "Back", page, new Vector2(left + 48, top - 22), new Vector2(96, 44), game.MainMenu);
             Text("WAVE " + game.Wave, page, new Vector2(left + 195, top - 22), new Vector2(170, 44), 24, TextAlignmentOptions.Left);
-            float selectorWidth = (right - left - 32) * .58f;
-            float listLeft = left + selectorWidth + 32;
-            ruleEditor = Rect("RuleEditor", page, new Vector2(left + selectorWidth / 2, (editorTop + editorBottom) / 2),
+            float available=right-left-48;
+            float bodyWidth=available*.22f,selectorWidth=available*.41f;
+            float selectorLeft=left+bodyWidth+24,listLeft=selectorLeft+selectorWidth+24;
+            bodyPreview=Rect("BodyPreview",page,new Vector2(left+bodyWidth/2,(editorTop+editorBottom)/2),new Vector2(bodyWidth,editorTop-editorBottom));
+            ruleEditor = Rect("RuleEditor", page, new Vector2(selectorLeft + selectorWidth / 2, (editorTop + editorBottom) / 2),
                 new Vector2(selectorWidth, editorTop - editorBottom));
             ruleList = Rect("RuleList", page, new Vector2((listLeft + right) / 2, (editorTop + editorBottom) / 2),
                 new Vector2(right - listLeft, editorTop - editorBottom));
-            Image(page, new Vector2(listLeft - 16, (editorTop + editorBottom) / 2), new Vector2(1, editorTop - editorBottom), new Color(.2f, .2f, .2f));
+            Image(page, new Vector2(selectorLeft - 12, (editorTop + editorBottom) / 2), new Vector2(1, editorTop - editorBottom), NeuralPalette.Border);
+            Image(page, new Vector2(listLeft - 12, (editorTop + editorBottom) / 2), new Vector2(1, editorTop - editorBottom), NeuralPalette.Border);
             BuildConfigurationBody();
             float w = ruleEditor.sizeDelta.x, h = ruleEditor.sizeDelta.y;
             Text(selectorRow < 0 ? "Rule Editor" : selectingCondition ? "1 / 2   Select Condition" : "2 / 2   Select Action", ruleEditor,
                 new Vector2(0, h / 2 - 24), new Vector2(w, 48), 30, TextAlignmentOptions.Left);
-            Image(ruleEditor, new Vector2(0, h / 2 - 58), new Vector2(w, 1), new Color(.2f, .2f, .2f));
+            Image(ruleEditor, new Vector2(0, h / 2 - 58), new Vector2(w, 1), NeuralPalette.Border);
             if (selectorRow >= 0) BuildRuleSelector();
             else Text("Add a rule or click a rule field to edit.", ruleEditor, new Vector2(0, -h / 2 + 28), new Vector2(w, 56), 22);
             BuildRuleRows();
 
-            Image(page, new Vector2((left + right) / 2, bottom + 64), new Vector2(right - left, 1), new Color(.2f, .2f, .2f));
-            var start = ConfigButton("StartFight", "Start Fight", page, new Vector2(right - 105, bottom + 20), new Vector2(210, 48), game.StartFight, true);
-            start.interactable = ConfigurationReady;
         }
 
         void BuildConfigurationBody()
         {
-            float bodyScale = Mathf.Min(ruleEditor.sizeDelta.x - 80, ruleEditor.sizeDelta.y - 150) / 810f;
-            var body = Rect("ConditionalBody", ruleEditor, new Vector2(0, -10), new Vector2(810, 810));
+            float bodyScale = Mathf.Min((bodyPreview.sizeDelta.x-12)/660f,(bodyPreview.sizeDelta.y-40)/680f);
+            var body = Rect("ConditionalBody", bodyPreview, new Vector2(0, -10), new Vector2(810, 810));
             body.localScale = Vector3.one * bodyScale;
             var group = body.gameObject.AddComponent<CanvasGroup>();
-            group.alpha = selectorRow < 0 ? 1 : .08f;
+            group.alpha = 1;
             group.blocksRaycasts = false;
             group.interactable = false;
             Vector2[] positions = { new Vector2(860,821), new Vector2(860,645), new Vector2(663,757.5f), new Vector2(1057,757.5f), new Vector2(801.5f,364), new Vector2(918.5f,364) };
@@ -152,6 +160,39 @@ namespace GoGhost.Duel
                 graphic.Monochrome = true;
                 graphic.raycastTarget = false;
                 graphic.Selected = false;
+                graphic.NeuralStyle=true;graphic.NeuralRegion=i;neuralRegions[i]=graphic;
+            }
+            UpdateConfigurationSignals();
+        }
+
+        NeuralBodySystem RuleSystem(ConditionalRule rule)=>NeuralPalette.System(ConditionalCatalog.Response(rule.Action).Operation);
+        void PreviewRule(NeuralBodySystem system,int row=-1){previewSystem=system;previewRow=row;UpdateConfigurationSignals();}
+        void RestoreFocusedPreview()
+        {
+            PreviewRule(NeuralBodySystem.None);
+            var selected=EventSystem.current!=null?EventSystem.current.currentSelectedGameObject:null;
+            if(selected!=null&&selected.activeInHierarchy)selected.GetComponent<ConditionalOptionDescription>()?.Inspect?.Invoke();
+        }
+        void UpdateConfigurationSignals()
+        {
+            float age=Time.unscaledTime-installedAt;
+            int connectedSystems=0;
+            for(int i=0;i<displayedRules.Count;i++)connectedSystems|=1<<(int)RuleSystem(displayedRules[i]);
+            for(int i=0;i<neuralRegions.Length;i++)
+            {
+                var region=neuralRegions[i];if(region==null)continue;
+                var system=i==0?NeuralBodySystem.None:i==1?NeuralBodySystem.Spine:i<4?NeuralBodySystem.Arms:NeuralBodySystem.Legs;
+                bool connected=system!=NeuralBodySystem.None&&(connectedSystems&(1<<(int)system))!=0;
+                float signal=system!=NeuralBodySystem.None&&previewSystem==system?1:connected?.38f:0;
+                float flow=connected&&system==installedSystem&&age<.55f?age/.55f:-1;
+                if(flow>=0)signal=Mathf.Max(signal,.8f);
+                if(!Mathf.Approximately(region.NeuralSignal,signal)||!Mathf.Approximately(region.NeuralFlow,flow))
+                {region.NeuralSignal=signal;region.NeuralFlow=flow;region.SetVerticesDirty();}
+            }
+            for(int i=0;i<equippedAccents.Count;i++)if(equippedAccents[i]!=null)
+            {
+                float strength=i==previewRow?1:i==installedRow&&age<.55f?Mathf.Lerp(1,.45f,age/.55f):.45f;
+                equippedAccents[i].color=NeuralPalette.Alpha(NeuralPalette.Body(RuleSystem(displayedRules[i])),strength);
             }
         }
 
@@ -190,18 +231,27 @@ namespace GoGhost.Duel
                 line.gameObject.AddComponent<UnityEngine.UI.LayoutElement>().preferredHeight=92;
                 float rw=w-20,fieldWidth=rw-114,fieldX=-rw/2+fieldWidth/2;
                 bool editing=pendingRule!=null&&pendingRow==i;
-                ConfigButton("Rule" + i + "Condition", "IF  "+ConditionLabel(rule), line, new Vector2(fieldX,24),
+                var accent=Image(line,new Vector2(-rw/2+1,0),new Vector2(2,86),NeuralPalette.Body(RuleSystem(rule)));
+                accent.name="RuleIdentity";equippedAccents.Add(accent);
+                var hover=line.gameObject.AddComponent<ConditionalOptionDescription>();
+                hover.Inspect=()=>PreviewRule(RuleSystem(rule),row);hover.Leave=RestoreFocusedPreview;hover.Deselect=()=>PreviewRule(NeuralBodySystem.None);
+                var conditionButton=ConfigButton("Rule" + i + "Condition", "IF  "+ConditionLabel(rule), line, new Vector2(fieldX,24),
                     new Vector2(fieldWidth,44), () => ChooseRule(row, true), editing&&selectingCondition, true);
-                ConfigButton("Rule" + i + "Action", "THEN  "+ConditionalCatalog.Response(rule.Action).Label,
+                var actionButton=ConfigButton("Rule" + i + "Action", "THEN  "+ConditionalCatalog.Response(rule.Action).Label,
                     line, new Vector2(fieldX,-24), new Vector2(fieldWidth,44), () => ChooseRule(row, false), editing&&!selectingCondition, true);
+                foreach(var field in new[]{conditionButton,actionButton})
+                {var inspect=field.gameObject.AddComponent<ConditionalOptionDescription>();inspect.Inspect=hover.Inspect;inspect.Leave=hover.Leave;inspect.Deselect=hover.Deselect;}
                 var up = ConfigButton("MoveRuleUp" + i, "▲", line, new Vector2(rw/2-78,24), new Vector2(44,44), () => MoveRule(row,-1));
                 up.interactable=row>0;
                 var down = ConfigButton("MoveRuleDown" + i, "▼", line, new Vector2(rw/2-30,24), new Vector2(44,44), () => MoveRule(row,1));
                 down.interactable=row+1<displayedRules.Count;
                 ConfigButton("RemoveRule" + i, "Remove", line, new Vector2(rw/2-54,-24), new Vector2(92,44), () => RemoveRule(row));
+                accent.rectTransform.SetAsLastSibling();
             }
             var add=ConfigButton("AddRule", "+ Add Rule", ruleList, new Vector2(-w/2+94,-h/2+28),new Vector2(188,48),AddRule);
             add.interactable=game.DraftLoadout.TotalRules<ConditionalCatalog.MaxRulesTotal&&pendingRule==null;
+            var start=ConfigButton("StartFight", "Start Fight", ruleList, new Vector2(w/2-105,-h/2+28),new Vector2(210,48),game.StartFight,true);
+            start.interactable=ConfigurationReady;
         }
 
         static string ConditionLabel(ConditionalRule rule) => rule.Condition == 0 ? "Select Condition"
@@ -221,6 +271,7 @@ namespace GoGhost.Duel
 
         void RemoveRule(int row)
         {
+            installedAt=float.NegativeInfinity;installedRow=-1;
             pendingRule = null;
             pendingRow = selectorRow = -1;
             if (row == displayedRules.Count) Show();
@@ -229,6 +280,7 @@ namespace GoGhost.Duel
 
         void MoveRule(int row, int direction)
         {
+            installedAt=float.NegativeInfinity;installedRow=-1;
             var rules = displayedRules;
             int other = row + direction;
             if (row < 0 || row >= rules.Count || other < 0 || other >= rules.Count) return;
@@ -283,6 +335,7 @@ namespace GoGhost.Duel
             }
             if (row == displayedRules.Count && displayedRules.Count >= ConditionalCatalog.MaxRulesTotal) return;
             var complete = pendingRule.Copy();
+            installedSystem=RuleSystem(complete);installedRow=row;installedAt=Time.unscaledTime;
             pendingRule = null;
             pendingRow = selectorRow = -1;
             game.EditLoadout(d =>
@@ -300,7 +353,7 @@ namespace GoGhost.Duel
             ConfigButton("CancelRuleEdit","Cancel",ruleEditor,new Vector2(w/2-58,top-90),new Vector2(116,44),CancelRuleEdit);
             if(!selectingCondition)
                 ConfigButton("SelectorBack","< Condition",ruleEditor,new Vector2(-w/2+90,top-90),new Vector2(180,44),()=>ChooseRule(pendingRow,true));
-            float categoryWidth=Mathf.Clamp(w*.29f,210,250);
+            float categoryWidth=selectingCondition?234:Mathf.Clamp(w*.29f,176,210);
             float optionsWidth=w-categoryWidth-20;
             float optionsX=-w/2+categoryWidth+20+optionsWidth/2;
             float optionsTop=top-154,optionsBottom=-h/2+114;
@@ -308,7 +361,7 @@ namespace GoGhost.Duel
             Text("Options",ruleEditor,new Vector2(optionsX,top-134),new Vector2(optionsWidth,28),20,TextAlignmentOptions.Left);
             var categories=BuildRuleOptions("SelectorCategories",ruleEditor,new Vector2(-w/2+categoryWidth/2,(optionsTop+optionsBottom)/2),new Vector2(categoryWidth,optionsTop-optionsBottom));
             var choices=BuildRuleOptions("RuleOptions",ruleEditor,new Vector2(optionsX,(optionsTop+optionsBottom)/2),new Vector2(optionsWidth,optionsTop-optionsBottom));
-            Image(ruleEditor,new Vector2(0,-h/2+100),new Vector2(w,1),new Color(.2f,.2f,.2f));
+            Image(ruleEditor,new Vector2(0,-h/2+100),new Vector2(w,1),NeuralPalette.Border);
             optionDescription=Text("",ruleEditor,new Vector2(0,-h/2+44),new Vector2(w,88),22,TextAlignmentOptions.TopLeft);
             optionDescription.name="OptionDescription";
             if(selectingCondition)
@@ -341,7 +394,7 @@ namespace GoGhost.Duel
                     bool allowed=ConditionalCatalog.IsAllowed(actionCategory,rule.Condition,action);
                     anyAllowed|=allowed;
                     RuleOption(ConditionalCatalog.Response(action).Label,choices,()=>ApplyChoice(0,false,action),rule.Action==action,
-                        ConditionalCatalog.ResponseDescription(action),allowed?null:ConditionalCatalog.IncompatibilityReason(actionCategory,rule.Condition,action));
+                        ConditionalCatalog.ResponseDescription(action),allowed?null:ConditionalCatalog.IncompatibilityReason(actionCategory,rule.Condition,action),action);
                 }
                 if(!anyAllowed)
                 {
@@ -373,7 +426,7 @@ namespace GoGhost.Duel
             scroll.scrollSensitivity = 36;
             var viewport = Rect("Viewport", root, new Vector2(-8, 0), new Vector2(w - 20, h));
             var maskImage = viewport.gameObject.AddComponent<UnityEngine.UI.Image>();
-            maskImage.color = Color.black;
+            maskImage.color = NeuralPalette.Background;
             viewport.gameObject.AddComponent<UnityEngine.UI.Mask>().showMaskGraphic = false;
             var content = Rect("Content", viewport, Vector2.zero, new Vector2(w - 20, 0));
             content.anchorMin = new Vector2(0, 1);
@@ -390,8 +443,8 @@ namespace GoGhost.Duel
             fit.verticalFit = UnityEngine.UI.ContentSizeFitter.FitMode.PreferredSize;
             var barRoot = Rect("Scrollbar", root, new Vector2(w / 2 - 4, 0), new Vector2(8, h));
             var track = barRoot.gameObject.AddComponent<UnityEngine.UI.Image>();
-            track.color = new Color(.12f, .12f, .12f);
-            var handle = Image(barRoot, Vector2.zero, new Vector2(8, h), new Color(.5f, .5f, .5f));
+            track.color = NeuralPalette.Border;
+            var handle = Image(barRoot, Vector2.zero, new Vector2(8, h), NeuralPalette.Secondary);
             // Scrollbar drives handle anchors; a fixed size would extend it beyond the track.
             handle.rectTransform.sizeDelta = Vector2.zero;
             handle.raycastTarget = true;
@@ -406,14 +459,14 @@ namespace GoGhost.Duel
             return content;
         }
 
-        void RuleOption(string label, RectTransform parent, UnityEngine.Events.UnityAction click, bool selected, string description, string reason = null)
+        void RuleOption(string label, RectTransform parent, UnityEngine.Events.UnityAction click, bool selected, string description, string reason = null,string action=null)
         {
             var option = ConfigButton("Option", label, parent, Vector2.zero, new Vector2(parent.rect.width, 56), click, selected, true);
             option.interactable = reason == null;
             if (reason != null)
             {
                 var text = option.GetComponentInChildren<TMP_Text>();
-                text.color = new Color(.55f, .55f, .55f);
+                text.color = NeuralPalette.Alpha(NeuralPalette.Secondary,.6f);
             }
             var inspect=option.gameObject.AddComponent<ConditionalOptionDescription>();
             inspect.Inspect=()=>
@@ -422,18 +475,29 @@ namespace GoGhost.Duel
                 if(!option.gameObject.activeInHierarchy)return;
                 inspectedDescription=label+"\n"+(reason==null?description:"Unavailable: "+reason+" "+description);
                 if(optionDescription!=null)optionDescription.text=inspectedDescription;
+                PreviewRule(reason==null&&action!=null?NeuralPalette.System(ConditionalCatalog.Response(action).Operation):NeuralBodySystem.None);
             };
+            inspect.Leave=RestoreFocusedPreview;
+            inspect.Deselect=()=>PreviewRule(NeuralBodySystem.None);
+            if(action!=null&&reason==null)
+            {
+                var accent=Image(option.transform,new Vector2(-5,0),new Vector2(2,24),NeuralPalette.Operation(ConditionalCatalog.Response(action).Operation)).rectTransform;
+                accent.anchorMin=accent.anchorMax=new Vector2(1,.5f);
+            }
             var layout = option.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();
             layout.minHeight = layout.preferredHeight = 56;
         }
     }
 
     // Inspect disabled choices without making them selectable. Scroll/drag still bubble to ScrollRect.
-    public sealed class ConditionalOptionDescription : MonoBehaviour, IPointerEnterHandler, ISelectHandler, IPointerClickHandler
+    public sealed class ConditionalOptionDescription : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, ISelectHandler, IDeselectHandler, IPointerClickHandler
     {
-        public System.Action Inspect;
-        public void OnPointerEnter(PointerEventData data)=>Inspect?.Invoke();
-        public void OnSelect(BaseEventData data)=>Inspect?.Invoke();
-        public void OnPointerClick(PointerEventData data)=>Inspect?.Invoke();
+        public System.Action Inspect,Leave,Deselect;
+        public void OnPointerEnter(PointerEventData data){if(isActiveAndEnabled)Inspect?.Invoke();}
+        public void OnSelect(BaseEventData data){if(isActiveAndEnabled)Inspect?.Invoke();}
+        public void OnPointerClick(PointerEventData data){if(isActiveAndEnabled)Inspect?.Invoke();}
+        public void OnPointerExit(PointerEventData data){if(isActiveAndEnabled)Leave?.Invoke();}
+        // EventSystem still points to this object while Deselect is dispatched.
+        public void OnDeselect(BaseEventData data){if(isActiveAndEnabled)Deselect?.Invoke();}
     }
 }

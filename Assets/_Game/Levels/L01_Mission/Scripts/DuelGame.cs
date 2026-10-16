@@ -61,6 +61,11 @@ namespace GoGhost.Duel
             AudioListener.pause = false;
             music?.StopMusic(true);
             Application.runInBackground = true;
+            if(Camera.main!=null)Camera.main.backgroundColor=NeuralPalette.Background;
+            // Existing authored arena renderers only; no collider, platform or camera geometry changes.
+            if(platforms!=null&&platforms.Length>0&&platforms[0]!=null)
+                foreach(var surface in platforms[0].transform.parent.GetComponentsInChildren<SpriteRenderer>())
+                    surface.color=Color.Lerp(NeuralPalette.Panel,NeuralPalette.Secondary,.70f);
             InitializeDeveloperTuning();
             ui = gameObject.AddComponent<DuelUI>();
             ui.Initialize(this, font);
@@ -70,6 +75,7 @@ namespace GoGhost.Duel
         void Start() { if (sounds != null) sounds.BeginScope(); }
         void OnDestroy()
         {
+            Player?.GetComponent<OfficerVisual>()?.ClearConditionalGlow();
             Rules?.Dispose();Rules=null;
             music?.StopMusic(true);
             Time.timeScale = 1;
@@ -130,7 +136,7 @@ namespace GoGhost.Duel
             coordinator.Configure(actors, navigation);
             Rules=new ConditionalController(Player,actors,platforms,arenaBounds,DraftLoadout);
             input.ConfigureConditionalControls(Rules.Resolve);
-            Player.GetComponent<OfficerVisual>()?.ConfigureConditionalGlow(conditionalGlow);
+            Player.GetComponent<OfficerVisual>()?.ConfigureConditionalGlow(conditionalGlow, Rules.VisualFeedback);
             foreach (var body in encounter.GetComponentsInChildren<Rigidbody2D>())
             {
                 body.linearVelocity = Vector2.zero;
@@ -205,6 +211,7 @@ namespace GoGhost.Duel
             if (Phase != DuelPhase.Fight && Phase != DuelPhase.Prepare) return;
             if (Paused == value) return;
             Paused = value;
+            Rules?.SetFeedbackPaused(value);
             input?.SetNarrativePaused(value);
             foreach (var actor in actors) if (actor != null) actor.SetPaused(value);
             coordinator?.SetPaused(value);

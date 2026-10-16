@@ -156,6 +156,11 @@ public static partial class BossEncounterSmoke
         if(mode=="alpha50") {yield return Alpha50();yield break;}
         if(mode=="unified-catalog") {yield return UnifiedCatalog();yield break;}
         if(mode=="condition-editor") {yield return ConditionEditor();yield break;}
+        if(mode=="cold-light") {yield return ColdLight();yield break;}
+        if(mode=="cold-light-review") {yield return ColdLightReview();yield break;}
+        if(mode=="cold-light-final") {yield return ColdLightFinal();yield break;}
+        if(mode=="cold-light-projectiles") {yield return ColdLightProjectiles();yield break;}
+        if(mode=="cold-light-closeout") {yield return ColdLightCloseout();yield break;}
         if(mode=="alpha50-cursor") {yield return AlphaCursorChecks();yield break;}
         if(mode=="developer-tuning") {yield return DeveloperTuning();yield break;}
         if(mode=="alpha50-edges") {yield return Alpha50Edges();yield break;}

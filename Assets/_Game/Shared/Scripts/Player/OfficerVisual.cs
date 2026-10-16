@@ -26,47 +26,46 @@ public sealed class OfficerVisual : MonoBehaviour
     private SpriteRenderer[] glowParts;
     private Material[] originalMaterials;
     private MaterialPropertyBlock glowBlock;
-    private float jumpGlow,shotGlow,moveExecutedAt=float.NegativeInfinity,aimExecutedAt=float.NegativeInfinity;
+    private System.Func<ControlOperation, ConditionalVisualFeedback> feedback;
+    private SpriteRenderer spineSignal;
     private bool glowBound;
     private static readonly int GlowStrength=Shader.PropertyToID("_AIStrength");
-    public void ConfigureConditionalGlow(Material material)
+    private static readonly int GlowColor=Shader.PropertyToID("_AIColor");
+    public void ConfigureConditionalGlow(Material material, System.Func<ControlOperation, ConditionalVisualFeedback> source = null)
     {
         if(!animate||material==null)return;
         ClearConditionalGlow();
-        glowParts=new[]{leftLeg,rightLeg,leftCalf,rightCalf,leftArm,rightArm,leftForearm,rightForearm,weaponGrip,weapon,torso};
+        if(spineSignal==null){spineSignal=AddSegment(torso,"SpineSignal");spineSignal.sortingOrder=torso.sortingOrder+1;}
+        spineSignal.enabled=true;
+        glowParts=new[]{leftLeg,rightLeg,leftCalf,rightCalf,leftArm,rightArm,leftForearm,rightForearm,weaponGrip,weapon,spineSignal};
         originalMaterials=new Material[glowParts.Length];glowBlock=new MaterialPropertyBlock();
         for(int i=0;i<glowParts.Length;i++)if(glowParts[i]!=null){originalMaterials[i]=glowParts[i].sharedMaterial;glowParts[i].sharedMaterial=material;}
-        input.ConditionalActionResolved+=GlowAction;shooting.ShotFired+=GlowShot;health.OnDeath+=ClearConditionalGlow;glowBound=true;
+        feedback=source;health.OnDeath+=ClearConditionalGlow;glowBound=true;
     }
-    void GlowAction(ControlOperation operation,bool accepted)
-    {
-        if(accepted&&operation==ControlOperation.Jump)jumpGlow=.16f;
-        if(operation==ControlOperation.Movement)moveExecutedAt=accepted?Time.time:float.NegativeInfinity;
-        if(operation==ControlOperation.Aim)aimExecutedAt=accepted?Time.time:float.NegativeInfinity;
-    }
-    void GlowShot(Vector2 origin,Vector2 direction)
-    {if(input.ConditionalFrame.FireOwned)shotGlow=.14f;}
     public void ClearConditionalGlow()
     {
-        if(glowBound){input.ConditionalActionResolved-=GlowAction;shooting.ShotFired-=GlowShot;health.OnDeath-=ClearConditionalGlow;}
-        glowBound=false;jumpGlow=shotGlow=0;
-        moveExecutedAt=aimExecutedAt=float.NegativeInfinity;
+        if(glowBound&&health!=null)health.OnDeath-=ClearConditionalGlow;
+        glowBound=false;feedback=null;
         if(glowParts!=null)for(int i=0;i<glowParts.Length;i++)if(glowParts[i]!=null){glowParts[i].SetPropertyBlock(null);glowParts[i].sharedMaterial=originalMaterials[i];}
+        if(spineSignal!=null)spineSignal.enabled=false;
         glowParts=null;originalMaterials=null;
     }
     void OnDestroy()=>ClearConditionalGlow();
     void UpdateConditionalGlow()
     {
-        if(!glowBound)return;
-        jumpGlow=Mathf.Max(0,jumpGlow-Time.deltaTime);shotGlow=Mathf.Max(0,shotGlow-Time.deltaTime);
-        var f=input.ConditionalFrame;
+        if(!glowBound||feedback==null)return;
+        var move=feedback(ControlOperation.Movement);var jump=feedback(ControlOperation.Jump);
+        var aim=feedback(ControlOperation.Aim);var fire=feedback(ControlOperation.Fire);var spine=feedback(ControlOperation.Dodge);
+        float legs=Mathf.Max(Mathf.Max(move.Signal,jump.Matched?.2f:0),Mathf.Max(move.Afterglow*.22f,Mathf.Max(jump.Pulse*.95f,jump.Afterglow*.22f)));
+        float arms=Mathf.Max(Mathf.Max(aim.Signal,fire.Signal),Mathf.Max(aim.Afterglow*.22f,fire.Afterglow*.22f));
+        float dodgeSignal=Mathf.Max(spine.Matched?.2f:0,Mathf.Max(spine.Pulse,spine.Afterglow*.22f));
         for(int i=0;i<glowParts.Length;i++)
         {
-            float strength=i<4?(f.MovementOwned&&!dodge.IsDodging&&!movement.HitPushActive&&Time.time-moveExecutedAt<.1f?.5f:0)+jumpGlow/.16f
-                :i<8?(f.AimOwned&&Time.time-aimExecutedAt<.1f?.5f:0)+(i==5||i==7?shotGlow/.14f*.5f:0)
-                :i<10?shotGlow/.14f:f.DodgeOwned&&dodge.IsDodging?1.3f:0;
+            float strength=i<4?legs:i<8?arms:i<10?Mathf.Max(fire.Signal*.7f,Mathf.Max(fire.Pulse,fire.Afterglow*.22f)):dodgeSignal;
             var renderer=glowParts[i];if(renderer==null)continue;
-            renderer.GetPropertyBlock(glowBlock);glowBlock.SetFloat(GlowStrength,strength);renderer.SetPropertyBlock(glowBlock);
+            if(i==10)renderer.enabled=strength>.001f;
+            renderer.GetPropertyBlock(glowBlock);glowBlock.SetFloat(GlowStrength,Mathf.Clamp01(strength));
+            glowBlock.SetColor(GlowColor,i<4?NeuralPalette.Legs:i<10?NeuralPalette.Arms:NeuralPalette.Spine);renderer.SetPropertyBlock(glowBlock);
         }
     }
     public bool ReloadVisible => reloading && weapon != null && weapon.enabled && weapon.gameObject.activeInHierarchy;
@@ -74,7 +73,7 @@ public sealed class OfficerVisual : MonoBehaviour
     public void ConfigureLegacyCombat()
     {
         foreach (var part in new[] { leftArm, rightArm, leftLeg, rightLeg, torso, head, weapon, weaponGrip })
-            if (part != null) part.color = Color.white;
+            if (part != null) part.color = NeuralPalette.Primary;
         SetReloading(false);
         movement = GetComponent<PlayerMovement>();
         input = GetComponent<PlayerInputReader>();
@@ -170,6 +169,7 @@ public sealed class OfficerVisual : MonoBehaviour
             if (!grounded) { front.y = floor + .28f; back.y = floor + .18f; }
         }
         Segment(torso, hip, chest + Vector2.up * .035f, .17f);
+        if(spineSignal!=null)Segment(spineSignal,hip,chest+Vector2.up*.035f,.055f);
         Place(head, headPoint, new Vector2(.46f, .46f), 0);
         Limb(leftLeg, leftCalf, hip + Vector2.left * (.075f * facing), back, new Vector2(.12f * facing, 0), .17f);
         Limb(rightLeg, rightCalf, hip + Vector2.right * (.075f * facing), front, new Vector2(.18f * facing, 0), .17f);
@@ -214,7 +214,7 @@ public sealed class OfficerVisual : MonoBehaviour
     private void UpdateReloadVisual()
     {
         float shade = reloading ? .32f + .18f * Mathf.Sin(Time.time * 16f) : 1f;
-        Color tint = new Color(shade, shade, shade, 1f);
+        Color tint = NeuralPalette.Primary * new Color(shade, shade, shade, 1f);
         if (weapon != null) weapon.color = tint;
         if (weaponGrip != null) weaponGrip.color = tint;
     }

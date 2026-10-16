@@ -40,7 +40,7 @@ namespace GoGhost.Duel
         TMP_Text Text(string value,Transform parent,Vector2 pos,Vector2 size,int points=26,TextAlignmentOptions align=TextAlignmentOptions.Center)
         {
             var r=Rect(value,parent,pos,size); var t=r.gameObject.AddComponent<TextMeshProUGUI>();
-            t.font=font; t.text=value; t.fontSize=points; t.color=Color.white; t.alignment=align;
+            t.font=font; t.text=value; t.fontSize=points; t.color=NeuralPalette.Primary; t.alignment=align;
             t.raycastTarget=false; t.richText=false; t.textWrappingMode=TextWrappingModes.Normal; return t;
         }
         UnityEngine.UI.Image Image(Transform parent,Vector2 pos,Vector2 size,Color color)
@@ -50,10 +50,18 @@ namespace GoGhost.Duel
         UnityEngine.UI.Button Button(string title,Transform parent,Vector2 pos,Vector2 size,UnityEngine.Events.UnityAction click,bool selected=false)
         {
             var r=Rect(title,parent,pos,size); var image=r.gameObject.AddComponent<UnityEngine.UI.Image>();
-            image.color=selected?Color.white:new Color(.12f,.12f,.12f); image.raycastTarget=true;
+            image.color=NeuralPalette.Panel; image.raycastTarget=true;
             var b=r.gameObject.AddComponent<UnityEngine.UI.Button>(); b.targetGraphic=image; b.onClick.AddListener(click);
-            var c=b.colors; c.normalColor=Color.white; c.highlightedColor=new Color(.7f,.7f,.7f); c.pressedColor=new Color(.4f,.4f,.4f); b.colors=c;
-            var t=Text(title,r,Vector2.zero,size,24); if(selected)t.color=Color.black;
+            var c=b.colors; c.normalColor=Color.white; c.highlightedColor=Color.white; c.selectedColor=Color.white; c.pressedColor=NeuralPalette.Secondary; b.colors=c;
+            var t=Text(title,r,Vector2.zero,size,24);
+            var outline=r.gameObject.AddComponent<DuelButtonOutline>();outline.Persistent=selected;outline.Button=b;
+            outline.Edges=new UnityEngine.UI.Image[4];
+            for(int i=0;i<4;i++)
+            {
+                var edge=Image(r,Vector2.zero,Vector2.zero,selected?NeuralPalette.Primary:NeuralPalette.Border);var er=edge.rectTransform;
+                er.anchorMin=i<2?new Vector2(0,i):new Vector2(i-2,0);er.anchorMax=i<2?new Vector2(1,i):new Vector2(i-2,1);
+                er.sizeDelta=i<2?new Vector2(0,1):new Vector2(1,0);outline.Edges[i]=edge;
+            }
             return b;
         }
         public void Show()
@@ -73,7 +81,7 @@ namespace GoGhost.Duel
                 BuildDeveloperTools();return;
             }
             if(game.Phase==DuelPhase.Menu||game.Phase==DuelPhase.Configure)
-                Image(page,Vector2.zero,new Vector2(4000,4000),Color.black);
+                Image(page,Vector2.zero,new Vector2(4000,4000),NeuralPalette.Background);
             if(game.Paused)
             {
                 Image(page,Vector2.zero,new Vector2(4000,4000),new Color(0,0,0,.88f));
@@ -111,15 +119,15 @@ namespace GoGhost.Duel
             {
                 float y=345-i*40;
                 policeHealth[i]=Text("",hud,new Vector2(-400,y),new Vector2(300,40),24,TextAlignmentOptions.Left);
-                Image(hud,new Vector2(0,y),new Vector2(430,12),new Color(.18f,.18f,.18f));
-                var color=game.Bosses[i].Profile.Kind==BossKind.Refraction?new Color(.333f,.788f,.953f):new Color(.91f,.298f,.298f);
+                Image(hud,new Vector2(0,y),new Vector2(430,12),NeuralPalette.Border);
+                var color=game.Bosses[i].Profile.Kind==BossKind.Refraction?NeuralPalette.Refraction:NeuralPalette.Severance;
                 policeFill[i]=Image(hud,new Vector2(-215,y),new Vector2(430,12),color);
                 policeFill[i].rectTransform.pivot=new Vector2(0,.5f);
             }
 
             playerHealth=Text("",hud,new Vector2(-400,-360),new Vector2(300,40),24,TextAlignmentOptions.Left);
-            Image(hud,new Vector2(0,-360),new Vector2(430,12),new Color(.18f,.18f,.18f));
-            playerFill=Image(hud,new Vector2(-215,-360),new Vector2(430,12),new Color(.6f,.9f,.65f));
+            Image(hud,new Vector2(0,-360),new Vector2(430,12),NeuralPalette.Border);
+            playerFill=Image(hud,new Vector2(-215,-360),new Vector2(430,12),NeuralPalette.Primary);
             playerFill.rectTransform.pivot=new Vector2(0,.5f);
             resources=Text("",hud,new Vector2(0,-397),new Vector2(430,40),22);
             if(game.Phase==DuelPhase.Prepare)
@@ -149,7 +157,21 @@ namespace GoGhost.Duel
             string ammo=game.Rifle.IsReloading?"Reloading":$"Ammo {game.Rifle.AmmoInMagazine} / {game.Rifle.MagazineSize}";
             resources.text=$"{ammo}     Dodge: {Ready(game.Dodge.CooldownRemaining)}";
             playerFill.rectTransform.sizeDelta=new Vector2(430f*game.Player.CurrentHealth/game.Player.MaxHealth,12);
+            playerFill.color=game.Rules!=null&&game.Rules.IsLowHealth?NeuralPalette.Danger:NeuralPalette.Primary;
         }
         string Ready(float remaining)=>remaining<=.01f?"Ready":$"{remaining:0.0}s";
+    }
+    public sealed class DuelButtonOutline : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, ISelectHandler, IDeselectHandler
+    {
+        public UnityEngine.UI.Button Button;
+        public UnityEngine.UI.Image[] Edges;
+        public bool Persistent;
+        bool hovered,focused;
+        void Refresh()
+        {if(Edges==null)return;foreach(var edge in Edges)edge.color=Button.interactable&&(Persistent||hovered||focused)?NeuralPalette.Primary:NeuralPalette.Border;}
+        public void OnPointerEnter(PointerEventData data){hovered=true;Refresh();}
+        public void OnPointerExit(PointerEventData data){hovered=false;Refresh();}
+        public void OnSelect(BaseEventData data){focused=true;Refresh();}
+        public void OnDeselect(BaseEventData data){focused=false;Refresh();}
     }
 }

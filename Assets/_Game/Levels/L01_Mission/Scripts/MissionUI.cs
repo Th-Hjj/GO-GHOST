@@ -573,6 +573,9 @@ public sealed class MissionBodyRegion : UnityEngine.UI.MaskableGraphic, ICanvasR
     public bool Equipped;
     public bool Monochrome;
     public Vector2[] Contour;
+    public bool NeuralStyle;
+    public int NeuralRegion;
+    public float NeuralSignal, NeuralFlow = -1;
 
     private int PointCount => Round ? 32 : Contour != null ? Contour.Length : 4;
     private Vector2 Point(int index)
@@ -603,6 +606,7 @@ public sealed class MissionBodyRegion : UnityEngine.UI.MaskableGraphic, ICanvasR
             outline = Selected ? Color.white : new Color(.55f, .55f, .55f);
             fill = Selected ? new Color(.12f, .12f, .12f) : Color.black;
         }
+        if(NeuralStyle){outline=NeuralPalette.Secondary;fill=NeuralPalette.Background;}
         mesh.AddVert(center, fill, Vector2.zero);
         for (int i = 0; i < count; i++) mesh.AddVert(Point(i), fill, Vector2.zero);
         for (int i = 0; i < count; i++) mesh.AddTriangle(0, i + 1, (i + 1) % count + 1);
@@ -618,6 +622,36 @@ public sealed class MissionBodyRegion : UnityEngine.UI.MaskableGraphic, ICanvasR
             Segment(mesh, a, b, width, outline);
             if (Equipped) Segment(mesh, Vector2.Lerp(center, a, .88f), Vector2.Lerp(center, b, .88f), 1,
                 new Color(outline.r, outline.g, outline.b, .40f));
+        }
+        if(NeuralStyle&&NeuralRegion>0&&NeuralSignal>0)DrawNeuralCircuit(mesh);
+    }
+
+    void DrawNeuralCircuit(UnityEngine.UI.VertexHelper mesh)
+    {
+        var r=rectTransform.rect;
+        Color identity=NeuralRegion==1?NeuralPalette.Spine:NeuralRegion<4?NeuralPalette.Arms:NeuralPalette.Legs;
+        Vector2 a,b;
+        if(NeuralRegion==1){a=new Vector2(0,.4f);b=new Vector2(0,-.4f);}
+        else if(NeuralRegion==2){a=new Vector2(.4f,-.32f);b=new Vector2(-.42f,.34f);}
+        else if(NeuralRegion==3){a=new Vector2(-.4f,-.32f);b=new Vector2(.42f,.34f);}
+        else if(NeuralRegion==4){a=new Vector2(.28f,.42f);b=new Vector2(-.3f,-.42f);}
+        else {a=new Vector2(-.28f,.42f);b=new Vector2(.3f,-.42f);}
+        a=Vector2.Scale(a,r.size)+r.center;b=Vector2.Scale(b,r.size)+r.center;
+        float pixel=1/Mathf.Max(.05f,rectTransform.lossyScale.x);
+        int sections=NeuralRegion==1?6:3;
+        for(int i=0;i<sections;i++)
+        {
+            float from=(float)i/sections,to=(i+.82f)/sections;
+            Vector2 p=Vector2.Lerp(a,b,from),q=Vector2.Lerp(a,b,to);
+            Segment(mesh,p,q,7*pixel,NeuralPalette.Alpha(identity,NeuralSignal*.07f));
+            Segment(mesh,p,q,1.5f*pixel,NeuralPalette.Alpha(identity,NeuralSignal));
+            Segment(mesh,p-Vector2.up*1.7f*pixel,p+Vector2.up*1.7f*pixel,3.4f*pixel,NeuralPalette.Alpha(identity,NeuralSignal));
+        }
+        if(NeuralFlow>=0&&NeuralFlow<1)
+        {
+            var p=Vector2.Lerp(a,b,NeuralFlow);var q=Vector2.Lerp(a,b,Mathf.Max(0,NeuralFlow-.18f));
+            Segment(mesh,q,p,8*pixel,NeuralPalette.Alpha(identity,.12f));
+            Segment(mesh,q,p,2.4f*pixel,identity);
         }
     }
 

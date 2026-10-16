@@ -435,7 +435,7 @@ namespace GoGhost.Duel
             {
                 var shot=Instantiate(actor.ProjectilePrefab,muzzle,Quaternion.identity);
                 shot.Launch(direction,p.BulletSpeed,BurstAction?p.Burst.Damage:settings.Damage,actor.gameObject);
-                var sprite=shot.GetComponent<SpriteRenderer>();if(sprite!=null)sprite.color=new Color(.33f,.84f,.42f);
+                var sprite=shot.GetComponent<SpriteRenderer>();if(sprite!=null)sprite.color=actor.Profile.Kind==BossKind.Refraction?NeuralPalette.Refraction:NeuralPalette.Severance;
                 actor.Sounds?.Play(Sfx.BossBurst,actor.ActorId,AttackId,shotIndex);actor.View?.Muzzle(muzzle,direction);
             }
             Ammo--;shotsRemaining--;shotIndex++;bulletLocked=false;

@@ -166,14 +166,15 @@ public static partial class BossEncounterSmoke
         var left=panels.First(r=>r.name=="RuleEditor");var right=panels.First(r=>r.name=="RuleList");
         Check($"{width} {step}: selector and complete list side by side",Screen.width==width&&left.position.x<right.position.x
             &&right.GetComponentsInChildren<UnityEngine.UI.Button>().Count(b=>b.name.StartsWith("Rule")&&b.name.EndsWith("Action"))==5
-            &&left.sizeDelta.x/(left.sizeDelta.x+right.sizeDelta.x)>.55f&&left.sizeDelta.x/(left.sizeDelta.x+right.sizeDelta.x)<.6f);
+            &&left.sizeDelta.x/(left.sizeDelta.x+right.sizeDelta.x)>.51f&&left.sizeDelta.x/(left.sizeDelta.x+right.sizeDelta.x)<.54f);
         var overflow=left.GetComponentsInChildren<TMPro.TMP_Text>().Concat(right.GetComponentsInChildren<TMPro.TMP_Text>()).Where(t=>t.isTextOverflowing).Select(t=>t.name).ToArray();
         Check($"{width} {step}: no label/description overflow",overflow.Length==0,string.Join(",",overflow));
         var rows=panels.First(r=>r.name=="EquippedRules").GetComponent<UnityEngine.UI.ScrollRect>();
         rows.verticalNormalizedPosition=0;Canvas.ForceUpdateCanvases();
         var last=(RectTransform)ConfigButtonNamed("Rule4Action").transform;
-        Check($"{width} {step}: final row reachable and footer separate",rows.viewport.rect.Contains(rows.viewport.InverseTransformPoint(last.position))
-            &&ConfigButtonNamed("StartFight").transform.position.y<right.position.y-right.rect.height*right.lossyScale.y/2);
+        Check($"{width} {step}: final row reachable and list actions aligned",rows.viewport.rect.Contains(rows.viewport.InverseTransformPoint(last.position))
+            &&ConfigButtonNamed("StartFight").transform.parent==right
+            &&Mathf.Approximately(ConfigButtonNamed("StartFight").transform.position.y,ConfigButtonNamed("AddRule").transform.position.y));
     }
     static IEnumerator UnifiedCatalog()
     {

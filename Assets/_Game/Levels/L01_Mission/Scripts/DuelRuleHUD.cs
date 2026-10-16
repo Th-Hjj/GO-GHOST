@@ -13,6 +13,8 @@ namespace GoGhost.Duel
             public int Row;
             public UnityEngine.UI.Image Background;
             public UnityEngine.UI.Image[] Border;
+            public TMP_Text Condition, Action;
+            public UnityEngine.UI.Image Identity;
         }
         readonly List<RuleRowView> ruleRows = new List<RuleRowView>(ConditionalCatalog.MaxRulesTotal);
         ConditionalController hudRules;
@@ -34,8 +36,8 @@ namespace GoGhost.Duel
             var group=ruleSidebar.gameObject.AddComponent<CanvasGroup>();
             group.blocksRaycasts=false;group.interactable=false;
             var background=ruleSidebar.gameObject.AddComponent<UnityEngine.UI.Image>();
-            background.color=Color.black;background.raycastTarget=false;
-            var divider=Image(ruleSidebar,new Vector2(-RulePanelWidth/2,0),new Vector2(1,900),new Color(.25f,.25f,.25f));
+            background.color=NeuralPalette.Background;background.raycastTarget=false;
+            var divider=Image(ruleSidebar,new Vector2(-RulePanelWidth/2,0),new Vector2(1,900),NeuralPalette.Border);
             divider.rectTransform.anchorMin=new Vector2(0,0);divider.rectTransform.anchorMax=new Vector2(0,1);
             divider.rectTransform.anchoredPosition=Vector2.zero;divider.rectTransform.sizeDelta=new Vector2(1,0);
             // A top-anchored, fixed readable block fits all five rules at the supported 16:9 sizes.
@@ -49,7 +51,7 @@ namespace GoGhost.Duel
                 int rows=hudRules.RuleCount((ControlOperation)op);
                 if(rows==0)continue;
                 var label=Text(ShortOperationLabels[op],content,new Vector2(0,y),new Vector2(318,28),22,TextAlignmentOptions.Left);
-                label.color=new Color(.72f,.72f,.72f);y-=40;
+                label.color=NeuralPalette.Secondary;y-=40;
                 for(int row=0;row<rows;row++)
                 {
                     var rule=hudRules.RuleAt((ControlOperation)op,row);
@@ -60,9 +62,10 @@ namespace GoGhost.Duel
                         Image(root,new Vector2(0,-25),new Vector2(318,1),Color.clear),
                         Image(root,new Vector2(-159,0),new Vector2(1,50),Color.clear),
                         Image(root,new Vector2(159,0),new Vector2(1,50),Color.clear)};
-                    Text((row+1)+"  "+ConditionLabel(rule),root,new Vector2(0,13),new Vector2(306,28),20,TextAlignmentOptions.Left);
-                    Text("> "+ConditionalCatalog.Response(rule.Action).Label,root,new Vector2(10,-13),new Vector2(286,28),20,TextAlignmentOptions.Left);
-                    ruleRows.Add(new RuleRowView{Operation=(ControlOperation)op,Row=row,Background=glow,Border=border});
+                    var condition=Text((row+1)+"  "+ConditionLabel(rule),root,new Vector2(3,13),new Vector2(300,28),20,TextAlignmentOptions.Left);
+                    var action=Text("> "+ConditionalCatalog.Response(rule.Action).Label,root,new Vector2(10,-13),new Vector2(286,28),20,TextAlignmentOptions.Left);
+                    var identity=Image(root,new Vector2(-157,0),new Vector2(2,42),NeuralPalette.Operation((ControlOperation)op));
+                    ruleRows.Add(new RuleRowView{Operation=(ControlOperation)op,Row=row,Background=glow,Border=border,Condition=condition,Action=action,Identity=identity});
                     y-=52;
                 }
                 y-=6;
@@ -98,10 +101,18 @@ namespace GoGhost.Duel
             UpdateBattleLayout();
             foreach(var row in ruleRows)
             {
-                float glow=game.Phase==DuelPhase.Fight&&hudRules==game.Rules
-                    ?hudRules.Feedback(row.Operation,row.Row).Glow:0;
-                row.Background.color=new Color(.15f,.8f,.35f,.11f*glow);
-                foreach(var edge in row.Border)edge.color=new Color(.3f,1,.5f,.6f*glow);
+                var f=game.Phase==DuelPhase.Fight&&hudRules==game.Rules
+                    ?hudRules.Feedback(row.Operation,row.Row).Visual:default;
+                var color=NeuralPalette.Operation(row.Operation);
+                bool executing=f.Executing||f.AcceptedThisFrame;
+                row.Condition.color=f.Matched?Color.Lerp(NeuralPalette.Primary,color,.55f):NeuralPalette.Primary;
+                row.Action.color=executing?color:NeuralPalette.Primary;
+                row.Action.fontStyle=executing?FontStyles.Bold:FontStyles.Normal;
+                row.Identity.color=NeuralPalette.Alpha(color,executing?1:.45f);
+                row.Background.color=Color.clear;
+                // A fading edge never keeps the action/arrow marked as the operation owner.
+                for(int i=0;i<row.Border.Length;i++)row.Border[i].color=NeuralPalette.Alpha(color,
+                    executing?(i==1?.7f:.08f):i==1?Mathf.Max(f.Pulse*.5f,f.Afterglow*.28f):0);
             }
         }
     }

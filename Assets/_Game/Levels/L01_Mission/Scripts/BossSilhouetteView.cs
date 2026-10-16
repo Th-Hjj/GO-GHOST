@@ -53,8 +53,14 @@ namespace GoGhost.Duel
         void SetColors()
         {
             bool gunner = visualKind == BossKind.Refraction;
-            bodyColor = gunner ? new Color(.333f,.788f,.953f) : new Color(.91f,.298f,.298f);
-            weaponColor = gunner ? new Color(.333f,.839f,.42f) : new Color(.961f,.784f,.294f);
+            bodyColor = gunner ? NeuralPalette.Refraction : NeuralPalette.Severance;
+            weaponColor = NeuralPalette.Primary;
+            // Reuse the existing empty sword grip slot; keep it under the same camo/pose alpha path.
+            if(!gunner&&parts[(int)Part.Sheath]!=null&&parts[(int)Part.Weapon]!=null)
+            {
+                parts[(int)Part.Sheath].sprite=parts[(int)Part.Weapon].sprite;
+                parts[(int)Part.Sheath].sharedMaterial=parts[(int)Part.Weapon].sharedMaterial;
+            }
         }
         public void SetPaused(bool value) => paused = value;
         public void Defeat() { defeated = true; defeatAt = clock; ClearTells(); }
@@ -225,7 +231,7 @@ namespace GoGhost.Duel
         {
             if (parts == null || parts.Length != 16) return;
             for (int i=0;i<parts.Length;i++) if(parts[i]!=null)
-            { Color color=i>=(int)Part.Weapon?weaponColor:bodyColor;color.a=alpha;parts[i].color=color; }
+            { Color color=i==(int)Part.Weapon?weaponColor:bodyColor;color.a=alpha;parts[i].color=color; }
             // Match the player's .46 diameter head and .16-.17 wide square segments.
             Segment(Part.Torso,p.Hip,p.Chest+Vector2.up*.045f,.17f);
             Place(Part.Head,p.Head,new Vector2(.46f,.46f),0);
@@ -238,7 +244,7 @@ namespace GoGhost.Duel
             Place(Part.Weapon,p.Weapon,gunner?new Vector2(.54f,.14f):new Vector2(actor!=null&&(actor.Actions.UsesBladeArc||actor.Actions.Ability==BossAbility.DropCut)?actor.Actions.BladeReach:1.2f,.075f),p.WeaponAngle);
             // Retain the serialized slot as the gun's simple grip; the blade needs no extra outline.
             if(gunner)Place(Part.Sheath,p.Weapon+Rotate(new Vector2(-.15f,-.09f),p.WeaponAngle),new Vector2(.075f,.18f),p.WeaponAngle);
-            else Hide(Part.Sheath);
+            else Place(Part.Sheath,p.Weapon-Angle(p.WeaponAngle)*.48f,new Vector2(.14f,.12f),p.WeaponAngle);
         }
         void Leg(Part thigh,Part calf,Part foot,Vector2 hip,Vector2 toe,float offset)
         {
@@ -288,10 +294,10 @@ namespace GoGhost.Duel
                     if(tells[0]==null)tells[0]=NewLine("FlankRoute",false,path.Length);
                     var route=tells[0];route.enabled=true;route.positionCount=path.Length;
                     for(int i=0;i<path.Length;i++)route.SetPosition(i,path[i]);
-                    route.startWidth=route.endWidth=.018f;route.startColor=route.endColor=new Color(1,.35f,.25f,.3f);
+                    route.startWidth=route.endWidth=.018f;route.startColor=route.endColor=NeuralPalette.Alpha(bodyColor,.3f);
                     if(tells[1]==null)tells[1]=NewLine("FlankLanding",false,2);
                     Vector2 ground=action.JumpDestination-Vector2.up*actor.Motor.Size.y*.5f;
-                    SetLine(tells[1],ground+Vector2.left*.35f,ground+Vector2.right*.35f,.025f,new Color(1,.8f,.25f,.65f));
+                    SetLine(tells[1],ground+Vector2.left*.35f,ground+Vector2.right*.35f,.025f,NeuralPalette.Alpha(bodyColor,.65f));
                 }
                 return;
             }
@@ -314,7 +320,7 @@ namespace GoGhost.Duel
                 }
                 line.startWidth=line.endWidth=cutting?.04f:.015f;
                 float alpha=action.Phase==BossActionPhase.Recovery?0:cutting?.85f:action.Phase==BossActionPhase.Locked?.5f:.20f;
-                line.startColor=line.endColor=new Color(weaponColor.r,weaponColor.g,weaponColor.b,alpha);
+                line.startColor=line.endColor=NeuralPalette.Alpha(bodyColor,alpha);
                 if(action.Ability==BossAbility.LeapSlash&&action.PublicThreats.Count==0)line.enabled=false;
                 if(action.Ability==BossAbility.LeapSlash&&action.PublicThreats.Count>0)
                 {
@@ -322,24 +328,24 @@ namespace GoGhost.Duel
                     if(tells[1]==null)tells[1]=NewLine("LeapRoute",false,2);
                     var route=tells[1];route.enabled=true;route.positionCount=threat.OriginPath.Length;
                     for(int i=0;i<threat.OriginPath.Length;i++)route.SetPosition(i,threat.OriginPath[i]);
-                    route.startWidth=route.endWidth=.012f;route.startColor=route.endColor=new Color(1,.8f,.25f,.16f);
+                    route.startWidth=route.endWidth=.012f;route.startColor=route.endColor=NeuralPalette.Alpha(bodyColor,.16f);
                 }
             }
             else if(action.Ability==BossAbility.DropCut && action.Phase!=BossActionPhase.Recovery)
             {
                 if(tells[0]==null)tells[0]=NewLine("DropLanding",false,2);
                 Vector2 ground=action.DropTarget-Vector2.up*(actor.Motor.Size.y*.5f);
-                SetLine(tells[0],ground+Vector2.left*.35f,ground+Vector2.right*.35f,.025f,new Color(1,.8f,.25f,.6f));
+                SetLine(tells[0],ground+Vector2.left*.35f,ground+Vector2.right*.35f,.025f,NeuralPalette.Alpha(bodyColor,.6f));
             }
             else if(action.Ability==BossAbility.Sweep && action.Phase!=BossActionPhase.Active && action.Phase!=BossActionPhase.Recovery)
             {
                 for(int i=0;i<2;i++)
                 {
                     if(tells[i]==null)tells[i]=NewLine("SweepEdge",false,2);
-                    SetLine(tells[i],action.Origin,i==0?action.SweepFrom:action.SweepTo,.014f,new Color(.33f,.84f,.42f,action.Phase==BossActionPhase.Locked?.35f:.16f));
+                    SetLine(tells[i],action.Origin,i==0?action.SweepFrom:action.SweepTo,.014f,NeuralPalette.Alpha(bodyColor,action.Phase==BossActionPhase.Locked?.35f:.16f));
                 }
                 if(tells[2]==null)tells[2]=NewLine("SweepBand",false,2);
-                SetLine(tells[2],action.SweepFrom,action.SweepTo,.012f,new Color(.33f,.84f,.42f,.13f));
+                SetLine(tells[2],action.SweepFrom,action.SweepTo,.012f,NeuralPalette.Alpha(bodyColor,.13f));
             }
             else
             {
@@ -351,7 +357,7 @@ namespace GoGhost.Duel
                     Vector2 end=threat.End;
                     if(threat.TerrainBlocked&&Projectile.TerrainHit(threat.Origin,end,threat.Radius,out var wall))end=threat.Origin+(end-threat.Origin).normalized*wall.distance;
                     bool locked=threat.Phase==BossThreatPhase.Locked;
-                    Color color=Color.Lerp(weaponColor,Color.white,.45f);color.a=locked?.75f:.27f;
+                    Color color=Color.Lerp(bodyColor,NeuralPalette.Primary,.20f);color.a=locked?.75f:.27f;
                     SetLine(tells[slot++],threat.Origin,end,locked?.028f:.015f,color);
                 }
             }
@@ -362,7 +368,7 @@ namespace GoGhost.Duel
                 float angle=Mathf.Atan2(actor.Actions.Aim.y,actor.Actions.Aim.x)*Mathf.Rad2Deg;
                 float halfArc=actor.Profile.GuardArc*.5f;
                 for(int i=0;i<11;i++)line.SetPosition(i,actor.Position+Angle(angle+Mathf.Lerp(-halfArc,halfArc,i/10f))*actor.Profile.Guard.Range);
-                line.startWidth=line.endWidth=.014f;line.startColor=line.endColor=new Color(weaponColor.r,weaponColor.g,weaponColor.b,.42f);
+                line.startWidth=line.endWidth=.014f;line.startColor=line.endColor=NeuralPalette.Alpha(bodyColor,.42f);
             }
         }
         void AddFlash(LineRenderer line,float life)
@@ -371,7 +377,7 @@ namespace GoGhost.Duel
             flashes.Add(new Flash{Root=line.gameObject,Line=line,Born=clock,Life=life,Alpha=line.startColor.a});
         }
         public void Beam(Vector2 from,Vector2 to)
-        {var line=NewLine("Beam",true,2);SetLine(line,from,to,actor==null?.14f:actor.Profile.BeamRadius*2,new Color(.62f,1,.68f,1));AddFlash(line,.09f);shotAt=clock;}
+        {var line=NewLine("Beam",true,2);SetLine(line,from,to,actor==null?.14f:actor.Profile.BeamRadius*2,bodyColor);AddFlash(line,.09f);shotAt=clock;}
         public void Muzzle(Vector2 at,Vector2 direction)
         {
             shotAt=clock;lastMuzzleOrigin=at;lastMuzzleDirection=direction;
@@ -385,12 +391,12 @@ namespace GoGhost.Duel
             if(dash)
             {
                 var trail=NewLine("DashBlade",true,2);
-                SetLine(trail,actor.Position-aim*.7f,actor.Position+aim*.6f,.04f,new Color(1,.79f,.23f,.92f));
+                SetLine(trail,actor.Position-aim*.7f,actor.Position+aim*.6f,.04f,NeuralPalette.Alpha(bodyColor,.92f));
                 AddFlash(trail,.09f);return;
             }
             var line=NewLine("BladeArc",true,11);float angle=Mathf.Atan2(aim.y,aim.x)*Mathf.Rad2Deg;
             for(int i=0;i<11;i++)line.SetPosition(i,actor.Position+Angle(angle+Mathf.Lerp(-48,48,i/10f))*reach);
-            line.startWidth=line.endWidth=dash?.04f:.027f;line.startColor=line.endColor=new Color(1,.79f,.23f,.92f);AddFlash(line,dash?.09f:.11f);
+            line.startWidth=line.endWidth=dash?.04f:.027f;line.startColor=line.endColor=NeuralPalette.Alpha(bodyColor,.92f);AddFlash(line,dash?.09f:.11f);
         }
         void Spark(Vector2 at,Vector2 forward,float reach,int count,bool glow)
         {
@@ -398,7 +404,7 @@ namespace GoGhost.Duel
             for(int i=0;i<count;i++)
             {
                 var line=NewLine(glow?"Spark":"Dust",glow,2);Vector2 d=Angle(angle+Mathf.Lerp(-68,68,i/(float)(count-1)));
-                Color c=glow?Color.Lerp(weaponColor,Color.white,.25f):new Color(.65f,.65f,.65f,.45f);
+                Color c=glow?Color.Lerp(bodyColor,NeuralPalette.Primary,.15f):NeuralPalette.Alpha(NeuralPalette.Secondary,.45f);
                 SetLine(line,at+d*.035f,at+d*reach,glow?.024f:.017f,c);AddFlash(line,glow?.09f:.16f);
             }
         }

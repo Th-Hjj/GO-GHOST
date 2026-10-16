@@ -115,7 +115,7 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
         {
             float angle = facing + Mathf.Lerp(-.85f, .85f, i / (float)(count - 1));
             var ray = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0);
-            lines[i] = Line(go, new[] { point + ray * .035f, point + ray * length }, .025f, Color.white);
+            lines[i] = Line(go, new[] { point + ray * .035f, point + ray * length }, .025f, NeuralPalette.Primary);
         }
         flashes.Add(new Flash { root = go, lines = lines, born = PresentationClock, life = life, alpha = 1f });
     }

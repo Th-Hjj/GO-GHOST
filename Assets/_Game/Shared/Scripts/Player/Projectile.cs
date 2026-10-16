@@ -75,6 +75,7 @@ public class Projectile : MonoBehaviour
         ProjectileActor actor = ProjectileActor.Environment, int permissionTier = 0)
     {
         Actor = actor;
+        if((actor==ProjectileActor.Player||actor==ProjectileActor.InnerAI)&&TryGetComponent<SpriteRenderer>(out var sprite))sprite.color=NeuralPalette.Primary;
         PermissionTier = permissionTier;
         damage = dmg;
         this.accuracyOwner = accuracyOwner;

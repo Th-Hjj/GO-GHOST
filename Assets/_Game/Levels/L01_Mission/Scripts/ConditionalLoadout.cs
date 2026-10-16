@@ -12,7 +12,6 @@ namespace GoGhost.Duel
     }
     [Serializable] public sealed class OperationRules
     {
-        public bool Enabled;
         public List<ConditionalRule> Rules = new List<ConditionalRule>(2);
     }
     public sealed class ConditionalLoadout
@@ -23,7 +22,6 @@ namespace GoGhost.Duel
             var copy=new ConditionalLoadout();
             for(int i=0;i<5;i++)
             {
-                copy.Operations[i].Enabled=Operations[i].Enabled;
                 foreach(var rule in Operations[i].Rules)
                     if(copy.Operations[i].Rules.Count<2) copy.Operations[i].Rules.Add(rule.Copy());
             }
@@ -48,6 +46,32 @@ namespace GoGhost.Duel
     // One catalog feeds the UI, runtime validation and documentation export.
     public static class ConditionalCatalog
     {
+        // Formal configuration and Start Fight share these exact pairs. Historical handlers stay private to development.
+        public static readonly int[][] FormalConditions = {new[]{33,34,9},new[]{33,25,43},new[]{17,1,27},new[]{40,1,27},new[]{25,41,42,1}};
+        public static bool IsAllowed(int operation,int condition,string action)
+        {
+            if(operation<0||operation>=5||Array.IndexOf(FormalConditions[operation],condition)<0)return false;
+            switch(operation)
+            {
+                case 0:return condition==34?action=="M01":action=="M02";
+                case 1:return action=="J01";
+                case 2:return action=="Q01";
+                case 3:return action=="F02"||action=="F03";
+                case 4:return action=="D01"||action=="D02";
+                default:return false;
+            }
+        }
+        public static bool IsValid(ConditionalLoadout loadout)
+        {
+            if(loadout==null)return false;
+            for(int op=0;op<5;op++)
+            {
+                var rules=loadout.Operations[op].Rules;
+                if(rules==null||rules.Count>2)return false;
+                foreach(var rule in rules)if(rule==null||!IsAllowed(op,rule.Condition,rule.Action))return false;
+            }
+            return true;
+        }
         public static readonly string[] OperationLabels={"Horizontal Movement","Jump","Aim","Fire","Dodge"};
         public static readonly string[] Categories={"Self","Input","Enemy State","Enemy Relation","Threat","Terrain"};
         public static readonly ConditionEntry[] Conditions={

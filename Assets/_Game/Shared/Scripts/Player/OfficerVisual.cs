@@ -26,7 +26,7 @@ public sealed class OfficerVisual : MonoBehaviour
     private SpriteRenderer[] glowParts;
     private Material[] originalMaterials;
     private MaterialPropertyBlock glowBlock;
-    private float jumpGlow,shotGlow;
+    private float jumpGlow,shotGlow,moveExecutedAt=float.NegativeInfinity,aimExecutedAt=float.NegativeInfinity;
     private bool glowBound;
     private static readonly int GlowStrength=Shader.PropertyToID("_AIStrength");
     public void ConfigureConditionalGlow(Material material)
@@ -39,13 +39,18 @@ public sealed class OfficerVisual : MonoBehaviour
         input.ConditionalActionResolved+=GlowAction;shooting.ShotFired+=GlowShot;health.OnDeath+=ClearConditionalGlow;glowBound=true;
     }
     void GlowAction(ControlOperation operation,bool accepted)
-    {if(accepted&&operation==ControlOperation.Jump)jumpGlow=.16f;}
+    {
+        if(accepted&&operation==ControlOperation.Jump)jumpGlow=.16f;
+        if(operation==ControlOperation.Movement)moveExecutedAt=accepted?Time.time:float.NegativeInfinity;
+        if(operation==ControlOperation.Aim)aimExecutedAt=accepted?Time.time:float.NegativeInfinity;
+    }
     void GlowShot(Vector2 origin,Vector2 direction)
     {if(input.ConditionalFrame.FireOwned)shotGlow=.14f;}
     public void ClearConditionalGlow()
     {
         if(glowBound){input.ConditionalActionResolved-=GlowAction;shooting.ShotFired-=GlowShot;health.OnDeath-=ClearConditionalGlow;}
         glowBound=false;jumpGlow=shotGlow=0;
+        moveExecutedAt=aimExecutedAt=float.NegativeInfinity;
         if(glowParts!=null)for(int i=0;i<glowParts.Length;i++)if(glowParts[i]!=null){glowParts[i].SetPropertyBlock(null);glowParts[i].sharedMaterial=originalMaterials[i];}
         glowParts=null;originalMaterials=null;
     }
@@ -57,9 +62,9 @@ public sealed class OfficerVisual : MonoBehaviour
         var f=input.ConditionalFrame;
         for(int i=0;i<glowParts.Length;i++)
         {
-            float strength=i<4?(f.MovementOwned?.5f:0)+jumpGlow/.16f
-                :i<8?(f.AimOwned?.5f:0)+(i==5||i==7?shotGlow/.14f*.5f:0)
-                :i<10?(f.FireOwned?.35f:0)+shotGlow/.14f:f.DodgeOwned&&dodge.IsDodging?1.3f:0;
+            float strength=i<4?(f.MovementOwned&&!dodge.IsDodging&&!movement.HitPushActive&&Time.time-moveExecutedAt<.1f?.5f:0)+jumpGlow/.16f
+                :i<8?(f.AimOwned&&Time.time-aimExecutedAt<.1f?.5f:0)+(i==5||i==7?shotGlow/.14f*.5f:0)
+                :i<10?shotGlow/.14f:f.DodgeOwned&&dodge.IsDodging?1.3f:0;
             var renderer=glowParts[i];if(renderer==null)continue;
             renderer.GetPropertyBlock(glowBlock);glowBlock.SetFloat(GlowStrength,strength);renderer.SetPropertyBlock(glowBlock);
         }

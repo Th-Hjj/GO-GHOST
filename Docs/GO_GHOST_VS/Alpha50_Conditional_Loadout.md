@@ -1,109 +1,49 @@
 # Alpha 50% — Conditional Loadout
 
-Confirmed assignment: Thomas, 2026-10-15. This replaces permanent Player/AI permissions and old autonomous player policy in the formal Duel. Bosses, arena, music, damage, health and player executors are retained. Implementation defaults below are tunable and have not been balanced.
+Confirmed assignment: Thomas, 2026-10-15; rule simplification, execution repair and combat Rules HUD. This supersedes the 40-condition/30-response configuration and Manual/Rules switches. Retain the newer compact configuration from `41822fc`, original player executors, Boss combat, five-platform arena and all combat tuning. Implementation defaults are not balance evidence.
 
-## Configuration and control
+## Configuration
 
-Legs contains Horizontal Movement and Jump; Arms contains Aim and Fire; Spine contains Dodge. Each operation defaults to Manual and may enable two ordered WHEN/THEN rules. No executable match means manual input. The body diagram reuses MissionBodyRegion contours without instantiating MissionUI. Conditions share one catalog in six categories; response lists filter by operation. A37 has Above/Below options under one ID. Changes are run-local. Start Fight deep-copies the draft; retry/next wave preserve it; New Game/Restart clears it. Combat/pause cannot edit the draft.
+Five independent operations: Move and Jump (Legs), Aim and Fire (Arms), Dodge (Spine). Each holds up to two ordered rules; the first matching executable rule wins. Empty lists and no executable match use manual input. There is no separate enable switch, preinstalled rule or autonomous fallback.
 
-Confirmed UI refinement, Thomas 2026-10-15: five direct operation buttons, a single Rules switch, compact numbered condition/action rows and one Swap control. Disable preserves completed rows. New pairs stay UI-local until both choices are made, then enable that operation; Start Fight is unavailable during incomplete editing. The in-panel picker retains context, filters by category and opens at the selected item; Above/Below is chosen there. Internal IDs are hidden. Use monochrome body contours, black backgrounds and white text, a minimum .75 configuration scale and compact layout on small windows. Reuse existing control/runtime semantics; HUD changes only group the existing player health/ammo/dodge information more closely.
+Keep the monochrome body, short operation names, numbered condition > action rows, Remove and Swap. The local picker directly lists only the operation's three or four conditions and legal responses, with no categories or internal IDs. Pending new or changed pairs remain UI-local until complete and legal. Changing a condition clears an incompatible response. Incomplete editing blocks Start Fight; the same formal pair definition validates UI choices and Start Fight. Swap is unavailable during incomplete editing. Historical handlers remain outside the formal catalog.
 
-PlayerInputReader saves focus/UI/release-gated raw input before arbitration. After current ground contacts refresh, resolution is **Move → Jump → Aim → Fire → Dodge**. Fire's A40 evaluates the final muzzle ray; Aim's A40 uses the previously committed direction. The original movement component accepts Dodge before Jump and owns physical arbitration; no new transform/Rigidbody writer exists. Manual Aim plus automatic Fire attributes shots to InnerAI; automatic Aim plus manual Fire attributes them to Player. An overridden press edge is not queued for later playback.
+| Operation | Condition | Allowed response |
+|---|---|---|
+| Move | A33 Enemy Close | M02 Retreat from Enemy |
+| Move | A34 Enemy Far | M01 Approach Enemy |
+| Move | A09 Reloading | M02 Retreat from Enemy |
+| Jump | A33 Enemy Close; A25 Enemy Preparing an Attack; A43 Incoming Low Attack | J01 Jump Once |
+| Aim | A17 Holding Fire; A01 Airborne; A27 Enemy Recovering | Q01 Aim at Nearest Enemy |
+| Fire | A40 Gun Aligned with an Enemy; A01 Airborne; A27 Enemy Recovering | F02 Short Burst; F03 Keep Firing |
+| Dodge | A25 Enemy Preparing an Attack; A41 Incoming Bullet; A42 Incoming Melee Attack; A01 Airborne | D01 Dodge Away from Threat; D02 Dodge Toward Enemy |
 
-## Lifecycle and observation
+These are 11 distinct conditions and eight responses. IDs retain their historical values; player-facing text omits them.
 
-The first executable row wins. A higher row may replace a lower response; accepted physical actions finish normally. A state plus a finite response starts once per false→true occurrence. Events have unique occurrences, observed for .25 s, independently consumed by each rule/operation. Event plus continuous response leases .75 s. Continuous state responses last while their condition is valid. Finite shooting counts paid trigger pulls and ends before crossing a reload. Invalid target, blocked movement, rejected Jump/Dodge or unavailable weapon resources do not acquire idle control. Cadence gaps within an accepted burst retain its Fire ownership.
+Start Fight deep-copies the run draft. Combat/pause cannot edit it. Retry/next wave retain it; New Game/Restart clear it. Each fight creates fresh actors, resources, observations, occurrences and feedback. Preparation is stationary for three seconds. Simultaneous death is defeat; both Bosses must die to clear wave three.
 
-Each trigger copies its candidates, source and any observed position. Enemy conditions bind selection to their matching candidates. Target selection is stable by distance then ActorId, with explicit response priorities. Only visible public BossContact facts are eligible for tracking; hidden cues/lost targets may supply a stationary observed source position to finite responses. Q03 requires a real visible enemy source; Q07 requires an existing target. Boss policy never receives rule configuration or hidden player input. Public phase/reload/grounded/health facts are copied only with a visible body.
+## Execution and observation
 
-Low HP enters at ≤40%, exits at ≥45%; Low Ammo is 1–2 rounds outside reload; F05 reserves 2. Close/Far use horizontal centre distance 5.3/8.5 with .35 exit hysteresis. A37 requires a full player collider height difference. A45/A46 use one player collider width near real arena/support edges. Approach/retreat velocity deadzone is .35 units/s. Mouse assist enters at 12°, releases beyond 16°. Threats use the retained executable .20 s geometry; low attacks intersect the lower half without also covering the upper half at impact. D07 compares executable left/right risk without the old Spine timing decision. One-way platform sides remain passable.
+PlayerInputReader captures focus/UI/release-gated raw input. Resolution remains Move → Jump → Aim → Fire → Dodge; HUD order is independent. Original PlayerMovement accepts Dodge before Jump. A successful Dodge suppresses a same-frame Jump and keeps its original direction until complete. Overridden manual press edges are never queued.
 
-M04 moves 1.5 units at normal speed; M06 freezes/clamps cursor X. Finite movement has travel-derived deadlines and a .25 s stuck fallback. J02 delays .20 s only while legally grounded. Q09 calibrates for .12 s. F02 fires at most three rounds; all finite Fire responses use current-magazine limits and real cadence. No response adds damage, speed, immunity, air jumps, cooldown resets, teleportation or hidden automatic fallback.
+Each rule owns only its operation. Aim writes the final muzzle direction without enabling Fire; Fire preserves the current Aim; Jump never enables Move. State-triggered finite actions consume their occurrence only after actual acceptance. Airborne Dodge may wait for cooldown within the same airtime, succeeds at most once for that occurrence, and expires on landing. Rejected Jump/Dodge requests do not consume state occurrences.
 
-## Feedback
+A25 observes a visible public attack preparation, including its lock, rather than an imminent-impact prediction. Each actor's new preparation has an independent public identity (including successive Rhythm tells); each rule consumes that identity only on successful execution. Overlapping Boss tells cannot swallow later independent preparations. Guard/Camo preparation is not an attack tell. A41/A42/A43 use the retained executable .20 s public-threat geometry. Low attacks intersect the lower half without covering the upper half at impact.
 
-OfficerVisual uses a player-only URP sprite material and cached property blocks. Move lights both legs/calves; accepted Jump adds a .16 s pulse. Aim lights arms/forearms; automatic paid shots pulse the hand/grip/gun for .14 s. Actual automatic Dodge lights the torso. Combined operations add intensity. The shader multiplies existing sprite tint, preserving reload dimming. Pause freezes clocks; fight end/death disposes subscriptions and restores materials. No equipped-only glow or shared Boss material mutation.
+Enemy conditions retain matching candidates/source. Tracking requires visible public BossContact facts. Hidden bodies are not retargeted. Boss policy receives no rule configuration or hidden player input. Close/Far use horizontal collider-centre distances 5.3/8.5 with .35 exit hysteresis. Approach and Retreat move throughout their configured condition; they have no separate Keep Mid Range stopping threshold. Invalid targets, blocked directions, Dodge and hit-push physical ownership release conditional Move.
 
-## Catalog
+Short Burst spends at most three actual rounds from the current magazine, never crossing a reload. First-shot requests and normal cadence waits are distinct; an accepted firing run retains ownership during the original .25 s interval. Rifle remains 12 damage, eight rounds, 1.2 s automatic reload. Move 7, Jump 12, gravity scale 3 and Dodge distance 3 / movement .18 s / immunity .20 s / cooldown 1.2 s are unchanged. No response writes transforms, damage, cooldowns or outcomes.
 
-Catalog tables below are generated from ConditionalCatalog, which also drives UI labels and runtime validation. S = state, E = event. A37 remains one logical ID.
+## Combat Rules HUD
 
-| Condition | Label | Type | Category |
-|---|---|---|---|
-| A01 | Airborne | S | Self |
-| A02 | Left Ground | E | Self |
-| A03 | Landed | E | Self |
-| A04 | Low Health | S | Self |
-| A05 | Entered Low Health | E | Self |
-| A06 | Took Damage | E | Self |
-| A07 | Dodge Finished | E | Self |
-| A09 | Reloading | S | Self |
-| A10 | Reload Started | E | Self |
-| A11 | Reload Finished | E | Self |
-| A12 | Low Ammo | S | Self |
-| A13 | Hit an Enemy | E | Self |
-| A14 | Defeated an Enemy | E | Self |
-| A15 | Dodge on Cooldown | S | Self |
-| A17 | Holding Fire | S | Input |
-| A18 | Cursor Near an Enemy | S | Input |
-| A19 | Jump Pressed | E | Input |
-| A20 | Dodge Pressed | E | Input |
-| A21 | Moving Toward an Enemy | S | Input |
-| A22 | Moving Away from an Enemy | S | Input |
-| A25 | Enemy Preparing an Attack | S | Enemy State |
-| A27 | Enemy Recovering | S | Enemy State |
-| A28 | Enemy Reloading | S | Enemy State |
-| A29 | Enemy Airborne | S | Enemy State |
-| A31 | Enemy Low Health | S | Enemy State |
-| A32 | Enemy Reappeared | E | Enemy State |
-| A33 | Enemy Close | S | Enemy Relation |
-| A34 | Enemy Far | S | Enemy Relation |
-| A35 | Enemy Approaching | S | Enemy Relation |
-| A36 | Enemy Retreating | S | Enemy Relation |
-| A37 | Enemy Above / Enemy Below | S | Enemy Relation |
-| A39 | Enemies on Both Sides | S | Enemy Relation |
-| A40 | Gun Aligned with an Enemy | S | Threat |
-| A41 | Incoming Bullet | S | Threat |
-| A42 | Incoming Melee Attack | S | Threat |
-| A43 | Incoming Low Attack | S | Threat |
-| A45 | Near Arena Wall | S | Terrain |
-| A46 | Near Platform Edge | S | Terrain |
-| A47 | Horizontal Movement Blocked | S | Terrain |
-| A50 | Aim Target Lost | E | Enemy State |
+Prepare/Fight display only complete snapshot rules in a separate right black sidebar with a thin grey divider, approximately 350 UI units at 1600×900. Zero rules hides it. Order: Aim, Fire, Dodge, Move, Jump. Each group retains rows 1/2; each row has condition then indented > response, using the configuration's labels. No editing controls, status prose, logs or scroll area. Ten rules fit the supported 16:9 sizes with readable text.
 
-| Response | Label | Operation | Length |
-|---|---|---|---|
-| M01 | Approach Enemy | Movement | Continuous |
-| M02 | Retreat from Enemy | Movement | Continuous |
-| M03 | Keep Mid Range | Movement | Continuous |
-| M04 | Step Back | Movement | Finite |
-| M05 | Hold Movement Direction | Movement | Continuous |
-| M06 | Move to Cursor X | Movement | Finite |
-| M09 | Move Toward Center | Movement | Continuous |
-| M10 | Stop Horizontal Movement | Movement | Continuous |
-| J01 | Jump Once | Jump | Finite |
-| J02 | Delayed Jump | Jump | Finite |
-| J03 | Repeat Jumps | Jump | Continuous |
-| Q01 | Aim at Nearest Enemy | Aim | Continuous |
-| Q02 | Aim at Lowest-Health Enemy | Aim | Continuous |
-| Q03 | Aim at Triggering Enemy | Aim | Continuous |
-| Q04 | Prioritize Gunner | Aim | Continuous |
-| Q05 | Prioritize Swordsman | Aim | Continuous |
-| Q06 | Assist Mouse Aim | Aim | Continuous |
-| Q07 | Keep Current Target | Aim | Continuous |
-| Q08 | Hold Aim Direction | Aim | Continuous |
-| Q09 | Calibrate Aim Once | Aim | Finite |
-| F01 | Fire One Shot | Fire | Finite |
-| F02 | Short Burst | Fire | Finite |
-| F03 | Keep Firing | Fire | Continuous |
-| F04 | Empty Current Magazine | Fire | Finite |
-| F05 | Fire and Keep a Reserve | Fire | Finite |
-| D01 | Dodge Away from Threat | Dodge | Finite |
-| D02 | Dodge Toward Enemy | Dodge | Finite |
-| D03 | Dodge Along Movement | Dodge | Finite |
-| D04 | Dodge Toward Cursor | Dodge | Finite |
-| D07 | Dodge to Safer Side | Dodge | Finite |
+The camera and existing combat HUD occupy the left region. Viewport fitting preserves the entire original Arena; no platform, collider or spawn moves. Mouse aim uses the same camera's ScreenToWorldPoint. Resolution changes only re-layout; menu/configuration/results and zero-rule fights restore full width.
 
-## Validation
+Feedback identity is the fight controller + operation + row. Only actual execution produces green: Move reports from the original physical velocity path, Aim from final direction submission, Jump/Dodge from accepted original actions, Fire from actual paid ShotFired. An already started firing run stays lit across normal cadence; rejected requests and manual actions do not light rules. The UI never calls Resolve/Evaluate or reads pending rules. A light green background and four fine edge lines preserve white text; short success is visible for at least .35 s and fades over .15 s. Scaled time freezes feedback on pause. Resume keeps the same controller/occurrences; results/retry/next wave/menu clear old references. Overlay graphics do not intercept input or depend on world Bloom.
 
-See the newest Implementation_Log entry for actual focused checks, standalone evidence and limits. No 40×30 matrix, win-rate test, forced all-AI loss or natural-victory gate is required. Unseen combinations remain NOT OBSERVED; hardware input, balancing and long sessions require recipient playtesting.
+## Validation and delivery
+
+Use the existing bounded development harness: normal compile, local configuration and real executor checks, the A25→D01 / A01→D02 Dodge pair, failure/retry/pause/next-wave cleanup, short W1/W2/W3 observations and actual 1280×720 / 1920×1080 screenshots for zero/two/ten rules. Controlled fixtures prove mechanisms only. No full historical matrix, win-rate test, forced outcome or natural-victory gate.
+
+Thomas additionally authorized one updated Windows x64 build, standalone smoke, complete ZIP with licenses and GitHub Release upload. Build artifacts remain outside Git. See the newest Implementation_Log entry for actual results, NOT OBSERVED and NOT TESTED limits.

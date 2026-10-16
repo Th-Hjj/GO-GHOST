@@ -14,121 +14,244 @@ public static partial class BossEncounterSmoke
     [MenuItem("GO GHOST/Playtest/Alpha 50 Focused Smoke")]
     public static void RunAlpha50()=>Start("alpha50",false);
     public static void RunAlpha50Edges()=>Start("alpha50-edges",false);
+    public static void RunAlpha50Layouts()=>Start("alpha50-layouts",false);
     static void Rule(ConditionalLoadout d,int op,int condition,string response)
-    {d.Operations[op].Enabled=true;d.Operations[op].Rules.Add(new ConditionalRule{Condition=condition,Action=response});}
+    {d.Operations[op].Rules.Add(new ConditionalRule{Condition=condition,Action=response});}
     static IEnumerator AlphaFresh(int wave,Action<ConditionalLoadout> configure,bool stop=true)
     {
         RestoreFixture();heldKeys=Array.Empty<Key>();mouseHeld=false;game.ConfigurePlaytestWave(wave);configure?.Invoke(game.DraftLoadout);
         game.StartFight();yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);
         if(stop)StopPolicies();yield return Frames(4);
     }
+    static ConditionalController.ExecutionFeedback Feedback(int op,int row=0)=>game.Rules.Feedback((ControlOperation)op,row);
+    static UnityEngine.UI.Button ConfigButtonNamed(string name,string label=null)
+    {
+        return Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<UnityEngine.UI.Button>()
+            .First(b=>b.gameObject.activeInHierarchy&&b.name==name&&(label==null||b.GetComponentInChildren<TMPro.TMP_Text>().text==label));
+    }
+    static void ClickConfig(string name,string label=null)=>ConfigButtonNamed(name,label).onClick.Invoke();
+    static void AlphaPlace(float playerX,float bossX)
+    {
+        OnFloor(game.Player.gameObject,game.Bosses[0].Navigation,playerX);
+        OnFloor(game.Bosses[0].gameObject,game.Bosses[0].Navigation,bossX);
+    }
     static IEnumerator Alpha50()
     {
-        Record("ALPHA50: controlled virtual-input mechanisms; no matrix, natural-victory or hardware-input claim.");
-        Check("catalog unique 40 conditions / 30 responses",ConditionalCatalog.Conditions.Length==40&&ConditionalCatalog.Conditions.Select(c=>c.Id).Distinct().Count()==40&&ConditionalCatalog.Responses.Length==30&&ConditionalCatalog.Responses.Select(b=>b.Id).Distinct().Count()==30);
-        Check("response operation counts 8/3/9/5/5",Enumerable.Range(0,5).Select(op=>ConditionalCatalog.Responses.Count(b=>(int)b.Operation==op)).SequenceEqual(new[]{8,3,9,5,5}));
-        yield return AlphaFresh(1,null);
-        Check("fresh run all Manual and empty",game.DraftLoadout.Operations.All(o=>!o.Enabled&&o.Rules.Count==0)&&!game.Player.GetComponent<PlayerInputReader>().LegacyArmsAI);
-        yield return CheckInputs();
+        Record("ALPHA50 RULE HUD: bounded controlled fixtures, real executors and paid shots; virtual input only.");
+        game.NewGame();yield return Frames(2);
+        Check("empty defaults, no independent toggle",game.DraftLoadout.Operations.All(o=>o.Rules.Count==0)
+            &&Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<UnityEngine.UI.Toggle>().Length==0);
+        ClickConfig("AddRule");yield return Frames(2);
+        Check("Move picker contains exactly its three conditions",Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<UnityEngine.UI.Button>().Count(b=>b.name=="Option")==3);
+        ClickConfig("Option","Enemy Close");yield return Frames(2);
+        game.StartFight();
+        Check("incomplete pair remains UI-local and blocks Start Fight",game.DraftLoadout.Operations[0].Rules.Count==0&&game.Phase==DuelPhase.Configure);
+        ClickConfig("Option","Retreat from Enemy");yield return Frames(2);
+        Check("complete pair equips without a switch",game.DraftLoadout.Operations[0].Rules.Count==1&&ConditionalCatalog.IsValid(game.DraftLoadout));
+        ClickConfig("Rule0Condition");yield return Frames(1);ClickConfig("Option","Enemy Far");yield return Frames(2);
+        game.StartFight();
+        Check("incompatible action waits locally; original draft remains legal",game.Phase==DuelPhase.Configure&&game.DraftLoadout.Operations[0].Rules[0].Condition==33);
+        ClickConfig("Option","Approach Enemy");yield return Frames(2);ClickConfig("RemoveRule0");yield return Frames(2);
+        Check("delete last rule restores empty manual list",game.DraftLoadout.Operations[0].Rules.Count==0&&ConfigButtonNamed("AddRule")!=null);
+        Rule(game.DraftLoadout,0,33,"M01");game.StartFight();
+        Check("Start Fight rejects a nonformal pair",game.Phase==DuelPhase.Configure);
+        yield return AlphaFresh(1,null);yield return CheckInputs();
 
-        yield return AlphaFresh(1,d=>{Rule(d,0,9,"M02");Rule(d,3,11,"F02");});
-        var p=game.Player;var reader=p.GetComponent<PlayerInputReader>();var movement=p.GetComponent<PlayerMovement>();
-        var boss=game.Bosses[0];OnFloor(boss.gameObject,boss.Navigation,-4);OnFloor(p.gameObject,boss.Navigation,-9);yield return Frames(4);
-        MouseAt(boss.Body.bounds.center,true);
-        yield return Until(()=>game.Rifle.IsReloading,3);
-        heldKeys=new[]{Key.D};mouseHeld=false;yield return Seconds(.12f);
-        Check("reload Retreat overrides only Move and preserves raw D",game.Rifle.IsReloading&&reader.RawInput.Move>0&&reader.MoveInput.x<0&&reader.ConditionalFrame.MovementOwned&&!reader.ConditionalFrame.AimOwned&&!reader.ConditionalFrame.JumpOwned,
-            $"reload={game.Rifle.IsReloading} raw={reader.RawInput.Move} move={reader.MoveInput.x}");
-        var calf=p.GetComponentsInChildren<SpriteRenderer>().First(s=>s.name=="LeftCalf");var block=new MaterialPropertyBlock();calf.GetPropertyBlock(block);
-        Check("dynamic calf uses ownership glow",calf.sharedMaterial.shader.name=="GO GHOST/Conditional Takeover"&&block.GetFloat("_AIStrength")>0);
-        int shots=game.Rifle.TriggerPulls;
-        yield return Until(()=>!game.Rifle.IsReloading,1.5f);yield return Seconds(.62f);
-        Check("reload finished event pays exactly three shots once",game.Rifle.TriggerPulls-shots==3&&game.Rifle.AmmoInMagazine==5,$"shots={game.Rifle.TriggerPulls-shots} ammo={game.Rifle.AmmoInMagazine}");
-        Check("Move returned to current raw D",!reader.ConditionalFrame.MovementOwned&&reader.MoveInput.x>0);
-        heldKeys=Array.Empty<Key>();yield return Seconds(.4f);
-        Check("same reload event does not retrigger",game.Rifle.TriggerPulls-shots==3&&!reader.ConditionalFrame.FireOwned);
+        yield return AlphaFresh(1,d=>{Rule(d,0,34,"M01");Rule(d,0,33,"M02");});
+        AlphaPlace(-9,3);yield return Frames(3);
+        var body=game.Player.GetComponent<Rigidbody2D>();var reader=game.Player.GetComponent<PlayerInputReader>();
+        float x=body.position.x;yield return Seconds(.2f);
+        Check("Far Approach physically moves and only its row executes",body.position.x>x+.6f&&Feedback(0,0).Executing&&!Feedback(0,1).Executing,$"x={x:F2}->{body.position.x:F2}");
+        OnFloor(game.Bosses[0].gameObject,game.Bosses[0].Navigation,body.position.x+3);yield return Frames(3);
+        x=body.position.x;yield return Seconds(.18f);
+        Check("Close Retreat physically moves with second-row feedback",body.position.x<x-.6f&&Feedback(0,1).Executing&&!Feedback(0,0).Executing,$"x={x:F2}->{body.position.x:F2}");
+        OnFloor(game.Bosses[0].gameObject,game.Bosses[0].Navigation,body.position.x+7);heldKeys=new[]{Key.D};yield return Seconds(.15f);
+        Check("no executable match returns to current manual Move",reader.MoveInput.x>0&&!reader.ConditionalFrame.MovementOwned);
+        heldKeys=Array.Empty<Key>();
+        yield return AlphaFresh(1,d=>Rule(d,0,9,"M02"));AlphaPlace(-8,3);yield return Frames(3);
+        MouseAt(game.Player.transform.position+Vector3.up*5,true);yield return Until(()=>game.Rifle.IsReloading,2.6f);
+        mouseHeld=false;body=game.Player.GetComponent<Rigidbody2D>();x=body.position.x;yield return Seconds(.18f);
+        Check("Reload Retreat travels beyond old Far threshold",game.Rifle.IsReloading&&body.position.x<x-.6f&&Feedback(0).Executing,$"x={x:F2}->{body.position.x:F2}");
 
-        yield return AlphaFresh(1,d=>Rule(d,2,17,"Q06"));p=game.Player;reader=p.GetComponent<PlayerInputReader>();boss=game.Bosses[0];
-        OnFloor(boss.gameObject,boss.Navigation,-4);yield return Frames(3);
-        MouseAt(boss.Body.bounds.center+Vector3.up*.15f,true);yield return Seconds(.15f);
-        Check("mouse assist owns Aim only; manual shot attribution",reader.ConditionalFrame.AimOwned&&!reader.ConditionalFrame.FireOwned&&reader.RawInput.Fire);
-        MouseAt(p.transform.position+Vector3.left*5,true);yield return Seconds(.08f);
-        Check("moving raw mouse away releases assist",!reader.ConditionalFrame.AimOwned&&reader.AimDirection.x<0);
-        mouseHeld=false;
+        yield return AlphaFresh(1,d=>{Rule(d,1,33,"J01");Rule(d,2,17,"Q01");});AlphaPlace(-5,-1);yield return Frames(3);
+        body=game.Player.GetComponent<Rigidbody2D>();reader=game.Player.GetComponent<PlayerInputReader>();
+        yield return Until(()=>body.linearVelocity.y>1,.35f);
+        Check("Jump Once has real upward velocity and accepted row glow",body.linearVelocity.y>1&&Feedback(1).Glow>0,$"velocity={body.linearVelocity}");
+        MouseAt(game.Player.transform.position+Vector3.up*5,true);yield return Frames(4);
+        var expected=((Vector2)game.Bosses[0].Body.bounds.center-game.Rifle.AimOrigin).normalized;
+        Check("Aim owns actual final muzzle direction only",Vector2.Dot(reader.AimDirection,expected)>.98f&&Feedback(2).Executing&&!reader.ConditionalFrame.FireOwned);
+        mouseHeld=false;yield return Seconds(1.1f);
+        Check("same Close occurrence does not jump again after landing",game.Player.GetComponent<PlayerMovement>().IsGrounded&&game.Rules.AcceptedJumps==1);
 
-        yield return AlphaFresh(1,d=>Rule(d,3,17,"F05"));reader=game.Player.GetComponent<PlayerInputReader>();
-        MouseAt(game.Bosses[0].Body.bounds.center,true);yield return Until(()=>game.Rifle.AmmoInMagazine<=2,2.2f);
-        mouseHeld=false;yield return Frames(2);
-        Check("reserve response pays six shots then releases",game.Rifle.TriggerPulls==6&&game.Rifle.AmmoInMagazine==2&&!reader.ConditionalFrame.FireOwned,$"shots={game.Rifle.TriggerPulls} ammo={game.Rifle.AmmoInMagazine}");
+        yield return AlphaFresh(1,d=>Rule(d,3,40,"F02"));AlphaPlace(-6,0);yield return Frames(3);
+        MouseAt(game.Bosses[0].Body.bounds.center,false);yield return Until(()=>game.Rifle.TriggerPulls>0,.4f);
+        Check("burst first paid shot lights only Fire",game.Rifle.AmmoInMagazine==7&&Feedback(3).Glow>0&&!game.Player.GetComponent<PlayerInputReader>().ConditionalFrame.AimOwned);
+        yield return Seconds(.1f);
+        Check("accepted burst stays lit during normal cadence",game.Rifle.TriggerPulls==1&&Feedback(3).Executing);
+        yield return Seconds(.85f);
+        Check("one aligned occurrence pays exactly three rounds",game.Rifle.TriggerPulls==3&&game.Rifle.AmmoInMagazine==5,$"shots={game.Rifle.TriggerPulls}");
+        yield return Seconds(.3f);Check("completed burst fades without repeat",Feedback(3).Glow==0&&game.Rifle.TriggerPulls==3);
+        // Spend four manual rounds away from the target, leaving one for a new aligned burst.
+        MouseAt(game.Player.transform.position+Vector3.up*5,true);yield return Until(()=>game.Rifle.AmmoInMagazine==1,1.2f);mouseHeld=false;yield return Frames(2);
+        MouseAt(game.Bosses[0].Body.bounds.center,false);yield return Until(()=>game.Rifle.IsReloading,.5f);
+        int paid=game.Rifle.TriggerPulls;yield return Seconds(1.7f);
+        Check("short burst cannot cross reload",paid==8&&game.Rifle.TriggerPulls==paid&&game.Rifle.AmmoInMagazine==8&&Feedback(3).Glow==0);
 
-        yield return AlphaFresh(1,d=>{Rule(d,1,19,"J01");Rule(d,4,19,"D03");});
-        reader=game.Player.GetComponent<PlayerInputReader>();yield return Until(()=>game.Player.GetComponent<PlayerMovement>().IsGrounded,.5f);
-        heldKeys=new[]{Key.Space,Key.D};yield return Frames(3);
-        Check("accepted Dodge suppresses same-frame Jump",game.Rules.AcceptedDodges==1&&game.Rules.AcceptedJumps==0&&game.Dodge.IsDodging);
-        heldKeys=Array.Empty<Key>();yield return Seconds(.6f);
-        Check("suppressed edge does not replay after Dodge",game.Rules.AcceptedJumps==0&&!reader.ConditionalFrame.JumpOwned);
-
-        yield return AlphaFresh(1,d=>{Rule(d,0,17,"M10");Rule(d,0,17,"M09");});
-        reader=game.Player.GetComponent<PlayerInputReader>();MouseAt(game.Bosses[0].Position,true);yield return Frames(4);
-        Check("first executable row has actual priority",reader.ConditionalFrame.MovementOwned&&reader.MoveInput.x==0);
-        mouseHeld=false;
-        // Controlled defeat/retry retains the draft, but always creates fresh response/event state.
-        game.Player.TakeDamage(99999,null);yield return Frames(2);game.Reconfigure();
-        Check("defeat returns to configuration with ordered draft",game.Phase==DuelPhase.Configure&&game.DraftLoadout.Operations[0].Rules[0].Action=="M10");
-        game.DraftLoadout.Operations[0].Rules.Reverse();game.StartFight();yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);StopPolicies();yield return Frames(3);
-        reader=game.Player.GetComponent<PlayerInputReader>();MouseAt(game.Bosses[0].Position,true);yield return Frames(3);
-        Check("swapping rows changes movement response",reader.ConditionalFrame.MovementOwned&&reader.MoveInput.x>0);
-        checkingPause=true;game.SetPause(true);int before=game.Rifle.TriggerPulls;float clock=game.FightClock;
-        yield return RealSeconds(.15);Check("pause freezes combat resources and time",game.Rifle.TriggerPulls==before&&game.FightClock==clock);
-        game.SetPause(false);checkingPause=false;mouseHeld=false;
-        game.NewGame();Check("Restart clears five rule lists",game.DraftLoadout.Operations.All(o=>!o.Enabled&&o.Rules.Count==0));
-
-        // One short normal sample per wave, no repeated combo search or outcome requirement.
+        yield return AlphaDodgeCase();
         for(int wave=1;wave<=3;wave++)
         {
-            yield return AlphaFresh(wave,d=>{Rule(d,0,9,"M02");Rule(d,2,17,"Q06");Rule(d,1,43,"J01");Rule(d,3,40,"F02");Rule(d,4,41,"D07");},false);
+            yield return AlphaFresh(wave,d=>{Rule(d,0,9,"M02");Rule(d,2,17,"Q01");Rule(d,1,43,"J01");Rule(d,3,40,"F03");Rule(d,4,41,"D01");},false);
             MouseAt(game.Bosses[0].Body.bounds.center,true);yield return Seconds(3);
-            Record($"SHORT W{wave} phase={game.Phase} time={game.FightClock:F2} autoShots={game.Rules?.AutomaticShots} jumps={game.Rules?.AcceptedJumps} dodges={game.Rules?.AcceptedDodges} hp={game.Player.CurrentHealth}");
-            mouseHeld=false;
-            foreach(var actor in game.Bosses)actor.Health.TakeDamage(99999,game.Player.gameObject);
-            yield return Frames(2);
-            Check("controlled wave "+wave+" result",game.Phase==(wave==3?DuelPhase.Complete:DuelPhase.Between));
-            if(wave<3){yield return Until(()=>game.Phase==DuelPhase.Configure,1.2f);Check("next wave retains draft",game.DraftLoadout.Operations[3].Rules[0].Action=="F02");}
+            Record($"SHORT W{wave} phase={game.Phase} time={game.FightClock:F2} paidShots={game.Rifle.TriggerPulls} hp={game.Player.CurrentHealth}");mouseHeld=false;
         }
-        game.NewGame();Object.FindAnyObjectByType<DuelUI>().Show();yield return Frames(3);
-        Directory.CreateDirectory(Output);ScreenCapture.CaptureScreenshot(Output+"alpha50-configure.png");yield return Frames(3);
-        game.MainMenu();yield return Frames(3);Check("cleanup removes encounter and projectiles",Object.FindObjectsByType<BossAgent>(FindObjectsSortMode.None).Length==0&&Projectile.Active.Count==0);
-        Record("NOT TESTED: hardware input, full 40x30 combinations, balance, natural completion, long sessions and audio audition.");
+        game.MainMenu();yield return Frames(3);
+        Check("Menu cleans controller and restores full camera",game.Rules==null&&Camera.main.rect.width==1&&Object.FindObjectsByType<BossAgent>(FindObjectsSortMode.None).Length==0);
+        Record("NOT TESTED: physical input, balance, natural completion, exhaustive historical combinations, long sessions and audio audition.");
+    }
+    static IEnumerator AlphaDodgeCase()
+    {
+        yield return AlphaFresh(1,d=>{Rule(d,4,25,"D01");Rule(d,4,1,"D02");});
+        AlphaPlace(-5,1);yield return Seconds(.1f);
+        var actor=game.Bosses[0];var body=game.Player.GetComponent<Rigidbody2D>();var movement=game.Player.GetComponent<PlayerMovement>();
+        float x=body.position.x,started=game.Dodge.LastDodgeStartedAt;
+        bool prepared=actor.Actions.TryStart(BossAbility.Piercing,game.Player.GetComponent<Collider2D>().bounds.center);
+        yield return Until(()=>game.Dodge.LastDodgeStartedAt>started,.3f);yield return Seconds(.06f);
+        Check("A25 first row accepts real Dodge away during public preparation",prepared&&game.Dodge.IsDodging&&body.position.x<x-.3f&&Feedback(4,0).Glow>0&&Feedback(4,1).Glow==0,
+            $"x={x:F2}->{body.position.x:F2} phase={actor.Actions.Phase} cooldown={game.Dodge.CooldownRemaining:F2}");
+        Directory.CreateDirectory(Output);ScreenCapture.CaptureScreenshot(Output+"alpha50-dodge-row1.png");yield return Frames(2);
+        yield return Seconds(.6f);
+        heldKeys=new[]{Key.Space};yield return Until(()=>!movement.IsGrounded&&body.linearVelocity.y>1,.3f);heldKeys=Array.Empty<Key>();
+        started=game.Dodge.LastDodgeStartedAt;
+        Check("air rule cooldown rejection has no new row glow",game.Dodge.CooldownRemaining>0&&Feedback(4,1).Glow==0);
+        yield return Until(()=>game.Dodge.LastDodgeStartedAt>started,.9f);x=body.position.x;yield return Seconds(.06f);
+        Check("A01 second row executes toward public target after cooldown",game.Dodge.LastDodgeStartedAt>started&&body.position.x>x+.3f&&Feedback(4,1).Glow>0&&!movement.IsGrounded,
+            $"x={x:F2}->{body.position.x:F2} cooldown={game.Dodge.CooldownRemaining:F2}");
+        ScreenCapture.CaptureScreenshot(Output+"alpha50-dodge-row2.png");yield return Frames(2);
+        var instance=game.Rules;float glow=Feedback(4,1).Glow;int accepted=game.Rules.AcceptedDodges;
+        checkingPause=true;game.SetPause(true);float clock=Time.time;yield return RealSeconds(.18);
+        Check("pause freezes row feedback time and action state",Time.time==clock&&Feedback(4,1).Glow==glow&&game.Rules==instance);
+        game.SetPause(false);checkingPause=false;yield return Seconds(.25f);
+        Check("resume rebinds same controller without replay",game.Rules==instance&&game.Rules.AcceptedDodges==accepted);
+        yield return Until(()=>movement.IsGrounded,1.2f);yield return Seconds(.6f);
+        Check("landing does not replay invalid airborne occurrence",game.Rules.AcceptedDodges==accepted&&Feedback(4,1).Glow==0);
+        game.Player.TakeDamage(99999,null);yield return Frames(3);game.Reconfigure();yield return Frames(2);
+        Check("failure retains ordered draft, disposes old feedback",game.Phase==DuelPhase.Configure&&game.Rules==null&&game.DraftLoadout.Operations[4].Rules[0].Condition==25&&instance.Feedback(ControlOperation.Dodge,1).Glow==0);
+        game.StartFight();yield return Frames(2);
+        Check("retry preparation starts fresh unlit snapshot",game.Phase==DuelPhase.Prepare&&game.Rules!=instance&&Feedback(4,0).Glow==0&&Feedback(4,1).Glow==0);
     }
     static IEnumerator Alpha50Edges()
     {
-        Record("CONTROLLED: regression of swallowed edge plus current-magazine and public target/threat boundaries; no matrices.");
-        yield return AlphaFresh(1,d=>{Rule(d,1,19,"J01");Rule(d,4,19,"D03");});
-        heldKeys=new[]{Key.Space,Key.D};yield return Frames(3);heldKeys=Array.Empty<Key>();yield return Seconds(.65f);
-        Check("suppressed Jump edge is consumed after Dodge",game.Rules.AcceptedDodges==1&&game.Rules.AcceptedJumps==0&&!game.Player.GetComponent<PlayerInputReader>().ConditionalFrame.JumpOwned);
-        yield return AlphaFresh(1,d=>Rule(d,3,19,"F04"));heldKeys=new[]{Key.Space};yield return Frames(3);heldKeys=Array.Empty<Key>();
-        yield return Seconds(3.3f);
-        Check("finite magazine response never crosses reload",game.Rifle.TriggerPulls==8&&game.Rifle.AmmoInMagazine==8&&!game.Player.GetComponent<PlayerInputReader>().ConditionalFrame.FireOwned,$"shots={game.Rifle.TriggerPulls} ammo={game.Rifle.AmmoInMagazine}");
-        yield return AlphaFresh(3,d=>Rule(d,2,28,"Q01"));
-        var gunner=game.Bosses.First(a=>a.Profile.Kind==BossKind.Refraction);var sword=game.Bosses.First(a=>a.Profile.Kind==BossKind.Severance);
-        OnFloor(gunner.gameObject,gunner.Navigation,-4);OnFloor(sword.gameObject,sword.Navigation,-11);
-        gunner.Actions.TryStart(BossAbility.Burst,game.Player.transform.position);
-        yield return Until(()=>!gunner.Actions.Busy,1.2f);
-        gunner.Actions.RequestReload();yield return Frames(4);
-        Check("enemy reload candidate binds Aim to gunner",game.Rules.CurrentTargetId==gunner.ActorId&&game.Player.GetComponent<PlayerInputReader>().ConditionalFrame.AimOwned,$"target={game.Rules.CurrentTargetId} reload={gunner.Actions.Reloading}");
-        // Use the real Camo executor, not a visibility flag or hidden Transform override.
-        bool camo=gunner.Actions.TryStart(BossAbility.Camo,game.Player.transform.position);
-        yield return Until(()=>gunner.IsCamo,.6f);yield return Frames(2);
-        Check("concealed target ends live tracking",camo&&gunner.IsCamo&&!game.Player.GetComponent<PlayerInputReader>().ConditionalFrame.AimOwned);
-        yield return AlphaFresh(1,d=>Rule(d,1,43,"J01"));
-        var bounds=game.Player.GetComponent<Collider2D>().bounds;var actor=game.Bosses[0];
-        Fire(actor,actor.gameObject,new Vector2(bounds.center.x+2.5f,bounds.min.y+.15f),Vector2.left);
+        Record("CONTROLLED public preparations, blocked response, one-shot priority and next-wave reset.");
+        yield return AlphaFresh(3,d=>{Rule(d,4,25,"D01");Rule(d,4,1,"D02");});
+        var gunner=game.Bosses.First(a=>a.ActorId==1);var sword=game.Bosses.First(a=>a.ActorId==2);
+        OnFloor(game.Player.gameObject,gunner.Navigation,-6);OnFloor(gunner.gameObject,gunner.Navigation,3);OnFloor(sword.gameObject,sword.Navigation,-2);yield return Frames(4);
+        // Preserve the shared major-attack budget; do not force an illegal overlapping tell.
+        float before=game.Dodge.LastDodgeStartedAt;
+        bool s=sword.Actions.TryStart(BossAbility.Rhythm,game.Player.GetComponent<Collider2D>().bounds.center);
+        yield return Until(()=>game.Dodge.LastDodgeStartedAt>before,.25f);float first=game.Dodge.LastDodgeStartedAt;
         yield return Seconds(.18f);
-        Check("public low bullet starts one real Jump",game.Rules.AcceptedJumps==1&&game.Player.GetComponent<Rigidbody2D>().linearVelocity.y>0,$"jumps={game.Rules.AcceptedJumps}");
-        yield return AlphaFresh(1,d=>Rule(d,4,41,"D07"));bounds=game.Player.GetComponent<Collider2D>().bounds;actor=game.Bosses[0];
-        Fire(actor,actor.gameObject,(Vector2)bounds.center+Vector2.right*2.5f,Vector2.left);yield return Seconds(.1f);
-        Check("public bullet selects executable Dodge side",game.Rules.AcceptedDodges==1&&game.Dodge.IsDodging,$"dodges={game.Rules.AcceptedDodges}");
+        bool g=gunner.Actions.TryStart(BossAbility.Piercing,game.Player.GetComponent<Collider2D>().bounds.center);
+        yield return Seconds(.3f);
+        Check("major attack mutual exclusion and Dodge cooldown retained",s&&!g&&game.Dodge.LastDodgeStartedAt==first);
+        yield return Until(()=>!sword.Actions.Busy&&game.Dodge.CanDodge,4f);
+        yield return Seconds(.8f);
+        OnFloor(game.Player.gameObject,gunner.Navigation,-6);yield return Frames(3);
+        var dodgeBody=game.Player.GetComponent<Rigidbody2D>();
+        float startX=dodgeBody.position.x, beforeGunner=game.Dodge.LastDodgeStartedAt;
+        float away=Mathf.Sign(startX-gunner.Body.bounds.center.x);
+        g=gunner.Actions.TryStart(BossAbility.Piercing,game.Player.GetComponent<Collider2D>().bounds.center);
+        yield return Seconds(.08f);
+        Check("independent next source accepts a second real Dodge",g&&game.Dodge.LastDodgeStartedAt>beforeGunner&&game.Dodge.IsDodging&&(dodgeBody.position.x-startX)*away>.3f&&Feedback(4,0).Glow>0,
+            $"before={beforeGunner:F3} next={game.Dodge.LastDodgeStartedAt:F3} bodyX={startX:F2}->{dodgeBody.position.x:F2} direction={game.Player.GetComponent<PlayerInputReader>().ConditionalFrame.DodgeDirection:F0}");
+        yield return Until(()=>!gunner.Actions.Busy,4f);yield return Seconds(.8f);
+        bool next=sword.Actions.TryStart(BossAbility.Guard,game.Player.transform.position);
+        yield return Frames(3);
+        Check("defensive Guard is not an attack preparation trigger",!sword.TryGetContact(out var contact)||!contact.Preparing);
+        Record("Sustained overlapping major preparations: NOT OBSERVED (shared major-attack budget retained). No forced cooldown.");
+
+        yield return AlphaFresh(1,d=>{Rule(d,4,25,"D01");Rule(d,4,1,"D02");});AlphaPlace(-5,1);yield return Seconds(.1f);
+        var moving=game.Player.GetComponent<PlayerMovement>();
+        heldKeys=new[]{Key.Space};yield return Until(()=>!moving.IsGrounded,.3f);heldKeys=Array.Empty<Key>();
+        game.Bosses[0].Actions.TryStart(BossAbility.Piercing,game.Player.transform.position);
+        float fromX=game.Player.transform.position.x;yield return Seconds(.08f);
+        Check("both Dodge conditions choose first row and keep away direction",game.Dodge.IsDodging&&game.Player.transform.position.x<fromX-.3f&&Feedback(4,0).Glow>0&&Feedback(4,1).Glow==0);
+
+        yield return AlphaFresh(1,d=>{Rule(d,1,33,"J01");Rule(d,4,25,"D01");});
+        AlphaPlace(-6,1);yield return Seconds(.1f);var actor=game.Bosses[0];
+        actor.Actions.TryStart(BossAbility.Piercing,game.Player.transform.position);
+        OnFloor(actor.gameObject,actor.Navigation,-4);yield return Frames(3);
+        var body=game.Player.GetComponent<Rigidbody2D>();
+        Check("accepted Dodge suppresses simultaneous conditional Jump",game.Dodge.IsDodging&&body.linearVelocity.y<1&&Feedback(4).Glow>0&&Feedback(1).Glow==0);
+        yield return Until(()=>body.linearVelocity.y>1,.4f);
+        Check("rejected Jump retries while Close remains true",body.linearVelocity.y>1&&Feedback(1).Glow>0);
+
+        yield return AlphaFresh(1,d=>Rule(d,0,33,"M02"));
+        AlphaPlace(-14.1f,-11);yield return Seconds(.45f);
+        var reader=game.Player.GetComponent<PlayerInputReader>();
+        Check("real wall blockage releases Move",!reader.ConditionalFrame.MovementOwned&&!Feedback(0).Executing);
+        foreach(var a in game.Bosses)a.Health.TakeDamage(99999,game.Player.gameObject);
+        yield return Until(()=>game.Phase==DuelPhase.Configure,1.2f);
+        Check("next wave retains completed rules",game.Wave==2&&game.DraftLoadout.Operations[0].Rules.Count==1);
+        game.StartFight();yield return Frames(2);Check("next wave preparation has no old glow",Feedback(0).Glow==0);
+        game.NewGame();Check("New Game clears all rules",game.DraftLoadout.Operations.All(o=>o.Rules.Count==0));
+        game.MainMenu();yield return Frames(2);
+    }
+    static IEnumerator Alpha50Layouts()
+    {
+        Record("LAYOUT: real Game View captures, complete snapshots, no image mockups.");
+        foreach(int width in new[]{1280,1920})
+        {
+            foreach(int count in new[]{0,2,10})
+            {
+                yield return AlphaFresh(3,d=>
+                {
+                    if(count==2){Rule(d,4,25,"D01");Rule(d,4,1,"D02");}
+                    if(count==10)
+                    {
+                        Rule(d,0,33,"M02");Rule(d,0,9,"M02");Rule(d,1,25,"J01");Rule(d,1,43,"J01");
+                        Rule(d,2,17,"Q01");Rule(d,2,27,"Q01");Rule(d,3,40,"F02");Rule(d,3,27,"F03");
+                        Rule(d,4,42,"D01");Rule(d,4,1,"D02");
+                    }
+                });
+                SetAlphaGameSize(width,width*9/16);yield return Frames(10);
+                var camera=Camera.main;var arena=game.ArenaBounds;
+                Vector3 min=camera.WorldToViewportPoint(arena.min),max=camera.WorldToViewportPoint(arena.max);
+                Check($"{width} count={count}: entire arena inside battle viewport",min.x>=0&&min.y>=0&&max.x<=1&&max.y<=1,$"min={min} max={max}");
+                var sidebar=Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<RectTransform>().FirstOrDefault(r=>r.name=="BattleRules");
+                Check($"{width} count={count}: sidebar visibility",(sidebar!=null)==(count>0));
+                if(sidebar!=null)
+                {
+                    var labels=sidebar.GetComponentsInChildren<TMPro.TMP_Text>();
+                    Check($"{width} count={count}: labels fit and remain mouse-transparent",labels.All(t=>!t.isTextOverflowing&&!t.raycastTarget)
+                        &&sidebar.GetComponentsInChildren<UnityEngine.UI.Selectable>().Length==0);
+                }
+                MouseAt(game.Player.transform.position+new Vector3(5,2),false);yield return Frames(4);
+                var expected=((Vector2)game.Player.transform.position+new Vector2(5,2)-game.Rifle.AimOrigin).normalized;
+                Check($"{width} count={count}: manual mouse world aim",Vector2.Dot(game.Player.GetComponent<PlayerInputReader>().AimDirection,expected)>.999f);
+                Directory.CreateDirectory(Output);ScreenCapture.CaptureScreenshot(Output+$"alpha50-rules-{count}-{width}.png");yield return Frames(4);
+            }
+        }
+        RestoreFixture();game.NewGame();yield return Frames(3);
+        ClickConfig("Operation4");yield return Frames(1);ClickConfig("AddRule");yield return Frames(2);
+        ScreenCapture.CaptureScreenshot(Output+"alpha50-local-picker.png");yield return Frames(3);
         game.MainMenu();yield return Frames(3);
+    }
+    static void SetAlphaGameSize(int width,int height)
+    {
+        var assembly=typeof(Editor).Assembly;var sizesType=assembly.GetType("UnityEditor.GameViewSizes");
+        var flags=System.Reflection.BindingFlags.Public|System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.Static|System.Reflection.BindingFlags.FlattenHierarchy;
+        object sizes=sizesType.GetProperty("instance",flags).GetValue(null);
+        object groupType=sizesType.GetProperty("currentGroupType",flags).GetValue(sizes);
+        object group=sizesType.GetMethod("GetGroup",flags).Invoke(sizes,new[]{groupType});
+        var groupClass=group.GetType();int builtin=(int)groupClass.GetMethod("GetBuiltinCount",flags).Invoke(group,null);
+        int custom=(int)groupClass.GetMethod("GetCustomCount",flags).Invoke(group,null);
+        var sizeType=assembly.GetType("UnityEditor.GameViewSize");var kind=assembly.GetType("UnityEditor.GameViewSizeType");
+        object size=Activator.CreateInstance(sizeType,flags,null,new[]{Enum.ToObject(kind,1),(object)width,height,"Alpha50 validation"},null);
+        groupClass.GetMethod("AddCustomSize",flags).Invoke(group,new[]{size});
+        var view=EditorWindow.GetWindow(assembly.GetType("UnityEditor.GameView"));
+        var selected=view.GetType().GetProperty("selectedSizeIndex",flags);int original=(int)selected.GetValue(view);
+        selected.SetValue(view,builtin+custom);view.Repaint();
+        restoration.Add(()=>{if(view!=null)selected.SetValue(view,original);groupClass.GetMethod("RemoveCustomSize",flags).Invoke(group,new object[]{builtin+custom});});
     }
 }
 #endif

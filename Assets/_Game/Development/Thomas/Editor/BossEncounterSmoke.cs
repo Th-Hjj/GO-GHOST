@@ -155,6 +155,7 @@ public static partial class BossEncounterSmoke
         Record("Editor Play Mode; simulated focus and virtual keyboard/mouse. No physical-input or audibility claim.");
         if(mode=="alpha50") {yield return Alpha50();yield break;}
         if(mode=="alpha50-edges") {yield return Alpha50Edges();yield break;}
+        if(mode=="alpha50-layouts") {yield return Alpha50Layouts();yield break;}
         if(mode=="release") {yield return ReleaseSmoke();yield break;}
         if(mode=="pursuit-flank") {yield return PursuitFlank();yield break;}
         if(mode=="pursuit-mechanics") {yield return PursuitMechanics();yield break;}

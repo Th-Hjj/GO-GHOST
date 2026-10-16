@@ -96,7 +96,7 @@ namespace GoGhost.Duel
         {if(Phase==DuelPhase.Configure&&!Paused){edit(DraftLoadout);ui.Show();}}
         public void StartFight()
         {
-            if (Phase != DuelPhase.Configure || Paused) return;
+            if (Phase != DuelPhase.Configure || Paused || !ui.ConfigurationReady) return;
             ClearEncounter();
             lockedLegs = lockedArms = lockedSpine = false;
             encounter = Instantiate(combatPrefab, transform);
@@ -268,8 +268,7 @@ namespace GoGhost.Duel
         }
         void LateUpdate()
         {
-            var camera = Camera.main;
-            if (camera != null) camera.orthographicSize = Mathf.Max(10, 16.8f / Mathf.Max(.3f, camera.aspect));
+            ui.UpdateBattleLayout();
             if (Phase != DuelPhase.Fight || Paused || Player == null || actors.Length == 0) return;
             bool allDead = true;
             foreach (var actor in actors) if (actor != null && actor.IsAlive) { allDead = false; break; }

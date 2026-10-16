@@ -7,7 +7,7 @@ namespace GoGhost.Duel
     public sealed partial class DuelUI
     {
         int selectedOperation;
-        int selectorRow = -1, selectorCategory;
+        int selectorRow = -1, pendingRow = -1;
         bool selectingCondition;
         ConditionalRule pendingRule;
         ConditionalLoadout displayedDraft;
@@ -15,6 +15,7 @@ namespace GoGhost.Duel
         RectTransform ruleEditor;
         static readonly string[] ShortOperationLabels = { "Move", "Jump", "Aim", "Fire", "Dodge" };
         public int SelectedOperation => selectedOperation;
+        public bool ConfigurationReady => pendingRule == null && selectorRow < 0 && ConditionalCatalog.IsValid(game.DraftLoadout);
 
         // Only the configuration page uses a pixel floor. Combat/menu retain their authored scale.
         void ConfigurePageScale()
@@ -116,7 +117,6 @@ namespace GoGhost.Duel
             float w = ruleEditor.sizeDelta.x, h = ruleEditor.sizeDelta.y;
             Text(ShortOperationLabels[selectedOperation], ruleEditor, new Vector2(-w / 2 + 100, h / 2 - 24),
                 new Vector2(200, 48), 30, TextAlignmentOptions.Left);
-            BuildRuleSwitch(new Vector2(w / 2 - 62, h / 2 - 24));
             Image(ruleEditor, new Vector2(0, h / 2 - 58), new Vector2(w, 1), new Color(.2f, .2f, .2f));
             if (selectorRow >= 0) BuildRuleSelector();
             else BuildRuleRows();
@@ -124,7 +124,7 @@ namespace GoGhost.Duel
             Image(page, new Vector2((left + right) / 2, bottom + 64), new Vector2(right - left, 1), new Color(.2f, .2f, .2f));
             Text("No match: manual control.", page, new Vector2(left + 175, bottom + 20), new Vector2(350, 44), 22, TextAlignmentOptions.Left);
             var start = ConfigButton("StartFight", "Start Fight", page, new Vector2(right - 105, bottom + 20), new Vector2(210, 48), game.StartFight, true);
-            start.interactable = pendingRule == null && selectorRow < 0;
+            start.interactable = ConfigurationReady;
         }
 
         void BuildConfigurationBody(float left, float width, float y)
@@ -153,46 +153,17 @@ namespace GoGhost.Duel
             }
         }
 
-        void BuildRuleSwitch(Vector2 position)
-        {
-            var config = game.DraftLoadout.Operations[selectedOperation];
-            var root = Rect("RulesToggle", ruleEditor, position, new Vector2(124, 44));
-            var hit = root.gameObject.AddComponent<UnityEngine.UI.Image>();
-            hit.color = Color.clear;
-            var toggle = root.gameObject.AddComponent<UnityEngine.UI.Toggle>();
-            toggle.targetGraphic = hit;
-            Image(root, new Vector2(-44, 0), new Vector2(26, 26), new Color(.35f, .35f, .35f));
-            var mark = Image(root, new Vector2(-44, 0), new Vector2(18, 18), Color.white);
-            toggle.graphic = mark;
-            Text("Rules", root, new Vector2(20, 0), new Vector2(78, 44), 22, TextAlignmentOptions.Left);
-            toggle.SetIsOnWithoutNotify(config.Enabled);
-            toggle.onValueChanged.AddListener(SetOperationEnabled);
-        }
-
-        void SetOperationEnabled(bool enabled)
-        {
-            selectorRow = -1;
-            pendingRule = null;
-            game.EditLoadout(d => d.Operations[selectedOperation].Enabled = enabled);
-        }
-
         void BuildRuleRows()
         {
             var config = game.DraftLoadout.Operations[selectedOperation];
             float w = ruleEditor.sizeDelta.x, top = ruleEditor.sizeDelta.y / 2 - 88;
-            if (!config.Enabled && pendingRule == null)
-            {
-                Text("Manual", ruleEditor, new Vector2(0, top - 24), new Vector2(w, 48), 24, TextAlignmentOptions.Left);
-                if (config.Rules.Count == 0) ConfigButton("AddRule", "+ Add rule", ruleEditor, new Vector2(-w / 2 + 90, top - 90), new Vector2(180, 48), AddRule);
-                return;
-            }
             bool stacked = w < 680;
             float step = stacked ? 126 : 94;
-            int count = config.Rules.Count + (pendingRule == null ? 0 : 1);
+            int count = config.Rules.Count + (pendingRule != null && pendingRow == config.Rules.Count ? 1 : 0);
             for (int i = 0; i < count; i++)
             {
                 int row = i;
-                var rule = i < config.Rules.Count ? config.Rules[i] : pendingRule;
+                var rule = pendingRule != null && i == pendingRow ? pendingRule : config.Rules[i];
                 float y = top - i * step;
                 Text((i + 1).ToString(), ruleEditor, new Vector2(-w / 2 + 12, y - 30), new Vector2(24, 50), 22);
                 float fieldWidth = stacked ? w - 88 : (w - 116) / 2;
@@ -205,13 +176,11 @@ namespace GoGhost.Duel
                 ConfigButton("Rule" + i + "Action", string.IsNullOrEmpty(rule.Action) ? "Choose action" : ConditionalCatalog.Response(rule.Action).Label,
                     ruleEditor, new Vector2(actionX, actionY), new Vector2(fieldWidth, stacked ? 48 : 60), () => ChooseRule(row, false), false, true);
                 ConfigButton("RemoveRule" + i, "×", ruleEditor, new Vector2(w / 2 - 22, y - (stacked ? 56 : 30)), new Vector2(44, 44), () => RemoveRule(row));
-                if (rule.Action == "Q03" && rule.Condition != 0 && !HasEnemySource(rule.Condition))
-                    Text("Requires an enemy source.", ruleEditor, new Vector2(0, y - (stacked ? 116 : 76)), new Vector2(w - 64, 26), 20);
             }
             float controlsY = top - count * step - 20;
             if (count < 2 && pendingRule == null)
                 ConfigButton("AddRule", "+ Add rule", ruleEditor, new Vector2(-w / 2 + 90, controlsY), new Vector2(180, 44), AddRule);
-            if (config.Rules.Count == 2)
+            if (config.Rules.Count == 2 && pendingRule == null)
             {
                 ConfigButton("SwapRules", "Swap", ruleEditor, new Vector2(-w / 2 + 50, controlsY), new Vector2(100, 44),
                     () => game.EditLoadout(d => d.Operations[selectedOperation].Rules.Reverse()));
@@ -221,18 +190,20 @@ namespace GoGhost.Duel
 
         static string ConditionLabel(ConditionalRule rule) => rule.Condition == 0 ? "Choose condition"
             : rule.Condition == 37 ? (rule.Below ? "Enemy Below" : "Enemy Above") : ConditionalCatalog.Condition(rule.Condition).Label;
-        static bool HasEnemySource(int id) => id == 6 || id == 13 || id == 14 || id == 18 || id == 21 || id == 22 || id >= 25 && id <= 43 && id != 39 || id == 50;
 
         void AddRule()
         {
             if (pendingRule != null || game.DraftLoadout.Operations[selectedOperation].Rules.Count >= 2) return;
             // Incomplete choices stay UI-local; the combat loadout only receives a complete pair.
             pendingRule = new ConditionalRule();
+            pendingRow = game.DraftLoadout.Operations[selectedOperation].Rules.Count;
             ChooseRule(game.DraftLoadout.Operations[selectedOperation].Rules.Count, true);
         }
 
         void RemoveRule(int row)
         {
+            pendingRule = null;
+            pendingRow = selectorRow = -1;
             if (row == game.DraftLoadout.Operations[selectedOperation].Rules.Count)
             {
                 pendingRule = null;
@@ -241,42 +212,43 @@ namespace GoGhost.Duel
             else game.EditLoadout(d => d.Operations[selectedOperation].Rules.RemoveAt(row));
         }
 
-        ConditionalRule EditingRule => selectorRow < game.DraftLoadout.Operations[selectedOperation].Rules.Count
-            ? game.DraftLoadout.Operations[selectedOperation].Rules[selectorRow] : pendingRule;
+        ConditionalRule EditingRule => pendingRule;
 
         void ChooseRule(int row, bool condition)
         {
+            if (pendingRule == null || pendingRow != row)
+            {
+                pendingRule = game.DraftLoadout.Operations[selectedOperation].Rules[row].Copy();
+                pendingRow = row;
+            }
             selectorRow = row;
             selectingCondition = condition;
-            selectorCategory = EditingRule.Condition == 0 ? 0 : ConditionalCatalog.Condition(EditingRule.Condition).Category;
             Show();
         }
 
         void ApplyChoice(int condition, bool below, string action)
         {
             int row = selectorRow;
-            if (pendingRule != null && row == game.DraftLoadout.Operations[selectedOperation].Rules.Count)
+            if (action == null)
             {
-                if (action == null) { pendingRule.Condition = condition; pendingRule.Below = below; }
-                else pendingRule.Action = action;
-                if (pendingRule.Condition == 0 || string.IsNullOrEmpty(pendingRule.Action))
-                {
-                    selectingCondition = pendingRule.Condition == 0;
-                    Show();
-                    return;
-                }
-                var complete = pendingRule.Copy();
-                pendingRule = null;
-                selectorRow = -1;
-                game.EditLoadout(d => { var config = d.Operations[selectedOperation]; config.Rules.Add(complete); config.Enabled = true; });
+                pendingRule.Condition = condition; pendingRule.Below = below;
+                if (!ConditionalCatalog.IsAllowed(selectedOperation, condition, pendingRule.Action)) pendingRule.Action = null;
+            }
+            else pendingRule.Action = action;
+            if (!ConditionalCatalog.IsAllowed(selectedOperation, pendingRule.Condition, pendingRule.Action))
+            {
+                selectingCondition = pendingRule.Condition == 0;
+                Show();
                 return;
             }
-            selectorRow = -1;
+            var complete = pendingRule.Copy();
+            pendingRule = null;
+            pendingRow = selectorRow = -1;
             game.EditLoadout(d =>
             {
-                var rule = d.Operations[selectedOperation].Rules[row];
-                if (action == null) { rule.Condition = condition; rule.Below = below; }
-                else rule.Action = action;
+                var rules = d.Operations[selectedOperation].Rules;
+                if (row == rules.Count) rules.Add(complete);
+                else rules[row] = complete;
             });
         }
 
@@ -287,91 +259,25 @@ namespace GoGhost.Duel
             ConfigButton("SelectorBack", "<", ruleEditor, new Vector2(-w / 2 + 22, top - 92), new Vector2(44, 44), () => { selectorRow = -1; Show(); });
             string summary = ConditionLabel(rule) + " > " + (string.IsNullOrEmpty(rule.Action) ? "Choose action" : ConditionalCatalog.Response(rule.Action).Label);
             Text(summary, ruleEditor, new Vector2(34, top - 92), new Vector2(w - 76, 50), 22, TextAlignmentOptions.Left);
-            float listTop = top - 120, listWidth = w, listCenter = 0;
+            float y = top - 162;
             if (selectingCondition)
             {
-                bool sidebar = w < 1000;
-                float categoryWidth = sidebar ? 184 : (w - 30) / 6;
-                float categoryHeight = sidebar ? Mathf.Min(40, (h - 140) / 6) : 42;
-                for (int i = 0; i < 6; i++)
+                foreach (int id in ConditionalCatalog.FormalConditions[selectedOperation])
                 {
-                    int category = i;
-                    ConfigButton("Category" + i, ConditionalCatalog.Categories[i], ruleEditor,
-                        new Vector2(-w / 2 + categoryWidth / 2 + (sidebar ? 0 : i * (categoryWidth + 6)),
-                            listTop - categoryHeight / 2 - (sidebar ? i * (categoryHeight + 4) : 0)),
-                        new Vector2(categoryWidth, categoryHeight), () => { selectorCategory = category; Show(); }, selectorCategory == i);
-                }
-                if (sidebar)
-                {
-                    listWidth -= categoryWidth + 12;
-                    listCenter = (categoryWidth + 12) / 2;
-                }
-                else listTop -= 50;
-            }
-            float listHeight = listTop + h / 2;
-            var scrollRoot = Rect("CatalogScroll", ruleEditor, new Vector2(listCenter, listTop - listHeight / 2), new Vector2(listWidth, listHeight));
-            var scroll = scrollRoot.gameObject.AddComponent<UnityEngine.UI.ScrollRect>();
-            scroll.horizontal = false;
-            scroll.movementType = UnityEngine.UI.ScrollRect.MovementType.Clamped;
-            scroll.scrollSensitivity = 38;
-            var viewport = Rect("Viewport", scrollRoot, new Vector2(-8, 0), new Vector2(listWidth - 16, listHeight));
-            var image = viewport.gameObject.AddComponent<UnityEngine.UI.Image>();
-            image.color = Color.black;
-            var mask = viewport.gameObject.AddComponent<UnityEngine.UI.Mask>();
-            mask.showMaskGraphic = false;
-            var content = Rect("Content", viewport, Vector2.zero, new Vector2(listWidth - 16, 1));
-            content.anchorMin = new Vector2(0, 1); content.anchorMax = new Vector2(1, 1); content.pivot = new Vector2(.5f, 1);
-            content.sizeDelta = new Vector2(0, 1);
-            var layout = content.gameObject.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
-            layout.spacing = 6; layout.childControlWidth = true; layout.childControlHeight = true; layout.childForceExpandHeight = false;
-            content.gameObject.AddComponent<UnityEngine.UI.ContentSizeFitter>().verticalFit = UnityEngine.UI.ContentSizeFitter.FitMode.PreferredSize;
-            scroll.viewport = viewport; scroll.content = content;
-            int index = 0, selected = -1;
-            if (selectingCondition)
-            {
-                foreach (var entry in ConditionalCatalog.Conditions)
-                {
-                    if (entry.Category != selectorCategory) continue;
-                    int id = entry.Id;
-                    int variants = id == 37 ? 2 : 1;
-                    for (int variant = 0; variant < variants; variant++)
-                    {
-                        bool below = variant == 1;
-                        bool active = rule.Condition == id && (id != 37 || rule.Below == below);
-                        SelectorButton(id == 37 ? (below ? "Enemy Below" : "Enemy Above") : entry.Label, content, () => ApplyChoice(id, below, null), active);
-                        if (active) selected = index;
-                        index++;
-                    }
+                    int condition = id;
+                    ConfigButton("Option", ConditionalCatalog.Condition(id).Label, ruleEditor,
+                        new Vector2(0, y), new Vector2(w, 56), () => ApplyChoice(condition, false, null), rule.Condition == id, true);
+                    y -= 66;
                 }
             }
             else foreach (var entry in ConditionalCatalog.Responses)
             {
-                if ((int)entry.Operation != selectedOperation) continue;
-                string id = entry.Id;
-                bool active = rule.Action == id;
-                SelectorButton(entry.Label, content, () => ApplyChoice(0, false, id), active);
-                if (active) selected = index;
-                index++;
+                if (!ConditionalCatalog.IsAllowed(selectedOperation, rule.Condition, entry.Id)) continue;
+                string action = entry.Id;
+                ConfigButton("Option", entry.Label, ruleEditor, new Vector2(0, y), new Vector2(w, 56),
+                    () => ApplyChoice(0, false, action), rule.Action == action, true);
+                y -= 66;
             }
-            var barRoot = Rect("Scrollbar", scrollRoot, new Vector2(listWidth / 2 - 5, 0), new Vector2(10, listHeight));
-            var bar = barRoot.gameObject.AddComponent<UnityEngine.UI.Scrollbar>();
-            var track = barRoot.gameObject.AddComponent<UnityEngine.UI.Image>(); track.color = new Color(.1f, .1f, .1f);
-            var handle = Rect("Handle", barRoot, Vector2.zero, Vector2.zero);
-            var handleImage = handle.gameObject.AddComponent<UnityEngine.UI.Image>(); handleImage.color = new Color(.65f, .65f, .65f);
-            bar.handleRect = handle; bar.targetGraphic = handleImage; bar.direction = UnityEngine.UI.Scrollbar.Direction.BottomToTop;
-            scroll.verticalScrollbar = bar;
-            Canvas.ForceUpdateCanvases();
-            UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(content);
-            float overflow = Mathf.Max(0, content.rect.height - listHeight);
-            float offset = selected < 0 ? 0 : Mathf.Clamp(selected * 62f - (listHeight - 56) / 2, 0, overflow);
-            scroll.verticalNormalizedPosition = overflow > 0 ? 1 - offset / overflow : 1;
-            barRoot.gameObject.SetActive(overflow > 0);
-        }
-
-        void SelectorButton(string label, RectTransform content, UnityEngine.Events.UnityAction click, bool selected = false)
-        {
-            var button = ConfigButton("Option", label, content, Vector2.zero, new Vector2(content.rect.width, 56), click, selected, true);
-            button.gameObject.AddComponent<UnityEngine.UI.LayoutElement>().preferredHeight = 56;
         }
     }
 }

@@ -9,6 +9,7 @@ namespace GoGhost.Duel
         public BossAbility Ability {get;private set;}
         public BossActionPhase Phase {get;private set;}
         public int AttackId {get;private set;}
+        public int PreparationId {get;private set;}
         public int Ammo {get;private set;}
         public bool Reloading=>reloadUntil>0;
         public bool Busy=>Ability!=BossAbility.None;
@@ -150,7 +151,7 @@ namespace GoGhost.Duel
                 default:return null;}
         }
         void SetPhase(BossActionPhase phase,float seconds)
-        {Phase=phase;phaseAt=Time.time;phaseUntil=Time.time+Mathf.Max(0,seconds);}
+        {if(phase==BossActionPhase.Prepare)PreparationId++;Phase=phase;phaseAt=Time.time;phaseUntil=Time.time+Mathf.Max(0,seconds);}
         void Update()
         {
             if(actor==null||!actor.Running||Time.deltaTime<=0)return;

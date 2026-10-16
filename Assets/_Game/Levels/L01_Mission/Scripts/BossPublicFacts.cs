@@ -6,6 +6,7 @@ namespace GoGhost.Duel
     public struct BossContact
     {
         public int ActorId;
+        public int PreparationId;
         public Bounds Bounds;
         public Vector2 Velocity;
         public bool VelocityKnown, Visible, Dynamic;

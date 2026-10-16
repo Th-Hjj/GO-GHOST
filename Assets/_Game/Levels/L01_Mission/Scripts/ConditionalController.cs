@@ -18,6 +18,14 @@ namespace GoGhost.Duel
         {
             public bool WasTrue, Consumed;
             public long Occurrence, LastEvent;
+            public readonly Dictionary<int,int> Preparations = new Dictionary<int,int>();
+        }
+        public readonly struct ExecutionFeedback
+        {
+            public readonly bool Executing;
+            public readonly float LastExecutedAt;
+            public ExecutionFeedback(bool executing,float at) {Executing=executing;LastExecutedAt=at;}
+            public float Glow => Executing?1:Mathf.Clamp01((LastExecutedAt+.5f-Time.time)/.15f);
         }
         sealed class Running
         {
@@ -53,6 +61,8 @@ namespace GoGhost.Duel
         readonly long[,] factOccurrences=new long[51,2];
         readonly TriggerContext[,] factContexts=new TriggerContext[51,2];
         readonly Running[] running={new Running(),new Running(),new Running(),new Running(),new Running()};
+        readonly float[,] executedAt=new float[5,2];
+        readonly int[,] executedFrame=new int[5,2];
         readonly List<Notice> events=new List<Notice>(16);
         readonly BossContact[] contacts;
         readonly bool[] visible,seen,hidden,lowEnemy,close,far;
@@ -69,6 +79,32 @@ namespace GoGhost.Duel
         public int AcceptedDodges {get;private set;}
         public int AutomaticShots {get;private set;}
         public int CurrentTargetId => currentTarget>=0?actors[currentTarget].ActorId:0;
+        public int RuleCount(ControlOperation operation)=>loadout.Operations[(int)operation].Rules.Count;
+        public ConditionalRule RuleAt(ControlOperation operation,int row)=>loadout.Operations[(int)operation].Rules[row].Copy();
+        public ExecutionFeedback Feedback(ControlOperation operation,int row)
+        {
+            int op=(int)operation;var r=running[op];
+            bool active=!disposed&&r.Row==row&&r.Accepted;
+            if(op==0)active&=input.ConditionalFrame.MovementOwned&&!dodge.IsDodging&&!movement.HitPushActive&&Time.time-executedAt[op,row]<.1f;
+            else if(op==2)active&=input.ConditionalFrame.AimOwned&&executedFrame[op,row]==Time.frameCount;
+            else if(op==3)active&=input.ConditionalFrame.FireOwned&&gun.isActiveAndEnabled&&!gun.IsReloading&&gun.AmmoInMagazine>0;
+            else if(op==4)active&=dodge.IsDodging;
+            else active=false;
+            return new ExecutionFeedback(active,disposed?float.NegativeInfinity:executedAt[op,row]);
+        }
+        void Executed(int op,Running r)
+        {
+            executedAt[op,r.Row]=Time.time;executedFrame[op,r.Row]=Time.frameCount;
+            r.Accepted=true;
+        }
+        void Consume(int op,Running r)
+        {
+            var rule=loadout.Operations[op].Rules[r.Row];var state=states[op,r.Row];
+            if(rule.Condition==25&&r.Context.Source>=0)
+                state.Preparations[r.Context.Source]=(int)r.Context.Occurrence;
+            if(ConditionalCatalog.Response(rule.Action).Finite)state.Consumed=true;
+            if(ConditionalCatalog.Condition(rule.Condition).Event)state.LastEvent=r.Context.Occurrence;
+        }
         public ConditionalController(PlayerHealth player,IReadOnlyList<BossAgent> actors,Collider2D[] platforms,Bounds arena,ConditionalLoadout snapshot)
         {
             this.player=player;this.actors=actors;this.platforms=platforms;this.arena=arena;loadout=snapshot.Copy();
@@ -77,7 +113,8 @@ namespace GoGhost.Duel
             geometry=new LegacyPlayerAI(player,actors,platforms);
             contacts=new BossContact[actors.Count];visible=new bool[actors.Count];seen=new bool[actors.Count];hidden=new bool[actors.Count];
             lowEnemy=new bool[actors.Count];close=new bool[actors.Count];far=new bool[actors.Count];
-            for(int op=0;op<5;op++)for(int row=0;row<2;row++) states[op,row]=new RuleState();
+            for(int op=0;op<5;op++)for(int row=0;row<2;row++)
+            {states[op,row]=new RuleState();executedAt[op,row]=float.NegativeInfinity;executedFrame[op,row]=-1;}
             gun.ReloadStarted+=ReloadStarted;gun.ReloadFinished+=ReloadFinished;gun.EnemyHit+=EnemyHit;gun.ShotFired+=Shot;
             player.DamageTaken+=Damaged;dodge.DodgeFinished+=DodgeFinished;input.ConditionalActionResolved+=ActionResolved;
         }
@@ -91,7 +128,12 @@ namespace GoGhost.Duel
         void ReloadStarted()=>Record(10);
         void ReloadFinished()=>Record(11);
         void DodgeFinished()=>Record(7);
-        void Shot(Vector2 origin,Vector2 direction) {if(input.ConditionalFrame.FireOwned) AutomaticShots++;}
+        void Shot(Vector2 origin,Vector2 direction)
+        {
+            var r=running[3];
+            if(disposed||!input.ConditionalFrame.FireOwned||r.Row<0)return;
+            AutomaticShots++;Executed(3,r);Consume(3,r);
+        }
         int Index(GameObject source)
         {
             var actor=source!=null?source.GetComponentInParent<BossAgent>():null;
@@ -161,7 +203,6 @@ namespace GoGhost.Duel
         void ResolveOperation(int op)
         {
             var config=loadout.Operations[op];var active=running[op];
-            if(!config.Enabled)return;
             // Observe both rows even while the higher one owns the operation, so a lower
             // condition's false/true transition cannot disappear behind priority arbitration.
             for(int row=0;row<config.Rules.Count;row++)
@@ -176,7 +217,7 @@ namespace GoGhost.Duel
                 matches[op,row]=match;contexts[op,row]=context;
             }
             // An already accepted physical action cannot be replaced or canceled by a condition change.
-            if(op==4&&active.Accepted&&dodge.IsDodging) {output.DodgeOwned=true;return;}
+            if(op==4&&active.Row>=0&&active.Accepted&&dodge.IsDodging) {output.DodgeOwned=true;Executed(op,active);return;}
             if(active.Accepted&&op==4)active.Row=-1;
             for(int row=0;row<config.Rules.Count;row++)
             {
@@ -193,19 +234,19 @@ namespace GoGhost.Duel
                 if(!match){if(existing)active.Row=-1;continue;}
                 if(existing)
                 {
-                    if(Continue(op,rule,active))return;
-                    active.Row=-1;continue;
+                    if(Continue(op,rule,active))
+                    {if(op==3&&active.Accepted)Executed(op,active);return;}
+                    active.Row=-1;
+                    if(op==0&&active.Stuck>ConditionalDefaults.StuckWindow)continue;
                 }
                 var response=ConditionalCatalog.Response(rule.Action);
                 if((int)response.Operation!=op)continue;
-                if(isEvent ? context.Occurrence<=state.LastEvent : response.Finite&&state.Consumed)continue;
+                if(isEvent ? context.Occurrence<=state.LastEvent : rule.Condition!=25&&response.Finite&&state.Consumed)continue;
                 var candidate=new Running {Row=row,Context=context,Started=Time.time,PreviousX=body.position.x,
                     Deadline=isEvent?Time.time+ConditionalDefaults.ResponseWindow:float.PositiveInfinity};
                 if(!Start(op,rule,candidate))continue;
                 // Only an executable higher row can replace the existing lower response.
                 running[op]=candidate;active=candidate;
-                if(response.Finite)state.Consumed=true;
-                if(isEvent)state.LastEvent=context.Occurrence;
                 Starts++;return;
             }
             running[op].Row=-1;
@@ -213,6 +254,19 @@ namespace GoGhost.Duel
         bool Evaluate(ConditionalRule rule,int op,out TriggerContext ctx)
         {
             ctx=new TriggerContext {Candidates=allVisible,Source=-1};
+            if(rule.Condition==25)
+            {
+                // Independent public preparations survive overlap between Bosses. Consume only on acceptance.
+                var state=states[op,loadout.Operations[op].Rules.IndexOf(rule)];
+                ctx.Candidates=0;
+                for(int i=0;i<actors.Count;i++)
+                    if(visible[i]&&contacts[i].Preparing&&(!state.Preparations.TryGetValue(i,out int used)||used!=contacts[i].PreparationId))
+                        ctx.Candidates|=1<<i;
+                ctx.Source=Choose(ctx.Candidates,"Q01");
+                if(ctx.Source<0)return false;
+                ctx.Candidates=1<<ctx.Source;ctx.HasPosition=true;ctx.Position=contacts[ctx.Source].Bounds.center;
+                ctx.Occurrence=contacts[ctx.Source].PreparationId;return true;
+            }
             if(ConditionalCatalog.Condition(rule.Condition).Event)
             {
                 foreach(var n in events)
@@ -429,7 +483,8 @@ namespace GoGhost.Duel
                 case ControlOperation.Movement:return WriteMovement(action,r);
                 case ControlOperation.Aim:return WriteAim(action,r);
                 case ControlOperation.Fire:
-                    if(gun.IsReloading||gun.AmmoInMagazine<=0)return false;
+                    if(!gun.isActiveAndEnabled||gun.IsReloading||gun.AmmoInMagazine<=0)return false;
+                    if(!r.Accepted&&!gun.CanFireNow)return false;
                     if(action!="F03"&&gun.TriggerPulls-r.Shots>=r.ShotLimit)return false;
                     if(action=="F05"&&gun.AmmoInMagazine<=ConditionalDefaults.Reserve)return false;
                     output.FireOwned=true;output.Fire=true;return true;
@@ -453,13 +508,14 @@ namespace GoGhost.Duel
         float Away(float x)=>Mathf.Abs(x-body.position.x)>.01f?(x>body.position.x?-1:1):movement.MovementFacingDirection;
         bool WriteMovement(string action,Running r)
         {
+            if(dodge.IsDodging||movement.HitPushActive||!movement.isActiveAndEnabled||!body.simulated)return false;
             float move=0,x=body.position.x;
             float distance=r.Target>=0?Mathf.Abs(contacts[r.Target].Bounds.center.x-shape.bounds.center.x):0;
             float toward=r.Target>=0?-Away(contacts[r.Target].Bounds.center.x):0;
             switch(action)
             {
-                case "M01":move=distance>ConditionalDefaults.Close?toward:0;break;
-                case "M02":move=distance<ConditionalDefaults.Far?-toward:0;break;
+                case "M01":move=toward;break;
+                case "M02":move=-toward;break;
                 case "M03":move=distance<ConditionalDefaults.Close?-toward:distance>ConditionalDefaults.Far?toward:0;break;
                 case "M04":case "M06":
                     if(Mathf.Abs(r.Destination-x)<.12f||action=="M04"&&(x-r.Destination)*r.Direction>=0)return false;
@@ -501,13 +557,19 @@ namespace GoGhost.Duel
         void ActionResolved(ControlOperation operation,bool accepted)
         {
             int op=(int)operation;var r=running[op];if(r.Row<0)return;
-            r.Accepted=accepted;
-            if(accepted){if(op==1)AcceptedJumps++;if(op==4)AcceptedDodges++;return;}
+            if(accepted)
+            {
+                Executed(op,r);Consume(op,r);
+                if(op==1)AcceptedJumps++;if(op==4)AcceptedDodges++;return;
+            }
+            r.Accepted=false;
+            if(op==0||op==2)return;
             // A rejected same-frame request consumes no occurrence and queues no edge.
             var state=states[op,r.Row];
             // An observed press edge is consumed even when the simultaneous Dodge wins;
             // replaying it at the end of the .25 s event window would queue swallowed input.
             if(!ConditionalCatalog.Condition(loadout.Operations[op].Rules[r.Row].Condition).Event)state.Consumed=false;
+            else state.LastEvent=r.Context.Occurrence;
             r.Row=-1;
         }
     }

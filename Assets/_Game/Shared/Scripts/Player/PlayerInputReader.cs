@@ -297,7 +297,11 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         var f=conditionalPolicy(RawInput);
         ConditionalFrame=f;
         if(f.MovementOwned) MoveInput=new Vector2(Mathf.Clamp(f.Move,-1,1),0);
-        if(f.AimOwned) SetResolvedAim(f.Aim);
+        if(f.AimOwned)
+        {
+            SetResolvedAim(f.Aim);
+            NotifyConditionalAction(ControlOperation.Aim,f.Aim.sqrMagnitude>.0001f);
+        }
         if(f.JumpOwned) {JumpPressedThisFrame=f.Jump;JumpHeld=false;}
         if(f.FireOwned) {AttackHeld=f.Fire;AttackPressedThisFrame=f.Fire&&!legacyFireHeld;}
         legacyFireHeld=AttackHeld;

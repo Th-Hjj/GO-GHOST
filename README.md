@@ -1,12 +1,12 @@
 # GO GHOST
 
-Single-player, fixed-camera 2D combat: Refraction (gunner), Severance (swordsman), then both together. Alpha 50% adds five independent conditional-control operations, 40 conditions and 30 responses. USC CTIN 489 — Thomas Hong and Walker Grupp.
+Single-player, fixed-camera 2D combat: Refraction (gunner), Severance (swordsman), then both together. Alpha 50% adds five independent conditional-control operations, 11 formal conditions and eight responses. USC CTIN 489 — Thomas Hong and Walker Grupp.
 
 ## Open and play
 
 Use **Unity 6000.6.0f1**, the existing packages and URP 2D renderer. Thomas uses Rider. The formal scene is `Assets/_Game/Levels/L01_Mission/Scenes/GO GHOST Duel.unity`; **GO GHOST > Combat > Open Arena** opens it. The Editor Play entry and Windows build use this scene, including when a different historical scene was last open.
 
-Choose **New Game**, then select **Move / Jump / Aim / Fire / Dodge** beside the body. **Add rule** selects a condition and an action; completing both enables that operation's rules. Add up to two rows, use **Swap** to change priority, or turn **Rules** off to use manual control without deleting the rows. Conditions have six categories; actions filter by operation. Pickers reopen at the current choice. Choose **Start Fight** when editing is complete. A matching executable rule temporarily owns only that operation; no match means manual control. The first configuration is empty/manual. The fight takes a deep copy; retry/next wave preserve the draft, New Game/Restart clears it. Each fight has a three-second stationary preparation and fresh actors/resources/observation. Victory advances; defeat opens reconfiguration; both Bosses defeated in wave three opens Complete.
+Choose **New Game**, then select **Move / Jump / Aim / Fire / Dodge** beside the body. **Add rule** selects a condition and an action; completing a legal pair equips it. Add up to two rows, use **Swap** to change priority, or delete rules to return to manual control. There is no enable switch. The local picker directly lists only the operation's allowed choices. Choose **Start Fight** when editing is complete. A matching executable rule temporarily owns only that operation; no match means manual control. The first configuration is empty/manual. The fight takes a deep copy; retry/next wave preserve the draft, New Game/Restart clears it. Each fight has a three-second stationary preparation and fresh actors/resources/observation. Victory advances; defeat opens reconfiguration; both Bosses defeated in wave three opens Complete.
 
 Wave 1/2 Bosses mirror the player's horizontal opening across the arena centre (currently player x=-9, Boss x=9). Wave 3 keeps the original x=9/x=3 Boss arrangement.
 
@@ -19,7 +19,7 @@ Wave 1/2 Bosses mirror the player's horizontal opening across the arena centre (
 Dodge: distance 3, movement .18 s, immunity .20 s, start cooldown 1.2 s; landing does not refresh it. Severance can intercept platform jumps, follow a landed Leap with one cut, and use a telegraphed physical Flank Leap with a separate arrival slash.
 | Pause | Escape: Resume or Main Menu |
 
-The fixed Rifle has 8 rounds, 12 damage, a .25 s interval and 1.2 s automatic reload. Aim rules select only eligible visible targets; Fire rules never change Aim. Actual takeover lights the corresponding legs, arms, gun or torso; accepted Jump/automatic shots add short pulses. Camo ends live target tracking. All player and enemy bullets pass through walls/platforms; bullets and the locked piercing beam still stop at allied Boss bodies. Each Boss has independent health. Both must die to clear wave three; simultaneous player death is defeat.
+The fixed Rifle has 8 rounds, 12 damage, a .25 s interval and 1.2 s automatic reload. Aim rules select only eligible visible targets; Fire rules never change Aim. Actual takeover lights the corresponding body parts. A right-side **Rules** list highlights only the row that actually executes; it is hidden for an empty loadout. The camera fits the entire arena beside it, and pause freezes feedback. Camo ends live target tracking. All player and enemy bullets pass through walls/platforms; bullets and the locked piercing beam still stop at allied Boss bodies. Each Boss has independent health. Both must die to clear wave three; simultaneous player death is defeat.
 
 Movement rules output horizontal movement only; Jump rules request the original legal ground jump. There is no hidden autonomous route or safety fallback. In Editor/development Wave 3, **P** requests alternating Cross Execution / Sweep & Drop attempts; the Console records legal rejection reasons. It does not force placement, resources or hits.
 

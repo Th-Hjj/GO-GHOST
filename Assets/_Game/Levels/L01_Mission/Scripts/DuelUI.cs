@@ -61,6 +61,7 @@ namespace GoGhost.Duel
             ConfigurePageScale();
             if(page!=null){page.gameObject.SetActive(false);Destroy(page.gameObject);}
             page=Rect("Page",canvas,Vector2.zero,new Vector2(1600,900));
+            ClearRuleHud();BuildRuleHud();UpdateBattleLayout();
             playerHealth=resources=null; playerFill=null;
             preparationCount=null; lastPreparationCount=-1;
             policeHealth=System.Array.Empty<TMP_Text>(); policeFill=System.Array.Empty<UnityEngine.UI.Image>();
@@ -70,7 +71,8 @@ namespace GoGhost.Duel
             {
                 Image(page,Vector2.zero,new Vector2(4000,4000),new Color(0,0,0,.88f));
                 Button("Resume",page,new Vector2(0,45),new Vector2(330,65),()=>game.SetPause(false));
-                Button("Main Menu",page,new Vector2(0,-45),new Vector2(330,65),game.MainMenu); return;
+                Button("Main Menu",page,new Vector2(0,-45),new Vector2(330,65),game.MainMenu);
+                if(ruleSidebar!=null)ruleSidebar.SetAsLastSibling();return;
             }
             if(game.Phase==DuelPhase.Menu)
             {
@@ -94,31 +96,33 @@ namespace GoGhost.Duel
                 }
                 return;
             }
-            Text("WAVE "+game.Wave,page,new Vector2(0,400),new Vector2(280,50),30);
+            var hud=battleUi!=null?battleUi:page;
+            Text("WAVE "+game.Wave,hud,new Vector2(0,400),new Vector2(280,50),30);
             policeHealth = new TMP_Text[game.Bosses.Count];
             policeFill = new UnityEngine.UI.Image[game.Bosses.Count];
             for (int i=0; i<game.Bosses.Count; i++)
             {
                 float y=345-i*40;
-                policeHealth[i]=Text("",page,new Vector2(-400,y),new Vector2(300,40),24,TextAlignmentOptions.Left);
-                Image(page,new Vector2(0,y),new Vector2(430,12),new Color(.18f,.18f,.18f));
+                policeHealth[i]=Text("",hud,new Vector2(-400,y),new Vector2(300,40),24,TextAlignmentOptions.Left);
+                Image(hud,new Vector2(0,y),new Vector2(430,12),new Color(.18f,.18f,.18f));
                 var color=game.Bosses[i].Profile.Kind==BossKind.Refraction?new Color(.333f,.788f,.953f):new Color(.91f,.298f,.298f);
-                policeFill[i]=Image(page,new Vector2(-215,y),new Vector2(430,12),color);
+                policeFill[i]=Image(hud,new Vector2(-215,y),new Vector2(430,12),color);
                 policeFill[i].rectTransform.pivot=new Vector2(0,.5f);
             }
 
-            playerHealth=Text("",page,new Vector2(-400,-360),new Vector2(300,40),24,TextAlignmentOptions.Left);
-            Image(page,new Vector2(0,-360),new Vector2(430,12),new Color(.18f,.18f,.18f));
-            playerFill=Image(page,new Vector2(-215,-360),new Vector2(430,12),new Color(.6f,.9f,.65f));
+            playerHealth=Text("",hud,new Vector2(-400,-360),new Vector2(300,40),24,TextAlignmentOptions.Left);
+            Image(hud,new Vector2(0,-360),new Vector2(430,12),new Color(.18f,.18f,.18f));
+            playerFill=Image(hud,new Vector2(-215,-360),new Vector2(430,12),new Color(.6f,.9f,.65f));
             playerFill.rectTransform.pivot=new Vector2(0,.5f);
-            resources=Text("",page,new Vector2(0,-397),new Vector2(430,40),22);
+            resources=Text("",hud,new Vector2(0,-397),new Vector2(430,40),22);
             if(game.Phase==DuelPhase.Prepare)
-                preparationCount=Text("3",page,Vector2.zero,new Vector2(300,100),72);
+                preparationCount=Text("3",hud,Vector2.zero,new Vector2(300,100),72);
             LateUpdate();
         }
         void LateUpdate()
         {
             if (RefreshConfigurationLayout()) return;
+            UpdateRuleHud();
             if(playerHealth==null||game.Player==null)return;
             if(preparationCount!=null)
             {

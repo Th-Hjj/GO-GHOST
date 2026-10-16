@@ -184,10 +184,12 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
     private void FixedUpdate()
     {
         IsHovering = false;
-        if (dodge != null && dodge.IsDodging) { hitPushRemaining = 0; return; } // accepted dodge owns movement
+        if (dodge != null && dodge.IsDodging)
+        {hitPushRemaining=0;if(input.ConditionalFrame.MovementOwned)input.NotifyConditionalAction(ControlOperation.Movement,false);return;}
 
         if (HitPushActive)
         {
+            if(input.ConditionalFrame.MovementOwned)input.NotifyConditionalAction(ControlOperation.Movement,false);
             float direction = Mathf.Sign(hitPushSpeed);
             hitPushRemaining = Mathf.Max(0, hitPushRemaining - Mathf.Max(0, (rb.position.x-hitPushPreviousX)*direction));
             hitPushPreviousX = rb.position.x;
@@ -218,6 +220,8 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
             vertical = Mathf.Max(vertical, -HoverFallSpeed);
         }
         rb.linearVelocity = new Vector2(moveInput.x * MoveSpeed, vertical);
+        if(input.ConditionalFrame.MovementOwned)
+            input.NotifyConditionalAction(ControlOperation.Movement,input.GameplayInputEnabled&&rb.simulated&&Mathf.Abs(moveInput.x)>.01f);
     }
 
     // A real damaging hit may request one bounded horizontal reaction. Physics and gravity still own position.

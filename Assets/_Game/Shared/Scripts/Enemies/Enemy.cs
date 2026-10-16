@@ -154,6 +154,14 @@ public class Enemy : MonoBehaviour, IDamageable
         CurrentHealth = maxHealth; automaticCombat = false; destroyOnDeath = false; combatStopped = false;
     }
 
+    // Runtime developer tuning preserves the current life, AI state and damage-event history.
+    public void SetRuntimeHealth(int maximum, int current)
+    {
+        if(IsDead || PhaseIndex!=1 || secondPhaseMaxHealth>0)return;
+        maxHealth=Mathf.Max(1,maximum);
+        CurrentHealth=Mathf.Clamp(current,1,maxHealth);
+    }
+
     /// <summary>Fresh Tower actor only: one existing health pool, with no automatic second life.</summary>
     public void ConfigureSingleEncounter(bool secondPhase)
     {

@@ -508,7 +508,7 @@ namespace GoGhost.Duel
         float Away(float x)=>Mathf.Abs(x-body.position.x)>.01f?(x>body.position.x?-1:1):movement.MovementFacingDirection;
         bool WriteMovement(string action,Running r)
         {
-            if(dodge.IsDodging||movement.HitPushActive||!movement.isActiveAndEnabled||!body.simulated)return false;
+            if(dodge.IsDodging||movement.HitPushActive||!movement.isActiveAndEnabled||!body.simulated||movement.MoveSpeed<=.01f)return false;
             float move=0,x=body.position.x;
             float distance=r.Target>=0?Mathf.Abs(contacts[r.Target].Bounds.center.x-shape.bounds.center.x):0;
             float toward=r.Target>=0?-Away(contacts[r.Target].Bounds.center.x):0;

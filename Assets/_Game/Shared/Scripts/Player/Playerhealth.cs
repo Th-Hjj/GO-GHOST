@@ -36,7 +36,16 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     [SerializeField] private Color deadTint = new Color(0.3f, 0.3f, 0.3f, 1f);
 
     public int CurrentHealth { get; private set; }
-    public int MaxHealth => stats.maxHealth;
+    private int runtimeMaxHealth;
+    public int MaxHealth => runtimeMaxHealth > 0 ? runtimeMaxHealth : stats.maxHealth;
+    // Development edits are not damage events and never resurrect a completed life.
+    public void SetRuntimeHealth(int maximum, int current)
+    {
+        if(IsDead)return;
+        runtimeMaxHealth=Mathf.Max(1,maximum);
+        CurrentHealth=Mathf.Clamp(current,1,MaxHealth);
+        OnHealthChanged?.Invoke(CurrentHealth,MaxHealth);
+    }
     public bool IsInvulnerable { get; set; }
     public bool IsDead { get; private set; }
 
@@ -56,7 +65,7 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     {
         dodge = GetComponent<PlayerDodge>();
         sfx = GetComponentInParent<SfxSet>();
-        CurrentHealth = stats.maxHealth;
+        CurrentHealth = MaxHealth;
     }
 
     public void TakeDamage(int amount, GameObject source)
@@ -75,7 +84,7 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         int actualDamage=CurrentHealth-Mathf.Max(projectedHealth,0);
         CurrentHealth = Mathf.Max(projectedHealth, 0);
         if (sfx != null) sfx.Play(Sfx.PlayerHurt); // real HP loss only; invulnerable/dodged hits returned above
-        OnHealthChanged?.Invoke(CurrentHealth, stats.maxHealth);
+        OnHealthChanged?.Invoke(CurrentHealth, MaxHealth);
 
         DamageTaken?.Invoke(actualDamage,source);
 
@@ -88,8 +97,8 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     public void Heal(int amount)
     {
         if (IsDead || amount <= 0) return;
-        CurrentHealth = Mathf.Min(CurrentHealth + amount, stats.maxHealth);
-        OnHealthChanged?.Invoke(CurrentHealth, stats.maxHealth);
+        CurrentHealth = Mathf.Min(CurrentHealth + amount, MaxHealth);
+        OnHealthChanged?.Invoke(CurrentHealth, MaxHealth);
     }
 
     /// <summary>
@@ -106,7 +115,7 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         yield return dodge.PerformForcedSlashDodge();
 
         CurrentHealth = 1;
-        OnHealthChanged?.Invoke(CurrentHealth, stats.maxHealth);
+        OnHealthChanged?.Invoke(CurrentHealth, MaxHealth);
         IsInvulnerable = false;
     }
 

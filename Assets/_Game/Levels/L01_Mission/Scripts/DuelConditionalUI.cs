@@ -23,7 +23,7 @@ namespace GoGhost.Duel
             var scaler = canvas.GetComponent<UnityEngine.UI.CanvasScaler>();
             var root = canvas.GetComponent<Canvas>();
             configurationScreen = new Vector2Int(Screen.width, Screen.height);
-            if (game.Phase == DuelPhase.Configure)
+            if (game.Phase == DuelPhase.Configure && !game.DeveloperToolsOpen)
             {
                 scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ConstantPixelSize;
                 scaler.scaleFactor = Mathf.Clamp(Screen.height / 900f, .75f, 1.5f);
@@ -33,8 +33,7 @@ namespace GoGhost.Duel
             {
                 scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
                 root.scaleFactor = Mathf.Min(Screen.width / 1600f, Screen.height / 900f);
-                selectorRow = -1;
-                pendingRule = null;
+                if(game.Phase!=DuelPhase.Configure){selectorRow = -1;pendingRule = null;}
             }
         }
 
@@ -46,7 +45,7 @@ namespace GoGhost.Duel
                 Show();
                 return true;
             }
-            if (selectorRow >= 0 && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            if (!DeveloperShortcutConsumed && selectorRow >= 0 && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
             {
                 selectorRow = -1;
                 Show();

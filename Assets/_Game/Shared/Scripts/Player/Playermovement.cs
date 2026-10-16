@@ -47,8 +47,12 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
     private PlayerInputReader input;
     private OfficerIdentity officer;
     private bool legacyCombat;
-    public float MoveSpeed => legacyCombat ? 7f : officer != null && officer.Deployment != null ? officer.Deployment.MoveSpeed : stats.moveSpeed;
-    public float JumpSpeed => stats.jumpForce;
+    public const float LegacyMoveSpeed = 7f;
+    private float runtimeMoveSpeed = -1, runtimeJumpSpeed = -1;
+    public float MoveSpeed => legacyCombat ? (runtimeMoveSpeed >= 0 ? runtimeMoveSpeed : LegacyMoveSpeed) : officer != null && officer.Deployment != null ? officer.Deployment.MoveSpeed : stats.moveSpeed;
+    public float JumpSpeed => legacyCombat && runtimeJumpSpeed > 0 ? runtimeJumpSpeed : stats.jumpForce;
+    public void SetRuntimeMovement(float speed, float jump)
+    { runtimeMoveSpeed = speed; runtimeJumpSpeed = jump; }
     private SpriteRenderer spriteRenderer;
     private Vector2 moveInput;
     private Collider2D movementShape;
@@ -221,7 +225,7 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         }
         rb.linearVelocity = new Vector2(moveInput.x * MoveSpeed, vertical);
         if(input.ConditionalFrame.MovementOwned)
-            input.NotifyConditionalAction(ControlOperation.Movement,input.GameplayInputEnabled&&rb.simulated&&Mathf.Abs(moveInput.x)>.01f);
+            input.NotifyConditionalAction(ControlOperation.Movement,input.GameplayInputEnabled&&rb.simulated&&Mathf.Abs(rb.linearVelocity.x)>.01f);
     }
 
     // A real damaging hit may request one bounded horizontal reaction. Physics and gravity still own position.
@@ -241,13 +245,13 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
     {
         if (IsGrounded)
         {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, stats.jumpForce);
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, JumpSpeed);
             IsGrounded = false;
         }
         else if (HasDoubleJump && airJumpsRemaining > 0)
         {
             airJumpsRemaining--;
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, stats.jumpForce);
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, JumpSpeed);
         }
     }
 

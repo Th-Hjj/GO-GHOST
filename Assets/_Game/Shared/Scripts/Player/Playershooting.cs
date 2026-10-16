@@ -38,19 +38,28 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
     private OfficerVisual visual;
     private bool legacyCombat;
     // The existing Assault Rifle profile, fixed for every new combat actor.
-    private static readonly WeaponProfile LegacyRifle = new WeaponProfile(12, .25f, 8, 1.2f);
-    private WeaponProfile Weapon => legacyCombat ? LegacyRifle : officer.Deployment.Weapon;
+    public static readonly WeaponProfile LegacyRifle = new WeaponProfile(12, .25f, 8, 1.2f);
+    private WeaponProfile? runtimeRifle;
+    private float runtimeBulletSpeed = -1;
+    private WeaponProfile Weapon => legacyCombat ? runtimeRifle ?? LegacyRifle : officer.Deployment.Weapon;
     private bool HasDeployment => officer != null && officer.Deployment != null;
-    public int BulletDamage => legacyCombat ? LegacyRifle.Damage : HasDeployment ? officer.Deployment.BulletDamage : stats.gunDamage;
-    public float FireInterval => legacyCombat ? LegacyRifle.FireInterval : HasDeployment ? officer.Deployment.FireInterval : stats.fireRate;
-    public float BulletSpeed => stats.bulletSpeed;
+    public int BulletDamage => legacyCombat ? Weapon.Damage : HasDeployment ? officer.Deployment.BulletDamage : stats.gunDamage;
+    public float FireInterval => legacyCombat ? Weapon.FireInterval : HasDeployment ? officer.Deployment.FireInterval : stats.fireRate;
+    public float BulletSpeed => legacyCombat && runtimeBulletSpeed > 0 ? runtimeBulletSpeed : stats.bulletSpeed;
+    public float ReloadSeconds => legacyCombat || HasDeployment ? Weapon.ReloadSeconds : 0;
     public float BulletRadius => bulletPrefab != null ? bulletPrefab.Radius : .125f;
     /// <summary>Player gun projectiles launched / that hit a living enemy.</summary>
     public int ShotsFired { get; private set; }
     public int ShotsHit { get; private set; }
     /// <summary>Successful trigger pulls: one round spent, one shot sound and one muzzle flash each.</summary>
     public int TriggerPulls { get; private set; }
-    public int MagazineSize => legacyCombat ? LegacyRifle.MagazineSize : HasDeployment ? officer.Deployment.Weapon.MagazineSize : 0;
+    public int MagazineSize => legacyCombat || HasDeployment ? Weapon.MagazineSize : 0;
+    // No free reload or cadence reset. Capacity increases fill on the next normal reload.
+    public void SetRuntimeWeapon(WeaponProfile weapon, float speed, bool fresh = false)
+    {
+        runtimeRifle=weapon; runtimeBulletSpeed=speed;
+        AmmoInMagazine=fresh?weapon.MagazineSize:Mathf.Min(AmmoInMagazine,weapon.MagazineSize);
+    }
     public int AmmoInMagazine { get; private set; }
     public bool IsReloading { get; private set; }
     public float ReloadRemaining => IsReloading ? Mathf.Max(0f, reloadDoneAt - Time.time) : 0f;
@@ -200,7 +209,7 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
         Vector2 spawn = GetMuzzlePosition(direction);
         float facing = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         Projectile bullet = Instantiate(bulletPrefab, spawn, Quaternion.Euler(0f, 0f, facing));
-        bullet.Launch(direction, stats.bulletSpeed, weapon.Damage, gameObject, accuracyOwner: this,
+        bullet.Launch(direction, BulletSpeed, weapon.Damage, gameObject, accuracyOwner: this,
             actor: actor, permissionTier: legacyCombat ? 0 : Mathf.Max(0, officer.Deployment.BrainPermissionTier));
         ShotsFired++;
         TriggerPulls++;

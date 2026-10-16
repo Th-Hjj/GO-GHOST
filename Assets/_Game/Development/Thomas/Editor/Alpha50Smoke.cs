@@ -104,7 +104,7 @@ public static partial class BossEncounterSmoke
         yield return PointerConfig("Option","Enemy Preparing an Attack");
         Check("pointer transition cannot leak old Condition description into Action",Private<ConditionalRule>(Object.FindAnyObjectByType<DuelUI>(),"pendingRule").Condition==25
             &&!EditorText("OptionDescription").text.Contains(ConditionalCatalog.ConditionDescription(25)));
-        yield return PointerConfig("Option","Aim at Triggering Enemy");
+        yield return PointerConfig("Option","Aim at Detected Enemy");
         Check("complete virtual-pointer flow commits one valid rule",game.DraftLoadout.TotalRules==1&&game.DraftLoadout.Operations[2].Rules[0].Action=="Q03"&&ConfigButtonNamed("StartFight").interactable);
         ClickConfig("RemoveRule0");yield return Frames(2);
         var legacy=new ConditionalLoadout();Rule(legacy,0,33,"M01");Rule(legacy,3,33,"F01");legacy.TryAddRule(2,new ConditionalRule{Condition=25,Action="Q03"});
@@ -215,7 +215,7 @@ public static partial class BossEncounterSmoke
             ClickConfig("Option",ConditionalCatalog.Condition(pair.Item2).Label);yield return Frames(1);ClickConfig("ActionCategory"+op);yield return Frames(2);
             var blocked=CatalogOptions().First(b=>!b.interactable);
             Check($"operation {op}: incompatible B stays in original position",(op==2||pair.Item2==12)
-                ? OptionLabel(blocked)==(op==2?"Aim at Triggering Enemy":"Fire and Keep a Reserve") : CatalogOptions().All(b=>!b.interactable));
+                ? OptionLabel(blocked)==(op==2?"Aim at Detected Enemy":"Fire and Keep a Reserve") : CatalogOptions().All(b=>!b.interactable));
             Check($"operation {op}: complete B with explanation",blocked.GetComponentInChildren<TMPro.TMP_Text>().color.r<.7f&&blocked.GetComponentInChildren<TMPro.TMP_Text>().text.Contains("\n")
                 &&CatalogOptions().Select(OptionLabel).SequenceEqual(ConditionalCatalog.FormalResponses[op].Select(id=>ConditionalCatalog.Response(id).Label)));
             blocked.onClick.Invoke();game.StartFight();yield return Frames(1);
@@ -253,7 +253,7 @@ public static partial class BossEncounterSmoke
         Check("Reloading accepts original movement-facing Dodge",game.Rifle.IsReloading&&game.Dodge.IsDodging&&game.Rules.AcceptedDodges==1&&Feedback(4).Glow>0);
 
         yield return AlphaFresh(1,d=>Rule(d,1,45,"J01"));AlphaPlace(-14,3);yield return Until(()=>game.Rules.AcceptedJumps>0,.4f);
-        Check("Near Arena Wall accepts original grounded Jump",game.Rules.AcceptedJumps==1&&game.Player.GetComponent<Rigidbody2D>().linearVelocity.y>1&&Feedback(1).Glow>0);
+        Check("Near Wall accepts original grounded Jump",game.Rules.AcceptedJumps==1&&game.Player.GetComponent<Rigidbody2D>().linearVelocity.y>1&&Feedback(1).Glow>0);
         yield return Seconds(1.2f);Check("same wall occurrence does not replay finite Jump",game.Rules.AcceptedJumps==1);
 
         yield return AlphaFresh(1,d=>{Rule(d,1,6,"J03");Rule(d,2,6,"Q03");});AlphaPlace(-6,3);yield return Frames(4);
@@ -445,7 +445,7 @@ public static partial class BossEncounterSmoke
 
         yield return AlphaFresh(1,d=>Rule(d,2,18,"Q06"));AlphaPlace(-6,0);yield return Frames(3);
         MouseAt(game.Bosses[0].Body.bounds.center+Vector3.up*.4f,false);yield return Frames(4);
-        Check("near cursor enables actual Assist Mouse Aim without Fire",Feedback(2).Executing&&!game.Player.GetComponent<PlayerInputReader>().ConditionalFrame.FireOwned&&game.Rifle.TriggerPulls==0);
+        Check("near cursor enables actual Fine-Tune Aim without Fire",Feedback(2).Executing&&!game.Player.GetComponent<PlayerInputReader>().ConditionalFrame.FireOwned&&game.Rifle.TriggerPulls==0);
         MouseAt(game.Player.transform.position+Vector3.up*5,false);yield return Seconds(.1f);
         Check("large mouse intention change releases Assist Aim",!game.Player.GetComponent<PlayerInputReader>().ConditionalFrame.AimOwned);
 

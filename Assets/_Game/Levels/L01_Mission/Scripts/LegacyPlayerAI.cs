@@ -605,6 +605,56 @@ public sealed class LegacyPlayerAI
         return result;
     }
 
+    // Conditional rules reuse only executable geometry, never the old Legs/Arms/Spine decisions.
+    public bool ConditionalThreat(int kind,float move,bool jump,out Vector2 source,out int actorId)
+    {
+        Sense(); source=default;actorId=0;
+        int count=PredictPath(new Motion(move,jump,dodge.IsDodging?Mathf.Sign(body.linearVelocity.x):0),SpineThreatWindow);
+        Vector2 half=selfBounds.extents;
+        if(kind==43) half.y*=.5f;
+        Vector2 offset=kind==43?Vector2.down*selfBounds.extents.y*.5f:Vector2.zero;
+        for(int i=1;i<count;i++)
+        {
+            float t=i*Step;
+            if(kind!=42)
+                foreach(var shot in Projectile.Active)
+                {
+                    if(shot==null||shot.OwnerLayer==player.gameObject.layer||!shot.transform.IsChildOf(combatRoot))continue;
+                    var rb=shot.GetComponent<Rigidbody2D>();
+                    if(rb==null||!rb.simulated)continue;
+                    Vector2 a=rb.position+rb.linearVelocity*(t-Step),b=rb.position+rb.linearVelocity*t;
+                    if(!SegmentBox(a-path[i-1]-offset,b-path[i]-offset,half+Vector2.one*shot.Radius))continue;
+                    if(kind==43&&SegmentBox(a-path[i-1]+offset,b-path[i]+offset,half+Vector2.one*shot.Radius))continue;
+                    source=rb.position;
+                    var owner=shot.Owner!=null?shot.Owner.GetComponentInParent<BossAgent>():null;
+                    actorId=owner!=null?owner.ActorId:0;return true;
+                }
+            if(kind==41)continue; // Only already emitted bullets, not a preparation ray.
+            foreach(var expressed in threats)
+            {
+                bool melee=expressed.Shape!=BossThreatShape.Projectile&&expressed.Shape!=BossThreatShape.Ray;
+                if(kind==42&&!melee)continue;
+                if(!expressed.IntersectsMotion(path[i-1]+offset,path[i]+offset,half,Time.time+t-Step,Time.time+t))continue;
+                if(kind==43&&expressed.IntersectsMotion(path[i-1]-offset,path[i]-offset,half,Time.time+t-Step,Time.time+t))continue;
+                source=expressed.Origin;actorId=expressed.ActorId;return true;
+            }
+        }
+        return false;
+    }
+    public bool ConditionalDodgeDirection(float move,out float direction)
+    {
+        Sense();direction=0;float best=float.PositiveInfinity;
+        float preferred=Mathf.Abs(move)>.01f?Mathf.Sign(move):movement.MovementFacingDirection;
+        foreach(float side in new[]{preferred,-preferred})
+        {
+            if(SolidTravel(side*dodge.Distance)<.15f)continue;
+            float risk=Risk(new Motion(move,false,side),Mathf.Max(SpineThreatWindow,dodge.InvulnerabilityDuration+EndpointMargin));
+            if(risk>=best)continue;
+            best=risk;direction=side;
+        }
+        return direction!=0;
+    }
+
     private float Risk(Motion motion,float horizon)
     {
         int count=PredictPath(motion,horizon);

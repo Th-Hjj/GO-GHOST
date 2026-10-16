@@ -29,7 +29,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
 
     /// <summary>Final manual/AI world-space aim. All aim consumers read this output; never zero.</summary>
     public Vector2 AimDirection { get; private set; } = Vector2.right;
-    public AimControl AimMode => LegacyCombatActive ? (LegacyArmsAI ? AimControl.AI : AimControl.Manual)
+    public AimControl AimMode => LegacyCombatActive ? (ConditionalFrame.AimOwned || LegacyArmsAI ? AimControl.AI : AimControl.Manual)
         : officer != null && officer.Deployment != null ? officer.Deployment.Aim : AimControl.Manual;
     public bool LegacyCombatActive { get; private set; }
     public bool LegacyLegsAI { get; private set; }
@@ -41,6 +41,19 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     private System.Func<float, bool, LegacyCombatIntent> legacySpine;
     private InputActionAsset legacyActions;
     private bool legacyFireHeld;
+    public RawPlayerInput RawInput { get; private set; }
+    public ConditionalControlFrame ConditionalFrame { get; private set; }
+    public bool ConditionalControlsActive => conditionalPolicy != null;
+    public bool AutomaticFireOwned => ConditionalControlsActive ? ConditionalFrame.FireOwned : LegacyArmsAI;
+    private System.Func<RawPlayerInput, ConditionalControlFrame> conditionalPolicy;
+    public event System.Action<ControlOperation, bool> ConditionalActionResolved;
+
+    public void ConfigureConditionalControls(System.Func<RawPlayerInput, ConditionalControlFrame> policy)
+    {
+        if (policy == null) throw new System.ArgumentNullException(nameof(policy));
+        ConfigureLegacyControls(false, false, false, null, null, null);
+        conditionalPolicy = policy;
+    }
 
     // UI-only ownership predicate. The level presenter supplies it; Shared never references level UI.
     public System.Func<bool> UiBlocksManualFire { get; set; }
@@ -232,6 +245,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         }
 
         // Aim authority stays live even while action buttons wait for release after deployment.
+        Vector2 committedAim = AimDirection;
         AimScreenPosition = aimAction.ReadValue<Vector2>();
         UpdateAimDirection();
         Vector2 move = moveAction.ReadValue<Vector2>();
@@ -265,7 +279,39 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         SecondaryAbilityPressedThisFrame = !secondaryGated && secondaryAbilityAction.WasPressedThisFrame();
         PreviousPressedThisFrame = previousAction != null && previousAction.WasPressedThisFrame();
         NextPressedThisFrame = nextAction != null && nextAction.WasPressedThisFrame();
-        if (LegacyCombatActive) ResolveLegacyIntent();
+        if (ConditionalControlsActive)
+        {
+            var camera = aimCamera != null ? aimCamera : Camera.main;
+            RawInput = new RawPlayerInput { Move=MoveInput.x, Aim=AimDirection, CommittedAim=committedAim,
+                Cursor=camera != null ? (Vector2)camera.ScreenToWorldPoint(AimScreenPosition) : (Vector2)transform.position,
+                Fire=AttackHeld, FirePressed=AttackPressedThisFrame, Jump=JumpPressedThisFrame, JumpHeld=JumpHeld, Dodge=DodgePressedThisFrame };
+            AbilityPressedThisFrame = SecondaryAbilityPressedThisFrame = PreviousPressedThisFrame = NextPressedThisFrame = false;
+        }
+        else if (LegacyCombatActive) ResolveLegacyIntent();
+    }
+
+    // Called once after fresh ground contacts, before Move/Jump/Dodge or the weapon execute.
+    public void ResolveConditionalInputs()
+    {
+        if (!ConditionalControlsActive || !GameplayInputEnabled || NarrativePaused || !hasFocus || Time.deltaTime<=0) return;
+        var f=conditionalPolicy(RawInput);
+        ConditionalFrame=f;
+        if(f.MovementOwned) MoveInput=new Vector2(Mathf.Clamp(f.Move,-1,1),0);
+        if(f.AimOwned) SetResolvedAim(f.Aim);
+        if(f.JumpOwned) {JumpPressedThisFrame=f.Jump;JumpHeld=false;}
+        if(f.FireOwned) {AttackHeld=f.Fire;AttackPressedThisFrame=f.Fire&&!legacyFireHeld;}
+        legacyFireHeld=AttackHeld;
+        DodgeDirection=f.DodgeOwned?f.DodgeDirection:0;
+        if(f.DodgeOwned) DodgePressedThisFrame=f.Dodge;
+    }
+    public void NotifyConditionalAction(ControlOperation operation,bool accepted)
+    {
+        ConditionalActionResolved?.Invoke(operation,accepted);
+        if (accepted) return;
+        var frame=ConditionalFrame;
+        if(operation==ControlOperation.Jump) frame.JumpOwned=false;
+        if(operation==ControlOperation.Dodge) frame.DodgeOwned=false;
+        ConditionalFrame=frame;
     }
 
     private void ResolveLegacyIntent()
@@ -391,6 +437,8 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     private void ClearFrameState()
     {
         legacyFireHeld = false;
+        RawInput = default;
+        ConditionalFrame = default;
         MoveInput = Vector2.zero;
         AttackHeld = false;
         AttackPressedThisFrame = false;

@@ -9,6 +9,8 @@ namespace GoGhost.Duel
         public Bounds Bounds;
         public Vector2 Velocity;
         public bool VelocityKnown, Visible, Dynamic;
+        public bool GroundedKnown, Grounded, Preparing, Recovering, Reloading;
+        public float HealthFraction;
         public float Gravity, ObservedAt, ExpiresAt;
         public bool IsFresh => ExpiresAt > Time.time;
     }

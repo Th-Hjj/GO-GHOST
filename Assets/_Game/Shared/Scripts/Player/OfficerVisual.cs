@@ -23,6 +23,47 @@ public sealed class OfficerVisual : MonoBehaviour
     private SpriteRenderer leftForearm, rightForearm, leftCalf, rightCalf;
     private float clock, gait, stride, landing, recoil, reloadDuration = 1.2f;
     private int lastShots;
+    private SpriteRenderer[] glowParts;
+    private Material[] originalMaterials;
+    private MaterialPropertyBlock glowBlock;
+    private float jumpGlow,shotGlow;
+    private bool glowBound;
+    private static readonly int GlowStrength=Shader.PropertyToID("_AIStrength");
+    public void ConfigureConditionalGlow(Material material)
+    {
+        if(!animate||material==null)return;
+        ClearConditionalGlow();
+        glowParts=new[]{leftLeg,rightLeg,leftCalf,rightCalf,leftArm,rightArm,leftForearm,rightForearm,weaponGrip,weapon,torso};
+        originalMaterials=new Material[glowParts.Length];glowBlock=new MaterialPropertyBlock();
+        for(int i=0;i<glowParts.Length;i++)if(glowParts[i]!=null){originalMaterials[i]=glowParts[i].sharedMaterial;glowParts[i].sharedMaterial=material;}
+        input.ConditionalActionResolved+=GlowAction;shooting.ShotFired+=GlowShot;health.OnDeath+=ClearConditionalGlow;glowBound=true;
+    }
+    void GlowAction(ControlOperation operation,bool accepted)
+    {if(accepted&&operation==ControlOperation.Jump)jumpGlow=.16f;}
+    void GlowShot(Vector2 origin,Vector2 direction)
+    {if(input.ConditionalFrame.FireOwned)shotGlow=.14f;}
+    public void ClearConditionalGlow()
+    {
+        if(glowBound){input.ConditionalActionResolved-=GlowAction;shooting.ShotFired-=GlowShot;health.OnDeath-=ClearConditionalGlow;}
+        glowBound=false;jumpGlow=shotGlow=0;
+        if(glowParts!=null)for(int i=0;i<glowParts.Length;i++)if(glowParts[i]!=null){glowParts[i].SetPropertyBlock(null);glowParts[i].sharedMaterial=originalMaterials[i];}
+        glowParts=null;originalMaterials=null;
+    }
+    void OnDestroy()=>ClearConditionalGlow();
+    void UpdateConditionalGlow()
+    {
+        if(!glowBound)return;
+        jumpGlow=Mathf.Max(0,jumpGlow-Time.deltaTime);shotGlow=Mathf.Max(0,shotGlow-Time.deltaTime);
+        var f=input.ConditionalFrame;
+        for(int i=0;i<glowParts.Length;i++)
+        {
+            float strength=i<4?(f.MovementOwned?.5f:0)+jumpGlow/.16f
+                :i<8?(f.AimOwned?.5f:0)+(i==5||i==7?shotGlow/.14f*.5f:0)
+                :i<10?(f.FireOwned?.35f:0)+shotGlow/.14f:f.DodgeOwned&&dodge.IsDodging?1.3f:0;
+            var renderer=glowParts[i];if(renderer==null)continue;
+            renderer.GetPropertyBlock(glowBlock);glowBlock.SetFloat(GlowStrength,strength);renderer.SetPropertyBlock(glowBlock);
+        }
+    }
     public bool ReloadVisible => reloading && weapon != null && weapon.enabled && weapon.gameObject.activeInHierarchy;
 
     public void ConfigureLegacyCombat()
@@ -82,6 +123,7 @@ public sealed class OfficerVisual : MonoBehaviour
             Pose(grounded, velocity, dodging ? Mathf.Sign(velocity.x) : 0);
         }
         if (reloading) UpdateReloadVisual();
+        UpdateConditionalGlow();
     }
 
     private SpriteRenderer AddSegment(SpriteRenderer source, string label)

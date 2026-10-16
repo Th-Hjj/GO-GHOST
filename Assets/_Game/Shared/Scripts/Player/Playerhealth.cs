@@ -46,6 +46,7 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     // Hook UI / your partner's systems into these.
     public event Action<int, int> OnHealthChanged; // (current, max)
     public event Action OnDeath;
+    public event Action<int,GameObject> DamageTaken;
     public event Action OnLastStandTriggered;
 
     private PlayerDodge dodge;
@@ -71,9 +72,12 @@ public class PlayerHealth : MonoBehaviour, IDamageable
             return;
         }
 
+        int actualDamage=CurrentHealth-Mathf.Max(projectedHealth,0);
         CurrentHealth = Mathf.Max(projectedHealth, 0);
         if (sfx != null) sfx.Play(Sfx.PlayerHurt); // real HP loss only; invulnerable/dodged hits returned above
         OnHealthChanged?.Invoke(CurrentHealth, stats.maxHealth);
+
+        DamageTaken?.Invoke(actualDamage,source);
 
         if (CurrentHealth <= 0)
         {

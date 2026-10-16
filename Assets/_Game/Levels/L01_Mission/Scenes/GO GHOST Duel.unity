@@ -698,6 +698,7 @@ MonoBehaviour:
   combatPrefab: {fileID: 7618452574013526934, guid: c5b22628e8011f349984e4fa6122e7a1, type: 3}
   gunnerPrefab: {fileID: 4900264100637733228, guid: d5d9f6943cdd273428e916cc188e4527, type: 3}
   swordsmanPrefab: {fileID: 7812134348706338667, guid: 31266c91939433d4da0619f679f1eb58, type: 3}
+  conditionalGlow: {fileID: 2100000, guid: 7ccb6b0d5a0aeef448745daa0328f4c2, type: 2}
   arenaBounds:
     m_Center: {x: 0, y: 3.25, z: 0}
     m_Extent: {x: 15, y: 5.75, z: 0}

@@ -20,6 +20,7 @@ namespace GoGhost.Duel
         [SerializeField] GameObject combatPrefab;
         [SerializeField] GameObject gunnerPrefab;
         [SerializeField] GameObject swordsmanPrefab;
+        [SerializeField] Material conditionalGlow;
         [SerializeField] Bounds arenaBounds = new Bounds(new Vector3(0, 3.25f), new Vector3(30, 11.5f));
         [SerializeField] Vector2 gunnerSpawn = new Vector2(7, -1.6f);
         [SerializeField] Vector2 swordsmanSpawn = new Vector2(3, -1.6f);
@@ -34,6 +35,9 @@ namespace GoGhost.Duel
         public PlayerShooting Rifle { get; private set; }
         public PlayerDodge Dodge { get; private set; }
         public float FightClock { get; private set; }
+        public ConditionalLoadout DraftLoadout {get;private set;}=new ConditionalLoadout();
+        public ConditionalController Rules {get;private set;}
+        public Bounds ArenaBounds => arenaBounds;
         public bool LegsAI => lockedLegs;
         public bool ArmsAI => lockedArms;
         public bool SpineAI => lockedSpine;
@@ -65,6 +69,7 @@ namespace GoGhost.Duel
         void Start() { if (sounds != null) sounds.BeginScope(); }
         void OnDestroy()
         {
+            Rules?.Dispose();Rules=null;
             music?.StopMusic(true);
             Time.timeScale = 1;
             AudioListener.pause = false;
@@ -78,22 +83,22 @@ namespace GoGhost.Duel
             ClearEncounter();
             Wave = 1;
             DraftLegs = DraftArms = DraftSpine = false;
+            DraftLoadout=new ConditionalLoadout();
             FirstConfiguration = true;
             SetPhase(DuelPhase.Configure);
         }
         public void SetDraft(int module, bool automatic)
         {
-            if (Phase != DuelPhase.Configure || Paused) return;
-            if (module == 0) DraftLegs = automatic;
-            else if (module == 1) DraftArms = automatic;
-            else if (module == 2) DraftSpine = automatic;
-            ui.Show();
+            // Retained development API cannot re-enable the retired permanent-AI route.
+            if(automatic) Debug.LogWarning("Permanent AI permissions are retired. Configure conditional rules instead.");
         }
+        public void EditLoadout(System.Action<ConditionalLoadout> edit)
+        {if(Phase==DuelPhase.Configure&&!Paused){edit(DraftLoadout);ui.Show();}}
         public void StartFight()
         {
             if (Phase != DuelPhase.Configure || Paused) return;
             ClearEncounter();
-            lockedLegs = DraftLegs; lockedArms = DraftArms; lockedSpine = DraftSpine;
+            lockedLegs = lockedArms = lockedSpine = false;
             encounter = Instantiate(combatPrefab, transform);
             encounter.name = "CombatAttempt";
             Player = encounter.GetComponentInChildren<PlayerHealth>();
@@ -120,8 +125,9 @@ namespace GoGhost.Duel
             actors = activeActors.ToArray();
             Police = actors[0].Health; // Historical development consumers; gameplay uses the full actor list.
             coordinator.Configure(actors, navigation);
-            var ai = new LegacyPlayerAI(Player, actors, platforms);
-            input.ConfigureLegacyControls(lockedLegs, lockedArms, lockedSpine, ai.Legs, ai.Arms, ai.Spine);
+            Rules=new ConditionalController(Player,actors,platforms,arenaBounds,DraftLoadout);
+            input.ConfigureConditionalControls(Rules.Resolve);
+            Player.GetComponent<OfficerVisual>()?.ConfigureConditionalGlow(conditionalGlow);
             foreach (var body in encounter.GetComponentsInChildren<Rigidbody2D>())
             {
                 body.linearVelocity = Vector2.zero;
@@ -211,6 +217,8 @@ namespace GoGhost.Duel
         }
         void StopCombat()
         {
+            Rules?.Dispose();Rules=null;
+            Player?.GetComponent<OfficerVisual>()?.ClearConditionalGlow();
             music?.StopMusic();
             if (encounter == null) return;
             // All contacts from this rendered frame finish before this LateUpdate boundary.
@@ -287,7 +295,6 @@ namespace GoGhost.Duel
         public void ObserveThirdWave()
         {
             ConfigurePlaytestWave(3);
-            for (int i=0;i<3;i++) SetDraft(i,true);
             diagnostics = true; StartFight();
         }
 #endif

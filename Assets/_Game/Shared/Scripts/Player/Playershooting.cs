@@ -58,7 +58,10 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
     public event System.Action<Vector2, Vector2> ShotFired;
     public event System.Action ReloadStarted;
     public event System.Action ReloadFinished;
-    internal void RegisterHit() => ShotsHit++;
+    public event System.Action<Enemy,bool> EnemyHit;
+    internal void RegisterHit(Enemy target,bool defeated) {ShotsHit++;EnemyHit?.Invoke(target,defeated);}
+    public bool CanFireNow => isActiveAndEnabled && !IsReloading && AmmoInMagazine>0 && Time.time>=nextFireTime
+        && input!=null && input.GameplayInputEnabled && !input.NarrativePaused;
     /// <summary>Called when the real combat starts so earlier practice shots never count.</summary>
     public void ResetShotCounters() { ShotsFired = 0; ShotsHit = 0; TriggerPulls = 0; }
     private float nextFireTime;
@@ -138,7 +141,7 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
             // Held Attack resumes the rifle after automatic reload; the permission input gate still owns consent.
             bool autonomous = input.AutomaticFireRequested;
             bool trigger = autonomous || input.AttackHeld;
-            var actor = autonomous || (legacyCombat && input.LegacyArmsAI) ? ProjectileActor.InnerAI : ProjectileActor.Player;
+            var actor = autonomous || (legacyCombat && input.AutomaticFireOwned) ? ProjectileActor.InnerAI : ProjectileActor.Player;
             if (trigger && !IsReloading && AmmoInMagazine > 0 && Time.time >= nextFireTime
                 && FireWeapon(aim, weapon, actor))
             {

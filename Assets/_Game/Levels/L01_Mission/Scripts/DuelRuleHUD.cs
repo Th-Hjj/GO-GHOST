@@ -14,7 +14,7 @@ namespace GoGhost.Duel
             public UnityEngine.UI.Image Background;
             public UnityEngine.UI.Image[] Border;
         }
-        readonly List<RuleRowView> ruleRows = new List<RuleRowView>(10);
+        readonly List<RuleRowView> ruleRows = new List<RuleRowView>(5 * ConditionalCatalog.MaxRulesPerOperation);
         ConditionalController hudRules;
         RectTransform ruleSidebar, battleUi;
 
@@ -38,7 +38,7 @@ namespace GoGhost.Duel
             var divider=Image(ruleSidebar,new Vector2(-RulePanelWidth/2,0),new Vector2(1,900),new Color(.25f,.25f,.25f));
             divider.rectTransform.anchorMin=new Vector2(0,0);divider.rectTransform.anchorMax=new Vector2(0,1);
             divider.rectTransform.anchoredPosition=Vector2.zero;divider.rectTransform.sizeDelta=new Vector2(1,0);
-            // A top-anchored, fixed readable block fits all ten rules at the supported 16:9 sizes.
+            // A top-anchored, fixed readable block fits all five rules at the supported 16:9 sizes.
             var content=Rect("RuleList",ruleSidebar,Vector2.zero,new Vector2(RulePanelWidth,0));
             content.anchorMin=content.anchorMax=new Vector2(.5f,1);content.pivot=new Vector2(.5f,1);
             Text("Rules",content,new Vector2(0,-38),new Vector2(318,44),30,TextAlignmentOptions.Left);

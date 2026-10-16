@@ -178,14 +178,8 @@ namespace GoGhost.Duel
                 ConfigButton("RemoveRule" + i, "×", ruleEditor, new Vector2(w / 2 - 22, y - (stacked ? 56 : 30)), new Vector2(44, 44), () => RemoveRule(row));
             }
             float controlsY = top - count * step - 20;
-            if (count < 2 && pendingRule == null)
+            if (count < ConditionalCatalog.MaxRulesPerOperation && pendingRule == null)
                 ConfigButton("AddRule", "+ Add rule", ruleEditor, new Vector2(-w / 2 + 90, controlsY), new Vector2(180, 44), AddRule);
-            if (config.Rules.Count == 2 && pendingRule == null)
-            {
-                ConfigButton("SwapRules", "Swap", ruleEditor, new Vector2(-w / 2 + 50, controlsY), new Vector2(100, 44),
-                    () => game.EditLoadout(d => d.Operations[selectedOperation].Rules.Reverse()));
-                Text("Top rule first", ruleEditor, new Vector2(-w / 2 + 225, controlsY), new Vector2(210, 44), 22, TextAlignmentOptions.Left);
-            }
         }
 
         static string ConditionLabel(ConditionalRule rule) => rule.Condition == 0 ? "Choose condition"
@@ -193,7 +187,7 @@ namespace GoGhost.Duel
 
         void AddRule()
         {
-            if (pendingRule != null || game.DraftLoadout.Operations[selectedOperation].Rules.Count >= 2) return;
+            if (pendingRule != null || game.DraftLoadout.Operations[selectedOperation].Rules.Count >= ConditionalCatalog.MaxRulesPerOperation) return;
             // Incomplete choices stay UI-local; the combat loadout only receives a complete pair.
             pendingRule = new ConditionalRule();
             pendingRow = game.DraftLoadout.Operations[selectedOperation].Rules.Count;

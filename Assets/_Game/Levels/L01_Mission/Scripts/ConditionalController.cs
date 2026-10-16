@@ -53,16 +53,16 @@ namespace GoGhost.Duel
         readonly Bounds arena;
         readonly LegacyPlayerAI geometry;
         readonly ConditionalLoadout loadout;
-        readonly RuleState[,] states=new RuleState[5,2];
-        readonly bool[,] matches=new bool[5,2];
-        readonly TriggerContext[,] contexts=new TriggerContext[5,2];
+        readonly RuleState[,] states=new RuleState[5,ConditionalCatalog.MaxRulesPerOperation];
+        readonly bool[,] matches=new bool[5,ConditionalCatalog.MaxRulesPerOperation];
+        readonly TriggerContext[,] contexts=new TriggerContext[5,ConditionalCatalog.MaxRulesPerOperation];
         readonly int[,] factFrames=new int[51,2];
         readonly bool[,] factMatches=new bool[51,2],factWasTrue=new bool[51,2];
         readonly long[,] factOccurrences=new long[51,2];
         readonly TriggerContext[,] factContexts=new TriggerContext[51,2];
         readonly Running[] running={new Running(),new Running(),new Running(),new Running(),new Running()};
-        readonly float[,] executedAt=new float[5,2];
-        readonly int[,] executedFrame=new int[5,2];
+        readonly float[,] executedAt=new float[5,ConditionalCatalog.MaxRulesPerOperation];
+        readonly int[,] executedFrame=new int[5,ConditionalCatalog.MaxRulesPerOperation];
         readonly List<Notice> events=new List<Notice>(16);
         readonly BossContact[] contacts;
         readonly bool[] visible,seen,hidden,lowEnemy,close,far;
@@ -113,7 +113,7 @@ namespace GoGhost.Duel
             geometry=new LegacyPlayerAI(player,actors,platforms);
             contacts=new BossContact[actors.Count];visible=new bool[actors.Count];seen=new bool[actors.Count];hidden=new bool[actors.Count];
             lowEnemy=new bool[actors.Count];close=new bool[actors.Count];far=new bool[actors.Count];
-            for(int op=0;op<5;op++)for(int row=0;row<2;row++)
+            for(int op=0;op<5;op++)for(int row=0;row<ConditionalCatalog.MaxRulesPerOperation;row++)
             {states[op,row]=new RuleState();executedAt[op,row]=float.NegativeInfinity;executedFrame[op,row]=-1;}
             gun.ReloadStarted+=ReloadStarted;gun.ReloadFinished+=ReloadFinished;gun.EnemyHit+=EnemyHit;gun.ShotFired+=Shot;
             player.DamageTaken+=Damaged;dodge.DodgeFinished+=DodgeFinished;input.ConditionalActionResolved+=ActionResolved;

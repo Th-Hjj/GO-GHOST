@@ -239,7 +239,7 @@ public static partial class BossEncounterSmoke
         var dodge=game.Dodge;var body=game.Player.GetComponent<Rigidbody2D>();float x=body.position.x;
         bool accepted=dodge.TryDodge(1);float start=dodge.LastDodgeStartedAt;
         Check("Dodge approved values",Mathf.Abs(dodge.Distance-3)<.001f&&Mathf.Abs(dodge.Duration-.18f)<.001f
-            &&Mathf.Abs(dodge.InvulnerabilityDuration-.2f)<.001f&&Mathf.Abs(dodge.DodgeStartInterval-1.2f)<.001f);
+            &&Mathf.Abs(dodge.InvulnerabilityDuration-.2f)<.001f&&Mathf.Abs(dodge.DodgeStartInterval-2f)<.001f);
         yield return Seconds(.1f);int hp=game.Player.CurrentHealth;game.Player.TakeDamage(1,game.Bosses[0].gameObject);
         Check("Dodge first .1s blocks actual damage",accepted&&game.Player.CurrentHealth==hp);
         yield return Until(()=>Time.time>=start+.24f,.3f);
@@ -249,10 +249,10 @@ public static partial class BossEncounterSmoke
         Check("Dodge .24s accepts actual damage",game.Player.CurrentHealth==hp-1);
         heldKeys=new[]{Key.Space};yield return Frames(2);heldKeys=Array.Empty<Key>();yield return Seconds(.12f);
         Check("airborne Dodge retains start cooldown",!game.Player.GetComponent<PlayerMovement>().IsGrounded&&!dodge.TryDodge(-1));
-        yield return Until(()=>Time.time>=start+1.03f,1);
+        yield return Until(()=>Time.time>=start+dodge.DodgeStartInterval-.17f,dodge.DodgeStartInterval);
         Check("landing does not refresh Dodge",dodge.CooldownRemaining>0&&!dodge.TryDodge(-1));
-        yield return Until(()=>Time.time>=start+1.22f,.4f);
-        Check("Dodge ready after 1.2s",dodge.TryDodge(-1));yield return Seconds(.25f);
+        yield return Until(()=>Time.time>=start+dodge.DodgeStartInterval+.02f,.4f);
+        Check("Dodge ready after 2.0s",dodge.TryDodge(-1));yield return Seconds(.25f);
 
         yield return PursuitFlank();
 

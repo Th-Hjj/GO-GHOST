@@ -691,7 +691,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GoGhost.Duel.DuelGame
   inputActions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
-  font: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  font: {fileID: 11400000, guid: 5c126bf6331849c47b1c55fc851a0146, type: 2}
+  controlFont: {fileID: 11400000, guid: 8d932ecfba7b1374086a375ffd90870b, type: 2}
+  headingFont: {fileID: 11400000, guid: 6c7b4c3bf3b93e145a9df2b958f3cf0d, type: 2}
+  numericFont: {fileID: 11400000, guid: 6ebde9057c20d7846aae6d7b153cf581, type: 2}
   sounds: {fileID: 405095933}
   music: {fileID: 2030619740}
   diagnostics: 0

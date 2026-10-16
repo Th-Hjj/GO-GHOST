@@ -161,6 +161,13 @@ public static partial class BossEncounterSmoke
         if(mode=="cold-light-final") {yield return ColdLightFinal();yield break;}
         if(mode=="cold-light-projectiles") {yield return ColdLightProjectiles();yield break;}
         if(mode=="cold-light-closeout") {yield return ColdLightCloseout();yield break;}
+        if(mode=="cold-light-layout") {yield return ColdLightLayoutReview();yield break;}
+        if(mode=="typography") {yield return Typography();yield break;}
+        if(mode=="typography-followup") {yield return TypographyFollowup();yield break;}
+        if(mode=="plex-ui") {yield return PlexUI();yield break;}
+        if(mode=="ui-polish") {yield return PlexUI(true);yield break;}
+        if(mode=="ui-polish-focus") {yield return UIPolishFocus();yield break;}
+        if(mode=="compact-rule-controls") {yield return CompactRuleControls();yield break;}
         if(mode=="alpha50-cursor") {yield return AlphaCursorChecks();yield break;}
         if(mode=="developer-tuning") {yield return DeveloperTuning();yield break;}
         if(mode=="alpha50-edges") {yield return Alpha50Edges();yield break;}

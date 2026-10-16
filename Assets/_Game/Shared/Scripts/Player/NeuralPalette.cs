@@ -18,6 +18,8 @@ public static class NeuralPalette
     public static readonly Color Severance = new Color32(255, 99, 117, 255);
     public static Color Danger => Severance;
     public static Color Border => Color.Lerp(Panel, Secondary, .28f);
+    public static Color ControlBorder => Color.Lerp(Panel, Secondary, .62f);
+    public static Color DisabledText => Color.Lerp(Panel, Secondary, .72f);
     public static NeuralBodySystem System(ControlOperation operation) => operation switch
     {
         ControlOperation.Aim or ControlOperation.Fire => NeuralBodySystem.Arms,

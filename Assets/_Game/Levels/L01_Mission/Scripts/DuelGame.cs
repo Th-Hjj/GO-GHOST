@@ -14,6 +14,7 @@ namespace GoGhost.Duel
         public float PreparationRemaining => Phase == DuelPhase.Prepare ? Mathf.Max(0, PreparationSeconds - phaseTime) : 0;
         [SerializeField] InputActionAsset inputActions;
         [SerializeField] TMP_FontAsset font;
+        [SerializeField] TMP_FontAsset controlFont, headingFont, numericFont;
         [SerializeField] SfxSet sounds;
         [SerializeField] WaveMusicPlayer music;
         [SerializeField] bool diagnostics;
@@ -68,7 +69,7 @@ namespace GoGhost.Duel
                     surface.color=Color.Lerp(NeuralPalette.Panel,NeuralPalette.Secondary,.70f);
             InitializeDeveloperTuning();
             ui = gameObject.AddComponent<DuelUI>();
-            ui.Initialize(this, font);
+            ui.Initialize(this, font, controlFont, headingFont, numericFont);
             Phase = DuelPhase.Menu;
             ui.Show();
         }

@@ -5,7 +5,7 @@ using UnityEngine.InputSystem.UI;
 
 namespace GoGhost.Duel
 {
-    public sealed class DuelUI : MonoBehaviour
+    public sealed partial class DuelUI : MonoBehaviour
     {
         DuelGame game;
         TMP_FontAsset font;
@@ -78,20 +78,7 @@ namespace GoGhost.Duel
             }
             if(game.Phase==DuelPhase.Configure)
             {
-                Text("WAVE "+game.Wave,page,new Vector2(0,330),new Vector2(600,65),42);
-
-                string[] labels={"Legs","Arms","Spine"};
-                string[] instructions={"A / D: Move     Space: Jump","Mouse: Aim     LMB: Rifle","Left Shift: Dodge"};
-                bool[] settings={game.DraftLegs,game.DraftArms,game.DraftSpine};
-                for(int i=0;i<3;i++)
-                {
-                    int module=i; float y=135-i*125;
-                    Text(labels[i],page,new Vector2(-545,y),new Vector2(160,65),30,TextAlignmentOptions.Left);
-                    Button("Player",page,new Vector2(-330,y),new Vector2(145,58),()=>game.SetDraft(module,false),!settings[i]);
-                    Button("AI",page,new Vector2(-165,y),new Vector2(145,58),()=>game.SetDraft(module,true),settings[i]);
-                    Text(instructions[i],page,new Vector2(335,y),new Vector2(800,90),23,TextAlignmentOptions.Left);
-                }
-                Button("Start Fight",page,new Vector2(0,-360),new Vector2(360,65),game.StartFight); return;
+                BuildConditionalLoadout();return;
             }
             if(game.Phase==DuelPhase.Failed || game.Phase==DuelPhase.Complete)
             {

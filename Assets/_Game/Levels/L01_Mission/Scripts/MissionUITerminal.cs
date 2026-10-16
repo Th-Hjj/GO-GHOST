@@ -70,7 +70,7 @@ public sealed partial class MissionUI
         image.raycastTarget = false;
     }
 
-    private static Vector2[] BodyContour(int index)
+    internal static Vector2[] BodyContour(int index)
     {
         switch (index)
         {

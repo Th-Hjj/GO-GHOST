@@ -33,6 +33,7 @@ public class PlayerDodge : MonoBehaviour
     public bool airDodgeUnlocked = false;
 
     public bool IsDodging { get; private set; }
+    public event System.Action DodgeFinished;
     private float nextDodgeTime;
     // Formal Air Dash (leg upgrade in the DeploymentSnapshot): one horizontal dash per airtime, same cooldown as the
     // ground dash. The base Human stays ground-only; the legacy airDodgeUnlocked field is not a progression path.
@@ -180,6 +181,8 @@ public class PlayerDodge : MonoBehaviour
 
         health.IsInvulnerable = false;
         IsDodging = false;
+
+        DodgeFinished?.Invoke();
 
         // Cooldown deadline was set at dodge START; dash/i-frames do not add another wait.
     }

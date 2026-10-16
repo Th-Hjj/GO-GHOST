@@ -106,6 +106,9 @@ namespace GoGhost.Duel
         {
             lastContact=new BossContact {ActorId=ActorId,Bounds=Body.bounds,Velocity=visible?Velocity:Vector2.zero,
                 VelocityKnown=visible,Visible=visible,Dynamic=true,Gravity=Mathf.Abs(Physics2D.gravity.y*profile.Motion.GravityScale),
+                GroundedKnown=visible,Grounded=visible&&Motor.Grounded,Preparing=visible&&(Actions.Phase==BossActionPhase.Prepare||Actions.Phase==BossActionPhase.Locked),
+                Recovering=visible&&Actions.Phase==BossActionPhase.Recovery,Reloading=visible&&Actions.Reloading,
+                HealthFraction=visible?(float)Health.CurrentHealth/Health.MaxHealth:0,
                 ObservedAt=Time.time,ExpiresAt=Time.time+(IsCamo?profile.CamoContactMemory:profile.SightMemory)};
         }
         public void BeginCamo()

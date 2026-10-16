@@ -14,6 +14,7 @@ using UnityEngine;
 // TryJump()             — performs a ground jump, or consumes one available air jump.
 // ApplyDeployment/CleanupAttempt — initialize/clear attempt-local leg resources.
 [RequireComponent(typeof(Rigidbody2D))]
+[DefaultExecutionOrder(-50)]
 public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
 {
     // Replaceable prototype values. Hover limits descent, never changes gravity or adds height.
@@ -118,10 +119,6 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
     private void Update()
     {
         if (input.NarrativePaused) return;
-        moveInput = input.MoveInput;
-        if (Mathf.Abs(moveInput.x) > 0.01f)
-            MovementFacingDirection = moveInput.x > 0f ? 1 : -1;
-
         // Facing follows the aim so the player can move left while shooting right.
         Vector2 aim = input.AimDirection;
         if (Mathf.Abs(aim.x) > 0.01f)
@@ -160,6 +157,12 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
             RefillAirResources();
         }
 
+        input.ResolveConditionalInputs();
+        moveInput = input.MoveInput;
+        if (Mathf.Abs(moveInput.x) > .01f) MovementFacingDirection = moveInput.x > 0 ? 1 : -1;
+        // Conditional Aim is resolved after grounding; visual facing follows that same final output.
+        if (Mathf.Abs(input.AimDirection.x) > .01f) FacingDirection=input.AimDirection.x>0?1:-1;
+        if(spriteRenderer!=null) spriteRenderer.flipX=FacingDirection<0;
         bool executableJump = input.JumpPressedThisFrame && (IsGrounded || HasDoubleJump && airJumpsRemaining > 0)
             && (dodge == null || !dodge.IsDodging) && input.GameplayInputEnabled;
         bool acceptedDodge = false;
@@ -167,11 +170,15 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         {
             input.ResolveLegacyDodge(executableJump);
             acceptedDodge = input.DodgePressedThisFrame && dodge != null && dodge.TryDodge(input.DodgeDirection);
+            if(input.ConditionalFrame.DodgeOwned && input.DodgePressedThisFrame)
+                input.NotifyConditionalAction(ControlOperation.Dodge,acceptedDodge);
         }
         if (executableJump && !acceptedDodge)
         {
             TryJump();
         }
+        if(input.ConditionalFrame.JumpOwned && input.JumpPressedThisFrame)
+            input.NotifyConditionalAction(ControlOperation.Jump,executableJump&&!acceptedDodge);
     }
 
     private void FixedUpdate()

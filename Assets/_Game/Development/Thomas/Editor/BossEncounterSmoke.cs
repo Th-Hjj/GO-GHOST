@@ -14,7 +14,7 @@ using UnityEngine.InputSystem.LowLevel;
 using Object = UnityEngine.Object;
 
 // Development-only bounded checks. No formal scene/prefab references this editor helper.
-public static class BossEncounterSmoke
+public static partial class BossEncounterSmoke
 {
     const string SessionKey = "GO_GHOST.BossSmoke", Output = "Logs/BossEncounter/";
     static readonly List<string> lines = new List<string>();
@@ -153,6 +153,8 @@ public static class BossEncounterSmoke
     static IEnumerator Run()
     {
         Record("Editor Play Mode; simulated focus and virtual keyboard/mouse. No physical-input or audibility claim.");
+        if(mode=="alpha50") {yield return Alpha50();yield break;}
+        if(mode=="alpha50-edges") {yield return Alpha50Edges();yield break;}
         if(mode=="release") {yield return ReleaseSmoke();yield break;}
         if(mode=="pursuit-flank") {yield return PursuitFlank();yield break;}
         if(mode=="pursuit-mechanics") {yield return PursuitMechanics();yield break;}
@@ -216,6 +218,7 @@ public static class BossEncounterSmoke
 
     static IEnumerator Fresh(int wave, bool automatic = false, bool stationaryAutomatic = false, bool manualPursuit = false)
     {
+        if(automatic||stationaryAutomatic||manualPursuit)throw new InvalidOperationException("Historical permanent-AI fixture retired. Use RunAlpha50 with explicit conditional loadouts.");
         RestoreFixture(); heldKeys = Array.Empty<Key>(); mouseHeld = false;
         game.NewGame();
         // Controlled entry changes only the shell wave selection, never actor resources or outcomes.

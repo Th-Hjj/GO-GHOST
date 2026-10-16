@@ -1,12 +1,12 @@
 # Alpha 50% — Conditional Loadout
 
-Confirmed assignment: Thomas, 2026-10-15; rule simplification, execution repair and combat Rules HUD. This supersedes the 40-condition/30-response configuration and Manual/Rules switches. Retain the newer compact configuration from `41822fc`, original player executors, Boss combat, five-platform arena and all combat tuning. Implementation defaults are not balance evidence.
+Confirmed assignment: Thomas, 2026-10-15; rule simplification, execution repair and combat Rules HUD. This supersedes the 40-condition/30-response configuration and Manual/Rules switches. Retain the newer compact configuration from `41822fc`, original player executors, Boss combat, five-platform arena and combat tuning except the confirmed 2.0 s Dodge start cooldown. Implementation defaults are not balance evidence.
 
 ## Configuration
 
-Five independent operations: Move and Jump (Legs), Aim and Fire (Arms), Dodge (Spine). Each holds up to two ordered rules; the first matching executable rule wins. Empty lists and no executable match use manual input. There is no separate enable switch, preinstalled rule or autonomous fallback.
+Five independent operations: Move and Jump (Legs), Aim and Fire (Arms), Dodge (Spine). Each holds at most one rule (five total), as confirmed by Thomas on 2026-10-15. Empty lists and no executable match use manual input. There is no separate enable switch, preinstalled rule or autonomous fallback.
 
-Keep the monochrome body, short operation names, numbered condition > action rows, Remove and Swap. The local picker directly lists only the operation's three or four conditions and legal responses, with no categories or internal IDs. Pending new or changed pairs remain UI-local until complete and legal. Changing a condition clears an incompatible response. Incomplete editing blocks Start Fight; the same formal pair definition validates UI choices and Start Fight. Swap is unavailable during incomplete editing. Historical handlers remain outside the formal catalog.
+Keep the monochrome body, short operation names, numbered condition > action rows and Remove. Hide Add when an operation already has its rule; there is no Swap. The local picker directly lists only the operation's three or four conditions and legal responses, with no categories or internal IDs. Pending new or changed pairs remain UI-local until complete and legal. Changing a condition clears an incompatible response. Incomplete editing blocks Start Fight; the same formal pair definition validates UI choices and Start Fight. Historical handlers remain outside the formal catalog.
 
 | Operation | Condition | Allowed response |
 |---|---|---|
@@ -32,11 +32,11 @@ A25 observes a visible public attack preparation, including its lock, rather tha
 
 Enemy conditions retain matching candidates/source. Tracking requires visible public BossContact facts. Hidden bodies are not retargeted. Boss policy receives no rule configuration or hidden player input. Close/Far use horizontal collider-centre distances 5.3/8.5 with .35 exit hysteresis. Approach and Retreat move throughout their configured condition; they have no separate Keep Mid Range stopping threshold. Invalid targets, blocked directions, Dodge and hit-push physical ownership release conditional Move.
 
-Short Burst spends at most three actual rounds from the current magazine, never crossing a reload. First-shot requests and normal cadence waits are distinct; an accepted firing run retains ownership during the original .25 s interval. Rifle remains 12 damage, eight rounds, 1.2 s automatic reload. Move 7, Jump 12, gravity scale 3 and Dodge distance 3 / movement .18 s / immunity .20 s / cooldown 1.2 s are unchanged. No response writes transforms, damage, cooldowns or outcomes.
+Short Burst spends at most three actual rounds from the current magazine, never crossing a reload. First-shot requests and normal cadence waits are distinct; an accepted firing run retains ownership during the original .25 s interval. Rifle remains 12 damage, eight rounds, 1.2 s automatic reload. Move 7, Jump 12, gravity scale 3 and Dodge distance 3 / movement .18 s / immunity .20 s / cooldown 2.0 s apply to both manual and conditional actions, on ground and in air. No response writes transforms, damage, cooldowns or outcomes.
 
 ## Combat Rules HUD
 
-Prepare/Fight display only complete snapshot rules in a separate right black sidebar with a thin grey divider, approximately 350 UI units at 1600×900. Zero rules hides it. Order: Aim, Fire, Dodge, Move, Jump. Each group retains rows 1/2; each row has condition then indented > response, using the configuration's labels. No editing controls, status prose, logs or scroll area. Ten rules fit the supported 16:9 sizes with readable text.
+Prepare/Fight display only complete snapshot rules in a separate right black sidebar with a thin grey divider, approximately 350 UI units at 1600×900. Zero rules hides it. Order: Aim, Fire, Dodge, Move, Jump. Each group contains row 1; each row has condition then indented > response, using the configuration's labels. No editing controls, status prose, logs or scroll area. Five rules fit the supported 16:9 sizes with readable text.
 
 The camera and existing combat HUD occupy the left region. Viewport fitting preserves the entire original Arena; no platform, collider or spawn moves. Mouse aim uses the same camera's ScreenToWorldPoint. Resolution changes only re-layout; menu/configuration/results and zero-rule fights restore full width.
 
@@ -44,6 +44,6 @@ Feedback identity is the fight controller + operation + row. Only actual executi
 
 ## Validation and delivery
 
-Use the existing bounded development harness: normal compile, local configuration and real executor checks, the A25→D01 / A01→D02 Dodge pair, failure/retry/pause/next-wave cleanup, short W1/W2/W3 observations and actual 1280×720 / 1920×1080 screenshots for zero/two/ten rules. Controlled fixtures prove mechanisms only. No full historical matrix, win-rate test, forced outcome or natural-victory gate.
+Use the existing bounded development harness: normal compile, local configuration and real executor checks, separate single-rule A25→D01 and A01→D02 Dodge fixtures, failure/retry/pause/next-wave cleanup, short W1/W2/W3 observations and actual 1280×720 / 1920×1080 screenshots for zero/one/five rules. Controlled fixtures prove mechanisms only. No full historical matrix, win-rate test, forced outcome or natural-victory gate.
 
-Thomas additionally authorized one updated Windows x64 build, standalone smoke, complete ZIP with licenses and GitHub Release upload. Build artifacts remain outside Git. See the newest Implementation_Log entry for actual results, NOT OBSERVED and NOT TESTED limits.
+Thomas authorized an updated Windows x64 build for the single-rule / 2.0 s Dodge revision, standalone smoke, complete ZIP with licenses and GitHub Release upload. Build artifacts remain outside Git. See the newest Implementation_Log entry for actual results, NOT OBSERVED and NOT TESTED limits.

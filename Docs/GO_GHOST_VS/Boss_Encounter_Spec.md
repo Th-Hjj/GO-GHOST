@@ -4,7 +4,7 @@ Player-control authority: [Alpha50_Conditional_Loadout.md](Alpha50_Conditional_L
 
 ## Relentless sword pursuit — confirmed 2026-10-05
 
-Thomas approved a more aggressive swordsman with a physical rear-position pursuit cut. Formal Dodge remains distance 3 / movement .18 s, but uses a 1.2 s start cooldown and .20 s immunity, identically for manual/AI and ground/air. The formal PlayerDodge accessors own this override; shared PlayerStats and historical loadouts are unchanged.
+Thomas approved a more aggressive swordsman with a physical rear-position pursuit cut. Formal Dodge remains distance 3 / movement .18 s, but uses a 2.0 s start cooldown (Thomas, 2026-10-15) and .20 s immunity, identically for manual/AI and ground/air. The formal PlayerDodge accessors own this override; shared PlayerStats and historical loadouts are unchanged.
 
 Sword approach candidates compare the player's delayed public trajectory against actual route arrival plus the blade tell. An obsolete movement plan may retire after newly observed movement; accepted airborne routes remain fixed. Sword prediction is terrain-aware and bounded to 1.25 s, without inventing another jump or reading controls. Leap Slash ranks potential blade contacts and landing pressure, rechecks slash time before commitment, then freezes it. Cooldown is 3.2 s. A real landing may transition once into a paid single Rhythm-strength cut, with complete preparation/lock and recovery.
 

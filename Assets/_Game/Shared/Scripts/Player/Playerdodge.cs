@@ -42,7 +42,7 @@ public class PlayerDodge : MonoBehaviour
     public bool HasAirDash => !legacyCombat && officer != null && officer.Deployment != null && officer.Deployment.HasAirDash;
     public bool AirDashAvailable => HasAirDash && airDashAvailable;
     private OfficerIdentity officer;
-    public float DodgeStartInterval => legacyCombat ? 1.2f : officer != null && officer.Deployment != null ? officer.Deployment.DodgeStartInterval : stats.dodgeCooldown;
+    public float DodgeStartInterval => legacyCombat ? 2f : officer != null && officer.Deployment != null ? officer.Deployment.DodgeStartInterval : stats.dodgeCooldown;
     public float CooldownRemaining => Mathf.Max(0f, nextDodgeTime - Time.time);
     public float LastDodgeStartedAt { get; private set; } = float.NegativeInfinity;
     public float Distance => stats.dodgeDistance;

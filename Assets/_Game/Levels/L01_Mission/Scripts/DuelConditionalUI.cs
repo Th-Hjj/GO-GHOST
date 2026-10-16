@@ -24,6 +24,7 @@ namespace GoGhost.Duel
         float installedAt=float.NegativeInfinity;
         TMP_Text optionDescription, optionDescriptionTitle;
         string inspectedDescription;
+        float selectorRowHeight;
         readonly Dictionary<string,float> configurationScroll = new Dictionary<string,float>();
         string focusName, focusLabel;
         int builtSelector=-1, builtCategory=-1;
@@ -220,6 +221,10 @@ namespace GoGhost.Duel
         void UpdateConfigurationSignals()
         {
             float age=Time.unscaledTime-installedAt;
+            // Keep a selected equipped row linked while its local editor is open.
+            int highlightedRow=previewRow>=0?previewRow:pendingRow<displayedRules.Count?pendingRow:-1;
+            var highlightedSystem=previewSystem!=NeuralBodySystem.None?previewSystem:
+                highlightedRow>=0?RuleSystem(displayedRules[highlightedRow]):NeuralBodySystem.None;
             int connectedSystems=0;
             for(int i=0;i<displayedRules.Count;i++)connectedSystems|=1<<(int)RuleSystem(displayedRules[i]);
             for(int i=0;i<neuralRegions.Length;i++)
@@ -227,7 +232,7 @@ namespace GoGhost.Duel
                 var region=neuralRegions[i];if(region==null)continue;
                 var system=i==0?NeuralBodySystem.None:i==1?NeuralBodySystem.Spine:i<4?NeuralBodySystem.Arms:NeuralBodySystem.Legs;
                 bool connected=system!=NeuralBodySystem.None&&(connectedSystems&(1<<(int)system))!=0;
-                float signal=system!=NeuralBodySystem.None&&previewSystem==system?1:connected?.38f:0;
+                float signal=system!=NeuralBodySystem.None&&highlightedSystem==system?1:connected?.38f:0;
                 float flow=connected&&system==installedSystem&&age<.55f?age/.55f:-1;
                 if(flow>=0)signal=Mathf.Max(signal,.8f);
                 if(!Mathf.Approximately(region.NeuralSignal,signal)||!Mathf.Approximately(region.NeuralFlow,flow))
@@ -235,7 +240,7 @@ namespace GoGhost.Duel
             }
             for(int i=0;i<equippedAccents.Count;i++)if(equippedAccents[i]!=null)
             {
-                float strength=i==previewRow?1:i==installedRow&&age<.55f?Mathf.Lerp(1,.45f,age/.55f):.45f;
+                float strength=i==highlightedRow?1:i==installedRow&&age<.55f?Mathf.Lerp(1,.45f,age/.55f):.45f;
                 equippedAccents[i].color=NeuralPalette.Alpha(NeuralPalette.Body(RuleSystem(displayedRules[i])),strength);
             }
         }
@@ -262,11 +267,6 @@ namespace GoGhost.Duel
             Text("Rules " + game.DraftLoadout.TotalRules + "/" + ConditionalCatalog.MaxRulesTotal, ruleList,
                 new Vector2(0, h/2-24), new Vector2(w,48),30,TextAlignmentOptions.Left,headingFont);
             var rows=BuildRuleOptions("EquippedRules",ruleList,new Vector2(0,18),new Vector2(w,h-168));
-            if(displayedRules.Count==0)
-            {
-                var empty=Text("No rules equipped.\nAll controls are manual.",rows,Vector2.zero,Vector2.zero,22);
-                empty.gameObject.AddComponent<UnityEngine.UI.LayoutElement>().preferredHeight=100;
-            }
             for (int i = 0; i < displayedRules.Count; i++)
             {
                 int row = i;
@@ -419,11 +419,13 @@ namespace GoGhost.Duel
             ConfigButton("CancelRuleEdit","Cancel",ruleEditor,new Vector2(w/2-58,top-90),new Vector2(116,44),CancelRuleEdit);
             if(!selectingCondition)
                 ConfigButton("SelectorBack","< Condition",ruleEditor,new Vector2(-w/2+90,top-90),new Vector2(180,44),()=>ChooseRule(pendingRow,true));
-            float categoryWidth=selectingCondition?234:Mathf.Clamp(w*.29f,176,210);
+            const float categoryWidth=234;
             float optionsWidth=w-categoryWidth-20;
             float optionsX=-w/2+categoryWidth+20+optionsWidth/2;
             const float descriptionHeight=132;
-            float optionsTop=top-154,optionsBottom=-h/2+descriptionHeight+26;
+            float optionsTop=top-162,optionsBottom=-h/2+descriptionHeight+26;
+            // Use the same six-row rhythm in both steps, independent of the current item count.
+            selectorRowHeight=Mathf.Clamp(Mathf.Floor((optionsTop-optionsBottom-4-5*12)/6),56,64);
             Text("Category",ruleEditor,new Vector2(-w/2+categoryWidth/2,top-134),new Vector2(categoryWidth,28),20,TextAlignmentOptions.Left);
             Text("Options",ruleEditor,new Vector2(optionsX,top-134),new Vector2(optionsWidth,28),20,TextAlignmentOptions.Left);
             var categories=BuildRuleOptions("SelectorCategories",ruleEditor,new Vector2(-w/2+categoryWidth/2,(optionsTop+optionsBottom)/2),new Vector2(categoryWidth,optionsTop-optionsBottom));
@@ -456,20 +458,14 @@ namespace GoGhost.Duel
                     int category=op;
                     CategoryOption("ActionCategory"+op,ShortOperationLabels[op],categories,()=>SelectActionCategory(category),actionCategory==op);
                 }
-                bool anyAllowed=false;
                 foreach(string id in ConditionalCatalog.FormalResponses[actionCategory])
                 {
+                    // Temporarily hidden from authoring; retain existing Q03 rules and runtime support.
+                    if(id=="Q03")continue;
                     string action=id;
                     bool allowed=ConditionalCatalog.IsAllowed(actionCategory,rule.Condition,action);
-                    anyAllowed|=allowed;
                     RuleOption(ConditionalCatalog.Response(action).Label,choices,()=>ApplyChoice(0,false,action),rule.Action==action,
                         ConditionalCatalog.ResponseDescription(action),allowed?null:ConditionalCatalog.IncompatibilityReason(actionCategory,rule.Condition,action),action);
-                }
-                if(!anyAllowed)
-                {
-                    var unavailable=Text("No available actions in this category for this condition.",choices,Vector2.zero,Vector2.zero,22,TextAlignmentOptions.Left);
-                    unavailable.name="NoAvailableActions";
-                    unavailable.gameObject.AddComponent<UnityEngine.UI.LayoutElement>().preferredHeight=68;
                 }
             }
             string selectedDescription=selectingCondition
@@ -481,7 +477,8 @@ namespace GoGhost.Duel
         void CategoryOption(string name,string label,RectTransform parent,UnityEngine.Events.UnityAction click,bool selected)
         {
             var option=ConfigButton(name,label,parent,Vector2.zero,Vector2.zero,click,selected,true);
-            option.gameObject.AddComponent<UnityEngine.UI.LayoutElement>().preferredHeight=44;
+            var layout=option.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();
+            layout.minHeight=layout.preferredHeight=selectorRowHeight;
         }
 
         RectTransform BuildRuleOptions(string name,RectTransform parent,Vector2 position,Vector2 size)
@@ -504,7 +501,7 @@ namespace GoGhost.Duel
             content.anchoredPosition = Vector2.zero;
             content.sizeDelta = Vector2.zero;
             var layout = content.gameObject.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
-            layout.spacing = name=="EquippedRules"?16:8;
+            layout.spacing = name=="EquippedRules"?16:12;
             layout.padding = new RectOffset(2,2,2,2);
             layout.childControlWidth = layout.childControlHeight = true;
             layout.childForceExpandWidth = true;
@@ -531,7 +528,7 @@ namespace GoGhost.Duel
 
         void RuleOption(string label, RectTransform parent, UnityEngine.Events.UnityAction click, bool selected, string description, string reason = null,string action=null)
         {
-            var option = ConfigButton("Option", label, parent, Vector2.zero, new Vector2(parent.rect.width, 56), click, selected, true);
+            var option = ConfigButton("Option", label, parent, Vector2.zero, new Vector2(parent.rect.width, selectorRowHeight), click, selected, true);
             option.interactable = reason == null;
             var inspect=option.gameObject.AddComponent<ConditionalOptionDescription>();
             inspect.Inspect=()=>
@@ -550,7 +547,7 @@ namespace GoGhost.Duel
                 accent.anchorMin=accent.anchorMax=new Vector2(1,.5f);
             }
             var layout = option.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();
-            layout.minHeight = layout.preferredHeight = 56;
+            layout.minHeight = layout.preferredHeight = selectorRowHeight;
         }
     }
 

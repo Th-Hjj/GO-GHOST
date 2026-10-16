@@ -168,6 +168,9 @@ public static partial class BossEncounterSmoke
         if(mode=="ui-polish") {yield return PlexUI(true);yield break;}
         if(mode=="ui-polish-focus") {yield return UIPolishFocus();yield break;}
         if(mode=="compact-rule-controls") {yield return CompactRuleControls();yield break;}
+        if(mode=="selector-spacing") {yield return SelectorSpacing();yield break;}
+        if(mode=="contour-pulse") {yield return ContourPulse();yield break;}
+        if(mode=="contour-visibility") {yield return ContourVisibility();yield break;}
         if(mode=="alpha50-cursor") {yield return AlphaCursorChecks();yield break;}
         if(mode=="developer-tuning") {yield return DeveloperTuning();yield break;}
         if(mode=="alpha50-edges") {yield return Alpha50Edges();yield break;}

@@ -24,6 +24,175 @@ public static partial class BossEncounterSmoke
     public static void RunUIPolish()=>Start("ui-polish",false);
     public static void RunUIPolishFocus()=>Start("ui-polish-focus",false);
     public static void RunCompactRuleControls()=>Start("compact-rule-controls",false);
+    public static void RunSelectorSpacing()=>Start("selector-spacing",false);
+    public static void RunContourPulse()=>Start("contour-pulse",false);
+    public static void RunContourVisibility()=>Start("contour-visibility",false);
+    static bool NoPulse(MissionBodyRegion region)
+    {
+        int count=Private<System.Collections.Generic.List<Vector2>>(region,"pathPoints").Count;
+        return region.canvasRenderer.GetMesh().vertexCount==count*4;
+    }
+    static bool MirroredPulse(int left,int right)
+    {
+        var a=Private<System.Collections.Generic.List<Vector2>>(Region(left),"pathPoints");
+        var b=Private<System.Collections.Generic.List<Vector2>>(Region(right),"pathPoints");
+        return a.Count==b.Count&&a.Select((p,i)=>Vector2.Distance(new Vector2(-p.x,p.y),b[i])<.001f).All(equal=>equal)
+            &&Region(left).canvasRenderer.GetMesh().colors32.SequenceEqual(Region(right).canvasRenderer.GetMesh().colors32);
+    }
+    static IEnumerator ContourVisibility()
+    {
+        game.NewGame();
+        foreach(int width in new[]{1280,1920,2560,3840})
+        {
+            SetAlphaGameSize(width,width*9/16);yield return Frames(5);
+            Check(width+" all unequipped contours have no pulse geometry",Enumerable.Range(0,6).All(i=>NoPulse(Region(i))));
+            yield return ColdCapture("pulse-static-idle-"+width);
+            ClickConfig("AddRule");yield return Frames(2);yield return SelectEditorCondition(33);
+            FocusOption("Option","Aim at Nearest Enemy");yield return RealSeconds(.5);
+            Check(width+" action preview pulses only arms",!NoPulse(Region(2))&&!NoPulse(Region(3))&&NoPulse(Region(0))&&NoPulse(Region(1))&&NoPulse(Region(4))&&NoPulse(Region(5)));
+            var colors=Region(2).canvasRenderer.GetMesh().colors32;bool mirror=true;
+            for(int frame=0;frame<12;frame++){mirror&=MirroredPulse(2,3);yield return Frames(1);}
+            Check(width+" highlighted arms animate in mirror symmetry",mirror&&!colors.SequenceEqual(Region(2).canvasRenderer.GetMesh().colors32));
+            yield return ColdCapture("pulse-active-arms-"+width);
+            ClickConfig("CancelRuleEdit");yield return RealSeconds(.9);
+            Check(width+" cancelled preview removes pulse geometry",Enumerable.Range(0,6).All(i=>NoPulse(Region(i))));
+            yield return AddEditorRule(33,"M01");yield return RealSeconds(.7);
+            EventSystem.current.SetSelectedGameObject(null);yield return RealSeconds(.4);
+            Check(width+" equipped Legs pulse; other contours stay static",!NoPulse(Region(4))&&!NoPulse(Region(5))&&NoPulse(Region(0))&&NoPulse(Region(1))&&NoPulse(Region(2))&&NoPulse(Region(3)));
+            colors=Region(4).canvasRenderer.GetMesh().colors32;mirror=true;
+            for(int frame=0;frame<12;frame++){mirror&=MirroredPulse(4,5);yield return Frames(1);}
+            Check(width+" equipped legs animate in mirror symmetry",mirror&&!colors.SequenceEqual(Region(4).canvasRenderer.GetMesh().colors32));
+            yield return ColdCapture("pulse-active-legs-"+width);
+            ClickConfig("RemoveRule0");yield return RealSeconds(.9);
+            Check(width+" removing final regional rule removes all pulses",Enumerable.Range(0,6).All(i=>NoPulse(Region(i))));
+        }
+        var head=Region(0);head.NeuralSignal=1;head.Selected=head.Equipped=true;head.SetVerticesDirty();
+        ExecuteEvents.Execute(head.gameObject,new PointerEventData(EventSystem.current),ExecuteEvents.pointerEnterHandler);
+        yield return RealSeconds(.3);
+        Check("head never produces a pulse even under selection/hover",NoPulse(head));
+        head.NeuralSignal=0;head.Selected=head.Equipped=false;
+    }
+    static IEnumerator ContourPulse()
+    {
+        Record("Scoped contour rendering/UI verification. Existing executor feedback only; no rule-engine changes.");
+        game.NewGame();
+        foreach(int width in new[]{1280,1920,2560,3840})
+        {
+            SetAlphaGameSize(width,width*9/16);yield return Frames(5);
+            Check(width+" actual Overlay render",Screen.width==width&&Screen.height==width*9/16&&Region(0).canvas.renderMode==RenderMode.ScreenSpaceOverlay);
+            var mesh=Region(2).canvasRenderer.GetMesh();var vertices=mesh.vertices;var colors=mesh.colors32;
+            yield return ColdCapture("pulse-idle-"+width);
+            yield return RealSeconds(.18);mesh=Region(2).canvasRenderer.GetMesh();
+            Check(width+" unequipped contour remains static",vertices.SequenceEqual(mesh.vertices)&&colors.SequenceEqual(mesh.colors32)&&NoPulse(Region(2)));
+            for(int i=0;i<6;i++)
+            {
+                var region=Region(i);mesh=region.canvasRenderer.GetMesh();
+                // Every vertex must remain in the feathered contour band; no internal bars/fill.
+                float pixel=Mathf.Max(1,region.canvas.scaleFactor)/region.rectTransform.lossyScale.x;
+                var points=Private<System.Collections.Generic.List<Vector2>>(region,"pathPoints");
+                float farthest=0;
+                foreach(var v in mesh.vertices)farthest=Mathf.Max(farthest,points.Min(p=>Vector2.Distance(p,v)));
+                Check(width+" region "+i+" mesh confined to actual outline",farthest<=11.3f*pixel&&region.NeuralStyle);
+            }
+            ClickConfig("AddRule");yield return Frames(2);yield return SelectEditorCondition(33);
+            var option=ConfigButtonNamed("Option","Aim at Nearest Enemy");
+            ExecuteEvents.Execute(option.gameObject,new PointerEventData(EventSystem.current),ExecuteEvents.pointerEnterHandler);
+            yield return RealSeconds(.4);
+            Check(width+" legal action hover raises arms only without committing",Region(2).NeuralSignal==1&&Private<float>(Region(2),"activity")>.85f&&Region(4).NeuralSignal==0&&game.DraftLoadout.TotalRules==0);
+            yield return ColdCapture("pulse-highlight-"+width);
+            ClickConfig("Option","Aim at Nearest Enemy");yield return RealSeconds(.7);
+            Check(width+" legal action commits existing workflow",game.DraftLoadout.TotalRules==1&&ConfigButtonNamed("StartFight").interactable);
+            ClickConfig("Rule0Action");yield return RealSeconds(.35);
+            Check(width+" selected equipped rule retains region preview",Region(2).NeuralSignal==1);
+            ClickConfig("CancelRuleEdit");yield return Frames(2);ClickConfig("RemoveRule0");yield return Frames(2);
+            Check(width+" cancel/remove returns idle without stale rule data",game.DraftLoadout.TotalRules==0&&Region(2).NeuralSignal==0);
+        }
+        // Same component handles legacy Upgrade pointer/selection; no historical flow is enabled.
+        var arm=Region(2);var data=new PointerEventData(EventSystem.current);
+        ExecuteEvents.Execute(arm.gameObject,data,ExecuteEvents.pointerEnterHandler);yield return RealSeconds(.4);
+        Check("Upgrade shared component hover rises",Private<float>(arm,"activity")>.85f);
+        ExecuteEvents.Execute(arm.gameObject,data,ExecuteEvents.pointerExitHandler);yield return RealSeconds(.08);
+        float fade=Private<float>(arm,"activity");Check("hover exit fades rather than snapping",fade>.05f&&fade<.9f);
+        yield return RealSeconds(.5);Check("hover exit returns to idle",Private<float>(arm,"activity")<.03f);
+        SetAlphaGameSize(1920,1080);yield return Frames(4);
+        yield return AlphaFresh(1,d=>{Rule(d,2,33,"Q01");Rule(d,2,33,"Q02");Rule(d,3,33,"F03");});
+        AlphaPlace(-5,-2);yield return Seconds(.15f);
+        var visual=game.Player.GetComponent<OfficerVisual>();
+        Check("real accepted Aim/Fire and bounded body feedback",Visual(2).Executing&&Visual(3).Executing&&game.Rules.AutomaticShots>0&&Signal(visual.Part(LoadoutSlot.LeftArm))>.6f&&Signal(visual.Part(LoadoutSlot.LeftArm))<=1);
+        Check("lower matched rule does not claim execution",Visual(2,1).Matched&&!Visual(2,1).Executing);
+        var block=new MaterialPropertyBlock();visual.Part(LoadoutSlot.LeftArm).GetPropertyBlock(block);
+        Check("combat character consumes same blue identity",block.GetColor("_AIColor")==NeuralPalette.Arms);
+        var ui=Object.FindAnyObjectByType<DuelUI>();
+        var action=ui.GetComponentsInChildren<TMPro.TMP_Text>().First(t=>t.name=="ActionText"&&t.transform.parent.name=="RuleFeedback_2_0");
+        Check("accepted HUD action shares blue identity",action.color==NeuralPalette.Arms);
+        yield return ColdCapture("pulse-combat-accepted");
+        checkingPause=true;game.SetPause(true);float now=Time.time;yield return RealSeconds(.15);
+        Check("combat pause still freezes rule clock",Time.time==now);game.SetPause(false);checkingPause=false;
+        game.Player.TakeDamage(99999,null);yield return Frames(3);game.Reconfigure();yield return Frames(3);
+        Check("controlled defeat reconfigures with rules retained",game.Phase==DuelPhase.Configure&&game.DraftLoadout.TotalRules==3&&game.Rules==null);
+        ClickConfig("StartFight");yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);
+        Check("retry enters normal Fight",game.Phase==DuelPhase.Fight);
+        yield return AlphaFresh(1,null);
+        heldKeys=new[]{Key.D};MouseAt(game.Player.transform.position+Vector3.up*5,true);yield return Seconds(.2f);
+        Check("manual fallback movement and real paid shot",game.Player.GetComponent<Rigidbody2D>().linearVelocity.x>1&&game.Rifle.TriggerPulls>0&&game.Rules.AutomaticShots==0);
+        heldKeys=Array.Empty<Key>();mouseHeld=false;
+        foreach(int wave in new[]{1,2,3})
+        {
+            yield return AlphaFresh(wave,null,false);float clock=game.FightClock;yield return Seconds(1.25f);
+            Check("short W"+wave+" normal combat observation",game.Phase==DuelPhase.Fight&&game.FightClock>clock+1);
+        }
+    }
+    static UnityEngine.UI.ScrollRect SelectorScroll(string name)=>Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<UnityEngine.UI.ScrollRect>().First(s=>s.name==name);
+    static void CheckSelectorSpacing(string context)
+    {
+        Canvas.ForceUpdateCanvases();
+        var categories=SelectorScroll("SelectorCategories");var choices=SelectorScroll("RuleOptions");
+        var left=categories.content.GetComponentsInChildren<UnityEngine.UI.Button>().Select(b=>b.GetComponent<RectTransform>()).ToArray();
+        var right=choices.content.GetComponentsInChildren<UnityEngine.UI.Button>().Select(b=>b.GetComponent<RectTransform>()).ToArray();
+        bool aligned=left.Length>0&&right.Length>0;
+        for(int i=0;i<Math.Min(left.Length,right.Length);i++)
+            aligned&=Mathf.Abs(left[i].position.y-right[i].position.y)<.1f&&Mathf.Abs(left[i].rect.height-right[i].rect.height)<.1f;
+        Check(context+" both columns share row geometry",aligned);
+        Check(context+" complete catalogs fit viewport",categories.content.rect.height<=categories.viewport.rect.height+.1f&&choices.content.rect.height<=choices.viewport.rect.height+.1f);
+        InspectCatalogText(context);
+    }
+    static IEnumerator SelectorSpacing()
+    {
+        foreach(int width in new[]{1280,1920,2560,3840})
+        {
+            game.NewGame();SetAlphaGameSize(width,width*9/16);yield return Frames(5);
+            ClickConfig("AddRule");yield return Frames(3);
+            Check(width+" actual render size",Screen.width==width&&Screen.height==width*9/16);
+            var categoryRect=SelectorScroll("SelectorCategories").GetComponent<RectTransform>();
+            var optionsRect=SelectorScroll("RuleOptions").GetComponent<RectTransform>();
+            float categoryWidth=categoryRect.rect.width,optionsWidth=optionsRect.rect.width,optionsX=optionsRect.anchoredPosition.x;
+            var descriptionPosition=EditorText("OptionDescription").rectTransform.position;
+            for(int category=0;category<6;category++)
+            {
+                ClickConfig("ConditionCategory"+category);yield return Frames(2);
+                CheckSelectorSpacing(width+" condition category "+category);
+                if(category==0||category==4)yield return ColdCapture("selector-spacing-condition-"+category+"-"+width);
+            }
+            yield return SelectEditorCondition(1);
+            categoryRect=SelectorScroll("SelectorCategories").GetComponent<RectTransform>();optionsRect=SelectorScroll("RuleOptions").GetComponent<RectTransform>();
+            Check(width+" Condition to Action keeps columns and description fixed",Mathf.Abs(categoryRect.rect.width-categoryWidth)<.1f&&Mathf.Abs(optionsRect.rect.width-optionsWidth)<.1f&&Mathf.Abs(optionsRect.anchoredPosition.x-optionsX)<.1f&&Vector3.Distance(descriptionPosition,EditorText("OptionDescription").rectTransform.position)<.1f);
+            foreach(int op in new[]{2,3,4,0,1})
+            {
+                ClickConfig("ActionCategory"+op);yield return Frames(2);
+                CheckSelectorSpacing(width+" action category "+op);
+                if(op==1)
+                {
+                    Check(width+" Airborne keeps Jump disabled",CatalogOptions().All(b=>!b.interactable));
+                    FocusOption("Option","Repeat Jumps");yield return Frames(2);
+                    yield return ColdCapture("selector-spacing-disabled-jump-"+width);
+                }
+            }
+            ClickConfig("CancelRuleEdit");yield return Frames(2);
+            Check(width+" cancel retains empty equipped list",game.DraftLoadout.TotalRules==0&&ConfigButtonNamed("StartFight").interactable);
+            yield return AddEditorRule(33,"Q01");
+            Check(width+" legal selection still commits once",game.DraftLoadout.TotalRules==1&&ConfigButtonNamed("StartFight").interactable);
+        }
+    }
     static IEnumerator CompactRuleControls()
     {
         game.NewGame();

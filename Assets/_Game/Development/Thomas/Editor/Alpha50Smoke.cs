@@ -87,14 +87,14 @@ public static partial class BossEncounterSmoke
         {
             ClickConfig("ActionCategory"+op);yield return Frames(2);
             actions.AddRange(CatalogOptions().Select(OptionLabel));
-            Check("Action category "+op+" exact order and shared compatibility",CatalogOptions().Select(OptionLabel).SequenceEqual(ConditionalCatalog.FormalResponses[op].Select(id=>ConditionalCatalog.Response(id).Label))
-                &&CatalogOptions().Select(b=>b.interactable).SequenceEqual(ConditionalCatalog.FormalResponses[op].Select(id=>ConditionalCatalog.IsAllowed(op,1,id)))
+            Check("Action category "+op+" visible order and shared compatibility",CatalogOptions().Select(OptionLabel).SequenceEqual(ConditionalCatalog.FormalResponses[op].Where(id=>id!="Q03").Select(id=>ConditionalCatalog.Response(id).Label))
+                &&CatalogOptions().Select(b=>b.interactable).SequenceEqual(ConditionalCatalog.FormalResponses[op].Where(id=>id!="Q03").Select(id=>ConditionalCatalog.IsAllowed(op,1,id)))
                 &&Private<ConditionalRule>(Object.FindAnyObjectByType<DuelUI>(),"pendingRule").Condition==chosenCondition);
         }
-        Check("exactly 19 formal actions, all five categories remain",actions.Count==19&&actions.Distinct().Count()==19&&ConditionalCatalog.Responses.Length==19
+        Check("18 visible actions, 19 retained definitions, all five categories remain",actions.Count==18&&actions.Distinct().Count()==18&&!actions.Contains("Aim at Detected Enemy")&&ConditionalCatalog.Responses.Length==19
             &&Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<UnityEngine.UI.Button>().Where(b=>b.name.StartsWith("ActionCategory")).Select(OptionLabel).SequenceEqual(new[]{"Aim","Fire","Dodge","Move","Jump"}));
         var blocked=ConfigButtonNamed("Option","Jump Once");mousePosition=RectTransformUtility.WorldToScreenPoint(null,blocked.transform.position);yield return Frames(5);
-        Check("disabled Action hover explains rejection and empty category",!blocked.interactable&&EditorText("OptionDescription").text.Contains(ConditionalCatalog.IncompatibilityReason(1,1,"J01"))&&EditorText("NoAvailableActions")!=null);
+        Check("disabled Action hover explains rejection without redundant category text",!blocked.interactable&&EditorText("OptionDescription").text.Contains(ConditionalCatalog.IncompatibilityReason(1,1,"J01"))&&!Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<TMPro.TMP_Text>().Any(t=>t.name=="NoAvailableActions"));
         blocked.onClick.Invoke();game.StartFight();yield return Frames(2);
         Check("invalid pairing cannot commit even through callback or Start",game.Phase==DuelPhase.Configure&&game.DraftLoadout.TotalRules==0);
         heldKeys=new[]{Key.Escape};yield return Frames(3);heldKeys=Array.Empty<Key>();yield return Frames(3);
@@ -104,8 +104,8 @@ public static partial class BossEncounterSmoke
         yield return PointerConfig("Option","Enemy Preparing an Attack");
         Check("pointer transition cannot leak old Condition description into Action",Private<ConditionalRule>(Object.FindAnyObjectByType<DuelUI>(),"pendingRule").Condition==25
             &&!EditorText("OptionDescription").text.Contains(ConditionalCatalog.ConditionDescription(25)));
-        yield return PointerConfig("Option","Aim at Detected Enemy");
-        Check("complete virtual-pointer flow commits one valid rule",game.DraftLoadout.TotalRules==1&&game.DraftLoadout.Operations[2].Rules[0].Action=="Q03"&&ConfigButtonNamed("StartFight").interactable);
+        yield return PointerConfig("Option","Aim at Nearest Enemy");
+        Check("complete virtual-pointer flow commits one valid rule",game.DraftLoadout.TotalRules==1&&game.DraftLoadout.Operations[2].Rules[0].Action=="Q01"&&ConfigButtonNamed("StartFight").interactable);
         ClickConfig("RemoveRule0");yield return Frames(2);
         var legacy=new ConditionalLoadout();Rule(legacy,0,33,"M01");Rule(legacy,3,33,"F01");legacy.TryAddRule(2,new ConditionalRule{Condition=25,Action="Q03"});
         Check("adding through existing API appends after unnumbered legacy rows",legacy.Copy().OrderedRules().Select(r=>r.Action).SequenceEqual(new[]{"M01","F01","Q03"}));

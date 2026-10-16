@@ -16,6 +16,8 @@ public static partial class BossEncounterSmoke
     public static void RunAlpha50Edges()=>Start("alpha50-edges",false);
     public static void RunAlpha50Layouts()=>Start("alpha50-layouts",false);
     public static void RunUnifiedCatalog()=>Start("unified-catalog",false);
+    [MenuItem("GO GHOST/Playtest/Condition Editor Smoke")]
+    public static void RunConditionEditor()=>Start("condition-editor",false);
     public static void RunAlphaCursorChecks()=>Start("alpha50-cursor",false);
     static void Rule(ConditionalLoadout d,int op,int condition,string response)
     {d.Operations[op].Rules.Add(new ConditionalRule{Condition=condition,Action=response});}
@@ -39,6 +41,140 @@ public static partial class BossEncounterSmoke
     }
     static UnityEngine.UI.Button[] CatalogOptions()=>Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<UnityEngine.UI.Button>().Where(b=>b.name=="Option").ToArray();
     static string OptionLabel(UnityEngine.UI.Button b)=>b.GetComponentInChildren<TMPro.TMP_Text>().text.Split('\n')[0];
+    static IEnumerator SelectEditorCondition(int id)
+    {
+        ClickConfig("ConditionCategory"+ConditionalCatalog.Condition(id).Category);yield return Frames(2);
+        ClickConfig("Option",ConditionalCatalog.Condition(id).Label);yield return Frames(2);
+    }
+    static IEnumerator AddEditorRule(int condition,string action)
+    {
+        ClickConfig("AddRule");yield return Frames(2);yield return SelectEditorCondition(condition);
+        ClickConfig("ActionCategory"+(int)ConditionalCatalog.Response(action).Operation);yield return Frames(2);
+        ClickConfig("Option",ConditionalCatalog.Response(action).Label);yield return Frames(2);
+    }
+    static IEnumerator PointerConfig(string name,string label=null)
+    {
+        mousePosition=RectTransformUtility.WorldToScreenPoint(null,ConfigButtonNamed(name,label).transform.position);
+        mouseHeld=false;yield return Frames(3);mouseHeld=true;yield return Frames(3);mouseHeld=false;yield return Frames(3);
+    }
+    static TMPro.TMP_Text EditorText(string name)=>Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<TMPro.TMP_Text>().First(t=>t.name==name);
+    static string[] EquippedActions()=>game.DraftLoadout.OrderedRules().Select(r=>r.Action).ToArray();
+    static IEnumerator ConditionEditor()
+    {
+        Record("SIDE-BY-SIDE CONDITION EDITOR: real uGUI, virtual pointer/Escape and bounded original-executor checks; no build or combat matrix.");
+        game.NewGame();SetAlphaGameSize(1280,720);yield return Frames(8);
+        Check("empty configuration has no defaults and no operation navigation",game.DraftLoadout.TotalRules==0&&ConfigButtonNamed("StartFight").interactable
+            &&!Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<UnityEngine.UI.Button>().Any(b=>b.name.StartsWith("ActionCategory")||b.name.StartsWith("Operation")));
+        yield return PointerConfig("AddRule");
+        Check("real virtual pointer opens Condition without choosing operation",Private<ConditionalRule>(Object.FindAnyObjectByType<DuelUI>(),"pendingRule").Condition==0
+            &&!ConfigButtonNamed("StartFight").interactable&&game.DraftLoadout.TotalRules==0);
+        int[][] expected={new[]{1,4,6},new[]{9,11,12},new[]{17,18,40},new[]{27,28,32},new[]{33,34,35,39,45},new[]{25,41,42,43}};
+        var seen=new System.Collections.Generic.List<string>();
+        for(int category=0;category<6;category++)
+        {
+            ClickConfig("ConditionCategory"+category);yield return Frames(2);
+            var options=CatalogOptions();seen.AddRange(options.Select(OptionLabel));
+            Check("Condition category "+category+" exact options and no auto-selection",options.Select(OptionLabel).SequenceEqual(expected[category].Select(id=>ConditionalCatalog.Condition(id).Label))
+                &&options.All(b=>b.interactable)&&Private<ConditionalRule>(Object.FindAnyObjectByType<DuelUI>(),"pendingRule").Condition==0);
+            UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(options[0].gameObject);yield return Frames(2);
+            Check("Condition category "+category+" focus shows real description",EditorText("OptionDescription").text.Contains(ConditionalCatalog.ConditionDescription(expected[category][0])));
+        }
+        Check("exactly 21 formal conditions once, with no historical entries",seen.Count==21&&seen.Distinct().Count()==21&&ConditionalCatalog.Conditions.Length==21);
+        yield return SelectEditorCondition(1);
+        int chosenCondition=Private<ConditionalRule>(Object.FindAnyObjectByType<DuelUI>(),"pendingRule").Condition;
+        var actions=new System.Collections.Generic.List<string>();
+        foreach(int op in new[]{2,3,4,0,1})
+        {
+            ClickConfig("ActionCategory"+op);yield return Frames(2);
+            actions.AddRange(CatalogOptions().Select(OptionLabel));
+            Check("Action category "+op+" exact order and shared compatibility",CatalogOptions().Select(OptionLabel).SequenceEqual(ConditionalCatalog.FormalResponses[op].Select(id=>ConditionalCatalog.Response(id).Label))
+                &&CatalogOptions().Select(b=>b.interactable).SequenceEqual(ConditionalCatalog.FormalResponses[op].Select(id=>ConditionalCatalog.IsAllowed(op,1,id)))
+                &&Private<ConditionalRule>(Object.FindAnyObjectByType<DuelUI>(),"pendingRule").Condition==chosenCondition);
+        }
+        Check("exactly 19 formal actions, all five categories remain",actions.Count==19&&actions.Distinct().Count()==19&&ConditionalCatalog.Responses.Length==19
+            &&Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<UnityEngine.UI.Button>().Where(b=>b.name.StartsWith("ActionCategory")).Select(OptionLabel).SequenceEqual(new[]{"Aim","Fire","Dodge","Move","Jump"}));
+        var blocked=ConfigButtonNamed("Option","Jump Once");mousePosition=RectTransformUtility.WorldToScreenPoint(null,blocked.transform.position);yield return Frames(5);
+        Check("disabled Action hover explains rejection and empty category",!blocked.interactable&&EditorText("OptionDescription").text.Contains(ConditionalCatalog.IncompatibilityReason(1,1,"J01"))&&EditorText("NoAvailableActions")!=null);
+        blocked.onClick.Invoke();game.StartFight();yield return Frames(2);
+        Check("invalid pairing cannot commit even through callback or Start",game.Phase==DuelPhase.Configure&&game.DraftLoadout.TotalRules==0);
+        heldKeys=new[]{Key.Escape};yield return Frames(3);heldKeys=Array.Empty<Key>();yield return Frames(3);
+        Check("Escape discards incomplete new draft",game.DraftLoadout.TotalRules==0&&ConfigButtonNamed("StartFight").interactable&&ConfigButtonNamed("AddRule").interactable);
+
+        yield return PointerConfig("AddRule");yield return PointerConfig("ConditionCategory5");
+        yield return PointerConfig("Option","Enemy Preparing an Attack");
+        Check("pointer transition cannot leak old Condition description into Action",Private<ConditionalRule>(Object.FindAnyObjectByType<DuelUI>(),"pendingRule").Condition==25
+            &&!EditorText("OptionDescription").text.Contains(ConditionalCatalog.ConditionDescription(25)));
+        yield return PointerConfig("Option","Aim at Triggering Enemy");
+        Check("complete virtual-pointer flow commits one valid rule",game.DraftLoadout.TotalRules==1&&game.DraftLoadout.Operations[2].Rules[0].Action=="Q03"&&ConfigButtonNamed("StartFight").interactable);
+        ClickConfig("RemoveRule0");yield return Frames(2);
+        var legacy=new ConditionalLoadout();Rule(legacy,0,33,"M01");Rule(legacy,3,33,"F01");legacy.TryAddRule(2,new ConditionalRule{Condition=25,Action="Q03"});
+        Check("adding through existing API appends after unnumbered legacy rows",legacy.Copy().OrderedRules().Select(r=>r.Action).SequenceEqual(new[]{"M01","F01","Q03"}));
+
+        yield return AddEditorRule(33,"M01");yield return AddEditorRule(33,"F01");yield return AddEditorRule(33,"M02");
+        Check("mixed operations stay in addition order",EquippedActions().SequenceEqual(new[]{"M01","F01","M02"}));
+        ClickConfig("MoveRuleUp2");yield return Frames(2);ClickConfig("MoveRuleUp1");yield return Frames(2);
+        Check("reordering changes same-operation priority only",EquippedActions().SequenceEqual(new[]{"M02","M01","F01"})&&game.DraftLoadout.Operations[0].Rules.Select(r=>r.Action).SequenceEqual(new[]{"M02","M01"}));
+        var original=game.DraftLoadout;var copy=original.Copy();
+        Check("Copy preserves mixed display order and deep copies rows",copy.OrderedRules().Select(r=>r.Action).SequenceEqual(EquippedActions())&&!ReferenceEquals(copy.Operations[0].Rules[0],original.Operations[0].Rules[0]));
+        typeof(DuelGame).GetProperty("DraftLoadout").SetValue(game,copy);Object.FindAnyObjectByType<DuelUI>().Show();yield return Frames(3);
+        Check("rebinding a copied loadout preserves the visible order",ConfigButtonNamed("Rule0Action").GetComponentInChildren<TMPro.TMP_Text>().text.Contains("Retreat from Enemy")&&ConfigButtonNamed("Rule2Action").GetComponentInChildren<TMPro.TMP_Text>().text.Contains("Fire One Shot"));
+        yield return AddEditorRule(33,"Q01");yield return AddEditorRule(33,"J01");
+        Check("five is shared budget; Add disabled but Edit available",game.DraftLoadout.TotalRules==5&&!ConfigButtonNamed("AddRule").interactable&&ConfigButtonNamed("Rule4Action").interactable);
+        ClickConfig("Rule4Condition");yield return Frames(2);yield return SelectEditorCondition(1);
+        Check("incompatible old Action cleared only in local draft",Private<ConditionalRule>(Object.FindAnyObjectByType<DuelUI>(),"pendingRule").Action==null
+            &&game.DraftLoadout.Operations[1].Rules[0].Condition==33&&ConfigButtonNamed("Rule4Action").GetComponentInChildren<TMPro.TMP_Text>().text.Contains("Jump Once"));
+        game.StartFight();Check("unfinished edit blocks direct StartFight",game.Phase==DuelPhase.Configure);
+        ClickConfig("CancelRuleEdit");yield return Frames(2);
+        ClickConfig("Rule0Condition");yield return Frames(2);yield return SelectEditorCondition(4);
+        Check("compatible old Action retained in draft",Private<ConditionalRule>(Object.FindAnyObjectByType<DuelUI>(),"pendingRule").Action=="M02");
+        ClickConfig("SelectorBack");yield return Frames(2);
+        Check("Action can return to Condition without changing equipped rule",Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<UnityEngine.UI.Button>().Any(b=>b.name=="ConditionCategory0")&&game.DraftLoadout.Operations[0].Rules[0].Condition==33);
+        heldKeys=new[]{Key.Escape};yield return Frames(3);heldKeys=Array.Empty<Key>();yield return Frames(3);
+        Check("Escape cancels existing edit without damage",game.DraftLoadout.Operations[0].Rules[0].Condition==33&&ConfigButtonNamed("StartFight").interactable);
+        ClickConfig("Rule4Action");yield return Frames(2);ClickConfig("ActionCategory3");yield return Frames(2);ClickConfig("Option","Keep Firing");yield return Frames(2);
+        Check("cross-operation edit at five retains row without duplicate",EquippedActions().SequenceEqual(new[]{"M02","M01","F01","Q01","F03"})&&game.DraftLoadout.Operations[1].Rules.Count==0&&game.DraftLoadout.Operations[3].Rules.Count==2);
+
+        foreach(int width in new[]{1280,1920})
+        {
+            SetAlphaGameSize(width,width*9/16);yield return Frames(6);
+            ClickConfig("Rule4Condition");yield return Frames(2);ClickConfig("ConditionCategory4");yield return Frames(5);
+            CheckEditorLayout(width,"Condition");
+            Directory.CreateDirectory(Output);ScreenCapture.CaptureScreenshot(Output+$"editor-condition-{width}.png");yield return Frames(3);
+            yield return SelectEditorCondition(9);ClickConfig("ActionCategory3");yield return Frames(4);
+            mousePosition=RectTransformUtility.WorldToScreenPoint(null,ConfigButtonNamed("Option","Fire One Shot").transform.position);yield return Frames(4);
+            CheckEditorLayout(width,"Action");
+            ScreenCapture.CaptureScreenshot(Output+$"editor-action-{width}.png");yield return Frames(3);
+            ClickConfig("CancelRuleEdit");yield return Frames(2);
+        }
+        // One short controlled combat sample checks the unchanged operation loop and the copied order.
+        game.StartFight();yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);StopPolicies();AlphaPlace(-5,-2);yield return Seconds(.18f);
+        Check("Start snapshot retains order and concurrent Move/Aim/Fire",game.Rules.RuleAt(ControlOperation.Movement,0).Action=="M02"
+            &&game.Rules.RuleAt(ControlOperation.Fire,1).DisplayOrder==4&&Feedback(0,0).Executing&&Feedback(2).Executing&&game.Rifle.TriggerPulls>0);
+        game.Player.TakeDamage(99999,null);yield return Frames(3);game.Reconfigure();yield return Frames(3);
+        Check("controlled defeat/reconfigure keeps mixed order",EquippedActions().SequenceEqual(new[]{"M02","M01","F01","Q01","F03"})&&ConfigButtonNamed("Rule4Action").GetComponentInChildren<TMPro.TMP_Text>().text.Contains("Keep Firing"));
+        for(int i=0;i<5;i++){ClickConfig("RemoveRule0");yield return Frames(2);}
+        Check("removing all rules returns to empty manual configuration",game.DraftLoadout.TotalRules==0&&ConfigButtonNamed("StartFight").interactable);
+        yield return AlphaFresh(1,null);heldKeys=new[]{Key.D};yield return Seconds(.15f);
+        Check("empty configuration retains actual manual movement",!game.Player.GetComponent<PlayerInputReader>().ConditionalFrame.MovementOwned&&game.Player.GetComponent<Rigidbody2D>().linearVelocity.x>1);
+        heldKeys=Array.Empty<Key>();game.MainMenu();yield return Frames(2);
+    }
+    static void CheckEditorLayout(int width,string step)
+    {
+        Canvas.ForceUpdateCanvases();
+        var ui=Object.FindAnyObjectByType<DuelUI>();
+        var panels=ui.GetComponentsInChildren<RectTransform>();
+        var left=panels.First(r=>r.name=="RuleEditor");var right=panels.First(r=>r.name=="RuleList");
+        Check($"{width} {step}: selector and complete list side by side",Screen.width==width&&left.position.x<right.position.x
+            &&right.GetComponentsInChildren<UnityEngine.UI.Button>().Count(b=>b.name.StartsWith("Rule")&&b.name.EndsWith("Action"))==5
+            &&left.sizeDelta.x/(left.sizeDelta.x+right.sizeDelta.x)>.55f&&left.sizeDelta.x/(left.sizeDelta.x+right.sizeDelta.x)<.6f);
+        var overflow=left.GetComponentsInChildren<TMPro.TMP_Text>().Concat(right.GetComponentsInChildren<TMPro.TMP_Text>()).Where(t=>t.isTextOverflowing).Select(t=>t.name).ToArray();
+        Check($"{width} {step}: no label/description overflow",overflow.Length==0,string.Join(",",overflow));
+        var rows=panels.First(r=>r.name=="EquippedRules").GetComponent<UnityEngine.UI.ScrollRect>();
+        rows.verticalNormalizedPosition=0;Canvas.ForceUpdateCanvases();
+        var last=(RectTransform)ConfigButtonNamed("Rule4Action").transform;
+        Check($"{width} {step}: final row reachable and footer separate",rows.viewport.rect.Contains(rows.viewport.InverseTransformPoint(last.position))
+            &&ConfigButtonNamed("StartFight").transform.position.y<right.position.y-right.rect.height*right.lossyScale.y/2);
+    }
     static IEnumerator UnifiedCatalog()
     {
         Record("CONDITION-FIRST EDITOR: unified rows, action categories and focused executor examples; no combination matrix.");

@@ -206,6 +206,14 @@ namespace GoGhost.Duel
                 graphic.raycastTarget = false;
                 graphic.Selected = false;
                 graphic.NeuralStyle=true;graphic.NeuralRegion=i;neuralRegions[i]=graphic;
+                if (i == 0)
+                {
+                    var brainRect = Rect("ParticleBrain", rect, Vector2.zero, Vector2.zero);
+                    brainRect.anchorMin = Vector2.zero;
+                    brainRect.anchorMax = Vector2.one;
+                    var brain = brainRect.gameObject.AddComponent<MissionParticleBrain>();
+                    brain.color = new Color32(232, 245, 255, 255);
+                }
             }
             UpdateConfigurationSignals();
         }

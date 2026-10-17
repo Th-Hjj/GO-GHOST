@@ -16,6 +16,8 @@ The right panel always shows **Rules X/5**, clickable IF/THEN fields, Up/Down, R
 
 Pending new or changed pairs remain UI-local until complete and legal. Selecting a condition opens Select Action; changing it clears only an incompatible response. The action step can return to Condition. Selecting a legal action commits immediately without an enable step. Cancel/Escape discards the draft and restores the original equipped row; the persistent list always shows committed data. Incomplete editing blocks Start Fight. No condition or action is automatically chosen. `ConditionalCatalog.IsAllowed()` is the same pair definition for the action picker, loadout validation and runtime. Copying preserves all rows, display order and operation-local order; invalid over-budget data is rejected rather than silently truncated. Historical handlers remain outside the formal selectable catalog.
 
+Visual-only head addition, Thomas 2026-10-16: the configuration head contains a small cool-white (#E8F5FF) cloud of 18 slowly rotating particles with simulated 3D depth and bounded drift. Preserve its original silhouette and static outline; the follow-up explicitly rejects a golden outline pulse. Color is configurable for future presentation, but there are no Ultimate, acquisition or other new gameplay mechanics. See Art Direction for the local renderer parameters.
+
 ## Formal catalog
 
 Temporary picker override, confirmed by Thomas on 2026-10-16: hide **Aim at Detected Enemy (Q03)** from the Action picker. The UI exposes 18 actions; all 19 definitions, existing equipped Q03 rules, validation and runtime behavior remain intact for later restoration. This overrides complete-catalog visibility for Q03 only.

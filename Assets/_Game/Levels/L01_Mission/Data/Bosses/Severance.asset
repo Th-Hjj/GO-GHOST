@@ -21,6 +21,43 @@ MonoBehaviour:
     JumpSpeed: 12
     GravityScale: 3
     AirControl: 0.55
+  Sword:
+    UnboundHealth: 0.45
+    AdvanceSpeed: 34
+    AdvanceDistance: 22
+    TravelSpeed: 15
+    DrawPrepare: 0.2
+    DrawLock: 0.14
+    WavePrepare: 0.3
+    WaveLock: 0.18
+    WaveSpeed: 15
+    WaveLength: 1.35
+    WaveLife: 2.4
+    CutReach: 3
+    CutRadius: 0.16
+    EchoDelay: 0.2
+    EchoWarning: 0
+    EchoActive: 0.12
+    EchoLength: 1.35
+    EchoSpeed: 13
+    EchoTravel: 18
+    EchoStagger: 0.16
+    CutPrepare: 0.3
+    FinisherPrepare: 0.38
+    CutLock: 0.16
+    CutAdvance: 1.1
+    CutStepSpeed: 12
+    JumpPrepare: 0.24
+    JumpLock: 0.12
+    JumpCutActive: 0.28
+    Recovery: 0.42
+    FinaleRecovery: 0.8
+    FinaleCooldown: 10
+    DrawDamage: 28
+    WaveDamage: 14
+    CutDamage: 18
+    FinisherDamage: 26
+    EchoDamage: 24
   Magazine: 12
   ReloadSeconds: 1.45
   BulletSpeed: 24

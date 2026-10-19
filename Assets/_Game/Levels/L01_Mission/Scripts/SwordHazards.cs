@@ -65,7 +65,8 @@ namespace GoGhost.Duel
             candidate.Clear();foreach(var trace in traces)if(!trace.Deferred)candidate.Add(trace.Threat);
             candidate.Add(threat);
             if(actor.Actions.HasLivingPartner&&!deferred&&!SwordEscape.HasRoute(actor,candidate,Mathf.Min(2.5f,threat.EndsAt-Time.time)))return;
-            traces.Add(new Trace {Threat=threat,Damage=s.EchoDamage,BornAt=Time.time,WarningAt=start-s.EchoWarning,Deferred=deferred});Echoes++;
+            // With no separate warning stage, expose the harmless .2 s residue immediately.
+            traces.Add(new Trace {Threat=threat,Damage=s.EchoDamage,BornAt=Time.time,WarningAt=s.EchoWarning>0?start-s.EchoWarning:Time.time,Deferred=deferred});Echoes++;
         }
         public void Replay()
         {

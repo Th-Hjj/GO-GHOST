@@ -74,7 +74,7 @@ namespace GoGhost.Duel
         public Vector2 DropTarget => targetPoint;
         public Vector2 SweepFrom => sweepFrom;
         public Vector2 SweepTo => sweepTo;
-        public float BladeReach => UsesBladeArc?actor.Navigation.PlatformWidth*(p.RhythmReach[RhythmIndex]/4f):settings!=null?settings.Range:1.2f;
+        public float BladeReach => UsesBladeArc||Ability==BossAbility.DropCut?p.Sword.CutReach:settings!=null?settings.Range:1.5f;
         public float BladeAngle => UsesBladeArc
             ? Mathf.Lerp(p.RhythmArcFrom[RhythmIndex],p.RhythmArcTo[RhythmIndex],Phase==BossActionPhase.Active?PhaseProgress:Phase==BossActionPhase.Recovery?1:0)
             : -90;
@@ -327,7 +327,7 @@ namespace GoGhost.Duel
                 End=sweepTo;
             }
             else if(Ability==BossAbility.DropCut)
-            {Origin=centre;Aim=Vector2.down;End=centre+Aim*settings.Range;}
+            {Origin=centre;Aim=Vector2.down;End=centre+Aim*BladeReach;}
             activeStarts=phaseUntil+LockSeconds;activeEnds=activeStarts+(Ability==BossAbility.Piercing?.0001f:ActiveSeconds);
         }
         Vector2 BeamEnd(Vector2 origin,Vector2 direction)
@@ -499,13 +499,13 @@ namespace GoGhost.Duel
             Vector2 now=actor.Position;
             for(int i=0;i<=4;i++)
             {
-                Vector2 offset=Vector2.down*(settings.Range*i/4f);
+                Vector2 offset=Vector2.down*(BladeReach*i/4f);
                 // A translated blade tip may already lie below a platform. It cannot originate damage there.
                 if(actor.Player!=null&&!Projectile.TerrainHit(now,actor.Player.GetComponent<Collider2D>().ClosestPoint(now+offset),.015f,out _))
                     HitSegment(previousBladeOrigin+offset,now+offset,p.BladeRadius,settings.Damage,true);
             }
-            HitSegment(now,now+Vector2.down*settings.Range,p.BladeRadius,settings.Damage,true);
-            Origin=now;Aim=Vector2.down;End=now+Aim*settings.Range;previousBladeOrigin=now;
+            HitSegment(now,now+Vector2.down*BladeReach,p.BladeRadius,settings.Damage,true);
+            Origin=now;Aim=Vector2.down;End=now+Aim*BladeReach;previousBladeOrigin=now;
         }
         void HitSegment(Vector2 from,Vector2 to,float radius,int damage,bool terrain)
         {

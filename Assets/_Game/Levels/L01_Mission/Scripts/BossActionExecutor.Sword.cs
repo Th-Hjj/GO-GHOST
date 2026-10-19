@@ -145,7 +145,7 @@ namespace GoGhost.Duel
             swordResidualMoving=swordResidualStepTried=false;swordPreview=BossAbility.None;
             swordTravelJumpPlanned=false;swordTravelBeats=0;
             swordChaseLinked=false;swordLandingFlowUntil=0;
-            swordPhraseEchoStart=swordHazards.Echoes;
+            swordPhraseEchoStart=swordHazards.Echoes+swordHazards.Emitted;
             swordDeadline=Time.time+(ability==BossAbility.SwordRedline?9:7);
             switch(ability)
             {
@@ -208,7 +208,7 @@ namespace GoGhost.Duel
                 float preparation=beat==SwordBeat.Wave?p.Sword.WavePrepare:beat==SwordBeat.Traverse?.18f:
                     beat==SwordBeat.JumpCut?p.Sword.JumpPrepare:beat==SwordBeat.DownCut?p.Sword.FinisherPrepare:
                     beat==SwordBeat.Draw?p.Sword.DrawPrepare:p.Sword.CutPrepare;
-                if(Time.time<swordLandingFlowUntil&&GroundSwordCut(beat))preparation=Mathf.Min(preparation,.12f);
+                // Landing follow-ups keep the same complete wind-up as other close swings.
                 SetPhase(BossActionPhase.Prepare,preparation);
                 actor.Sounds?.Play(Sfx.DrawPrepare,actor.ActorId,AttackId);UpdateSwordGeometry();PublishSword();return;
             }
@@ -276,12 +276,7 @@ namespace GoGhost.Duel
                 else if(CurrentSwordBeat==SwordBeat.Draw)
                 {
                     if(!actor.Motor.DashActive||Time.time>=phaseUntil)
-                    {
-                        Vector2 lead=SwordDrawLead;
-                        if(swordHazards.Echoes==swordPhraseEchoStart)
-                            swordHazards.Echo(swordDrawStart+lead,actor.Position+lead,Ability==BossAbility.SwordRedline);
-                        NextSwordBeat();
-                    }
+                    {NextSwordBeat();}
                 }
                 else if(Time.time>=phaseUntil){if(GroundSwordCut(CurrentSwordBeat))SeedSwordCut();NextSwordBeat();}
             }
@@ -382,11 +377,12 @@ namespace GoGhost.Duel
         void SeedSwordCut()
         {
             if(swordCutSeeded)return;swordCutSeeded=true;
-            // Count successful emissions for the whole phrase, not currently surviving blades.
+            // Only a completed real swing can leave a blade. Draw/traversal never seed one.
+            // Both lane waves and afterblades consume the phrase's one successful emission.
             // Expiry or an ally block never grants another seed within this phrase.
-            if(swordHazards.Echoes!=swordPhraseEchoStart)return;
+            if(swordHazards.Echoes+swordHazards.Emitted!=swordPhraseEchoStart)return;
             Vector2 direction=new Vector2(swordFacing*Mathf.Max(.6f,Mathf.Abs(Aim.x)),Aim.y*.55f).normalized;
-            swordHazards.Cut(SwordBladeRoot,direction,Ability==BossAbility.SwordRedline);
+            swordHazards.Cut(SwordBladeRoot,direction,false);
         }
         void ActivateSwordBeat()
         {

@@ -8,6 +8,86 @@ using UnityEngine.InputSystem;
 
 public static partial class BossEncounterSmoke
 {
+    static IEnumerator SwordCloseReadability()
+    {
+        Record("Controlled real close/jump actions; rendered blade and tell geometry, actual strike timestamps. Not human balance proof.");
+        yield return Fresh(2);StopPolicies();yield return Frames(2);var sword=game.Bosses[0];
+        OnFloor(sword.gameObject,sword.Navigation,-8);OnFloor(game.Player.gameObject,sword.Navigation,-6);
+        yield return Seconds(.3f);
+        var weapon=Private<SpriteRenderer[]>(sword.View,"parts")[(int)BossSilhouetteView.Part.Weapon];
+        float idle=weapon.transform.localScale.x*weapon.sprite.bounds.size.x,min=idle,max=idle;
+        Check("close readability real phrase begins",sword.Actions.TryStartSword(BossAbility.SwordDuel));
+        float lastStrike=-1,minGap=float.PositiveInfinity,end=Time.time+6;int lastId=-1,strikes=0;bool shot=false;
+        while(sword.Actions.Busy&&Time.time<end)
+        {
+            float length=weapon.transform.localScale.x*weapon.sprite.bounds.size.x;min=Mathf.Min(min,length);max=Mathf.Max(max,length);
+            if(sword.Actions.Phase==BossActionPhase.Active&&sword.Actions.CurrentSwordBeat!=SwordBeat.Draw&&lastId!=sword.Actions.AttackId)
+            {
+                lastId=sword.Actions.AttackId;strikes++;
+                if(lastStrike>=0)minGap=Mathf.Min(minGap,Time.time-lastStrike);lastStrike=Time.time;
+                Record("STRIKE "+sword.Actions.CurrentSwordBeat+" time="+Time.time);
+            }
+            if(!shot&&sword.Actions.Phase==BossActionPhase.Active&&sword.Actions.PhaseProgress>.25f)
+            {ScreenCapture.CaptureScreenshot(Output+mode+"-close.png");shot=true;}
+            yield return null;
+        }
+        Check("sword blade stays 1.5 between idle and cuts",max-min<.05f&&Mathf.Abs(max-1.5f)<.01f,"idle="+idle+" min="+min+" max="+max);
+        Check("slash reach is 3.0 independently of the 1.5 blade",Mathf.Abs(sword.Profile.Sword.CutReach-3f)<.01f);
+        Check("close sequence has distinct paced strikes",strikes>=2&&minGap>=.6f,"strikes="+strikes+" minimumGap="+minGap);
+        Check("short blade still connects real melee damage",sword.Actions.ConnectedHits>0);
+        Check("close phrase has finite full recovery",!sword.Actions.Busy);
+
+        yield return Fresh(2);StopPolicies();yield return Frames(2);sword=game.Bosses[0];
+        var low=sword.Navigation.Nodes.Where(n=>n.Collider.GetComponent<PlatformEffector2D>()!=null&&n.Position.y<1)
+            .OrderBy(n=>Mathf.Abs(n.Position.x+4.4f)).First();
+        var high=sword.Navigation.Nodes.Where(n=>n.Collider.GetComponent<PlatformEffector2D>()!=null&&n.Position.y>1)
+            .OrderBy(n=>Mathf.Abs(n.Position.x+9)).First();
+        Position(sword.gameObject,low.Center(sword.Motor.Size));Position(game.Player.gameObject,high.Center(game.Player.GetComponent<Collider2D>().bounds.size));
+        yield return Seconds(.3f);Check("readability crossing begins",sword.Actions.TryStartSword(BossAbility.SwordCrossing));
+        int early=0,earlySamples=0;bool publicTell=false,jump=false,lateArc=false;float furthest=0;shot=false;end=Time.time+4;
+        while(sword.Actions.Busy&&Time.time<end)
+        {
+            if(sword.Actions.CurrentSwordBeat==SwordBeat.JumpCut)
+            {
+                jump=true;
+                bool tooSoon=sword.Actions.Phase!=BossActionPhase.Active||Time.time<sword.Actions.SwordStrikeAt-.2f;
+                if(tooSoon)
+                {
+                    earlySamples++;publicTell|=sword.PublicThreats.Any(t=>t.Shape==BossThreatShape.BladeArc);
+                    if(sword.View.GetComponentsInChildren<LineRenderer>().Any(l=>l.enabled&&l.name=="SwordCommitment"))early++;
+                    if(!shot&&sword.Actions.Phase==BossActionPhase.Locked)
+                    {ScreenCapture.CaptureScreenshot(Output+mode+"-jump-tell.png");shot=true;}
+                }
+                else
+                {
+                    var line=sword.View.GetComponentsInChildren<LineRenderer>().FirstOrDefault(l=>l.enabled&&l.name=="SwordCommitment");
+                    if(line!=null)
+                    {
+                        if(!lateArc)ScreenCapture.CaptureScreenshot(Output+mode+"-local-arc.png");lateArc=true;
+                        for(int i=0;i<line.positionCount;i++)furthest=Mathf.Max(furthest,Vector2.Distance(line.GetPosition(i),sword.Actions.SwordBladeRoot));
+                    }
+                }
+            }
+            yield return null;
+        }
+        Check("jump does not draw the future slash before approach",jump&&earlySamples>0&&early==0,"earlyVisible="+early+" samples="+earlySamples);
+        Check("public jump commitment remains available",publicTell);
+        Check("late local arc expresses 3.0 slash reach",lateArc&&Mathf.Abs(furthest-3f)<.1f&&sword.Actions.SwordJumpCuts>0,"furthest="+furthest+" swings="+sword.Actions.SwordJumpCuts);
+        game.MainMenu();yield return Frames(2);Check("readability fixture cleans menu",game.Bosses.Count==0);
+        foreach(int wave in new[]{1,2,3})
+        {
+            yield return Fresh(wave);end=Time.time+3.5f;
+            while(Time.time<end&&game.Phase==DuelPhase.Fight)
+            {
+                var target=game.Bosses.FirstOrDefault(a=>a.IsAlive);if(target!=null)MouseAt(target.Position,true);
+                heldKeys=Time.time%2<1?new[]{Key.D}:new[]{Key.A,Key.Space};yield return null;
+            }
+            heldKeys=Array.Empty<Key>();mouseHeld=false;
+            Check("short readability W"+wave+" advances combat",game.FightClock>1&&game.Rifle.ShotsFired>0,"clock="+game.FightClock+" phase="+game.Phase);
+        }
+        game.MainMenu();yield return Frames(2);Check("readability flow ends at clean menu",game.Bosses.Count==0);
+    }
+
     static IEnumerator SwordPerformance()
     {
         yield return Fresh(2);StopPolicies();var sword=game.Bosses[0];
@@ -98,7 +178,7 @@ public static partial class BossEncounterSmoke
     static IEnumerator SwordPhraseBlades()
     {
         Record("Controlled starts; real complete phrases and physics. Direction observation is bounded, not proof against every reported angle.");
-        foreach(var ability in new[]{BossAbility.SwordPursuit,BossAbility.SwordDuel,BossAbility.SwordCrossing,BossAbility.SwordRedline})
+        foreach(var ability in new[]{BossAbility.SwordPursuit,BossAbility.SwordDuel,BossAbility.SwordCrossing,BossAbility.SwordRedline,BossAbility.SwordDislodge})
         {
             yield return Fresh(2);StopPolicies();yield return Frames(2);var sword=game.Bosses[0];var nav=sword.Navigation;
             OnFloor(sword.gameObject,nav,ability==BossAbility.SwordDuel?-4.6f:-13);
@@ -110,7 +190,7 @@ public static partial class BossEncounterSmoke
                 Position(sword.gameObject,low.Center(sword.Motor.Size));Position(game.Player.gameObject,high.Center(game.Player.GetComponent<Collider2D>().bounds.size));
             }
             yield return Seconds(.3f);
-            int before=sword.Actions.SwordEchoCount;
+            int before=sword.Actions.SwordEchoCount+sword.Actions.SwordWaveCount;
             if(ability==BossAbility.SwordRedline)
             {
                 sword.Health.TakeDamage(Mathf.CeilToInt(sword.Health.MaxHealth*.6f),game.Player.gameObject);
@@ -120,16 +200,17 @@ public static partial class BossEncounterSmoke
             else Check("phrase starts "+ability,sword.Actions.TryStartSword(ability));
             var seeds=new System.Collections.Generic.Dictionary<int,Vector2>();
             Vector2 committed=sword.Actions.Aim;SwordBeat beat=sword.Actions.CurrentSwordBeat;
-            bool frozen=true,consistent=true;float end=Time.time+11;
+            bool frozen=true,consistent=true,swingOnly=true,sawSwing=false;float end=Time.time+11;
             while(Time.time<end&&sword.Actions.Busy)
             {
                 foreach(var trace in sword.Actions.SwordTraces)
                 {
-                    if(trace.Wave)continue;
                     if(seeds.TryGetValue(trace.Threat.AttackId,out var initial))frozen&=initial==trace.Threat.Direction;
                     else
                     {
                         seeds.Add(trace.Threat.AttackId,trace.Threat.Direction);
+                        swingOnly&=trace.Wave?beat==SwordBeat.Wave:
+                            beat==SwordBeat.LowCut||beat==SwordBeat.RisingCut||beat==SwordBeat.DownCut||beat==SwordBeat.JumpCut;
                         bool agrees=beat==SwordBeat.Draw?Vector2.Dot(committed.normalized,trace.Threat.Direction)>.98f:
                             Mathf.Abs(committed.x)<.05f||Mathf.Sign(committed.x)==Mathf.Sign(trace.Threat.Direction.x);
                         consistent&=agrees;
@@ -138,11 +219,20 @@ public static partial class BossEncounterSmoke
                 }
                 if(sword.Actions.Phase==BossActionPhase.Active||sword.Actions.Phase==BossActionPhase.Locked)
                 {committed=sword.Actions.Aim;beat=sword.Actions.CurrentSwordBeat;}
+                if(sword.Actions.Phase==BossActionPhase.Active)
+                    sawSwing|=beat==SwordBeat.LowCut||beat==SwordBeat.RisingCut||beat==SwordBeat.DownCut||beat==SwordBeat.Wave
+                        ||beat==SwordBeat.JumpCut&&sword.Actions.SwordJumpCuts>0;
                 yield return null;
             }
-            Check("complete phrase emits exactly one afterblade "+ability,sword.Actions.SwordEchoCount-before==1,"emitted="+(sword.Actions.SwordEchoCount-before));
-            Check("observed seed agrees with committed direction "+ability,seeds.Count>0&&consistent);
-            Check("seed direction stays frozen "+ability,seeds.Count>0&&frozen);
+            int emitted=sword.Actions.SwordEchoCount+sword.Actions.SwordWaveCount-before;
+            Check("phrase emits one blade only if it swings "+ability,emitted==(sawSwing?1:0),"emitted="+emitted+" sawSwing="+sawSwing);
+            Check("blades only originate from actual swings, never Draw or travel "+ability,swingOnly);
+            if(seeds.Count>0)
+            {
+                Check("observed seed agrees with committed direction "+ability,consistent);
+                Check("seed direction stays frozen "+ability,frozen);
+            }
+            else Record("NOT OBSERVED: blade direction for "+ability+"; no swing reached in this fixture.");
             Check("phrase has finite exit "+ability,!sword.Actions.Busy);
         }
         yield return Fresh(2);StopPolicies();yield return Frames(2);var owner=game.Bosses[0];
@@ -216,10 +306,12 @@ public static partial class BossEncounterSmoke
         yield return Seconds(.3f);Vector2 start=sword.Position;
         Check("long pursuit starts",sword.Actions.TryStartSword(BossAbility.SwordPursuit));
         yield return Until(()=>sword.Actions.Phase==BossActionPhase.Locked,1);
-        var locked=sword.Actions.End;yield return Until(()=>sword.Actions.SwordEchoCount>0,2);
+        var locked=sword.Actions.End;yield return Until(()=>sword.Actions.CurrentSwordBeat!=SwordBeat.Draw,2);
         Check("real draw reaches increased distance",Vector2.Distance(start,sword.Position)>21.5f&&Vector2.Distance(start,sword.Position)<=22.1f,
             "travel="+Vector2.Distance(start,sword.Position)+" locked="+locked+" max="+sword.Profile.Sword.AdvanceDistance);
-        Check("long draw emits exactly one delayed moving blade",sword.Actions.SwordTraces.Count==1&&sword.Actions.SwordTraces.All(t=>t.Threat.Shape==BossThreatShape.MovingBlade&&!t.Wave));
+        Check("completed Draw does not emit a blade",sword.Actions.SwordEchoCount==0&&sword.Actions.SwordWaveCount==0);
+        yield return Until(()=>sword.Actions.SwordEchoCount>0,2);
+        Check("following real swing emits one delayed moving blade",sword.Actions.SwordTraces.Count==1&&sword.Actions.SwordTraces.All(t=>t.Threat.Shape==BossThreatShape.MovingBlade&&!t.Wave));
         ScreenCapture.CaptureScreenshot(Output+mode+"-draw.png");yield return Frames(2);
         yield return Until(()=>sword.Actions.SwordTerminalRecovery,3);
         float recovery=Time.time;var hazards=Private<SwordHazards>(sword.Actions,"swordHazards");
@@ -228,7 +320,7 @@ public static partial class BossEncounterSmoke
         Check("recovery ends independently of delayed blades",!sword.Actions.Busy&&sword.Actions.PendingSwordThreats&&Time.time-recovery<.6f,
             "recovery observed="+(Time.time-recovery));
         Check("idle owner continues publishing warning",sword.PublicThreats.Any(t=>t.Shape==BossThreatShape.MovingBlade));
-        Check("next attack can begin while afterblade charges",sword.Actions.TryStartSword(BossAbility.SwordDuel));
+        Check("next attack can begin while earlier blade remains",sword.Actions.TryStartSword(BossAbility.SwordDuel));
 
         yield return Fresh(2);StopPolicies();yield return Frames(2);sword=game.Bosses[0];
         OnFloor(sword.gameObject,sword.Navigation,-13);OnFloor(game.Player.gameObject,sword.Navigation,-2);
@@ -238,10 +330,10 @@ public static partial class BossEncounterSmoke
         Check("afterblade matches ordinary wave length and has finite frozen launch",Mathf.Abs(Vector2.Distance(trace.Threat.Origin,trace.Threat.End)-sword.Profile.Sword.WaveLength)<.01f&&trace.Threat.Direction==Vector2.right
             &&Mathf.Abs(trace.Threat.ProjectileSpeed-13)<.01f&&Mathf.Abs(trace.Threat.EndsAt-trace.Threat.StartsAt-18f/13)<.01f,
             "length="+Vector2.Distance(trace.Threat.Origin,trace.Threat.End)+" speed="+trace.Threat.ProjectileSpeed+" life="+(trace.Threat.EndsAt-trace.Threat.StartsAt));
-        Check("afterblade grants full extended warning",Mathf.Abs(trace.Threat.StartsAt-trace.WarningAt-.5f)<.01f
-            &&Mathf.Abs(trace.Threat.StartsAt-trace.BornAt-.82f)<.01f,
+        Check("blade has .2 second total residue and no extra warning",sword.Profile.Sword.EchoWarning==0
+            &&Mathf.Abs(trace.Threat.StartsAt-trace.BornAt-.2f)<.01f&&Mathf.Abs(trace.WarningAt-trace.BornAt)<.01f,
             "warning="+(trace.Threat.StartsAt-trace.WarningAt)+" total="+(trace.Threat.StartsAt-trace.BornAt));
-        yield return Seconds(.4f);
+        yield return Seconds(.08f);
         Check("charging blade is stationary and harmless",trace.A(Time.time)==seed&&game.Player.CurrentHealth==hp);
         ScreenCapture.CaptureScreenshot(Output+mode+"-charge.png");yield return Frames(2);
         checkingPause=true;game.SetPause(true);float paused=Time.time;yield return RealSeconds(.12);

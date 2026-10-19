@@ -11,9 +11,9 @@ namespace GoGhost.Duel
         public float AdvanceSpeed=34, AdvanceDistance=22, TravelSpeed=15;
         public float DrawPrepare=.20f, DrawLock=.14f, WavePrepare=.30f, WaveLock=.18f;
         public float WaveSpeed=15, WaveLength=1.35f, WaveLife=2.4f;
-        public float CutReach=3.4f, CutRadius=.16f, EchoDelay=.32f, EchoWarning=.50f, EchoActive=.12f;
+        public float CutReach=3.0f, CutRadius=.16f, EchoDelay=.20f, EchoWarning=0, EchoActive=.12f;
         public float EchoLength=1.35f, EchoSpeed=13, EchoTravel=18, EchoStagger=.16f;
-        public float CutPrepare=.16f, FinisherPrepare=.24f, CutLock=.10f, CutAdvance=1.1f, CutStepSpeed=12;
+        public float CutPrepare=.30f, FinisherPrepare=.38f, CutLock=.16f, CutAdvance=1.1f, CutStepSpeed=12;
         public float JumpPrepare=.24f, JumpLock=.12f, JumpCutActive=.28f;
         public float Recovery=.42f, FinaleRecovery=.8f, FinaleCooldown=10;
         public int DrawDamage=28, WaveDamage=14, CutDamage=18, FinisherDamage=26, EchoDamage=24;

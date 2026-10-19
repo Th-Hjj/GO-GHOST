@@ -10,23 +10,44 @@ namespace GoGhost.Duel
         float rulePanelWidth=RulePanelWidth;
         sealed class RuleRowView
         {
+            public ConditionalController Controller;
+            public ConditionalRule Rule;
             public ControlOperation Operation;
             public int Row;
+            public RectTransform Root;
             public UnityEngine.UI.Image Background;
             public UnityEngine.UI.Image[] Border;
-            public TMP_Text Condition, Action, Arrow;
-            public Material Signal;
-            public bool Executing;
-            public UnityEngine.UI.Image Identity;
+            public TMP_Text Number, Condition, Action, Arrow;
+            public Material[] Signals;
+            public bool Matched;
         }
-        readonly List<RuleRowView> ruleRows = new List<RuleRowView>(ConditionalCatalog.MaxRulesTotal);
-        ConditionalController hudRules;
-        RectTransform ruleSidebar, battleUi;
-
+        // View capacity is independent of the current five-rule gameplay budget.
+        readonly List<RuleRowView> ruleRows = new List<RuleRowView>();
+        ConditionalController hudRules, hudScrollController;
+        RectTransform ruleSidebar, battleUi, ruleScrollRoot, ruleViewport, ruleContent, ruleScrollbarRoot;
+        UnityEngine.UI.ScrollRect ruleScroll;
+        TMP_Text ruleHeading;
+        Vector2 ruleHudSize;
+        float hudScrollPosition=1;
+#if UNITY_EDITOR
+        List<ConditionalRule> ruleHudViewSample;
+        // Presentation-only capacity checks never install rules or read controller feedback.
+        internal void SetRuleHudViewSample(IReadOnlyList<ConditionalRule> sample)
+        {
+            ruleHudViewSample=sample==null?null:new List<ConditionalRule>();
+            if(sample!=null)foreach(var rule in sample)if(rule!=null)ruleHudViewSample.Add(rule.Copy());
+            Show();
+            if(ruleScroll!=null)ruleScroll.verticalNormalizedPosition=1;
+        }
+#endif
         void ClearRuleHud()
         {
-            foreach(var row in ruleRows)if(row.Signal!=null)Destroy(row.Signal);
-            ruleRows.Clear();hudRules=null;ruleSidebar=battleUi=null;
+            if(ruleScroll!=null)hudScrollPosition=ruleScroll.verticalNormalizedPosition;
+            foreach(var row in ruleRows)if(row.Signals!=null)
+                foreach(var signal in row.Signals)if(signal!=null)Destroy(signal);
+            ruleRows.Clear();hudRules=null;
+            ruleSidebar=battleUi=ruleScrollRoot=ruleViewport=ruleContent=ruleScrollbarRoot=null;
+            ruleScroll=null;ruleHeading=null;ruleHudSize=Vector2.zero;
         }
         void OnDestroy()=>ClearRuleHud();
         void BuildRuleHud()
@@ -34,105 +55,152 @@ namespace GoGhost.Duel
             if(game.Phase!=DuelPhase.Prepare&&game.Phase!=DuelPhase.Fight)return;
             battleUi=Rect("BattleHUD",page,Vector2.zero,new Vector2(1600,900));
             hudRules=game.Rules;
-            int count=0;
-            if(hudRules!=null)for(int op=0;op<5;op++)count+=hudRules.RuleCount((ControlOperation)op);
-            if(count==0)return;
-            rulePanelWidth=MeasureRulePanelWidth();
-            float innerWidth=rulePanelWidth-32,conditionWidth=rulePanelWidth-56,actionWidth=rulePanelWidth-86;
+            if(hudScrollController!=hudRules){hudScrollPosition=1;hudScrollController=hudRules;}
+#if UNITY_EDITOR
+            if(ruleHudViewSample!=null)
+            {
+                foreach(var rule in ruleHudViewSample)
+                    ruleRows.Add(new RuleRowView{Rule=rule,Operation=ConditionalCatalog.Response(rule.Action).Operation,Row=-1});
+            }
+            else
+#endif
+            if(hudRules!=null)
+            {
+                for(int op=0;op<ConditionalCatalog.OperationLabels.Length;op++)
+                    for(int row=0;row<hudRules.RuleCount((ControlOperation)op);row++)
+                        ruleRows.Add(new RuleRowView{Controller=hudRules,Rule=hudRules.RuleAt((ControlOperation)op,row),Operation=(ControlOperation)op,Row=row});
+            }
+            // Stable sorting matches ConditionalLoadout.OrderedRules, including unnumbered old data.
+            for(int i=1;i<ruleRows.Count;i++)
+            {
+                var row=ruleRows[i];int j=i;
+                int order=row.Rule.DisplayOrder>=0?row.Rule.DisplayOrder:int.MaxValue;
+                while(j>0&&(ruleRows[j-1].Rule.DisplayOrder>=0?ruleRows[j-1].Rule.DisplayOrder:int.MaxValue)>order)
+                {ruleRows[j]=ruleRows[j-1];j--;}
+                ruleRows[j]=row;
+            }
+            if(ruleRows.Count==0)return;
             ruleSidebar=Rect("BattleRules",page,Vector2.zero,new Vector2(rulePanelWidth,900));
-            var group=ruleSidebar.gameObject.AddComponent<CanvasGroup>();
-            group.blocksRaycasts=false;group.interactable=false;
             var background=ruleSidebar.gameObject.AddComponent<UnityEngine.UI.Image>();
             background.color=NeuralPalette.Background;background.raycastTarget=false;
-            var divider=Image(ruleSidebar,new Vector2(-rulePanelWidth/2,0),new Vector2(1,900),NeuralPalette.Border);
+            var divider=Image(ruleSidebar,Vector2.zero,Vector2.zero,NeuralPalette.Border);
             divider.rectTransform.anchorMin=new Vector2(0,0);divider.rectTransform.anchorMax=new Vector2(0,1);
-            divider.rectTransform.anchoredPosition=Vector2.zero;divider.rectTransform.sizeDelta=new Vector2(1,0);
-            // Keep fixed readable type; widen only when the complete five-rule text needs it.
-            var content=Rect("RuleList",ruleSidebar,Vector2.zero,new Vector2(rulePanelWidth,0));
-            content.anchorMin=content.anchorMax=new Vector2(.5f,1);content.pivot=new Vector2(.5f,1);
-            Text("Rules: "+count+"/"+ConditionalCatalog.MaxRulesTotal,content,new Vector2(0,-38),new Vector2(innerWidth,44),30,TextAlignmentOptions.Left,headingFont);
-            float y=-82;
-            int[] order={2,3,4,0,1};
-            foreach(int op in order)
+            divider.rectTransform.sizeDelta=new Vector2(1,0);
+            ruleHeading=Text("Rules "+ruleRows.Count,ruleSidebar,Vector2.zero,Vector2.zero,30,TextAlignmentOptions.Left,headingFont);
+            ruleHeading.rectTransform.anchorMin=ruleHeading.rectTransform.anchorMax=new Vector2(.5f,1);
+            ruleScrollRoot=Rect("BattleRuleScroll",ruleSidebar,Vector2.zero,Vector2.zero);
+            ruleScroll=ruleScrollRoot.gameObject.AddComponent<UnityEngine.UI.ScrollRect>();
+            ruleScroll.horizontal=false;ruleScroll.vertical=true;
+            ruleScroll.movementType=UnityEngine.UI.ScrollRect.MovementType.Clamped;
+            ruleScroll.scrollSensitivity=36;
+            ruleViewport=Rect("Viewport",ruleScrollRoot,Vector2.zero,Vector2.zero);
+            var scrollSurface=ruleViewport.gameObject.AddComponent<UnityEngine.UI.Image>();
+            scrollSurface.color=Color.clear;scrollSurface.raycastTarget=true;
+            ruleViewport.gameObject.AddComponent<UnityEngine.UI.RectMask2D>();
+            ruleContent=Rect("RuleList",ruleViewport,Vector2.zero,Vector2.zero);
+            ruleContent.anchorMin=new Vector2(0,1);ruleContent.anchorMax=new Vector2(1,1);
+            ruleContent.pivot=new Vector2(.5f,1);
+            ruleScrollbarRoot=Rect("Scrollbar",ruleScrollRoot,Vector2.zero,Vector2.zero);
+            var track=ruleScrollbarRoot.gameObject.AddComponent<UnityEngine.UI.Image>();track.color=NeuralPalette.Border;
+            var handle=Image(ruleScrollbarRoot,Vector2.zero,Vector2.zero,NeuralPalette.Secondary);handle.raycastTarget=true;
+            var bar=ruleScrollbarRoot.gameObject.AddComponent<UnityEngine.UI.Scrollbar>();
+            bar.handleRect=handle.rectTransform;bar.targetGraphic=handle;
+            bar.direction=UnityEngine.UI.Scrollbar.Direction.BottomToTop;
+            ruleScroll.viewport=ruleViewport;ruleScroll.content=ruleContent;
+            ruleScroll.verticalScrollbar=bar;
+            ruleScroll.verticalScrollbarVisibility=UnityEngine.UI.ScrollRect.ScrollbarVisibility.AutoHide;
+            for(int i=0;i<ruleRows.Count;i++)
             {
-                int rows=hudRules.RuleCount((ControlOperation)op);
-                if(rows==0)continue;
-                var label=Text(ShortOperationLabels[op],content,new Vector2(0,y),new Vector2(innerWidth,32),22,TextAlignmentOptions.Left);
-                label.color=NeuralPalette.Secondary;y-=22;
-                for(int row=0;row<rows;row++)
+                var row=ruleRows[i];var expression=ConditionalCatalog.Expression(row.Rule);
+                row.Root=Rect("RuleFeedback_"+row.Operation+"_"+row.Row+"_"+i,ruleContent,Vector2.zero,Vector2.zero);
+                row.Root.anchorMin=row.Root.anchorMax=new Vector2(.5f,1);
+                row.Background=row.Root.gameObject.AddComponent<UnityEngine.UI.Image>();
+                row.Background.raycastTarget=false;row.Background.color=NeuralPalette.Panel;
+                row.Number=Text((i+1).ToString(),row.Root,Vector2.zero,Vector2.zero,20,TextAlignmentOptions.TopLeft,numericFont);
+                row.Number.name="RuleNumber";row.Number.color=NeuralPalette.Secondary;
+                row.Condition=Text(expression.Conditions,row.Root,Vector2.zero,Vector2.zero,22,TextAlignmentOptions.TopLeft);
+                row.Condition.name="ConditionText";
+                row.Arrow=Text("→",row.Root,Vector2.zero,Vector2.zero,22,TextAlignmentOptions.TopLeft,controlFont);
+                row.Arrow.name="ActionArrow";
+                row.Action=Text(expression.Action,row.Root,Vector2.zero,Vector2.zero,22,TextAlignmentOptions.TopLeft,controlFont);
+                row.Action.name="ActionText";
+                // Preserve each font atlas and fixed geometry; the entire card shares one match signal.
+                var texts=new[]{row.Number,row.Condition,row.Arrow,row.Action};
+                row.Signals=new Material[texts.Length];
+                for(int t=0;t<texts.Length;t++)
                 {
-                    var rule=hudRules.RuleAt((ControlOperation)op,row);
-                    var root=Rect("RuleFeedback_"+op+"_"+row,content,Vector2.zero,Vector2.zero);
-                    var condition=Text((row+1)+"  "+HudConditionLabel(rule),root,Vector2.zero,new Vector2(conditionWidth,28),22,TextAlignmentOptions.TopLeft);
-                    condition.name="ConditionText";
-                    var arrow=Text(">",root,Vector2.zero,new Vector2(18,28),22,TextAlignmentOptions.TopLeft,controlFont);
-                    arrow.name="ActionArrow";
-                    var action=Text(ConditionalCatalog.RuleActionLabel(rule),root,Vector2.zero,new Vector2(actionWidth,28),22,TextAlignmentOptions.TopLeft,controlFont);
-                    action.name="ActionText";
-                    // One material per visible row; only glow alpha changes at acceptance/release.
-                    // Fixed weight, keyword and padding keep every glyph and line break in place.
-                    var signal=new Material(action.fontSharedMaterial){name="Rule signal",hideFlags=HideFlags.DontSave};
+                    var signal=new Material(texts[t].fontSharedMaterial){name="Rule match signal",hideFlags=HideFlags.DontSave};
                     signal.EnableKeyword("GLOW_ON");
                     signal.SetFloat(ShaderUtilities.ID_GlowOffset,0);
                     signal.SetFloat(ShaderUtilities.ID_GlowOuter,.12f);
                     signal.SetFloat(ShaderUtilities.ID_GlowInner,.02f);
                     signal.SetColor(ShaderUtilities.ID_GlowColor,Color.clear);
-                    action.fontSharedMaterial=arrow.fontSharedMaterial=signal;
-                    condition.lineSpacing=action.lineSpacing=2;
-                    float conditionHeight=Mathf.Max(28,TextHeight(condition,conditionWidth));
-                    float actionHeight=Mathf.Max(28,TextHeight(action,actionWidth));
-                    float arrowHeight=TextHeight(arrow,18);
-                    float height=16+conditionHeight+4+actionHeight;
-                    root.sizeDelta=new Vector2(innerWidth,height);root.anchoredPosition=new Vector2(0,y-height/2);
-                    condition.rectTransform.sizeDelta=new Vector2(conditionWidth,conditionHeight);
-                    condition.rectTransform.anchoredPosition=new Vector2(0,height/2-8-conditionHeight/2);
-                    action.rectTransform.sizeDelta=new Vector2(actionWidth,actionHeight);
-                    action.rectTransform.anchoredPosition=new Vector2(15,height/2-12-conditionHeight-actionHeight/2);
-                    arrow.rectTransform.sizeDelta=new Vector2(18,arrowHeight);
-                    arrow.rectTransform.anchoredPosition=new Vector2(-actionWidth/2+6,height/2-12-conditionHeight-arrowHeight/2);
-                    var glow=root.gameObject.AddComponent<UnityEngine.UI.Image>();
-                    glow.raycastTarget=false;glow.color=Color.clear;
-                    var border=new[]{Image(root,new Vector2(0,height/2-1),new Vector2(innerWidth,2),Color.clear),
-                        Image(root,new Vector2(0,-height/2+1),new Vector2(innerWidth,2),Color.clear),
-                        Image(root,new Vector2(-innerWidth/2+1,0),new Vector2(2,height-4),Color.clear),
-                        Image(root,new Vector2(innerWidth/2-1,0),new Vector2(2,height-4),Color.clear)};
-                    var identity=Image(root,new Vector2(-innerWidth/2+2,0),new Vector2(2,height-16),NeuralPalette.Operation((ControlOperation)op));
-                    ruleRows.Add(new RuleRowView{Operation=(ControlOperation)op,Row=row,Background=glow,Border=border,Condition=condition,Action=action,Arrow=arrow,Signal=signal,Identity=identity});
-                    y-=height+8;
+                    texts[t].fontSharedMaterial=row.Signals[t]=signal;
                 }
-                y-=14;
+                // Three concentric, non-overlapping rings form the same narrow glow on every edge.
+                row.Border=new UnityEngine.UI.Image[12];
+                for(int edge=0;edge<row.Border.Length;edge++)
+                    row.Border[edge]=Image(row.Root,Vector2.zero,Vector2.zero,Color.clear);
             }
         }
-        static string HudConditionLabel(ConditionalRule rule)=>ConditionalCatalog.ConditionLabel(rule)+
-            (rule.AdditionalCondition==0?"":"\nAND "+ConditionalCatalog.ConditionLabel(rule,true));
 
-        float MeasureRulePanelWidth()
+        // Shared by setup and combat. Text comes from the structured catalog expression;
+        // measurement uses the final fixed fonts, never temporary emphasis or auto-sizing.
+        float LayoutRuleCard(RectTransform root,TMP_Text number,TMP_Text condition,TMP_Text arrow,TMP_Text action,
+            float width,float rightInset=14,float minHeight=0)
         {
-            float available=Screen.height/Mathf.Max(.01f,canvas.GetComponent<Canvas>().scaleFactor)-24;
-            var measure=Text("",page,Vector2.zero,Vector2.zero,22,TextAlignmentOptions.TopLeft);
-            measure.enabled=false;measure.lineSpacing=2;
-            float selectedWidth=RulePanelWidth;
-            for(float width=RulePanelWidth;width<=470;width+=40)
+            const float left=42,pad=12,gap=4,arrowWidth=24;
+            float available=Mathf.Max(60,width-left-rightInset);
+            condition.lineSpacing=action.lineSpacing=2;
+            float conditionNatural=condition.GetPreferredValues(condition.text,Mathf.Infinity,Mathf.Infinity).x+2;
+            float actionNatural=action.GetPreferredValues(action.text,Mathf.Infinity,Mathf.Infinity).x+2;
+            bool inline=conditionNatural+arrowWidth+actionNatural+12<=available;
+            float conditionWidth=inline?conditionNatural:available;
+            float actionWidth=inline?available-conditionNatural-arrowWidth-12:available-arrowWidth;
+            float conditionHeight=Mathf.Max(28,TextHeight(condition,conditionWidth));
+            float actionHeight=Mathf.Max(28,TextHeight(action,actionWidth));
+            float arrowHeight=Mathf.Max(28,TextHeight(arrow,arrowWidth));
+            float actionTop=inline?pad:pad+conditionHeight+gap;
+            float height=Mathf.Max(minHeight,(inline?Mathf.Max(conditionHeight,Mathf.Max(actionHeight,arrowHeight)):
+                conditionHeight+gap+Mathf.Max(actionHeight,arrowHeight))+pad*2);
+            root.sizeDelta=new Vector2(width,height);
+            SetCardTextRect(condition,left,pad,conditionWidth,conditionHeight,width,height);
+            float arrowLeft=inline?left+conditionNatural+6:left;
+            SetCardTextRect(arrow,arrowLeft,actionTop,arrowWidth,arrowHeight,width,height);
+            SetCardTextRect(action,arrowLeft+arrowWidth,actionTop,actionWidth,actionHeight,width,height);
+            if(number!=null)SetCardTextRect(number,12,pad,24,28,width,height);
+            return height;
+        }
+        static void SetCardTextRect(TMP_Text text,float left,float top,float width,float height,float cardWidth,float cardHeight)
+        {
+            var rect=text.rectTransform;rect.anchorMin=rect.anchorMax=rect.pivot=new Vector2(.5f,.5f);
+            rect.sizeDelta=new Vector2(width,height);
+            rect.anchoredPosition=new Vector2(-cardWidth/2+left+width/2,cardHeight/2-top-height/2);
+        }
+        float MeasureRulePanelWidth(float availableWidth)=>Mathf.Clamp(availableWidth*.24f,320,410);
+        void LayoutRuleHud(float width,float height)
+        {
+            float position=ruleScroll!=null&&ruleHudSize!=Vector2.zero?ruleScroll.verticalNormalizedPosition:hudScrollPosition;
+            rulePanelWidth=MeasureRulePanelWidth(width);
+            float scrollWidth=rulePanelWidth-24,viewportWidth=scrollWidth-14,viewportHeight=Mathf.Max(80,height-92);
+            ruleHeading.rectTransform.sizeDelta=new Vector2(rulePanelWidth-32,44);
+            ruleHeading.rectTransform.anchoredPosition=new Vector2(0,-34);
+            ruleScrollRoot.sizeDelta=new Vector2(scrollWidth,viewportHeight);
+            ruleScrollRoot.anchoredPosition=new Vector2(0,-28);
+            ruleViewport.sizeDelta=new Vector2(viewportWidth,viewportHeight);ruleViewport.anchoredPosition=new Vector2(-7,0);
+            ruleScrollbarRoot.sizeDelta=new Vector2(8,viewportHeight);ruleScrollbarRoot.anchoredPosition=new Vector2(scrollWidth/2-4,0);
+            float y=2;
+            foreach(var row in ruleRows)
             {
-                float height=82;
-                foreach(int op in new[]{2,3,4,0,1})
-                {
-                    int count=hudRules.RuleCount((ControlOperation)op);if(count==0)continue;
-                    height+=36;
-                    for(int row=0;row<count;row++)
-                    {
-                        var rule=hudRules.RuleAt((ControlOperation)op,row);
-                        measure.font=font;measure.text=(row+1)+"  "+HudConditionLabel(rule);
-                        float condition=Mathf.Max(28,TextHeight(measure,width-56));
-                        measure.font=controlFont;measure.text=ConditionalCatalog.RuleActionLabel(rule);
-                        float action=Mathf.Max(28,TextHeight(measure,width-86));
-                        height+=28+condition+action;
-                    }
-                }
-                selectedWidth=width;if(height<=available)break;
+                float cardWidth=viewportWidth-4;
+                float cardHeight=LayoutRuleCard(row.Root,row.Number,row.Condition,row.Arrow,row.Action,cardWidth);
+                row.Root.anchoredPosition=new Vector2(0,-y-cardHeight/2);
+                y+=cardHeight+8;
             }
-            Destroy(measure.gameObject);
-            return selectedWidth;
+            ruleContent.sizeDelta=new Vector2(0,Mathf.Max(0,y-6));
+            ruleHudSize=new Vector2(width,height);
+            Canvas.ForceUpdateCanvases();
+            ruleScroll.StopMovement();ruleScroll.verticalNormalizedPosition=position;
         }
 
         public void UpdateBattleLayout()
@@ -142,6 +210,7 @@ namespace GoGhost.Duel
             float width=Screen.width/Mathf.Max(.01f,scale),height=Screen.height/Mathf.Max(.01f,scale);
             bool hasRules=ruleSidebar!=null&&hudRules==game.Rules&&
                 (game.Phase==DuelPhase.Prepare||game.Phase==DuelPhase.Fight);
+            if(hasRules&&(Mathf.Abs(ruleHudSize.x-width)>.5f||Mathf.Abs(ruleHudSize.y-height)>.5f))LayoutRuleHud(width,height);
             float panel=hasRules?rulePanelWidth:0;
             if(battleUi!=null)
             {
@@ -160,27 +229,50 @@ namespace GoGhost.Duel
             float aspect=camera.pixelRect.width/Mathf.Max(1,camera.pixelRect.height);
             camera.orthographicSize=Mathf.Max(10,16.8f/Mathf.Max(.3f,aspect));
         }
+        static void AlignRuleGlow(RuleRowView row,float scale)
+        {
+            // This HUD uses Screen Space Overlay. Snap only decoration, including after scrolling;
+            // enabling pixelPerfect on the shared Canvas would also change text rendering.
+            var rect=row.Root.rect;
+            var min=row.Root.TransformPoint(rect.min);var max=row.Root.TransformPoint(rect.max);
+            min=row.Root.InverseTransformPoint(new Vector3(Mathf.Round(min.x),Mathf.Round(min.y),min.z));
+            max=row.Root.InverseTransformPoint(new Vector3(Mathf.Round(max.x),Mathf.Round(max.y),max.z));
+            var frameRect=UnityEngine.Rect.MinMaxRect(min.x,min.y,max.x,max.y);
+            float stroke=Mathf.Max(1,Mathf.Round(scale))/scale;
+            for(int i=0;i<row.Border.Length;i++)
+            {
+                var edge=row.Border[i].rectTransform;
+                int side=i%4;float inset=(1+i/4)*stroke;
+                float w=frameRect.width-2*inset,h=frameRect.height-2*inset;
+                edge.sizeDelta=side<2?new Vector2(w,stroke):new Vector2(stroke,h-2*stroke);
+                edge.anchoredPosition=frameRect.center+(side<2?new Vector2(0,(side==0?1:-1)*(h-stroke)/2):
+                    new Vector2((side==2?-1:1)*(w-stroke)/2,0));
+            }
+        }
         void UpdateRuleHud()
         {
             UpdateBattleLayout();
+            float scale=canvas!=null?Mathf.Max(.01f,canvas.GetComponent<Canvas>().scaleFactor):1;
             foreach(var row in ruleRows)
             {
-                var f=game.Phase==DuelPhase.Fight&&hudRules==game.Rules
-                    ?hudRules.Feedback(row.Operation,row.Row).Visual:default;
+                AlignRuleGlow(row,scale);
+                var f=game.Phase==DuelPhase.Fight&&row.Controller!=null&&row.Controller==game.Rules
+                    ?row.Controller.Feedback(row.Operation,row.Row).Visual:default;
                 var color=NeuralPalette.Operation(row.Operation);
-                bool executing=f.Executing||f.AcceptedThisFrame;
-                row.Condition.color=f.Matched?Color.Lerp(NeuralPalette.Primary,color,.55f):NeuralPalette.Primary;
-                row.Action.color=row.Arrow.color=executing?color:NeuralPalette.Primary;
-                if(row.Executing!=executing)
+                bool matched=f.Matched;
+                row.Condition.color=row.Action.color=row.Arrow.color=matched?color:NeuralPalette.Primary;
+                row.Number.color=matched?color:NeuralPalette.Secondary;
+                row.Background.color=matched?Color.Lerp(NeuralPalette.Panel,color,.08f):NeuralPalette.Panel;
+                if(row.Matched!=matched)
                 {
-                    row.Executing=executing;
-                    row.Signal.SetColor(ShaderUtilities.ID_GlowColor,NeuralPalette.Alpha(color,executing?.28f:0));
+                    row.Matched=matched;
+                    foreach(var signal in row.Signals)
+                        signal.SetColor(ShaderUtilities.ID_GlowColor,NeuralPalette.Alpha(color,matched?.28f:0));
                 }
-                row.Identity.color=NeuralPalette.Alpha(color,executing?1:.45f);
-                row.Background.color=Color.clear;
-                // A fading edge never keeps the action/arrow marked as the operation owner.
+                // Match already includes optional AND and source intersection, independent of execution.
+                // Feedback never reorders, scrolls, remeasures, or changes typography.
                 for(int i=0;i<row.Border.Length;i++)row.Border[i].color=NeuralPalette.Alpha(color,
-                    executing?(i==1?.7f:.08f):i==1?Mathf.Max(f.Pulse*.5f,f.Afterglow*.28f):0);
+                    matched?(i/4==0?.65f:i/4==1?.16f:.05f):0);
             }
         }
     }

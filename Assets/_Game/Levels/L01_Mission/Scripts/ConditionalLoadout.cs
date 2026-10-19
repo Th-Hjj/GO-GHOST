@@ -27,7 +27,7 @@ namespace GoGhost.Duel
             GroundState=GroundState, AdditionalGroundState=AdditionalGroundState,
             Distance=Distance, AdditionalDistance=AdditionalDistance,
             IncomingAttack=IncomingAttack, AdditionalIncomingAttack=AdditionalIncomingAttack,
-            MoveDirection=MoveDirection, AmmoUse=AmmoUse, DisplayOrder=DisplayOrder
+            MoveDirection=MoveDirection, AmmoUse=Action=="F02"?AmmoUseOption.AllowEmpty:AmmoUse, DisplayOrder=DisplayOrder
         };
     }
     [Serializable] public sealed class OperationRules
@@ -103,6 +103,17 @@ namespace GoGhost.Duel
         public readonly bool Finite;
         public ResponseEntry(string id,string label,ControlOperation operation,bool finite=false) {Id=id;Label=label;Operation=operation;Finite=finite;}
     }
+    // Structured shared display model; views never split or parse condition sentences.
+    public readonly struct RuleExpression
+    {
+        public readonly string Primary, Additional, Action;
+        public RuleExpression(string primary,string additional,string action)
+        {Primary=primary;Additional=additional;Action=action;}
+        public bool HasAdditional => !string.IsNullOrEmpty(Additional);
+        public string Conditions => Primary+(HasAdditional?" + "+Additional:"");
+        public string ArrowAction => "→ "+Action;
+        public string Text => Conditions+" → "+Action;
+    }
     // One catalog feeds the UI, runtime validation and documentation export.
     public static class ConditionalCatalog
     {
@@ -117,7 +128,7 @@ namespace GoGhost.Duel
             new[]{"Q01","Q02","Q06"},new[]{"F01","F02","F03","F06"},new[]{"D01","D02","D03","D04"}
         };
         public static readonly string[] OperationLabels={"Horizontal Movement","Jump","Aim","Fire","Dodge"};
-        public static readonly string[] Categories={"Body State","Weapon & Input","Position & Range","Threats","Actions & Results"};
+        public static readonly string[] Categories={"Body State","Weapon","Position","Threats","Action"};
         public static readonly ConditionEntry[] Conditions={
             new ConditionEntry(51,"Ground State",0),new ConditionEntry(4,"Low Health",0),new ConditionEntry(6,"Took Damage",0,true,true),
             new ConditionEntry(54,"Moving",0),new ConditionEntry(55,"Dodging",0),
@@ -156,10 +167,10 @@ namespace GoGhost.Duel
             new ResponseEntry("J01","Jump Once",ControlOperation.Jump,true),new ResponseEntry("J03","Repeat Jumps",ControlOperation.Jump),
             new ResponseEntry("Q01","Aim at Nearest Enemy",ControlOperation.Aim),new ResponseEntry("Q02","Aim at Lowest-Health Enemy",ControlOperation.Aim),
             new ResponseEntry("Q06","Fine-Tune Aim",ControlOperation.Aim),
-            new ResponseEntry("F01","Fire One Shot",ControlOperation.Fire,true),new ResponseEntry("F02","Short Burst",ControlOperation.Fire,true),
+            new ResponseEntry("F01","Fire 1 Shot",ControlOperation.Fire,true),new ResponseEntry("F02","Short Burst",ControlOperation.Fire,true),
             new ResponseEntry("F03","Keep Firing",ControlOperation.Fire),new ResponseEntry("F06","Hold Fire",ControlOperation.Fire),
             new ResponseEntry("D01","Dodge Away from Threat",ControlOperation.Dodge,true),new ResponseEntry("D02","Dodge Toward Enemy",ControlOperation.Dodge,true),
-            new ResponseEntry("D03","Dodge Along Movement",ControlOperation.Dodge,true),new ResponseEntry("D04","Dodge Toward Aim Point",ControlOperation.Dodge,true)
+            new ResponseEntry("D03","Dodge Along Movement",ControlOperation.Dodge,true),new ResponseEntry("D04","Dodge Toward Aim",ControlOperation.Dodge,true)
         };
         static readonly ResponseEntry[] HistoricalResponses={
             new ResponseEntry("M05","Hold Movement Direction",ControlOperation.Movement),new ResponseEntry("M06","Move to Cursor X",ControlOperation.Movement,true),
@@ -177,7 +188,8 @@ namespace GoGhost.Duel
         public static bool IsStateCondition(int id)=>IsSelectableCondition(id)&&!Condition(id).Event;
         public static bool IsSelectableResponse(string id)
         {foreach(var response in Responses)if(response.Id==id)return true;return false;}
-        public static bool UsesAmmoOption(string action)=>action=="F01"||action=="F02"||action=="F03";
+        public static bool UsesAmmoOption(string action)=>action=="F01"||action=="F03";
+        public static bool IsShootingAction(string action)=>UsesAmmoOption(action)||action=="F02";
         public static ConditionEntry Condition(int id)
         {foreach(var c in Conditions)if(c.Id==id)return c;foreach(var c in HistoricalConditions)if(c.Id==id)return c;throw new ArgumentException("Unknown condition "+id);}
         public static ResponseEntry Response(string id)
@@ -249,7 +261,7 @@ namespace GoGhost.Duel
             if(conditionReason!=null)return conditionReason;
             if(Array.IndexOf(FormalResponses[operation],rule.Action)<0)return "Choose an action for this operation.";
             if(operation==(int)ControlOperation.Jump&&HasGroundState(rule,GroundStateOption.Airborne))return "Jump requires being grounded.";
-            if(UsesAmmoOption(rule.Action)&&(rule.Condition==9||rule.AdditionalCondition==9))return "Cannot fire while reloading.";
+            if(IsShootingAction(rule.Action)&&(rule.Condition==9||rule.AdditionalCondition==9))return "Cannot fire while reloading.";
             if(UsesAmmoOption(rule.Action)&&!Enum.IsDefined(typeof(AmmoUseOption),rule.AmmoUse))return "Choose an Ammo Use option.";
             if(rule.Action=="M11"&&(rule.MoveDirection<MoveDirectionOption.Unspecified||rule.MoveDirection>MoveDirectionOption.Right
                 ||requireComplete&&rule.MoveDirection==MoveDirectionOption.Unspecified))return "Choose Left or Right.";
@@ -308,24 +320,25 @@ namespace GoGhost.Duel
         }
         public static string ConditionLabel(ConditionalRule rule,bool additional=false)
         {
-            if(rule==null)return "Choose Condition";
+            if(rule==null)return "Select Condition";
             int id=additional?rule.AdditionalCondition:rule.Condition;
-            if(id==0)return additional?"Add State Condition":"Choose Condition";
+            if(id==0)return additional?"Select State":"Select Condition";
             int option=ConditionOption(rule,additional);
             string[] options=ConditionOptions(id);
             if(option>=0&&option<options.Length)
             {
                 if(id==51)return options[option];
-                if(id==52)return "Enemy Distance: "+options[option];
-                if(id==53)return "Incoming Attack: "+options[option];
+                if(id==52)return "Enemy "+options[option];
+                if(id==53)return option==0?"Any Incoming Attack":option==3?"Incoming Low Attack":"Incoming "+options[option];
             }
             return id==37?(rule.Below?"Enemy Below":"Enemy Above"):Condition(id).Label;
         }
-        public static string RuleConditionLabel(ConditionalRule rule)
-            =>ConditionLabel(rule)+(rule!=null&&rule.AdditionalCondition!=0?" AND "+ConditionLabel(rule,true):"");
+        public static RuleExpression Expression(ConditionalRule rule)
+            =>new RuleExpression(ConditionLabel(rule),rule!=null&&rule.AdditionalCondition!=0?ConditionLabel(rule,true):"",RuleActionLabel(rule));
+        public static string RuleConditionLabel(ConditionalRule rule)=>Expression(rule).Conditions;
         public static string RuleActionLabel(ConditionalRule rule)
         {
-            if(rule==null||string.IsNullOrEmpty(rule.Action))return "Choose Action";
+            if(rule==null||string.IsNullOrEmpty(rule.Action))return "Select Action";
             if(rule.Action=="M11"&&rule.MoveDirection!=MoveDirectionOption.Unspecified)
                 return rule.MoveDirection==MoveDirectionOption.Left?"Move Left":"Move Right";
             string label=Response(rule.Action).Label;
@@ -394,7 +407,7 @@ namespace GoGhost.Duel
                 case "Q03":return "Aim at the visible enemy associated with the detected situation.";
                 case "Q06":return "Make small corrections toward a visible enemy close to your intended line of aim.";
                 case "F01":return "Fire one paid shot in your current aim direction, using the selected Ammo Use option.";
-                case "F02":return "Plan and fire up to three available shots without crossing a reload, using the selected Ammo Use option.";
+                case "F02":return "Fire the remaining magazine.";
                 case "F03":return "Keep firing at the normal rate while the situation lasts, using the selected Ammo Use option.";
                 case "F06":return "Hold Fire control without shooting, blocking manual and lower-priority fire while active.";
                 case "F05":return "Shoot until only two rounds remain in the magazine.";
@@ -420,6 +433,6 @@ namespace GoGhost.Duel
         public const float LowEnter=.4f,LowExit=.45f,Close=5.3f,Far=8.5f,Hysteresis=.35f;
         public const float MouseEnter=12,MouseExit=16,ThreatWindow=.20f,VelocityDeadzone=.35f;
         public const float StepBack=1.5f,JumpDelay=.20f,Calibration=.12f,ResponseWindow=.75f,EventWindow=.25f,StuckWindow=.25f;
-        public const int Reserve=2,Burst=3;
+        public const int Reserve=2;
     }
 }

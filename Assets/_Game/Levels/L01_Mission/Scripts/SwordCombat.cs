@@ -47,7 +47,16 @@ namespace GoGhost.Duel
         readonly List<Vector2> points=new List<Vector2>(32);
         readonly List<BossThreat> linkThreats=new List<BossThreat>(4);
         readonly List<Vector2> travelPredictions=new List<Vector2>(64);
+        readonly List<RaycastHit2D> drawHits=new List<RaycastHit2D>(16);
         bool predictingTravel;
+        int decisionDepth;
+        bool decisionTravelValid,decisionTravelFound,decisionAttackJump,decisionAirLink,decisionPlatformSetup;
+        SwordBeat decisionFollowup;
+        SwordTravel decisionTravel;
+        // Selection, immediate validation and first-beat setup are one synchronous decision.
+        // A later decision/landing must search again against fresh public facts and geometry.
+        internal void BeginDecision(){if(decisionDepth++==0)decisionTravelValid=false;}
+        internal void EndDecision(){if(--decisionDepth==0){decisionTravelValid=false;decisionTravel=null;}}
         Vector2 failedPoint;
         float failedUntil;
         Collider2D previousSupport;
@@ -151,8 +160,11 @@ namespace GoGhost.Duel
             actor.Navigation.TryDash(from,from+direction*length,size,out end);
             // The moving target is predicted at arrival, not frozen as a blocker at its current
             // location. The motor still sweeps the actual player every physics step and stops.
-            foreach(var hit in Physics2D.BoxCastAll(from,size-Vector2.one*.025f,0,direction,
-                Vector2.Distance(from,end),LayerMask.GetMask("Player","Enemy")))
+            var filter=new ContactFilter2D().NoFilter();
+            filter.SetLayerMask((1<<LayerMask.NameToLayer("Player"))|(1<<LayerMask.NameToLayer("Enemy")));
+            filter.useTriggers=Physics2D.queriesHitTriggers;
+            Physics2D.BoxCast(from,size-Vector2.one*.025f,0,direction,filter,drawHits,Vector2.Distance(from,end));
+            foreach(var hit in drawHits)
             {
                 if(hit.collider==null||hit.collider.isTrigger||hit.collider.attachedRigidbody==actor.Motor.GetComponent<Rigidbody2D>())continue;
                 if(hit.collider.GetComponentInParent<PlayerHealth>()!=null)continue;
@@ -193,9 +205,21 @@ namespace GoGhost.Duel
 
         public bool TryTravel(out SwordTravel result,SwordBeat followup,bool allowAttackJump,bool requireAirLink,bool allowPlatformSetup=false)
         {
+            if(decisionDepth>0&&decisionTravelValid&&decisionFollowup==followup&&decisionAttackJump==allowAttackJump
+                &&decisionAirLink==requireAirLink&&decisionPlatformSetup==allowPlatformSetup)
+            {result=decisionTravel;return decisionTravelFound;}
             travelPredictions.Clear();predictingTravel=true;
             UnityEngine.Profiling.Profiler.BeginSample("Sword.TravelSearch");
-            try {return FindTravel(out result,followup,allowAttackJump,requireAirLink,allowPlatformSetup);}
+            try
+            {
+                bool found=FindTravel(out result,followup,allowAttackJump,requireAirLink,allowPlatformSetup);
+                if(decisionDepth>0)
+                {
+                    decisionTravelValid=true;decisionTravelFound=found;decisionTravel=result;decisionFollowup=followup;
+                    decisionAttackJump=allowAttackJump;decisionAirLink=requireAirLink;decisionPlatformSetup=allowPlatformSetup;
+                }
+                return found;
+            }
             finally {predictingTravel=false;UnityEngine.Profiling.Profiler.EndSample();}
         }
 

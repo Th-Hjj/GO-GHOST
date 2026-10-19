@@ -183,7 +183,7 @@ namespace GoGhost.Duel
         public UnityEngine.UI.Image[] Edges;
         public UnityEngine.UI.Image Selection;
         public TMP_Text Label;
-        public bool Persistent, Primary, Subtle;
+        public bool Persistent, Primary, Subtle, TextRegion;
         public bool KeyboardFocused => focused;
         bool hovered,focused;
         int lastState=-1;
@@ -194,22 +194,34 @@ namespace GoGhost.Duel
             if(Edges==null||Button==null)return;
             bool available=Button.IsInteractable();
             float scale=Mathf.Max(.01f,transform.lossyScale.x);
-            int state=(available?1:0)|(hovered?2:0)|(focused?4:0)|(Persistent?8:0)|(Primary?16:0)|(Subtle?32:0);
+            int state=(available?1:0)|(hovered?2:0)|(focused?4:0)|(Persistent?8:0)|(Primary?16:0)|(Subtle?32:0)|(TextRegion?64:0);
             if(state==lastState&&Mathf.Approximately(scale,lastScale))return;
             lastState=state;lastScale=scale;
             var color=!available?NeuralPalette.Border:focused||Primary?NeuralPalette.Primary:
                 hovered?NeuralPalette.Secondary:Subtle?Color.Lerp(NeuralPalette.Border,NeuralPalette.ControlBorder,.5f):NeuralPalette.ControlBorder;
+            if(TextRegion&&!focused&&!hovered&&!Persistent)color=Color.clear;
             float pixels=Mathf.Max(2,Mathf.Round(2*scale));
             if(available&&focused)pixels=Mathf.Max(pixels+1,Mathf.Round(3*scale));
             for(int i=0;i<Edges.Length;i++)
             {Edges[i].color=color;Edges[i].rectTransform.sizeDelta=i<2?new Vector2(0,pixels/scale):new Vector2(pixels/scale,0);}
-            if(Label!=null)Label.color=!available?NeuralPalette.DisabledText:Subtle&&!hovered&&!focused?NeuralPalette.Secondary:NeuralPalette.Primary;
+            if(Label!=null)Label.color=!available?NeuralPalette.DisabledText:Subtle&&!TextRegion&&!hovered&&!focused?NeuralPalette.Secondary:NeuralPalette.Primary;
             if(Selection!=null)Selection.enabled=available&&Persistent;
         }
         public void OnPointerDown(PointerEventData data){focused=false;Refresh();}
         public void OnPointerEnter(PointerEventData data){hovered=true;Refresh();}
         public void OnPointerExit(PointerEventData data){hovered=false;Refresh();}
-        public void OnSelect(BaseEventData data){focused=true;Refresh();}
+        public void OnSelect(BaseEventData data){focused=true;Refresh();KeepVisible();}
+        void KeepVisible()
+        {
+            var scroll=GetComponentInParent<UnityEngine.UI.ScrollRect>();if(scroll==null||scroll.content==null||scroll.viewport==null)return;
+            Canvas.ForceUpdateCanvases();
+            var bounds=RectTransformUtility.CalculateRelativeRectTransformBounds(scroll.viewport,transform);
+            var area=scroll.viewport.rect;float delta=bounds.max.y>area.yMax?area.yMax-bounds.max.y:bounds.min.y<area.yMin?area.yMin-bounds.min.y:0;
+            if(Mathf.Abs(delta)<.01f)return;
+            var pos=scroll.content.anchoredPosition;pos.y+=delta;
+            pos.y=Mathf.Clamp(pos.y,0,Mathf.Max(0,scroll.content.rect.height-scroll.viewport.rect.height));
+            scroll.content.anchoredPosition=pos;scroll.StopMovement();
+        }
         public void OnDeselect(BaseEventData data){focused=false;Refresh();}
         public void OnMove(AxisEventData data)
         {

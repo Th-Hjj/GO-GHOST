@@ -22,6 +22,7 @@ public class Projectile : MonoBehaviour
     public int OwnerLayer => ownerLayer;
     public GameObject Owner => owner;
     private static readonly List<Projectile> active = new List<Projectile>();
+    private static readonly List<RaycastHit2D> terrainHits = new List<RaycastHit2D>(16);
     public static IReadOnlyList<Projectile> Active => active;
     public int Damage => damage;
     public ProjectileActor Actor { get; private set; }
@@ -56,7 +57,11 @@ public class Projectile : MonoBehaviour
     public static bool TerrainHit(Vector2 from, Vector2 to, float radius, out RaycastHit2D blocker)
     {
         Vector2 delta = to - from;
-        foreach (var hit in Physics2D.CircleCastAll(from, radius, delta.normalized, delta.magnitude, LayerMask.GetMask("Ground")))
+        var filter = new ContactFilter2D().NoFilter();
+        filter.SetLayerMask(1 << LayerMask.NameToLayer("Ground"));
+        filter.useTriggers = Physics2D.queriesHitTriggers;
+        Physics2D.CircleCast(from, radius, delta.normalized, filter, terrainHits, delta.magnitude);
+        foreach (var hit in terrainHits)
             if (hit.collider != null && !hit.collider.isTrigger) { blocker = hit; return true; }
         blocker = default;
         return false;
@@ -68,7 +73,7 @@ public class Projectile : MonoBehaviour
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetRegistry() => active.Clear();
+    private static void ResetRegistry() { active.Clear(); terrainHits.Clear(); }
     private void OnDestroy() => active.Remove(this);
 
     public void Launch(Vector2 direction, float speed, int dmg, GameObject shooter, PlayerTimeSlow hostileClock = null, bool counterable = false, PlayerShooting accuracyOwner = null,

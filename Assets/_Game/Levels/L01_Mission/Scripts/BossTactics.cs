@@ -21,8 +21,25 @@ namespace GoGhost.Duel
     public sealed class BossTactics
     {
         readonly BossAgent actor;
+        readonly PublicPrediction gunPrediction=new PublicPrediction(),swordPrediction=new PublicPrediction();
+        int predictionDepth;
+        sealed class PublicPrediction
+        {
+            public readonly List<Vector2> Points=new List<Vector2>(65);
+            public BossObservation Original,Facts;
+            public Vector2 Point,Velocity;
+            public float Time;
+        }
+        void BeginPredictions()
+        {
+            if(predictionDepth++==0)
+            {gunPrediction.Points.Clear();swordPrediction.Points.Clear();actor.Navigation.BeginRouteBatch();}
+        }
+        void EndPredictions(){if(--predictionDepth==0)actor.Navigation.EndRouteBatch();}
         readonly List<BossPlan> candidates=new List<BossPlan>(12);
         readonly List<BossPlan> ranked=new List<BossPlan>(64);
+        readonly Dictionary<Vector2,ArenaNavigation2D.Route> candidateRoutes=new Dictionary<Vector2,ArenaNavigation2D.Route>();
+        readonly List<RaycastHit2D> allyHits=new List<RaycastHit2D>(16);
         float nextTick,lastAttackAt,nextSpacing,nextAerial,avoidFailedUntil;
         Vector2 failedDestination,lastSearchPoint;
         readonly HashSet<Collider2D> searchedSupports=new HashSet<Collider2D>();
@@ -322,6 +339,12 @@ namespace GoGhost.Duel
         }
         bool TryGunReposition(BossObservation facts)
         {
+            using(GunRepositionSample.Auto())
+            {BeginPredictions();try{return FindGunReposition(facts);}finally{EndPredictions();}}
+        }
+        static readonly Unity.Profiling.ProfilerMarker GunRepositionSample=new Unity.Profiling.ProfilerMarker("Boss.GunReposition");
+        bool FindGunReposition(BossObservation facts)
+        {
             if(actor.Profile.Kind!=BossKind.Refraction||!facts.Visible||Time.time<nextGunMove||plan!=null
                 ||actor.Coordinator!=null&&actor.Coordinator.HasAssignment(actor))return false;
             float width=actor.Navigation.PlatformWidth,distance=Mathf.Abs(facts.Position.x-actor.Position.x);
@@ -501,6 +524,12 @@ namespace GoGhost.Duel
         public List<BossPlan> BuildCandidates(BossAbility forced=BossAbility.None)=>BuildCandidates(forced,false);
         List<BossPlan> BuildCandidates(BossAbility forced,bool camo)
         {
+            using(CandidatesSample.Auto())
+            {BeginPredictions();try{return FindCandidates(forced,camo);}finally{EndPredictions();}}
+        }
+        static readonly Unity.Profiling.ProfilerMarker CandidatesSample=new Unity.Profiling.ProfilerMarker("Boss.Candidates");
+        List<BossPlan> FindCandidates(BossAbility forced,bool camo)
+        {
             ranked.Clear();candidates.Clear();var facts=actor.Perception.Facts;
             if(facts.Confidence<=0)return candidates;
             AddAt(actor.Position,facts,forced,true);
@@ -538,6 +567,7 @@ namespace GoGhost.Duel
             ranked.Sort((a,b)=>forced==BossAbility.None?b.Score.CompareTo(a.Score)
                 : Vector2.Distance(a.Destination,actor.Position).CompareTo(Vector2.Distance(b.Destination,actor.Position)));
             int attempts=0;
+            candidateRoutes.Clear();
             var perSupport=new Dictionary<Collider2D,int>();
             foreach(var candidate in ranked)
             {
@@ -552,9 +582,19 @@ namespace GoGhost.Duel
                 bool near=Vector2.Distance(candidate.Destination,actor.Position)<.25f;
                 // Camo needs a short executable relocation, not a graph launch point at the jump limit.
                 // Reuse the physical-position jump solver before walking to an approximate graph node.
-                bool directCamoJump=camo&&Mathf.Abs(candidate.Destination.y-actor.Position.y)>.3f
-                    &&actor.Navigation.TryJumpRoute(actor.Position,candidate.Destination,actor.Motor,out candidate.Route);
-                if(!near&&!directCamoJump&&!actor.Navigation.TryRoute(actor.Position,candidate.Destination,actor.Motor,out candidate.Route))continue;
+                if(!near)
+                {
+                    // Several abilities can rank the same destination. Reachability is identical
+                    // within this synchronous search, including a failed route; preserve attempts/order.
+                    if(!candidateRoutes.TryGetValue(candidate.Destination,out candidate.Route))
+                    {
+                        bool directCamoJump=camo&&Mathf.Abs(candidate.Destination.y-actor.Position.y)>.3f
+                            &&actor.Navigation.TryJumpRoute(actor.Position,candidate.Destination,actor.Motor,out candidate.Route);
+                        if(!directCamoJump)actor.Navigation.TryRoute(actor.Position,candidate.Destination,actor.Motor,out candidate.Route);
+                        candidateRoutes.Add(candidate.Destination,candidate.Route);
+                    }
+                    if(candidate.Route==null)continue;
+                }
                 candidate.TravelSeconds=candidate.Route!=null?candidate.Route.Duration:0;
                 if(actor.Profile.Kind==BossKind.Severance&&candidate.Ability==BossAbility.None)
                 {
@@ -732,6 +772,30 @@ namespace GoGhost.Duel
         }
         Vector2 PredictBodyLimited(BossObservation facts,float horizon,float limit,bool sword=false)
         {
+            if(predictionDepth>0)
+            {
+                var cache=sword?swordPrediction:gunPrediction;
+                var original=cache.Original;
+                // Only reuse prefixes during this synchronous query. Changed observations, even
+                // within that query, start a fresh trajectory; nothing survives to a later frame.
+                if(cache.Points.Count==0||!original.Position.Equals(facts.Position)||!original.Velocity.Equals(facts.Velocity)
+                    ||original.Grounded!=facts.Grounded||original.Dodging!=facts.Dodging
+                    ||original.ObservedAt!=facts.ObservedAt||!original.Body.size.Equals(facts.Body.size))
+                {
+                    cache.Points.Clear();cache.Original=cache.Facts=facts;
+                    cache.Point=facts.Position;cache.Velocity=facts.Velocity;cache.Time=0;
+                    cache.Points.Add(cache.Point);
+                }
+                // Keep float accumulation identical to the original fixed-step predictor.
+                int count=0;float step=Time.fixedDeltaTime;
+                for(float t=0;t<Mathf.Min(limit,horizon);t+=step)count++;
+                while(cache.Points.Count<=count)
+                {
+                    StepPublicPrediction(ref cache.Facts,ref cache.Point,ref cache.Velocity,cache.Time,step,sword);
+                    cache.Time+=step;cache.Points.Add(cache.Point);
+                }
+                return cache.Points[count];
+            }
             Vector2 point=facts.Position,velocity=facts.Velocity;
             float dt=Time.fixedDeltaTime;
             for(float t=0;t<Mathf.Min(limit,horizon);t+=dt)
@@ -787,6 +851,12 @@ namespace GoGhost.Duel
             return false;
         }
         public bool TryPlanMobility(BossAbility ability,BossObservation facts,out BossPlan result)
+        {
+            using(MobilitySample.Auto())
+            {BeginPredictions();try{return FindMobility(ability,facts,out result);}finally{EndPredictions();}}
+        }
+        static readonly Unity.Profiling.ProfilerMarker MobilitySample=new Unity.Profiling.ProfilerMarker("Boss.Mobility");
+        bool FindMobility(BossAbility ability,BossObservation facts,out BossPlan result)
         {
             result=null;
             if(!actor.Motor.Grounded || facts.Confidence<.3f || !actor.Actions.Ready(ability)
@@ -1100,7 +1170,9 @@ namespace GoGhost.Duel
         {
             if(actor.Coordinator==null)return false;
             Vector2 delta=target-from;
-            foreach(var hit in Physics2D.CircleCastAll(from,actor.ProjectilePrefab.Radius,delta.normalized,delta.magnitude,1<<actor.gameObject.layer))
+            var filter=new ContactFilter2D().NoFilter();filter.SetLayerMask(1<<actor.gameObject.layer);filter.useTriggers=Physics2D.queriesHitTriggers;
+            Physics2D.CircleCast(from,actor.ProjectilePrefab.Radius,delta.normalized,filter,allyHits,delta.magnitude);
+            foreach(var hit in allyHits)
                 foreach(var other in actor.Coordinator.Actors)if(other!=actor&&other.IsAlive&&hit.collider==other.Body)return true;
             return false;
         }

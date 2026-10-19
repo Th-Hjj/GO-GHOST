@@ -105,6 +105,8 @@ Feedback identity is fight controller + operation + operation-local row. Existin
 
 ## Runtime developer tuning
 
+Wave-jump follow-up, Thomas 2026-10-16: F8 exposes Wave 1/2/3 buttons. Each starts a fresh selected-wave attempt through the normal three-second preparation, including restarting the current wave. Retain equipped rules/order and session tuning; discard only incomplete picker edits, close the panel and clear the previous encounter/pause state. Keep compact parameter labels, ranges and short status feedback instead of repeated explanatory paragraphs.
+
 F8 opens the release-player tuning panel for movement/jump/Dodge, Rifle and both sides' maximum/current HP. Opening pauses combat; F8/Escape closes it and restores the prior pause state. Session-only instance overrides preserve original executors, collision and the live rule controller. Explicit edits do not change assets or rules. Retry/next wave/New Game retain tuning until app exit or Restore defaults. Accepted Dodge and cooldown/reload/cadence deadlines remain committed; new actions use new values. Capacity increases do not refill ammo. HP edits clamp living actors; dead/absent actors cannot be edited. Normal defaults are unchanged.
 
 ## Validation and delivery

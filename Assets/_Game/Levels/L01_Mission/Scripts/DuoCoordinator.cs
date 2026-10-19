@@ -93,9 +93,15 @@ namespace GoGhost.Duel
                 return deadline-Time.time>.82f && gunner.Actions.Ammo>=gunner.Profile.Settings(GunAbility).Cost+3
                     && Mathf.Abs(gunner.Perception.Facts.Position.x-gunner.Position.x)>=gunner.Tactics.EngagementDistance*.6f;
             if(Phase!=DuoPhase.Idle)return ability==BossAbility.Camo;
+            // A solo sword phrase already contains its own crossing threats. Minor gunfire cannot
+            // fill its intended escape route; authored duo combinations keep their existing rules.
+            if(ability==BossAbility.Burst||ability==BossAbility.TacticalJumpShot)
+                foreach(var other in actors)
+                    if(other!=actor&&other.IsAlive&&(BossActionExecutor.IsSwordPhrase(other.Actions.Ability)||other.Actions.PendingSwordThreats))return false;
             if(BossActionExecutor.IsHigh(ability))
                 foreach(var other in actors)
-                    if(other!=actor&&other.IsAlive&&other.Actions.HighThreat&&other.Actions.Busy&&!other.Actions.SafeRecovery)return false;
+                    if(other!=actor&&other.IsAlive&&(other.Actions.OccupiesThreatBudget
+                        ||BossActionExecutor.IsSwordPhrase(ability)&&(other.Actions.Ability==BossAbility.Burst||other.Actions.Ability==BossAbility.TacticalJumpShot)))return false;
             return true;
         }
         public bool TryReserve(BossAgent actor,BossAbility ability,bool cooperative)
@@ -103,7 +109,7 @@ namespace GoGhost.Duel
             if(!CanStart(actor,ability,cooperative))return false;
             if(cooperative)return true;
             foreach(var other in actors)
-                if(other!=actor&&other.IsAlive&&other.Actions.HighThreat&&other.Actions.Busy)
+                if(other!=actor&&other.IsAlive&&(other.Actions.OccupiesThreatBudget||other.Actions.HighThreat&&other.Actions.Busy))
                 {
                     if(!other.Actions.SafeRecovery)return false;
                     RecoveryHandoffs++;actor.Trace("recovery handoff from "+other.ActorId);
@@ -259,8 +265,11 @@ namespace GoGhost.Duel
             {
                 if(!sword.Tactics.LegalAt(BossAbility.DrawDash,swordPlan.Destination,facts,out _)
                     ||gunner.Tactics.AllyBlocks(gunPlan.Destination+Vector2.up*.28f,gunPlan.TargetHypothesis))return false;
-                float contact=Mathf.Max(0,Mathf.Abs(swordPlan.TargetHypothesis.x-swordPlan.Destination.x)
-                    -facts.Body.extents.x-(sword.Profile.BladeRadius+.2f))/sword.Profile.DashSpeed;
+                Vector2 dashDelta=swordPlan.TargetHypothesis-swordPlan.Destination;
+                float targetExtent=Mathf.Abs(dashDelta.normalized.x)*facts.Body.extents.x+Mathf.Abs(dashDelta.normalized.y)*facts.Body.extents.y;
+                float contact=Mathf.Max(0,dashDelta.magnitude
+                    -targetExtent-(sword.Profile.BladeRadius+.2f)
+                    -BossActionExecutor.DashBladeLead(dashDelta.normalized,sword.Motor.Size,sword.Profile.BladeRadius+.2f))/sword.Profile.DashSpeed;
                 a=sword.Profile.DrawDash.Prepare+sword.Profile.DrawDash.Lock+contact;
                 b=gunner.Profile.Piercing.Prepare+gunner.Profile.Piercing.Lock;delta=.40f;
                 swordStartAt=Time.time+Mathf.Max(0,b-(a+delta));
@@ -292,10 +301,12 @@ namespace GoGhost.Duel
             // Four public walk/jump samples; this rejects obvious sealed routes, not a solvability proof.
             float dt=Time.fixedDeltaTime;
             float dashDuration=0;
+            Vector2 dashDirection=Vector2.zero;
             if(Combination==DuoCombination.CrossExecution)
             {
-                if(!nav.TryHorizontalAttack(swordPlan.Destination,swordPlan.TargetHypothesis,sword.Motor.Size,out var dashEnd))return false;
+                if(!nav.TryDirectionalAttack(swordPlan.Destination,swordPlan.TargetHypothesis,sword.Motor.Size,out var dashEnd))return false;
                 dashDuration=Vector2.Distance(swordPlan.Destination,dashEnd)/sword.Profile.DashSpeed;
+                dashDirection=(dashEnd-swordPlan.Destination).normalized;
             }
             for(int sample=0;sample<4;sample++)
             {
@@ -317,7 +328,8 @@ namespace GoGhost.Duel
                         float dashT=t-dashStart;
                         if(dashT>=0&&dashT<dashDuration)
                         {
-                            Vector2 at=swordPlan.Destination+Vector2.right*Mathf.Sign(swordPlan.TargetHypothesis.x-swordPlan.Destination.x)*dashT*sword.Profile.DashSpeed;
+                            float bladeOffset=BossActionExecutor.DashBladeLead(dashDirection,sword.Motor.Size,sword.Profile.BladeRadius+.2f);
+                            Vector2 at=swordPlan.Destination+dashDirection*(dashT*sword.Profile.DashSpeed+bladeOffset);
                             if(new Bounds(at,Vector2.one*(sword.Profile.BladeRadius+.2f)*2).Intersects(new Bounds(next,observation.Body.size))){safe=false;break;}
                         }
                         Vector2 origin=gunPlan.Destination+Vector2.up*.28f;

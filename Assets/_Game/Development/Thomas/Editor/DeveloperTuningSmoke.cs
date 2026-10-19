@@ -13,6 +13,55 @@ public static partial class BossEncounterSmoke
 {
     [MenuItem("GO GHOST/Playtest/Developer Tuning Smoke")]
     public static void RunDeveloperTuning()=>Start("developer-tuning",false);
+    [MenuItem("GO GHOST/Playtest/Developer Wave Jump Smoke")]
+    public static void RunDeveloperWaveJump()=>Start("developer-wave",false);
+    static IEnumerator DeveloperWaveJump()
+    {
+        Record("Focused developer wave buttons, virtual F8/Escape and normal fight lifecycle.");
+        game.NewGame();
+        game.DraftLoadout.TryAddRule(2,new ConditionalRule{Condition=34,Action="Q01"});
+        game.DraftLoadout.TryAddRule(0,new ConditionalRule{Condition=34,Action="M01"});
+        ClickConfig("AddRule");yield return Frames(2);
+        Check("fixture has an uncommitted picker",!Object.FindAnyObjectByType<DuelUI>().ConfigurationReady);
+        yield return DeveloperKey(Key.F8);
+        game.SetDeveloperValue(DeveloperSetting.MoveSpeed,9);
+        ClickConfig("Dev_Wave3");
+        Check("W3 jump discards picker and starts fresh preparation",game.Wave==3&&game.Phase==DuelPhase.Prepare&&!game.DeveloperToolsOpen&&!game.Paused&&Time.timeScale==1&&!AudioListener.pause);
+        Check("jump keeps equipped order and tuning",game.DraftLoadout.TotalRules==2&&game.DraftLoadout.OrderedRules()[0].Action=="Q01"&&game.Player.GetComponent<PlayerMovement>().MoveSpeed==9);
+        Check("W3 has both fresh actors and full resources",game.Bosses.Count==2&&game.Bosses.All(b=>b.Health.CurrentHealth==b.Health.MaxHealth)&&game.Player.CurrentHealth==game.Player.MaxHealth&&game.Rifle.AmmoInMagazine==game.Rifle.MagazineSize);
+        yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);yield return Seconds(.5f);
+        Check("W3 reaches live combat",game.Phase==DuelPhase.Fight&&game.FightClock>0);
+        checkingPause=true;game.SetPause(true);yield return DeveloperKey(Key.F8);yield return DeveloperKey(Key.Escape);
+        Check("closing panel preserves preexisting pause",!game.DeveloperToolsOpen&&game.Paused&&Time.timeScale==0);
+        yield return DeveloperKey(Key.F8);
+        var oldPlayer=game.Player;var oldRules=game.Rules;
+        ClickConfig("Dev_Wave1");yield return Frames(3);
+        Check("paused W3 to W1 clears old encounter",game.Wave==1&&game.Phase==DuelPhase.Prepare&&oldPlayer==null&&!ReferenceEquals(oldRules,game.Rules)&&game.Bosses.Count==1&&game.Bosses[0].ActorId==1&&!game.Paused);
+        yield return DeveloperKey(Key.F8);ClickConfig("Dev_Wave2");
+        Check("jump during preparation selects Severance",game.Wave==2&&game.Phase==DuelPhase.Prepare&&game.Bosses.Count==1&&game.Bosses[0].ActorId==2);
+        yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);yield return Seconds(.5f);
+        Check("W2 reaches live combat",game.Phase==DuelPhase.Fight&&game.FightClock>0);
+        yield return DeveloperKey(Key.F8);oldPlayer=game.Player;ClickConfig("Dev_Wave2");yield return Frames(3);
+        Check("current wave button restarts fresh",game.Wave==2&&game.Phase==DuelPhase.Prepare&&oldPlayer==null&&game.FightClock==0);
+        yield return DeveloperKey(Key.F8);ClickConfig("Dev_Wave1");
+        yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);yield return Seconds(.5f);
+        Check("W1 reaches live combat",game.Phase==DuelPhase.Fight&&game.FightClock>0);
+        game.Player.TakeDamage(10000,null);yield return Until(()=>game.Phase==DuelPhase.Failed,.5f);
+        yield return DeveloperKey(Key.F8);ClickConfig("Dev_Wave3");
+        Check("defeat to W3 recovers cleanly",game.Phase==DuelPhase.Prepare&&game.Wave==3&&!game.Player.IsDead&&game.DraftLoadout.TotalRules==2);
+        yield return DeveloperKey(Key.F8);
+        SetAlphaGameSize(1280,720);yield return Frames(8);
+        ScreenCapture.CaptureScreenshot(Output+"developer-wave-1280.png");yield return Frames(3);
+        ClickConfig("Health");SetAlphaGameSize(1920,1080);yield return Frames(8);
+        ScreenCapture.CaptureScreenshot(Output+"developer-wave-health-1920.png");yield return Frames(3);
+        Check("health controls remain editable",Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<TMP_InputField>().All(f=>f.interactable));
+        game.ResetDeveloperTuning();game.MainMenu();yield return DeveloperKey(Key.F8);ClickConfig("Dev_Wave1");
+        Check("menu jump works and defaults restore",game.Phase==DuelPhase.Prepare&&game.Wave==1&&game.Player.GetComponent<PlayerMovement>().MoveSpeed==7);
+        game.MainMenu();yield return Frames(3);
+        Check("menu cleanup releases pause and actors",game.Player==null&&game.Bosses.Count==0&&!game.DeveloperToolsOpen&&Time.timeScale==1&&!AudioListener.pause);
+        checkingPause=false;
+        Record("NOT TESTED: physical input, standalone, full fight outcomes and balance.");
+    }
     static IEnumerator DeveloperKey(Key key)
     {heldKeys=new[]{key};yield return Frames(3);heldKeys=Array.Empty<Key>();yield return Frames(3);}
     static IEnumerator DeveloperTuning()

@@ -74,6 +74,11 @@ namespace GoGhost.Duel
         public void SetMove(float direction, float speedScale = 1)
         { move = Mathf.Clamp(direction, -1, 1); this.speedScale = Mathf.Clamp01(speedScale); }
         public void Brake() { route = null; routeMotion = null; stepping = false; BrakeMotion(); }
+        public void HoldHorizontal()
+        {
+            Brake();
+            if (body != null) body.linearVelocity = new Vector2(0, body.linearVelocity.y);
+        }
         public void ClearRoute() { route = null; routeMotion = null; launched = leftGround = false; BrakeMotion(); }
         void BrakeMotion() { move = 0; speedScale = 1; }
         public bool TryJump()
@@ -89,6 +94,18 @@ namespace GoGhost.Duel
             dashDirection = direction.normalized; dashRemaining = distance; dashSpeed = speed;
             PreviousPosition = Position;
             DashActive = true; DashBlocked = dashStopPending = false;
+            dashElapsed = dashStalled = 0;
+            dashDeadline = distance / speed + .3f;
+        }
+        float dashElapsed, dashStalled, dashDeadline;
+        public int StalledDrives { get; private set; }
+        // Retire attack motion without disabling terrain/body collision or normal gravity.
+        public void EndAttackMotion()
+        {
+            bool driven=DashActive;
+            DashActive=dashStopPending=dropping=dropRequested=stepping=jumpRequested=false;
+            fixedDropLanding=false;ClearRoute();
+            if(body!=null)body.linearVelocity=new Vector2(0,driven?0:body.linearVelocity.y);
         }
         public bool StartCommittedJump(ArenaNavigation2D.Route value, BossMotionProfile motion=null)
         {
@@ -146,13 +163,20 @@ namespace GoGhost.Duel
             }
             if (DashActive)
             {
-                dashRemaining -= Mathf.Max(0, Vector2.Dot(here - PreviousPosition, dashDirection));
+                float progress=Mathf.Max(0,Vector2.Dot(here-PreviousPosition,dashDirection));
+                dashElapsed+=dt;
+                dashStalled=progress<.001f?dashStalled+dt:0;
+                // Rigidbody contact can disagree with the planning cast at a platform corner.
+                // Distance alone cannot finish a drive when that contact prevents displacement.
+                if(!dashStopPending&&(dashStalled>.18f||dashElapsed>dashDeadline))
+                {DashBlocked=dashStopPending=true;StalledDrives++;}
+                dashRemaining -= progress;
                 if (dashStopPending || dashRemaining <= .025f)
                 {
                     // The earlier damage reader has consumed the last completed dash segment.
-                    // End its horizontal drive now; ordinary gravity keeps the current vertical velocity.
+                    // End the finite drive without turning an upward dash into a second ballistic launch.
                     DashActive = dashStopPending = false; Brake();
-                    body.linearVelocity = new Vector2(0, body.linearVelocity.y);
+                    body.linearVelocity = Vector2.zero;
                     PreviousPosition = here;
                     return;
                 }
@@ -160,7 +184,7 @@ namespace GoGhost.Duel
                 {
                     float travel = Mathf.Min(dashRemaining, dashSpeed * dt);
                     Vector2 desired = here + dashDirection * travel;
-                    // A horizontal dash drives a straight swept Rigidbody path across a platform gap.
+                    // A dash drives a straight swept Rigidbody path in its committed direction.
                     // Counter gravity only during that finite drive; ordinary gravity resumes on exit.
                     bool clear = navigation == null || navigation.TryDash(here, desired, Size, out _);
                     Vector2 end = desired;

@@ -21,7 +21,7 @@ namespace GoGhost.Duel
         {Id=id;Label=label;Group=group;Default=value;Min=min;Max=max;Step=step;}
     }
 
-    // Session-only values. Never writes shared assets or replaces an active fight/controller.
+    // Session-only values. Tuning edits never write assets or replace the active controller.
     public sealed partial class DuelGame
     {
         public bool DeveloperToolsOpen { get; private set; }
@@ -115,6 +115,18 @@ namespace GoGhost.Duel
             if(!DeveloperToolsOpen||!GetDeveloperHealth(actor,out _,out int maximum))return;
             if(actor==0)Player.SetRuntimeHealth(maximum,value);
             else foreach(var boss in actors)if(boss!=null&&boss.ActorId==actor)boss.Health.SetRuntimeHealth(maximum,value);
+        }
+
+        public void JumpToDeveloperWave(int wave)
+        {
+            if(!DeveloperToolsOpen||wave<1||wave>3||!ConditionalCatalog.IsValid(DraftLoadout))return;
+            EventSystem.current?.SetSelectedGameObject(null);
+            ClearEncounter();
+            // Keep equipped rules/order, but discard any incomplete picker draft.
+            DraftLoadout=DraftLoadout.Copy();
+            Wave=wave;
+            SetPhase(DuelPhase.Configure);
+            StartFight();
         }
 
         public void ToggleDeveloperTools()

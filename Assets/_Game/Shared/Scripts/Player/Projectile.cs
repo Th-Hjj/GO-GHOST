@@ -34,7 +34,7 @@ public class Projectile : MonoBehaviour
     private int ownerLayer = -1; // cached in Launch: the owner may be destroyed while the bullet is still flying
     private bool spent;
     public bool CanBeCountered { get; private set; }
-    /// <summary>True once an Arm-Blade slash turned this bullet around; it then belongs to the deflecting side.</summary>
+    /// <summary>True once a blade turned this bullet around; it then belongs to the deflecting side.</summary>
     public bool Deflected { get; private set; }
     private PlayerTimeSlow timeSlow;
     private Vector2 fullVelocity;
@@ -95,22 +95,24 @@ public class Projectile : MonoBehaviour
     }
 
     /// <summary>
-    /// Arm-Blade deflection: the same bullet flies back the way it came and now belongs to <paramref name="newOwner"/>
+    /// Blade deflection: the same bullet flies back the way it came and now belongs to <paramref name="newOwner"/>
     /// (team, damage credit). No aiming, homing or damage bonus; it keeps its remaining lifetime, passes through walls
     /// and is never counted as a gun shot. Returns false if it was already spent or deflected.
     /// </summary>
-    public bool Deflect(GameObject newOwner)
+    public bool Deflect(GameObject newOwner) => Deflect(newOwner, ProjectileActor.Player);
+
+    public bool Deflect(GameObject newOwner, ProjectileActor actor)
     {
         if (!launched || spent || Deflected || newOwner == null) return false;
         Deflected = true;
-        Actor = ProjectileActor.Player;
+        Actor = actor;
         var identity = newOwner.GetComponent<OfficerIdentity>();
         PermissionTier = identity != null && identity.Deployment != null ? Mathf.Max(0, identity.Deployment.BrainPermissionTier) : 0;
         owner = newOwner;
         ownerLayer = newOwner.layer;
         accuracyOwner = null;
         CanBeCountered = false;
-        timeSlow = null; // the hostile clock no longer applies to a bullet that now belongs to the player
+        timeSlow = null; // Reflection keeps the original full speed, independently of its old owner's clock.
         fullVelocity = -fullVelocity;
         rb.linearVelocity = fullVelocity;
         transform.Rotate(0f, 0f, 180f);
@@ -133,8 +135,11 @@ public class Projectile : MonoBehaviour
         foreach (var hit in Physics2D.CircleCastAll(rb.position, Radius, travel.normalized, travel.magnitude))
         {
             if (hit.collider == null || hit.collider.gameObject == gameObject) continue;
+            var ownerBefore = owner;
             OnTriggerEnter2D(hit.collider);
             if (spent) return;
+            // A receiver can reverse this bullet; the remaining hits describe its obsolete forward path.
+            if (owner != ownerBefore) break;
         }
         remainingLife -= Time.fixedDeltaTime * SimulationRate;
         if (remainingLife <= 0f) Retire();
@@ -169,7 +174,10 @@ public class Projectile : MonoBehaviour
         }
 
         var receiver = other.GetComponentInParent<IProjectileReceiver>();
-        if (receiver != null && receiver.ReceiveProjectile(this, other))
+        var previousOwner = owner;
+        bool consumed = receiver != null && receiver.ReceiveProjectile(this, other);
+        if (owner != previousOwner) return; // Reflection transfers the live bullet instead of consuming it.
+        if (consumed)
         {
             Retire();
             return;

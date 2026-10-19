@@ -4,7 +4,8 @@ using UnityEngine;
 namespace GoGhost.Duel
 {
     public enum BossKind { Refraction, Severance }
-    public enum BossAbility { None, Burst, Camo, Piercing, Sweep, Rhythm, DrawDash, ReturnCut, DropCut, Guard, Reload, LeapSlash, TacticalJumpShot, DashFollowup, DropFollowup, FlankLeap, FlankCut, LeapFollowup }
+    public enum BossAbility { None, Burst, Camo, Piercing, Sweep, Rhythm, DrawDash, ReturnCut, DropCut, Guard, Reload, LeapSlash, TacticalJumpShot, DashFollowup, DropFollowup, FlankLeap, FlankCut, LeapFollowup,
+        SwordPursuit, SwordDislodge, SwordDuel, SwordCrossing, SwordRedline }
     public enum BossActionPhase { Idle, Prepare, Locked, Active, Recovery }
     [Serializable]
     public sealed class BossAbilitySettings
@@ -20,6 +21,7 @@ namespace GoGhost.Duel
         public BossKind Kind;
         public int Health=720;
         public BossMotionProfile Motion=new BossMotionProfile();
+        public SwordCombatSettings Sword=new SwordCombatSettings();
         public int Magazine=12;
         public float ReloadSeconds=1.45f, BulletSpeed=24, BurstInterval=.12f, SweepInterval=.12f;
         public float BurstShotLock=.08f, BurstTail=.04f, SweepTail=.10f, SweepWidth=5, SweepHeight=.65f;

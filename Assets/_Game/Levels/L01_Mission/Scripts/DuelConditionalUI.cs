@@ -10,7 +10,7 @@ namespace GoGhost.Duel
     {
         int actionCategory = 2, conditionCategory;
         int selectorRow = -1, pendingRow = -1;
-        bool selectingCondition;
+        bool selectingCondition, selectingAdditional;
         ConditionalRule pendingRule;
         ConditionalLoadout displayedDraft;
         // Presentation order only. Runtime priority remains the relative order within each operation.
@@ -28,29 +28,29 @@ namespace GoGhost.Duel
         readonly Dictionary<string,float> configurationScroll = new Dictionary<string,float>();
         string focusName, focusLabel;
         int builtSelector=-1, builtCategory=-1;
-        bool builtCondition;
+        bool builtCondition, builtAdditional;
         static readonly string[] ShortOperationLabels = { "Move", "Jump", "Aim", "Fire", "Dodge" };
         public int SelectedOperation => actionCategory;
         public bool ConfigurationReady => pendingRule == null && selectorRow < 0 && ConditionalCatalog.IsValid(game.DraftLoadout);
 
-        string ScrollKey(string name,int row,bool condition,int category) => name=="EquippedRules"?name:name+"/"+row+"/"+condition+"/"+category;
+        string ScrollKey(string name,int row,bool condition,bool additional,int category) => name=="EquippedRules"?name:name+"/"+row+"/"+condition+"/"+additional+"/"+category;
         void CaptureConfigurationView()
         {
             focusName=focusLabel=null;
             if(page==null||game.Phase!=DuelPhase.Configure||displayedDraft!=game.DraftLoadout)
             {configurationScroll.Clear();return;}
             foreach(var scroll in page.GetComponentsInChildren<UnityEngine.UI.ScrollRect>())
-                configurationScroll[ScrollKey(scroll.name,builtSelector,builtCondition,builtCategory)]=scroll.verticalNormalizedPosition;
+                configurationScroll[ScrollKey(scroll.name,builtSelector,builtCondition,builtAdditional,builtCategory)]=scroll.verticalNormalizedPosition;
             var selected=EventSystem.current!=null?EventSystem.current.currentSelectedGameObject:null;
             if(selected!=null&&selected.transform.IsChildOf(page)&&selected.GetComponent<DuelButtonOutline>() is {KeyboardFocused:true})
             {focusName=selected.name;focusLabel=selected.GetComponentInChildren<TMP_Text>()?.text;}
         }
         void RestoreConfigurationView()
         {
-            builtSelector=selectorRow;builtCondition=selectingCondition;builtCategory=selectingCondition?conditionCategory:actionCategory;
+            builtSelector=selectorRow;builtCondition=selectingCondition;builtAdditional=selectingAdditional;builtCategory=selectingCondition?conditionCategory:actionCategory;
             Canvas.ForceUpdateCanvases();
             foreach(var scroll in page.GetComponentsInChildren<UnityEngine.UI.ScrollRect>())
-                if(configurationScroll.TryGetValue(ScrollKey(scroll.name,builtSelector,builtCondition,builtCategory),out float position))scroll.verticalNormalizedPosition=position;
+                if(configurationScroll.TryGetValue(ScrollKey(scroll.name,builtSelector,builtCondition,builtAdditional,builtCategory),out float position))scroll.verticalNormalizedPosition=position;
             if(focusName==null||EventSystem.current==null)return;
             UnityEngine.UI.Button target=null,fallback=null;
             foreach(var button in page.GetComponentsInChildren<UnityEngine.UI.Button>())
@@ -120,6 +120,7 @@ namespace GoGhost.Duel
         {
             pendingRule = null;
             pendingRow = selectorRow = -1;
+            selectingAdditional=false;
             inspectedDescription = null;
             Show();
         }
@@ -177,7 +178,7 @@ namespace GoGhost.Duel
             Image(page, new Vector2(listLeft - 12, (editorTop + editorBottom) / 2), new Vector2(1, editorTop - editorBottom), NeuralPalette.Border);
             BuildConfigurationBody();
             float w = ruleEditor.sizeDelta.x, h = ruleEditor.sizeDelta.y;
-            Text(selectorRow < 0 ? "Rule Editor" : selectingCondition ? "1 / 2   Select Condition" : "2 / 2   Select Action", ruleEditor,
+            Text(selectorRow < 0 ? "Rule Editor" : selectingAdditional ? "Optional AND" : selectingCondition ? "1 / 2   Select Condition" : "2 / 2   Select Action", ruleEditor,
                 new Vector2(0, h / 2 - 24), new Vector2(w, 48), 30, TextAlignmentOptions.Left,headingFont);
             Image(ruleEditor, new Vector2(0, h / 2 - 58), new Vector2(w, 1), NeuralPalette.Border);
             if (selectorRow >= 0) BuildRuleSelector();
@@ -279,38 +280,53 @@ namespace GoGhost.Duel
             {
                 int row = i;
                 var rule = displayedRules[i];
-                var line=Rect("RuleRow"+i,rows,Vector2.zero,new Vector2(w-24,92));
-                line.gameObject.AddComponent<UnityEngine.UI.LayoutElement>().preferredHeight=92;
                 float rw=w-24,fieldWidth=rw-62,fieldX=-rw/2+fieldWidth/2;
+                var line=Rect("RuleRow"+i,rows,Vector2.zero,new Vector2(rw,92));
+                var rowLayout=line.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();
                 bool editing=pendingRule!=null&&pendingRow==i;
-                var accent=Image(line,new Vector2(-rw/2+1,0),new Vector2(2,86),NeuralPalette.Body(RuleSystem(rule)));
-                accent.name="RuleIdentity";equippedAccents.Add(accent);
                 var hover=line.gameObject.AddComponent<ConditionalOptionDescription>();
                 hover.Inspect=()=>PreviewRule(RuleSystem(rule),row);hover.Leave=RestoreFocusedPreview;hover.Deselect=()=>PreviewRule(NeuralBodySystem.None);
-                var conditionButton=ConfigButton("Rule" + i + "Condition", "IF  "+ConditionLabel(rule), line, new Vector2(fieldX,24),
-                    new Vector2(fieldWidth,44), () => ChooseRule(row, true), editing&&selectingCondition, true);
-                var actionButton=ConfigButton("Rule" + i + "Action", "THEN  "+ConditionalCatalog.Response(rule.Action).Label,
-                    line, new Vector2(fieldX,-24), new Vector2(fieldWidth,44), () => ChooseRule(row, false), editing&&!selectingCondition, true);
-                foreach(var field in new[]{conditionButton,actionButton})
-                {var inspect=field.gameObject.AddComponent<ConditionalOptionDescription>();inspect.Inspect=hover.Inspect;inspect.Leave=hover.Leave;inspect.Deselect=hover.Deselect;}
+                var fields=new List<UnityEngine.UI.Button>();
+                fields.Add(ConfigButton("Rule" + i + "Condition", "IF  "+ConditionalCatalog.ConditionLabel(rule), line, Vector2.zero,
+                    new Vector2(fieldWidth,44), () => ChooseRule(row, true), editing&&selectingCondition&&!selectingAdditional, true));
+                if(rule.AdditionalCondition!=0)
+                    fields.Add(ConfigButton("Rule"+i+"AdditionalCondition","AND  "+ConditionalCatalog.ConditionLabel(rule,true),line,Vector2.zero,
+                        new Vector2(fieldWidth,44),()=>ChooseAdditionalCondition(row),editing&&selectingAdditional,true));
+                fields.Add(ConfigButton("Rule" + i + "Action", "THEN  "+ConditionalCatalog.RuleActionLabel(rule),line,Vector2.zero,
+                    new Vector2(fieldWidth,44), () => ChooseRule(row, false), editing&&!selectingCondition, true));
+                float height=0;
+                foreach(var field in fields)
+                {
+                    var text=field.GetComponentInChildren<TMP_Text>();
+                    float fieldHeight=Mathf.Max(44,TextHeight(text,fieldWidth-28)+8);
+                    ((RectTransform)field.transform).sizeDelta=new Vector2(fieldWidth,fieldHeight);
+                    height+=fieldHeight+4;
+                    var inspect=field.gameObject.AddComponent<ConditionalOptionDescription>();
+                    inspect.Inspect=hover.Inspect;inspect.Leave=hover.Leave;inspect.Deselect=hover.Deselect;
+                }
+                height-=4;line.sizeDelta=new Vector2(rw,height);rowLayout.minHeight=rowLayout.preferredHeight=height;
+                float y=height/2;
+                foreach(var field in fields)
+                {
+                    var rect=(RectTransform)field.transform;
+                    rect.anchoredPosition=new Vector2(fieldX,y-rect.sizeDelta.y/2);y-=rect.sizeDelta.y+4;
+                }
+                var accent=Image(line,new Vector2(-rw/2+1,0),new Vector2(2,height-6),NeuralPalette.Body(RuleSystem(rule)));
+                accent.name="RuleIdentity";equippedAccents.Add(accent);
                 var up = ConfigButton("MoveRuleUp" + i, "▲", line, new Vector2(rw/2-28,32), new Vector2(40,28), () => MoveRule(row,-1));
                 up.GetComponentInChildren<TMP_Text>().fontSize=18;
-                up.GetComponent<DuelButtonOutline>().Subtle=true;
-                up.interactable=row>0;
+                up.GetComponent<DuelButtonOutline>().Subtle=true;up.interactable=row>0;
                 var down = ConfigButton("MoveRuleDown" + i, "▼", line, new Vector2(rw/2-28,0), new Vector2(40,28), () => MoveRule(row,1));
                 down.GetComponentInChildren<TMP_Text>().fontSize=18;
-                down.GetComponent<DuelButtonOutline>().Subtle=true;
-                down.interactable=row+1<displayedRules.Count;
+                down.GetComponent<DuelButtonOutline>().Subtle=true;down.interactable=row+1<displayedRules.Count;
                 var remove=ConfigButton("RemoveRule" + i, "", line, new Vector2(rw/2-28,-32), new Vector2(40,28), () => RemoveRule(row));
-                remove.GetComponent<DuelButtonOutline>().Subtle=true;
-                BuildTrashIcon(remove.transform);
+                remove.GetComponent<DuelButtonOutline>().Subtle=true;BuildTrashIcon(remove.transform);
                 accent.rectTransform.SetAsLastSibling();
             }
             var add=ConfigButton("AddRule", "+ Add Rule", ruleList, new Vector2(-w/2+94,-h/2+28),new Vector2(188,48),AddRule);
             add.interactable=game.DraftLoadout.TotalRules<ConditionalCatalog.MaxRulesTotal&&pendingRule==null;
             var start=ConfigButton("StartFight", "Start Fight", ruleList, new Vector2(w/2-105,-h/2+28),new Vector2(210,48),game.StartFight);
-            start.GetComponent<DuelButtonOutline>().Primary=true;
-            start.interactable=ConfigurationReady;
+            start.GetComponent<DuelButtonOutline>().Primary=true;start.interactable=ConfigurationReady;
         }
 
         void BuildTrashIcon(Transform parent)
@@ -328,14 +344,14 @@ namespace GoGhost.Duel
             Image(icon,new Vector2(2,-2),new Vector2(stroke,7),color);
         }
 
-        static string ConditionLabel(ConditionalRule rule) => rule.Condition == 0 ? "Select Condition"
-            : rule.Condition == 37 ? (rule.Below ? "Enemy Below" : "Enemy Above") : ConditionalCatalog.Condition(rule.Condition).Label;
+        static string ConditionLabel(ConditionalRule rule) => ConditionalCatalog.RuleConditionLabel(rule);
 
         void AddRule()
         {
             if (pendingRule != null || game.DraftLoadout.TotalRules >= ConditionalCatalog.MaxRulesTotal) return;
             // Incomplete choices stay UI-local; the combat loadout only receives a complete pair.
             pendingRule = new ConditionalRule();
+            selectingAdditional=false;
             pendingRow = displayedRules.Count;
             actionCategory = 2;
             conditionCategory = 0;
@@ -378,7 +394,7 @@ namespace GoGhost.Duel
                 pendingRule = displayedRules[row].Copy();
                 pendingRow = row;
             }
-            selectorRow = row;
+            selectorRow = row;selectingAdditional=false;
             selectingCondition = condition || pendingRule.Condition == 0;
             inspectedDescription = null;
             if (selectingCondition && pendingRule.Condition != 0)
@@ -388,54 +404,115 @@ namespace GoGhost.Duel
             Show();
         }
 
+        void ChooseAdditionalCondition(int row)
+        {
+            if(pendingRule==null||pendingRow!=row)
+            {pendingRule=displayedRules[row].Copy();pendingRow=row;}
+            selectorRow=row;selectingCondition=selectingAdditional=true;inspectedDescription=null;
+            conditionCategory=pendingRule.AdditionalCondition==0?0:ConditionalCatalog.Condition(pendingRule.AdditionalCondition).Category;
+            Show();
+        }
+
+        void RemoveAdditionalCondition()
+        {
+            pendingRule.AdditionalCondition=0;ConditionalCatalog.SetConditionOption(pendingRule,-1,true);
+            ReturnToAction();
+        }
+
+        void ReturnToAction()
+        {
+            selectingAdditional=selectingCondition=false;inspectedDescription=null;
+            if(!string.IsNullOrEmpty(pendingRule.Action))actionCategory=(int)ConditionalCatalog.Response(pendingRule.Action).Operation;
+            Show();
+        }
+
+        void FinishConditionChoice()
+        {
+            if(!string.IsNullOrEmpty(pendingRule.Action)&&ConditionalCatalog.IncompatibilityReasonForActionChoice(pendingRule,pendingRule.Action)!=null)
+                pendingRule.Action=null;
+            ReturnToAction();
+        }
+
+        void SelectCondition(int condition)
+        {
+            int previous=selectingAdditional?pendingRule.AdditionalCondition:pendingRule.Condition;
+            if(selectingAdditional)pendingRule.AdditionalCondition=condition;else pendingRule.Condition=condition;
+            if(previous!=condition)ConditionalCatalog.SetConditionOption(pendingRule,-1,selectingAdditional);
+            inspectedDescription=null;
+            if(ConditionalCatalog.ConditionOptions(condition).Length==0)FinishConditionChoice();
+            else Show();
+        }
+
+        void SelectConditionOption(int option)
+        {
+            ConditionalCatalog.SetConditionOption(pendingRule,option,selectingAdditional);
+            FinishConditionChoice();
+        }
+
+        // Retain the existing editor entry point; all choices now validate the complete draft.
         void ApplyChoice(int condition, bool below, string action)
         {
-            int row = selectorRow;
-            if (action == null)
-            {
-                pendingRule.Condition = condition; pendingRule.Below = below;
-                if (!string.IsNullOrEmpty(pendingRule.Action) && !ConditionalCatalog.IsAllowed(
-                    (int)ConditionalCatalog.Response(pendingRule.Action).Operation, condition, pendingRule.Action)) pendingRule.Action = null;
-                selectingCondition = false;
-                inspectedDescription = null;
-                if(!string.IsNullOrEmpty(pendingRule.Action))actionCategory=(int)ConditionalCatalog.Response(pendingRule.Action).Operation;
-                Show();
-                return;
-            }
-            else
-            {
-                if (!ConditionalCatalog.IsAllowed((int)ConditionalCatalog.Response(action).Operation, pendingRule.Condition, action)) return;
-                pendingRule.Action = action;
-            }
-            if (row == displayedRules.Count && displayedRules.Count >= ConditionalCatalog.MaxRulesTotal) return;
-            var complete = pendingRule.Copy();
+            if(action==null){SelectCondition(condition);return;}
+            if(!ConditionalCatalog.ConditionsAreComplete(pendingRule)||ConditionalCatalog.IncompatibilityReasonForActionChoice(pendingRule,action)!=null)return;
+            if(pendingRule.Action!=action&&ConditionalCatalog.ActionOptions(action).Length>0&&!ConditionalCatalog.UsesAmmoOption(action))
+                pendingRule.MoveDirection=MoveDirectionOption.Unspecified;
+            pendingRule.Action=action;inspectedDescription=null;
+            if(ConditionalCatalog.ActionOptions(action).Length>0)Show();else CommitRuleChoice();
+        }
+
+        void CommitRuleChoice()
+        {
+            if(pendingRule==null||string.IsNullOrEmpty(pendingRule.Action)||
+                !ConditionalCatalog.IsAllowed((int)ConditionalCatalog.Response(pendingRule.Action).Operation,pendingRule))return;
+            int row=selectorRow;
+            if(row==displayedRules.Count&&displayedRules.Count>=ConditionalCatalog.MaxRulesTotal)return;
+            var complete=pendingRule.Copy();
             installedSystem=RuleSystem(complete);installedRow=row;installedAt=Time.unscaledTime;
-            pendingRule = null;
-            pendingRow = selectorRow = -1;
-            game.EditLoadout(d =>
+            pendingRule=null;pendingRow=selectorRow=-1;selectingAdditional=false;
+            game.EditLoadout(d=>
             {
-                if (row == displayedRules.Count) displayedRules.Add(complete);
-                else displayedRules[row] = complete;
+                if(row==displayedRules.Count)displayedRules.Add(complete);else displayedRules[row]=complete;
                 WriteRuleOrder(d);
             });
         }
 
+        bool CategoryHasSelectableCondition(int category)
+        {
+            foreach(var entry in ConditionalCatalog.Conditions)
+                if(entry.Category==category&&(!selectingAdditional||!entry.Event))return true;
+            return false;
+        }
+
         void BuildRuleSelector()
         {
-            float w = ruleEditor.sizeDelta.x, h = ruleEditor.sizeDelta.y, top = h / 2;
-            var rule = EditingRule;
+            float w=ruleEditor.sizeDelta.x,h=ruleEditor.sizeDelta.y,top=h/2;
+            var rule=EditingRule;
             ConfigButton("CancelRuleEdit","Cancel",ruleEditor,new Vector2(w/2-58,top-90),new Vector2(116,44),CancelRuleEdit);
-            if(!selectingCondition)
+            if(selectingAdditional)
+                ConfigButton("SelectorBack","< Action",ruleEditor,new Vector2(-w/2+90,top-90),new Vector2(180,44),ReturnToAction);
+            else if(!selectingCondition)
                 ConfigButton("SelectorBack","< Condition",ruleEditor,new Vector2(-w/2+90,top-90),new Vector2(180,44),()=>ChooseRule(pendingRow,true));
-            const float categoryWidth=234;
-            float optionsWidth=w-categoryWidth-20;
-            float optionsX=-w/2+categoryWidth+20+optionsWidth/2;
-            const float descriptionHeight=132;
-            float optionsTop=top-162,optionsBottom=-h/2+descriptionHeight+26;
-            // Use the same six-row rhythm in both steps, independent of the current item count.
+            bool hasAdditional=rule.AdditionalCondition!=0;
+            float andWidth=hasAdditional?w-56:156;
+            var andButton=ConfigButton("AdditionalCondition",hasAdditional?"AND  "+ConditionalCatalog.ConditionLabel(rule,true):"+ AND",ruleEditor,
+                new Vector2(-w/2+andWidth/2,top-142),new Vector2(andWidth,44),()=>ChooseAdditionalCondition(pendingRow),selectingAdditional,true);
+            andButton.interactable=rule.Condition!=0&&(ConditionalCatalog.ConditionOptions(rule.Condition).Length==0||ConditionalCatalog.ConditionOption(rule)>=0);
+            if(hasAdditional)
+            {
+                var remove=ConfigButton("RemoveAdditionalCondition","",ruleEditor,new Vector2(w/2-22,top-142),new Vector2(44,44),RemoveAdditionalCondition);
+                BuildTrashIcon(remove.transform);
+            }
+            int selectedCondition=selectingAdditional?rule.AdditionalCondition:rule.Condition;
+            bool selectedAction=!selectingCondition&&!string.IsNullOrEmpty(rule.Action)&&(int)ConditionalCatalog.Response(rule.Action).Operation==actionCategory;
+            string[] parameters=selectingCondition?selectedCondition==0?System.Array.Empty<string>():ConditionalCatalog.ConditionOptions(selectedCondition)
+                :selectedAction?ConditionalCatalog.ActionOptions(rule.Action):System.Array.Empty<string>();
+            bool hasParameters=parameters.Length>0;
+            const float categoryWidth=234,descriptionHeight=132;
+            float optionsWidth=w-categoryWidth-20,optionsX=-w/2+categoryWidth+20+optionsWidth/2;
+            float optionsTop=top-210,optionsBottom=-h/2+(hasParameters?238:descriptionHeight+26);
             selectorRowHeight=Mathf.Clamp(Mathf.Floor((optionsTop-optionsBottom-4-5*12)/6),56,64);
-            Text("Category",ruleEditor,new Vector2(-w/2+categoryWidth/2,top-134),new Vector2(categoryWidth,28),20,TextAlignmentOptions.Left);
-            Text("Options",ruleEditor,new Vector2(optionsX,top-134),new Vector2(optionsWidth,28),20,TextAlignmentOptions.Left);
+            Text("Category",ruleEditor,new Vector2(-w/2+categoryWidth/2,top-184),new Vector2(categoryWidth,28),20,TextAlignmentOptions.Left);
+            Text("Options",ruleEditor,new Vector2(optionsX,top-184),new Vector2(optionsWidth,28),20,TextAlignmentOptions.Left);
             var categories=BuildRuleOptions("SelectorCategories",ruleEditor,new Vector2(-w/2+categoryWidth/2,(optionsTop+optionsBottom)/2),new Vector2(categoryWidth,optionsTop-optionsBottom));
             var choices=BuildRuleOptions("RuleOptions",ruleEditor,new Vector2(optionsX,(optionsTop+optionsBottom)/2),new Vector2(optionsWidth,optionsTop-optionsBottom));
             Image(ruleEditor,new Vector2(0,-h/2+descriptionHeight+12),new Vector2(w,1),NeuralPalette.Border);
@@ -447,16 +524,20 @@ namespace GoGhost.Duel
             {
                 for(int i=0;i<ConditionalCatalog.Categories.Length;i++)
                 {
-                    int category=i;
+                    int category=i;if(!CategoryHasSelectableCondition(category))continue;
                     CategoryOption("ConditionCategory"+i,ConditionalCatalog.Categories[i],categories,()=>
                     {conditionCategory=category;inspectedDescription=null;Show();},conditionCategory==i);
                 }
-                foreach (var entry in ConditionalCatalog.Conditions)
+                foreach(var entry in ConditionalCatalog.Conditions)
                 {
-                    if(entry.Category!=conditionCategory)continue;
-                    int condition = entry.Id;
-                    RuleOption(entry.Label, choices, () => ApplyChoice(condition, false, null), rule.Condition == condition,
-                        ConditionalCatalog.ConditionDescription(condition));
+                    if(entry.Category!=conditionCategory||selectingAdditional&&entry.Event)continue;
+                    int condition=entry.Id;
+                    var candidate=rule.Copy();
+                    if(selectingAdditional)candidate.AdditionalCondition=condition;else candidate.Condition=condition;
+                    if(condition!=selectedCondition)ConditionalCatalog.SetConditionOption(candidate,-1,selectingAdditional);
+                    string reason=ConditionalCatalog.HasAnyCompatibleAction(candidate)?null:"These conditions cannot be true together.";
+                    RuleOption(entry.Label,choices,()=>ApplyChoice(condition,false,null),selectedCondition==condition,
+                        ConditionalCatalog.ConditionDescription(condition),reason);
                 }
             }
             else
@@ -468,18 +549,48 @@ namespace GoGhost.Duel
                 }
                 foreach(string id in ConditionalCatalog.FormalResponses[actionCategory])
                 {
-                    // Temporarily hidden from authoring; retain existing Q03 rules and runtime support.
-                    if(id=="Q03")continue;
                     string action=id;
-                    bool allowed=ConditionalCatalog.IsAllowed(actionCategory,rule.Condition,action);
+                    string reason=!ConditionalCatalog.ConditionsAreComplete(rule)?"Choose the remaining condition option.":ConditionalCatalog.IncompatibilityReasonForActionChoice(rule,action);
                     RuleOption(ConditionalCatalog.Response(action).Label,choices,()=>ApplyChoice(0,false,action),rule.Action==action,
-                        ConditionalCatalog.ResponseDescription(action),allowed?null:ConditionalCatalog.IncompatibilityReason(actionCategory,rule.Condition,action),action);
+                        ConditionalCatalog.ResponseDescription(action),reason,action);
                 }
             }
+            if(hasParameters)BuildRuleParameters(parameters,selectedCondition,w,h);
             string selectedDescription=selectingCondition
-                ? rule.Condition==0?null:ConditionalCatalog.ConditionDescription(rule.Condition)
-                : string.IsNullOrEmpty(rule.Action)?null:ConditionalCatalog.ResponseDescription(rule.Action);
+                ?selectedCondition==0?null:ConditionalCatalog.ConditionLabel(rule,selectingAdditional)+"\n"+ConditionalCatalog.ConditionDescription(rule,selectingAdditional)
+                :selectedAction?ConditionalCatalog.RuleActionLabel(rule)+"\n"+ConditionalCatalog.ResponseDescription(rule.Action):null;
             SetOptionDescription(inspectedDescription??selectedDescription);
+        }
+
+        void BuildRuleParameters(string[] options,int condition,float w,float h)
+        {
+            bool ammo=!selectingCondition&&ConditionalCatalog.UsesAmmoOption(pendingRule.Action);
+            string label=selectingCondition?ConditionalCatalog.Condition(condition).Label:ConditionalCatalog.ActionOptionLabel(pendingRule.Action);
+            Text(label,ruleEditor,new Vector2(0,-h/2+212),new Vector2(w,28),20,TextAlignmentOptions.Left);
+            int columns=options.Length+(ammo?1:0);
+            float width=(w-(columns-1)*8)/columns;
+            int selected=selectingCondition?ConditionalCatalog.ConditionOption(pendingRule,selectingAdditional):ConditionalCatalog.ActionOption(pendingRule);
+            for(int i=0;i<options.Length;i++)
+            {
+                int index=i;bool allowed=true;
+                if(selectingCondition)
+                {
+                    var candidate=pendingRule.Copy();ConditionalCatalog.SetConditionOption(candidate,index,selectingAdditional);
+                    allowed=ConditionalCatalog.HasAnyCompatibleAction(candidate);
+                }
+                var option=ConfigButton("RuleParameter"+i,options[i],ruleEditor,new Vector2(-w/2+width/2+i*(width+8),-h/2+172),new Vector2(width,44),()=>
+                {
+                    if(selectingCondition){SelectConditionOption(index);return;}
+                    ConditionalCatalog.SetActionOption(pendingRule,index);inspectedDescription=null;
+                    if(ammo)Show();else CommitRuleChoice();
+                },selected==i);
+                option.interactable=allowed;
+            }
+            if(ammo)
+            {
+                var commit=ConfigButton("UseAction","Use Action",ruleEditor,new Vector2(w/2-width/2,-h/2+172),new Vector2(width,44),CommitRuleChoice);
+                commit.interactable=ConditionalCatalog.IsAllowed((int)ConditionalCatalog.Response(pendingRule.Action).Operation,pendingRule);
+            }
         }
 
         void CategoryOption(string name,string label,RectTransform parent,UnityEngine.Events.UnityAction click,bool selected)

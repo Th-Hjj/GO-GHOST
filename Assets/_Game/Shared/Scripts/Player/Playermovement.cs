@@ -40,6 +40,11 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
 
     /// <summary>True on an upward-facing Ground surface or a solid enemy supporting the player. Gates jump and ground dodge.</summary>
     public bool IsGrounded { get; private set; }
+    public bool IsOrdinaryMoving { get; private set; }
+    public event System.Action JumpStarted;
+    public event System.Action JumpApexReached;
+    private bool jumpInFlight, jumpWasAscending, physicsObserved;
+    private float previousPhysicsX, ordinaryDirection;
 
     private Rigidbody2D rb;
     private readonly ContactPoint2D[] supportContacts = new ContactPoint2D[8];
@@ -94,6 +99,9 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         IsHovering = false;
         moveInput = Vector2.zero;
         IsGrounded = false;
+        IsOrdinaryMoving = false;
+        jumpInFlight = jumpWasAscending = physicsObserved = false;
+        ordinaryDirection = 0;
         hitPushRemaining = 0; HitPushCount = 0;
     }
 
@@ -159,6 +167,16 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         if (IsGrounded)
         {
             RefillAirResources();
+            jumpInFlight = jumpWasAscending = false;
+        }
+        else if (jumpInFlight)
+        {
+            if (jumpWasAscending && rb.linearVelocity.y <= 0)
+            {
+                jumpInFlight = false;
+                JumpApexReached?.Invoke();
+            }
+            else if (rb.linearVelocity.y > 0) jumpWasAscending = true;
         }
 
         input.ResolveConditionalInputs();
@@ -187,6 +205,14 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
 
     private void FixedUpdate()
     {
+        // Observe the last physics result, not an input or a velocity requested against a wall.
+        IsOrdinaryMoving = physicsObserved && ordinaryDirection != 0 && rb.simulated
+            && input.GameplayInputEnabled && !input.NarrativePaused
+            && (dodge == null || !dodge.IsDodging) && !HitPushActive
+            && (rb.position.x - previousPhysicsX) * ordinaryDirection > .0005f;
+        previousPhysicsX = rb.position.x;
+        physicsObserved = true;
+        ordinaryDirection = 0;
         IsHovering = false;
         if (dodge != null && dodge.IsDodging)
         {hitPushRemaining=0;if(input.ConditionalFrame.MovementOwned)input.NotifyConditionalAction(ControlOperation.Movement,false);return;}
@@ -224,8 +250,10 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
             vertical = Mathf.Max(vertical, -HoverFallSpeed);
         }
         rb.linearVelocity = new Vector2(moveInput.x * MoveSpeed, vertical);
+        ordinaryDirection = Mathf.Abs(moveInput.x) > .01f ? Mathf.Sign(moveInput.x) : 0;
         if(input.ConditionalFrame.MovementOwned)
-            input.NotifyConditionalAction(ControlOperation.Movement,input.GameplayInputEnabled&&rb.simulated&&Mathf.Abs(rb.linearVelocity.x)>.01f);
+            input.NotifyConditionalAction(ControlOperation.Movement,input.GameplayInputEnabled&&rb.simulated
+                && (Mathf.Abs(input.ConditionalFrame.Move)<.01f || IsOrdinaryMoving));
     }
 
     // A real damaging hit may request one bounded horizontal reaction. Physics and gravity still own position.
@@ -243,15 +271,24 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
 
     private void TryJump()
     {
+        bool accepted = false;
         if (IsGrounded)
         {
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, JumpSpeed);
             IsGrounded = false;
+            accepted = true;
         }
         else if (HasDoubleJump && airJumpsRemaining > 0)
         {
             airJumpsRemaining--;
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, JumpSpeed);
+            accepted = true;
+        }
+        if (accepted)
+        {
+            jumpInFlight = true;
+            jumpWasAscending = rb.linearVelocity.y > 0;
+            JumpStarted?.Invoke();
         }
     }
 

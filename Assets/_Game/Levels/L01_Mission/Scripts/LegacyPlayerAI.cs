@@ -606,7 +606,7 @@ public sealed class LegacyPlayerAI
     }
 
     // Conditional rules reuse only executable geometry, never the old Legs/Arms/Spine decisions.
-    public bool ConditionalThreat(int kind,float move,bool jump,out Vector2 source,out int actorId)
+    public bool ConditionalThreat(int kind,float move,bool jump,out Vector2 source,out int actorId,int requiredActorId=0)
     {
         Sense(); source=default;actorId=0;
         int count=PredictPath(new Motion(move,jump,dodge.IsDodging?Mathf.Sign(body.linearVelocity.x):0),SpineThreatWindow);
@@ -625,12 +625,14 @@ public sealed class LegacyPlayerAI
                     Vector2 a=rb.position+rb.linearVelocity*(t-Step),b=rb.position+rb.linearVelocity*t;
                     if(!SegmentBox(a-path[i-1]-offset,b-path[i]-offset,half+Vector2.one*shot.Radius))continue;
                     if(kind==43&&SegmentBox(a-path[i-1]+offset,b-path[i]+offset,half+Vector2.one*shot.Radius))continue;
-                    source=rb.position;
                     var owner=shot.Owner!=null?shot.Owner.GetComponentInParent<BossAgent>():null;
-                    actorId=owner!=null?owner.ActorId:0;return true;
+                    int candidateId=owner!=null?owner.ActorId:0;
+                    if(requiredActorId!=0&&candidateId!=requiredActorId)continue;
+                    source=rb.position;actorId=candidateId;return true;
                 }
             foreach(var expressed in threats)
             {
+                if(requiredActorId!=0&&expressed.ActorId!=requiredActorId)continue;
                 // Emitted sword waves share the public projectile rule; a windup is not a bullet.
                 if(kind==41&&(expressed.Shape!=BossThreatShape.MovingBlade||expressed.Phase!=BossThreatPhase.Active))continue;
                 bool melee=expressed.Shape!=BossThreatShape.Projectile&&expressed.Shape!=BossThreatShape.Ray&&expressed.Shape!=BossThreatShape.MovingBlade;

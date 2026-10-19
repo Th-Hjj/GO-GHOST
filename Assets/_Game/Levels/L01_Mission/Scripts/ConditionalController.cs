@@ -11,15 +11,19 @@ namespace GoGhost.Duel
         {
             public long Occurrence;
             public int Candidates, Source;
-            public bool HasPosition;
+            public bool HasPosition, EnemyBound, IsThreat;
+            public int ThreatKind, PreparationSource, PreparationId;
             public Vector2 Position;
             public float ExpiresAt;
         }
         sealed class RuleState
         {
             public bool WasTrue, Consumed;
-            public long Occurrence, LastEvent;
+            public long Occurrence;
+            public readonly HashSet<long> ConsumedEvents = new HashSet<long>();
             public int RangeMode;
+            public bool CadencePending;
+            public TriggerContext CadenceContext;
             public readonly Dictionary<int,int> Preparations = new Dictionary<int,int>();
         }
         public readonly struct ExecutionFeedback
@@ -35,8 +39,8 @@ namespace GoGhost.Duel
             public int Row=-1, Target=-1, Shots, ShotLimit;
             public float Started, Deadline, Direction, Destination, PreviousX, Stuck;
             public Vector2 Aim;
-            public bool Accepted;
-            public TriggerContext Context;
+            public bool Accepted, Completed;
+            public TriggerContext Context, EventContext;
         }
         struct Notice
         {
@@ -65,10 +69,12 @@ namespace GoGhost.Duel
         readonly ExecutionFeedback[,] displayedFeedback=new ExecutionFeedback[5,ConditionalCatalog.MaxRulesTotal];
         bool feedbackPaused;
         readonly TriggerContext[,] contexts=new TriggerContext[5,ConditionalCatalog.MaxRulesTotal];
-        readonly int[,] factFrames=new int[51,2];
-        readonly bool[,] factMatches=new bool[51,2],factWasTrue=new bool[51,2];
-        readonly long[,] factOccurrences=new long[51,2];
-        readonly TriggerContext[,] factContexts=new TriggerContext[51,2];
+        struct Fact
+        {
+            public bool Match;
+            public TriggerContext Context;
+        }
+        readonly Dictionary<int,Fact> facts=new Dictionary<int,Fact>(24);
         readonly Running[] running={new Running(),new Running(),new Running(),new Running(),new Running()};
         readonly float[,] executedAt=new float[5,ConditionalCatalog.MaxRulesTotal];
         readonly int[,] executedFrame=new int[5,ConditionalCatalog.MaxRulesTotal];
@@ -78,7 +84,9 @@ namespace GoGhost.Duel
         readonly RaycastHit2D[] hits=new RaycastHit2D[24];
         RawPlayerInput raw;
         ConditionalControlFrame output;
-        long sequence;
+        long sequence, observedSequence;
+        float lastResolvedAt=float.NegativeInfinity,previousResolvedAt;
+        int lastResolvedFrame=-2,previousResolvedFrame;
         int allVisible,previousTarget=-1,currentTarget=-1;
         bool initialized,grounded,lowHealth,disposed;
         Vector2 previousTargetPosition;
@@ -99,7 +107,8 @@ namespace GoGhost.Duel
             bool active=!disposed&&r.Row==row&&r.Accepted;
             if(op==0)active&=input.ConditionalFrame.MovementOwned&&!dodge.IsDodging&&!movement.HitPushActive&&Time.time-executedAt[op,row]<.1f;
             else if(op==2)active&=input.ConditionalFrame.AimOwned&&executedFrame[op,row]==Time.frameCount;
-            else if(op==3)active&=input.ConditionalFrame.FireOwned&&gun.isActiveAndEnabled&&!gun.IsReloading&&gun.AmmoInMagazine>0;
+            else if(op==3)active&=input.ConditionalFrame.FireOwned&&gun.isActiveAndEnabled
+                &&(loadout.Operations[op].Rules[row].Action=="F06"||!gun.IsReloading&&gun.IsFiring);
             else if(op==4)active&=dodge.IsDodging;
             else active=false;
             var visual=new ConditionalVisualFeedback {Matched=visualMatches[op,row],Executing=active,
@@ -135,10 +144,15 @@ namespace GoGhost.Duel
         void Consume(int op,Running r)
         {
             var rule=loadout.Operations[op].Rules[r.Row];var state=states[op,r.Row];
-            if(rule.Condition==25&&r.Context.Source>=0&&ConditionalCatalog.Response(rule.Action).Finite)
-                state.Preparations[r.Context.Source]=(int)r.Context.Occurrence;
+            if(r.Context.PreparationSource>=0&&r.Context.PreparationId!=0&&ConditionalCatalog.Response(rule.Action).Finite)
+                state.Preparations[r.Context.PreparationSource]=r.Context.PreparationId;
             if(ConditionalCatalog.Response(rule.Action).Finite)state.Consumed=true;
-            if(ConditionalCatalog.Condition(rule.Condition).Event)state.LastEvent=r.Context.Occurrence;
+            if(ConditionalCatalog.Condition(rule.Condition).Event)state.ConsumedEvents.Add(r.Context.Occurrence);
+        }
+        void Accept(int op,Running r)
+        {
+            if(!r.Accepted){acceptedAt[op,r.Row]=Time.time;acceptedFrame[op,r.Row]=Time.frameCount;}
+            Executed(op,r);Consume(op,r);
         }
         public ConditionalController(PlayerHealth player,IReadOnlyList<BossAgent> actors,Collider2D[] platforms,Bounds arena,ConditionalLoadout snapshot)
         {
@@ -154,38 +168,49 @@ namespace GoGhost.Duel
                 displayedFeedback[op,row]=new ExecutionFeedback(false,float.NegativeInfinity,default);}
             gun.ReloadStarted+=ReloadStarted;gun.ReloadFinished+=ReloadFinished;gun.EnemyHit+=EnemyHit;gun.ShotFired+=Shot;
             player.DamageTaken+=Damaged;dodge.DodgeFinished+=DodgeFinished;input.ConditionalActionResolved+=ActionResolved;
+            movement.JumpStarted+=JumpStarted;movement.JumpApexReached+=JumpApexReached;
         }
         public void Dispose()
         {
             if(disposed)return;disposed=true;
             gun.ReloadStarted-=ReloadStarted;gun.ReloadFinished-=ReloadFinished;gun.EnemyHit-=EnemyHit;gun.ShotFired-=Shot;
             player.DamageTaken-=Damaged;dodge.DodgeFinished-=DodgeFinished;input.ConditionalActionResolved-=ActionResolved;
-            events.Clear();output=default;
+            movement.JumpStarted-=JumpStarted;movement.JumpApexReached-=JumpApexReached;
+            events.Clear();facts.Clear();foreach(var response in running)response.Row=-1;output=default;
         }
-        void ReloadStarted()=>Record(10);
+        void ReloadStarted() { }
         void ReloadFinished()=>Record(11);
         void DodgeFinished()=>Record(7);
+        void JumpStarted()=>Record(57);
+        void JumpApexReached()=>Record(58);
         void Shot(Vector2 origin,Vector2 direction)
         {
+            // The public fact includes manual shots; only the owning response receives auto credit.
+            Record(59);
             var r=running[3];
-            if(disposed||!input.ConditionalFrame.FireOwned||r.Row<0)return;
-            AutomaticShots++;acceptedAt[3,r.Row]=Time.time;acceptedFrame[3,r.Row]=Time.frameCount;Executed(3,r);Consume(3,r);
+            if(disposed||!input.ConditionalFrame.FireOwned||!input.ConditionalFrame.Fire||r.Row<0)return;
+            string action=loadout.Operations[3].Rules[r.Row].Action;
+            if(action=="F06"||r.Completed)return;
+            AutomaticShots++;r.Shots++;acceptedAt[3,r.Row]=Time.time;acceptedFrame[3,r.Row]=Time.frameCount;Accept(3,r);
+            if(action=="F02"&&r.Shots>=r.ShotLimit)
+            {r.Completed=true;Record(60);}
         }
         int Index(GameObject source)
         {
             var actor=source!=null?source.GetComponentInParent<BossAgent>():null;
+            if(actor==null)return -1;
             for(int i=0;i<actors.Count;i++)if(actors[i]==actor)return i;
             return -1;
         }
-        void Damaged(int amount,GameObject source)=>Record(6,Index(source));
+        void Damaged(int amount,GameObject source) {if(amount>0)Record(6,Index(source));}
         void EnemyHit(Enemy enemy,bool defeated)
         {
-            int target=Index(enemy.gameObject);Record(13,target);if(defeated)Record(14,target);
+            if(enemy!=null)Record(13,Index(enemy.gameObject));
         }
         void Record(int condition,int source=-1,Vector2? position=null)
         {
-            if(!initialized||disposed)return;
-            var ctx=new TriggerContext {Occurrence=++sequence,Source=source,Candidates=source>=0?1<<source:allVisible,
+            if(!initialized||disposed||player.IsDead||!input.GameplayInputEnabled||input.NarrativePaused)return;
+            var ctx=new TriggerContext {Occurrence=++sequence,Source=source,Candidates=source>=0?1<<source:allVisible,EnemyBound=source>=0,PreparationSource=-1,
                 ExpiresAt=Time.time+(condition==6?ConditionalDefaults.ResponseWindow:ConditionalDefaults.EventWindow)};
             if(position.HasValue){ctx.HasPosition=true;ctx.Position=position.Value;}
             // Damage/death identifies its source; only retain an already observed static body position.
@@ -202,7 +227,7 @@ namespace GoGhost.Duel
                 if(now)
                 {
                     contacts[i]=c;allVisible|=1<<i;
-                    if(initialized&&seen[i]&&hidden[i])Record(32,i,(Vector2)c.Bounds.center);
+
                     seen[i]=true;hidden[i]=false;
                     lowEnemy[i]=HysteresisLow(c.HealthFraction,lowEnemy[i]);
                     float distance=Mathf.Abs(c.Bounds.center.x-shape.bounds.center.x);
@@ -217,21 +242,24 @@ namespace GoGhost.Duel
             bool low=HysteresisLow((float)player.CurrentHealth/player.MaxHealth,lowHealth);
             if(initialized)
             {
-                if(movement.IsGrounded!=grounded)Record(movement.IsGrounded?3:2);
-                if(low&&!lowHealth)Record(5);
-                if(previousTarget>=0&&!visible[previousTarget])Record(50,previousTarget,previousTargetPosition);
+                if(movement.IsGrounded&&!grounded)Record(3);
             }
             grounded=movement.IsGrounded;lowHealth=low;
-            if(initialized&&raw.Jump)Record(19);
-            if(initialized&&raw.Dodge)Record(20);
             initialized=true;
             events.RemoveAll(n=>Time.time>n.Context.ExpiresAt);
+            for(int op=0;op<5;op++)for(int row=0;row<loadout.Operations[op].Rules.Count;row++)
+                states[op,row].ConsumedEvents.RemoveWhere(id=>!events.Exists(n=>n.Context.Occurrence==id));
         }
         static bool HysteresisLow(float ratio,bool wasLow)=>wasLow?ratio<ConditionalDefaults.LowExit:ratio<=ConditionalDefaults.LowEnter;
         public ConditionalControlFrame Resolve(RawPlayerInput frame)
         {
             if(disposed||player.IsDead)return default;
-            raw=frame;output=default;Snapshot();
+            previousResolvedAt=lastResolvedAt;previousResolvedFrame=lastResolvedFrame;
+            lastResolvedAt=Time.time;lastResolvedFrame=Time.frameCount;
+            raw=frame;output=default;facts.Clear();Snapshot();
+            // Results raised while resolving are observed on the next pass, never synchronously recursed.
+            observedSequence=sequence;
+            CompleteStepBack();
             output.Move=raw.Move;output.Aim=raw.Aim;
             // Data dependencies only: Fire sees final Aim and D03 sees resolved Move.
             // Each operation arbitrates its own priority list independently.
@@ -244,159 +272,232 @@ namespace GoGhost.Duel
         void ResolveOperation(int op)
         {
             var config=loadout.Operations[op];var active=running[op];
-            // Observe every row even while the higher one owns the operation, so a lower
-            // condition's false/true transition cannot disappear behind priority arbitration.
+            // Observe every row independently, including rows hidden by a higher executable response.
             for(int row=0;row<config.Rules.Count;row++)
             {
                 var rule=config.Rules[row];var state=states[op,row];
-                bool match=Evaluate(rule,op,out var context,out bool observed);
+                bool match=Evaluate(rule,op,row,out var context,out bool observed);
                 visualMatches[op,row]=observed;
                 if(!ConditionalCatalog.Condition(rule.Condition).Event)
                 {
-                    if(match&&state.Occurrence!=context.Occurrence)state.Consumed=false;
-                    state.WasTrue=match;state.Occurrence=context.Occurrence;
+                    if(observed&&!state.WasTrue){state.Consumed=false;state.Occurrence=++sequence;}
+                    state.WasTrue=observed;context.Occurrence=state.Occurrence;
                 }
                 matches[op,row]=match;contexts[op,row]=context;
             }
-            // An already accepted physical action cannot be replaced or canceled by a condition change.
-            if(op==4&&active.Row>=0&&active.Accepted&&dodge.IsDodging) {output.DodgeOwned=true;Executed(op,active);return;}
+            // Physical Dodge is already committed. A completed Jump never gets canceled here.
+            if(op==4&&active.Row>=0&&active.Accepted&&dodge.IsDodging)
+            {output.DodgeOwned=true;Executed(op,active);return;}
             if(active.Accepted&&op==4)active.Row=-1;
             for(int row=0;row<config.Rules.Count;row++)
             {
-                var rule=config.Rules[row];var state=states[op,row];
-                bool match=matches[op,row];var context=contexts[op,row];
+                var rule=config.Rules[row];var state=states[op,row];var response=ConditionalCatalog.Response(rule.Action);
                 bool isEvent=ConditionalCatalog.Condition(rule.Condition).Event;
-                // Event's short observation window doesn't shorten an already accepted response.
+                bool match=matches[op,row];var context=contexts[op,row];
                 bool existing=active.Row==row;
-                if(existing&&isEvent)
-                {
-                    context=active.Context;
-                    match=active.Accepted||Time.time<=context.ExpiresAt;
-                }
-                if(existing&&rule.Condition==25&&active.Accepted&&ConditionalCatalog.Response(rule.Action).Finite)
-                {
-                    // Consumption prevents another start, not completion of this accepted bounded response.
-                    int source=active.Context.Source;
-                    if(source>=0&&visible[source]&&contacts[source].Preparing&&contacts[source].PreparationId==active.Context.Occurrence)
-                    {context=active.Context;match=true;}
-                }
-                if(!match){if(existing)active.Row=-1;continue;}
                 if(existing)
                 {
-                    if(!isEvent)active.Context=context;
-                    if(Continue(op,rule,active))
-                    {if(op==3&&active.Accepted)Executed(op,active);return;}
+                    // An accepted finite event response owns its real process. Continuous responses
+                    // retain their bounded response window and must still satisfy the optional state.
+                    if(isEvent)
+                    {
+                        context=response.Finite&&active.Accepted?active.Context:active.EventContext;
+                        match=active.Accepted||Time.time<=context.ExpiresAt;
+                        if(!response.Finite||!active.Accepted)
+                            match&=AdditionalMatches(rule,op,ref context);
+                    }
+                    else
+                    {
+                        match=StateRuleMatches(rule,op,out context);
+                    }
+                    if(match&&active.Target>=0&&op!=2&&context.EnemyBound)
+                        match=(context.Candidates&(1<<active.Target))!=0;
+                    // A finite state response retains its commitment only after current eligibility.
+                    if(match&&!isEvent&&response.Finite)context=active.Context;
+                    if(match)
+                    {
+                        active.Context=context;
+                        if(Continue(op,rule,active))return;
+                    }
                     active.Row=-1;
-                    if(op==0&&active.Stuck>ConditionalDefaults.StuckWindow)continue;
+                    // A failed or completed attempt does not mint another state occurrence.
+                    match=matches[op,row];context=contexts[op,row];
                 }
-                var response=ConditionalCatalog.Response(rule.Action);
-                if((int)response.Operation!=op)continue;
-                if(isEvent ? context.Occurrence<=state.LastEvent : rule.Condition!=25&&response.Finite&&state.Consumed)continue;
+                if(!match||(int)response.Operation!=op)continue;
+                bool preparation=HasPreparation(rule)&&!isEvent;
+                if(isEvent?state.ConsumedEvents.Contains(context.Occurrence):response.Finite&&!preparation&&state.Consumed)continue;
                 var candidate=new Running {Row=row,Context=context,Started=Time.time,PreviousX=body.position.x,
                     Deadline=isEvent?Time.time+ConditionalDefaults.ResponseWindow:float.PositiveInfinity};
+                if(isEvent)
+                {
+                    candidate.EventContext=context;
+                    foreach(var notice in events)if(notice.Context.Occurrence==context.Occurrence)
+                    {candidate.EventContext=notice.Context;break;}
+                }
                 if(!Start(op,rule,candidate))continue;
-                // Only an executable higher row can replace the existing lower response.
-                running[op]=candidate;active=candidate;
-                Starts++;return;
+                // Failed higher rows leave the existing lower response untouched.
+                if(op==3)for(int other=0;other<config.Rules.Count;other++)states[op,other].CadencePending=false;
+                running[op]=candidate;Starts++;return;
             }
             running[op].Row=-1;
         }
-        bool Evaluate(ConditionalRule rule,int op,out TriggerContext ctx,out bool observed)
+        static bool HasPreparation(ConditionalRule rule)=>rule.Condition==25||rule.AdditionalCondition==25;
+        TriggerContext EmptyContext()=>new TriggerContext {Candidates=allVisible,Source=-1,PreparationSource=-1};
+        bool Evaluate(ConditionalRule rule,int op,int row,out TriggerContext ctx,out bool observed)
         {
-            observed=false;
-            ctx=new TriggerContext {Candidates=allVisible,Source=-1};
-            if(rule.Condition==25)
-            {
-                // Independent public preparations survive overlap between Bosses. Consume only on acceptance.
-                var state=states[op,loadout.Operations[op].Rules.IndexOf(rule)];
-                ctx.Candidates=0;
-                for(int i=0;i<actors.Count;i++)
-                    if(visible[i]&&contacts[i].Preparing)
-                    {observed=true;if(!state.Preparations.TryGetValue(i,out int used)||used!=contacts[i].PreparationId)ctx.Candidates|=1<<i;}
-                ctx.Source=Choose(ctx.Candidates,"Q01");
-                if(ctx.Source<0)return false;
-                ctx.Candidates=1<<ctx.Source;ctx.HasPosition=true;ctx.Position=contacts[ctx.Source].Bounds.center;
-                ctx.Occurrence=contacts[ctx.Source].PreparationId;return true;
-            }
+            var state=states[op,row];ctx=EmptyContext();observed=false;
             if(ConditionalCatalog.Condition(rule.Condition).Event)
             {
-                foreach(var n in events)
-                    if(n.Condition==rule.Condition)
-                    {observed=true;if(n.Context.Occurrence>states[op,loadout.Operations[op].Rules.IndexOf(rule)].LastEvent){ctx=n.Context;return true;}}
-                return false;
+                // At equal event/cadence boundaries, adjacent frame samples can straddle both deadlines.
+                // Admit only the first crossing sample of an already valid cadence-only attempt;
+                // this is not an expired-event response queue and never extends its original deadline.
+                if(state.CadencePending)
+                {
+                    var pending=state.CadenceContext;
+                    bool inside=Time.time<=pending.ExpiresAt;
+                    bool boundary=!inside&&Time.frameCount==previousResolvedFrame+1&&previousResolvedAt<=pending.ExpiresAt
+                        &&gun.NextShotReadyAt<=pending.ExpiresAt+.0001f&&Time.time>=gun.NextShotReadyAt;
+                    if((inside||boundary)&&!state.ConsumedEvents.Contains(pending.Occurrence)
+                        &&gun.isActiveAndEnabled&&!gun.IsReloading&&gun.AmmoInMagazine>AmmoFloor(rule)
+                        &&AdditionalMatches(rule,op,ref pending))
+                    {ctx=pending;observed=inside;return true;}
+                    state.CadencePending=false;
+                }
+                bool found=false;
+                foreach(var notice in events)
+                {
+                    if(notice.Condition!=rule.Condition||notice.Context.Occurrence>observedSequence)continue;
+                    var candidate=notice.Context;
+                    if(!AdditionalMatches(rule,op,ref candidate))continue;
+                    observed=true;
+                    if(!found&&!state.ConsumedEvents.Contains(candidate.Occurrence)){ctx=candidate;found=true;}
+                }
+                return found;
             }
-            // All operations share one condition fact and occurrence. A40 alone has an
-            // explicitly separate final-Fire ray versus the prior committed ray.
-            int id=rule.Condition,variant=id==37&&rule.Below||id==40&&op!=3?1:0;
-            if(factFrames[id,variant]!=Time.frameCount)
+            if(!StateRuleMatches(rule,op,out ctx))return false;
+            observed=true;
+            if(HasPreparation(rule)&&ConditionalCatalog.Response(rule.Action).Finite)
             {
-                bool match=EvaluateState(rule,op,out ctx);
-                if(match&&!factWasTrue[id,variant])factOccurrences[id,variant]=++sequence;
-                factWasTrue[id,variant]=match;ctx.Occurrence=factOccurrences[id,variant];
-                factFrames[id,variant]=Time.frameCount;factMatches[id,variant]=match;factContexts[id,variant]=ctx;
+                int available=0;
+                for(int i=0;i<actors.Count;i++)if((ctx.Candidates&(1<<i))!=0&&visible[i]&&contacts[i].Preparing
+                    &&(!state.Preparations.TryGetValue(i,out int used)||used!=contacts[i].PreparationId))available|=1<<i;
+                if(available==0)return false;
+                ctx.Candidates=available;SelectSource(ref ctx);
             }
-            ctx=factContexts[id,variant];observed=factMatches[id,variant];return factMatches[id,variant];
+            return true;
         }
-        bool EvaluateState(ConditionalRule rule,int op,out TriggerContext ctx)
+        bool StateRuleMatches(ConditionalRule rule,int op,out TriggerContext ctx)
         {
-            ctx=new TriggerContext {Candidates=allVisible,Source=-1};
-            switch(rule.Condition)
+            if(!StateFact(rule,false,op,out ctx))return false;
+            return AdditionalMatches(rule,op,ref ctx);
+        }
+        bool AdditionalMatches(ConditionalRule rule,int op,ref TriggerContext ctx)
+        {
+            if(rule.AdditionalCondition==0)return true;
+            if(!StateFact(rule,true,op,out var extra))return false;
+            if(ctx.EnemyBound&&extra.EnemyBound)
             {
-                case 1:return !movement.IsGrounded;
+                ctx.Candidates&=extra.Candidates;
+                if(ctx.Candidates==0)return false;
+            }
+            else if(extra.EnemyBound)
+            {ctx.Candidates=extra.Candidates;ctx.EnemyBound=true;}
+            if(!ctx.IsThreat&&extra.IsThreat&&(ctx.Occurrence==0||ctx.Source<0))
+            {ctx.IsThreat=true;ctx.ThreatKind=extra.ThreatKind;ctx.HasPosition=false;}
+            if(extra.PreparationSource>=0)ctx.PreparationSource=extra.PreparationSource;
+            SelectSource(ref ctx);
+            return true;
+        }
+        void SelectSource(ref TriggerContext ctx)
+        {
+            if(!ctx.EnemyBound)return;
+            if(ctx.Source<0||(ctx.Candidates&(1<<ctx.Source))==0)
+            {
+                ctx.Source=Choose(ctx.Candidates,"Q01");
+                // A public projectile can retain a source whose body is currently concealed.
+                if(ctx.Source<0)for(int i=0;i<actors.Count;i++)if((ctx.Candidates&(1<<i))!=0){ctx.Source=i;break;}
+                ctx.HasPosition=false;
+            }
+            if(ctx.Source>=0&&!ctx.HasPosition)
+            {
+                if(ctx.IsThreat)
+                {
+                    if(geometry.ConditionalThreat(ctx.ThreatKind,movement.MoveInput.x,false,out var origin,out _,actors[ctx.Source].ActorId))
+                    {ctx.HasPosition=true;ctx.Position=origin;}
+                }
+                else if(visible[ctx.Source]){ctx.HasPosition=true;ctx.Position=contacts[ctx.Source].Bounds.center;}
+            }
+            if(ctx.PreparationSource>=0&&ctx.Source>=0&&visible[ctx.Source]&&contacts[ctx.Source].Preparing)
+            {ctx.PreparationSource=ctx.Source;ctx.PreparationId=contacts[ctx.Source].PreparationId;}
+        }
+        bool StateFact(ConditionalRule rule,bool additional,int op,out TriggerContext ctx)
+        {
+            int id=additional?rule.AdditionalCondition:rule.Condition;
+            int option=id==51?(int)(additional?rule.AdditionalGroundState:rule.GroundState)
+                :id==52?(int)(additional?rule.AdditionalDistance:rule.Distance)
+                :id==53?(int)(additional?rule.AdditionalIncomingAttack:rule.IncomingAttack):0;
+            int key=id*32+option*2+(id==40&&op==3?1:0);
+            if(!facts.TryGetValue(key,out var fact))
+            {
+                bool match=EvaluateState(id,option,op,out ctx);
+                facts[key]=fact=new Fact {Match=match,Context=ctx};
+            }
+            ctx=fact.Context;return fact.Match;
+        }
+        bool EvaluateState(int id,int option,int op,out TriggerContext ctx)
+        {
+            ctx=EmptyContext();
+            switch(id)
+            {
+                case 51:return option==(int)GroundStateOption.Grounded?movement.IsGrounded:!movement.IsGrounded;
                 case 4:return lowHealth;
                 case 9:return gun.IsReloading;
                 case 12:return !gun.IsReloading&&gun.AmmoInMagazine>0&&gun.AmmoInMagazine<=2;
-                case 15:return dodge.CooldownRemaining>0;
                 case 17:return raw.Fire;
+                case 54:return movement.IsOrdinaryMoving;
+                case 55:return dodge.IsDodging;
+                case 56:return gun.IsFiring;
                 case 39:
                     bool left=false,right=false;
-                    for(int i=0;i<actors.Count;i++)if(visible[i]) {left|=contacts[i].Bounds.center.x<shape.bounds.center.x;right|=contacts[i].Bounds.center.x>shape.bounds.center.x;}
-                    // Both sides supplies a public candidate set; use the normal deterministic nearest tie-break.
+                    for(int i=0;i<actors.Count;i++)if(visible[i])
+                    {left|=contacts[i].Bounds.center.x<shape.bounds.center.x;right|=contacts[i].Bounds.center.x>shape.bounds.center.x;}
                     if(left&&right){ctx.Source=Choose(ctx.Candidates,"Q01");ctx.HasPosition=true;ctx.Position=contacts[ctx.Source].Bounds.center;}
                     return left&&right;
-                case 41:case 42:case 43:
-                    if(!geometry.ConditionalThreat(rule.Condition,movement.MoveInput.x,false,out var origin,out int actorId))return false;
-                    ctx.HasPosition=true;ctx.Position=origin;
-                    for(int i=0;i<actors.Count;i++)if(actors[i].ActorId==actorId){ctx.Source=i;ctx.Candidates=1<<i;break;}
-                    return true;
+                case 53:
+                    ctx.EnemyBound=true;ctx.IsThreat=true;
+                    ctx.ThreatKind=option==(int)IncomingAttackOption.Bullet?41:option==(int)IncomingAttackOption.Melee?42:option==(int)IncomingAttackOption.Low?43:0;
+                    ctx.Candidates=0;
+                    for(int i=0;i<actors.Count;i++)if(actors[i]!=null&&geometry.ConditionalThreat(ctx.ThreatKind,movement.MoveInput.x,false,out _,out _,actors[i].ActorId))
+                        ctx.Candidates|=1<<i;
+                    if(ctx.Candidates==0)
+                    {
+                        if(!geometry.ConditionalThreat(ctx.ThreatKind,movement.MoveInput.x,false,out var unknown,out int actorId))return false;
+                        // Public geometry without a body identity is usable but cannot match a named enemy filter.
+                        ctx.HasPosition=true;ctx.Position=unknown;return true;
+                    }
+                    SelectSource(ref ctx);return true;
                 case 45:
                     float margin=shape.bounds.size.x;
                     return shape.bounds.min.x-arena.min.x<margin||arena.max.x-shape.bounds.max.x<margin;
-                case 46:return NearSupportEdge();
-                case 47:
-                    float move=movement.MoveInput.x;
-                    return Mathf.Abs(move)>.01f&&Travel(Mathf.Sign(move),.2f)<.08f;
-                case 18:case 21:case 22:case 25:case 27:case 28:case 29:case 31:
-                case 33:case 34:case 35:case 36:case 37:case 40:
-                    ctx.Candidates=0;
-                    for(int i=0;i<actors.Count;i++)
-                        if(visible[i]&&EnemyMatches(rule,i,op))ctx.Candidates|=1<<i;
-                    ctx.Source=Choose(ctx.Candidates,"Q01");
-                    if(ctx.Source>=0){ctx.HasPosition=true;ctx.Position=contacts[ctx.Source].Bounds.center;}
-                    return ctx.Candidates!=0;
-                default:throw new InvalidOperationException("Unhandled state A"+rule.Condition);
+                case 18:case 25:case 35:case 40:case 52:
+                    ctx.EnemyBound=true;ctx.Candidates=0;
+                    for(int i=0;i<actors.Count;i++)if(visible[i]&&EnemyMatches(id,option,i,op))ctx.Candidates|=1<<i;
+                    if(ctx.Candidates==0)return false;
+                    if(id==25)ctx.PreparationSource=0;
+                    SelectSource(ref ctx);return true;
+                default:throw new InvalidOperationException("Unhandled V2 state A"+id);
             }
         }
-        bool EnemyMatches(ConditionalRule r,int i,int op)
+        bool EnemyMatches(int id,int option,int i,int op)
         {
             var c=contacts[i];Vector2 delta=(Vector2)c.Bounds.center-(Vector2)shape.bounds.center;
-            switch(r.Condition)
+            switch(id)
             {
                 case 18:return cursorNear[i];
-                case 21:return raw.Move*delta.x>.01f;
-                case 22:return raw.Move*delta.x<-.01f;
                 case 25:return c.Preparing;
-                case 27:return c.Recovering;
-                case 28:return c.Reloading;
-                case 29:return c.GroundedKnown&&!c.Grounded;
-                case 31:return lowEnemy[i];
-                case 33:return close[i];
-                case 34:return far[i];
-                case 35:case 36:
-                    if(!c.VelocityKnown||delta.sqrMagnitude<.01f)return false;
-                    float separation=Vector2.Dot(c.Velocity-body.linearVelocity,delta.normalized);
-                    return r.Condition==35?separation<-ConditionalDefaults.VelocityDeadzone:separation>ConditionalDefaults.VelocityDeadzone;
-                case 37:return r.Below?delta.y<-shape.bounds.size.y:delta.y>shape.bounds.size.y;
+                case 52:return option==(int)EnemyDistanceOption.Close?close[i]:option==(int)EnemyDistanceOption.Far?far[i]:!close[i]&&!far[i];
+                case 35:return c.VelocityKnown&&delta.sqrMagnitude>=.01f
+                    &&Vector2.Dot(c.Velocity-body.linearVelocity,delta.normalized)<-ConditionalDefaults.VelocityDeadzone;
                 case 40:return RayAligned(i,op==3?output.Aim:raw.CommittedAim);
                 default:throw new InvalidOperationException("Unhandled enemy condition");
             }
@@ -465,14 +566,15 @@ namespace GoGhost.Duel
             }
             return (point-gun.AimOrigin).normalized;
         }
+        int AmmoFloor(ConditionalRule rule)=>rule.AmmoUse==AmmoUseOption.KeepTwoRounds?ConditionalDefaults.Reserve:0;
         bool Start(int op,ConditionalRule rule,Running r)
         {
             string action=rule.Action;
-            bool targetAction=op==2&&action!="Q08"||action=="M01"||action=="M02"||action=="M03"||action=="D02";
-            r.Target=targetAction?Choose(r.Context.Candidates,action):-1;
-            if((action=="M04"||action=="D01")&&!r.Context.HasPosition)r.Target=Choose(r.Context.Candidates,"Q01");
-            if(action=="M04"&&!r.Context.HasPosition&&r.Target<0)r.Target=Choose(allVisible,"Q01");
-            if(action=="Q03")r.Target=r.Context.Source>=0&&visible[r.Context.Source]&&(r.Context.Candidates&(1<<r.Context.Source))!=0?r.Context.Source:-1;
+            bool targetAction=op==2||action=="M01"||action=="M02"||action=="M03"||action=="D02";
+            // Explicit Nearest/Lowest-Health/Fine-Tune strategies retain their own visible target policy.
+            r.Target=targetAction?Choose(op==2||!r.Context.EnemyBound?allVisible:r.Context.Candidates,action):-1;
+            if(action=="M04"&&!r.Context.HasPosition)r.Target=Choose(r.Context.EnemyBound?r.Context.Candidates:allVisible,"Q01");
+            if(action=="Q03")r.Target=r.Context.Source>=0&&visible[r.Context.Source]?r.Context.Source:-1;
             r.Aim=raw.CommittedAim;
             switch((ControlOperation)op)
             {
@@ -482,36 +584,31 @@ namespace GoGhost.Duel
                     {
                         if(!SourcePoint(r,out var threat))return false;
                         r.Direction=Away(threat.x);r.Destination=body.position.x+r.Direction*ConditionalDefaults.StepBack;
-                        r.Deadline=Time.time+ConditionalDefaults.StepBack/movement.MoveSpeed+.5f;
+                        r.Deadline=Time.time+ConditionalDefaults.StepBack/Mathf.Max(.01f,movement.MoveSpeed)+.5f;
                     }
-                    if(action=="M05") {r.Direction=Mathf.Sign(raw.Move);if(Mathf.Abs(raw.Move)<.01f)return false;}
-                    if(action=="M06") {r.Destination=Mathf.Clamp(raw.Cursor.x,arena.min.x+shape.bounds.extents.x,arena.max.x-shape.bounds.extents.x);r.Deadline=Time.time+Mathf.Abs(r.Destination-body.position.x)/movement.MoveSpeed+.5f;}
+                    if(action=="M11")r.Direction=rule.MoveDirection==MoveDirectionOption.Left?-1:1;
                     return WriteMovement(action,r);
                 case ControlOperation.Jump:
                     if(!CanJump())return false;
-                    switch(action)
-                    {
-                        case "J01":case "J03":output.Jump=true;break;
-                        case "J02":r.Deadline=Time.time+ConditionalDefaults.JumpDelay;output.Jump=false;break;
-                        default:throw new InvalidOperationException("Unknown Jump response");
-                    }
-                    output.JumpOwned=true;return true;
+                    output.JumpOwned=true;output.Jump=true;return true;
                 case ControlOperation.Aim:
-                    if(action!="Q08"&&r.Target<0)return false;
-                    if(action=="Q09")r.Deadline=Time.time+ConditionalDefaults.Calibration;
+                    if(r.Target<0)return false;
                     return WriteAim(action,r);
                 case ControlOperation.Fire:
-                    if(!gun.CanFireNow)return false;
-                    if(action=="F05"&&gun.AmmoInMagazine<=ConditionalDefaults.Reserve)return false;
-                    r.Shots=gun.TriggerPulls;
-                    switch(action)
+                    if(action=="F06")
+                    {output.FireOwned=true;output.Fire=false;Accept(op,r);return true;}
+                    if(!gun.isActiveAndEnabled||gun.IsReloading||gun.AmmoInMagazine<=AmmoFloor(rule))return false;
+                    if(!gun.CanFireNow)
                     {
-                        case "F01":r.ShotLimit=1;break;
-                        case "F02":r.ShotLimit=Mathf.Min(ConditionalDefaults.Burst,gun.AmmoInMagazine);break;
-                        case "F03":case "F04":r.ShotLimit=gun.AmmoInMagazine;break;
-                        case "F05":r.ShotLimit=gun.AmmoInMagazine-ConditionalDefaults.Reserve;break;
-                        default:throw new InvalidOperationException("Unknown Fire response");
+                        var state=states[op,r.Row];
+                        if((action=="F01"||action=="F02")&&ConditionalCatalog.Condition(rule.Condition).Event
+                            &&!state.CadencePending&&Time.time<=r.Context.ExpiresAt
+                            &&gun.NextShotReadyAt<=r.Context.ExpiresAt+.0001f)
+                        {state.CadencePending=true;state.CadenceContext=r.Context;}
+                        return false;
                     }
+                    r.Shots=0;
+                    r.ShotLimit=action=="F01"?1:action=="F02"?Mathf.Min(ConditionalDefaults.Burst,gun.AmmoInMagazine-AmmoFloor(rule)):int.MaxValue;
                     if(action!="F03")r.Deadline=Time.time+r.ShotLimit*gun.FireInterval+.5f;
                     output.FireOwned=true;output.Fire=true;return true;
                 case ControlOperation.Dodge:
@@ -520,7 +617,6 @@ namespace GoGhost.Duel
                     else if(action=="D02") {if(r.Target<0)return false;r.Direction=-Away(contacts[r.Target].Bounds.center.x);}
                     else if(action=="D03")r.Direction=Mathf.Abs(output.Move)>.01f?Mathf.Sign(output.Move):movement.MovementFacingDirection;
                     else if(action=="D04") {if(Mathf.Abs(raw.Cursor.x-body.position.x)<.01f)return false;r.Direction=Mathf.Sign(raw.Cursor.x-body.position.x);}
-                    else if(action=="D07") {if(!geometry.ConditionalDodgeDirection(output.Move,out r.Direction))return false;}
                     else throw new InvalidOperationException("Unknown Dodge response");
                     if(Travel(r.Direction,dodge.Distance)<.08f)return false;
                     output.DodgeOwned=true;output.Dodge=true;output.DodgeDirection=r.Direction;return true;
@@ -530,33 +626,34 @@ namespace GoGhost.Duel
         bool Continue(int op,ConditionalRule rule,Running r)
         {
             string action=rule.Action;
-            if(op==1&&r.Accepted)return false;
+            if(r.Completed||op==1&&r.Accepted)return false;
             if(op!=1&&Time.time>=r.Deadline)return false;
             if(r.Target>=0&&(!visible[r.Target]||!actors[r.Target].IsAlive))return false;
-            if(action=="Q03"&&r.Target!=r.Context.Source)return false;
-            // Enemy state filters remain bound to the selected candidate, even if another actor still matches.
-            if(r.Target>=0&&!ConditionalCatalog.Condition(rule.Condition).Event
-                &&IsEnemyState(rule.Condition)&&!EnemyMatches(rule,r.Target,op))return false;
             switch((ControlOperation)op)
             {
                 case ControlOperation.Movement:return WriteMovement(action,r);
                 case ControlOperation.Aim:return WriteAim(action,r);
                 case ControlOperation.Fire:
-                    if(!gun.isActiveAndEnabled||gun.IsReloading||gun.AmmoInMagazine<=0)return false;
+                    if(action=="F06"){output.FireOwned=true;output.Fire=false;Accept(op,r);return true;}
+                    if(!gun.isActiveAndEnabled||gun.IsReloading||gun.AmmoInMagazine<=AmmoFloor(rule))return false;
                     if(!r.Accepted&&!gun.CanFireNow)return false;
-                    if(action!="F03"&&gun.TriggerPulls-r.Shots>=r.ShotLimit)return false;
-                    if(action=="F05"&&gun.AmmoInMagazine<=ConditionalDefaults.Reserve)return false;
+                    if(action!="F03"&&r.Shots>=r.ShotLimit)return false;
                     output.FireOwned=true;output.Fire=true;return true;
                 case ControlOperation.Jump:
-                    if(action=="J02"&&Time.time<r.Deadline)
-                    {if(!CanJump())return false;output.JumpOwned=true;return true;}
                     if(!CanJump())return false;
                     output.JumpOwned=true;output.Jump=true;return true;
                 case ControlOperation.Dodge:return false;
                 default:throw new InvalidOperationException("Unknown running operation");
             }
         }
-        static bool IsEnemyState(int id)=>id==18||id==21||id==22||id==25||id==27||id==28||id==29||id==31||id>=33&&id<=37||id==40;
+        void CompleteStepBack()
+        {
+            var r=running[0];
+            if(r.Row<0||!r.Accepted||r.Completed||loadout.Operations[0].Rules[r.Row].Action!="M04"
+                ||Time.time>=r.Deadline||dodge.IsDodging||movement.HitPushActive)return;
+            if((body.position.x-r.Destination)*r.Direction<-.005f)return;
+            r.Completed=true;Record(61);
+        }
         bool CanJump()=>movement.IsGrounded&&!dodge.IsDodging&&input.GameplayInputEnabled&&movement.isActiveAndEnabled;
         bool SourcePoint(Running r,out Vector2 point)
         {
@@ -567,7 +664,7 @@ namespace GoGhost.Duel
         float Away(float x)=>Mathf.Abs(x-body.position.x)>.01f?(x>body.position.x?-1:1):movement.MovementFacingDirection;
         bool WriteMovement(string action,Running r)
         {
-            if(dodge.IsDodging||movement.HitPushActive||!movement.isActiveAndEnabled||!body.simulated||movement.MoveSpeed<=.01f)return false;
+            if(dodge.IsDodging||movement.HitPushActive||!movement.isActiveAndEnabled||!body.simulated||action!="M10"&&movement.MoveSpeed<=.01f)return false;
             float move=0,x=body.position.x;
             float distance=r.Target>=0?Mathf.Abs(contacts[r.Target].Bounds.center.x-shape.bounds.center.x):0;
             float toward=r.Target>=0?-Away(contacts[r.Target].Bounds.center.x):0;
@@ -582,10 +679,9 @@ namespace GoGhost.Duel
                     if(state.RangeMode==0)state.RangeMode=distance<ConditionalDefaults.Close?-1:distance>ConditionalDefaults.Far?1:0;
                     if(state.RangeMode==0)return false;
                     move=state.RangeMode*toward;break;
-                case "M04":case "M06":
-                    if(Mathf.Abs(r.Destination-x)<.12f||action=="M04"&&(x-r.Destination)*r.Direction>=0)return false;
-                    move=Mathf.Sign(r.Destination-x);break;
-                case "M05":move=r.Direction;break;
+                case "M04":
+                    if(r.Completed)return false;move=r.Direction;break;
+                case "M11":move=r.Direction;break;
                 case "M09":if(Mathf.Abs(arena.center.x-x)<=.15f)return false;move=Mathf.Sign(arena.center.x-x);break;
                 case "M10":move=0;break;
                 default:throw new InvalidOperationException("Unknown movement response");
@@ -601,8 +697,8 @@ namespace GoGhost.Duel
         bool WriteAim(string action,Running r)
         {
             // A current public candidate set, never a hidden target lock.
-            if(action=="Q02")
-            {r.Target=Choose(r.Context.Candidates,action);if(r.Target<0)return false;}
+            if(action=="Q01"||action=="Q02")
+            {r.Target=Choose(allVisible,action);if(r.Target<0)return false;}
             if((action=="Q06"||action=="Q09")&&MouseAngle(r.Target)>ConditionalDefaults.MouseExit)return false;
             output.AimOwned=true;output.Aim=action=="Q08"?r.Aim:AimAt(r.Target);
             currentTarget=action=="Q08"?AlignedTarget(r.Aim,allVisible):r.Target;return true;
@@ -624,20 +720,16 @@ namespace GoGhost.Duel
         }
         void ActionResolved(ControlOperation operation,bool accepted)
         {
+            if(disposed)return;
             int op=(int)operation;var r=running[op];if(r.Row<0)return;
             if(accepted)
             {
-                if(op==1||op==4){acceptedAt[op,r.Row]=Time.time;acceptedFrame[op,r.Row]=Time.frameCount;}
-                Executed(op,r);Consume(op,r);
+                Accept(op,r);
                 if(op==1)AcceptedJumps++;if(op==4)AcceptedDodges++;return;
             }
+            // Losing a physical attempt never refunds an already consumed occurrence.
             r.Accepted=false;
             if(op==0||op==2)return;
-            // A rejected same-frame request consumes no occurrence and queues no edge.
-            var state=states[op,r.Row];
-            // Formal events remain eligible only inside their bounded public window.
-            // Rejection spends nothing; raw manual edges are never stored here.
-            if(!ConditionalCatalog.Condition(loadout.Operations[op].Rules[r.Row].Condition).Event)state.Consumed=false;
             r.Row=-1;
         }
     }

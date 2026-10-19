@@ -185,6 +185,8 @@ public class PlayerDodge : MonoBehaviour
 
         rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
         IsDodging = false;
+        CommittedHorizontalSpeed = 0;
+        DodgeFinished?.Invoke();
 
         // Immunity has its own deadline; it need not cover the entire movement.
         float remainingIFrames = immunity - elapsed;
@@ -193,8 +195,6 @@ public class PlayerDodge : MonoBehaviour
 
         health.IsInvulnerable = false;
         IsDodging = false;
-
-        DodgeFinished?.Invoke();
 
         // Cooldown deadline was set at dodge START; dash/i-frames do not add another wait.
     }

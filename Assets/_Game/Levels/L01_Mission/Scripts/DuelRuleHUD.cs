@@ -7,6 +7,7 @@ namespace GoGhost.Duel
     public sealed partial class DuelUI
     {
         const float RulePanelWidth = 350;
+        float rulePanelWidth=RulePanelWidth;
         sealed class RuleRowView
         {
             public ControlOperation Operation;
@@ -36,35 +37,37 @@ namespace GoGhost.Duel
             int count=0;
             if(hudRules!=null)for(int op=0;op<5;op++)count+=hudRules.RuleCount((ControlOperation)op);
             if(count==0)return;
-            ruleSidebar=Rect("BattleRules",page,Vector2.zero,new Vector2(RulePanelWidth,900));
+            rulePanelWidth=MeasureRulePanelWidth();
+            float innerWidth=rulePanelWidth-32,conditionWidth=rulePanelWidth-56,actionWidth=rulePanelWidth-86;
+            ruleSidebar=Rect("BattleRules",page,Vector2.zero,new Vector2(rulePanelWidth,900));
             var group=ruleSidebar.gameObject.AddComponent<CanvasGroup>();
             group.blocksRaycasts=false;group.interactable=false;
             var background=ruleSidebar.gameObject.AddComponent<UnityEngine.UI.Image>();
             background.color=NeuralPalette.Background;background.raycastTarget=false;
-            var divider=Image(ruleSidebar,new Vector2(-RulePanelWidth/2,0),new Vector2(1,900),NeuralPalette.Border);
+            var divider=Image(ruleSidebar,new Vector2(-rulePanelWidth/2,0),new Vector2(1,900),NeuralPalette.Border);
             divider.rectTransform.anchorMin=new Vector2(0,0);divider.rectTransform.anchorMax=new Vector2(0,1);
             divider.rectTransform.anchoredPosition=Vector2.zero;divider.rectTransform.sizeDelta=new Vector2(1,0);
-            // A top-anchored, fixed readable block fits all five rules at the supported 16:9 sizes.
-            var content=Rect("RuleList",ruleSidebar,Vector2.zero,new Vector2(RulePanelWidth,0));
+            // Keep fixed readable type; widen only when the complete five-rule text needs it.
+            var content=Rect("RuleList",ruleSidebar,Vector2.zero,new Vector2(rulePanelWidth,0));
             content.anchorMin=content.anchorMax=new Vector2(.5f,1);content.pivot=new Vector2(.5f,1);
-            Text("Rules: "+count+"/"+ConditionalCatalog.MaxRulesTotal,content,new Vector2(0,-38),new Vector2(318,44),30,TextAlignmentOptions.Left,headingFont);
+            Text("Rules: "+count+"/"+ConditionalCatalog.MaxRulesTotal,content,new Vector2(0,-38),new Vector2(innerWidth,44),30,TextAlignmentOptions.Left,headingFont);
             float y=-82;
             int[] order={2,3,4,0,1};
             foreach(int op in order)
             {
                 int rows=hudRules.RuleCount((ControlOperation)op);
                 if(rows==0)continue;
-                var label=Text(ShortOperationLabels[op],content,new Vector2(0,y),new Vector2(318,32),22,TextAlignmentOptions.Left);
+                var label=Text(ShortOperationLabels[op],content,new Vector2(0,y),new Vector2(innerWidth,32),22,TextAlignmentOptions.Left);
                 label.color=NeuralPalette.Secondary;y-=22;
                 for(int row=0;row<rows;row++)
                 {
                     var rule=hudRules.RuleAt((ControlOperation)op,row);
                     var root=Rect("RuleFeedback_"+op+"_"+row,content,Vector2.zero,Vector2.zero);
-                    var condition=Text((row+1)+"  "+ConditionLabel(rule),root,Vector2.zero,new Vector2(294,28),22,TextAlignmentOptions.TopLeft);
+                    var condition=Text((row+1)+"  "+HudConditionLabel(rule),root,Vector2.zero,new Vector2(conditionWidth,28),22,TextAlignmentOptions.TopLeft);
                     condition.name="ConditionText";
                     var arrow=Text(">",root,Vector2.zero,new Vector2(18,28),22,TextAlignmentOptions.TopLeft,controlFont);
                     arrow.name="ActionArrow";
-                    var action=Text(ConditionalCatalog.Response(rule.Action).Label,root,Vector2.zero,new Vector2(264,28),22,TextAlignmentOptions.TopLeft,controlFont);
+                    var action=Text(ConditionalCatalog.RuleActionLabel(rule),root,Vector2.zero,new Vector2(actionWidth,28),22,TextAlignmentOptions.TopLeft,controlFont);
                     action.name="ActionText";
                     // One material per visible row; only glow alpha changes at acceptance/release.
                     // Fixed weight, keyword and padding keep every glyph and line break in place.
@@ -76,30 +79,62 @@ namespace GoGhost.Duel
                     signal.SetColor(ShaderUtilities.ID_GlowColor,Color.clear);
                     action.fontSharedMaterial=arrow.fontSharedMaterial=signal;
                     condition.lineSpacing=action.lineSpacing=2;
-                    float conditionHeight=Mathf.Max(28,TextHeight(condition,294));
-                    float actionHeight=Mathf.Max(28,TextHeight(action,264));
+                    float conditionHeight=Mathf.Max(28,TextHeight(condition,conditionWidth));
+                    float actionHeight=Mathf.Max(28,TextHeight(action,actionWidth));
                     float arrowHeight=TextHeight(arrow,18);
                     float height=16+conditionHeight+4+actionHeight;
-                    root.sizeDelta=new Vector2(318,height);root.anchoredPosition=new Vector2(0,y-height/2);
-                    condition.rectTransform.sizeDelta=new Vector2(294,conditionHeight);
+                    root.sizeDelta=new Vector2(innerWidth,height);root.anchoredPosition=new Vector2(0,y-height/2);
+                    condition.rectTransform.sizeDelta=new Vector2(conditionWidth,conditionHeight);
                     condition.rectTransform.anchoredPosition=new Vector2(0,height/2-8-conditionHeight/2);
-                    action.rectTransform.sizeDelta=new Vector2(264,actionHeight);
+                    action.rectTransform.sizeDelta=new Vector2(actionWidth,actionHeight);
                     action.rectTransform.anchoredPosition=new Vector2(15,height/2-12-conditionHeight-actionHeight/2);
                     arrow.rectTransform.sizeDelta=new Vector2(18,arrowHeight);
-                    arrow.rectTransform.anchoredPosition=new Vector2(-126,height/2-12-conditionHeight-arrowHeight/2);
+                    arrow.rectTransform.anchoredPosition=new Vector2(-actionWidth/2+6,height/2-12-conditionHeight-arrowHeight/2);
                     var glow=root.gameObject.AddComponent<UnityEngine.UI.Image>();
                     glow.raycastTarget=false;glow.color=Color.clear;
-                    var border=new[]{Image(root,new Vector2(0,height/2-1),new Vector2(318,2),Color.clear),
-                        Image(root,new Vector2(0,-height/2+1),new Vector2(318,2),Color.clear),
-                        Image(root,new Vector2(-158,0),new Vector2(2,height-4),Color.clear),
-                        Image(root,new Vector2(158,0),new Vector2(2,height-4),Color.clear)};
-                    var identity=Image(root,new Vector2(-157,0),new Vector2(2,height-16),NeuralPalette.Operation((ControlOperation)op));
+                    var border=new[]{Image(root,new Vector2(0,height/2-1),new Vector2(innerWidth,2),Color.clear),
+                        Image(root,new Vector2(0,-height/2+1),new Vector2(innerWidth,2),Color.clear),
+                        Image(root,new Vector2(-innerWidth/2+1,0),new Vector2(2,height-4),Color.clear),
+                        Image(root,new Vector2(innerWidth/2-1,0),new Vector2(2,height-4),Color.clear)};
+                    var identity=Image(root,new Vector2(-innerWidth/2+2,0),new Vector2(2,height-16),NeuralPalette.Operation((ControlOperation)op));
                     ruleRows.Add(new RuleRowView{Operation=(ControlOperation)op,Row=row,Background=glow,Border=border,Condition=condition,Action=action,Arrow=arrow,Signal=signal,Identity=identity});
                     y-=height+8;
                 }
-                y-=26;
+                y-=14;
             }
         }
+        static string HudConditionLabel(ConditionalRule rule)=>ConditionalCatalog.ConditionLabel(rule)+
+            (rule.AdditionalCondition==0?"":"\nAND "+ConditionalCatalog.ConditionLabel(rule,true));
+
+        float MeasureRulePanelWidth()
+        {
+            float available=Screen.height/Mathf.Max(.01f,canvas.GetComponent<Canvas>().scaleFactor)-24;
+            var measure=Text("",page,Vector2.zero,Vector2.zero,22,TextAlignmentOptions.TopLeft);
+            measure.enabled=false;measure.lineSpacing=2;
+            float selectedWidth=RulePanelWidth;
+            for(float width=RulePanelWidth;width<=470;width+=40)
+            {
+                float height=82;
+                foreach(int op in new[]{2,3,4,0,1})
+                {
+                    int count=hudRules.RuleCount((ControlOperation)op);if(count==0)continue;
+                    height+=36;
+                    for(int row=0;row<count;row++)
+                    {
+                        var rule=hudRules.RuleAt((ControlOperation)op,row);
+                        measure.font=font;measure.text=(row+1)+"  "+HudConditionLabel(rule);
+                        float condition=Mathf.Max(28,TextHeight(measure,width-56));
+                        measure.font=controlFont;measure.text=ConditionalCatalog.RuleActionLabel(rule);
+                        float action=Mathf.Max(28,TextHeight(measure,width-86));
+                        height+=28+condition+action;
+                    }
+                }
+                selectedWidth=width;if(height<=available)break;
+            }
+            Destroy(measure.gameObject);
+            return selectedWidth;
+        }
+
         public void UpdateBattleLayout()
         {
             if(canvas==null)return;
@@ -107,7 +142,7 @@ namespace GoGhost.Duel
             float width=Screen.width/Mathf.Max(.01f,scale),height=Screen.height/Mathf.Max(.01f,scale);
             bool hasRules=ruleSidebar!=null&&hudRules==game.Rules&&
                 (game.Phase==DuelPhase.Prepare||game.Phase==DuelPhase.Fight);
-            float panel=hasRules?RulePanelWidth:0;
+            float panel=hasRules?rulePanelWidth:0;
             if(battleUi!=null)
             {
                 battleUi.anchoredPosition=new Vector2(-panel/2,0);

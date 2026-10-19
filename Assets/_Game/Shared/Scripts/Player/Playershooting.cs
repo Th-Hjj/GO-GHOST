@@ -62,6 +62,7 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
     }
     public int AmmoInMagazine { get; private set; }
     public bool IsReloading { get; private set; }
+    public bool IsFiring { get; private set; }
     public float ReloadRemaining => IsReloading ? Mathf.Max(0f, reloadDoneAt - Time.time) : 0f;
     public bool ReloadVisible => legacyCombat && IsReloading && visual != null && visual.ReloadVisible;
     public event System.Action<Vector2, Vector2> ShotFired;
@@ -71,6 +72,7 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
     internal void RegisterHit(Enemy target,bool defeated) {ShotsHit++;EnemyHit?.Invoke(target,defeated);}
     public bool CanFireNow => isActiveAndEnabled && !IsReloading && AmmoInMagazine>0 && Time.time>=nextFireTime
         && input!=null && input.GameplayInputEnabled && !input.NarrativePaused;
+    public float NextShotReadyAt => nextFireTime;
     /// <summary>Called when the real combat starts so earlier practice shots never count.</summary>
     public void ResetShotCounters() { ShotsFired = 0; ShotsHit = 0; TriggerPulls = 0; }
     private float nextFireTime;
@@ -102,6 +104,7 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
     // Full magazine, no reload in progress. Also re-applied once at the practice -> combat door.
     public void ApplyDeployment(DeploymentSnapshot snapshot)
     {
+        IsFiring = false;
         IsReloading = false;
         AmmoInMagazine = snapshot.Weapon.MagazineSize;
         nextFireTime = 0f;
@@ -109,6 +112,7 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
 
     public void ConfigureLegacyCombat()
     {
+        IsFiring = false;
         legacyCombat = true;
         volleyUnlocked = false;
         StopAllCoroutines();
@@ -122,6 +126,7 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
 
     public void CleanupAttempt()
     {
+        IsFiring = false;
         IsReloading = false;
         if (legacyCombat && visual != null) visual.SetReloading(false);
     }
@@ -150,6 +155,7 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
             // Held Attack resumes the rifle after automatic reload; the permission input gate still owns consent.
             bool autonomous = input.AutomaticFireRequested;
             bool trigger = autonomous || input.AttackHeld;
+            if (!trigger || IsReloading || !input.GameplayInputEnabled) IsFiring = false;
             var actor = autonomous || (legacyCombat && input.AutomaticFireOwned) ? ProjectileActor.InnerAI : ProjectileActor.Player;
             if (trigger && !IsReloading && AmmoInMagazine > 0 && Time.time >= nextFireTime
                 && FireWeapon(aim, weapon, actor))
@@ -161,6 +167,7 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
             if (!IsReloading && AmmoInMagazine <= 0)
             {
                 IsReloading = true;
+                IsFiring = false;
                 reloadDoneAt = Time.time + weapon.ReloadSeconds;
                 if (legacyCombat && visual != null) visual.SetReloading(true);
                 if (legacyCombat && sfx != null) sfx.Play(Sfx.Equip);
@@ -213,6 +220,7 @@ public class PlayerShooting : MonoBehaviour, IAttemptAugmentation
             actor: actor, permissionTier: legacyCombat ? 0 : Mathf.Max(0, officer.Deployment.BrainPermissionTier));
         ShotsFired++;
         TriggerPulls++;
+        IsFiring = true;
         if (sfx != null) sfx.Play(Sfx.Shot);
         if (vfx != null) vfx.Muzzle(spawn, direction);
         ShotFired?.Invoke(spawn, direction.normalized);

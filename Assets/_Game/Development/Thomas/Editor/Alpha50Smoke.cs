@@ -11,13 +11,193 @@ using Object=UnityEngine.Object;
 
 public static partial class BossEncounterSmoke
 {
+    [MenuItem("GO GHOST/Playtest/Condition Action V2 Focused Smoke")]
+    public static void RunConditionalV2()=>Start("condition-v2",false);
+    [MenuItem("GO GHOST/Playtest/Condition Action V2 UI Smoke")]
+    public static void RunConditionalV2UI()=>Start("condition-v2-ui",false);
+    static void V2Rule(ConditionalLoadout draft,ConditionalRule rule)
+    {
+        if(!draft.TryAddRule(ConditionalCatalog.Response(rule.Action).Operation,rule))
+            throw new InvalidOperationException("Invalid V2 fixture: "+ConditionalCatalog.RuleConditionLabel(rule));
+    }
+    [MenuItem("GO GHOST/Playtest/Condition Action V2 Priority and Lifecycle")]
+    public static void RunConditionalV2Followup()=>Start("condition-v2-followup",false);
+    public static void RunConditionalV2Targets()=>Start("condition-v2-targets",false);
+    static ConditionalRule V2Ground(string action,GroundStateOption ground=GroundStateOption.Grounded)
+        =>new ConditionalRule{Condition=51,GroundState=ground,Action=action};
+    static IEnumerator ConditionalV2()
+    {
+        Record("V2 focused mechanisms: real executors and virtual input; fixture positions/policies are controlled, not balance proof.");
+        Check("V2 exact selectable catalog 26 / 20 in five categories",ConditionalCatalog.Conditions.Length==26
+            &&ConditionalCatalog.Responses.Length==20&&ConditionalCatalog.Categories.Length==5);
+        Check("V2 removed entries stay nonselectable",new[]{0,27,28,32}.All(id=>!ConditionalCatalog.IsSelectableCondition(id))
+            &&!ConditionalCatalog.IsSelectableResponse("Q03")&&!ConditionalCatalog.IsSelectableResponse("F05"));
+        Check("V2 optional AND and explicitly allowed Fine-Tune pair",ConditionalCatalog.IsAllowed(2,new ConditionalRule{Condition=18,Action="Q06"}));
+        Check("V2 reloading Hold Fire legal",ConditionalCatalog.IsAllowed(3,new ConditionalRule{Condition=9,Action="F06"}));
+        var data=V2Ground("F02");data.AdditionalCondition=52;data.AdditionalDistance=EnemyDistanceOption.Mid;data.AmmoUse=AmmoUseOption.KeepTwoRounds;
+        var copied=data.Copy();var draft=new ConditionalLoadout();V2Rule(draft,copied);
+        copied.GroundState=GroundStateOption.Airborne;
+        Check("V2 full data deep copy",draft.Copy().Operations[3].Rules[0].GroundState==GroundStateOption.Grounded
+            &&draft.Copy().Operations[3].Rules[0].AdditionalDistance==EnemyDistanceOption.Mid
+            &&draft.Copy().Operations[3].Rules[0].AmmoUse==AmmoUseOption.KeepTwoRounds);
+        var invalid=V2Ground("M10");invalid.AdditionalCondition=51;invalid.AdditionalGroundState=GroundStateOption.Airborne;
+        Check("V2 contradictory ground states rejected",!ConditionalCatalog.IsAllowed(0,invalid));
+        invalid.AdditionalCondition=59;
+        Check("V2 second event rejected",!ConditionalCatalog.IsAllowed(0,invalid));
+        Check("V2 required direction/condition parameter cannot silently default",!ConditionalCatalog.IsAllowed(0,new ConditionalRule{Condition=51,Action="M10"})
+            &&!ConditionalCatalog.IsAllowed(0,new ConditionalRule{Condition=4,Action="M11"}));
+
+        // Manual jump -> paid burst -> airborne Dodge. No synthetic action-result notifications.
+        yield return AlphaFresh(1,d=>{
+            V2Rule(d,new ConditionalRule{Condition=57,Action="F02"});
+            V2Rule(d,new ConditionalRule{Condition=60,AdditionalCondition=51,AdditionalGroundState=GroundStateOption.Airborne,Action="D04"});
+        });
+        AlphaPlace(-6,9);yield return Seconds(.12f);
+        var movement=game.Player.GetComponent<PlayerMovement>();int jumps=0,apices=0;
+        movement.JumpStarted+=()=>jumps++;movement.JumpApexReached+=()=>apices++;
+        MouseAt(game.Rifle.AimOrigin+new Vector2(12,1),false);yield return Frames(3);
+        Check("V2 initialization fabricates no jump or automatic action",jumps==0&&game.Rules.AutomaticShots==0&&game.Rules.AcceptedDodges==0);
+        heldKeys=new[]{Key.Space};yield return Frames(2);heldKeys=Array.Empty<Key>();
+        yield return Until(()=>game.Rules.AcceptedDodges==1,1.5f);
+        Check("V2 manual Jump -> Short Burst -> airborne Dodge",jumps==1&&game.Rules.AutomaticShots==3&&game.Rules.AcceptedDodges==1,
+            $"jumps={jumps} shots={game.Rules.AutomaticShots} dodge={game.Rules.AcceptedDodges}");
+        Check("V2 Fire preserves raw aim without Aim ownership",!game.Player.GetComponent<PlayerInputReader>().ConditionalFrame.AimOwned
+            &&Vector2.Dot(game.Player.GetComponent<PlayerInputReader>().RawInput.Aim,game.Player.GetComponent<PlayerInputReader>().AimDirection)>.999f);
+        yield return Until(()=>movement.IsGrounded,1.5f);
+        Check("V2 one real apex per active jump",apices==1&&game.Rules.AcceptedJumps==0);
+        yield return Seconds(.35f);
+        Check("V2 completed event does not replay",game.Rules.AutomaticShots==3&&game.Rules.AcceptedDodges==1);
+
+        yield return AlphaFresh(1,d=>{
+            V2Rule(d,new ConditionalRule{Condition=25,Action="M04"});
+            V2Rule(d,new ConditionalRule{Condition=61,AdditionalCondition=51,AdditionalGroundState=GroundStateOption.Grounded,Action="J01"});
+            V2Rule(d,new ConditionalRule{Condition=58,Action="F02"});
+        });
+        AlphaPlace(-5,4);yield return Seconds(.12f);MouseAt(game.Bosses[0].Position,false);
+        bool preparing=game.Bosses[0].Actions.TryStart(BossAbility.Piercing,game.Player.transform.position);
+        yield return Until(()=>game.Rules.AutomaticShots==3,2f);
+        Check("V2 preparation -> completed Step Back -> Jump -> apex Burst",preparing&&game.Rules.AcceptedJumps==1&&game.Rules.AutomaticShots==3,
+            $"jump={game.Rules.AcceptedJumps} shots={game.Rules.AutomaticShots}");
+        yield return AlphaFresh(1,d=>{
+            V2Rule(d,new ConditionalRule{Condition=25,Action="M04"});
+            V2Rule(d,new ConditionalRule{Condition=61,Action="J01"});
+        });
+        AlphaPlace(-14.1f,-7);yield return Seconds(.12f);
+        game.Bosses[0].Actions.TryStart(BossAbility.Piercing,game.Player.transform.position);yield return Seconds(.8f);
+        Check("V2 wall-blocked Step Back does not report success",game.Rules.AcceptedJumps==0);
+
+        yield return AlphaFresh(1,d=>{
+            V2Rule(d,V2Ground("M10"));V2Rule(d,V2Ground("F06"));
+            var left=V2Ground("M11");left.MoveDirection=MoveDirectionOption.Left;V2Rule(d,left);
+        });
+        AlphaPlace(-5,8);yield return Seconds(.1f);float heldX=game.Player.transform.position.x;
+        heldKeys=new[]{Key.D};MouseAt(game.Bosses[0].Position,true);yield return Seconds(.25f);
+        var reader=game.Player.GetComponent<PlayerInputReader>();
+        Check("V2 zero output owns Move and Fire over manual/lower rules",reader.ConditionalFrame.MovementOwned&&reader.ConditionalFrame.FireOwned
+            &&Mathf.Abs(game.Player.transform.position.x-heldX)<.08f&&game.Rifle.ShotsFired==0&&Feedback(0).Executing&&Feedback(3).Executing);
+        heldKeys=new[]{Key.D,Key.Space};yield return Frames(2);heldKeys=new[]{Key.D};yield return Seconds(.12f);
+        Check("V2 Hold release restores manual move/fire",game.Player.transform.position.x>heldX+.25f&&game.Rifle.ShotsFired>0);
+        heldKeys=Array.Empty<Key>();mouseHeld=false;
+
+        // All three real shooting responses share the same reserve option.
+        foreach(string action in new[]{"F01","F02","F03"})
+        {
+            yield return AlphaFresh(1,d=>{
+                V2Rule(d,new ConditionalRule{Condition=18,AdditionalCondition=51,AdditionalGroundState=GroundStateOption.Airborne,
+                    Action=action,AmmoUse=AmmoUseOption.KeepTwoRounds});
+            });
+            MouseAt(game.Rifle.AimOrigin+Vector2.up*12,true);
+            yield return Until(()=>game.Rifle.AmmoInMagazine==3,1.5f);mouseHeld=false;
+            MouseAt(game.Bosses[0].Position,false);heldKeys=new[]{Key.Space};yield return Frames(2);heldKeys=Array.Empty<Key>();
+            yield return Seconds(.9f);
+            Check("V2 "+action+" stops at the two-round floor",game.Rifle.AmmoInMagazine==2&&game.Rules.AutomaticShots==1,
+                $"ammo={game.Rifle.AmmoInMagazine} automatic={game.Rules.AutomaticShots}");
+            if(action=="F03")
+            {
+                MouseAt(game.Bosses[0].Position,true);yield return Seconds(.35f);mouseHeld=false;
+                Check("V2 reserve yields to manual remaining rounds",game.Rifle.AmmoInMagazine<2||game.Rifle.IsReloading);
+            }
+        }
+
+        yield return AlphaFresh(1,d=>V2Rule(d,new ConditionalRule{Condition=59,Action="F01",AmmoUse=AmmoUseOption.KeepTwoRounds}));
+        AlphaPlace(-5,7);yield return Seconds(.1f);int hitEvents=0;
+        game.Rifle.EnemyHit+=(enemy,dead)=>hitEvents++;
+        MouseAt(game.Bosses[0].Position,true);yield return Until(()=>game.Rifle.ShotsFired>0,.3f);mouseHeld=false;
+        yield return Seconds(1.6f);
+        Check("V2 real Shot->Shot loop is bounded by ammo/cadence",game.Rifle.ShotsFired==6&&game.Rifle.AmmoInMagazine==2&&game.Rules.AutomaticShots==5,
+            $"total={game.Rifle.ShotsFired} auto={game.Rules.AutomaticShots} ammo={game.Rifle.AmmoInMagazine}");
+        Check("V2 delayed real projectile damage reports Hit",hitEvents>0&&game.Rifle.ShotsHit==hitEvents);
+
+        yield return AlphaFresh(1,d=>{
+            V2Rule(d,V2Ground("F02"));V2Rule(d,new ConditionalRule{Condition=60,Action="D04"});
+        });
+        yield return Until(()=>game.Rules.AutomaticShots==1,.3f);
+        heldKeys=new[]{Key.Space};yield return Frames(2);heldKeys=Array.Empty<Key>();yield return Seconds(.6f);
+        Check("V2 cancelled Burst emits no successful completion",game.Rules.AutomaticShots==1&&game.Rules.AcceptedDodges==0);
+        yield return AlphaFresh(1,d=>V2Rule(d,new ConditionalRule{Condition=57,AdditionalCondition=51,AdditionalGroundState=GroundStateOption.Grounded,Action="F01"}));
+        heldKeys=new[]{Key.Space};yield return Frames(2);heldKeys=Array.Empty<Key>();yield return Seconds(1.1f);
+        Check("V2 expired event cannot wait for a later additional state",game.Rifle.ShotsFired==0);
+
+        yield return AlphaFresh(1,d=>V2Rule(d,new ConditionalRule{Condition=3,Action="J01"}));
+        Check("V2 grounded spawn emits no fake landing",game.Rules.AcceptedJumps==0);
+        heldKeys=new[]{Key.Space};yield return Frames(2);heldKeys=Array.Empty<Key>();yield return Seconds(1.85f);
+        Check("V2 real Landed -> Jump loop needs physical landings",game.Rules.AcceptedJumps>=1&&game.Rules.AcceptedJumps<=3);
+        yield return AlphaFresh(1,d=>V2Rule(d,new ConditionalRule{Condition=7,Action="F01"}));
+        bool finishDuringImmunity=false;int finished=0;
+        game.Dodge.DodgeFinished+=()=>{finished++;finishDuringImmunity=game.Player.IsInvulnerable;};
+        heldKeys=new[]{Key.LeftShift};yield return Frames(2);heldKeys=Array.Empty<Key>();yield return Seconds(.4f);
+        Check("V2 Dodge Finished is one movement-end event",finished==1&&finishDuringImmunity&&game.Rules.AutomaticShots==1);
+        yield return AlphaFresh(1,d=>{
+            V2Rule(d,new ConditionalRule{Condition=11,Action="J01"});V2Rule(d,new ConditionalRule{Condition=9,Action="F06"});
+        });
+        MouseAt(game.Rifle.AimOrigin+Vector2.up*12,true);yield return Until(()=>game.Rifle.IsReloading,2.3f);mouseHeld=false;
+        yield return Frames(2);
+        Check("V2 Reloading Hold Fire owns while ammo is empty",game.Player.GetComponent<PlayerInputReader>().ConditionalFrame.FireOwned&&Feedback(3).Executing);
+        int reloads=0;game.Rifle.ReloadFinished+=()=>reloads++;
+        yield return Until(()=>game.Rules.AcceptedJumps==1,1.6f);
+        Check("V2 Reload Finished follows actual reload only once",reloads==1&&game.Rules.AcceptedJumps==1&&game.Rifle.AmmoInMagazine==game.Rifle.MagazineSize);
+
+        // Arrange while gameplay input is disabled; a queued previous mouse sample must not
+        // shoot between teleporting the fixture and applying its intended cursor direction.
+        RestoreFixture();heldKeys=Array.Empty<Key>();mouseHeld=false;game.ConfigurePlaytestWave(3);
+        V2Rule(game.DraftLoadout,new ConditionalRule{Condition=52,Distance=EnemyDistanceOption.Close,AdditionalCondition=18,Action="F01"});
+        game.StartFight();
+        var gunner=game.Bosses.First(a=>a.ActorId==1);var sword=game.Bosses.First(a=>a.ActorId==2);
+        V2PreparePlace(game.Player.gameObject,gunner.Navigation,0);V2PreparePlace(gunner.gameObject,gunner.Navigation,10);V2PreparePlace(sword.gameObject,sword.Navigation,-4);
+        MouseAt(gunner.Position,false);yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);StopPolicies();yield return Seconds(.3f);
+        Check("V2 two bosses cannot supply separate AND facts",game.Rifle.ShotsFired==0,$"shots={game.Rifle.ShotsFired}");
+        MouseAt(sword.Position,false);yield return Seconds(.3f);
+        Check("V2 same visible boss satisfies both AND facts",game.Rifle.ShotsFired==1,$"shots={game.Rifle.ShotsFired}");
+        var snapshot=game.Rules;checkingPause=true;game.SetPause(true);float pausedTime=Time.time;
+        yield return RealSeconds(.2f);
+        Check("V2 pause freezes real time and keeps controller",Time.time==pausedTime&&game.Rules==snapshot);
+        game.SetPause(false);checkingPause=false;yield return Seconds(.12f);
+        Check("V2 resume does not replay consumed occurrence",game.Rifle.ShotsFired==1);
+        checkingPause=true;yield return DeveloperKey(Key.F8);float frozen=Time.time;
+        yield return RealSeconds(.2f);
+        Check("V2 F8 freezes time and retains active rules",game.DeveloperToolsOpen&&game.Paused&&Time.time==frozen&&game.Rules==snapshot);
+        yield return DeveloperKey(Key.F8);checkingPause=false;
+        Check("V2 F8 resumes the same controller",!game.DeveloperToolsOpen&&!game.Paused&&game.Rules==snapshot);
+        foreach(var boss in game.Bosses)boss.Health.TakeDamage(99999,game.Player.gameObject);
+        yield return Until(()=>game.Phase==DuelPhase.Complete,1.2f);
+        Check("V2 real third-wave completion disposes controller",game.Phase==DuelPhase.Complete);
+        game.NewGame();Check("V2 New Game clears rule data",game.DraftLoadout.TotalRules==0);
+        foreach(int wave in new[]{1,2,3})
+        {
+            yield return AlphaFresh(wave,null,false);MouseAt(game.Bosses[0].Position,true);heldKeys=new[]{Key.D};
+            yield return Seconds(.65f);heldKeys=Array.Empty<Key>();mouseHeld=false;
+            Check("V2 short W"+wave+" normal executor smoke",game.Phase==DuelPhase.Fight&&game.Rifle.ShotsFired>0);
+        }
+        game.MainMenu();yield return Frames(3);
+        Check("V2 cleanup clears actors and projectiles",Object.FindObjectsByType<BossAgent>(FindObjectsSortMode.None).Length==0&&Projectile.Active.Count==0);
+    }
     [MenuItem("GO GHOST/Playtest/Alpha 50 Focused Smoke")]
-    public static void RunAlpha50()=>Start("alpha50",false);
+    public static void RunAlpha50()=>RunConditionalV2();
     public static void RunAlpha50Edges()=>Start("alpha50-edges",false);
     public static void RunAlpha50Layouts()=>Start("alpha50-layouts",false);
     public static void RunUnifiedCatalog()=>Start("unified-catalog",false);
     [MenuItem("GO GHOST/Playtest/Condition Editor Smoke")]
-    public static void RunConditionEditor()=>Start("condition-editor",false);
+    public static void RunConditionEditor()=>RunConditionalV2UI();
     public static void RunAlphaCursorChecks()=>Start("alpha50-cursor",false);
     static void Rule(ConditionalLoadout d,int op,int condition,string response)
     {d.Operations[op].Rules.Add(new ConditionalRule{Condition=condition,Action=response});}
@@ -38,6 +218,15 @@ public static partial class BossEncounterSmoke
     {
         OnFloor(game.Player.gameObject,game.Bosses[0].Navigation,playerX);
         OnFloor(game.Bosses[0].gameObject,game.Bosses[0].Navigation,bossX);
+    }
+    static void V2PreparePlace(GameObject actor,ArenaNavigation2D navigation,float x)
+    {
+        OnFloor(actor,navigation,x);
+        // Preparation disables simulation; also update the Transform so interpolation cannot
+        // restore the original spawn when the real fight enables its Rigidbody again.
+        var position=actor.GetComponent<Rigidbody2D>().position;
+        actor.transform.position=new Vector3(position.x,position.y,actor.transform.position.z);
+        Physics2D.SyncTransforms();
     }
     static UnityEngine.UI.Button[] CatalogOptions()=>Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<UnityEngine.UI.Button>().Where(b=>b.name=="Option").ToArray();
     static string OptionLabel(UnityEngine.UI.Button b)=>b.GetComponentInChildren<TMPro.TMP_Text>().text.Split('\n')[0];
@@ -648,6 +837,335 @@ public static partial class BossEncounterSmoke
         var selected=view.GetType().GetProperty("selectedSizeIndex",flags);int original=(int)selected.GetValue(view);
         selected.SetValue(view,builtin+custom);view.Repaint();
         restoration.Add(()=>{if(view!=null)selected.SetValue(view,original);groupClass.GetMethod("RemoveCustomSize",flags).Invoke(group,new object[]{builtin+custom});});
+    }
+    // Append inside the existing BossEncounterSmoke partial class in Alpha50Smoke.cs.
+    // Uses its real Button callbacks plus the existing ColdLight text/layout helpers.
+    static string V2UIFields(ConditionalRule rule)
+    {var copy=rule.Copy();copy.DisplayOrder=-1;return JsonUtility.ToJson(copy);}
+    static ConditionalRule V2UIPending()=>Private<ConditionalRule>(Object.FindAnyObjectByType<DuelUI>(),"pendingRule");
+    static string[] V2UIRules()=>game.DraftLoadout.OrderedRules().Select(V2UIFields).ToArray();
+    static IEnumerator V2UISelect(int condition,int option=-1)
+    {
+        yield return SelectEditorCondition(condition);
+        if(option>=0){ClickConfig("RuleParameter"+option);yield return Frames(2);}
+    }
+    static IEnumerator V2UIAction(string action,int option=-1)
+    {
+        ClickConfig("ActionCategory"+(int)ConditionalCatalog.Response(action).Operation);yield return Frames(2);
+        ClickConfig("Option",ConditionalCatalog.Response(action).Label);yield return Frames(2);
+        if(option>=0){ClickConfig("RuleParameter"+option);yield return Frames(2);}
+        if(ConditionalCatalog.UsesAmmoOption(action)){ClickConfig("UseAction");yield return Frames(2);}
+    }
+    static IEnumerator V2UICapture(string name)
+    {Directory.CreateDirectory(Output);ScreenCapture.CaptureScreenshot(Output+"condition-v2-ui-"+name+".png");yield return Frames(3);}
+    static void V2UIFiveLayout(int width,string step)
+    {
+        Canvas.ForceUpdateCanvases();var ui=Object.FindAnyObjectByType<DuelUI>();
+        var panels=ui.GetComponentsInChildren<RectTransform>();
+        var body=panels.First(r=>r.name=="BodyPreview");var selector=panels.First(r=>r.name=="RuleEditor");
+        var list=panels.First(r=>r.name=="RuleList");
+        Check($"V2 UI {width} {step}: actual size and three preserved regions",Screen.width==width&&Screen.height==width*9/16
+            &&body.position.x<selector.position.x&&selector.position.x<list.position.x&&Region(0).GetComponentInParent<CanvasGroup>().alpha==1);
+        Check($"V2 UI {width} {step}: five complete rows and accessible Start/Add",game.DraftLoadout.TotalRules==5
+            &&list.GetComponentsInChildren<UnityEngine.UI.Button>().Count(b=>b.name.StartsWith("Rule")&&b.name.EndsWith("Action"))==5
+            &&ConfigButtonNamed("StartFight").transform.parent==list
+            &&Mathf.Approximately(ConfigButtonNamed("StartFight").transform.position.y,ConfigButtonNamed("AddRule").transform.position.y)
+            &&!ConfigButtonNamed("AddRule").interactable);
+        TextFits($"V2 UI {width} {step}");
+        var rules=game.DraftLoadout.OrderedRules();
+        bool labels=true;
+        for(int i=0;i<rules.Count;i++)
+        {
+            labels&=ConfigButtonNamed("Rule"+i+"Condition").GetComponentInChildren<TMPro.TMP_Text>().text=="IF  "+ConditionalCatalog.ConditionLabel(rules[i]);
+            labels&=ConfigButtonNamed("Rule"+i+"Action").GetComponentInChildren<TMPro.TMP_Text>().text=="THEN  "+ConditionalCatalog.RuleActionLabel(rules[i]);
+            if(rules[i].AdditionalCondition!=0)
+                labels&=ConfigButtonNamed("Rule"+i+"AdditionalCondition").GetComponentInChildren<TMPro.TMP_Text>().text=="AND  "+ConditionalCatalog.ConditionLabel(rules[i],true);
+        }
+        Check($"V2 UI {width} {step}: actual AND/direction/ammo text",labels);
+    }
+    static IEnumerator ConditionalV2UI()
+    {
+        Record("V2 UI: real configuration Button callbacks and actual 1280/1920 Game View renders; controlled policies/defeat prove UI and lifecycle, not balance.");
+        RestoreFixture();heldKeys=Array.Empty<Key>();mouseHeld=false;game.NewGame();SetAlphaGameSize(1280,720);yield return Frames(8);
+        Check("V2 UI starts empty without hidden defaults",game.DraftLoadout.TotalRules==0&&ConfigButtonNamed("StartFight").interactable);
+        ClickConfig("AddRule");yield return Frames(2);
+        var primaryLabels=new System.Collections.Generic.List<string>();
+        for(int category=0;category<ConditionalCatalog.Categories.Length;category++)
+        {
+            ClickConfig("ConditionCategory"+category);yield return Frames(2);
+            var expected=ConditionalCatalog.Conditions.Where(c=>c.Category==category).Select(c=>c.Label);
+            primaryLabels.AddRange(CatalogOptions().Select(OptionLabel));
+            Check("V2 UI primary category "+category+" catalog and no auto-selection",CatalogOptions().Select(OptionLabel).SequenceEqual(expected)
+                &&V2UIPending().Condition==0);
+        }
+        Check("V2 UI all 26 selectable conditions displayed once",primaryLabels.Count==26&&primaryLabels.Distinct().Count()==26);
+        yield return V2UISelect(18);yield return V2UIAction("Q06");
+        Check("V2 UI Fine-Tune standalone commits immediately without AND",game.DraftLoadout.TotalRules==1
+            &&game.DraftLoadout.OrderedRules()[0].AdditionalCondition==0&&game.DraftLoadout.OrderedRules()[0].Action=="Q06");
+
+        ClickConfig("AddRule");yield return Frames(2);yield return V2UISelect(57);
+        ClickConfig("AdditionalCondition");yield return Frames(2);
+        var stateLabels=new System.Collections.Generic.List<string>();
+        int[] stateCategories=ConditionalCatalog.Conditions.Where(c=>!c.Event).Select(c=>c.Category).Distinct().ToArray();
+        var categoryButtons=Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<UnityEngine.UI.Button>().Where(b=>b.name.StartsWith("ConditionCategory")).ToArray();
+        Check("V2 UI AND hides categories without states",categoryButtons.Select(b=>b.name).SequenceEqual(stateCategories.Select(c=>"ConditionCategory"+c)));
+        foreach(int category in stateCategories)
+        {
+            ClickConfig("ConditionCategory"+category);yield return Frames(2);
+            var expected=ConditionalCatalog.Conditions.Where(c=>c.Category==category&&!c.Event).Select(c=>c.Label);
+            stateLabels.AddRange(CatalogOptions().Select(OptionLabel));
+            Check("V2 UI AND category "+category+" contains only actual State entries",CatalogOptions().Select(OptionLabel).SequenceEqual(expected));
+        }
+        Check("V2 UI optional picker exposes 16 states, no events",stateLabels.Count==16&&stateLabels.Distinct().Count()==16);
+        yield return SelectEditorCondition(51);
+        Check("V2 UI Ground State needs an explicit branch before commit",V2UIPending().AdditionalGroundState==GroundStateOption.Unspecified
+            &&game.DraftLoadout.TotalRules==1&&!ConfigButtonNamed("StartFight").interactable);
+        ClickConfig("StartFight");yield return Frames(2);
+        Check("V2 UI incomplete parameter cannot start fight through callback",game.Phase==DuelPhase.Configure&&game.DraftLoadout.TotalRules==1);
+        ClickConfig("RuleParameter1");yield return Frames(2);
+        ClickConfig("ActionCategory3");yield return Frames(2);ClickConfig("Option","Short Burst");yield return Frames(2);
+        Check("V2 UI Ammo default is visible and remains draft-local",V2UIPending().AmmoUse==AmmoUseOption.AllowEmpty
+            &&ConfigButtonNamed("RuleParameter0","Allow Empty").GetComponent<DuelButtonOutline>().Persistent
+            &&ConfigButtonNamed("RuleParameter1","Keep Two Rounds")!=null&&game.DraftLoadout.TotalRules==1);
+        ClickConfig("RuleParameter1");yield return Frames(2);ClickConfig("UseAction");yield return Frames(2);
+        Check("V2 UI Ammo selection commits complete AND rule",game.DraftLoadout.TotalRules==2
+            &&game.DraftLoadout.OrderedRules()[1].AdditionalGroundState==GroundStateOption.Airborne
+            &&game.DraftLoadout.OrderedRules()[1].AmmoUse==AmmoUseOption.KeepTwoRounds);
+
+        ClickConfig("AddRule");yield return Frames(2);yield return SelectEditorCondition(52);
+        Check("V2 UI Enemy Distance does not default a branch",V2UIPending().Distance==EnemyDistanceOption.Unspecified&&game.DraftLoadout.TotalRules==2);
+        ClickConfig("RuleParameter1");yield return Frames(2);ClickConfig("AdditionalCondition");yield return Frames(2);
+        yield return SelectEditorCondition(53);
+        Check("V2 UI Incoming Attack does not default a branch",V2UIPending().AdditionalIncomingAttack==IncomingAttackOption.Unspecified);
+        ClickConfig("RuleParameter1");yield return Frames(2);yield return V2UIAction("D04");
+        ClickConfig("AddRule");yield return Frames(2);yield return V2UISelect(25);
+        ClickConfig("AdditionalCondition");yield return Frames(2);yield return V2UISelect(51,0);
+        ClickConfig("ActionCategory0");yield return Frames(2);ClickConfig("Option","Move Left / Right");yield return Frames(2);
+        Check("V2 UI fixed movement direction requires explicit choice",V2UIPending().MoveDirection==MoveDirectionOption.Unspecified
+            &&game.DraftLoadout.TotalRules==3&&!ConfigButtonNamed("StartFight").interactable);
+        ClickConfig("RuleParameter0");yield return Frames(2);
+        ClickConfig("AddRule");yield return Frames(2);yield return V2UISelect(11);
+        ClickConfig("AdditionalCondition");yield return Frames(2);yield return V2UISelect(51,0);yield return V2UIAction("J03");
+        Check("V2 UI five rules finish with complete params and independent operations",game.DraftLoadout.TotalRules==5
+            &&ConditionalCatalog.IsValid(game.DraftLoadout)&&ConfigButtonNamed("StartFight").interactable&&!ConfigButtonNamed("AddRule").interactable);
+        var copied=game.DraftLoadout.Copy();
+        Check("V2 UI configured fields survive deep Copy",copied.OrderedRules().Select(V2UIFields).SequenceEqual(V2UIRules()));
+
+        string[] original=V2UIRules();
+        ClickConfig("Rule1Action");yield return Frames(2);ClickConfig("RuleParameter0");yield return Frames(2);
+        ClickConfig("AdditionalCondition");yield return Frames(2);yield return V2UISelect(51,0);
+        ClickConfig("SelectorBack");yield return Frames(2);yield return V2UISelect(52,2);
+        Check("V2 UI changes all condition/ammo fields only in local draft",V2UIPending().Condition==52&&V2UIPending().Distance==EnemyDistanceOption.Far
+            &&V2UIPending().AdditionalGroundState==GroundStateOption.Grounded&&V2UIPending().AmmoUse==AmmoUseOption.AllowEmpty
+            &&V2UIRules().SequenceEqual(original));
+        ClickConfig("CancelRuleEdit");yield return Frames(2);
+        Check("V2 UI Cancel restores every field and Start availability",V2UIRules().SequenceEqual(original)&&ConfigButtonNamed("StartFight").interactable);
+        ClickConfig("Rule1AdditionalCondition");yield return Frames(2);ClickConfig("RemoveAdditionalCondition");yield return Frames(2);
+        Check("V2 UI removing AND remains a draft edit",V2UIPending().AdditionalCondition==0&&V2UIRules().SequenceEqual(original));
+        heldKeys=new[]{Key.Escape};yield return Frames(3);heldKeys=Array.Empty<Key>();yield return Frames(3);
+        Check("V2 UI Escape restores removed AND and its parameter",V2UIPending()==null&&V2UIRules().SequenceEqual(original));
+        ClickConfig("Rule1AdditionalCondition");yield return Frames(2);ClickConfig("RemoveAdditionalCondition");yield return Frames(2);
+        ClickConfig("UseAction");yield return Frames(2);
+        Check("V2 UI AND can actually be removed without changing the action",game.DraftLoadout.OrderedRules()[1].AdditionalCondition==0
+            &&game.DraftLoadout.OrderedRules()[1].Action=="F02"&&game.DraftLoadout.OrderedRules()[1].AmmoUse==AmmoUseOption.KeepTwoRounds);
+        ClickConfig("Rule1Action");yield return Frames(2);ClickConfig("AdditionalCondition");yield return Frames(2);
+        yield return V2UISelect(51,1);ClickConfig("UseAction");yield return Frames(2);
+        Check("V2 UI AND can be restored by direct action edit",V2UIRules().SequenceEqual(original));
+
+        ClickConfig("Rule4Action");yield return Frames(2);yield return V2UIAction("F01",1);
+        Check("V2 UI cross-operation replacement at five preserves conditions",game.DraftLoadout.TotalRules==5
+            &&game.DraftLoadout.Operations[1].Rules.Count==0&&game.DraftLoadout.Operations[3].Rules.Count==2
+            &&game.DraftLoadout.OrderedRules()[4].Condition==11&&game.DraftLoadout.OrderedRules()[4].AdditionalGroundState==GroundStateOption.Grounded);
+        string moving=V2UIFields(game.DraftLoadout.OrderedRules()[4]);
+        for(int row=4;row>1;row--){ClickConfig("MoveRuleUp"+row);yield return Frames(2);}
+        Check("V2 UI reorder preserves complete fields and same-operation priority",V2UIFields(game.DraftLoadout.OrderedRules()[1])==moving
+            &&game.DraftLoadout.Operations[3].Rules.Select(r=>r.Action).SequenceEqual(new[]{"F01","F02"})
+            &&game.DraftLoadout.OrderedRules().Select(r=>r.DisplayOrder).SequenceEqual(Enumerable.Range(0,5)));
+        for(int row=1;row<4;row++){ClickConfig("MoveRuleDown"+row);yield return Frames(2);}
+        ClickConfig("Rule4Action");yield return Frames(2);yield return V2UIAction("J03");
+        Check("V2 UI return across operation keeps original primary and AND",game.DraftLoadout.TotalRules==5&&game.DraftLoadout.Operations[1].Rules.Count==1
+            &&game.DraftLoadout.OrderedRules()[4].Condition==11&&game.DraftLoadout.OrderedRules()[4].AdditionalGroundState==GroundStateOption.Grounded);
+
+        foreach(int width in new[]{1280,1920})
+        {
+            SetAlphaGameSize(width,width*9/16);yield return Frames(7);
+            V2UIFiveLayout(width,"equipped");yield return V2UICapture("equipped-"+width);
+            var scroll=SelectorScroll("EquippedRules");scroll.verticalNormalizedPosition=0;yield return Frames(2);Canvas.ForceUpdateCanvases();
+            var last=(RectTransform)ConfigButtonNamed("Rule4Action").transform;
+            Check($"V2 UI {width}: final complete row reachable by local scrolling",scroll.viewport.rect.Contains(scroll.viewport.InverseTransformPoint(last.position)));
+            yield return V2UICapture("equipped-last-"+width);
+            ClickConfig("Rule1AdditionalCondition");yield return Frames(3);V2UIFiveLayout(width,"AND editor");
+            Check($"V2 UI {width}: local fixed options fit and show actual choice",ConfigButtonNamed("RuleParameter1","Airborne").GetComponent<DuelButtonOutline>().Persistent
+                &&!ConfigButtonNamed("StartFight").interactable);
+            FocusOption("ConditionCategory1");ClickConfig("ConditionCategory1");yield return Frames(3);
+            Check($"V2 UI {width}: keyboard focus and equipped scroll survive rebuild",UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject!=null
+                &&UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject.name=="ConditionCategory1"
+                &&SelectorScroll("EquippedRules").verticalNormalizedPosition<.01f);
+            yield return V2UICapture("and-"+width);ClickConfig("CancelRuleEdit");yield return Frames(2);
+            ClickConfig("Rule1Action");yield return Frames(3);V2UIFiveLayout(width,"Ammo editor");
+            Check($"V2 UI {width}: Ammo visible, editable, and not implicitly submitted",ConfigButtonNamed("RuleParameter1","Keep Two Rounds").GetComponent<DuelButtonOutline>().Persistent
+                &&ConfigButtonNamed("UseAction").interactable&&!ConfigButtonNamed("StartFight").interactable);
+            yield return V2UICapture("ammo-"+width);ClickConfig("CancelRuleEdit");yield return Frames(2);
+            var beforeFight=V2UIRules();ClickConfig("StartFight");yield return Frames(3);
+            Check($"V2 UI {width}: real Start button begins stationary preparation",game.Phase==DuelPhase.Prepare&&game.Rules!=null);
+            yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);StopPolicies();yield return Frames(3);
+            bool fullText=true;var ui=Object.FindAnyObjectByType<DuelUI>();
+            for(int op=0;op<5;op++)for(int row=0;row<game.Rules.RuleCount((ControlOperation)op);row++)
+            {
+                var rule=game.Rules.RuleAt((ControlOperation)op,row);
+                var root=ui.GetComponentsInChildren<RectTransform>().First(r=>r.name=="RuleFeedback_"+op+"_"+row);
+                var texts=root.GetComponentsInChildren<TMPro.TMP_Text>();
+                string expected=(row+1)+"  "+ConditionalCatalog.ConditionLabel(rule)+(rule.AdditionalCondition==0?"":"\nAND "+ConditionalCatalog.ConditionLabel(rule,true));
+                fullText&=texts.First(t=>t.name=="ConditionText").text==expected&&texts.First(t=>t.name=="ActionText").text==ConditionalCatalog.RuleActionLabel(rule);
+            }
+            TextFits($"V2 HUD {width}");Check($"V2 HUD {width}: all five actual rules fit in nonoverlapping rows",fullText&&HudRowsFit()
+                &&ui.GetComponentsInChildren<RectTransform>().Count(r=>r.name.StartsWith("RuleFeedback_"))==5);
+            var camera=Camera.main;Vector3 min=camera.WorldToViewportPoint(game.ArenaBounds.min),max=camera.WorldToViewportPoint(game.ArenaBounds.max);
+            Check($"V2 HUD {width}: complete arena remains inside battle viewport",min.x>=0&&min.y>=0&&max.x<=1&&max.y<=1,$"min={min} max={max}");
+            MouseAt(game.Bosses[0].Position,false);yield return Until(()=>Feedback(2).Executing,.4f);
+            var aimRow=ui.GetComponentsInChildren<RectTransform>().First(r=>r.name=="RuleFeedback_2_0");
+            var aimAction=aimRow.GetComponentsInChildren<TMPro.TMP_Text>().First(t=>t.name=="ActionText");
+            Check($"V2 HUD {width}: real Fine-Tune ownership drives action color",Feedback(2).Visual.Matched&&Feedback(2).Executing
+                &&aimAction.color==NeuralPalette.Operation(ControlOperation.Aim));
+            yield return V2UICapture("combat-"+width);
+            game.Player.TakeDamage(99999,null);yield return Until(()=>game.Phase==DuelPhase.Failed,1.2f);game.Reconfigure();yield return Frames(3);
+            Check($"V2 UI {width}: defeat/reconfigure retains all fields and ordering",game.Phase==DuelPhase.Configure&&V2UIRules().SequenceEqual(beforeFight));
+        }
+        game.NewGame();yield return Frames(3);
+        Check("V2 UI New Game returns to a valid empty manual loadout",game.DraftLoadout.TotalRules==0&&ConfigButtonNamed("StartFight").interactable);
+        game.MainMenu();yield return Frames(3);
+    }
+    // Append inside the existing BossEncounterSmoke partial class; invoke once with
+    // yield return ConditionalV2Followup(). Uses existing helpers and real executors.
+    static string V2FollowupData(ConditionalLoadout loadout)
+        =>string.Join("\n",loadout.OrderedRules().Select(rule=>JsonUtility.ToJson(rule)));
+    static string V2FollowupRuntimeData(ConditionalController controller)
+        =>string.Join("\n",Enumerable.Range(0,5)
+            .SelectMany(op=>Enumerable.Range(0,controller.RuleCount((ControlOperation)op))
+                .Select(row=>controller.RuleAt((ControlOperation)op,row)))
+            .OrderBy(rule=>rule.DisplayOrder).Select(rule=>JsonUtility.ToJson(rule)));
+    static bool V2FollowupEmptyRuntime(ConditionalController controller)
+        =>controller!=null&&controller.Starts==0&&controller.AutomaticShots==0
+            &&controller.AcceptedJumps==0&&controller.AcceptedDodges==0
+            &&Private<IList>(controller,"events").Count==0;
+    static IEnumerator ConditionalV2Followup()
+    {
+        Record("V2 short follow-up: three controlled fixtures, normal input/results and lifecycle; no balance/outcome proof.");
+
+        // One fixture covers first-executable fallback and independent consumption of one real event.
+        yield return AlphaFresh(1,d=>{
+            V2Rule(d,V2Ground("D01")); // Global Grounded supplies no threat source: not executable.
+            V2Rule(d,V2Ground("D04"));
+            V2Rule(d,new ConditionalRule{Condition=57,AdditionalCondition=17,Action="M10"});
+            V2Rule(d,new ConditionalRule{Condition=57,AdditionalCondition=17,Action="Q01"});
+        });
+        MouseAt(game.Rifle.AimOrigin+Vector2.right*10,false);
+        yield return Until(()=>game.Rules.AcceptedDodges==1,.4f);
+        var accepted=Private<float[,]>(game.Rules,"acceptedAt");
+        Check("V2 follow-up first executable: source-less high Dodge yields to lower Aim-point Dodge",
+            game.Rules.AcceptedDodges==1&&float.IsNegativeInfinity(accepted[4,0])&&!float.IsNegativeInfinity(accepted[4,1]));
+        yield return Until(()=>!game.Dodge.IsDodging&&game.Player.GetComponent<PlayerMovement>().IsGrounded,1.3f);
+        int beforeStarts=game.Rules.Starts;float jumpAt=float.NegativeInfinity;int jumps=0;
+        Action started=()=>{jumpAt=Time.time;jumps++;};
+        var move=game.Player.GetComponent<PlayerMovement>();move.JumpStarted+=started;
+        var reader=game.Player.GetComponent<PlayerInputReader>();
+        MouseAt(game.Bosses[0].Position,true);heldKeys=new[]{Key.Space};
+        yield return Frames(2);heldKeys=Array.Empty<Key>();
+        yield return Until(()=>Feedback(0).Executing&&Feedback(2).Executing,.12f);
+        Check("V2 follow-up one manual Jump event is independently accepted by Move and Aim",
+            jumps==1&&game.Rules.Starts==beforeStarts+2&&Feedback(0).Executing&&Feedback(2).Executing
+            &&reader.ConditionalFrame.MovementOwned&&reader.ConditionalFrame.AimOwned&&game.Rules.AcceptedJumps==0,
+            $"jumps={jumps} starts={game.Rules.Starts-beforeStarts} elapsed={Time.time-jumpAt:F3}");
+        int consumedStarts=game.Rules.Starts;
+        mouseHeld=false;yield return Frames(2);
+        Check("V2 follow-up AND false releases both continuous responses",
+            !reader.ConditionalFrame.MovementOwned&&!reader.ConditionalFrame.AimOwned);
+        mouseHeld=true;yield return Frames(2);
+        bool insideWindow=Time.time-jumpAt<=ConditionalDefaults.EventWindow;
+        Check("V2 follow-up consumed event cannot revive when AND returns inside original window",
+            insideWindow&&game.Rules.Starts==consumedStarts&&!reader.ConditionalFrame.MovementOwned&&!reader.ConditionalFrame.AimOwned,
+            $"elapsed={Time.time-jumpAt:F3}/{ConditionalDefaults.EventWindow:F2} starts={game.Rules.Starts-consumedStarts}");
+        mouseHeld=false;move.JumpStarted-=started;
+
+        // Full selected fields survive both ordinary retry and next-wave transitions.
+        yield return AlphaFresh(1,d=>{
+            V2Rule(d,new ConditionalRule{Condition=57,AdditionalCondition=51,AdditionalGroundState=GroundStateOption.Airborne,
+                Action="F02",AmmoUse=AmmoUseOption.KeepTwoRounds});
+            V2Rule(d,new ConditionalRule{Condition=52,Distance=EnemyDistanceOption.Far,AdditionalCondition=53,
+                AdditionalIncomingAttack=IncomingAttackOption.Any,Action="M11",MoveDirection=MoveDirectionOption.Left});
+            V2Rule(d,new ConditionalRule{Condition=6,AdditionalCondition=51,AdditionalGroundState=GroundStateOption.Grounded,Action="Q02"});
+            V2Rule(d,new ConditionalRule{Condition=11,AdditionalCondition=52,AdditionalDistance=EnemyDistanceOption.Mid,Action="J03"});
+            V2Rule(d,new ConditionalRule{Condition=53,IncomingAttack=IncomingAttackOption.Low,AdditionalCondition=52,
+                AdditionalDistance=EnemyDistanceOption.Close,Action="D04"});
+        });
+        string expected=V2FollowupData(game.DraftLoadout);
+        MouseAt(game.Rifle.AimOrigin+Vector2.up*12,false);
+        heldKeys=new[]{Key.Space};yield return Frames(2);heldKeys=Array.Empty<Key>();
+        yield return Until(()=>game.Rules.AutomaticShots==3,1.1f);
+        var old=game.Rules;
+        Check("V2 follow-up lifecycle starts with a consumed real finite response",old.AutomaticShots==3);
+        game.Player.TakeDamage(99999,null);yield return Until(()=>game.Phase==DuelPhase.Failed,1.2f);
+        game.Reconfigure();yield return Frames(2);
+        Check("V2 follow-up defeat retry keeps complete fields and presentation order",
+            game.Phase==DuelPhase.Configure&&V2FollowupData(game.DraftLoadout)==expected&&Private<bool>(old,"disposed"));
+        game.StartFight();StopPolicies();yield return Frames(2);
+        var retry=game.Rules;
+        Check("V2 follow-up retry constructs a fresh empty runtime from the same full snapshot",
+            game.Phase==DuelPhase.Prepare&&!ReferenceEquals(old,retry)&&V2FollowupEmptyRuntime(retry)
+            &&V2FollowupRuntimeData(retry)==expected);
+        yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);StopPolicies();yield return Seconds(.12f);
+        Check("V2 follow-up retry does not replay old events on entering combat",V2FollowupEmptyRuntime(retry));
+        MouseAt(game.Rifle.AimOrigin+Vector2.up*12,false);
+        heldKeys=new[]{Key.Space};yield return Frames(2);heldKeys=Array.Empty<Key>();
+        yield return Until(()=>retry.AutomaticShots==3,1.1f);
+        Check("V2 follow-up fresh retry consumes a new real Jump event once",retry.AutomaticShots==3&&old.AutomaticShots==3);
+        foreach(var boss in game.Bosses)boss.Health.TakeDamage(99999,game.Player.gameObject);
+        yield return Until(()=>game.Phase==DuelPhase.Configure&&game.Wave==2,1.8f);
+        Check("V2 follow-up next wave preserves complete rule data and disposes old runtime",
+            game.Phase==DuelPhase.Configure&&game.Wave==2&&V2FollowupData(game.DraftLoadout)==expected&&Private<bool>(retry,"disposed"));
+        game.StartFight();StopPolicies();yield return Frames(2);
+        var next=game.Rules;
+        Check("V2 follow-up next wave starts with fresh occurrences and no old ownership",
+            game.Phase==DuelPhase.Prepare&&!ReferenceEquals(retry,next)&&V2FollowupEmptyRuntime(next)
+            &&V2FollowupRuntimeData(next)==expected);
+        yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);StopPolicies();yield return Seconds(.12f);
+        Check("V2 follow-up next wave does not replay the previous wave's results",V2FollowupEmptyRuntime(next));
+
+        yield return ConditionalV2TargetedAnd();
+    }
+    static IEnumerator ConditionalV2TargetedAnd()
+    {
+        // Set positions and the intended mouse sample during Prepare, before any rules can execute.
+        RestoreFixture();heldKeys=Array.Empty<Key>();mouseHeld=false;game.ConfigurePlaytestWave(3);
+        V2Rule(game.DraftLoadout,new ConditionalRule{Condition=52,Distance=EnemyDistanceOption.Close,AdditionalCondition=18,Action="F01"});
+        game.StartFight();StopPolicies();
+        var gunner=game.Bosses.First(actor=>actor.ActorId==1);var sword=game.Bosses.First(actor=>actor.ActorId==2);
+        V2PreparePlace(game.Player.gameObject,gunner.Navigation,0);V2PreparePlace(gunner.gameObject,gunner.Navigation,10);V2PreparePlace(sword.gameObject,sword.Navigation,-4);
+        MouseAt(gunner.Position,false);yield return Frames(3);
+        int prepareShots=game.Rifle.ShotsFired;
+        Check("V2 follow-up W3 fixture input is settled before combat",game.Phase==DuelPhase.Prepare&&prepareShots==0);
+        yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);StopPolicies();yield return Seconds(.3f);
+        int separateShots=game.Rifle.ShotsFired;
+        V2AndProbe("separate",gunner,sword);
+        Check("V2 follow-up W3 different bosses cannot combine AND facts",separateShots==0,
+            $"prepare={prepareShots} separate={separateShots}");
+        MouseAt(sword.Position,false);yield return Seconds(.3f);
+        int sameShots=game.Rifle.ShotsFired;
+        V2AndProbe("same",gunner,sword);
+        Check("V2 follow-up W3 one visible boss supplies both AND facts",sameShots==1,
+            $"separate={separateShots} same={sameShots}");
+        var controller=game.Rules;checkingPause=true;game.SetPause(true);float pausedAt=Time.time;
+        yield return RealSeconds(.18f);
+        Check("V2 follow-up W3 pause holds the same consumed snapshot",Time.time==pausedAt&&game.Rules==controller&&game.Rifle.ShotsFired==sameShots);
+        game.SetPause(false);checkingPause=false;yield return Seconds(.12f);
+        Check("V2 follow-up W3 resume preserves the consumed shot count",game.Rifle.ShotsFired==sameShots,
+            $"before={sameShots} after={game.Rifle.ShotsFired}");
+        game.MainMenu();yield return Frames(2);
+    }
+    static void V2AndProbe(string phase,BossAgent gunner,BossAgent sword)
+    {
+        var reader=game.Player.GetComponent<PlayerInputReader>();
+        Record($"V2 AND {phase}: player={game.Player.transform.position} bounds={game.Player.GetComponent<Collider2D>().bounds} gunner={gunner.Body.bounds} sword={sword.Body.bounds} aim={reader.RawInput.Aim} cursor={reader.RawInput.Cursor} origin={game.Rifle.AimOrigin} visible={string.Join(",",Private<bool[]>(game.Rules,"visible"))} close={string.Join(",",Private<bool[]>(game.Rules,"close"))} near={string.Join(",",Private<bool[]>(game.Rules,"cursorNear"))} matched={Feedback(3).Visual.Matched} ammo={game.Rifle.AmmoInMagazine}");
     }
 }
 #endif

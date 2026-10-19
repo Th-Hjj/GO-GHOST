@@ -6,6 +6,8 @@ namespace GoGhost.Duel
     {
         bool swordPoseReady;
         float swordDisplayAngle;
+        // Physical blade appearance is fixed; the slash arc expresses the larger attack reach.
+        const float SwordBladeLength=1.5f;
         static float SwordTellWidth(bool active,bool locked)=>active?.06f:locked?.025f:.02f;
         Color SwordTellColor(bool active,bool locked)
         {
@@ -51,10 +53,10 @@ namespace GoGhost.Duel
             if(cut)
             {
                 Vector2 root=LocalPoint(a.SwordBladeRoot),direction=Angle(p.WeaponAngle);
-                p.FrontHand=root+direction*.15f;p.Weapon=root+direction*actor.Profile.Sword.CutReach*.5f;
+                p.FrontHand=root+direction*.15f;p.Weapon=root+direction*SwordBladeLength*.5f;
                 if(a.Phase==BossActionPhase.Active){p.Chest.x+=.10f;p.Head.x+=.06f;}
             }
-            else p.Weapon=p.FrontHand+Angle(p.WeaponAngle)*.60f;
+            else p.Weapon=p.FrontHand+Angle(p.WeaponAngle)*SwordBladeLength*.5f;
             p.BackHand=p.FrontHand+new Vector2(-.10f,-.035f);
         }
         void SwordTells(BossActionExecutor action)
@@ -65,6 +67,14 @@ namespace GoGhost.Duel
                 if(threat.AttackId!=action.AttackId||slot>=4||action.Phase==BossActionPhase.Recovery)continue;
                 // Wave bodies carry their own charge/flight effect; omit projected travel guides.
                 if(threat.Shape==BossThreatShape.MovingBlade)continue;
+                if(threat.Shape==BossThreatShape.BladeArc)
+                {
+                    // The body pose carries early preparation. Show the local arc only near
+                    // the actual swing, never a future airborne/advancing strike destination.
+                    if(action.CurrentSwordBeat==SwordBeat.JumpCut)
+                    {if(action.Phase!=BossActionPhase.Active||Time.time<threat.StartsAt-.2f)continue;}
+                    else if(action.Phase==BossActionPhase.Prepare)continue;
+                }
                 bool active=threat.Phase==BossThreatPhase.Active,locked=threat.Phase==BossThreatPhase.Locked;
                 Color color=SwordTellColor(active,locked);
                 if(tells[slot]==null)tells[slot]=NewLine("SwordCommitment",false,2);
@@ -76,7 +86,7 @@ namespace GoGhost.Duel
                     for(int i=0;i<21;i++)
                     {
                         float progress=Mathf.Lerp(start,finish,i/20f);
-                        Vector2 root=threat.OriginAt(active?Time.time:Mathf.Lerp(threat.StartsAt,threat.EndsAt,progress));
+                        Vector2 root=action.SwordBladeRoot;
                         float angle=Mathf.Lerp(threat.ArcFrom,threat.ArcTo,progress)*Mathf.Deg2Rad;
                         Vector2 tip=root+new Vector2(threat.Facing*Mathf.Cos(angle),Mathf.Sin(angle))*threat.Reach;
                         if(Projectile.TerrainHit(root,tip,threat.Radius,out var wall))tip=root+(tip-root).normalized*wall.distance;

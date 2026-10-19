@@ -171,12 +171,12 @@ namespace GoGhost.Duel
                     if(a.Ability==BossAbility.DropCut&&a.Phase!=BossActionPhase.Active&&a.Phase!=BossActionPhase.Recovery)cut=Angle(105);
                     p.WeaponAngle=Mathf.Atan2(cut.y,cut.x)*Mathf.Rad2Deg;
                     p.FrontHand=cut*.14f;p.BackHand=p.FrontHand+new Vector2(-.12f,-.04f);
-                    p.Weapon=cut*(a.BladeReach*.5f);
+                    p.Weapon=cut*(SwordBladeLength*.5f);
                 }
-                else p.Weapon = p.FrontHand + Angle(p.WeaponAngle)*.60f;
+                else p.Weapon = p.FrontHand + Angle(p.WeaponAngle)*SwordBladeLength*.5f;
                 if(a!=null&&BossActionExecutor.IsSwordPhrase(a.Ability))SwordPose(ref p,a);
                 else if(a!=null&&a.SwordUnbound&&!a.Busy)
-                {p.Chest.x+=.10f;p.Head.x+=.08f;p.Hip.y-=.06f;p.WeaponAngle=-12;p.Weapon=p.FrontHand+Angle(p.WeaponAngle)*.60f;}
+                {p.Chest.x+=.10f;p.Head.x+=.08f;p.Hip.y-=.06f;p.WeaponAngle=-12;p.Weapon=p.FrontHand+Angle(p.WeaponAngle)*SwordBladeLength*.5f;}
             }
             float hit = Mathf.Max(0,1-(clock-hitAt)/.10f);
             p.Chest.x -= hit*.035f; p.Head.x -= hit*.045f;
@@ -250,10 +250,7 @@ namespace GoGhost.Duel
             Arm(Part.BackUpperArm,Part.BackForearm,p.Chest+new Vector2(-.11f,-.045f),p.BackHand,-.10f);
             Arm(Part.FrontUpperArm,Part.FrontForearm,p.Chest+new Vector2(.08f,-.035f),p.FrontHand,.10f);
             bool gunner=visualKind==BossKind.Refraction;
-            bool swordCut=actor!=null&&BossActionExecutor.IsSwordPhrase(actor.Actions.Ability)
-                &&(actor.Actions.CurrentSwordBeat==SwordBeat.JumpCut||actor.Actions.CurrentSwordBeat==SwordBeat.LowCut
-                    ||actor.Actions.CurrentSwordBeat==SwordBeat.RisingCut||actor.Actions.CurrentSwordBeat==SwordBeat.DownCut);
-            float bladeLength=swordCut?actor.Profile.Sword.CutReach:actor!=null&&(actor.Actions.UsesBladeArc||actor.Actions.Ability==BossAbility.DropCut)?actor.Actions.BladeReach:1.2f;
+            float bladeLength=SwordBladeLength;
             Place(Part.Weapon,p.Weapon,gunner?new Vector2(.54f,.14f):new Vector2(bladeLength,.075f),p.WeaponAngle);
             // Retain the serialized slot as the gun's simple grip; the blade needs no extra outline.
             if(gunner)Place(Part.Sheath,p.Weapon+Rotate(new Vector2(-.15f,-.09f),p.WeaponAngle),new Vector2(.075f,.18f),p.WeaponAngle);

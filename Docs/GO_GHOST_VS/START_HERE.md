@@ -1,5 +1,11 @@
 # GO GHOST — Start Here
 
+Latest correction, Thomas 2026-10-18: melee slash reach is 3.0; the visible sword remains fixed at 1.5. Attack arcs show the larger reach. Slower cadence, late local arcs and sword-wave rules remain unchanged; see newest Boss specification/log.
+
+Latest correction, Thomas 2026-10-18: fixed 1.5-unit sword and matching melee reach, slower close wind-up including landing links, and late local slash arcs rather than arcs at future movement destinations. Public threat prediction and the swing-only/.20 s residue rules remain. See newest Boss specification and implementation evidence; local Editor only.
+
+Latest correction, Thomas 2026-10-18: sword waves require actual swings; Draw/traversal no longer seed afterblades. Ordinary and delayed blades share one emission per complete phrase. Delayed blades stay harmless for .20 s total, with no extra warning wait or Redline release hold. Hidden guides and other tuning remain. This supersedes older timing/emission notes below; see the newest Boss specification and implementation-log evidence. Local Editor only.
+
 Latest clarification, Thomas 2026-10-18: limit delayed blades to one per complete phrase, allowing earlier-phrase residual overlap. Reduce length to 1.35, matching the ordinary lane wave, and use the same active white-core/coral-glow/trail effect for both. All other pressure/timing/damage and solo/W3 policies remain. See the newest specification and implementation log; local Editor only.
 
 Latest correction, Thomas 2026-10-18: narrow delayed afterblades to 2.2 units, slow them to 13 and extend explicit warning to .50 s (plus .32 s residue); each actual Draw leaves at most one. Other pressure behavior, close/jump seeds, concurrent caps and solo/W3 escape policies remain unchanged. See the newest Boss specification and implementation-log entry. Local Editor only.

@@ -90,6 +90,7 @@ public static partial class BossEncounterSmoke
     public static void RunSwordPressureFlow() => Start("sword-pressure-flow", false);
     public static void RunSwordAfterbladeAdjustment() => Start("sword-afterblade-adjustment", false);
     public static void RunSwordPhraseBlades() => Start("sword-phrase-blades", false);
+    public static void RunSwordCloseReadability() => Start("sword-close-readability", false);
     public static void RunSwordPerformance() => Start("sword-performance", false);
     public static void Cancel()
     { if (Running) { Record("NOT TESTED: operator cancelled unfinished checks."); Finish(false); } }
@@ -184,6 +185,7 @@ public static partial class BossEncounterSmoke
         if(mode=="sword-pressure-flow") {yield return SwordPressureFlow();yield break;}
         if(mode=="sword-afterblade-adjustment") {yield return SwordAfterbladeAdjustment();yield break;}
         if(mode=="sword-phrase-blades") {yield return SwordPhraseBlades();yield break;}
+        if(mode=="sword-close-readability") {yield return SwordCloseReadability();yield break;}
         if(mode=="sword-performance") {yield return SwordPerformance();yield break;}
         if(mode=="alpha50") {yield return Alpha50();yield break;}
         if(mode=="unified-catalog") {yield return UnifiedCatalog();yield break;}

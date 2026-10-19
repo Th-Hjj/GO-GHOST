@@ -50,6 +50,10 @@ Aim+Fire and Move+Jump aggregate with bounded maxima, never additive white-out. 
 
 Retain stickman poses, weapons, collision geometry, platforms, camera and combat. Boss weapon structures are neutral with small owner accents. Player HP is cold white, changing to Danger through the existing Low Health latch/hysteresis; retain left anchors and numbers. Player bullets have the same neutral identity for manual and automatic shots. Enemy bullets, beams and blade effects use their actual Boss identity with unchanged geometry, timing and alpha hierarchy.
 
+Sword guard follow-up, Thomas 2026-10-16: Severance stands still with the blade vertically downward during active reflection. Preparation lowers the blade into this stance; recovery returns it to the normal pose. The weapon stays neutral, and reflected bullets adopt Severance coral to show their changed ownership. Keep the existing narrow guard/contact cues and stickman proportions.
+
+Directional Draw Dash follow-up, Thomas 2026-10-16: keep grounded initiation and the original stickman silhouette. The blade pose, narrow slash trail and locked route warning follow the actual two-dimensional dash direction. Steep sweeps use the leading body edge so visible blade contact and the physical hit agree; retain horizontal hit geometry, existing effect widths, colors and timing. No new screen-wide effects.
+
 Camo hides every body/weapon accent through the original alpha path; only existing event-local traces remain. Terrain stays neutral with clear landing edges. Keep existing restrained Bloom; core contours, text and state distinctions must work without it. Use local meshes/material property blocks, not per-frame textures/materials/page rebuilding. No decorative fake data, scans, glitches, full-screen flashes or new telegraphs.
 
 ## Delivery

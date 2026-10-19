@@ -32,16 +32,24 @@ namespace GoGhost.Duel
         void BuildDeveloperTools()
         {
             Image(page,Vector2.zero,new Vector2(4000,4000),new Color(.025f,.025f,.025f,.98f)).raycastTarget=true;
-            Text("Developer tuning",page,new Vector2(-390,380),new Vector2(650,60),36,TextAlignmentOptions.Left,headingFont);
+            Text("Developer",page,new Vector2(-390,380),new Vector2(650,60),36,TextAlignmentOptions.Left,headingFont);
             Button("Close  [F8]",page,new Vector2(565,380),new Vector2(260,54),game.ToggleDeveloperTools);
-            Text("Paused while editing  |  Session only: restart the app to discard changes",page,new Vector2(0,325),new Vector2(1400,40),22);
+            Text("Jump to wave",page,new Vector2(-565,310),new Vector2(300,48),24,TextAlignmentOptions.Left);
+            for(int wave=1;wave<=3;wave++)
+            {
+                int target=wave;
+                var jump=Button("Wave "+wave,page,new Vector2(-235+(wave-1)*350,310),new Vector2(300,48),
+                    ()=>game.JumpToDeveloperWave(target),game.Wave==wave);
+                jump.name="Dev_Wave"+wave;
+                jump.interactable=ConditionalCatalog.IsValid(game.DraftLoadout);
+            }
             string[] tabs={"Player","Weapon","Health"};
             for(int i=0;i<tabs.Length;i++)
             {
                 int tab=i;
-                Button(tabs[i],page,new Vector2(-430+i*430,260),new Vector2(390,52),()=>{developerTab=tab;Show();},i==developerTab);
+                Button(tabs[i],page,new Vector2(-430+i*430,225),new Vector2(390,52),()=>{developerTab=tab;Show();},i==developerTab);
             }
-            float y=177;
+            float y=145;
             foreach(var parameter in game.DeveloperParameters)
             {
                 if(parameter.Group!=developerTab)continue;
@@ -63,13 +71,10 @@ namespace GoGhost.Duel
                     y-=68;
                 }
             }
-            string note=developerTab==2?"Max HP edits keep current HP, clamped to the new maximum. Current HP requires a living actor."
-                :developerTab==1?"Existing shots and reload/cadence deadlines stay unchanged. Extra capacity fills on the next reload."
-                :"Movement updates on resume. Jump and Dodge edits affect the next action; active actions stay committed.";
-            Text(note,page,new Vector2(0,-280),new Vector2(1400,70),22);
-            developerStatus=Text("Type a value and press Enter, or use - / +. Values are bounded to the displayed range.",page,new Vector2(0,-335),new Vector2(1400,45),20);
+            Text("Session only  /  Wave jump restarts combat; rules stay equipped.",page,new Vector2(0,-285),new Vector2(1400,40),20);
+            developerStatus=Text("",page,new Vector2(0,-335),new Vector2(1400,45),20);
             Button("Restore defaults",page,new Vector2(0,-400),new Vector2(300,54),()=>
-            {game.ResetDeveloperTuning();RefreshDeveloperFields();developerStatus.text="Defaults restored. Current HP and active timers were preserved.";});
+            {game.ResetDeveloperTuning();RefreshDeveloperFields();developerStatus.text="Defaults restored.";});
             RefreshDeveloperFields();
         }
 
@@ -95,12 +100,12 @@ namespace GoGhost.Duel
             {
                 if(!game.DeveloperToolsOpen||field.wasCanceled)return;
                 if(float.TryParse(value,NumberStyles.Float,CultureInfo.InvariantCulture,out float number)&&!float.IsNaN(number)&&!float.IsInfinity(number))Apply(Mathf.Clamp(number,min,max));
-                else {RefreshDeveloperFields();developerStatus.text="Enter a finite number using a decimal point.";}
+                else {RefreshDeveloperFields();developerStatus.text="Invalid number.";}
             });
             void Apply(float value)
             {
                 if(!game.DeveloperToolsOpen||!available())return;
-                write(value);RefreshDeveloperFields();developerStatus.text="Applied. Close the panel to continue.";
+                write(value);RefreshDeveloperFields();developerStatus.text="Applied.";
             }
         }
 

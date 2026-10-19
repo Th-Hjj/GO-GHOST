@@ -75,6 +75,22 @@ public static partial class BossEncounterSmoke
     public static void RunPursuitObservation() => Start("pursuit-observation", false);
     public static void RunDashMobility() => Start("dash-mobility", false);
     public static void RunReleaseSmoke() => Start("release", false);
+    public static void RunGuardReflection() => Start("guard-reflection", false);
+    public static void RunDirectionalDash() => Start("directional-dash", false);
+    public static void RunSwordIntelligence() => Start("sword-intelligence", false);
+    public static void RunSwordRework() => Start("sword-rework", false);
+    public static void RunSwordReworkProbe() => Start("sword-rework-probe", false);
+    public static void RunSwordReworkLifecycle() => Start("sword-rework-lifecycle", false);
+    public static void RunSwordFollowup() => Start("sword-followup", false);
+    public static void RunSwordFollowupLinks() => Start("sword-followup-links", false);
+    public static void RunSwordPlatforms() => Start("sword-platforms", false);
+    public static void RunSwordPlatformLink() => Start("sword-platform-link", false);
+    public static void RunSwordPressureBaseline() => Start("sword-pressure-baseline", false);
+    public static void RunSwordPressure() => Start("sword-pressure", false);
+    public static void RunSwordPressureFlow() => Start("sword-pressure-flow", false);
+    public static void RunSwordAfterbladeAdjustment() => Start("sword-afterblade-adjustment", false);
+    public static void RunSwordPhraseBlades() => Start("sword-phrase-blades", false);
+    public static void RunSwordPerformance() => Start("sword-performance", false);
     public static void Cancel()
     { if (Running) { Record("NOT TESTED: operator cancelled unfinished checks."); Finish(false); } }
 
@@ -153,6 +169,22 @@ public static partial class BossEncounterSmoke
     static IEnumerator Run()
     {
         Record("Editor Play Mode; simulated focus and virtual keyboard/mouse. No physical-input or audibility claim.");
+        if(mode=="guard-reflection") {yield return GuardReflection();yield break;}
+        if(mode=="directional-dash") {yield return DirectionalDash();yield break;}
+        if(mode=="sword-intelligence") {yield return SwordIntelligence();yield break;}
+        if(mode=="sword-rework") {yield return SwordRework();yield break;}
+        if(mode=="sword-rework-probe") {yield return SwordReworkProbe();yield break;}
+        if(mode=="sword-rework-lifecycle") {yield return SwordReworkLifecycle();yield break;}
+        if(mode=="sword-followup") {yield return SwordFollowup();yield break;}
+        if(mode=="sword-followup-links") {yield return SwordFollowupLinks();yield break;}
+        if(mode=="sword-platforms") {yield return SwordPlatforms();yield break;}
+        if(mode=="sword-platform-link") {yield return SwordPlatforms(true);yield break;}
+        if(mode=="sword-pressure-baseline") {yield return SwordPressureBaseline();yield break;}
+        if(mode=="sword-pressure") {yield return SwordPressure();yield break;}
+        if(mode=="sword-pressure-flow") {yield return SwordPressureFlow();yield break;}
+        if(mode=="sword-afterblade-adjustment") {yield return SwordAfterbladeAdjustment();yield break;}
+        if(mode=="sword-phrase-blades") {yield return SwordPhraseBlades();yield break;}
+        if(mode=="sword-performance") {yield return SwordPerformance();yield break;}
         if(mode=="alpha50") {yield return Alpha50();yield break;}
         if(mode=="unified-catalog") {yield return UnifiedCatalog();yield break;}
         if(mode=="condition-editor") {yield return ConditionEditor();yield break;}
@@ -173,6 +205,7 @@ public static partial class BossEncounterSmoke
         if(mode=="contour-visibility") {yield return ContourVisibility();yield break;}
         if(mode=="alpha50-cursor") {yield return AlphaCursorChecks();yield break;}
         if(mode=="developer-tuning") {yield return DeveloperTuning();yield break;}
+        if(mode=="developer-wave") {yield return DeveloperWaveJump();yield break;}
         if(mode=="alpha50-edges") {yield return Alpha50Edges();yield break;}
         if(mode=="alpha50-layouts") {yield return Alpha50Layouts();yield break;}
         if(mode=="release") {yield return ReleaseSmoke();yield break;}
@@ -1613,7 +1646,7 @@ public static partial class BossEncounterSmoke
                 $"locked={sawLocked} hp={hp}->{game.Player.CurrentHealth} guarded={actions.Guarded}");
             if (ability == BossAbility.Guard)
             {
-                Check("guard consumes a real frontal projectile", actions.Guarded > 0);
+                Check("guard reflects a real frontal projectile", actions.Guarded > 0);
                 Check("guard rear remains damageable", guardRear && actor.Health.CurrentHealth < actorHp);
             }
             if (ability == BossAbility.DrawDash)

@@ -162,6 +162,28 @@ namespace GoGhost.Duel
             if (!TryDash(from,desired,size,out end)) return Vector2.Distance(from,end)>size.x;
             return CanStand(end,size); // An unblocked full dash must have a real landing support.
         }
+        public bool TryDirectionalAttack(Vector2 from, Vector2 target, Vector2 size, out Vector2 end)
+        {
+            end = from;
+            Vector2 delta = target - from;
+            if (SameLevelSpacing <= 0 || delta.sqrMagnitude < .0001f) return false;
+            // Preserve same-support horizontal attacks despite different resting body-centre heights.
+            if (TrySupport(from,size,out var source) && TrySupport(target,size,out var support) && source == support)
+                return TryHorizontalAttack(from,target,size,out end);
+            Vector2 direction = delta.normalized;
+            float distance = Mathf.Min(SameLevelSpacing, delta.magnitude + size.x);
+            // Clip along the chosen ray, never rotate it toward a clamped endpoint at an arena edge.
+            Vector2 min = (Vector2)arena.min + size * .5f + Vector2.one * .025f;
+            Vector2 max = (Vector2)arena.max - size * .5f - Vector2.one * .025f;
+            if (Mathf.Abs(direction.x) > .0001f)
+                distance = Mathf.Min(distance, ((direction.x > 0 ? max.x : min.x) - from.x) / direction.x);
+            if (Mathf.Abs(direction.y) > .0001f)
+                distance = Mathf.Min(distance, ((direction.y > 0 ? max.y : min.y) - from.y) / direction.y);
+            if (distance <= 0) return false;
+            TryDash(from, from + direction * distance, size, out end);
+            // A diagonal dash may end in the air; ordinary gravity resumes after its finite drive.
+            return Vector2.Distance(from,end) > size.x;
+        }
         int Fingerprint(Collider2D collider)
         {
             unchecked
@@ -345,6 +367,12 @@ namespace GoGhost.Duel
                 for (int j = 0; j < count; j++)
                 {
                     if (visited[j] || j == current) continue;
+                    // Same-support edges can only be a walk with this exact cost. If even a
+                    // clear walk cannot improve the known cost, avoid its many support casts.
+                    // This is the same >= rejection below, before constructing the edge.
+                    if (source.SurfaceId == usable[j].SurfaceId
+                        && cost[current] + Mathf.Max(.02f, Vector2.Distance(source.Center(size), usable[j].Center(size))
+                            / motor.Profile.Speed + .1f) >= cost[j]) continue;
                     var link = GetLink(source, usable[j], motor.Profile, size);
                     if (link == null || IsBlocked(source.Id, usable[j].Id)) continue;
                     float candidate = cost[current] + Mathf.Max(.02f, link.Duration);

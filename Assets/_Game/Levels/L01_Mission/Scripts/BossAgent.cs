@@ -109,7 +109,7 @@ namespace GoGhost.Duel
                 GroundedKnown=visible,Grounded=visible&&Motor.Grounded,
                 Preparing=visible&&Actions.PublicThreats.Count>0&&(Actions.Phase==BossActionPhase.Prepare||Actions.Phase==BossActionPhase.Locked),
                 PreparationId=visible?Actions.PreparationId:0,
-                Recovering=visible&&Actions.Phase==BossActionPhase.Recovery,Reloading=visible&&Actions.Reloading,
+                Recovering=visible&&Actions.Phase==BossActionPhase.Recovery&&!Actions.SwordResidualWaiting,Reloading=visible&&Actions.Reloading,
                 HealthFraction=visible?(float)Health.CurrentHealth/Health.MaxHealth:0,
                 ObservedAt=Time.time,ExpiresAt=Time.time+(IsCamo?profile.CamoContactMemory:profile.SightMemory)};
         }

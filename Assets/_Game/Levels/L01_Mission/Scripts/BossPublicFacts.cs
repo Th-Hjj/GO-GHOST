@@ -17,7 +17,7 @@ namespace GoGhost.Duel
     }
 
     public enum BossThreatPhase { Preparation, Locked, Active, Recovery }
-    public enum BossThreatShape { Ray, SweptCapsule, Box, Projectile, BladeArc, FallingBlade }
+    public enum BossThreatShape { Ray, SweptCapsule, Box, Projectile, BladeArc, FallingBlade, MovingBlade, StationaryBlade }
 
     // Scaled absolute times and the same expressed geometry used by the attack and tell.
     // Ray End is already clipped by the emitting skill against the nearest blocking ally body.
@@ -53,6 +53,18 @@ namespace GoGhost.Duel
             Vector2 aPlayer = Vector2.Lerp(previous, current, (first - fromTime) / interval);
             Vector2 bPlayer = Vector2.Lerp(previous, current, (last - fromTime) / interval);
             Vector2 expanded = half + Vector2.one * Mathf.Max(0, Radius);
+            if(Shape==BossThreatShape.MovingBlade)
+            {
+                Vector2 v=Direction.normalized*ProjectileSpeed;
+                Vector2 a=Origin+v*Mathf.Max(0,first-StartsAt)-aPlayer;
+                Vector2 b=End+v*Mathf.Max(0,first-StartsAt)-aPlayer;
+                Vector2 travel=v*(last-first)-(bPlayer-aPlayer);
+                // Swept finite blade against the expanded player box (four-axis SAT).
+                return OverlapAxis(a,b,travel,expanded,Vector2.right)
+                    &&OverlapAxis(a,b,travel,expanded,Vector2.up)
+                    &&OverlapAxis(a,b,travel,expanded,new Vector2(-(b-a).y,(b-a).x))
+                    &&OverlapAxis(a,b,travel,expanded,new Vector2(-travel.y,travel.x));
+            }
             if (Shape == BossThreatShape.BladeArc || Shape == BossThreatShape.FallingBlade)
             {
                 // Bounded samples within this .02 s prediction step use the executable arc/descent.
@@ -115,6 +127,15 @@ namespace GoGhost.Duel
             return SegmentBox(Origin - aPlayer, end - aPlayer, expanded)
                 || SegmentBox(Origin - bPlayer, end - bPlayer, expanded)
                 || SegmentBox(Origin - (aPlayer + bPlayer) * .5f, end - (aPlayer + bPlayer) * .5f, expanded);
+        }
+
+        static bool OverlapAxis(Vector2 a,Vector2 b,Vector2 travel,Vector2 half,Vector2 axis)
+        {
+            if(axis.sqrMagnitude<.000001f)return true;
+            float x=Vector2.Dot(a,axis),y=Vector2.Dot(b,axis),d=Vector2.Dot(travel,axis);
+            float lo=Mathf.Min(x,y)+Mathf.Min(0,d),hi=Mathf.Max(x,y)+Mathf.Max(0,d);
+            float extent=Mathf.Abs(axis.x)*half.x+Mathf.Abs(axis.y)*half.y;
+            return lo<=extent&&hi>=-extent;
         }
 
         static bool SegmentBox(Vector2 from, Vector2 to, Vector2 half)

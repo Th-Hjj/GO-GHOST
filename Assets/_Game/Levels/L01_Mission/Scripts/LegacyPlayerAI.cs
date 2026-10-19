@@ -629,10 +629,11 @@ public sealed class LegacyPlayerAI
                     var owner=shot.Owner!=null?shot.Owner.GetComponentInParent<BossAgent>():null;
                     actorId=owner!=null?owner.ActorId:0;return true;
                 }
-            if(kind==41)continue; // Only already emitted bullets, not a preparation ray.
             foreach(var expressed in threats)
             {
-                bool melee=expressed.Shape!=BossThreatShape.Projectile&&expressed.Shape!=BossThreatShape.Ray;
+                // Emitted sword waves share the public projectile rule; a windup is not a bullet.
+                if(kind==41&&(expressed.Shape!=BossThreatShape.MovingBlade||expressed.Phase!=BossThreatPhase.Active))continue;
+                bool melee=expressed.Shape!=BossThreatShape.Projectile&&expressed.Shape!=BossThreatShape.Ray&&expressed.Shape!=BossThreatShape.MovingBlade;
                 if(kind==42&&!melee)continue;
                 if(!expressed.IntersectsMotion(path[i-1]+offset,path[i]+offset,half,Time.time+t-Step,Time.time+t))continue;
                 if(kind==43&&expressed.IntersectsMotion(path[i-1]-offset,path[i]-offset,half,Time.time+t-Step,Time.time+t))continue;

@@ -26,6 +26,9 @@ namespace GoGhost.Duel
         float reactionAt;
         int comparable, retreatSign, missed;
         float pressureDistance, pressureHeight;
+        public float LastDodgeObservedAt {get;private set;}=-100;
+        public float DodgeStartedAt {get;private set;}=-100;
+        public float BeforeDodgeVelocityX {get;private set;}
         public int LearnedRetreat => comparable>=2 && missed<2 ? retreatSign : 0;
         public BossObservation Facts => current;
         public BossPerception(PlayerHealth player, BossProfile profile)
@@ -49,7 +52,18 @@ namespace GoGhost.Duel
         public void Tick(Vector2 observer)
         {
             if(player==null || player.IsDead) {current.Confidence=0;return;}
-            if(hasPending && Time.time>=readyAt) {current=pending;hasPending=false;}
+            if(hasPending && Time.time>=readyAt)
+            {
+                // Learn only from the delayed public motion sample, never the player's action clock.
+                if(pending.Dodging)
+                {
+                    if(!current.Dodging||pending.ObservedAt-current.ObservedAt>profile.SightMemory)
+                        DodgeStartedAt=pending.ObservedAt;
+                    LastDodgeObservedAt=pending.ObservedAt;
+                }
+                else BeforeDodgeVelocityX=pending.Velocity.x;
+                current=pending;hasPending=false;
+            }
             current.Confidence=Mathf.Clamp01(1-(Time.time-current.ObservedAt)/profile.SightMemory);
             if(Time.time>=nextSample && !hasPending)
             {

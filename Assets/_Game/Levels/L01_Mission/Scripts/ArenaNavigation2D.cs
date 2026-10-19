@@ -61,6 +61,27 @@ namespace GoGhost.Duel
         readonly List<Node> nodes = new List<Node>();
         readonly List<Surface> surfaces = new List<Surface>();
         readonly HashSet<Type> warnedTypes = new HashSet<Type>();
+        // List overloads grow when needed, so dense geometry is never silently truncated.
+        readonly List<RaycastHit2D> supportHits = new List<RaycastHit2D>(16);
+        readonly List<RaycastHit2D> traversalHits = new List<RaycastHit2D>(16);
+        readonly List<Collider2D> standingHits = new List<Collider2D>(16);
+        readonly List<Node> routeNodes = new List<Node>(128);
+        readonly List<RouteStep> reversedSteps = new List<RouteStep>(16);
+        float[] routeStartCosts = Array.Empty<float>(), routeCosts = Array.Empty<float>();
+        int[] routePrevious = Array.Empty<int>();
+        RouteStep[] routeIncoming = Array.Empty<RouteStep>();
+        bool[] routeVisited = Array.Empty<bool>();
+        int routeBatchDepth, routeVersion, routeMotion;
+        bool routeStartReady;
+        Vector2 routeOrigin, routeSize;
+        internal void BeginRouteBatch() { if (routeBatchDepth++ == 0) routeStartReady = false; }
+        internal void EndRouteBatch() { if (--routeBatchDepth == 0) routeStartReady = false; }
+        ContactFilter2D GroundFilter()
+        {
+            var filter = new ContactFilter2D().NoFilter();
+            filter.SetLayerMask(groundMask); filter.useTriggers = Physics2D.queriesHitTriggers;
+            return filter;
+        }
         Bounds arena;
         float nextScan;
         int nextId = 1, groundMask;
@@ -76,6 +97,8 @@ namespace GoGhost.Duel
         {
             arena = legalBounds; groundMask = LayerMask.GetMask("Ground"); initialized = true;
             geometry.Clear(); links.Clear(); blocked.Clear(); nodes.Clear(); surfaces.Clear();
+            routeStartReady = false; routeBatchDepth = 0; routeNodes.Clear(); reversedSteps.Clear();
+            Array.Clear(routeIncoming, 0, routeIncoming.Length);
             Version = 0; nextId = 1; Refresh();
         }
         void Update()
@@ -262,7 +285,8 @@ namespace GoGhost.Duel
             if (center.x - size.x * .5f < arena.min.x + .02f || center.x + size.x * .5f > arena.max.x - .02f
                 || center.y + size.y * .5f > arena.max.y - .02f) return false;
             if (!TrySupport(center, size, out _)) return false;
-            foreach (var collider in Physics2D.OverlapBoxAll(center + Vector2.up * .02f, size - Vector2.one * .055f, 0, groundMask))
+            Physics2D.OverlapBox(center + Vector2.up * .02f, size - Vector2.one * .055f, 0, GroundFilter(), standingHits);
+            foreach (var collider in standingHits)
                 if (collider != null && !collider.isTrigger) return false;
             return true;
         }
@@ -271,8 +295,9 @@ namespace GoGhost.Duel
             support = null;
             Vector2 foot = center - Vector2.up * (size.y * .5f);
             float best = float.PositiveInfinity;
-            foreach (var hit in Physics2D.BoxCastAll(foot + Vector2.up * .055f,
-                new Vector2(Mathf.Max(.04f, size.x - .10f), .035f), 0, Vector2.down, .115f, groundMask))
+            Physics2D.BoxCast(foot + Vector2.up * .055f,
+                new Vector2(Mathf.Max(.04f, size.x - .10f), .035f), 0, Vector2.down, GroundFilter(), supportHits, .115f);
+            foreach (var hit in supportHits)
             {
                 if (hit.collider == null || hit.collider.isTrigger || hit.normal.y < .7f || hit.distance >= best) continue;
                 if (OneWay(hit.collider, out var effector) && Vector2.Dot(hit.normal, effector.transform.up) < Mathf.Cos(effector.surfaceArc * .5f * Mathf.Deg2Rad)) continue;
@@ -285,7 +310,8 @@ namespace GoGhost.Duel
             Vector2 delta = to - from; blocker = default; safeEnd = to;
             if (delta.sqrMagnitude < .0000001f) return true;
             float distance = delta.magnitude;
-            foreach (var hit in Physics2D.BoxCastAll(from, size - Vector2.one * .035f, 0, delta / distance, distance, groundMask))
+            Physics2D.BoxCast(from, size - Vector2.one * .035f, 0, delta / distance, GroundFilter(), traversalHits, distance);
+            foreach (var hit in traversalHits)
             {
                 if (hit.collider == null || hit.collider.isTrigger) continue;
                 if (OneWay(hit.collider, out var effector))
@@ -335,27 +361,50 @@ namespace GoGhost.Duel
         }
         public bool TryRoute(Vector2 from, Vector2 destination, BossMotor2D motor, out Route route)
         {
+            using(RouteSample.Auto())return FindRoute(from,destination,motor,out route);
+        }
+        static readonly Unity.Profiling.ProfilerMarker RouteSample=new Unity.Profiling.ProfilerMarker("Navigation.Route");
+        bool FindRoute(Vector2 from, Vector2 destination, BossMotor2D motor, out Route route)
+        {
             route = null;
             if (!initialized || motor == null || motor.Profile == null) return false;
             Vector2 size = motor.Size;
             Surface startSurface = SurfaceAt(from, size), endSurface = SurfaceAt(destination, size);
             if (startSurface == null || endSurface == null || !CanStand(destination, size)) return false;
-            var usable = new List<Node>();
-            foreach (var node in nodes)
+            // All destinations in one synchronous planning query share the same supported
+            // launch nodes. Never reuse this across a frame, terrain edit or different actor.
+            var usable = routeNodes;
+            bool reuse = routeBatchDepth > 0 && routeStartReady && routeOrigin.Equals(from) && routeSize.Equals(size)
+                && routeVersion == Version && routeMotion == motor.Profile.Fingerprint;
+            if (!reuse)
             {
-                var surface = SurfaceById(node.SurfaceId);
-                if (node.Position.x < surface.A.x + size.x * .5f + .055f || node.Position.x > surface.B.x - size.x * .5f - .055f) continue;
-                if (CanStand(node.Center(size), size)) usable.Add(node);
+                routeStartReady = false;
+                usable.Clear();
+                foreach (var node in nodes)
+                {
+                    var surface = SurfaceById(node.SurfaceId);
+                    if (node.Position.x < surface.A.x + size.x * .5f + .055f || node.Position.x > surface.B.x - size.x * .5f - .055f) continue;
+                    if (CanStand(node.Center(size), size)) usable.Add(node);
+                }
+                if (usable.Count == 0) return false;
+                if (routeCosts.Length < usable.Count)
+                {
+                    int capacity = Mathf.NextPowerOfTwo(usable.Count);
+                    routeStartCosts = new float[capacity]; routeCosts = new float[capacity]; routePrevious = new int[capacity];
+                    routeIncoming = new RouteStep[capacity]; routeVisited = new bool[capacity];
+                }
+                for (int i = 0; i < usable.Count; i++)
+                {
+                    routeStartCosts[i] = float.PositiveInfinity;
+                    if (usable[i].SurfaceId == startSurface.Id && WalkClear(from, usable[i].Center(size), size))
+                        routeStartCosts[i] = Vector2.Distance(from, usable[i].Center(size)) / motor.Profile.Speed;
+                }
+                routeStartReady = true; routeOrigin = from; routeSize = size; routeVersion = Version; routeMotion = motor.Profile.Fingerprint;
             }
-            if (usable.Count == 0) return false;
             int count = usable.Count;
-            var cost = new float[count]; var previous = new int[count]; var incoming = new RouteStep[count]; var visited = new bool[count];
+            var cost = routeCosts; var previous = routePrevious; var incoming = routeIncoming; var visited = routeVisited;
             for (int i = 0; i < count; i++)
-            {
-                cost[i] = float.PositiveInfinity; previous[i] = -1;
-                if (usable[i].SurfaceId == startSurface.Id && WalkClear(from, usable[i].Center(size), size))
-                    cost[i] = Vector2.Distance(from, usable[i].Center(size)) / motor.Profile.Speed;
-            }
+            { cost[i] = routeStartCosts[i]; previous[i] = -1; incoming[i] = null; visited[i] = false; }
             int goal = -1;
             for (int iteration = 0; iteration < count; iteration++)
             {
@@ -381,7 +430,7 @@ namespace GoGhost.Duel
                 }
             }
             if (goal < 0) return false;
-            var reversed = new List<RouteStep>(); int cursor = goal;
+            var reversed = reversedSteps; reversed.Clear(); int cursor = goal;
             while (previous[cursor] >= 0) { reversed.Add(incoming[cursor]); cursor = previous[cursor]; }
             route = new Route { Version = Version };
             AddWalk(route, from, usable[cursor].Center(size), startSurface.Collider, motor.Profile.Speed);

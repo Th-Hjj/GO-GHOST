@@ -79,6 +79,8 @@ namespace GoGhost.Duel
         readonly float[,] executedAt=new float[5,ConditionalCatalog.MaxRulesTotal];
         readonly int[,] executedFrame=new int[5,ConditionalCatalog.MaxRulesTotal];
         readonly List<Notice> events=new List<Notice>(16);
+        readonly HashSet<long> liveEvents=new HashSet<long>();
+        readonly Predicate<long> expiredEvent;
         readonly BossContact[] contacts;
         readonly bool[] visible,seen,hidden,lowEnemy,close,far,cursorNear;
         readonly RaycastHit2D[] hits=new RaycastHit2D[24];
@@ -158,6 +160,7 @@ namespace GoGhost.Duel
         {
             if(!ConditionalCatalog.IsValid(snapshot))throw new ArgumentException("Invalid conditional loadout",nameof(snapshot));
             this.player=player;this.actors=actors;this.platforms=platforms;this.arena=arena;loadout=snapshot.Copy();
+            expiredEvent=IsExpiredEvent;
             movement=player.GetComponent<PlayerMovement>();gun=player.GetComponent<PlayerShooting>();dodge=player.GetComponent<PlayerDodge>();
             input=player.GetComponent<PlayerInputReader>();shape=player.GetComponent<Collider2D>();body=player.GetComponent<Rigidbody2D>();
             geometry=new LegacyPlayerAI(player,actors,platforms);
@@ -178,7 +181,13 @@ namespace GoGhost.Duel
             movement.JumpStarted-=JumpStarted;movement.JumpApexReached-=JumpApexReached;
             events.Clear();facts.Clear();foreach(var response in running)response.Row=-1;output=default;
         }
-        void ReloadStarted() { }
+        void ReloadStarted()
+        {
+            // Final-shot completion is recorded before the gun begins its automatic reload.
+            // An unfinished burst must never resume from a later magazine, even after a fast reload.
+            var r=running[(int)ControlOperation.Fire];
+            if(r.Row>=0&&!r.Completed&&loadout.Operations[(int)ControlOperation.Fire].Rules[r.Row].Action=="F02")r.Row=-1;
+        }
         void ReloadFinished()=>Record(11);
         void DodgeFinished()=>Record(7);
         void JumpStarted()=>Record(57);
@@ -191,6 +200,12 @@ namespace GoGhost.Duel
             if(disposed||!input.ConditionalFrame.FireOwned||!input.ConditionalFrame.Fire||r.Row<0)return;
             string action=loadout.Operations[3].Rules[r.Row].Action;
             if(action=="F06"||r.Completed)return;
+            if(action=="F02"&&!r.Accepted)
+            {
+                // ShotFired follows the real ammo spend: capture this magazine at actual acceptance.
+                r.ShotLimit=gun.AmmoInMagazine+1;
+                r.Deadline=Time.time+r.ShotLimit*gun.FireInterval+.5f;
+            }
             AutomaticShots++;r.Shots++;acceptedAt[3,r.Row]=Time.time;acceptedFrame[3,r.Row]=Time.frameCount;Accept(3,r);
             if(action=="F02"&&r.Shots>=r.ShotLimit)
             {r.Completed=true;Record(60);}
@@ -247,9 +262,12 @@ namespace GoGhost.Duel
             grounded=movement.IsGrounded;lowHealth=low;
             initialized=true;
             events.RemoveAll(n=>Time.time>n.Context.ExpiresAt);
+            liveEvents.Clear();
+            foreach(var notice in events)liveEvents.Add(notice.Context.Occurrence);
             for(int op=0;op<5;op++)for(int row=0;row<loadout.Operations[op].Rules.Count;row++)
-                states[op,row].ConsumedEvents.RemoveWhere(id=>!events.Exists(n=>n.Context.Occurrence==id));
+                states[op,row].ConsumedEvents.RemoveWhere(expiredEvent);
         }
+        bool IsExpiredEvent(long occurrence)=>!liveEvents.Contains(occurrence);
         static bool HysteresisLow(float ratio,bool wasLow)=>wasLow?ratio<ConditionalDefaults.LowExit:ratio<=ConditionalDefaults.LowEnter;
         public ConditionalControlFrame Resolve(RawPlayerInput frame)
         {
@@ -566,7 +584,7 @@ namespace GoGhost.Duel
             }
             return (point-gun.AimOrigin).normalized;
         }
-        int AmmoFloor(ConditionalRule rule)=>rule.AmmoUse==AmmoUseOption.KeepTwoRounds?ConditionalDefaults.Reserve:0;
+        int AmmoFloor(ConditionalRule rule)=>ConditionalCatalog.UsesAmmoOption(rule.Action)&&rule.AmmoUse==AmmoUseOption.KeepTwoRounds?ConditionalDefaults.Reserve:0;
         bool Start(int op,ConditionalRule rule,Running r)
         {
             string action=rule.Action;
@@ -608,7 +626,7 @@ namespace GoGhost.Duel
                         return false;
                     }
                     r.Shots=0;
-                    r.ShotLimit=action=="F01"?1:action=="F02"?Mathf.Min(ConditionalDefaults.Burst,gun.AmmoInMagazine-AmmoFloor(rule)):int.MaxValue;
+                    r.ShotLimit=action=="F01"?1:action=="F02"?gun.AmmoInMagazine:int.MaxValue;
                     if(action!="F03")r.Deadline=Time.time+r.ShotLimit*gun.FireInterval+.5f;
                     output.FireOwned=true;output.Fire=true;return true;
                 case ControlOperation.Dodge:

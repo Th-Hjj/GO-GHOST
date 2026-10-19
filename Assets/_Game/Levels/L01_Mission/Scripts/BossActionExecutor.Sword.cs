@@ -74,6 +74,11 @@ namespace GoGhost.Duel
         }
         public void TickSwordDecision()
         {
+            swordPlanner.BeginDecision();
+            try{EvaluateSwordDecision();}finally{swordPlanner.EndDecision();}
+        }
+        void EvaluateSwordDecision()
+        {
             if(!actor.Running||!actor.IsAlive||Busy||Time.deltaTime<=0)return;
             if(!swordUnbound&&(float)actor.Health.CurrentHealth/actor.Health.MaxHealth<=p.Sword.UnboundHealth)
             {swordUnbound=true;actor.View?.Impact(actor.Position);actor.Trace("sword unbound");}
@@ -124,7 +129,7 @@ namespace GoGhost.Duel
             if(facts.Confidence<.2f)return;
             if(Ready(BossAbility.Guard)&&actor.Tactics.GuardOpportunity(actor.Position,facts,out _)
                 &&TryStart(BossAbility.Guard,facts.Position))return;
-            // Only cache an intent, not a stale route. TryStartSword builds its movement anew.
+            // Recovery retains only an intent; this decision freshly searches its movement.
             bool previewFresh=swordPreview!=BossAbility.None&&Time.time-swordPreviewedAt<.4f
                 &&Vector2.Distance(swordPreviewOrigin,actor.Position)<.25f
                 &&Vector2.Distance(swordPreviewTarget,facts.Position)<.4f&&Ready(swordPreview)&&swordPlanner.StillUseful(swordPreview);
@@ -133,6 +138,11 @@ namespace GoGhost.Duel
             if(choice!=BossAbility.None)TryStartSword(choice);
         }
         public bool TryStartSword(BossAbility ability)
+        {
+            swordPlanner.BeginDecision();
+            try{return StartSwordDecision(ability);}finally{swordPlanner.EndDecision();}
+        }
+        bool StartSwordDecision(BossAbility ability)
         {
             if(!IsSwordPhrase(ability)||p.Kind!=BossKind.Severance||!actor.Running||!actor.IsAlive||Busy
                 ||!Ready(ability)||!actor.Motor.Grounded||actor.Perception.Facts.Confidence<.2f)return false;

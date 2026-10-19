@@ -25,7 +25,166 @@ public static partial class BossEncounterSmoke
     public static void RunConditionalV2Targets()=>Start("condition-v2-targets",false);
     static ConditionalRule V2Ground(string action,GroundStateOption ground=GroundStateOption.Grounded)
         =>new ConditionalRule{Condition=51,GroundState=ground,Action=action};
+    // Current focused suite. Ammo placement is a controlled fixture; every counted shot
+    // and completion below comes from the real rifle/controller, never injected notices.
+    sealed class RuleCardsBurstProbe : IDisposable
+    {
+        readonly ConditionalController controller;
+        readonly PlayerShooting rifle;
+        public readonly System.Collections.Generic.HashSet<long> Shots=new System.Collections.Generic.HashSet<long>();
+        public readonly System.Collections.Generic.HashSet<long> Bursts=new System.Collections.Generic.HashSet<long>();
+        public int Callbacks, Reloads, AcceptedBudget=-1;
+        public bool BurstPresentAtReload;
+        public readonly System.Collections.Generic.List<float> ShotTimes=new System.Collections.Generic.List<float>();
+        public RuleCardsBurstProbe(ConditionalController controller,PlayerShooting rifle)
+        {this.controller=controller;this.rifle=rifle;rifle.ShotFired+=OnShot;rifle.ReloadStarted+=OnReload;}
+        void OnShot(Vector2 origin,Vector2 direction){Callbacks++;ShotTimes.Add(Time.time);Sample();}
+        void OnReload(){Reloads++;Sample();BurstPresentAtReload=Bursts.Count==1;}
+        public void Sample()
+        {
+            foreach(object notice in Private<IList>(controller,"events"))
+            {
+                var type=notice.GetType();int condition=(int)type.GetField("Condition").GetValue(notice);
+                var context=(ConditionalController.TriggerContext)type.GetField("Context").GetValue(notice);
+                if(condition==59)Shots.Add(context.Occurrence);if(condition==60)Bursts.Add(context.Occurrence);
+            }
+            if(AcceptedBudget<0)
+            {
+                object response=Private<IList>(controller,"running")[3];var type=response.GetType();
+                if((bool)type.GetField("Accepted").GetValue(response))
+                    AcceptedBudget=(int)type.GetField("ShotLimit").GetValue(response);
+            }
+        }
+        public void Dispose(){rifle.ShotFired-=OnShot;rifle.ReloadStarted-=OnReload;}
+    }
+    static IEnumerator RuleCardsSample(RuleCardsBurstProbe probe,float seconds,Func<bool> stop=null)
+    {
+        float end=Time.time+seconds;
+        while(Time.time<end&&(stop==null||!stop())){probe.Sample();yield return null;}
+        probe.Sample();
+    }
+    static void RuleCardsAmmo(int amount)
+        =>typeof(PlayerShooting).GetField("<AmmoInMagazine>k__BackingField",PrivateInstance).SetValue(game.Rifle,amount);
     static IEnumerator ConditionalV2()
+    {
+        Record("Rule Cards / remaining-magazine Burst: controlled ammo, stopped Boss policies and virtual input; real rifle shots, controller notices and lifecycle. No balance or physical-input claim.");
+        Check("Catalog retains 26 conditions / 20 actions / five-rule gameplay budget",ConditionalCatalog.Conditions.Length==26
+            &&ConditionalCatalog.Responses.Length==20&&ConditionalCatalog.MaxRulesTotal==5);
+        var legacy=new ConditionalRule{Condition=57,AdditionalCondition=51,AdditionalGroundState=GroundStateOption.Airborne,
+            Action="F02",AmmoUse=AmmoUseOption.KeepTwoRounds,DisplayOrder=4};
+        var normalized=legacy.Copy();
+        Check("Old F02 KeepTwo normalizes without losing complete rule data",normalized.AmmoUse==AmmoUseOption.AllowEmpty
+            &&normalized.Condition==57&&normalized.AdditionalCondition==51&&normalized.AdditionalGroundState==GroundStateOption.Airborne
+            &&normalized.DisplayOrder==4&&normalized.Action=="F02");
+        Check("Burst is one no-parameter action with exact common name",!ConditionalCatalog.UsesAmmoOption("F02")
+            &&ConditionalCatalog.Response("F02").Label=="Short Burst"&&ConditionalCatalog.RuleActionLabel(legacy)=="Short Burst");
+        Check("Other Fire actions preserve their explicit reserve options",ConditionalCatalog.UsesAmmoOption("F01")&&ConditionalCatalog.UsesAmmoOption("F03")
+            &&new ConditionalRule{Condition=57,Action="F01",AmmoUse=AmmoUseOption.KeepTwoRounds}.Copy().AmmoUse==AmmoUseOption.KeepTwoRounds);
+        Check("Fine-Tune remains directly legal",ConditionalCatalog.IsAllowed(2,new ConditionalRule{Condition=18,Action="Q06"}));
+
+        foreach(int ammunition in new[]{0,1,2,8})
+        {
+            yield return AlphaFresh(1,d=>V2Rule(d,legacy));
+            RuleCardsAmmo(ammunition);MouseAt(game.Rifle.AimOrigin+Vector2.up*12,false);
+            using(var probe=new RuleCardsBurstProbe(game.Rules,game.Rifle))
+            {
+                heldKeys=new[]{Key.Space};yield return Frames(2);heldKeys=Array.Empty<Key>();
+                yield return RuleCardsSample(probe,3.7f);
+                Check("Burst "+ammunition+": paid shots and public Shot Fired occurrences agree",game.Rifle.ShotsFired==ammunition
+                    &&game.Rules.AutomaticShots==ammunition&&probe.Callbacks==ammunition&&probe.Shots.Count==ammunition,
+                    $"rifle={game.Rifle.ShotsFired} auto={game.Rules.AutomaticShots} callbacks={probe.Callbacks} notices={probe.Shots.Count}");
+                Check("Burst "+ammunition+": budget snapshots remaining magazine; zero is rejected",ammunition==0
+                    ?probe.AcceptedBudget<0&&game.Rules.Starts==0:probe.AcceptedBudget==ammunition,$"acceptedBudget={probe.AcceptedBudget}");
+                Check("Burst "+ammunition+": completion occurs exactly once only for successful finite execution",
+                    probe.Bursts.Count==(ammunition>0?1:0),$"Burst Finished occurrences={probe.Bursts.Count}");
+                Check("Burst "+ammunition+": no continuation after automatic reload",probe.Reloads==1&&!game.Rifle.IsReloading
+                    &&game.Rifle.AmmoInMagazine==game.Rifle.MagazineSize&&game.Rifle.ShotsFired==ammunition);
+                Check("Burst "+ammunition+": last shot completion precedes automatic reload",ammunition==0?!probe.BurstPresentAtReload:probe.BurstPresentAtReload);
+                Check("Burst "+ammunition+": real firing retains original cadence",probe.ShotTimes.Zip(probe.ShotTimes.Skip(1),(a,b)=>b-a).All(t=>t+.002f>=game.Rifle.FireInterval));
+            }
+        }
+
+        // Losing a state condition cancels an already accepted response.
+        yield return AlphaFresh(1,d=>V2Rule(d,new ConditionalRule{Condition=17,Action="F02"}));
+        MouseAt(game.Rifle.AimOrigin+Vector2.up*12,true);
+        using(var probe=new RuleCardsBurstProbe(game.Rules,game.Rifle))
+        {
+            yield return RuleCardsSample(probe,.4f,()=>probe.Callbacks>=1);mouseHeld=false;
+            yield return RuleCardsSample(probe,.6f);
+            Check("Burst state cancellation stops after actual first shot and never completes",probe.Callbacks==1&&probe.Bursts.Count==0
+                &&game.Rifle.AmmoInMagazine==7&&!game.Player.GetComponent<PlayerInputReader>().ConditionalFrame.FireOwned);
+        }
+        // A higher executable Fire rule retains normal operation-local priority.
+        yield return AlphaFresh(1,d=>{V2Rule(d,new ConditionalRule{Condition=17,Action="F06"});V2Rule(d,new ConditionalRule{Condition=57,Action="F02"});});
+        MouseAt(game.Rifle.AimOrigin+Vector2.up*12,false);
+        using(var probe=new RuleCardsBurstProbe(game.Rules,game.Rifle))
+        {
+            heldKeys=new[]{Key.Space};yield return Frames(2);heldKeys=Array.Empty<Key>();
+            yield return RuleCardsSample(probe,.8f,()=>probe.Callbacks>=2);mouseHeld=true;
+            yield return RuleCardsSample(probe,.55f);
+            Check("Higher-priority Hold interrupts Burst without false completion",probe.Callbacks==2&&probe.Bursts.Count==0
+                &&Feedback(3,0).Executing&&game.Player.GetComponent<PlayerInputReader>().ConditionalFrame.FireOwned);
+            mouseHeld=false;yield return RuleCardsSample(probe,.55f);
+            Check("Interrupted consumed Burst does not resume or create a new completion",probe.Callbacks==2&&probe.Bursts.Count==0);
+        }
+        // A real fire request whose executor cannot emit a projectile must not pay a shot.
+        yield return AlphaFresh(1,d=>V2Rule(d,new ConditionalRule{Condition=17,Action="F02"}));
+        var prefab=Private<Projectile>(game.Rifle,"bulletPrefab");var rifle=game.Rifle;
+        var prefabField=typeof(PlayerShooting).GetField("bulletPrefab",PrivateInstance);prefabField.SetValue(rifle,null);
+        restoration.Add(()=>{if(rifle!=null)prefabField.SetValue(rifle,prefab);});
+        using(var probe=new RuleCardsBurstProbe(game.Rules,game.Rifle))
+        {
+            MouseAt(game.Rifle.AimOrigin+Vector2.up*12,true);yield return RuleCardsSample(probe,.4f);
+            mouseHeld=false;yield return RuleCardsSample(probe,.1f);
+            Check("Rejected projectile requests never advance Burst or create completion",game.Rifle.ShotsFired==0
+                &&game.Rules.AutomaticShots==0&&probe.Callbacks==0&&probe.Bursts.Count==0&&game.Rifle.AmmoInMagazine==8);
+            prefabField.SetValue(rifle,prefab);
+        }
+
+        // Retry and next-wave snapshots preserve normalized data and global order while
+        // constructing independent occurrence state. Direct deaths establish flow only.
+        yield return AlphaFresh(1,d=>{
+            V2Rule(d,legacy);
+            V2Rule(d,new ConditionalRule{Condition=6,AdditionalCondition=52,AdditionalDistance=EnemyDistanceOption.Far,Action="M11",MoveDirection=MoveDirectionOption.Left});
+            V2Rule(d,new ConditionalRule{Condition=61,Action="D04"});
+        });
+        string expected=V2FollowupData(game.DraftLoadout);var previous=game.Rules;
+        Check("Fight snapshot normalizes old Burst data and preserves display order",V2FollowupRuntimeData(previous)==expected
+            &&previous.RuleAt(ControlOperation.Fire,0).AmmoUse==AmmoUseOption.AllowEmpty);
+        game.DraftLoadout.Operations[3].Rules[0].AdditionalGroundState=GroundStateOption.Grounded;
+        Check("Fight snapshot is independent of subsequent draft mutation",previous.RuleAt(ControlOperation.Fire,0).AdditionalGroundState==GroundStateOption.Airborne);
+        game.DraftLoadout.Operations[3].Rules[0].AdditionalGroundState=GroundStateOption.Airborne;
+        MouseAt(game.Rifle.AimOrigin+Vector2.up*12,false);heldKeys=new[]{Key.Space};yield return Frames(2);heldKeys=Array.Empty<Key>();
+        yield return Until(()=>previous.AutomaticShots==8,2.2f);
+        Check("Lifecycle fixture executes the complete eight-shot remaining magazine",previous.AutomaticShots==8);
+        game.Player.TakeDamage(99999,null);yield return Until(()=>game.Phase==DuelPhase.Failed,1.2f);
+        game.Reconfigure();yield return Frames(2);
+        Check("Retry keeps normalized conditions/parameters/order and disposes old runtime",game.Phase==DuelPhase.Configure
+            &&V2FollowupData(game.DraftLoadout)==expected&&Private<bool>(previous,"disposed"));
+        game.StartFight();StopPolicies();yield return Frames(2);var retry=game.Rules;
+        Check("Retry starts with fresh runtime and identical full snapshot",V2FollowupEmptyRuntime(retry)&&V2FollowupRuntimeData(retry)==expected&&!ReferenceEquals(previous,retry));
+        yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);StopPolicies();yield return Frames(3);
+        Check("Retry cannot replay previous action-result events",V2FollowupEmptyRuntime(retry));
+        MouseAt(game.Rifle.AimOrigin+Vector2.up*12,false);heldKeys=new[]{Key.Space};yield return Frames(2);heldKeys=Array.Empty<Key>();
+        yield return Until(()=>retry.AutomaticShots==8,2.2f);
+        Check("Retry retains full-magazine Burst behavior",retry.AutomaticShots==8);
+        foreach(var actor in game.Bosses)actor.Health.TakeDamage(99999,game.Player.gameObject);
+        yield return Until(()=>game.Phase==DuelPhase.Configure&&game.Wave==2,1.8f);
+        Check("Next Wave preserves normalized rule content and order",game.Phase==DuelPhase.Configure&&game.Wave==2
+            &&V2FollowupData(game.DraftLoadout)==expected&&Private<bool>(retry,"disposed"));
+        game.StartFight();StopPolicies();yield return Frames(2);
+        Check("Next Wave uses a fresh empty controller and identical snapshot",V2FollowupEmptyRuntime(game.Rules)&&V2FollowupRuntimeData(game.Rules)==expected);
+        yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);StopPolicies();yield return Frames(3);
+        Check("Next Wave enters fight without replaying prior occurrences",V2FollowupEmptyRuntime(game.Rules));
+        MouseAt(game.Rifle.AimOrigin+Vector2.up*12,false);heldKeys=new[]{Key.Space};yield return Frames(2);heldKeys=Array.Empty<Key>();
+        yield return Until(()=>game.Rules.AutomaticShots==8,2.2f);
+        Check("Next Wave retains full-magazine Burst behavior",game.Rules.AutomaticShots==8);
+        game.NewGame();yield return Frames(2);Check("New Game clears rules",game.DraftLoadout.TotalRules==0);
+        game.MainMenu();yield return Frames(2);
+    }
+
+
+    static IEnumerator ConditionalV2Historical()
     {
         Record("V2 focused mechanisms: real executors and virtual input; fixture positions/policies are controlled, not balance proof.");
         Check("V2 exact selectable catalog 26 / 20 in five categories",ConditionalCatalog.Conditions.Length==26
@@ -883,7 +1042,362 @@ public static partial class BossEncounterSmoke
         }
         Check($"V2 UI {width} {step}: actual AND/direction/ammo text",labels);
     }
+    static DuelUI CardsUI()=>Object.FindAnyObjectByType<DuelUI>();
+    static TMPro.TMP_Text CardsText(Transform root,string name)=>root.GetComponentsInChildren<TMPro.TMP_Text>().First(t=>t.name==name);
+    static string CardsPreview(string name)=>ConfigButtonNamed(name).GetComponentInChildren<TMPro.TMP_Text>().text;
+    static RectTransform CardsRect(string name)=>CardsUI().GetComponentsInChildren<RectTransform>().First(r=>r.name==name);
+    static UnityEngine.UI.ScrollRect CardsScroll(bool combat)=>CardsUI().GetComponentsInChildren<UnityEngine.UI.ScrollRect>()
+        .First(s=>s.name==(combat?"BattleRuleScroll":"EquippedRules"));
+    static RectTransform[] CardsRows(UnityEngine.UI.ScrollRect scroll)=>scroll.content.Cast<Transform>().OfType<RectTransform>()
+        .Where(r=>r.GetComponentsInChildren<TMPro.TMP_Text>().Any(t=>t.name=="ConditionText")).ToArray();
+    static bool CardsInside(RectTransform outer,RectTransform inner,float padding=1)
+    {
+        var corners=new Vector3[4];inner.GetWorldCorners(corners);var bounds=outer.rect;
+        bounds.xMin-=padding;bounds.xMax+=padding;bounds.yMin-=padding;bounds.yMax+=padding;
+        return corners.All(c=>bounds.Contains(outer.InverseTransformPoint(c)));
+    }
+    static bool CardsOnScreen(RectTransform rect)
+    {var corners=new Vector3[4];rect.GetWorldCorners(corners);return corners.All(c=>c.x>=-.5f&&c.x<=Screen.width+.5f&&c.y>=-.5f&&c.y<=Screen.height+.5f);}
+    static void CardsLayout(bool combat,int count,string context)
+    {
+        Canvas.ForceUpdateCanvases();var scroll=CardsScroll(combat);var cards=CardsRows(scroll);
+        Check(context+": cards derive from actual view collection",cards.Length==count,$"cards={cards.Length} expected={count}");
+        bool fits=true,numbered=true,noOverlap=true;
+        for(int i=0;i<cards.Length;i++)
+        {
+            var card=cards[i];numbered&=CardsText(card,"RuleNumber").text==(i+1).ToString();
+            foreach(var text in card.GetComponentsInChildren<TMPro.TMP_Text>())
+            {text.ForceMeshUpdate();fits&=!text.isTextOverflowing&&!text.enableAutoSizing&&CardsInside(card,text.rectTransform);}
+            if(i+1<cards.Length)
+            {
+                var low=new Vector3[4];var next=new Vector3[4];card.GetWorldCorners(low);cards[i+1].GetWorldCorners(next);
+                noOverlap&=low[0].y+.5f>=next[1].y;
+            }
+        }
+        Check(context+": fixed fonts and complete text remain inside each card",fits);
+        Check(context+": continuous global numbers and nonoverlapping measured rows",numbered&&noOverlap);
+        Check(context+": masked vertical viewport and full content height",scroll.viewport.GetComponent<UnityEngine.UI.RectMask2D>()!=null
+            &&scroll.vertical&&!scroll.horizontal&&cards.All(c=>CardsInside(scroll.content,c,2))
+            &&scroll.content.rect.height+2>=cards.Sum(c=>c.rect.height),$"content={scroll.content.rect.height:F1} viewport={scroll.viewport.rect.height:F1}");
+        bool overflow=scroll.content.rect.height>scroll.viewport.rect.height+1;
+        Check(context+": scrollbar follows overflow only",scroll.verticalScrollbar!=null
+            &&scroll.verticalScrollbarVisibility==UnityEngine.UI.ScrollRect.ScrollbarVisibility.AutoHide
+            &&scroll.verticalScrollbar.gameObject.activeInHierarchy==overflow,$"overflow={overflow}");
+        if(!combat)
+        {
+            var preview=CardsRect("RulePreview");var add=(RectTransform)ConfigButtonNamed("AddRule").transform;
+            var start=(RectTransform)ConfigButtonNamed("StartFight").transform;
+            Check(context+": preview and bottom controls remain fixed and reachable",CardsOnScreen(preview)&&CardsOnScreen(add)&&CardsOnScreen(start)
+                &&preview.GetComponentInParent<UnityEngine.UI.ScrollRect>()==null&&add.GetComponentInParent<UnityEngine.UI.ScrollRect>()==null
+                &&start.GetComponentInParent<UnityEngine.UI.ScrollRect>()==null);
+            Check(context+": body-selector-rules relationship preserved",CardsRect("BodyPreview").position.x<CardsRect("RuleEditor").position.x
+                &&CardsRect("RuleEditor").position.x<CardsRect("RuleList").position.x);
+        }
+        else
+        {
+            float panel=CardsRect("BattleRules").rect.width;
+            Check(context+": HUD width is bounded independently of rule count",panel>=320-.1f&&panel<=410+.1f,$"width={panel:F1}");
+        }
+    }
+    static void CardsSetSample(bool combat,System.Collections.Generic.IReadOnlyList<ConditionalRule> sample)
+        =>typeof(DuelUI).GetMethod(combat?"SetRuleHudViewSample":"SetRuleSetupViewSample",PrivateInstance).Invoke(CardsUI(),new object[]{sample});
+    static System.Collections.Generic.List<ConditionalRule> CardsSample(int count,System.Collections.Generic.IReadOnlyList<ConditionalRule> source)
+    {
+        var result=new System.Collections.Generic.List<ConditionalRule>();
+        for(int i=0;i<count;i++){var rule=source[i%source.Count].Copy();rule.DisplayOrder=i;result.Add(rule);}return result;
+    }
+    static string CardsGeometry(RectTransform root)
+        =>root.rect.size+"|"+string.Join("|",root.GetComponentsInChildren<TMPro.TMP_Text>().Select(t=>{
+            t.ForceMeshUpdate();return t.name+":"+t.fontSize+":"+t.fontStyle+":"+t.rectTransform.rect.size+":"+t.rectTransform.anchoredPosition+":"+t.textInfo.lineCount;}));
+    static object CardsHudRow(ControlOperation operation,int row)
+        =>Private<IList>(CardsUI(),"ruleRows").Cast<object>().First(r=>(ControlOperation)r.GetType().GetField("Operation").GetValue(r)==operation
+            &&(int)r.GetType().GetField("Row").GetValue(r)==row);
+    static T CardsField<T>(object row,string field)=>(T)row.GetType().GetField(field).GetValue(row);
+    static void CardsHudBinding(string context)
+    {
+        var rows=Private<IList>(CardsUI(),"ruleRows").Cast<object>().ToArray();
+        var expected=game.DraftLoadout.OrderedRules();bool bound=rows.Length==expected.Count;
+        for(int i=0;i<rows.Length&&i<expected.Count;i++)
+        {
+            var row=rows[i];var op=CardsField<ControlOperation>(row,"Operation");int local=CardsField<int>(row,"Row");
+            var rule=game.Rules.RuleAt(op,local);var expression=ConditionalCatalog.Expression(rule);
+            bound&=ReferenceEquals(CardsField<ConditionalController>(row,"Controller"),game.Rules)
+                &&V2UIFields(rule)==V2UIFields(expected[i])&&CardsField<TMPro.TMP_Text>(row,"Number").text==(i+1).ToString()
+                &&CardsField<TMPro.TMP_Text>(row,"Condition").text==expression.Conditions
+                &&CardsField<TMPro.TMP_Text>(row,"Action").text==expression.Action;
+        }
+        Check(context+": global display order retains exact controller/operation/local-row binding",bound);
+    }
+    static IEnumerator CardsCapture(string name)
+    {Directory.CreateDirectory(Output);ScreenCapture.CaptureScreenshot(Output+"rule-cards-"+name+".png");yield return Frames(3);}
     static IEnumerator ConditionalV2UI()
+    {
+        Record("Rule Cards UI: actual formal scene Button callbacks, TMP geometry and Game View screenshots. View-only 10/20 samples never install extra gameplay rules. Input is virtual; no physical keyboard/mouse or balance claim.");
+        RestoreFixture();heldKeys=Array.Empty<Key>();mouseHeld=false;game.NewGame();SetAlphaGameSize(1280,720);yield return Frames(8);
+        ClickConfig("AddRule");yield return Frames(2);
+        Check("New rule keeps complete placeholder preview and blocks fight",CardsPreview("PreviewCondition")=="Select Condition"
+            &&CardsPreview("PreviewAction")=="Select Action"&&!ConfigButtonNamed("StartFight").interactable&&game.DraftLoadout.TotalRules==0);
+        ClickConfig("StartFight");yield return Frames(2);Check("Incomplete draft blocks actual Start callback",game.Phase==DuelPhase.Configure);
+        yield return V2UISelect(17);ClickConfig("ActionCategory3");yield return Frames(2);
+        Check("Primary stays visible throughout action selection",CardsPreview("PreviewCondition")=="Trigger Held"&&CardsPreview("PreviewAction")=="Select Action");
+        var burstOption=ConfigButtonNamed("Option","Short Burst");string draftBefore=V2UIFields(V2UIPending());
+        UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
+        var pointer=new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current);
+        UnityEngine.EventSystems.ExecuteEvents.Execute(burstOption.gameObject,pointer,UnityEngine.EventSystems.ExecuteEvents.pointerEnterHandler);yield return Frames(2);
+        string hoverDescription=Private<TMPro.TMP_Text>(CardsUI(),"optionDescription").text;
+        Check("Hover previews the candidate without mutating draft or equipped data",CardsPreview("PreviewAction")=="Short Burst"
+            &&V2UIFields(V2UIPending())==draftBefore&&game.DraftLoadout.TotalRules==0);
+        UnityEngine.EventSystems.ExecuteEvents.Execute(burstOption.gameObject,pointer,UnityEngine.EventSystems.ExecuteEvents.pointerExitHandler);yield return Frames(2);
+        Check("Leaving candidate restores the selected expression",CardsPreview("PreviewAction")=="Select Action"&&V2UIFields(V2UIPending())==draftBefore);
+        FocusOption("Option","Short Burst");yield return Frames(2);
+        Check("Keyboard focus and hover expose the same single description",Private<TMPro.TMP_Text>(CardsUI(),"optionDescription").text==hoverDescription
+            &&hoverDescription=="Fire the remaining magazine."&&CardsPreview("PreviewAction")=="Short Burst");
+        ClickConfig("Option","Short Burst");yield return Frames(3);
+        Check("Short Burst selection commits immediately without Ammo confirmation",game.DraftLoadout.TotalRules==1&&V2UIPending()==null
+            &&game.DraftLoadout.OrderedRules()[0].AmmoUse==AmmoUseOption.AllowEmpty&&CardsPreview("PreviewCondition")=="Trigger Held"
+            &&CardsPreview("PreviewAction")=="Short Burst"&&ConfigButtonNamed("StartFight").interactable);
+
+        ClickConfig("AddRule");yield return Frames(2);yield return V2UISelect(60);ClickConfig("AdditionalCondition");yield return Frames(2);
+        Check("Optional picker contains state conditions only",CatalogOptions().All(b=>!ConditionalCatalog.Conditions.First(c=>c.Label==OptionLabel(b)).Event));
+        yield return V2UISelect(51);Check("Additional Ground State requires explicit branch",V2UIPending().AdditionalGroundState==GroundStateOption.Unspecified
+            &&!ConfigButtonNamed("StartFight").interactable);ClickConfig("RuleParameter0");yield return Frames(2);yield return V2UIAction("D04");
+        Check("Full AND preview survives commit",CardsPreview("PreviewCondition")=="Burst Finished"&&CardsPreview("PreviewAdditional")=="Grounded"
+            &&CardsPreview("PreviewAction")=="Dodge Toward Aim");
+        ClickConfig("AddRule");yield return Frames(2);yield return V2UISelect(18);yield return V2UIAction("Q06");
+        Check("Fine-Tune standalone still commits without extra condition",game.DraftLoadout.TotalRules==3&&game.DraftLoadout.OrderedRules()[2].AdditionalCondition==0);
+        ClickConfig("AddRule");yield return Frames(2);yield return V2UISelect(6);ClickConfig("AdditionalCondition");yield return Frames(2);yield return V2UISelect(51,0);
+        ClickConfig("ActionCategory0");yield return Frames(2);ClickConfig("Option","Move Left / Right");yield return Frames(2);
+        Check("Move direction is never silently defaulted",V2UIPending().MoveDirection==MoveDirectionOption.Unspecified&&game.DraftLoadout.TotalRules==3);
+        ClickConfig("RuleParameter0");yield return Frames(2);
+        ClickConfig("AddRule");yield return Frames(2);yield return V2UISelect(11);yield return V2UIAction("J03");
+        Check("Gameplay capacity controls Add while five complete cards remain editable",game.DraftLoadout.TotalRules==5
+            &&!ConfigButtonNamed("AddRule").interactable&&ConfigButtonNamed("StartFight").interactable);
+
+        // Exercise parameter cancellation on an action which still requires explicit Ammo Use.
+        ClickConfig("Rule4Action");yield return Frames(2);yield return V2UIAction("F01",1);string[] original=V2UIRules();
+        Check("Cross-operation replacement at capacity preserves the same global row",game.DraftLoadout.TotalRules==5
+            &&game.DraftLoadout.Operations[1].Rules.Count==0&&game.DraftLoadout.Operations[3].Rules.Count==2&&game.DraftLoadout.OrderedRules()[4].Action=="F01");
+        ClickConfig("Rule4Action");yield return Frames(2);ClickConfig("RuleParameter0");yield return Frames(2);
+        ClickConfig("PreviewCondition");yield return Frames(2);yield return V2UISelect(52,2);ClickConfig("AdditionalCondition");yield return Frames(2);yield return V2UISelect(51,0);
+        Check("Condition, state and Ammo edits remain an isolated complete draft",V2UIRules().SequenceEqual(original)
+            &&V2UIPending().Condition==52&&V2UIPending().Distance==EnemyDistanceOption.Far&&V2UIPending().AdditionalGroundState==GroundStateOption.Grounded
+            &&V2UIPending().AmmoUse==AmmoUseOption.AllowEmpty);
+        ClickConfig("CancelRuleEdit");yield return Frames(2);Check("Cancel restores all parameters and complete rule",V2UIRules().SequenceEqual(original)&&V2UIPending()==null);
+        ClickConfig("Rule1Condition");yield return Frames(2);ClickConfig("PreviewAdditional");yield return Frames(2);ClickConfig("RemoveAdditionalCondition");yield return Frames(2);
+        heldKeys=new[]{Key.Escape};yield return Frames(3);heldKeys=Array.Empty<Key>();yield return Frames(3);
+        Check("Escape restores removed additional state and its selected parameter",V2UIRules().SequenceEqual(original)&&V2UIPending()==null);
+        for(int row=4;row>0;row--){ClickConfig("MoveRuleUp"+row);yield return Frames(2);}
+        Check("Global reorder changes only local priority within Fire",game.DraftLoadout.Operations[3].Rules.Select(r=>r.Action).SequenceEqual(new[]{"F01","F02"})
+            &&game.DraftLoadout.OrderedRules().Select(r=>r.DisplayOrder).SequenceEqual(Enumerable.Range(0,5)));
+        for(int row=0;row<4;row++){ClickConfig("MoveRuleDown"+row);yield return Frames(2);}
+        Check("Down restores complete global order",V2UIRules().SequenceEqual(original));
+        ClickConfig("Rule4Action");yield return Frames(2);yield return V2UIAction("J03");
+        ClickConfig("RemoveRule4");yield return Frames(2);string[] four=V2UIRules();
+        Check("Deleting a card frees gameplay budget",game.DraftLoadout.TotalRules==4&&ConfigButtonNamed("AddRule").interactable);
+        ClickConfig("AddRule");yield return Frames(2);yield return V2UISelect(52);
+        heldKeys=new[]{Key.Escape};yield return Frames(3);heldKeys=Array.Empty<Key>();yield return Frames(3);
+        Check("Cancel new rule discards incomplete branch without changing equipped cards",V2UIRules().SequenceEqual(four)&&V2UIPending()==null);
+        ClickConfig("AddRule");yield return Frames(2);yield return V2UISelect(11);yield return V2UIAction("J03");
+        var actual=game.DraftLoadout.OrderedRules().Select(r=>r.Copy()).ToList();string actualData=V2FollowupData(game.DraftLoadout);
+
+        foreach(int width in new[]{1280,1920,2560,3840})
+        {
+            SetAlphaGameSize(width,width*9/16);yield return Frames(7);
+            Check("Setup "+width+": actual requested render size",Screen.width==width&&Screen.height==width*9/16);
+            CardsLayout(false,5,"Setup "+width);TextFits("Setup "+width);yield return CardsCapture("setup-"+width);
+            ClickConfig("Rule1Action");yield return Frames(3);Check("Setup "+width+": complete draft preview stays above scrolling lists",
+                CardsPreview("PreviewCondition")=="Burst Finished"&&CardsPreview("PreviewAdditional")=="Grounded"&&CardsPreview("PreviewAction")=="Dodge Toward Aim");
+            TextFits("Setup draft "+width);yield return CardsCapture("preview-"+width);ClickConfig("CancelRuleEdit");yield return Frames(2);
+            foreach(int count in new[]{10,20})
+            {
+                CardsSetSample(false,CardsSample(count,actual));yield return Frames(4);CardsLayout(false,count,"Setup sample "+count+" / "+width);
+                var scroll=CardsScroll(false);scroll.verticalNormalizedPosition=0;yield return Frames(3);
+                var last=CardsRows(scroll).Last();Check("Setup sample "+count+" / "+width+": final card reachable",CardsInside(scroll.viewport,last));
+                yield return CardsCapture("setup-sample-"+count+"-"+width);
+                scroll.verticalNormalizedPosition=1;UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);yield return Frames(2);
+                var lastButton=last.GetComponentsInChildren<UnityEngine.UI.Button>().First(b=>b.name.EndsWith("Action"));
+                UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(lastButton.gameObject);yield return Frames(3);
+                Check("Setup sample "+count+" / "+width+": keyboard focus brings target into viewport",CardsInside(scroll.viewport,(RectTransform)lastButton.transform));
+                Check("Setup sample "+count+" / "+width+": samples never modify gameplay budget/loadout",V2FollowupData(game.DraftLoadout)==actualData&&game.DraftLoadout.TotalRules==5);
+                CardsSetSample(false,null);yield return Frames(3);
+            }
+        }
+        CardsSetSample(false,CardsSample(20,actual));yield return Frames(3);CardsScroll(false).verticalNormalizedPosition=.42f;
+        UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);SetAlphaGameSize(1600,1000);yield return Frames(7);
+        CardsLayout(false,20,"Setup live aspect resize 1600x1000");
+        Check("Setup live resize preserves reasonable scroll position",Mathf.Abs(CardsScroll(false).verticalNormalizedPosition-.42f)<.06f);
+        yield return CardsCapture("setup-resize-1600x1000");CardsSetSample(false,null);yield return Frames(3);
+
+        SetAlphaGameSize(1920,1080);yield return Frames(6);ClickConfig("StartFight");yield return Frames(3);
+        Check("Formal Start button opens stationary preparation with copied rules",game.Phase==DuelPhase.Prepare&&V2FollowupRuntimeData(game.Rules)==actualData);
+        StopPolicies();yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);yield return Frames(3);CardsHudBinding("Actual combat");
+        MouseAt(game.Bosses[0].Position,false);yield return Until(()=>Feedback(2).Executing,.5f);yield return Frames(3);
+        var aimRow=CardsHudRow(ControlOperation.Aim,0);
+        Check("Actual Aim ownership binds the third global card to Arms",Feedback(2).Executing&&CardsField<TMPro.TMP_Text>(aimRow,"Number").text=="3"
+            &&CardsField<TMPro.TMP_Text>(aimRow,"Action").color==NeuralPalette.Operation(ControlOperation.Aim));
+        var fireRow=CardsHudRow(ControlOperation.Fire,0);var fireRoot=CardsField<RectTransform>(fireRow,"Root");string geometry=CardsGeometry(fireRoot);
+        float beforeScroll=CardsScroll(true).verticalNormalizedPosition;mouseHeld=true;yield return Until(()=>Feedback(3).Executing,.5f);yield return Frames(2);
+        var feedback=Feedback(3).Visual;
+        Check("Actual full-rule match and accepted fire use distinct group/action shapes",feedback.Matched&&feedback.Executing
+            &&CardsField<TMPro.TMP_Text>(fireRow,"Action").color==NeuralPalette.Operation(ControlOperation.Fire)
+            &&CardsField<UnityEngine.UI.Image>(fireRow,"ConditionLine").color.a>0
+            &&CardsField<UnityEngine.UI.Image[]>(fireRow,"Border").Any(b=>b.color.a>0));
+        yield return CardsCapture("combat-executing-1920");mouseHeld=false;
+        yield return Until(()=>!Feedback(3).Executing&&Feedback(3).Visual.Afterglow>0,.4f);yield return Frames(1);
+        Check("Execution release leaves edge afterglow with neutral action text",!Feedback(3).Executing&&Feedback(3).Visual.Afterglow>0
+            &&CardsField<TMPro.TMP_Text>(fireRow,"Action").color==NeuralPalette.Primary
+            &&CardsField<UnityEngine.UI.Image[]>(fireRow,"Border").Any(b=>b.color.a>0));
+        Check("Feedback never changes type/layout or scroll/order",CardsGeometry(fireRoot)==geometry
+            &&Mathf.Abs(CardsScroll(true).verticalNormalizedPosition-beforeScroll)<.01f&&V2FollowupData(game.DraftLoadout)==actualData);
+        yield return CardsCapture("combat-afterglow-1920");
+
+        foreach(int width in new[]{1280,1920,2560,3840})
+        {
+            SetAlphaGameSize(width,width*9/16);yield return Frames(7);CardsLayout(true,5,"Combat "+width);TextFits("Combat "+width);CardsHudBinding("Combat "+width);
+            Check("Combat "+width+": actual requested render size",Screen.width==width&&Screen.height==width*9/16);
+            yield return CardsCapture("combat-"+width);
+            foreach(int count in new[]{10,20})
+            {
+                CardsSetSample(true,CardsSample(count,actual));yield return Frames(4);CardsLayout(true,count,"HUD sample "+count+" / "+width);
+                var scroll=CardsScroll(true);scroll.verticalNormalizedPosition=0;yield return Frames(3);
+                Check("HUD sample "+count+" / "+width+": final card reachable",CardsInside(scroll.viewport,CardsRows(scroll).Last()));
+                Check("HUD sample "+count+" / "+width+": display samples leave the real snapshot untouched",V2FollowupRuntimeData(game.Rules)==actualData);
+                yield return CardsCapture("combat-sample-"+count+"-"+width);CardsSetSample(true,null);yield return Frames(3);
+            }
+        }
+        CardsSetSample(true,CardsSample(20,actual));yield return Frames(3);CardsScroll(true).verticalNormalizedPosition=.42f;
+        SetAlphaGameSize(1600,1000);yield return Frames(7);CardsLayout(true,20,"HUD live aspect resize 1600x1000");
+        Check("HUD live resize preserves reasonable scroll position",Mathf.Abs(CardsScroll(true).verticalNormalizedPosition-.42f)<.06f);
+        yield return CardsCapture("combat-resize-1600x1000");
+        var input=game.Player.GetComponent<PlayerInputReader>();var battleScroll=CardsScroll(true);battleScroll.verticalNormalizedPosition=1;
+        mousePosition=battleScroll.viewport.TransformPoint(Vector3.zero);mouseHeld=false;yield return Frames(3);int beforeShots=game.Rifle.ShotsFired;
+        mouseHeld=true;
+        for(int i=0;i<8;i++){InputSystem.QueueDeltaStateEvent(mouse.scroll,new Vector2(0,-120));yield return Frames(1);}
+        // Editor coroutine observations may precede Dynamic input and UI LateUpdate.
+        yield return Frames(3);
+        Vector2 expectedCursor=Camera.main.ScreenToWorldPoint(mousePosition);
+        Check("Wheel over HUD scrolls while raw combat aim/trigger and real shooting remain active",battleScroll.verticalNormalizedPosition<.99f
+            &&input.RawInput.Fire&&Vector2.Distance(input.RawInput.Cursor,expectedCursor)<.02f&&game.Rifle.ShotsFired>beforeShots,
+            $"scroll={battleScroll.verticalNormalizedPosition:F3} shots={game.Rifle.ShotsFired-beforeShots} rawFire={input.RawInput.Fire}");
+        mouseHeld=false;CardsSetSample(true,null);yield return Frames(3);CardsHudBinding("After presentation samples");
+        game.Player.TakeDamage(99999,null);yield return Until(()=>game.Phase==DuelPhase.Failed,1.2f);game.Reconfigure();yield return Frames(3);
+        Check("Actual defeat/reconfigure retains complete content and global order",game.Phase==DuelPhase.Configure&&V2FollowupData(game.DraftLoadout)==actualData);
+        game.NewGame();yield return Frames(3);Check("New Game returns empty valid manual setup",game.DraftLoadout.TotalRules==0&&ConfigButtonNamed("StartFight").interactable);
+        game.MainMenu();yield return Frames(3);
+    }
+
+
+    public static void RunRuleCardsFollowup()=>Start("rule-cards-followup",false);
+    public static void RunRuleMatchGlow()=>Start("rule-match-glow",false);
+    static void CheckRuleMatchGlow(string context)
+    {
+        foreach(var row in Private<IList>(CardsUI(),"ruleRows"))
+        {
+            var op=CardsField<ControlOperation>(row,"Operation");int index=CardsField<int>(row,"Row");
+            bool matched=game.Rules.Feedback(op,index).Visual.Matched;
+            var color=NeuralPalette.Operation(op);
+            var borders=CardsField<UnityEngine.UI.Image[]>(row,"Border");
+            bool uniform=borders.Length==12;
+            float scale=borders[0].canvas.scaleFactor,stroke=Mathf.Max(1,Mathf.Round(scale))/scale;
+            for(int i=0;i<borders.Length;i++)
+            {
+                uniform&=borders[i].color==borders[i/4*4].color
+                    &&Mathf.Abs((i%4<2?borders[i].rectTransform.rect.height:borders[i].rectTransform.rect.width)-stroke)<.001f;
+                var corners=new Vector3[4];borders[i].rectTransform.GetWorldCorners(corners);
+                foreach(var corner in corners)
+                {
+                    var pixel=RectTransformUtility.WorldToScreenPoint(null,corner);
+                    uniform&=Mathf.Abs(pixel.x-Mathf.Round(pixel.x))<.01f&&Mathf.Abs(pixel.y-Mathf.Round(pixel.y))<.01f;
+                }
+            }
+            bool text=new[]{"Condition","Action","Arrow"}.All(name=>CardsField<TMPro.TMP_Text>(row,name).color==(matched?color:NeuralPalette.Primary));
+            bool glow=CardsField<Material[]>(row,"Signals").All(m=>Mathf.Approximately(m.GetColor(TMPro.ShaderUtilities.ID_GlowColor).a,matched?.28f:0));
+            Check(context+": "+op+"/"+index+" whole card follows complete match",text&&glow&&uniform&&(borders[0].color.a>0)==matched);
+        }
+    }
+    static IEnumerator RuleMatchGlow()
+    {
+        Record("Focused HUD match feedback, real landing, AND, priority rejection and four rendered sizes. Virtual input; no balance claim.");
+        yield return AlphaFresh(1,d=>{
+            V2Rule(d,V2Ground("F06"));V2Rule(d,V2Ground("F06"));
+            V2Rule(d,new ConditionalRule{Condition=51,GroundState=GroundStateOption.Grounded,AdditionalCondition=17,Action="Q02"});
+            V2Rule(d,new ConditionalRule{Condition=3,Action="Q01"});
+            V2Rule(d,new ConditionalRule{Condition=51,GroundState=GroundStateOption.Grounded,AdditionalCondition=4,Action="M10"});
+        });
+        yield return Frames(4);
+        Check("Lower-priority matched Hold Fire glows without execution",Feedback(3,1).Visual.Matched&&!Feedback(3,1).Executing);
+        Check("AND stays unlit with only Grounded true",!Feedback(2).Visual.Matched);
+        CheckRuleMatchGlow("Initial");
+        mouseHeld=true;yield return Frames(5);
+        Check("Both Grounded and Trigger Held light the AND card",Feedback(2).Visual.Matched);
+        foreach(int width in new[]{1280,1920,2560,3840})
+        {
+            SetAlphaGameSize(width,width*9/16);yield return Frames(8);
+            CheckRuleMatchGlow("Rendered "+width);TextFits("Match glow "+width);
+            yield return CardsCapture("match-glow-"+width);
+        }
+        mouseHeld=false;SetAlphaGameSize(1920,1080);yield return Frames(6);
+        Check("Releasing additional state extinguishes the whole card",!Feedback(2).Visual.Matched);CheckRuleMatchGlow("AND released");
+        heldKeys=new[]{Key.Space};yield return Frames(3);heldKeys=Array.Empty<Key>();
+        yield return Until(()=>!game.Player.GetComponent<PlayerMovement>().IsGrounded,1);
+        yield return Until(()=>Feedback(2,1).Visual.Matched,2.5f);yield return Frames(1);
+        Check("Real landing lights Landed card",Feedback(2,1).Visual.Matched);CheckRuleMatchGlow("Landed");
+        checkingPause=true;game.SetPause(true);yield return Frames(3);
+        Check("Pause freezes complete-match signal",Feedback(2,1).Visual.Matched);
+        yield return CardsCapture("match-glow-landed-1920");game.SetPause(false);checkingPause=false;
+        yield return Seconds(.35f);yield return Frames(2);
+        Check("Expired landing extinguishes without execution afterglow",!Feedback(2,1).Visual.Matched);CheckRuleMatchGlow("Expired");
+        for(int wave=1;wave<=3;wave++)
+        {
+            yield return AlphaFresh(wave,d=>V2Rule(d,V2Ground("Q02")),false);
+            MouseAt(game.Bosses[0].Position,true);yield return Seconds(.65f);yield return Frames(2);
+            Check("Short W"+wave+" normal combat and real shots",game.Phase==DuelPhase.Fight&&game.Rifle.ShotsFired>0);
+            CheckRuleMatchGlow("W"+wave);mouseHeld=false;game.MainMenu();yield return Frames(3);
+        }
+        Check("Menu clears rule cards and runtime bindings",Private<IList>(CardsUI(),"ruleRows").Count==0&&game.Rules==null);
+    }
+    static IEnumerator RuleCardsFollowup()
+    {
+        Record("Targeted followup for two UI sampling assertions, plus short normal W1/W2/W3. Virtual input, actual executors; no balance claim.");
+        RestoreFixture();mouseHeld=false;heldKeys=Array.Empty<Key>();game.ConfigurePlaytestWave(1);
+        V2Rule(game.DraftLoadout,new ConditionalRule{Condition=17,Action="F02"});
+        V2Rule(game.DraftLoadout,new ConditionalRule{Condition=60,AdditionalCondition=51,AdditionalGroundState=GroundStateOption.Grounded,Action="D04"});
+        V2Rule(game.DraftLoadout,new ConditionalRule{Condition=18,Action="Q06"});
+        V2Rule(game.DraftLoadout,new ConditionalRule{Condition=6,Action="M11",MoveDirection=MoveDirectionOption.Left});
+        V2Rule(game.DraftLoadout,new ConditionalRule{Condition=11,Action="J03"});
+        game.StartFight();StopPolicies();SetAlphaGameSize(1920,1080);yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);yield return Frames(5);
+        MouseAt(game.Bosses[0].Position,false);yield return Until(()=>Feedback(2).Executing,.6f);yield return Frames(3);
+        var aim=CardsHudRow(ControlOperation.Aim,0);var action=CardsField<TMPro.TMP_Text>(aim,"Action");
+        var input=game.Player.GetComponent<PlayerInputReader>();
+        Record($"Aim diagnostic executing={Feedback(2).Executing} matched={Feedback(2).Visual.Matched} number={CardsField<TMPro.TMP_Text>(aim,"Number").text} color={action.color} expected={NeuralPalette.Operation(ControlOperation.Aim)} raw={input.RawInput.Cursor} screen={input.AimScreenPosition} requested={mousePosition} boss={game.Bosses[0].Position}");
+        Check("Real Fine-Tune ownership after a rendered frame binds global card 3 to Arms",Feedback(2).Executing
+            &&CardsField<TMPro.TMP_Text>(aim,"Number").text=="3"&&action.color==NeuralPalette.Operation(ControlOperation.Aim));
+        CardsHudBinding("Followup real controller");yield return CardsCapture("combat-aim-confirmed-1920");
+        var actual=game.DraftLoadout.OrderedRules().Select(r=>r.Copy()).ToList();CardsSetSample(true,CardsSample(20,actual));
+        SetAlphaGameSize(1600,1000);yield return Frames(8);var scroll=CardsScroll(true);scroll.verticalNormalizedPosition=1;
+        mousePosition=scroll.viewport.TransformPoint(Vector3.zero);yield return Frames(6);int before=game.Rifle.ShotsFired;mouseHeld=true;
+        for(int i=0;i<8;i++){InputSystem.QueueDeltaStateEvent(mouse.scroll,new Vector2(0,-120));yield return Frames(1);}
+        yield return Frames(3);
+        var camera=Private<Camera>(input,"aimCamera");if(camera==null)camera=Camera.main;
+        Vector2 expected=camera.ScreenToWorldPoint(mousePosition),consumed=camera.ScreenToWorldPoint(input.AimScreenPosition);
+        Record($"Wheel diagnostic scroll={scroll.verticalNormalizedPosition} shots={game.Rifle.ShotsFired-before} fire={input.RawInput.Fire} raw={input.RawInput.Cursor} expected={expected} consumed={consumed} screen={input.AimScreenPosition} requested={mousePosition} camera={camera.name} main={Camera.main.name} rect={camera.rect} size={Screen.width}x{Screen.height}");
+        Check("Wheel scroll retains actual shots and raw trigger",scroll.verticalNormalizedPosition<.99f&&game.Rifle.ShotsFired>before&&input.RawInput.Fire);
+        Check("Wheel scroll retains original aim-screen to world conversion",Vector2.Distance(input.RawInput.Cursor,consumed)<.02f
+            &&Vector2.Distance(input.AimScreenPosition,mousePosition)<1f);
+        mouseHeld=false;CardsSetSample(true,null);yield return Frames(3);
+        for(int wave=1;wave<=3;wave++)
+        {
+            yield return AlphaFresh(wave,d=>{foreach(var rule in actual)V2Rule(d,rule);},false);
+            SetAlphaGameSize(1920,1080);yield return Frames(6);heldKeys=new[]{Key.D};MouseAt(game.Bosses[0].Position,true);
+            yield return Seconds(.65f);heldKeys=Array.Empty<Key>();MouseAt(game.Bosses[0].Position,true);yield return Seconds(.3f);
+            Check("Short W"+wave+": normal combat, actual rifle, five bound cards",game.Phase==DuelPhase.Fight&&game.Rifle.ShotsFired>0&&Private<IList>(CardsUI(),"ruleRows").Count==5);
+            CardsHudBinding("Short W"+wave);yield return CardsCapture("normal-w"+wave+"-1920");
+            mouseHeld=false;yield return Seconds(.25f);game.MainMenu();yield return Frames(3);
+        }
+        Check("Short combat cleanup removes actors and projectiles",Object.FindObjectsByType<BossAgent>(FindObjectsSortMode.None).Length==0&&Projectile.Active.Count==0);
+    }
+
+    static IEnumerator ConditionalV2UIHistorical()
     {
         Record("V2 UI: real configuration Button callbacks and actual 1280/1920 Game View renders; controlled policies/defeat prove UI and lifecycle, not balance.");
         RestoreFixture();heldKeys=Array.Empty<Key>();mouseHeld=false;game.NewGame();SetAlphaGameSize(1280,720);yield return Frames(8);

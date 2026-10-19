@@ -32,6 +32,7 @@ namespace GoGhost.Duel
             public LineRenderer Line;
             public SpriteRenderer[] Sprites;
             public float Born, Life, Alpha;
+            public float ShrinkWidth;
             public bool Echo;
         }
 
@@ -75,6 +76,7 @@ namespace GoGhost.Duel
         {
             foreach (var line in tells) if (line != null) line.enabled = false;
             for (int i = flashes.Count - 1; i >= 0; i--) RemoveFlash(i);
+            ClearGunBullets();
         }
         void LateUpdate()
         {
@@ -89,7 +91,7 @@ namespace GoGhost.Duel
                 targetAlpha < alpha ? actor.Profile.CamoFade : actor.Profile.RevealFade));
             transform.position = actor.Position;
             transform.localScale = new Vector3(actor.Facing >= 0 ? 1 : -1, 1, 1);
-            ApplyPose(BuildPose()); UpdateTells(); UpdateFlashes();
+            ApplyPose(BuildPose()); UpdateTells(); UpdateFlashes(); UpdateGunBullets();
             if (!defeated && actor.Running && (actor.Motor.DashActive||actor.Actions.FlankTravelling) && clock >= nextEcho)
             { nextEcho = clock + .055f; CaptureEcho(); }
         }
@@ -296,6 +298,7 @@ namespace GoGhost.Duel
             foreach(var line in tells)if(line!=null)line.enabled=false;
             if(defeated||!actor.Running)return;
             var action=actor.Actions;
+            if(visualKind==BossKind.Refraction){GunnerTells(action);return;}
             if(BossActionExecutor.IsSwordPhrase(action.Ability)){SwordTells(action);return;}
             if(action.PendingSwordThreats)SwordTells(action);
             if(action.Ability==BossAbility.FlankLeap&&action.Phase!=BossActionPhase.Recovery)
@@ -333,16 +336,6 @@ namespace GoGhost.Duel
                 bool active=action.Phase==BossActionPhase.Active,locked=action.Phase==BossActionPhase.Locked;
                 SetLine(tells[0],ground+Vector2.left*.35f,ground+Vector2.right*.35f,SwordTellWidth(active,locked),SwordTellColor(active,locked));
             }
-            else if(action.Ability==BossAbility.Sweep && action.Phase!=BossActionPhase.Active && action.Phase!=BossActionPhase.Recovery)
-            {
-                for(int i=0;i<2;i++)
-                {
-                    if(tells[i]==null)tells[i]=NewLine("SweepEdge",false,2);
-                    SetLine(tells[i],action.Origin,i==0?action.SweepFrom:action.SweepTo,.014f,NeuralPalette.Alpha(bodyColor,action.Phase==BossActionPhase.Locked?.35f:.16f));
-                }
-                if(tells[2]==null)tells[2]=NewLine("SweepBand",false,2);
-                SetLine(tells[2],action.SweepFrom,action.SweepTo,.012f,NeuralPalette.Alpha(bodyColor,.13f));
-            }
             else
             {
                 int slot=0;
@@ -373,13 +366,19 @@ namespace GoGhost.Duel
                 line.startColor=line.endColor=SwordTellColor(false,true);
             }
         }
-        void AddFlash(LineRenderer line,float life)
+        void AddFlash(LineRenderer line,float life,bool shrink=false)
         {
             while(flashes.Count>=28)RemoveFlash(0);
-            flashes.Add(new Flash{Root=line.gameObject,Line=line,Born=clock,Life=life,Alpha=line.startColor.a});
+            flashes.Add(new Flash{Root=line.gameObject,Line=line,Born=clock,Life=life,Alpha=line.startColor.a,ShrinkWidth=shrink?line.startWidth:0});
         }
         public void Beam(Vector2 from,Vector2 to)
-        {var line=NewLine("Beam",true,2);SetLine(line,from,to,actor==null?.14f:actor.Profile.BeamRadius*2,bodyColor);AddFlash(line,.09f);shotAt=clock;}
+        {
+            float width=actor==null?.14f:actor.Profile.BeamRadius*2;
+            var halo=NewLine("BeamHalo",true,2);
+            SetLine(halo,from,to,width*2.1f,NeuralPalette.Alpha(bodyColor,.45f));AddFlash(halo,.09f,true);
+            var core=NewLine("Beam",true,2);core.sortingOrder=26;
+            SetLine(core,from,to,width,GunCoreColor);AddFlash(core,.09f,true);shotAt=clock;
+        }
         public void Muzzle(Vector2 at,Vector2 direction)
         {
             shotAt=clock;lastMuzzleOrigin=at;lastMuzzleDirection=direction;
@@ -449,6 +448,7 @@ namespace GoGhost.Duel
                 if(f.Root==null||age>=f.Life){RemoveFlash(i);continue;}
                 float a=f.Alpha*(1-age/f.Life);
                 if(f.Line!=null){Color color=f.Line.startColor;color.a=a;f.Line.startColor=f.Line.endColor=color;}
+                if(f.Line!=null&&f.ShrinkWidth>0)f.Line.startWidth=f.Line.endWidth=f.ShrinkWidth*Mathf.Lerp(1,.15f,age/f.Life);
                 if(f.Sprites!=null)foreach(var sprite in f.Sprites){Color color=sprite.color;color.a=a;sprite.color=color;}
             }
         }

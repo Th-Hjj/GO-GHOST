@@ -63,7 +63,7 @@ namespace GoGhost.Duel
         bool jumpAirborne,slashStarted,slashFinished;
         float jumpDeadline,slashAt;
         float phaseAt,phaseUntil,activeStarts,activeEnds,reloadUntil,nextShot,sweepStart,sweepEnd,lastCamoEnded=-100,returnWindowUntil;
-        int shotsRemaining,shotIndex,hitsAtStart;
+        int shotsRemaining,shotIndex,hitsAtStart,platformActiveBefore;
         bool hitInWindow,comboTarget,hasReturned,bulletLocked;
         float burstStepX;
         bool burstStep;
@@ -126,13 +126,14 @@ namespace GoGhost.Duel
             if(ability==BossAbility.DrawDash&&!actor.Tactics.LegalAt(ability,actor.Position,actor.Perception.Facts,out _))return false;
             if(IsHigh(ability)&&actor.Coordinator!=null&&!actor.Coordinator.TryReserve(actor,ability,cooperative))return false;
             Ability=ability;settings=p.Settings(ability);AttackId++;Started[(int)ability]++;
+            platformActiveBefore=Activated[(int)ability];
             hitsAtStart=ConnectedHits;
             targetPoint=hypothesis;comboTarget=cooperative;RhythmIndex=0;hasReturned=false;bulletLocked=false;Guarded=0;InterruptedCurrent=false;
             returnWindowUntil=-1;
             dropBodyWaitUntil=0;
-            StaggeredBurst=ability==BossAbility.Burst && Started[(int)BossAbility.Burst]%2==0
+            StaggeredBurst=!actor.IsTrainingEnemy && ability==BossAbility.Burst && Started[(int)BossAbility.Burst]%2==0
                 && (actor.Coordinator==null||actor.Coordinator.Phase==DuoPhase.Idle);
-            burstStep=ability==BossAbility.Burst&&actor.Tactics.TryBurstStep(out burstStepX);
+            burstStep=!actor.IsTrainingEnemy&&ability==BossAbility.Burst&&actor.Tactics.TryBurstStep(out burstStepX);
             readyAt[(int)ability]=Time.time+settings.Cooldown;
             Aim=(hypothesis-actor.Position).normalized;if(Aim.sqrMagnitude<.1f)Aim=Vector2.right*actor.Facing;
             actor.Face(Aim);SetPhase(BossActionPhase.Prepare,ability==BossAbility.Burst?settings.Prepare-p.BurstShotLock:settings.Prepare);
@@ -223,9 +224,14 @@ namespace GoGhost.Duel
                 }
                 else if(Ability==BossAbility.Camo)
                 {
-                    if(actor.Velocity.sqrMagnitude>.1f)camoMovingSeconds+=Time.deltaTime;
-                    if(actor.Tactics.CamoRouteInvalid || Time.time>=phaseUntil || camoMovingSeconds>=p.CamoMinimumMove
-                        && Vector2.Distance(actor.Position,dashStart)>.4f && actor.Motor.RouteCompleted)Recover();
+                    if(actor.Tactics.PlatformBlinkActive)
+                    {if(actor.Tactics.TickPlatformBlink(Time.time-phaseAt))Recover();}
+                    else
+                    {
+                        if(actor.Velocity.sqrMagnitude>.1f)camoMovingSeconds+=Time.deltaTime;
+                        if(actor.Tactics.CamoRouteInvalid || Time.time>=phaseUntil || camoMovingSeconds>=p.CamoMinimumMove
+                            && Vector2.Distance(actor.Position,dashStart)>.4f && actor.Motor.RouteCompleted)Recover();
+                    }
                 }
                 else if(Ability==BossAbility.Guard)
                 {
@@ -665,6 +671,7 @@ namespace GoGhost.Duel
         { if(Phase==BossActionPhase.Prepare){actor.Trace("cancel "+Ability);actor.Sounds?.StopAttack(actor.ActorId,AttackId);Recover();} }
         void Finish()
         {
+            actor.Tactics.PlatformAttackFinished(Ability, !InterruptedCurrent && Activated[(int)Ability] > platformActiveBefore);
             if(RecoveryStepping){actor.Motor.Brake();RecoveryStepping=false;}
             if(UsesBladeArc||Ability==BossAbility.DrawDash||Ability==BossAbility.ReturnCut||Ability==BossAbility.DropCut)
                 ConsecutiveMeleeMisses=ConnectedHits>hitsAtStart?0:ConsecutiveMeleeMisses+1;
@@ -674,6 +681,7 @@ namespace GoGhost.Duel
         }
         public void StopCombat()
         {
+            actor?.Tactics?.CancelPlatformPressure();
             StopSword();
             if(RecoveryStepping){actor.Motor.Brake();RecoveryStepping=false;}
             if(guardZone!=null)guardZone.enabled=false;reloadUntil=0;PublicThreats.Clear();jumpPlan=null;

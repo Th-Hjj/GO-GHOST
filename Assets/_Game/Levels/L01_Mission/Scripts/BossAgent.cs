@@ -4,7 +4,7 @@ using UnityEngine;
 namespace GoGhost.Duel
 {
     [RequireComponent(typeof(Enemy),typeof(BossMotor2D),typeof(BossActionExecutor))]
-    public sealed class BossAgent : MonoBehaviour, IProjectileReceiver
+    public sealed partial class BossAgent : MonoBehaviour, IProjectileReceiver
     {
         [SerializeField] BossProfile profile;
         [SerializeField] Projectile projectile;
@@ -56,6 +56,7 @@ namespace GoGhost.Duel
         { Running=false;Actions?.StopCombat();Motor?.SetCombatEnabled(false);Health?.StopCombat();Sounds?.StopActor(ActorId);View?.ClearTells(); }
         void OnDestroy()
         {
+            if (IsTrainingEnemy && profile != null) Destroy(profile);
             Perception?.Dispose();
             if(Health!=null){Health.OnDied-=OnDied;Health.OnDamaged-=OnDamaged;}
         }
@@ -89,7 +90,7 @@ namespace GoGhost.Duel
                 if(facts.Confidence>.1f)Face(facts.Position-Position);
                 else if(Mathf.Abs(Velocity.x)>.1f)Face(Velocity);
             }
-            Tactics.Tick();
+            if (IsTrainingEnemy) TickTraining(); else Tactics.Tick();
             bool grounded=Motor.Grounded;
             if(grounded&&!wasGrounded)
             {View?.Landing();Sounds?.Play(Sfx.Land,ActorId);PublishCue(.12f);}

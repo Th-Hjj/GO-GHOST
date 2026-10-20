@@ -55,7 +55,7 @@ namespace GoGhost.Duel
         void SetColors()
         {
             bool gunner = visualKind == BossKind.Refraction;
-            bodyColor = gunner ? NeuralPalette.Refraction : NeuralPalette.Severance;
+            bodyColor = actor != null && actor.IsTrainingEnemy ? NeuralPalette.Secondary : gunner ? NeuralPalette.Refraction : NeuralPalette.Severance;
             weaponColor = NeuralPalette.Primary;
             // Reuse the existing empty sword grip slot; keep it under the same camo/pose alpha path.
             if(!gunner&&parts[(int)Part.Sheath]!=null&&parts[(int)Part.Weapon]!=null)

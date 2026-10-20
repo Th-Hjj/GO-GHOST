@@ -287,7 +287,15 @@ namespace GoGhost.Duel
             if (!TrySupport(center, size, out _)) return false;
             Physics2D.OverlapBox(center + Vector2.up * .02f, size - Vector2.one * .055f, 0, GroundFilter(), standingHits);
             foreach (var collider in standingHits)
-                if (collider != null && !collider.isTrigger) return false;
+            {
+                if (collider == null || collider.isTrigger) continue;
+                // One-way undersides do not block a body already supported below their surface.
+                // W1 tiers are body-height apart, so a legal standing body can overlap the tier above.
+                if (OneWay(collider, out var effector) && Vector2.Dot(effector.transform.up, Vector2.up) > .999f
+                    && Mathf.Abs(effector.rotationalOffset) < .01f
+                    && center.y - size.y * .5f < collider.bounds.max.y - .08f) continue;
+                return false;
+            }
             return true;
         }
         public bool TrySupport(Vector2 center, Vector2 size, out Collider2D support)
@@ -609,7 +617,7 @@ namespace GoGhost.Duel
         {
             if (step == null || step.Support == null || !step.Support.enabled || !step.Support.gameObject.activeInHierarchy) return false;
             if (step.Kind == TravelKind.Walk) return WalkClear(motor.Position,step.End,motor.Size);
-            if (step.Kind == TravelKind.Jump) return Simulate(motor.Position,step.End,motor.Profile,motor.Size,true,step.Support,out _);
+            if (step.Kind == TravelKind.Jump) return Simulate(motor.Position,step.End,motor.TraversalProfile,motor.Size,true,step.Support,out _);
             if (!TrySupport(motor.Position,motor.Size,out var source)) return false;
             return SimulateDrop(motor.Position,step.Launch,step.End,motor.Profile,motor.Size,source,step.Support,out _);
         }

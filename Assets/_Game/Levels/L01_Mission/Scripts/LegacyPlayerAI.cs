@@ -91,6 +91,10 @@ public sealed class LegacyPlayerAI
     {
         this.targets = targets;
         navigation = targets.Count > 0 ? targets[0].Navigation : null;
+        // Threat prediction follows the active room, including rooms away from world origin.
+        // The formal arena retains its existing -15 / 15 physical boundaries.
+        if (navigation != null)
+        { leftEdge = navigation.ArenaBounds.min.x; rightEdge = navigation.ArenaBounds.max.x; }
     }
 
     private LegacyPlayerAI(PlayerHealth player, Collider2D[] platforms)

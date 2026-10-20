@@ -408,7 +408,7 @@ namespace GoGhost.Duel
             float buttonWidth=(w-12)/2;
             var add=ConfigButton("AddRule","+ Add Rule",ruleList,new Vector2(-(buttonWidth+12)/2,-h/2+28),new Vector2(buttonWidth,48),AddRule);
             add.interactable=game.DraftLoadout.TotalRules<ConditionalCatalog.MaxRulesTotal&&pendingRule==null;
-            var start=ConfigButton("StartFight","Start Fight",ruleList,new Vector2((buttonWidth+12)/2,-h/2+28),new Vector2(buttonWidth,48),game.StartFight);
+            var start=ConfigButton("StartFight",game.TrainingPending?"Enter Test Room":"Start Fight",ruleList,new Vector2((buttonWidth+12)/2,-h/2+28),new Vector2(buttonWidth,48),game.StartConfiguredEncounter);
             start.GetComponent<DuelButtonOutline>().Primary=true;start.interactable=ConfigurationReady;
 #if UNITY_EDITOR
             if(ruleSetupViewSample!=null)

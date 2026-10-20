@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 
 namespace GoGhost.Duel
 {
-    public enum DuelPhase { Menu, Configure, Prepare, Fight, Between, Failed, Complete }
+    public enum DuelPhase { Menu, Configure, Prepare, Fight, Between, Failed, Complete, Training }
 
     // Retained three-wave shell. The legacy components own every physical action and hit.
     public sealed partial class DuelGame : MonoBehaviour
@@ -39,6 +39,7 @@ namespace GoGhost.Duel
         public ConditionalLoadout DraftLoadout {get;private set;}=new ConditionalLoadout();
         public ConditionalController Rules {get;private set;}
         public Bounds ArenaBounds => arenaBounds;
+        public bool TrainingPending => FirstConfiguration && Wave == 1;
         public bool LegsAI => lockedLegs;
         public bool ArmsAI => lockedArms;
         public bool SpineAI => lockedSpine;
@@ -76,6 +77,8 @@ namespace GoGhost.Duel
         void Start() { if (sounds != null) sounds.BeginScope(); }
         void OnDestroy()
         {
+            ClearPlatformLayout();
+            playerRespawnAt = enemyRespawnAt = 0;
             Player?.GetComponent<OfficerVisual>()?.ClearConditionalGlow();
             Rules?.Dispose();Rules=null;
             music?.StopMusic(true);
@@ -85,7 +88,7 @@ namespace GoGhost.Duel
         void OnApplicationFocus(bool focus)
         {
             if (!focus) developerResumeOnClose = false;
-            if (!focus && (Phase == DuelPhase.Fight || Phase == DuelPhase.Prepare)) SetPause(true);
+            if (!focus && (Phase == DuelPhase.Fight || Phase == DuelPhase.Prepare || Phase == DuelPhase.Training)) SetPause(true);
         }
         public void NewGame()
         {
@@ -106,7 +109,12 @@ namespace GoGhost.Duel
         public void StartFight()
         {
             if (Phase != DuelPhase.Configure || Paused || !ui.ConfigurationReady) return;
+            CreateEncounter(false);
+        }
+        void CreateEncounter(bool training)
+        {
             ClearEncounter();
+            ApplyPlatformLayout(training);
             lockedLegs = lockedArms = lockedSpine = false;
             encounter = Instantiate(combatPrefab, transform);
             encounter.name = "CombatAttempt";
@@ -116,28 +124,32 @@ namespace GoGhost.Duel
             Rifle = Player.GetComponent<PlayerShooting>();
             Dodge = Player.GetComponent<PlayerDodge>();
             navigation = encounter.AddComponent<ArenaNavigation2D>();
-            navigation.Initialize(arenaBounds);
+            navigation.Initialize(ArenaBounds);
             AlignPlayerOpeningSupport();
             Player.GetComponent<PlayerMovement>().ConfigureLegacyCombat();
             Rifle.ConfigureLegacyCombat();
             Dodge.ConfigureLegacyCombat();
             Player.GetComponent<OfficerVisual>()?.ConfigureLegacyCombat();
-            coordinator = encounter.AddComponent<DuoCoordinator>();
+            if (!training) coordinator = encounter.AddComponent<DuoCoordinator>();
             var activeActors = new List<BossAgent>(2);
             // Solo opponents mirror the actual player opening across the arena centre.
             // Keep each Boss's supported height and the authored duo arrangement.
             float soloX = 2 * arenaBounds.center.x - Player.transform.position.x;
-            if (Wave == 1 || Wave == 3) activeActors.Add(CreateBoss(gunnerPrefab,
-                Wave == 1 ? new Vector2(soloX, gunnerSpawn.y) : gunnerSpawn, 1));
-            if (Wave == 2 || Wave == 3) activeActors.Add(CreateBoss(swordsmanPrefab,
-                Wave == 2 ? new Vector2(soloX, swordsmanSpawn.y) : swordsmanSpawn, 2));
+            if (training) activeActors.Add(CreateTrainingEnemy());
+            else
+            {
+                if (Wave == 1 || Wave == 3) activeActors.Add(CreateBoss(gunnerPrefab,
+                    Wave == 1 ? new Vector2(soloX, gunnerSpawn.y) : gunnerSpawn, 1));
+                if (Wave == 2 || Wave == 3) activeActors.Add(CreateBoss(swordsmanPrefab,
+                    Wave == 2 ? new Vector2(soloX, swordsmanSpawn.y) : swordsmanSpawn, 2));
+            }
             actors = activeActors.ToArray();
+            if (!training && Wave == 1) actors[0].Tactics.ConfigurePlatformPressure(ActivePlatforms);
             ApplyDeveloperTuning(true);
             Police = actors[0].Health; // Historical development consumers; gameplay uses the full actor list.
-            coordinator.Configure(actors, navigation);
-            Rules=new ConditionalController(Player,actors,platforms,arenaBounds,DraftLoadout);
-            input.ConfigureConditionalControls(Rules.Resolve);
-            Player.GetComponent<OfficerVisual>()?.ConfigureConditionalGlow(conditionalGlow, Rules.VisualFeedback);
+            coordinator?.Configure(actors, navigation);
+            BindEncounterRules();
+            if (training) input.UiBlocksManualFire = ui.TrainingOwnsPointer;
             foreach (var body in encounter.GetComponentsInChildren<Rigidbody2D>())
             {
                 body.linearVelocity = Vector2.zero;
@@ -150,6 +162,15 @@ namespace GoGhost.Duel
             effects?.SetPaused(true);
             Physics2D.SyncTransforms();
             FightClock = 0;
+            if (training)
+            {
+                foreach (var body in encounter.GetComponentsInChildren<Rigidbody2D>()) body.simulated = true;
+                effects?.SetPaused(false);
+                input.SetGameplayInputEnabled(true);
+                actors[0].StartCombat();
+                SetPhase(DuelPhase.Training);
+                return;
+            }
             FirstConfiguration = false;
             SetPhase(DuelPhase.Prepare);
             music?.PlayWave(Wave);
@@ -209,7 +230,7 @@ namespace GoGhost.Duel
         public void SetPause(bool value)
         {
             if (DeveloperToolsOpen && !value) return;
-            if (Phase != DuelPhase.Fight && Phase != DuelPhase.Prepare) return;
+            if (Phase != DuelPhase.Fight && Phase != DuelPhase.Prepare && Phase != DuelPhase.Training) return;
             if (Paused == value) return;
             Paused = value;
             Rules?.SetFeedbackPaused(value);
@@ -250,10 +271,12 @@ namespace GoGhost.Duel
             Time.timeScale = 1;
             AudioListener.pause = false;
             if (encounter != null) { encounter.SetActive(false); Destroy(encounter); }
+            ClearPlatformLayout();
             encounter = null;
             Player = null; Police = null; input = null;
             actors = System.Array.Empty<BossAgent>(); navigation = null; coordinator = null;
             Rifle = null; Dodge = null; effects = null; encounterSounds = null;
+            playerRespawnAt = enemyRespawnAt = 0;
         }
         void Update()
         {
@@ -277,11 +300,12 @@ namespace GoGhost.Duel
         }
         void FixedUpdate()
         {
-            if (Phase == DuelPhase.Fight && !Paused) FightClock += Time.fixedDeltaTime;
+            if ((Phase == DuelPhase.Fight || Phase == DuelPhase.Training) && !Paused) FightClock += Time.fixedDeltaTime;
         }
         void LateUpdate()
         {
             ui.UpdateBattleLayout();
+            if (Phase == DuelPhase.Training) { TickTrainingRespawn(); return; }
             if (Phase != DuelPhase.Fight || Paused || Player == null || actors.Length == 0) return;
             bool allDead = true;
             foreach (var actor in actors) if (actor != null && actor.IsAlive) { allDead = false; break; }

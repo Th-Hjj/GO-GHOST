@@ -18,7 +18,7 @@ namespace GoGhost.Duel
         // Start: supported arrival + resource/ray/range valid. Commit: action Locked.
         // Exit: terrain invalidation, deadline, route failure, lost contact, actor death.
     }
-    public sealed class BossTactics
+    public sealed partial class BossTactics
     {
         readonly BossAgent actor;
         readonly PublicPrediction gunPrediction=new PublicPrediction(),swordPrediction=new PublicPrediction();
@@ -73,7 +73,8 @@ namespace GoGhost.Duel
         public bool CamoRouteInvalid=>camoTravelling&&(camoPlan==null
             ||camoPlan.TerrainVersion!=actor.Navigation.Version||actor.Motor.RouteFailed
             ||!actor.Motor.HasRoute&&!actor.Motor.RouteCompleted);
-        public float EngagementDistance=>actor.Profile.Kind==BossKind.Refraction?actor.Navigation.SameLevelSpacing*.8f:actor.Navigation.PlatformWidth*.4f;
+        public float EngagementDistance=>PlatformPressureEnabled?actor.Profile.DesiredDistance:
+            actor.Profile.Kind==BossKind.Refraction?actor.Navigation.SameLevelSpacing*.8f:actor.Navigation.PlatformWidth*.4f;
         public BossTactics(BossAgent actor){this.actor=actor;}
         public void Tick()
         {
@@ -87,7 +88,7 @@ namespace GoGhost.Duel
             if(!exposed)exposedSince=-1;else if(exposedSince<0)exposedSince=Time.time;
             if(action.Busy)
             {
-                if(action.SafeRecovery&&actor.Motor.Grounded&&Time.time>=nextTick
+                if(!PlatformPressureEnabled&&action.SafeRecovery&&actor.Motor.Grounded&&Time.time>=nextTick
                     &&(actor.Coordinator==null||!actor.Coordinator.HasAssignment(actor)))
                 {
                     nextTick=Time.time+actor.Profile.TacticTick;
@@ -101,6 +102,7 @@ namespace GoGhost.Duel
             {if(camoPlan!=null){if(plan==camoPlan)plan=null;camoPlan=null;}return;}
             if(!actor.Motor.Grounded)return; // Finish the accepted physical air connection before replanning.
             if(TickCamoFollowup(facts))return;
+            if(PlatformPressureEnabled){TickPlatformPressure(facts);return;}
             if(facts.Visible&&facts.Confidence>.3f)
             {searchedSupports.Clear();searchSupport=null;}
             if(TryGunReposition(facts)){recoveryPlan=null;return;}
@@ -384,8 +386,10 @@ namespace GoGhost.Duel
         {
             var action=actor.Actions;var facts=actor.Perception.Facts;
             if(actor.Profile.Kind!=BossKind.Refraction||action.Busy||!actor.Motor.Grounded
-                ||!facts.Visible||facts.Confidence<.3f||!action.Ready(BossAbility.Camo)
+                ||!action.Ready(BossAbility.Camo)
                 ||actor.Coordinator!=null&&actor.Coordinator.HasAssignment(actor))return false;
+            if(PlatformPressureEnabled)return facts.Body.size.sqrMagnitude>.01f&&BeginPlatformBlink(facts);
+            if(!facts.Visible||facts.Confidence<.3f)return false;
             var options=BuildCandidates(BossAbility.None,true);
             if(options.Count==0)return false;
             var chosen=options[0];
@@ -399,6 +403,7 @@ namespace GoGhost.Duel
         }
         public void EndCamoRoute()
         {
+            if(PlatformBlinkActive){EndPlatformBlink();return;}
             if(!camoTravelling)return;
             bool arrived=!CamoRouteInvalid&&actor.Motor.RouteCompleted&&actor.Motor.Grounded
                 &&Vector2.Distance(actor.Position,camoPlan.Destination)<.45f;

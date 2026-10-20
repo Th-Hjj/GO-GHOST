@@ -90,7 +90,7 @@ namespace GoGhost.Duel
             Player.SetRuntimeHealth(max,fresh?max:Player.CurrentHealth);
             foreach(var boss in actors)
             {
-                if(boss==null||!boss.IsAlive)continue;
+                if(boss==null||!boss.IsAlive||boss.IsTrainingEnemy)continue;
                 max=(int)GetDeveloperValue(boss.ActorId==1?DeveloperSetting.GunnerMaxHealth:DeveloperSetting.SwordMaxHealth);
                 boss.Health.SetRuntimeHealth(max,fresh?max:boss.Health.CurrentHealth);
             }
@@ -99,7 +99,7 @@ namespace GoGhost.Duel
         public bool GetDeveloperHealth(int actor,out int current,out int maximum)
         {
             current=maximum=0;
-            if(Phase!=DuelPhase.Prepare&&Phase!=DuelPhase.Fight)return false;
+            if(Phase!=DuelPhase.Prepare&&Phase!=DuelPhase.Fight&&Phase!=DuelPhase.Training)return false;
             if(actor==0)
             {
                 if(Player==null||Player.IsDead)return false;
@@ -125,6 +125,7 @@ namespace GoGhost.Duel
             // Keep equipped rules/order, but discard any incomplete picker draft.
             DraftLoadout=DraftLoadout.Copy();
             Wave=wave;
+            FirstConfiguration=false;
             SetPhase(DuelPhase.Configure);
             StartFight();
         }
@@ -140,7 +141,7 @@ namespace GoGhost.Duel
                 return;
             }
             DeveloperToolsOpen=true;
-            developerResumeOnClose=!Paused&&(Phase==DuelPhase.Prepare||Phase==DuelPhase.Fight);
+            developerResumeOnClose=!Paused&&(Phase==DuelPhase.Prepare||Phase==DuelPhase.Fight||Phase==DuelPhase.Training);
             if(developerResumeOnClose)SetPause(true);else ui.Show();
         }
     }

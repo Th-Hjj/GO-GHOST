@@ -21,7 +21,8 @@ namespace GoGhost.Duel
     {
         public BossMotionProfile Profile { get; private set; }
         BossMotionProfile routeMotion;
-        public BossMotionProfile TraversalProfile => routeMotion ?? Profile;
+        public BossMotionProfile TraversalProfile => routeMotion != null && route != null && stepIndex < route.Steps.Count
+            && route.Steps[stepIndex].Kind == ArenaNavigation2D.TravelKind.Jump ? routeMotion : Profile;
         public Vector2 Position => body != null ? body.position + centreOffset : (Vector2)transform.position;
         public Vector2 PreviousPosition { get; private set; }
         public Vector2 Velocity => body != null ? body.linearVelocity : Vector2.zero;
@@ -131,8 +132,10 @@ namespace GoGhost.Duel
         {StartDrop(horizontal);fixedDropLanding=true;dropLandingX=landingX;}
         public void EndDrop() { dropping = dropRequested = DropBlocked = fixedDropLanding = false; Brake(); }
         public void SetRoute(ArenaNavigation2D.Route value)
+            => SetRoute(value, null);
+        public void SetRoute(ArenaNavigation2D.Route value, BossMotionProfile motion)
         {
-            route = value; routeMotion=null; stepIndex = 0; launched = leftGround = false;
+            route = value; routeMotion=motion; stepIndex = 0; launched = leftGround = false;
             RouteFailed = false; RouteFailure = null; RouteCompleted = value == null || value.Steps.Count == 0;
             routeAge = progressAge = 0; progressPosition = Position;
             if (RouteCompleted) route = null;
@@ -146,6 +149,26 @@ namespace GoGhost.Duel
             RouteFailed = RouteCompleted = false; RouteFailure = null; launched = leftGround = false;
             Brake();
             if (body != null) body.linearVelocity = Vector2.zero;
+        }
+        readonly System.Collections.Generic.List<Collider2D> camoOccupants = new System.Collections.Generic.List<Collider2D>(16);
+        // W1's authored Camo relocation is the sole exception to physical route traversal.
+        internal bool TryCamoRelocate(Vector2 destination)
+        {
+            var owner = GetComponent<BossAgent>();
+            if (!enabledCombat || !owner.IsAlive || !owner.IsCamo || !owner.Tactics.PlatformBlinkActive
+                || !navigation.CanStand(destination, Size)) return false;
+            var filter = new ContactFilter2D().NoFilter(); filter.useTriggers = false;
+            Physics2D.OverlapBox(destination, Size + Vector2.one * .02f, 0, filter, camoOccupants);
+            foreach (var other in camoOccupants)
+                if (other.attachedRigidbody != body && (other.GetComponentInParent<PlayerHealth>() != null
+                    || other.GetComponentInParent<BossAgent>() != null)) return false;
+            Stop();
+            var interpolation = body.interpolation; body.interpolation = RigidbodyInterpolation2D.None;
+            body.position = destination - centreOffset;
+            transform.position = new Vector3(body.position.x, body.position.y, transform.position.z);
+            PreviousPosition = progressPosition = destination; Grounded = true;
+            Physics2D.SyncTransforms(); body.interpolation = interpolation;
+            return true;
         }
         void FixedUpdate()
         {

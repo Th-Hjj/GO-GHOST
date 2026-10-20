@@ -52,7 +52,7 @@ namespace GoGhost.Duel
         void OnDestroy()=>ClearRuleHud();
         void BuildRuleHud()
         {
-            if(game.Phase!=DuelPhase.Prepare&&game.Phase!=DuelPhase.Fight)return;
+            if(game.Phase!=DuelPhase.Prepare&&game.Phase!=DuelPhase.Fight&&game.Phase!=DuelPhase.Training)return;
             battleUi=Rect("BattleHUD",page,Vector2.zero,new Vector2(1600,900));
             hudRules=game.Rules;
             if(hudScrollController!=hudRules){hudScrollPosition=1;hudScrollController=hudRules;}
@@ -209,7 +209,7 @@ namespace GoGhost.Duel
             float scale=canvas.GetComponent<Canvas>().scaleFactor;
             float width=Screen.width/Mathf.Max(.01f,scale),height=Screen.height/Mathf.Max(.01f,scale);
             bool hasRules=ruleSidebar!=null&&hudRules==game.Rules&&
-                (game.Phase==DuelPhase.Prepare||game.Phase==DuelPhase.Fight);
+                (game.Phase==DuelPhase.Prepare||game.Phase==DuelPhase.Fight||game.Phase==DuelPhase.Training);
             if(hasRules&&(Mathf.Abs(ruleHudSize.x-width)>.5f||Mathf.Abs(ruleHudSize.y-height)>.5f))LayoutRuleHud(width,height);
             float panel=hasRules?rulePanelWidth:0;
             if(battleUi!=null)
@@ -256,7 +256,7 @@ namespace GoGhost.Duel
             foreach(var row in ruleRows)
             {
                 AlignRuleGlow(row,scale);
-                var f=game.Phase==DuelPhase.Fight&&row.Controller!=null&&row.Controller==game.Rules
+                var f=(game.Phase==DuelPhase.Fight||game.Phase==DuelPhase.Training)&&row.Controller!=null&&row.Controller==game.Rules
                     ?row.Controller.Feedback(row.Operation,row.Row).Visual:default;
                 var color=NeuralPalette.Operation(row.Operation);
                 bool matched=f.Matched;

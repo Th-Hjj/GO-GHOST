@@ -17,6 +17,29 @@ namespace GoGhost.Duel
         TMP_Text[] policeHealth = System.Array.Empty<TMP_Text>();
         UnityEngine.UI.Image[] policeFill = System.Array.Empty<UnityEngine.UI.Image>();
         UnityEngine.UI.Image playerFill;
+        RectTransform trainingBack, trainingContinue;
+
+        void BuildTrainingButtons()
+        {
+            var parent = battleUi != null ? battleUi : page;
+            trainingBack = Button("← Back", parent, Vector2.zero, new Vector2(150, 48), game.BackFromTraining).GetComponent<RectTransform>();
+            trainingBack.anchorMin = trainingBack.anchorMax = trainingBack.pivot = new Vector2(0, 1);
+            trainingBack.anchoredPosition = new Vector2(24, -24);
+            trainingContinue = Button("Continue →", parent, Vector2.zero, new Vector2(180, 48), game.ContinueFromTraining).GetComponent<RectTransform>();
+            trainingContinue.anchorMin = trainingContinue.anchorMax = trainingContinue.pivot = new Vector2(1, 0);
+            trainingContinue.anchoredPosition = new Vector2(-24, 24);
+            // Pause's backdrop belongs to Page. Keep the same navigation available above it.
+            if (game.Paused) parent.SetAsLastSibling();
+        }
+
+        public bool TrainingOwnsPointer()
+        {
+            var mouse = UnityEngine.InputSystem.Mouse.current;
+            if (mouse == null) return false;
+            var point = mouse.position.ReadValue();
+            return trainingBack != null && RectTransformUtility.RectangleContainsScreenPoint(trainingBack, point)
+                || trainingContinue != null && RectTransformUtility.RectangleContainsScreenPoint(trainingContinue, point);
+        }
         public void Initialize(DuelGame game, TMP_FontAsset font, TMP_FontAsset controlFont=null,
             TMP_FontAsset headingFont=null, TMP_FontAsset numericFont=null)
         {
@@ -87,6 +110,7 @@ namespace GoGhost.Duel
             if(page!=null){page.gameObject.SetActive(false);Destroy(page.gameObject);}
             page=Rect("Page",canvas,Vector2.zero,new Vector2(1600,900));
             developerFields.Clear();
+            trainingBack=trainingContinue=null;
             ClearRuleHud();BuildRuleHud();UpdateBattleLayout();
             playerHealth=resources=null; playerFill=null;
             preparationCount=null; lastPreparationCount=-1;
@@ -103,6 +127,7 @@ namespace GoGhost.Duel
                 Image(page,Vector2.zero,new Vector2(4000,4000),new Color(0,0,0,.88f));
                 Button("Resume",page,new Vector2(0,45),new Vector2(330,65),()=>game.SetPause(false));
                 Button("Main Menu",page,new Vector2(0,-45),new Vector2(330,65),game.MainMenu);
+                if(game.Phase==DuelPhase.Training)BuildTrainingButtons();
                 if(ruleSidebar!=null)ruleSidebar.SetAsLastSibling();return;
             }
             if(game.Phase==DuelPhase.Menu)
@@ -128,7 +153,7 @@ namespace GoGhost.Duel
                 return;
             }
             var hud=battleUi!=null?battleUi:page;
-            Text("WAVE "+game.Wave,hud,new Vector2(0,400),new Vector2(280,50),30,face:headingFont);
+            Text(game.Phase==DuelPhase.Training?"TRAINING":"WAVE "+game.Wave,hud,new Vector2(0,400),new Vector2(280,50),30,face:headingFont);
             policeHealth = new TMP_Text[game.Bosses.Count];
             policeFill = new UnityEngine.UI.Image[game.Bosses.Count];
             for (int i=0; i<game.Bosses.Count; i++)
@@ -136,7 +161,7 @@ namespace GoGhost.Duel
                 float y=345-i*40;
                 policeHealth[i]=Text("",hud,new Vector2(-400,y),new Vector2(300,40),24,TextAlignmentOptions.Left,numericFont);
                 Image(hud,new Vector2(0,y),new Vector2(430,12),NeuralPalette.Border);
-                var color=game.Bosses[i].Profile.Kind==BossKind.Refraction?NeuralPalette.Refraction:NeuralPalette.Severance;
+                var color=game.Bosses[i].IsTrainingEnemy?NeuralPalette.Secondary:game.Bosses[i].Profile.Kind==BossKind.Refraction?NeuralPalette.Refraction:NeuralPalette.Severance;
                 policeFill[i]=Image(hud,new Vector2(-215,y),new Vector2(430,12),color);
                 policeFill[i].rectTransform.pivot=new Vector2(0,.5f);
             }
@@ -148,6 +173,7 @@ namespace GoGhost.Duel
             resources=Text("",hud,new Vector2(0,-397),new Vector2(430,40),22,face:numericFont);
             if(game.Phase==DuelPhase.Prepare)
                 preparationCount=Text("3",hud,Vector2.zero,new Vector2(300,100),72,face:numericFont);
+            if(game.Phase==DuelPhase.Training)BuildTrainingButtons();
             LateUpdate();
         }
         void LateUpdate()
@@ -166,7 +192,7 @@ namespace GoGhost.Duel
             {
                 var actor=game.Bosses[i];
                 if(actor==null)continue;
-                policeHealth[i].text=(actor.ActorId==1?"GUNNER  ":"SWORDSMAN  ")+actor.Health.CurrentHealth;
+                policeHealth[i].text=(actor.IsTrainingEnemy?"TRAINING ENEMY  ":actor.ActorId==1?"GUNNER  ":"SWORDSMAN  ")+actor.Health.CurrentHealth;
                 policeFill[i].rectTransform.sizeDelta=new Vector2(430f*actor.Health.CurrentHealth/actor.Health.MaxHealth,12);
             }
 

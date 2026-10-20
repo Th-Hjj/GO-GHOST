@@ -68,8 +68,8 @@ public static partial class BossEncounterSmoke
     static IEnumerator ConditionalV2()
     {
         Record("Rule Cards / remaining-magazine Burst: controlled ammo, stopped Boss policies and virtual input; real rifle shots, controller notices and lifecycle. No balance or physical-input claim.");
-        Check("Catalog retains 26 conditions / 20 actions / five-rule gameplay budget",ConditionalCatalog.Conditions.Length==26
-            &&ConditionalCatalog.Responses.Length==20&&ConditionalCatalog.MaxRulesTotal==5);
+        Check("Catalog retains 26 conditions / 21 actions / five-rule gameplay budget",ConditionalCatalog.Conditions.Length==26
+            &&ConditionalCatalog.Responses.Length==21&&ConditionalCatalog.MaxRulesTotal==5);
         var legacy=new ConditionalRule{Condition=57,AdditionalCondition=51,AdditionalGroundState=GroundStateOption.Airborne,
             Action="F02",AmmoUse=AmmoUseOption.KeepTwoRounds,DisplayOrder=4};
         var normalized=legacy.Copy();

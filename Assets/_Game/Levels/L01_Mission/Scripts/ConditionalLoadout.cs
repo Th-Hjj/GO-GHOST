@@ -8,6 +8,7 @@ namespace GoGhost.Duel
     public enum IncomingAttackOption { Unspecified, Any, Bullet, Melee, Low }
     public enum MoveDirectionOption { Unspecified, Left, Right }
     public enum AmmoUseOption { AllowEmpty, KeepTwoRounds }
+    public enum PlatformDirectionOption { Unspecified, Higher, Lower }
 
     [Serializable] public sealed class ConditionalRule
     {
@@ -20,14 +21,16 @@ namespace GoGhost.Duel
         public IncomingAttackOption IncomingAttack, AdditionalIncomingAttack;
         public MoveDirectionOption MoveDirection;
         public AmmoUseOption AmmoUse;
-        // Presentation order only; execution still uses each operation's own list.
+        public PlatformDirectionOption PlatformDirection;
+        // Each operation keeps its own list; J04 also uses this order for its shared Legs claim.
         public int DisplayOrder = -1;
         public ConditionalRule Copy() => new ConditionalRule {
             Condition=Condition, Action=Action, Below=Below, AdditionalCondition=AdditionalCondition,
             GroundState=GroundState, AdditionalGroundState=AdditionalGroundState,
             Distance=Distance, AdditionalDistance=AdditionalDistance,
             IncomingAttack=IncomingAttack, AdditionalIncomingAttack=AdditionalIncomingAttack,
-            MoveDirection=MoveDirection, AmmoUse=Action=="F02"?AmmoUseOption.AllowEmpty:AmmoUse, DisplayOrder=DisplayOrder
+            MoveDirection=MoveDirection, PlatformDirection=PlatformDirection,
+            AmmoUse=Action=="F02"?AmmoUseOption.AllowEmpty:AmmoUse, DisplayOrder=DisplayOrder
         };
     }
     [Serializable] public sealed class OperationRules
@@ -124,7 +127,7 @@ namespace GoGhost.Duel
         public const int BurstFinishedCondition=60, StepBackFinishedCondition=61;
         public const int MaxConditionId=61;
         public static readonly string[][] FormalResponses = {
-            new[]{"M01","M02","M03","M04","M09","M11","M10"},new[]{"J01","J03"},
+            new[]{"M01","M02","M03","M04","M09","M11","M10"},new[]{"J01","J03","J04"},
             new[]{"Q01","Q02","Q06"},new[]{"F01","F02","F03","F06"},new[]{"D01","D02","D03","D04"}
         };
         public static readonly string[] OperationLabels={"Horizontal Movement","Jump","Aim","Fire","Dodge"};
@@ -165,6 +168,7 @@ namespace GoGhost.Duel
             new ResponseEntry("M09","Move Toward Center",ControlOperation.Movement),new ResponseEntry("M11","Move Left / Right",ControlOperation.Movement),
             new ResponseEntry("M10","Hold Position",ControlOperation.Movement),
             new ResponseEntry("J01","Jump Once",ControlOperation.Jump,true),new ResponseEntry("J03","Repeat Jumps",ControlOperation.Jump),
+            new ResponseEntry("J04","Jump to Platform",ControlOperation.Jump),
             new ResponseEntry("Q01","Aim at Nearest Enemy",ControlOperation.Aim),new ResponseEntry("Q02","Aim at Lowest-Health Enemy",ControlOperation.Aim),
             new ResponseEntry("Q06","Fine-Tune Aim",ControlOperation.Aim),
             new ResponseEntry("F01","Fire 1 Shot",ControlOperation.Fire,true),new ResponseEntry("F02","Short Burst",ControlOperation.Fire,true),
@@ -184,6 +188,7 @@ namespace GoGhost.Duel
         static readonly string[] GroundOptions={"Grounded","Airborne"},DistanceOptions={"Close","Mid","Far"};
         static readonly string[] IncomingOptions={"Any","Bullet","Melee","Low"},DirectionOptions={"Left","Right"};
         static readonly string[] AmmoOptions={"Allow Empty","Keep Two Rounds"};
+        static readonly string[] PlatformOptions={"Higher","Lower"};
         public static bool IsSelectableCondition(int id)=>Array.IndexOf(SharedConditionIds,id)>=0;
         public static bool IsStateCondition(int id)=>IsSelectableCondition(id)&&!Condition(id).Event;
         public static bool IsSelectableResponse(string id)
@@ -221,14 +226,15 @@ namespace GoGhost.Duel
                 case 53:if(additional)rule.AdditionalIncomingAttack=(IncomingAttackOption)(index+1);else rule.IncomingAttack=(IncomingAttackOption)(index+1);break;
             }
         }
-        public static string[] ActionOptions(string action)=>action=="M11"?DirectionOptions:UsesAmmoOption(action)?AmmoOptions:NoOptions;
-        public static string ActionOptionLabel(string action)=>action=="M11"?"Direction":UsesAmmoOption(action)?"Ammo Use":"";
-        public static int ActionOption(ConditionalRule rule)=>rule==null?-1:rule.Action=="M11"?(int)rule.MoveDirection-1:UsesAmmoOption(rule.Action)?(int)rule.AmmoUse:-1;
+        public static string[] ActionOptions(string action)=>action=="J04"?PlatformOptions:action=="M11"?DirectionOptions:UsesAmmoOption(action)?AmmoOptions:NoOptions;
+        public static string ActionOptionLabel(string action)=>action=="J04"||action=="M11"?"Direction":UsesAmmoOption(action)?"Ammo Use":"";
+        public static int ActionOption(ConditionalRule rule)=>rule==null?-1:rule.Action=="J04"?(int)rule.PlatformDirection-1:rule.Action=="M11"?(int)rule.MoveDirection-1:UsesAmmoOption(rule.Action)?(int)rule.AmmoUse:-1;
         public static void SetActionOption(ConditionalRule rule,int index)
         {
             if(rule==null)return;
             if(index<0||index>=ActionOptions(rule.Action).Length)throw new ArgumentOutOfRangeException(nameof(index));
             if(rule.Action=="M11")rule.MoveDirection=(MoveDirectionOption)(index+1);
+            else if(rule.Action=="J04")rule.PlatformDirection=(PlatformDirectionOption)(index+1);
             else if(UsesAmmoOption(rule.Action))rule.AmmoUse=(AmmoUseOption)index;
         }
         public static bool ConditionsAreComplete(ConditionalRule rule)=>ConditionRuleReason(rule,true)==null;
@@ -265,6 +271,8 @@ namespace GoGhost.Duel
             if(UsesAmmoOption(rule.Action)&&!Enum.IsDefined(typeof(AmmoUseOption),rule.AmmoUse))return "Choose an Ammo Use option.";
             if(rule.Action=="M11"&&(rule.MoveDirection<MoveDirectionOption.Unspecified||rule.MoveDirection>MoveDirectionOption.Right
                 ||requireComplete&&rule.MoveDirection==MoveDirectionOption.Unspecified))return "Choose Left or Right.";
+            if(rule.Action=="J04"&&(rule.PlatformDirection<PlatformDirectionOption.Unspecified||rule.PlatformDirection>PlatformDirectionOption.Lower
+                ||requireComplete&&rule.PlatformDirection==PlatformDirectionOption.Unspecified))return "Choose Higher or Lower.";
             return null;
         }
         static bool HasGroundState(ConditionalRule rule,GroundStateOption option)
@@ -342,6 +350,8 @@ namespace GoGhost.Duel
             if(rule.Action=="M11"&&rule.MoveDirection!=MoveDirectionOption.Unspecified)
                 return rule.MoveDirection==MoveDirectionOption.Left?"Move Left":"Move Right";
             string label=Response(rule.Action).Label;
+            if(rule.Action=="J04"&&rule.PlatformDirection!=PlatformDirectionOption.Unspecified)
+                label+=rule.PlatformDirection==PlatformDirectionOption.Higher?" ↑":" ↓";
             if(UsesAmmoOption(rule.Action))
             {
                 int option=(int)rule.AmmoUse;
@@ -402,6 +412,7 @@ namespace GoGhost.Duel
         {
             switch(id)
             {
+                case "J04":return "Move to the nearest reachable higher or lower platform.";
                 case "Q01":return "Aim at the nearest visible enemy.";
                 case "Q02":return "Aim at the visible enemy with the lowest health percentage.";
                 case "Q03":return "Aim at the visible enemy associated with the detected situation.";

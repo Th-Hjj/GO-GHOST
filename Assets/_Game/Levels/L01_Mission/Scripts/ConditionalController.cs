@@ -5,7 +5,7 @@ using UnityEngine;
 namespace GoGhost.Duel
 {
     // Per-fight controller. Emits input only; the retained executors accept actions and spend resources.
-    public sealed class ConditionalController : IDisposable
+    public sealed partial class ConditionalController : IDisposable
     {
         public struct TriggerContext
         {
@@ -24,6 +24,9 @@ namespace GoGhost.Duel
             public int RangeMode;
             public bool CadencePending;
             public TriggerContext CadenceContext;
+            public bool PlatformFailed;
+            public Vector2 PlatformFailurePosition;
+            public int PlatformFailureVersion;
             public readonly Dictionary<int,int> Preparations = new Dictionary<int,int>();
         }
         public readonly struct ExecutionFeedback
@@ -41,6 +44,7 @@ namespace GoGhost.Duel
             public Vector2 Aim;
             public bool Accepted, Completed;
             public TriggerContext Context, EventContext;
+            public PlatformTransition Platform;
         }
         struct Notice
         {
@@ -112,6 +116,7 @@ namespace GoGhost.Duel
             else if(op==3)active&=input.ConditionalFrame.FireOwned&&gun.isActiveAndEnabled
                 &&(loadout.Operations[op].Rules[row].Action=="F06"||!gun.IsReloading&&gun.IsFiring);
             else if(op==4)active&=dodge.IsDodging;
+            else if(op==1)active&=r.Platform!=null&&platformOwnsMovement&&!dodge.IsDodging&&!movement.HitPushActive;
             else active=false;
             var visual=new ConditionalVisualFeedback {Matched=visualMatches[op,row],Executing=active,
                 AcceptedThisFrame=acceptedFrame[op,row]==Time.frameCount,
@@ -274,7 +279,7 @@ namespace GoGhost.Duel
             if(disposed||player.IsDead)return default;
             previousResolvedAt=lastResolvedAt;previousResolvedFrame=lastResolvedFrame;
             lastResolvedAt=Time.time;lastResolvedFrame=Time.frameCount;
-            raw=frame;output=default;facts.Clear();Snapshot();
+            raw=frame;output=default;platformOwnsMovement=false;facts.Clear();Snapshot();
             // Results raised while resolving are observed on the next pass, never synchronously recursed.
             observedSequence=sequence;
             CompleteStepBack();
@@ -300,6 +305,7 @@ namespace GoGhost.Duel
                 {
                     if(observed&&!state.WasTrue){state.Consumed=false;state.Occurrence=++sequence;}
                     state.WasTrue=observed;context.Occurrence=state.Occurrence;
+                    if(!observed)state.PlatformFailed=false;
                 }
                 matches[op,row]=match;contexts[op,row]=context;
             }
@@ -328,6 +334,9 @@ namespace GoGhost.Duel
                     {
                         match=StateRuleMatches(rule,op,out context);
                     }
+                    // A selected transition is one bounded process, including its physical landing.
+                    if(rule.Action=="J04"&&active.Platform!=null&&(active.Accepted||active.Platform.LeftGround))
+                    {match=true;context=active.Context;}
                     if(match&&active.Target>=0&&op!=2&&context.EnemyBound)
                         match=(context.Candidates&(1<<active.Target))!=0;
                     // A finite state response retains its commitment only after current eligibility.
@@ -607,6 +616,7 @@ namespace GoGhost.Duel
                     if(action=="M11")r.Direction=rule.MoveDirection==MoveDirectionOption.Left?-1:1;
                     return WriteMovement(action,r);
                 case ControlOperation.Jump:
+                    if(action=="J04")return StartPlatform(rule,r);
                     if(!CanJump())return false;
                     output.JumpOwned=true;output.Jump=true;return true;
                 case ControlOperation.Aim:
@@ -644,6 +654,7 @@ namespace GoGhost.Duel
         bool Continue(int op,ConditionalRule rule,Running r)
         {
             string action=rule.Action;
+            if(action=="J04")return ContinuePlatform(rule,r);
             if(r.Completed||op==1&&r.Accepted)return false;
             if(op!=1&&Time.time>=r.Deadline)return false;
             if(r.Target>=0&&(!visible[r.Target]||!actors[r.Target].IsAlive))return false;
@@ -739,11 +750,18 @@ namespace GoGhost.Duel
         void ActionResolved(ControlOperation operation,bool accepted)
         {
             if(disposed)return;
+            if(platformOwnsMovement&&operation==ControlOperation.Movement)
+            {
+                var transition=running[1];
+                if(transition.Row>=0&&transition.Platform!=null&&accepted)Accept(1,transition);
+                return;
+            }
             int op=(int)operation;var r=running[op];if(r.Row<0)return;
             if(accepted)
             {
                 Accept(op,r);
-                if(op==1)AcceptedJumps++;if(op==4)AcceptedDodges++;return;
+                if(op==1){AcceptedJumps++;if(r.Platform!=null)r.Platform.Launched=true;}
+                if(op==4)AcceptedDodges++;return;
             }
             // Losing a physical attempt never refunds an already consumed occurrence.
             r.Accepted=false;

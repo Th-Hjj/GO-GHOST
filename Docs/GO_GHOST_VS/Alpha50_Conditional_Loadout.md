@@ -4,6 +4,14 @@ Confirmed assignment: Thomas, 2026-10-18, Condition–Action V2. This document i
 
 ## Configuration and priority
 
+**Jump to Platform extension — Thomas, 2026-10-19:** J04 adds required **Higher / Lower** under Legs/Jump; the catalog now has 21 actions and the same 26 conditions / five-rule budget. Ordinary Jump remains unchanged. The rule displays `Jump to Platform ↑` or `Jump to Platform ↓` throughout draft editing, preview, setup and combat; copies and fight snapshots preserve the direction.
+
+J04 claims Move and Jump for one transition. Its Jump row uses normal Jump priority; a simultaneously executable Move row ahead of it in displayed order takes precedence, while J04 overrides a lower Move row. All other operations retain their independent arbitration. Unavailable destinations release both claims to lower rows/manual input.
+
+Selection checks active collider support geometry, actual player width, speed, jump speed, gravity, landing clearance and intervening terrain. Prefer the next reachable height, then the shortest horizontal approach/flight; ties use stable support/sample order. A bounded supported approach precedes Higher's ordinary single jump. Lower walks beyond an edge then steers toward a lower landing, including the floor; the retained player has no drop-through mechanic. There is no transform write, jump boost or graph route.
+
+An accepted transition retains its destination through landing even after its triggering state/event ends. Higher-priority Legs ownership, Dodge, knockback, invalid geometry/tuning or a bounded failed attempt releases it. A stuck/timed-out route is not retried at the same position and geometry until the state clears or the player moves; there is no added cooldown. After a successful landing, a still-true state may immediately choose the next transition. An event is consumed only once. Pause, disposal and fight lifecycle retain existing behavior. Existing horizontal arena layouts are supported; moving/rotated platforms and arbitrary platform shapes are not certified by this pass.
+
 Five operations arbitrate independently: Move and Jump (Legs), Aim and Fire (Arms), Dodge (Spine). **MaxRulesTotal = 5** is one shared budget, freely distributed. Initial rules are empty. There is no Always condition, Manual/Auto mode, enable switch, preinstalled rule or autonomous fallback.
 
 Each rule has one required primary state or event, at most one optional additional **state**, and one action. No second event, OR/NOT, nesting, variables, arbitrary waits or separate Combo Editor. Actual actions create events that other rules can use. Manual and automatic actions share the same real event sources.
@@ -21,7 +29,7 @@ Keep existing six body contours and proportions. Arms are cyan, Legs mint and Sp
 
 ## Formal catalog
 
-There are exactly **26 selectable conditions in five categories** and **20 selectable actions in five operations**. Fixed branches are parameters of one entry, not separate catalog entries. IDs stay internal. New merged conditions use new IDs; historical IDs keep their old meanings. Historical definitions are not selectable rules.
+There are exactly **26 selectable conditions in five categories** and **21 selectable actions in five operations**. Fixed branches are parameters of one entry, not separate catalog entries. IDs stay internal. New merged conditions use new IDs; historical IDs keep their old meanings. Historical definitions are not selectable rules.
 
 **Enemy State** and its Enemy Recovering, Enemy Reloading and Enemy Reappeared entries are removed from the selectable catalog. **Q03 Aim at Detected Enemy** remains hidden. **F05 Fire and Keep a Reserve** is replaced by the common Ammo Use parameter and is not selectable. No Always or replacement Enemy Vulnerable entry is introduced. Old removed rules must not silently re-equip or become a different tactic.
 
@@ -67,7 +75,7 @@ Took Damage and all nine Action entries are events. The other 16 entries are sta
 | Operation | Complete ordered action catalog |
 |---|---|
 | Move | M01 Approach Enemy; M02 Retreat from Enemy; M03 Keep Mid Range; M04 Step Back; M09 Move Toward Center; M11 Move Left / Right; M10 Hold Position |
-| Jump | J01 Jump Once; J03 Repeat Jumps |
+| Jump | J01 Jump Once; J03 Repeat Jumps; J04 Jump to Platform (Higher / Lower) |
 | Aim | Q01 Aim at Nearest Enemy; Q02 Aim at Lowest-Health Enemy; Q06 Fine-Tune Aim |
 | Fire | F01 Fire 1 Shot; F02 Short Burst; F03 Keep Firing; F06 Hold Fire |
 | Dodge | D01 Dodge Away from Threat; D02 Dodge Toward Enemy; D03 Dodge Along Movement; D04 Dodge Toward Aim |

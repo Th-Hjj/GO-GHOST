@@ -122,7 +122,7 @@ namespace GoGhost.Duel
             if((ability==BossAbility.DrawDash||ability==BossAbility.Guard||ability==BossAbility.Rhythm)&&!actor.Motor.Grounded)return false;
             if(ability==BossAbility.DropCut&&!actor.Tactics.CanDropFromHere(hypothesis,out _))return false;
             if(ability==BossAbility.Sweep&&!actor.Tactics.TrySweepBand(actor.Position,actor.Perception.Facts,out sweepFrom,out sweepTo))return false;
-            if(ability==BossAbility.Burst&&!actor.Tactics.TryGunTarget(ability,actor.Position,actor.Perception.Facts,out hypothesis))return false;
+            if(ability==BossAbility.Burst&&!actor.IsTrainingEnemy&&!actor.Tactics.TryGunTarget(ability,actor.Position,actor.Perception.Facts,out hypothesis))return false;
             if(ability==BossAbility.DrawDash&&!actor.Tactics.LegalAt(ability,actor.Position,actor.Perception.Facts,out _))return false;
             if(IsHigh(ability)&&actor.Coordinator!=null&&!actor.Coordinator.TryReserve(actor,ability,cooperative))return false;
             Ability=ability;settings=p.Settings(ability);AttackId++;Started[(int)ability]++;
@@ -139,7 +139,7 @@ namespace GoGhost.Duel
             actor.Face(Aim);SetPhase(BossActionPhase.Prepare,ability==BossAbility.Burst?settings.Prepare-p.BurstShotLock:settings.Prepare);
             cutFacing=actor.Facing;
             if(ability==BossAbility.Camo){dashStart=actor.Position;camoMovingSeconds=0;actor.BeginCamo();}
-            if(ability!=BossAbility.Camo)actor.Motor.Brake();
+            if(ability!=BossAbility.Camo&&!actor.IsTrainingEnemy)actor.Motor.Brake();
             if(ability==BossAbility.Guard)actor.Motor.HoldHorizontal();
             if(ability==BossAbility.Rhythm)actor.Motor.BeginStep(p.RhythmStep[0]);
             var prepareCue=PrepareCue(ability);
@@ -166,100 +166,196 @@ namespace GoGhost.Duel
         {if(phase==BossActionPhase.Prepare)PreparationId++;Phase=phase;phaseAt=Time.time;phaseUntil=Time.time+Mathf.Max(0,seconds);}
         void Update()
         {
-            if(actor==null||!actor.Running||Time.deltaTime<=0)return;
-            if(IsSwordPhrase(Ability)){TickSwordPhrase();return;}
-            if(reloadUntil>0&&Time.time>=reloadUntil){reloadUntil=0;Ammo=p.Magazine;actor.Trace("reload complete");}
-            if(!Busy){Publish();return;}
-            if(Phase==BossActionPhase.Prepare)
+            if (actor == null || !actor.Running || Time.deltaTime <= 0)
+                return;
+            if (IsSwordPhrase(Ability))
             {
-                if(!comboTarget && !JumpAction && Ability!=BossAbility.DropCut && Ability!=BossAbility.Sweep && actor.Perception.Facts.Confidence>.1f)
-                {
-                    if(p.Kind==BossKind.Refraction && Ability!=BossAbility.Camo)
-                    {
-                        if(actor.Tactics.TryGunTarget(Ability,actor.Position,actor.Perception.Facts,out var shotPoint,AimDelay))targetPoint=shotPoint;
-                        else {AbortPreparation();return;}
-                    }
-                    else targetPoint=p.Kind==BossKind.Severance
-                        ?actor.Tactics.SwordTarget(Ability,actor.Position,actor.Perception.Facts,AimDelay,RhythmIndex)
-                        :actor.Tactics.PredictBody(actor.Perception.Facts,.16f);
-                }
-                if(Ability==BossAbility.Rhythm||SingleCut)
-                {
-                    float delta=targetPoint.x-actor.Position.x;
-                    cutFacing=Mathf.Abs(delta)>.05f?Mathf.Sign(delta):cutFacing;
-                    actor.Face(Vector2.right*cutFacing);
-                    actor.Motor.SetMove(Mathf.Abs(delta)>BladeReach*.72f?cutFacing:0);
-                }
-                UpdateGeometry();
-                if(Time.time>=phaseUntil)Lock();
+                TickSwordPhrase();
+                return;
             }
-            else if(Phase==BossActionPhase.Locked&&Time.time>=phaseUntil)Activate();
-            else if(Phase==BossActionPhase.Active)
+            CompleteReloadIfReady();
+            if (actor.IsTrainingEnemy)
+                UpdateGunAim();
+            if (!Busy)
             {
-                if(JumpAction)TickJump();
-                else if(Ability==BossAbility.Burst&&!actor.Motor.Grounded)Recover();
-                else if(Ability==BossAbility.Burst||Ability==BossAbility.Sweep)
-                {
-                    if(Ability==BossAbility.Burst && shotsRemaining>0 && !bulletLocked)
-                    {
-                        if(actor.Tactics.TryGunTarget(Ability,actor.Position,actor.Perception.Facts,out var point,AimDelay))
-                        {targetPoint=point;UpdateGunAim();}
-                        if(Time.time>=nextShot-p.BurstShotLock){bulletLocked=true;actor.Face(Aim);}
-                    }
-                    if(shotsRemaining>0&&Time.time>=nextShot)FireBullet();
-                    if(shotsRemaining==0&&Time.time>=phaseUntil)Recover();
-                }
-                else if(Ability==BossAbility.DrawDash||Ability==BossAbility.ReturnCut)
-                {if(!actor.Motor.DashActive&&Time.time-phaseAt>.025f)FinishDash();}
-                else if(Ability==BossAbility.DropCut)
-                {
-                    if(actor.Motor.DropBlocked&&dropBodyWaitUntil==0)dropBodyWaitUntil=Time.time+.3f;
-                    if(actor.Motor.Grounded||actor.Motor.DropBlocked&&Time.time>=dropBodyWaitUntil)
-                    {
-                        SweepDrop();actor.Motor.EndDrop();
-                        if(!TryDropFollowup())
-                        {returnWindowUntil=!comboTarget&&Ready(BossAbility.Rhythm)?Time.time+.45f:-1;Recover();}
-                    }
-                    // No arbitrary active cutoff: one descent window ends on real support.
-                }
-                else if(Ability==BossAbility.Camo)
-                {
-                    if(actor.Tactics.PlatformBlinkActive)
-                    {if(actor.Tactics.TickPlatformBlink(Time.time-phaseAt))Recover();}
-                    else
-                    {
-                        if(actor.Velocity.sqrMagnitude>.1f)camoMovingSeconds+=Time.deltaTime;
-                        if(actor.Tactics.CamoRouteInvalid || Time.time>=phaseUntil || camoMovingSeconds>=p.CamoMinimumMove
-                            && Vector2.Distance(actor.Position,dashStart)>.4f && actor.Motor.RouteCompleted)Recover();
-                    }
-                }
-                else if(Ability==BossAbility.Guard)
-                {
-                    if(Time.time>=phaseUntil || Time.time-phaseAt>=.18f && Ready(BossAbility.Rhythm)
-                        && actor.Tactics.LegalAt(BossAbility.Rhythm,actor.Position,actor.Perception.Facts,out _))Recover();
-                }
-                else if(Time.time>=phaseUntil)
-                {
-                    if(UsesBladeArc){SweepBlade(1);NextRhythm();}else Recover();
-                }
+                Publish();
+                return;
             }
-            else if(Phase==BossActionPhase.Recovery)
+
+            // Dispatch once: changing Phase never ticks the next phase in this same Update.
+            // Preparation cancellation and accepted recovery follow-ups also skip the tail.
+            if (Phase == BossActionPhase.Prepare)
             {
-                if(Ability==BossAbility.DropCut&&Time.time<=returnWindowUntil&&TryDropFollowup())return;
-                if(Ability==BossAbility.DrawDash&&Time.time<=returnWindowUntil&&TryDashFollowup())return;
-                if(Time.time>=phaseUntil)Finish();
+                if (!TickPreparation())
+                    return;
             }
-            if(Ability==BossAbility.Guard)actor.Motor.HoldHorizontal();
-            if(Ability==BossAbility.Burst&&Phase!=BossActionPhase.Recovery&&actor.Motor.Grounded)
-            {
-                float direction=burstStep&&Mathf.Abs(burstStepX-actor.Position.x)>.12f?Mathf.Sign(burstStepX-actor.Position.x):0;
-                if(direction!=0&&!actor.Navigation.CanStand(actor.Position+Vector2.right*direction*.45f,actor.Motor.Size))direction=0;
-                if(direction!=0&&actor.Coordinator!=null&&actor.Coordinator.Occupied(actor,actor.Position+Vector2.right*direction*.6f))direction=0;
-                actor.Motor.SetMove(direction,.5f);
-            }
-            if(Camouflaged&&Ammo==0)RequestReload();
+            else if (Phase == BossActionPhase.Locked && Time.time >= phaseUntil)
+                Activate();
+            else if (Phase == BossActionPhase.Active)
+                TickActive();
+            else if (Phase == BossActionPhase.Recovery && !TickRecovery())
+                return;
+
+            ApplyOngoingMovement();
+            if (Camouflaged && Ammo == 0)
+                RequestReload();
             Publish();
         }
+
+        void CompleteReloadIfReady()
+        {
+            if (reloadUntil > 0 && Time.time >= reloadUntil)
+            {
+                reloadUntil = 0;
+                Ammo = p.Magazine;
+                actor.Trace("reload complete");
+            }
+        }
+
+        bool TickPreparation()
+        {
+            if (!actor.IsTrainingEnemy && !comboTarget && !JumpAction
+                && Ability != BossAbility.DropCut && Ability != BossAbility.Sweep
+                && actor.Perception.Facts.Confidence > .1f)
+            {
+                if (p.Kind == BossKind.Refraction && Ability != BossAbility.Camo)
+                {
+                    if (actor.Tactics.TryGunTarget(Ability, actor.Position, actor.Perception.Facts, out var shotPoint, AimDelay))
+                        targetPoint = shotPoint;
+                    else
+                    {
+                        AbortPreparation();
+                        return false;
+                    }
+                }
+                else
+                    targetPoint = p.Kind == BossKind.Severance
+                        ? actor.Tactics.SwordTarget(Ability, actor.Position, actor.Perception.Facts, AimDelay, RhythmIndex)
+                        : actor.Tactics.PredictBody(actor.Perception.Facts, .16f);
+            }
+            if (Ability == BossAbility.Rhythm || SingleCut)
+            {
+                float delta = targetPoint.x - actor.Position.x;
+                cutFacing = Mathf.Abs(delta) > .05f ? Mathf.Sign(delta) : cutFacing;
+                actor.Face(Vector2.right * cutFacing);
+                actor.Motor.SetMove(Mathf.Abs(delta) > BladeReach * .72f ? cutFacing : 0);
+            }
+            UpdateGeometry();
+            if (Time.time >= phaseUntil)
+                Lock();
+            return true;
+        }
+
+        void TickActive()
+        {
+            if (JumpAction)
+                TickJump();
+            else if (Ability == BossAbility.Burst && !actor.Motor.Grounded)
+                Recover();
+            else if (Ability == BossAbility.Burst || Ability == BossAbility.Sweep)
+            {
+                if (!actor.IsTrainingEnemy && Ability == BossAbility.Burst && shotsRemaining > 0 && !bulletLocked)
+                {
+                    if (actor.Tactics.TryGunTarget(Ability, actor.Position, actor.Perception.Facts, out var point, AimDelay))
+                    {
+                        targetPoint = point;
+                        UpdateGunAim();
+                    }
+                    if (Time.time >= nextShot - p.BurstShotLock)
+                    {
+                        bulletLocked = true;
+                        actor.Face(Aim);
+                    }
+                }
+                if (shotsRemaining > 0 && Time.time >= nextShot)
+                    FireBullet();
+                if (shotsRemaining == 0 && Time.time >= phaseUntil)
+                    Recover();
+            }
+            else if (Ability == BossAbility.DrawDash || Ability == BossAbility.ReturnCut)
+            {
+                if (!actor.Motor.DashActive && Time.time - phaseAt > .025f)
+                    FinishDash();
+            }
+            else if (Ability == BossAbility.DropCut)
+            {
+                if (actor.Motor.DropBlocked && dropBodyWaitUntil == 0)
+                    dropBodyWaitUntil = Time.time + .3f;
+                if (actor.Motor.Grounded || actor.Motor.DropBlocked && Time.time >= dropBodyWaitUntil)
+                {
+                    SweepDrop();
+                    actor.Motor.EndDrop();
+                    if (!TryDropFollowup())
+                    {
+                        returnWindowUntil = !comboTarget && Ready(BossAbility.Rhythm) ? Time.time + .45f : -1;
+                        Recover();
+                    }
+                }
+                // No arbitrary active cutoff: one descent window ends on real support.
+            }
+            else if (Ability == BossAbility.Camo)
+            {
+                if (actor.Tactics.PlatformBlinkActive)
+                {
+                    if (actor.Tactics.TickPlatformBlink(Time.time - phaseAt))
+                        Recover();
+                }
+                else
+                {
+                    if (actor.Velocity.sqrMagnitude > .1f)
+                        camoMovingSeconds += Time.deltaTime;
+                    if (actor.Tactics.CamoRouteInvalid || Time.time >= phaseUntil
+                        || camoMovingSeconds >= p.CamoMinimumMove
+                        && Vector2.Distance(actor.Position, dashStart) > .4f && actor.Motor.RouteCompleted)
+                        Recover();
+                }
+            }
+            else if (Ability == BossAbility.Guard)
+            {
+                if (Time.time >= phaseUntil || Time.time - phaseAt >= .18f && Ready(BossAbility.Rhythm)
+                    && actor.Tactics.LegalAt(BossAbility.Rhythm, actor.Position, actor.Perception.Facts, out _))
+                    Recover();
+            }
+            else if (Time.time >= phaseUntil)
+            {
+                if (UsesBladeArc)
+                {
+                    SweepBlade(1);
+                    NextRhythm();
+                }
+                else
+                    Recover();
+            }
+        }
+
+        bool TickRecovery()
+        {
+            if (Ability == BossAbility.DropCut && Time.time <= returnWindowUntil && TryDropFollowup())
+                return false;
+            if (Ability == BossAbility.DrawDash && Time.time <= returnWindowUntil && TryDashFollowup())
+                return false;
+            if (Time.time >= phaseUntil)
+                Finish();
+            return true;
+        }
+
+        void ApplyOngoingMovement()
+        {
+            if (Ability == BossAbility.Guard)
+                actor.Motor.HoldHorizontal();
+            if (Ability == BossAbility.Burst && Phase != BossActionPhase.Recovery && actor.Motor.Grounded)
+            {
+                float direction = burstStep && Mathf.Abs(burstStepX - actor.Position.x) > .12f
+                    ? Mathf.Sign(burstStepX - actor.Position.x) : 0;
+                if (direction != 0 && !actor.Navigation.CanStand(actor.Position + Vector2.right * direction * .45f, actor.Motor.Size))
+                    direction = 0;
+                if (direction != 0 && actor.Coordinator != null
+                    && actor.Coordinator.Occupied(actor, actor.Position + Vector2.right * direction * .6f))
+                    direction = 0;
+                actor.Motor.SetMove(direction, .5f);
+            }
+        }
+
         void Lock()
         {
             // One visible correction at the end of preparation. The subsequent full lock never homes.
@@ -301,55 +397,6 @@ namespace GoGhost.Duel
             activeStarts=Time.time+LockSeconds;activeEnds=activeStarts+(Ability==BossAbility.Piercing?.0001f:ActiveSeconds);
             actor.Trace($"lock {Ability} origin={Origin} end={End}");
             if(LockSeconds<=0)Activate();
-        }
-        void UpdateGeometry()
-        {
-            Vector2 centre=actor.Position;
-            Aim=(targetPoint-(centre+Vector2.up*.28f)).normalized;
-            if(Aim.sqrMagnitude<.1f)Aim=Vector2.right*actor.Facing;
-            Origin=centre+Vector2.up*.28f+Aim*.45f;
-            End=targetPoint;
-            if(Ability==BossAbility.DrawDash||Ability==BossAbility.ReturnCut)
-            {
-                Aim=Vector2.right*Mathf.Sign(targetPoint.x-centre.x);
-                Origin=centre;
-                if(Ability==BossAbility.DrawDash)
-                {
-                    if(!actor.Navigation.TryDirectionalAttack(centre,targetPoint,actor.Motor.Size,out var safe))End=centre;
-                    else {End=safe;Aim=(End-centre).normalized;}
-                }
-                if(Ability==BossAbility.ReturnCut){actor.Navigation.TryDash(centre,centre+Aim*Mathf.Min(p.ReturnCut.Range,Mathf.Abs(targetPoint.x-centre.x)+.75f),actor.Motor.Size,out var safe);End=safe;}
-            }
-            else if(UsesBladeArc)
-            {Aim=BladeDirection(0);Origin=centre;End=centre+Aim*BladeReach;}
-            else if(Ability==BossAbility.Piercing)End=BeamEnd(Origin,Aim);
-            else if(Ability==BossAbility.Sweep)
-            {
-                // The support band and its scan direction were chosen at start, never after a reaction.
-                Aim=(sweepFrom-(centre+Vector2.up*.28f)).normalized;
-                Origin=centre+Vector2.up*.28f;
-                sweepStart=Mathf.Atan2(sweepFrom.y-Origin.y,sweepFrom.x-Origin.x)*Mathf.Rad2Deg;
-                sweepEnd=sweepStart+Mathf.DeltaAngle(sweepStart,Mathf.Atan2(sweepTo.y-Origin.y,sweepTo.x-Origin.x)*Mathf.Rad2Deg);
-                End=sweepTo;
-            }
-            else if(Ability==BossAbility.DropCut)
-            {Origin=centre;Aim=Vector2.down;End=centre+Aim*BladeReach;}
-            activeStarts=phaseUntil+LockSeconds;activeEnds=activeStarts+(Ability==BossAbility.Piercing?.0001f:ActiveSeconds);
-        }
-        Vector2 BeamEnd(Vector2 origin,Vector2 direction)
-        {
-            var bounds=actor.Navigation.ArenaBounds;
-            float distance=settings.Range;
-            if(Mathf.Abs(direction.x)>.001f)distance=Mathf.Min(distance,((direction.x>0?bounds.max.x:bounds.min.x)-origin.x)/direction.x);
-            if(Mathf.Abs(direction.y)>.001f)distance=Mathf.Min(distance,((direction.y>0?bounds.max.y:bounds.min.y)-origin.y)/direction.y);
-            if(actor.Coordinator!=null)
-                foreach(var other in actor.Coordinator.Actors)
-                    if(other!=actor&&other.IsAlive)
-                    {
-                        var hits=Physics2D.RaycastAll(origin,direction,Mathf.Max(0,distance),1<<other.gameObject.layer);
-                        foreach(var hit in hits)if(hit.collider==other.Body)distance=Mathf.Min(distance,hit.distance);
-                    }
-            return origin+direction*Mathf.Max(0,distance);
         }
         void Activate()
         {
@@ -400,256 +447,6 @@ namespace GoGhost.Duel
             else if(Ability==BossAbility.Guard&&guardZone!=null)guardZone.enabled=true;
             if(Ammo==0)RequestReload();Publish();
         }
-        void TickJump()
-        {
-            if(!actor.Motor.Grounded && actor.Motor.JumpStartedAt>=0 && !jumpAirborne)
-            {
-                jumpAirborne=true;slashAt=actor.Motor.JumpStartedAt+jumpPlan.SlashOffset;
-                if(BurstAction)nextShot=Time.time+p.BurstShotLock;
-            }
-            if(jumpAirborne && actor.Motor.Grounded || Time.time>jumpDeadline || actor.Motor.RouteFailed)
-            {
-                if(slashStarted&&!slashFinished)SweepBlade(CutProgress);
-                if(jumpAirborne&&actor.Motor.Grounded&&!actor.Motor.RouteFailed
-                    &&Vector2.Distance(actor.Position,jumpPlan.Destination)<.4f&&TryJumpFollowup())return;
-                Recover();return;
-            }
-            if(!jumpAirborne)return;
-            if(Ability==BossAbility.FlankLeap)return; // Movement alone never deals damage.
-            if(BurstAction)
-            {
-                if(shotsRemaining>0 && !bulletLocked)
-                {
-                    if(!actor.Tactics.TryGunTarget(BossAbility.Burst,actor.Position,actor.Perception.Facts,out var point,AimDelay))return;
-                    targetPoint=point;UpdateGunAim();
-                    if(Time.time>=nextShot-p.BurstShotLock){bulletLocked=true;nextShot=Mathf.Max(nextShot,Time.time+p.BurstShotLock);actor.Face(Aim);}
-                }
-                if(shotsRemaining>0&&bulletLocked&&Time.time>=nextShot)FireBullet();
-            }
-            else
-            {
-                if(!slashStarted && Time.time>=slashAt)
-                {
-                    slashStarted=true;previousBladeOrigin=actor.Position;previousCutProgress=0;
-                    actor.Sounds?.Play(Sfx.BladeHeavy,actor.ActorId,AttackId);
-                }
-                if(slashStarted&&!slashFinished&&Time.time>=slashAt+p.LeapSlash.Active)
-                {SweepBlade(1);slashFinished=true;}
-            }
-        }
-        void UpdateGunAim()
-        {
-            Aim=(targetPoint-(actor.Position+Vector2.up*.28f)).normalized;
-            Origin=actor.Position+Vector2.up*.28f+Aim*.52f;
-            End=Origin+Aim*(BurstAction?p.Burst.Range:settings.Range);
-        }
-        void FireBullet()
-        {
-            if(Ammo<=0||shotsRemaining<=0)return;
-            Vector2 direction=Aim;
-            if(Ability==BossAbility.Sweep)
-            {
-                Vector2 point=Vector2.Lerp(sweepFrom,sweepTo,shotIndex/(float)(p.SweepShots-1));
-                direction=(point-(actor.Position+Vector2.up*.28f)).normalized;Aim=direction;
-            }
-            actor.Face(direction);
-            Vector2 muzzle=actor.Position+Vector2.up*.28f+direction*.52f;
-            if(!actor.Tactics.AllyBlocks(actor.Position+Vector2.up*.28f,muzzle))
-            {
-                var shot=Instantiate(actor.ProjectilePrefab,muzzle,Quaternion.identity);
-                shot.Launch(direction,p.BulletSpeed,BurstAction?p.Burst.Damage:settings.Damage,actor.gameObject);
-                var sprite=shot.GetComponent<SpriteRenderer>();if(sprite!=null)sprite.color=actor.Profile.Kind==BossKind.Refraction?NeuralPalette.Refraction:NeuralPalette.Severance;
-                actor.View?.Bullet(shot,direction);
-                actor.Sounds?.Play(Sfx.BossBurst,actor.ActorId,AttackId,shotIndex);actor.View?.Muzzle(muzzle,direction);
-            }
-            Ammo--;shotsRemaining--;shotIndex++;bulletLocked=false;
-            nextShot=Time.time+(BurstAction?(StaggeredBurst&&shotIndex==1?p.BurstStaggerPause:p.BurstInterval):p.SweepInterval);
-            if(shotsRemaining==0){phaseUntil=Time.time+(BurstAction?p.BurstTail:p.SweepTail);activeEnds=phaseUntil;}
-            if(Ammo==0)RequestReload();
-        }
-        void FixedUpdate()
-        {
-            if(actor!=null&&actor.Running&&Time.deltaTime>0)
-            {
-                swordHazards?.Tick();
-                if(IsSwordPhrase(Ability)){SweepSwordBeat();return;}
-            }
-            if(actor!=null&&actor.Running&&Ability==BossAbility.Guard&&Time.timeScale>0)actor.Motor.HoldHorizontal();
-            if(actor==null||!actor.Running||Phase!=BossActionPhase.Active||Time.timeScale<=0)return;
-            if(Ability==BossAbility.DrawDash||Ability==BossAbility.ReturnCut)
-                SweepDashBlade();
-            else if(Ability==BossAbility.LeapSlash){if(slashStarted&&!slashFinished)SweepBlade(CutProgress);}
-            else if(UsesBladeArc)SweepBlade(PhaseProgress);
-            else if(Ability==BossAbility.DropCut)SweepDrop();
-        }
-        void SweepBlade(float progress)
-        {
-            // Subdivide the physical step by angular travel, including the swept tip and translated root.
-            int samples=Mathf.Max(1,Mathf.CeilToInt(Mathf.Abs(progress-previousCutProgress)
-                *Mathf.Abs(p.RhythmArcTo[RhythmIndex]-p.RhythmArcFrom[RhythmIndex])/4));
-            Vector2 lastRoot=previousBladeOrigin,lastTip=lastRoot+BladeDirection(previousCutProgress)*BladeReach;
-            for(int i=1;i<=samples;i++)
-            {
-                float t=i/(float)samples,cut=Mathf.Lerp(previousCutProgress,progress,t);
-                Vector2 root=Vector2.Lerp(previousBladeOrigin,actor.Position,t),tip=root+BladeDirection(cut)*BladeReach;
-                int damage=RhythmIndex==2?p.RhythmThirdDamage:settings.Damage;
-                HitSegment(root,tip,p.BladeRadius,damage,true);
-                if(actor.Player!=null&&!Projectile.TerrainHit(root,actor.Player.GetComponent<Collider2D>().ClosestPoint(tip),.015f,out _))
-                    HitSegment(lastTip,tip,p.BladeRadius,damage,true);
-                lastRoot=root;lastTip=tip;
-            }
-            Origin=actor.Position;Aim=BladeDirection(progress);End=Origin+Aim*BladeReach;
-            previousBladeOrigin=Origin;previousCutProgress=progress;
-        }
-        void SweepDrop()
-        {
-            Vector2 now=actor.Position;
-            for(int i=0;i<=4;i++)
-            {
-                Vector2 offset=Vector2.down*(BladeReach*i/4f);
-                // A translated blade tip may already lie below a platform. It cannot originate damage there.
-                if(actor.Player!=null&&!Projectile.TerrainHit(now,actor.Player.GetComponent<Collider2D>().ClosestPoint(now+offset),.015f,out _))
-                    HitSegment(previousBladeOrigin+offset,now+offset,p.BladeRadius,settings.Damage,true);
-            }
-            HitSegment(now,now+Vector2.down*BladeReach,p.BladeRadius,settings.Damage,true);
-            Origin=now;Aim=Vector2.down;End=now+Aim*BladeReach;previousBladeOrigin=now;
-        }
-        void HitSegment(Vector2 from,Vector2 to,float radius,int damage,bool terrain)
-        {
-            if(hitInWindow||actor.Player==null||actor.Player.IsDead)return;
-            var body=actor.Player.GetComponent<Collider2D>();
-            Vector2 point=body.ClosestPoint(to);Vector2 d=to-from;
-            float t=d.sqrMagnitude>.001f?Mathf.Clamp01(Vector2.Dot((Vector2)body.bounds.center-from,d)/d.sqrMagnitude):0;
-            Vector2 nearest=from+d*t;point=body.ClosestPoint(nearest);
-            if(Vector2.Distance(point,nearest)>radius)return;
-            if(terrain&&Projectile.TerrainHit(from,point,.015f,out _))return;
-            hitInWindow=true;int before=actor.Player.CurrentHealth;
-            actor.Player.TakeDamage(damage,actor.gameObject);
-            if(actor.Player.CurrentHealth<before)
-            {
-                ConnectedHits++;actor.View?.Impact(point);
-                if(Ability==BossAbility.DropCut&&!actor.Player.IsDead)
-                {
-                    float side=body.bounds.center.x-targetPoint.x;
-                    actor.Player.GetComponent<PlayerMovement>()?.ApplyHitPush(Mathf.Abs(side)>.05f?Mathf.Sign(side):actor.Facing,
-                        actor.Navigation.PlatformWidth*.35f,.14f);
-                }
-            }
-        }
-        void NextRhythm()
-        {
-            if(SingleCut){Recover();return;}
-            var observed=actor.Perception.Facts;int next=RhythmIndex+1;
-            Vector2 nextTarget=next<3?actor.Tactics.SwordTarget(BossAbility.Rhythm,actor.Position,observed,-1,next):observed.Position;
-            if(next>=3||observed.Confidence<.2f
-                || Vector2.Distance(nextTarget,actor.Position)>p.RhythmReach[next]+p.RhythmStep[next]+observed.Body.extents.x
-                || Mathf.Abs(nextTarget.y-actor.Position.y)>p.RhythmReach[next]+observed.Body.extents.y)
-            {Recover();return;}
-            RhythmIndex=next;targetPoint=nextTarget;
-            actor.Motor.BeginStep(p.RhythmStep[next]);
-            SetPhase(BossActionPhase.Prepare,p.RhythmPrepare[next]);UpdateGeometry();
-        }
-        void FinishDash()
-        {
-            // A body/wall sweep can stop the motor during its last physics step. Resolve that
-            // completed displacement before Update leaves Active; the next FixedUpdate is too late.
-            SweepDashBlade();
-            End=actor.Position;PublicThreats.Clear();
-            if(TryDashFollowup())return;
-            returnWindowUntil=Time.time+p.ReturnBranchWindow;Recover();
-        }
-        void SweepDashBlade()
-        {
-            Vector2 offset=DashBladeOffset;
-            // A leading blade must not originate damage through a wall/platform.
-            if(offset.sqrMagnitude>0&&Projectile.TerrainHit(actor.Position,actor.Position+offset,.015f,out _))return;
-            HitSegment(actor.Motor.PreviousPosition+offset,actor.Position+offset,p.BladeRadius+.2f,settings.Damage,true);
-        }
-        bool TryJumpFollowup()
-        {
-            var facts=actor.Perception.Facts;
-            if(Ability!=BossAbility.LeapSlash&&Ability!=BossAbility.FlankLeap)return false;
-            var next=Ability==BossAbility.FlankLeap?BossAbility.FlankCut:BossAbility.LeapFollowup;
-            if(comboTarget||hasReturned||!facts.Visible||facts.Confidence<.3f||!Ready(BossAbility.Rhythm)
-                ||!actor.Tactics.LegalAt(BossAbility.Rhythm,actor.Position,facts,out _)
-                ||actor.Coordinator!=null&&!actor.Coordinator.TryReserve(actor,next,false))return false;
-            hasReturned=true;Ability=next;settings=p.Rhythm;RhythmIndex=0;
-            AttackId++;Started[(int)Ability]++;targetPoint=facts.Position;cutFacing=Mathf.Sign(targetPoint.x-actor.Position.x);
-            actor.Face(Vector2.right*cutFacing);actor.Motor.Brake();
-            readyAt[(int)BossAbility.Rhythm]=Time.time+p.Rhythm.Cooldown;
-            actor.Motor.BeginStep(p.RhythmStep[0]);
-            // Arrival has its own full tell; no damage on the frame a flank lands.
-            SetPhase(BossActionPhase.Prepare,next==BossAbility.FlankCut?.24f:p.RhythmPrepare[0]);
-            actor.Sounds?.Play(Sfx.ReturnPrepare,actor.ActorId,AttackId);
-            UpdateGeometry();Publish();actor.Trace("prepare "+Ability+" attack="+AttackId);return true;
-        }
-        bool TryDropFollowup()
-        {
-            var facts=actor.Perception.Facts;
-            if(comboTarget||hasReturned||!actor.Motor.Grounded||!facts.Visible||facts.Confidence<.3f
-                ||!Ready(BossAbility.Rhythm)||Mathf.Sign(facts.Position.x-actor.Position.x)!=actor.Facing
-                ||!actor.Tactics.LegalAt(BossAbility.Rhythm,actor.Position,facts,out _)
-                ||actor.Coordinator!=null&&!actor.Coordinator.TryReserve(actor,BossAbility.DropFollowup,false))return false;
-            hasReturned=true;Ability=BossAbility.DropFollowup;settings=p.Rhythm;RhythmIndex=0;
-            AttackId++;Started[(int)Ability]++;targetPoint=facts.Position;cutFacing=actor.Facing;
-            readyAt[(int)BossAbility.Rhythm]=Time.time+p.Rhythm.Cooldown;
-            actor.Motor.BeginStep(p.RhythmStep[0]);SetPhase(BossActionPhase.Prepare,p.RhythmPrepare[0]);
-            UpdateGeometry();Publish();actor.Trace("prepare DropFollowup attack="+AttackId);return true;
-        }
-        bool TryDashFollowup()
-        {
-            if(TryReturn())return true;
-            var facts=actor.Perception.Facts;
-            if(Ability!=BossAbility.DrawDash||comboTarget||hasReturned||!actor.Motor.Grounded||facts.Confidence<.3f
-                ||!Ready(BossAbility.Rhythm)
-                || Mathf.Sign(facts.Position.x-actor.Position.x)!=Mathf.Sign(Aim.x)
-                || !actor.Tactics.LegalAt(BossAbility.Rhythm,actor.Position,facts,out _)
-                ||actor.Coordinator!=null&&!actor.Coordinator.TryReserve(actor,BossAbility.DashFollowup,false))return false;
-            hasReturned=true;Ability=BossAbility.DashFollowup;settings=p.Rhythm;RhythmIndex=0;
-            AttackId++;Started[(int)Ability]++;targetPoint=facts.Position;cutFacing=Mathf.Sign(Aim.x);
-            readyAt[(int)BossAbility.Rhythm]=Time.time+p.Rhythm.Cooldown;
-            actor.Motor.BeginStep(p.RhythmStep[0]);SetPhase(BossActionPhase.Prepare,p.RhythmPrepare[0]);
-            UpdateGeometry();Publish();actor.Trace("prepare DashFollowup attack="+AttackId);return true;
-        }
-        bool TryReturn()
-        {
-            var facts=actor.Perception.Facts;
-            Vector2 opportunity=ObservedReturnPoint(facts);
-            if(Ability==BossAbility.DrawDash&&!comboTarget&&!hasReturned&&actor.Motor.Grounded&&Ready(BossAbility.ReturnCut)&&facts.Confidence>.3f&&Mathf.Sign(opportunity.x-actor.Position.x)!=Mathf.Sign(Aim.x)
-                &&Mathf.Abs(opportunity.y-actor.Position.y)<.85f&&Mathf.Abs(opportunity.x-actor.Position.x)<p.ReturnCut.Range)
-            {
-                Vector2 to=actor.Position+Vector2.right*Mathf.Sign(opportunity.x-actor.Position.x)*Mathf.Min(p.ReturnCut.Range,Mathf.Abs(opportunity.x-actor.Position.x)+.6f);
-                if(actor.Navigation.TryDash(actor.Position,to,actor.Motor.Size,out var safe)&&Vector2.Distance(safe,actor.Position)>.75f)
-                {
-                    hasReturned=true;Ability=BossAbility.ReturnCut;settings=p.ReturnCut;AttackId++;Started[(int)Ability]++;
-                    readyAt[(int)Ability]=Time.time+settings.Cooldown;targetPoint=opportunity;comboTarget=false;
-                    actor.Motor.Brake();UpdateGeometry();actor.Face(Aim);SetPhase(BossActionPhase.Prepare,settings.Prepare);actor.Sounds?.Play(Sfx.ReturnPrepare,actor.ActorId,AttackId);return true;
-                }
-            }
-            return false;
-        }
-        Vector2 ObservedReturnPoint(BossObservation facts)
-        {
-            // A visibly descending body is a commitment. Predict only that expressed motion
-            // through real terrain during the full second tell, never a new player input.
-            if(facts.Velocity.y>=-.5f||facts.Position.y<=actor.Position.y+.85f)return facts.Position;
-            Vector2 point=facts.Position,velocity=facts.Velocity,size=facts.Body.size;
-            float horizon=Mathf.Min(.6f,p.ReturnCut.Prepare+p.ReturnCut.Lock+Mathf.Max(0,Time.time-facts.ObservedAt));
-            float dt=Time.fixedDeltaTime;
-            for(float t=0;t<horizon;t+=dt)
-            {
-                velocity.y+=Physics2D.gravity.y*3*dt; // Retained public player gravity.
-                Vector2 next=point+velocity*dt;
-                if(!actor.Navigation.SweepTraversal(point,next,size,out var hit,out var safe))
-                {
-                    point=safe;
-                    if(hit.normal.y>.6f&&velocity.y<0)return point;
-                    return facts.Position;
-                }
-                point=next;
-            }
-            return point;
-        }
         void Recover()
         {
             if(guardZone!=null)guardZone.enabled=false;
@@ -659,7 +456,8 @@ namespace GoGhost.Duel
                 actor.Tactics.EndCamoRoute();lastCamoEnded=Time.time;
                 actor.Sounds?.Play(Sfx.CamoExit,actor.ActorId,AttackId);actor.PublishCue(.15f);
             }
-            actor.Motor.Brake();PublicThreats.Clear();SetPhase(BossActionPhase.Recovery,settings.Recovery);
+            if(!actor.IsTrainingEnemy)actor.Motor.Brake();
+            PublicThreats.Clear();SetPhase(BossActionPhase.Recovery,settings.Recovery);
             RecoveryStepping=false;
             if(Ability!=BossAbility.Guard&&SafeRecovery&&!comboTarget&&actor.Tactics.TrySwordRecoveryStep(out float step))
             {
@@ -689,101 +487,5 @@ namespace GoGhost.Duel
         }
         // Ordinary hits still damage health, but do not cancel G3/G4 preparation.
         public void OnDamaged(GameObject source) { }
-        public bool GuardBlocksRay(Vector2 origin,Vector2 point)
-        {
-            if(Ability!=BossAbility.Guard||Phase!=BossActionPhase.Active||Guarded>=p.GuardCapacity)return false;
-            Vector2 outward=(origin-actor.Position).normalized;
-            return Vector2.Dot(outward,Aim)>Mathf.Cos(p.GuardArc*.5f*Mathf.Deg2Rad);
-        }
-        public bool ReceiveProjectile(Projectile shot,Collider2D contact)
-        {
-            if(shot.OwnerLayer==gameObject.layer||!GuardBlocksRay(shot.transform.position,actor.Position))return false;
-            var velocity=shot.GetComponent<Rigidbody2D>().linearVelocity;
-            if(Vector2.Dot(velocity,Aim)>=0 || Vector2.Distance(shot.transform.position,actor.Position)>p.Guard.Range+shot.Radius)return false;
-            if(!shot.Deflect(gameObject,ProjectileActor.Environment))return false;
-            if(shot.TryGetComponent<SpriteRenderer>(out var sprite))sprite.color=NeuralPalette.Severance;
-            Guarded++;actor.Sounds?.Play(Sfx.GuardBlock,actor.ActorId,AttackId,Guarded);actor.View?.Impact(shot.transform.position);
-            if(Guarded>=p.GuardCapacity)Recover();return true;
-        }
-        void Publish()
-        {
-            PublicThreats.Clear();
-            swordHazards?.Publish(PublicThreats);
-            if(!Busy||Phase==BossActionPhase.Recovery||Ability==BossAbility.Camo||Ability==BossAbility.Guard||Ability==BossAbility.FlankLeap)return;
-            if(Ability==BossAbility.LeapSlash){PublishLeap();return;}
-            var phase=Phase==BossActionPhase.Prepare?BossThreatPhase.Preparation:Phase==BossActionPhase.Locked?BossThreatPhase.Locked:BossThreatPhase.Active;
-            int count=Ability==BossAbility.Sweep?p.SweepShots:1;
-            if(BurstAction&&Phase==BossActionPhase.Active&&shotsRemaining==0)return;
-            for(int i=0;i<count;i++)
-            {
-                Vector2 origin=Origin,end=End,direction=Aim;
-                BossThreatShape shape=BossThreatShape.SweptCapsule;
-                float radius=p.BladeRadius,start=activeStarts,finish=activeEnds,speed=0;
-                bool terrain=true;
-                if(Ability==BossAbility.Piercing){shape=BossThreatShape.Ray;radius=p.BeamRadius;terrain=false;}
-                else if(BurstAction||Ability==BossAbility.Sweep)
-                {
-                    shape=BossThreatShape.Projectile;radius=actor.ProjectilePrefab.Radius;speed=p.BulletSpeed;terrain=false;
-                    if(BurstAction)
-                    {
-                        // Only the current round has an expressed direction. Later rounds have not been selected.
-                        origin=actor.Position+Vector2.up*.28f+Aim*.52f;
-                        if(Phase==BossActionPhase.Active){start=nextShot;phase=bulletLocked?BossThreatPhase.Locked:BossThreatPhase.Preparation;}
-                    }
-                    else
-                    {
-                        if(Phase==BossActionPhase.Active&&i<shotIndex)continue;
-                        direction=(Vector2.Lerp(sweepFrom,sweepTo,i/(float)(p.SweepShots-1))-(actor.Position+Vector2.up*.28f)).normalized;
-                        origin=actor.Position+Vector2.up*.28f+direction*.52f;
-                        start=Phase==BossActionPhase.Active?nextShot+(i-shotIndex)*p.SweepInterval:activeStarts+i*p.SweepInterval;
-                    }
-                    float range=BurstAction?p.Burst.Range:settings.Range;
-                    end=origin+direction*range;finish=start+range/speed;
-                }
-                else if(Ability==BossAbility.DrawDash||Ability==BossAbility.ReturnCut)
-                {
-                    radius=p.BladeRadius+.2f;finish=start+Vector2.Distance(origin,end)/(Ability==BossAbility.DrawDash?p.DashSpeed:p.ReturnSpeed);
-                    origin+=DashBladeOffset;end+=DashBladeOffset;
-                    // The full-body route was clipped by navigation, including one-way traversal.
-                    // A second ray clip would incorrectly erase an upward route through a one-way support.
-                    if(Ability==BossAbility.DrawDash)terrain=false;
-                }
-                else if(UsesBladeArc){shape=BossThreatShape.BladeArc;origin=actor.Position;}
-                else if(Ability==BossAbility.DropCut)
-                {
-                    shape=BossThreatShape.FallingBlade;
-                    // Gravity prediction uses the same one-time horizontal request, never a homing endpoint.
-                    float before=Phase==BossActionPhase.Active?0:Mathf.Max(0,start-Time.time);
-                    actor.Tactics.PredictDropActivation(before,out origin);
-                    float fall=(Mathf.Sqrt(p.DropSpeed*p.DropSpeed+2*(-Physics2D.gravity.y*p.Motion.GravityScale)*Mathf.Max(.01f,origin.y-targetPoint.y))-p.DropSpeed)/(-Physics2D.gravity.y*p.Motion.GravityScale);
-                    direction=Phase==BossActionPhase.Active?actor.Velocity:new Vector2(Mathf.Clamp((targetPoint.x-origin.x)/Mathf.Max(.02f,fall),-p.Motion.Speed,p.Motion.Speed),-p.DropSpeed);
-                    if(Phase==BossActionPhase.Active)start=Time.time;
-                    finish=start+fall+Time.fixedDeltaTime;
-                }
-                PublicThreats.Add(new BossThreat {ActorId=actor.ActorId,AttackId=AttackId,Phase=phase,Shape=shape,Origin=origin,End=end,Direction=direction,
-                    Radius=radius,StartsAt=start,EndsAt=finish,ProjectileSpeed=speed,TerrainBlocked=terrain,Valid=true,
-                    HasLandingX=Ability==BossAbility.DropCut,LandingX=targetPoint.x,
-                    ArcFrom=p.RhythmArcFrom[RhythmIndex],ArcTo=p.RhythmArcTo[RhythmIndex],Facing=cutFacing,Reach=BladeReach,Gravity=Physics2D.gravity.y*p.Motion.GravityScale});
-            }
-        }
-        void PublishLeap()
-        {
-            if(jumpPlan==null||Phase==BossActionPhase.Active&&slashFinished)return;
-            bool flying=Phase==BossActionPhase.Active&&jumpAirborne;
-            float launch=flying?actor.Motor.JumpStartedAt:Phase==BossActionPhase.Active?Time.time+Time.fixedDeltaTime
-                :phaseUntil+(Phase==BossActionPhase.Prepare?LockSeconds:0);
-            float start=flying?slashAt:launch+jumpPlan.SlashOffset,end=start+p.LeapSlash.Active;
-            float pathStart=flying?Time.time:launch;
-            Vector2 velocity=flying?actor.Velocity:Vector2.up*p.Motion.JumpSpeed;
-            var path=actor.Navigation.PredictAirPath(actor.Position,velocity,jumpPlan.Destination,p.Motion,actor.Motor.Size,Mathf.Max(0,end-pathStart));
-            var threat=new BossThreat { ActorId=actor.ActorId,AttackId=AttackId,Valid=true,
-                Shape=BossThreatShape.BladeArc,Phase=Time.time>=start?BossThreatPhase.Active:
-                    Phase==BossActionPhase.Prepare?BossThreatPhase.Preparation:BossThreatPhase.Locked,
-                StartsAt=start,EndsAt=end,Origin=actor.Position,Direction=BladeDirection(0),Radius=p.BladeRadius,
-                ArcFrom=p.RhythmArcFrom[0],ArcTo=p.RhythmArcTo[0],Facing=cutFacing,Reach=BladeReach,TerrainBlocked=true,
-                OriginPath=path,PathStartsAt=pathStart,PathStep=Time.fixedDeltaTime };
-            threat.Origin=threat.OriginAt(start);threat.End=threat.Origin+BladeDirection(0)*BladeReach;
-            PublicThreats.Add(threat);
-        }
     }
 }

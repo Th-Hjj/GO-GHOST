@@ -146,6 +146,8 @@ public sealed class OfficerVisual : MonoBehaviour
     {
         Vector2 aim = input.AimDirection.normalized;
         int facing = movement.FacingDirection;
+        // Arms stay attached to the independently aimed rifle when the legs face the other way.
+        int aimFacing = aim.x < 0 ? -1 : 1;
         float wave = Mathf.Sin(gait), lift = Mathf.Cos(gait);
         float crouch = landing * .12f + (dashDirection != 0 ? .17f : 0);
         float breath = Mathf.Sin(clock * 2.4f) * .009f;
@@ -176,18 +178,18 @@ public sealed class OfficerVisual : MonoBehaviour
 
         // FirePoint remains entirely owned by PlayerShooting. The barrel ends at its real muzzle.
         float reload = reloading ? Mathf.Sin(Mathf.PI * Mathf.Clamp01(1 - shooting.ReloadRemaining / reloadDuration)) : 0;
-        float angle = -35 * facing * reload;
+        float angle = -35 * aimFacing * reload;
         Quaternion rotation = Quaternion.Euler(0, 0, angle);
-        Vector3 barrel = new Vector3(-.24f - reload * .10f, -.12f * facing * reload, 0);
+        Vector3 barrel = new Vector3(-.24f - reload * .10f, -.12f * aimFacing * reload, 0);
         weapon.transform.localPosition = barrel;
         weapon.transform.localRotation = rotation;
-        weaponGrip.transform.localPosition = barrel + rotation * new Vector3(-.12f, -.08f * facing, 0);
+        weaponGrip.transform.localPosition = barrel + rotation * new Vector3(-.12f, -.08f * aimFacing, 0);
         weaponGrip.transform.localRotation = rotation;
-        Vector2 triggerHand = transform.InverseTransformPoint(weapon.transform.TransformPoint(new Vector3(-.28f, -.45f * facing, 0)));
-        Vector2 supportHand = transform.InverseTransformPoint(weapon.transform.TransformPoint(new Vector3(.25f, -.30f * facing, 0)));
-        supportHand = Vector2.Lerp(supportHand, chest + new Vector2(.12f * facing, -.24f), reload);
-        Limb(leftArm, leftForearm, chest + new Vector2(-.10f * facing, -.04f), supportHand, new Vector2(-.08f * facing, -.12f), .16f);
-        Limb(rightArm, rightForearm, chest + new Vector2(.08f * facing, -.04f), triggerHand, new Vector2(.06f * facing, -.12f), .16f);
+        Vector2 triggerHand = transform.InverseTransformPoint(weapon.transform.TransformPoint(new Vector3(-.28f, -.45f * aimFacing, 0)));
+        Vector2 supportHand = transform.InverseTransformPoint(weapon.transform.TransformPoint(new Vector3(.25f, -.30f * aimFacing, 0)));
+        supportHand = Vector2.Lerp(supportHand, chest + new Vector2(.12f * aimFacing, -.24f), reload);
+        Limb(leftArm, leftForearm, chest + new Vector2(-.10f * aimFacing, -.04f), supportHand, new Vector2(-.08f * aimFacing, -.12f), .16f);
+        Limb(rightArm, rightForearm, chest + new Vector2(.08f * aimFacing, -.04f), triggerHand, new Vector2(.06f * aimFacing, -.12f), .16f);
     }
 
     private void Limb(SpriteRenderer upper, SpriteRenderer lower, Vector2 start, Vector2 end, Vector2 bend, float width)

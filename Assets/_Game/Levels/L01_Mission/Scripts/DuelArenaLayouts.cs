@@ -4,8 +4,11 @@ namespace GoGhost.Duel
 {
     public sealed partial class DuelGame
     {
+        // Default jump 12 / gravity 29.43 / fixed step .02 rises 2.328 units in real physics.
+        // A shared 2.1 rise leaves .228 landing margin and .25 body clearance below a .3-thick platform.
+        // Authored geometry is only a template; every stage uses this same vertical metric.
+        public const float PlatformTierRise = 2.1f;
         // Arena-relative X, surface height above the floor, and width in world units.
-        // W2/W3 continue to use the serialized scene platforms without any transform edits.
         readonly struct PlatformPlacement
         {
             public readonly float X, Rise, Width;
@@ -15,17 +18,25 @@ namespace GoGhost.Duel
 
         static readonly PlatformPlacement[] TrainingLayout =
         {
-            new PlatformPlacement(-5.5f, 1.6f, 4f)
+            new PlatformPlacement(-5.5f, PlatformTierRise, 4f)
         };
         static readonly PlatformPlacement[] WaveOneLayout =
         {
-            new PlatformPlacement(-7.5f, 1.7f, 4f),
-            new PlatformPlacement(-8.5f, 3.4f, 4f),
-            new PlatformPlacement(-9.5f, 5.1f, 4f),
-            new PlatformPlacement( 7.5f, 1.7f, 4f),
-            new PlatformPlacement( 8.5f, 3.4f, 4f),
-            new PlatformPlacement( 9.5f, 5.1f, 4f),
-            new PlatformPlacement( 0f, 3.4f, 4f)
+            new PlatformPlacement(-7.5f, PlatformTierRise, 4f),
+            new PlatformPlacement(-8.5f, PlatformTierRise * 2, 4f),
+            new PlatformPlacement(-9.5f, PlatformTierRise * 3, 4f),
+            new PlatformPlacement( 7.5f, PlatformTierRise, 4f),
+            new PlatformPlacement( 8.5f, PlatformTierRise * 2, 4f),
+            new PlatformPlacement( 9.5f, PlatformTierRise * 3, 4f),
+            new PlatformPlacement( 0f, PlatformTierRise * 2, 4f)
+        };
+        static readonly PlatformPlacement[] WaveTwoThreeLayout =
+        {
+            new PlatformPlacement(-8.75f, PlatformTierRise * 2, 4f),
+            new PlatformPlacement(-4.375f, PlatformTierRise, 4f),
+            new PlatformPlacement(0, PlatformTierRise * 2, 4f),
+            new PlatformPlacement(4.375f, PlatformTierRise, 4f),
+            new PlatformPlacement(8.75f, PlatformTierRise * 2, 4f)
         };
 
         GameObject stagePlatforms;
@@ -35,8 +46,7 @@ namespace GoGhost.Duel
 
         void ApplyPlatformLayout(bool training)
         {
-            var layout = training ? TrainingLayout : Wave == 1 ? WaveOneLayout : null;
-            if (layout == null) return;
+            var layout = training ? TrainingLayout : Wave == 1 ? WaveOneLayout : WaveTwoThreeLayout;
 
             // The existing list contains the floor first, followed by the five one-way platforms.
             // Clone only a platform, preserving its collider/effector/rendering setup and Ground layer.
@@ -44,7 +54,7 @@ namespace GoGhost.Duel
             var templateBounds = template.bounds;
             var offset = templateBounds.center - template.transform.position;
             float floorY = platforms[0].bounds.max.y;
-            stagePlatforms = new GameObject(training ? "Training Platforms" : "Wave 1 Platforms");
+            stagePlatforms = new GameObject(training ? "Training Platforms" : "Wave " + Wave + " Platforms");
             stagePlatforms.transform.SetParent(template.transform.parent, false);
             stageSupports = new Collider2D[layout.Length + 1];
             stageSupports[0] = platforms[0];

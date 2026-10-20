@@ -119,7 +119,7 @@ public static partial class BossEncounterSmoke
         Check("W1 mirrored three equal-height pairs", Enumerable.Range(1, 3).All(i =>
             Mathf.Abs(waveOne[i].bounds.center.x + waveOne[i + 3].bounds.center.x) < .001f
             && Mathf.Abs(waveOne[i].bounds.max.y - waveOne[i + 3].bounds.max.y) < .001f
-            && Mathf.Abs(waveOne[i].bounds.max.y - authored[0].bounds.max.y - 1.7f * i) < .001f));
+            && Mathf.Abs(waveOne[i].bounds.max.y - authored[0].bounds.max.y - DuelGame.PlatformTierRise * i) < .001f));
         yield return LayoutCapture("wave1");
         yield return Until(() => game.Phase == DuelPhase.Fight, 4);
         yield return Seconds(4);
@@ -145,13 +145,28 @@ public static partial class BossEncounterSmoke
         {
             game.StartFight(); yield return Frames(5);
             CheckStageLayout("W" + wave, 5, baselineGround);
-            Check("W" + wave + " exact original transforms/sizes/bounds and Boss roster", authored.Select((c, i) =>
-                c.transform.position == positions[i] && c.transform.localScale == scales[i] && c.bounds.size == sizes[i]).All(v => v)
+            var active=LayoutSupports();
+            Check("W" + wave + " unified tiers, original horizontal layout and Boss roster", authored.Select((c, i) =>
+                c.transform.position == positions[i] && c.transform.localScale == scales[i]).All(v => v)
+                && active.Skip(1).All(c=>Mathf.Abs(c.bounds.size.x-4)<.001f
+                    && positions.Skip(1).Any(p=>Mathf.Abs(p.x-c.bounds.center.x)<.001f))
+                && active.Skip(1).Select(c=>Mathf.Round((c.bounds.max.y-active[0].bounds.max.y)/DuelGame.PlatformTierRise))
+                    .OrderBy(v=>v).SequenceEqual(new[]{1f,1f,2f,2f,2f})
                 && game.ArenaBounds == arena && game.Bosses.Count == (wave == 3 ? 2 : 1));
             yield return LayoutCapture("wave" + wave);
             game.Player.SetRuntimeHealth(10000, 10000);
             yield return Until(() => game.Phase == DuelPhase.Fight, 4); yield return Seconds(4);
             Check("W" + wave + " short live combat", game.Phase == DuelPhase.Fight && game.Bosses.Any(b => b.Actions.AttackId > 0));
+            StopPolicies();
+            foreach(var shot in game.GetComponentsInChildren<Projectile>())shot.Retire();
+            foreach(var boss in game.Bosses)OnFloor(boss.gameObject,boss.Navigation,10+boss.ActorId);
+            var low=active.Skip(1).First(c=>Mathf.Abs(c.bounds.center.x+4.375f)<.001f);
+            var high=active.Skip(1).First(c=>Mathf.Abs(c.bounds.center.x)<.001f);
+            OnFloor(game.Player.gameObject,game.Bosses[0].Navigation,-4.375f);yield return Seconds(.2f);
+            yield return OrdinaryPlatformJump(low,"W"+wave+" ground -> low");
+            heldKeys=new[]{Key.D};yield return Until(()=>game.Player.transform.position.x>-3,1);heldKeys=Array.Empty<Key>();
+            yield return Frames(3);
+            yield return OrdinaryPlatformJump(high,"W"+wave+" low -> high");
             foreach (var boss in game.Bosses) boss.Health.TakeDamage(boss.Health.MaxHealth, game.Player.gameObject);
             yield return Until(() => game.Phase == (wave == 3 ? DuelPhase.Complete : DuelPhase.Configure), 2);
         }

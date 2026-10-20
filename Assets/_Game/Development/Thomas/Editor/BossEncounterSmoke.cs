@@ -170,6 +170,12 @@ public static partial class BossEncounterSmoke
     static IEnumerator Run()
     {
         Record("Editor Play Mode; simulated focus and virtual keyboard/mouse. No physical-input or audibility claim.");
+        if(mode=="player-turning") {yield return PlayerTurning();yield break;}
+        if(mode=="behavior-corrections") {yield return BehaviorCorrections();yield break;}
+        if(mode=="behavior-public-facts") {yield return BehaviorPublicFacts();yield break;}
+        if(mode=="behavior-platforms") {yield return BehaviorPlatforms();yield break;}
+        if(mode=="behavior-catalog") {yield return BehaviorCatalog();yield break;}
+        if(mode=="boss-body-scale") {yield return BossBodyScale();yield break;}
         if(mode=="jump-platform") {yield return JumpPlatform();yield break;}
         if(mode=="jump-platform-edges") {yield return JumpPlatformEdges();yield break;}
         if(mode=="map-gunner") {yield return MapGunner();yield break;}
@@ -179,6 +185,7 @@ public static partial class BossEncounterSmoke
         if(mode=="gunner-platforms") {yield return GunnerPlatforms();yield break;}
         if(mode=="gunner-crossings") {yield return GunnerPlatformCrossings();yield break;}
         if(mode=="training-room") {yield return TrainingRoom();yield break;}
+        if(mode=="training-patrol") {yield return TrainingPatrol();yield break;}
         if(mode=="training-threat") {yield return TrainingThreat();yield break;}
         if(mode=="gunner-vfx") {yield return GunnerVfx();yield break;}
         if(mode=="wave-performance-mechanisms") {yield return WavePerformanceMechanisms();yield break;}

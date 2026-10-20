@@ -10,7 +10,7 @@ namespace GoGhost.Duel
             public Collider2D Source, Destination;
             public Bounds SourceBounds, DestinationBounds;
             public float TakeoffX, LandingX, Speed, JumpSpeed, Gravity, Deadline;
-            public bool Higher, Launched, LeftGround;
+            public bool Higher, Jump, Drop, Launched, LeftGround;
         }
         bool platformOwnsMovement;
         readonly Collider2D[] platformOccupants=new Collider2D[32];
@@ -55,7 +55,7 @@ namespace GoGhost.Duel
         {
             var p=r.Platform;var nav=PlatformGeometry;
             if(p==null||nav==null||dodge.IsDodging||movement.HitPushActive||!movement.isActiveAndEnabled
-                ||!body.simulated||!input.GameplayInputEnabled||!PlatformHasMovementPriority(rule))return false;
+                ||!body.simulated||!input.GameplayInputEnabled)return false;
             if(!ActiveSupport(p.Source)||!ActiveSupport(p.Destination)
                 ||p.Source.bounds!=p.SourceBounds||p.Destination.bounds!=p.DestinationBounds
                 ||Mathf.Abs(movement.MoveSpeed-p.Speed)>.001f||Mathf.Abs(movement.JumpSpeed-p.JumpSpeed)>.001f
@@ -69,19 +69,21 @@ namespace GoGhost.Duel
                 PlatformTransitionsCompleted++;r.Completed=true;return false;
             }
             float target=p.LandingX;
-            bool jump=false;
+            bool jump=false,drop=false;
             if(!p.LeftGround&&!p.Launched)
             {
                 if(!nav.TrySupport(shape.bounds.center,shape.bounds.size,out var support)||support!=p.Source)return FailPlatform(r);
                 target=p.TakeoffX;
-                if(p.Higher&&Mathf.Abs(shape.bounds.center.x-p.TakeoffX)<=.035f)
+                if((p.Jump||p.Drop)&&Mathf.Abs(shape.bounds.center.x-p.TakeoffX)<=.035f)
                 {
                     // Recheck the frozen path at takeoff; do not choose a different destination.
-                    if(!PlatformFlight(nav,shape.bounds.center,p.LandingX,p.Destination,true,out _))return FailPlatform(r);
-                    jump=true;target=p.LandingX;
+                    if(!PlatformFlight(nav,shape.bounds.center,p.LandingX,p.Destination,p.Jump,out _,p.Drop?p.Source:null))
+                        return FailPlatform(r);
+                    if(p.Drop&&!movement.CanDropThrough(p.Source))return FailPlatform(r);
+                    jump=p.Jump;drop=p.Drop;target=p.LandingX;
                 }
             }
-            else if(!p.Higher&&shape.bounds.min.y>=p.SourceBounds.max.y-.12f)
+            else if(!p.Jump&&!p.Drop&&shape.bounds.min.y>=p.SourceBounds.max.y-.12f)
                 target=p.TakeoffX; // Clear the real body before steering back beneath the source.
 
             float move=PlatformSteer(target);
@@ -97,7 +99,7 @@ namespace GoGhost.Duel
             // Only revoke the lower movement row once the transition can actually emit input.
             running[0].Row=-1;
             platformOwnsMovement=true;output.MovementOwned=true;output.Move=move;
-            output.JumpOwned=true;output.Jump=jump;
+            output.JumpOwned=true;output.Jump=jump;output.Drop=drop;
             return true;
         }
 
@@ -130,22 +132,31 @@ namespace GoGhost.Duel
                     float land=point==0?Mathf.Clamp(origin.x,min,max):point==1?(min+max)*.5f:point==2?min:max;
                     Vector2 landing=new Vector2(land,to.max.y+size.y*.5f+.025f);
                     if(!nav.CanStand(landing,size)||!PlatformLandingFree(landing,size))continue;
-                    for(int side=0;side<(higher?3:2);side++)
+                    // Lower can use the current one-way support, an edge, or an ordinary jump.
+                    // Equal geometry/cost keeps this stable order, preferring the direct S capability.
+                    for(int route=0;route<(higher?1:3);route++)
                     {
-                        float launch=higher
-                            ?side==0?Mathf.Clamp(origin.x,sourceMin,sourceMax):side==1?Mathf.Clamp(land,sourceMin,sourceMax):Mathf.Clamp((origin.x+land)*.5f,sourceMin,sourceMax)
-                            :side==0?from.min.x-half-.10f:from.max.x+half+.10f;
-                        float walk=Mathf.Abs(launch-origin.x);
-                        if(walk>localReach||Mathf.Abs(land-launch)>localReach&&higher)continue;
-                        var takeoff=new Vector2(launch,from.max.y+size.y*.5f+.025f);
-                        if(!nav.SweepTraversal(origin,takeoff,size,out _,out _))continue;
-                        if(!PlatformFlight(nav,takeoff,land,destination,higher,out float flight))continue;
-                        float cost=walk+Mathf.Abs(land-launch);
-                        if(level>=bestRise-.05f&&cost>=bestCost-.001f)continue;
-                        bestRise=level;bestCost=cost;
-                        best=new PlatformTransition {Source=source,Destination=destination,SourceBounds=from,DestinationBounds=to,
-                            TakeoffX=launch,LandingX=land,Higher=higher,Speed=speed,JumpSpeed=movement.JumpSpeed,Gravity=gravity,
-                            Deadline=Time.time+walk/speed+flight+.75f};
+                        bool jump=higher||route==2,drop=!higher&&route==0;
+                        if(drop&&!PlayerMovement.IsDropThroughSupport(source))continue;
+                        bool edge=!jump&&!drop;
+                        for(int side=0;side<(edge?2:3);side++)
+                        {
+                            float launch=edge
+                                ?side==0?from.min.x-half-.10f:from.max.x+half+.10f
+                                :side==0?Mathf.Clamp(origin.x,sourceMin,sourceMax):side==1?Mathf.Clamp(land,sourceMin,sourceMax):Mathf.Clamp((origin.x+land)*.5f,sourceMin,sourceMax);
+                            float walk=Mathf.Abs(launch-origin.x);
+                            if(walk>localReach||Mathf.Abs(land-launch)>localReach&&jump)continue;
+                            var takeoff=new Vector2(launch,from.max.y+size.y*.5f+.025f);
+                            if(!nav.SweepTraversal(origin,takeoff,size,out _,out _))continue;
+                            if(!PlatformFlight(nav,takeoff,land,destination,jump,out float flight,drop?source:null))continue;
+                            float cost=walk+Mathf.Abs(land-launch);
+                            if(level>=bestRise-.05f&&cost>=bestCost-.001f)continue;
+                            bestRise=level;bestCost=cost;
+                            best=new PlatformTransition {Source=source,Destination=destination,SourceBounds=from,DestinationBounds=to,
+                                TakeoffX=launch,LandingX=land,Higher=higher,Jump=jump,Drop=drop,
+                                Speed=speed,JumpSpeed=movement.JumpSpeed,Gravity=gravity,
+                                Deadline=Time.time+walk/speed+flight+.75f};
+                        }
                     }
                 }
             }
@@ -164,7 +175,8 @@ namespace GoGhost.Duel
             }
             return true;
         }
-        bool PlatformFlight(ArenaNavigation2D nav,Vector2 start,float land,Collider2D destination,bool jump,out float flight)
+        bool PlatformFlight(ArenaNavigation2D nav,Vector2 start,float land,Collider2D destination,bool jump,out float flight,
+            Collider2D ignoredSupport=null)
         {
             flight=0;
             float step=Time.fixedDeltaTime,gravity=-Physics2D.gravity.y*body.gravityScale;
@@ -179,7 +191,7 @@ namespace GoGhost.Duel
                 Vector2 next=position;
                 next.x=Mathf.MoveTowards(next.x,land,movement.MoveSpeed*step);
                 vy-=gravity*step;next.y+=vy*step;
-                if(!nav.SweepTraversal(position,next,size,out var hit,out _))
+                if(!nav.SweepTraversal(position,next,size,out var hit,out _,ignoredSupport))
                 {
                     flight=t;
                     return vy<=0&&hit.normal.y>.5f&&hit.collider==destination

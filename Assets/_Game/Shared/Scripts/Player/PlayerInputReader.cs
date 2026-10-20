@@ -61,6 +61,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     public bool AttackPressedThisFrame { get; private set; }
     public bool JumpPressedThisFrame { get; private set; }
     public bool JumpHeld { get; private set; }
+    public bool DropPressedThisFrame { get; private set; }
     public bool DodgePressedThisFrame { get; private set; }
     public bool AbilityPressedThisFrame { get; private set; }
     public bool SecondaryAbilityPressedThisFrame { get; private set; }
@@ -85,7 +86,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     private bool hasFocus = true;
     // Release gates are (re)armed whenever input starts or focus returns. See Update.
     private bool waitingForRelease = true;
-    private bool attackGated, jumpGated, dodgeGated, abilityGated, secondaryGated;
+    private bool attackGated, jumpGated, dodgeGated, dropGated, abilityGated, secondaryGated;
     private OfficerIdentity officer;
     private PlayerShooting shooting;
     private Enemy aimTarget;
@@ -134,6 +135,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
 
     private void OnDestroy()
     {
+        dropAction?.Dispose();
         if (legacyActions != null) { legacyActions.Disable(); Destroy(legacyActions); }
     }
 
@@ -158,6 +160,8 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     private InputAction attackAction;
     private InputAction jumpAction;
     private InputAction dodgeAction;
+    // Actor-local action follows the same enable/focus/release gates without changing the shared asset.
+    private InputAction dropAction;
     private InputAction abilityAction;
     private InputAction secondaryAbilityAction;
     private InputAction previousAction;
@@ -182,6 +186,8 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         secondaryAbilityAction = Find(asset, "Player/SecondaryAbility");
         previousAction = Find(asset, "Player/Previous");
         nextAction = Find(asset, "Player/Next");
+        if (dropAction == null) dropAction = new InputAction("Drop Through", InputActionType.Button, "<Keyboard>/s");
+        dropAction.Enable();
 
         IsReady = moveAction != null && aimAction != null && attackAction != null && jumpAction != null
                   && dodgeAction != null && abilityAction != null && secondaryAbilityAction != null;
@@ -210,6 +216,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
 
     private void OnDisable()
     {
+        dropAction?.Disable();
         EndAimOverride();
         // Preserve the legacy temporary-disable behavior. Permanent input shutdown belongs to CleanupAttempt.
         ClearFrameState();
@@ -258,6 +265,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
             attackGated = attackAction.IsPressed();
             jumpGated = jumpAction.IsPressed();
             dodgeGated = dodgeAction.IsPressed();
+            dropGated = dropAction.IsPressed();
             abilityGated = abilityAction.IsPressed();
             secondaryGated = secondaryAbilityAction.IsPressed();
         }
@@ -265,6 +273,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         if (attackAction.IsPressed() && UiBlocksManualFire?.Invoke() == true) SuppressUiFireUntilRelease();
         jumpGated &= jumpAction.IsPressed();
         dodgeGated &= dodgeAction.IsPressed();
+        dropGated &= dropAction.IsPressed();
         abilityGated &= abilityAction.IsPressed();
         secondaryGated &= secondaryAbilityAction.IsPressed();
         MoveInput = new Vector2(Mathf.Clamp(move.x, -1f, 1f), 0f);
@@ -274,6 +283,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         if (overrideRunning && AttackHeld) overridePlayerRequestedFire = true;
         JumpPressedThisFrame = !jumpGated && jumpAction.WasPressedThisFrame();
         JumpHeld = !jumpGated && jumpAction.IsPressed();
+        DropPressedThisFrame = !dropGated && dropAction.WasPressedThisFrame();
         DodgePressedThisFrame = !dodgeGated && dodgeAction.WasPressedThisFrame();
         AbilityPressedThisFrame = !abilityGated && abilityAction.WasPressedThisFrame();
         SecondaryAbilityPressedThisFrame = !secondaryGated && secondaryAbilityAction.WasPressedThisFrame();
@@ -284,7 +294,8 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
             var camera = aimCamera != null ? aimCamera : Camera.main;
             RawInput = new RawPlayerInput { Move=MoveInput.x, Aim=AimDirection, CommittedAim=committedAim,
                 Cursor=camera != null ? (Vector2)camera.ScreenToWorldPoint(AimScreenPosition) : (Vector2)transform.position,
-                Fire=AttackHeld, FirePressed=AttackPressedThisFrame, Jump=JumpPressedThisFrame, JumpHeld=JumpHeld, Dodge=DodgePressedThisFrame };
+                Fire=AttackHeld, FirePressed=AttackPressedThisFrame, Jump=JumpPressedThisFrame, JumpHeld=JumpHeld,
+                Dodge=DodgePressedThisFrame, Drop=DropPressedThisFrame };
             AbilityPressedThisFrame = SecondaryAbilityPressedThisFrame = PreviousPressedThisFrame = NextPressedThisFrame = false;
         }
         else if (LegacyCombatActive) ResolveLegacyIntent();
@@ -302,7 +313,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
             SetResolvedAim(f.Aim);
             NotifyConditionalAction(ControlOperation.Aim,f.Aim.sqrMagnitude>.0001f);
         }
-        if(f.JumpOwned) {JumpPressedThisFrame=f.Jump;JumpHeld=false;}
+        if(f.JumpOwned) {JumpPressedThisFrame=f.Jump;JumpHeld=false;DropPressedThisFrame=f.Drop;}
         if(f.FireOwned) {AttackHeld=f.Fire;AttackPressedThisFrame=f.Fire&&!legacyFireHeld;}
         legacyFireHeld=AttackHeld;
         DodgeDirection=f.DodgeOwned?f.DodgeDirection:0;
@@ -448,6 +459,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         AttackPressedThisFrame = false;
         JumpPressedThisFrame = false;
         JumpHeld = false;
+        DropPressedThisFrame = false;
         DodgePressedThisFrame = false;
         DodgeDirection = 0f;
         AbilityPressedThisFrame = false;

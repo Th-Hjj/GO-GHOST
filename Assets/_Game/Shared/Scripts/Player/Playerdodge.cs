@@ -67,6 +67,7 @@ public class PlayerDodge : MonoBehaviour
     private Collider2D bodyShape;
     private Collider2D[] passThroughBodies = System.Array.Empty<Collider2D>();
     private readonly List<Collider2D> ignoredBodies = new List<Collider2D>(2);
+    private readonly RaycastHit2D[] travelHits = new RaycastHit2D[32];
 
     // The encounter supplies bodies, keeping Shared independent of level-specific Boss types.
     public void ConfigurePassThroughBodies(Collider2D[] bodies)
@@ -78,6 +79,28 @@ public class PlayerDodge : MonoBehaviour
 
     public bool CanPassThroughBody(Collider2D other)
         => other != null && System.Array.IndexOf(passThroughBodies, other) >= 0;
+
+    // Automatic direction admission uses the same registered pass-through bodies as the real Dodge.
+    // Ordinary movement deliberately does not use this query.
+    public float AvailableTravel(float direction, float distance)
+    {
+        if (bodyShape == null || Mathf.Abs(direction) < .01f || distance <= 0) return 0;
+        Vector2 axis = Vector2.right * Mathf.Sign(direction);
+        float available = distance;
+        var filter = new ContactFilter2D { useTriggers = false };
+        int count = bodyShape.Cast(axis, filter, travelHits, distance);
+        for (int i = 0; i < count; i++)
+        {
+            var hit = travelHits[i];
+            var other = hit.collider;
+            if (other == null || other.isTrigger || other.attachedRigidbody == rb || CanPassThroughBody(other)
+                || Physics2D.GetIgnoreCollision(bodyShape, other) || Vector2.Dot(hit.normal, axis) >= -.2f) continue;
+            var effector = other.usedByEffector ? other.GetComponent<PlatformEffector2D>() : null;
+            if (effector != null && effector.enabled && effector.useOneWay) continue;
+            available = Mathf.Min(available, Mathf.Max(0, hit.distance - .015f));
+        }
+        return available;
+    }
 
     private void IgnoreBodyCollisions()
     {

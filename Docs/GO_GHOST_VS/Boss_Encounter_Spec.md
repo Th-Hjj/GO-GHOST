@@ -2,6 +2,12 @@
 
 Player-control authority: [Alpha50_Conditional_Loadout.md](Alpha50_Conditional_Loadout.md), Thomas 2026-10-15. Five conditional operations replace permanent module AI and the old autonomous Legs policy; Windows delivery is authorized. This file retains Boss combat. Boss foundation: Thomas's **2026-10-05 solo Boss pressure / gunner mobility upgrade**, including his correction that Drop Cut pushes the player while the sword keeps its locked landing. It extends Optical Camo, Player Legs Platform Use + Light Duo and the focused Boss pressure pass. This specification records confirmed scope and implemented source. Runtime checks and limits belong in [Implementation_Log.md](Implementation_Log.md); controlled fixtures do not prove balance or a normal all-AI result.
 
+## Map-aware gunner follow-up — approved 2026-10-19
+
+Thomas extends the approved platform pressure and concealed relocation to Wave 3. The active layout supplies floating supports (the lowest floor is excluded); safe landing clearance, actual jump trajectories and a bounded same-support approach decide reachability. Crossing chooses reachable progress toward the last public player position rather than hard-coded bank indices or x=0. Both real Refraction encounters use the same air steering and desired range described below. Training keeps its simple policy; W2/W3 platform geometry is unchanged.
+
+W3 assignment ownership takes priority over local platform plans. Attack selection filters the coordinator's legal abilities before ranking. Both platform and Camo destinations avoid the sword's current/planned occupation; concealed arrival rechecks occupancy and cancels if blocked. Preserve delayed perception, fixed destinations, ammo/cooldown costs, full visible tells/recovery, allied bullet blocking and shared threat/escape limits. No hidden player tracking or additional damage. This supersedes the W1-only enablement below.
+
 ## W1 gunner platform pressure — approved 2026-10-19
 
 Thomas approved one central platform at the middle-tier height, explicitly matching the other platforms' **4-unit width**. W1 now has seven floating platforms; the center is x=0, surface 3.4 above the floor. Side stairs, Training's single platform and W2/W3's authored five-platform layout remain unchanged.

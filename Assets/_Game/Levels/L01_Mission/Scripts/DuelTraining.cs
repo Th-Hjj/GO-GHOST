@@ -67,6 +67,7 @@ namespace GoGhost.Duel
             previous.gameObject.SetActive(false);
             Destroy(previous.gameObject);
             actors[0] = CreateTrainingEnemy();
+            ConfigureDodgeBodies();
             Police = actors[0].Health;
             // Fresh source identity/occurrences and subscriptions, with existing player resources and physical commitments.
             BindEncounterRules();

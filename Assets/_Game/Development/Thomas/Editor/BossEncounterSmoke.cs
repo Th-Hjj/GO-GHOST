@@ -170,6 +170,9 @@ public static partial class BossEncounterSmoke
     static IEnumerator Run()
     {
         Record("Editor Play Mode; simulated focus and virtual keyboard/mouse. No physical-input or audibility claim.");
+        if(mode=="map-gunner") {yield return MapGunner();yield break;}
+        if(mode=="duo-camo-tell") {yield return DuoCamoTell();yield break;}
+        if(mode=="dash-bodies") {yield return DashBodies();yield break;}
         if(mode=="stage-platforms") {yield return StagePlatforms();yield break;}
         if(mode=="gunner-platforms") {yield return GunnerPlatforms();yield break;}
         if(mode=="gunner-crossings") {yield return GunnerPlatformCrossings();yield break;}

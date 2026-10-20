@@ -600,7 +600,7 @@ public sealed class LegacyPlayerAI
             : (bullets.Count>0 && selfBounds.center.x<bullets[0].Position.x ? -1 : 1);
         foreach(float direction in new[]{away,-away})
         {
-            if(SolidTravel(direction*dodge.Distance)<dodge.Distance-.08f) continue;
+            if(SolidTravel(direction*dodge.Distance,true)<dodge.Distance-.08f) continue;
             // Trigger is short. Validate the escape through i-frame expiry and the immediate endpoint too.
             float check=Mathf.Max(SpineThreatWindow,dodge.InvulnerabilityDuration+EndpointMargin);
             if(Risk(new Motion(acceptedMove,false,direction),check)>0) continue;
@@ -654,7 +654,7 @@ public sealed class LegacyPlayerAI
         float preferred=Mathf.Abs(move)>.01f?Mathf.Sign(move):movement.MovementFacingDirection;
         foreach(float side in new[]{preferred,-preferred})
         {
-            if(SolidTravel(side*dodge.Distance)<.15f)continue;
+            if(SolidTravel(side*dodge.Distance,true)<.15f)continue;
             float risk=Risk(new Motion(move,false,side),Mathf.Max(SpineThreatWindow,dodge.InvulnerabilityDuration+EndpointMargin));
             if(risk>=best)continue;
             best=risk;direction=side;
@@ -731,7 +731,8 @@ public sealed class LegacyPlayerAI
         for(int i=1;i<count;i++)
         {
             float t=i*Step;
-            float vx=motion.DodgeDirection!=0 && t<=(dodge.IsDodging?dodge.MovementRemaining:dodge.Duration)
+            bool dashing=motion.DodgeDirection!=0 && t<=(dodge.IsDodging?dodge.MovementRemaining:dodge.Duration);
+            float vx=dashing
                 ? (dodge.IsDodging?dodge.CommittedHorizontalSpeed:motion.DodgeDirection*dodge.Distance/dodge.Duration)
                 : (motion.SteerLanding?LandingSteer(motion.LandingX,position.x):motion.Move)*movement.MoveSpeed;
             Vector2 previous=position;
@@ -742,12 +743,12 @@ public sealed class LegacyPlayerAI
                     var opponent = observed.Bounds;
                     if (observed.Contact.VelocityKnown)
                         opponent.center += (Vector3)(observed.Contact.Velocity * Mathf.Min(t, SpineThreatWindow));
-                    ClampAgainstBody(ref position, previous, opponent, observed.Actor.Body);
+                    ClampAgainstBody(ref position, previous, opponent, observed.Actor.Body, dashing);
                 }
             else if (hasContact)
             {
                 var opponent = targetBounds; opponent.center += (Vector3)(targetVelocity * Mathf.Min(t, SpineThreatWindow));
-                ClampAgainstBody(ref position, previous, opponent, targetShape);
+                ClampAgainstBody(ref position, previous, opponent, targetShape, dashing);
             }
             if(grounded && !SupportedAt(position)) grounded=false;
             if(!grounded)
@@ -786,20 +787,20 @@ public sealed class LegacyPlayerAI
             if(hit.collider!=null && !hit.collider.isTrigger && hit.collider.GetComponent<PlatformEffector2D>()==null && hit.distance>.01f) return false;
         return true;
     }
-    private float SolidTravel(float distance)
+    private float SolidTravel(float distance, bool dashing=false)
     {
         if(Mathf.Abs(distance)<.001f) return 0;
         float direction=Mathf.Sign(distance),available=Mathf.Min(Mathf.Abs(distance),direction>0?rightEdge-selfBounds.max.x:selfBounds.min.x-leftEdge);
         if (targets != null)
             foreach (var observed in contacts)
-                available = BodyTravel(available, direction, observed.Bounds, observed.Actor.Body);
-        else if (hasContact) available = BodyTravel(available, direction, targetBounds, targetShape);
+                available = BodyTravel(available, direction, observed.Bounds, observed.Actor.Body, dashing);
+        else if (hasContact) available = BodyTravel(available, direction, targetBounds, targetShape, dashing);
         return Mathf.Max(0,available);
     }
 
-    private float BodyTravel(float available, float direction, Bounds opponent, Collider2D other)
+    private float BodyTravel(float available, float direction, Bounds opponent, Collider2D other, bool dashing)
     {
-        if (other != null && !Physics2D.GetIgnoreCollision(shape, other)
+        if (other != null && !(dashing && dodge.CanPassThroughBody(other)) && !Physics2D.GetIgnoreCollision(shape, other)
             && selfBounds.max.y > opponent.min.y && selfBounds.min.y < opponent.max.y)
         {
             float gap = direction > 0 ? opponent.min.x - selfBounds.max.x : selfBounds.min.x - opponent.max.x;
@@ -808,9 +809,9 @@ public sealed class LegacyPlayerAI
         return available;
     }
 
-    private void ClampAgainstBody(ref Vector2 position, Vector2 previous, Bounds opponent, Collider2D other)
+    private void ClampAgainstBody(ref Vector2 position, Vector2 previous, Bounds opponent, Collider2D other, bool dashing)
     {
-        if (other == null || Physics2D.GetIgnoreCollision(shape, other)
+        if (other == null || dashing && dodge.CanPassThroughBody(other) || Physics2D.GetIgnoreCollision(shape, other)
             || position.y - selfBounds.extents.y >= opponent.max.y || position.y + selfBounds.extents.y <= opponent.min.y) return;
         if (previous.x + selfBounds.extents.x <= opponent.min.x && position.x + selfBounds.extents.x > opponent.min.x)
             position.x = opponent.min.x - selfBounds.extents.x - .01f;

@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace GoGhost.Duel
 {
-    // Explicitly enabled by W1. W3 and the training actor keep their existing policies.
+    // Perches come from the active layout; solo and duo use the same physical route solver.
     public sealed partial class BossTactics
     {
         const float PlatformDwell = 3.2f, PlatformMoveGap = 1.2f, BlinkHiddenSeconds = .45f;
@@ -25,11 +25,16 @@ namespace GoGhost.Duel
         public void ConfigurePlatformPressure(Collider2D[] supports)
         {
             if (actor.Profile.Kind != BossKind.Refraction || actor.IsTrainingEnemy) return;
+            gunPlatforms.Clear(); platformVisits.Clear();
+            float floor = float.PositiveInfinity;
             foreach (var support in supports)
-                if (support != null && support.usedByEffector && support.GetComponent<PlatformEffector2D>() != null)
+                if (support != null) floor = Mathf.Min(floor, support.bounds.max.y);
+            foreach (var support in supports)
+                if (support != null && !support.isTrigger && support.bounds.max.y > floor + .2f
+                    && !gunPlatforms.Contains(support))
                     gunPlatforms.Add(support);
             var motion = actor.Profile.Motion;
-            // W1-only air steering bridges the two 4.5-unit gaps; ground speed and jump height stay unchanged.
+            // Reuse the approved air steering on every layout; ground speed and jump height stay unchanged.
             platformJumpMotion = new BossMotionProfile { Speed = 9.5f, Acceleration = 65f, AirControl = 1,
                 Braking = motion.Braking, JumpSpeed = motion.JumpSpeed, GravityScale = motion.GravityScale, ArrivalBraking = true };
             supportSince = Time.time;
@@ -127,6 +132,7 @@ namespace GoGhost.Duel
             foreach (var ability in PlatformAttackChoices)
             {
                 if (!actor.Actions.Ready(ability) || !actor.Actions.CanAfford(ability)
+                    || actor.Coordinator != null && !actor.Coordinator.CanStart(actor, ability, false)
                     || !LegalAt(ability, point, facts, out float chance)) continue;
                 float value = chance * .7f + (ability == BossAbility.Burst ? 1 : ability == BossAbility.Piercing ? 1.1f : 1.05f);
                 if (ability == previousAbility) value -= .45f;
@@ -144,6 +150,7 @@ namespace GoGhost.Duel
         {
             return support != null && support.enabled && support.gameObject.activeInHierarchy
                 && !new Bounds(point, actor.Motor.Size + Vector2.one * .5f).Intersects(facts.Body)
+                && (actor.Coordinator == null || !actor.Coordinator.Occupied(actor, point))
                 && actor.Navigation.CanStand(point, actor.Motor.Size)
                 && actor.Navigation.TrySupport(point, actor.Motor.Size, out var actual) && actual == support;
         }
@@ -226,21 +233,35 @@ namespace GoGhost.Duel
             return true;
         }
 
-        // A real crossing uses the middle support as its next landing, then continues to the far bank.
+        // Advance through reachable supports toward the last public target. No origin, bank or
+        // platform index assumptions: W1 naturally uses its middle bridge; W3 uses its staggered perches.
         bool TryPlatformCrossing(BossObservation facts)
         {
-            if (!gunPlatforms.Contains(gunSupport) || Mathf.Abs(facts.Position.x) < 1) return false;
-            int bank = Mathf.Abs(gunSupport.bounds.center.x) < .1f ? 0 : (int)Mathf.Sign(gunSupport.bounds.center.x);
-            int targetBank = (int)Mathf.Sign(facts.Position.x);
-            if (bank == targetBank) return false;
+            float gap = facts.Position.x - actor.Position.x;
+            if (!gunPlatforms.Contains(gunSupport) || Mathf.Abs(gap) < EngagementDistance * .7f) return false;
+            float direction = Mathf.Sign(gap);
+            platformOptions.Clear();
             foreach (var support in gunPlatforms)
             {
-                int nextBank = Mathf.Abs(support.bounds.center.x) < .1f ? 0 : (int)Mathf.Sign(support.bounds.center.x);
-                if (bank != 0 ? nextBank != 0 : nextBank != targetBank || Mathf.Abs(support.bounds.max.y - gunSupport.bounds.max.y) > .1f) continue;
+                if (support == gunSupport) continue;
                 float inset = actor.Motor.Size.x * .5f + .15f;
+                if (support.bounds.size.x < inset * 2) continue;
                 Vector2 point = PlatformPoint(support);
                 point.x = Mathf.Clamp(actor.Position.x, support.bounds.min.x + inset, support.bounds.max.x - inset);
-                if (!PlatformPointValid(support, point, facts) || !TryPlatformRoute(point, out var route, out var path)) continue;
+                float progress = (point.x - actor.Position.x) * direction;
+                float rise = Mathf.Abs(point.y - actor.Position.y);
+                if (progress < 1 || progress > Mathf.Abs(gap) + .5f || progress > 10
+                    || rise > ArenaNavigation2D.ExecutableJumpHeight(platformJumpMotion)
+                    || Time.time < avoidFailedUntil && Vector2.Distance(point, failedDestination) < .9f
+                    || !PlatformPointValid(support, point, facts)) continue;
+                platformOptions.Add(new BossPlan { Destination = point, Score = progress - rise * 2
+                    + PlatformScore(support, point, facts) * .2f });
+            }
+            platformOptions.Sort((a, b) => b.Score.CompareTo(a.Score));
+            for (int i = 0; i < Mathf.Min(6, platformOptions.Count); i++)
+            {
+                var point = platformOptions[i].Destination;
+                if (!TryPlatformRoute(point, out var route, out var path)) continue;
                 plan = new BossPlan { Intent = "PlatformRelocate", Destination = point, Route = route, JumpPath = path,
                     JumpMotion = platformJumpMotion, TerrainVersion = actor.Navigation.Version, CreatedAt = Time.time,
                     MaxPlanTime = route.Duration + .65f };
@@ -288,6 +309,7 @@ namespace GoGhost.Duel
             if (camoPlan != null && camoPlan.TerrainVersion == actor.Navigation.Version
                 && blinkSupport != null && blinkSupport.enabled && blinkSupport.gameObject.activeInHierarchy
                 && Vector2.Distance(PlatformPoint(blinkSupport), camoPlan.Destination) < .05f
+                && (actor.Coordinator == null || !actor.Coordinator.Occupied(actor, camoPlan.Destination))
                 && actor.Motor.TryCamoRelocate(camoPlan.Destination))
             {
                 blinkMoved = true; PlatformBlinks++; lastBlinkSupport = blinkSupport;

@@ -99,7 +99,12 @@ namespace GoGhost.Duel
             }
             if(dropPlan!=null){TickDropPlan();return;}
             if(actor.Coordinator!=null&&actor.Coordinator.HasAssignment(actor))
-            {if(camoPlan!=null){if(plan==camoPlan)plan=null;camoPlan=null;}return;}
+            {
+                if(camoPlan!=null){if(plan==camoPlan)plan=null;camoPlan=null;}
+                // Coordinator now owns movement. Do not resume a stale solo perch plan afterwards.
+                if(plan!=null&&plan.Intent=="PlatformRelocate")plan=null;
+                return;
+            }
             if(!actor.Motor.Grounded)return; // Finish the accepted physical air connection before replanning.
             if(TickCamoFollowup(facts))return;
             if(PlatformPressureEnabled){TickPlatformPressure(facts);return;}

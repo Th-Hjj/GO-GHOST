@@ -19,6 +19,9 @@ namespace GoGhost.Duel
     [DefaultExecutionOrder(100)] // Damage readers see the completed last step before this writer advances its origin.
     public sealed class BossMotor2D : MonoBehaviour
     {
+        // Match the retained player's body. Keep the original foot plane at authored spawns.
+        public static Vector2 DefaultBodySize => new Vector2(.7f, 1.55f);
+        public static Vector2 DefaultBodyOffset => Vector2.down * (1.7f - DefaultBodySize.y) * .5f;
         public BossMotionProfile Profile { get; private set; }
         BossMotionProfile routeMotion;
         public BossMotionProfile TraversalProfile => routeMotion != null && route != null && stepIndex < route.Steps.Count
@@ -26,7 +29,7 @@ namespace GoGhost.Duel
         public Vector2 Position => body != null ? body.position + centreOffset : (Vector2)transform.position;
         public Vector2 PreviousPosition { get; private set; }
         public Vector2 Velocity => body != null ? body.linearVelocity : Vector2.zero;
-        public Vector2 Size => shape != null ? (Vector2)shape.bounds.size : new Vector2(.7f, 1.65f);
+        public Vector2 Size => shape != null ? (Vector2)shape.bounds.size : DefaultBodySize;
         public bool Grounded { get; private set; }
         public bool DashActive { get; private set; }
         public bool DashBlocked { get; private set; }

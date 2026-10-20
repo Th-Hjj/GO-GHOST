@@ -14,6 +14,77 @@ public static partial class BossEncounterSmoke
     [MenuItem("GO GHOST/Playtest/Test Room Focused Smoke")]
     public static void RunTrainingRoom() => Start("training-room", false);
     public static void RunTrainingThreat() => Start("training-threat", false);
+    public static void RunTrainingPatrol() => Start("training-patrol", false);
+
+    static IEnumerator TrainingPatrol()
+    {
+        yield return TrainingFresh(null);
+        var trainer = game.Bosses[0];
+        Check("training starts with 99999 HP and one-round magazine",
+            trainer.Health.CurrentHealth == 99999 && trainer.Health.MaxHealth == 99999 && trainer.Profile.Magazine == 1);
+        // Keep the player on the existing low platform, clear of the walking lane and above the gun.
+        OnFloor(game.Player.gameObject, trainer.Navigation, -5.5f);
+        yield return Frames(5);
+        heldKeys = new[] { Key.Space }; yield return Frames(4); heldKeys = Array.Empty<Key>();
+        yield return Seconds(1);
+        Check("fixture player physically lands above patrol lane", game.Player.GetComponent<PlayerMovement>().IsGrounded
+            && Mathf.Abs(game.Player.GetComponent<Collider2D>().bounds.min.y - LayoutSupports()[1].bounds.max.y) < .06f);
+        var playerBody = game.Player.GetComponent<Collider2D>();
+        Check("smaller trainer clears platform feet with solid body collision",
+            !Physics2D.GetIgnoreCollision(playerBody, trainer.Body)
+            && playerBody.bounds.min.y - trainer.Body.bounds.max.y > .5f);
+        float firstX = trainer.Position.x, minX = firstX, maxX = firstX;
+        bool right = false, leftAgain = false, horizontal = true, forward = true, spaced = true, single = true;
+        int shots = 0, lastAttack = -1;
+        float lastShot = -100;
+        var seen = new System.Collections.Generic.HashSet<Projectile>();
+        float until = Time.time + 48;
+        while (Time.time < until && !leftAgain)
+        {
+            minX = Mathf.Min(minX, trainer.Position.x); maxX = Mathf.Max(maxX, trainer.Position.x);
+            right |= trainer.Facing > 0;
+            leftAgain |= right && trainer.Facing < 0;
+            foreach (var shot in Projectile.Active)
+            {
+                if (shot.Owner != trainer.gameObject || !seen.Add(shot)) continue;
+                var velocity = shot.GetComponent<Rigidbody2D>().linearVelocity;
+                horizontal &= Mathf.Abs(velocity.y) < .001f && Mathf.Abs(Mathf.Abs(velocity.x) - 10) < .01f;
+                forward &= Mathf.Sign(velocity.x) == trainer.Facing;
+                spaced &= Time.time - lastShot >= 3.3f;
+                single &= lastAttack != trainer.Actions.AttackId;
+                lastShot = Time.time; lastAttack = trainer.Actions.AttackId; shots++;
+            }
+            yield return null;
+        }
+        Check("physical patrol reaches both arena ends and reverses", right && leftAgain
+            && minX < game.ArenaBounds.min.x + .6f && maxX > game.ArenaBounds.max.x - .6f,
+            "range=" + minX + ".." + maxX);
+        Check("intermittent single forward horizontal bullets ignore elevated player", shots >= 6
+            && horizontal && forward && spaced && single, "shots=" + shots);
+        Check("no complex abilities or jump", trainer.Actions.Started.Where((v,i) => i != (int)BossAbility.Burst).All(v => v == 0)
+            && trainer.Motor.Grounded);
+        MouseAt(trainer.Position, true); yield return Seconds(.8f); mouseHeld = false; yield return Seconds(1);
+        Check("99999 HP remains damageable by real player bullets", trainer.Health.CurrentHealth < 99999 && trainer.IsAlive);
+        checkingPause = true; game.SetPause(true);
+        var position = trainer.Position; int attack = trainer.Actions.AttackId; float clock = Time.time;
+        yield return RealSeconds(.2);
+        Check("pause freezes patrol and firing", trainer.Position == position && trainer.Actions.AttackId == attack && Time.time == clock);
+        game.SetPause(false); checkingPause = false;
+        yield return TrainingCapture("patrol");
+        game.BackFromTraining(); yield return Frames(3);
+        Check("Back cleans training actors and shots", game.Phase == DuelPhase.Configure && game.Bosses.Count == 0 && Projectile.Active.Count == 0);
+        game.StartConfiguredEncounter(); yield return Frames(5);
+        Check("re-entry restores training health and initial left direction", game.Bosses[0].Health.CurrentHealth == 99999 && game.Bosses[0].Facing < 0);
+        game.ContinueFromTraining(); game.StartConfiguredEncounter(); yield return Seconds(5);
+        Check("Continue starts normal W1 profile", game.Phase == DuelPhase.Fight && !game.Bosses[0].IsTrainingEnemy
+            && game.Bosses[0].Health.MaxHealth == game.Bosses[0].Profile.Health && game.Bosses[0].Health.MaxHealth != 99999);
+        for (int wave = 2; wave <= 3; wave++)
+        {
+            game.ToggleDeveloperTools(); game.JumpToDeveloperWave(wave); yield return Seconds(5);
+            Check("short W" + wave + " retains normal Boss policies/profiles", game.Phase == DuelPhase.Fight
+                && game.Bosses.All(b => !b.IsTrainingEnemy && b.Health.MaxHealth == b.Profile.Health && b.Health.MaxHealth != 99999));
+        }
+    }
 
     static IEnumerator TrainingThreat()
     {
@@ -62,7 +133,7 @@ public static partial class BossEncounterSmoke
     static IEnumerator TrainingRoom()
     {
         Record("Test Room: normal UI callbacks, virtual keyboard/mouse, real projectiles and rule evaluation. Controlled lethal damage only for player recovery and short wave progression; no balance/hardware-input claim.");
-        Check("V2 catalog unchanged", ConditionalCatalog.Conditions.Length == 26 && ConditionalCatalog.Responses.Length == 20 && ConditionalCatalog.MaxRulesTotal == 5);
+        Check("V2 catalog unchanged", ConditionalCatalog.Conditions.Length == 26 && ConditionalCatalog.Responses.Length == 21 && ConditionalCatalog.MaxRulesTotal == 5);
         game.NewGame(); SetAlphaGameSize(1280,720); yield return Frames(6);
         Check("New Game remains empty/manual, first button enters training", game.DraftLoadout.TotalRules == 0
             && ConfigButtonNamed("StartFight").GetComponentInChildren<TMPro.TMP_Text>().text == "Enter Test Room");
@@ -133,11 +204,12 @@ public static partial class BossEncounterSmoke
             TrainingLayout(width);yield return TrainingCapture(width.ToString());
         }
         heldKeys=Array.Empty<Key>();mouseHeld=false;
-        // Kill the enemy with paid player bullets, then verify replacement and one subscription per event.
+        // Bound the high-HP fixture, then finish with paid player bullets to verify replacement/subscriptions.
         until=Time.time+7;var killed=game.Bosses[0];
+        killed.Health.SetRuntimeHealth(99999, 48);
         while(Time.time<until&&killed.IsAlive){MouseAt(killed.Position,true);yield return null;}
         mouseHeld=false;yield return Until(()=>game.Bosses[0]!=killed,2);
-        Check("enemy real bullet death and delayed fresh respawn",killed==null&&game.Bosses[0].IsAlive&&game.Bosses[0].Health.CurrentHealth==96);
+        Check("enemy real bullet death and delayed fresh respawn",killed==null&&game.Bosses[0].IsAlive&&game.Bosses[0].Health.CurrentHealth==99999);
         Check("respawn preserves loadout without duplicate rule subscriptions",JsonUtility.ToJson(game.DraftLoadout)==saved
             &&Object.FindObjectsByType<BossAgent>(FindObjectsSortMode.None).Length==1
             &&((Delegate)typeof(PlayerShooting).GetField("EnemyHit",PrivateInstance).GetValue(game.Rifle)).GetInvocationList().Length==1);

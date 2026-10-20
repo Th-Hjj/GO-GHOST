@@ -571,7 +571,7 @@ namespace GoGhost.Duel
             if(action==null){SelectCondition(condition);return;}
             if(!ConditionalCatalog.ConditionsAreComplete(pendingRule)||ConditionalCatalog.IncompatibilityReasonForActionChoice(pendingRule,action)!=null)return;
             if(pendingRule.Action!=action&&ConditionalCatalog.ActionOptions(action).Length>0&&!ConditionalCatalog.UsesAmmoOption(action))
-            {pendingRule.MoveDirection=MoveDirectionOption.Unspecified;pendingRule.PlatformDirection=PlatformDirectionOption.Unspecified;}
+            {pendingRule.MoveDirection=MoveDirectionOption.Unspecified;pendingRule.ShortMoveDirection=ShortMoveDirectionOption.Back;pendingRule.PlatformDirection=PlatformDirectionOption.Unspecified;}
             pendingRule.Action=action;inspectedDescription=null;
             if(ConditionalCatalog.ActionOptions(action).Length>0)Show();else CommitRuleChoice();
         }

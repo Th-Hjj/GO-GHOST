@@ -71,7 +71,7 @@ public static partial class BossEncounterSmoke
             if(now>completed)
             {
                 int tier=higher?now:3-now;
-                float expected=supports[0].bounds.max.y+1.7f*tier;
+                float expected=supports[0].bounds.max.y+DuelGame.PlatformTierRise*tier;
                 Check((higher?"Higher ":"Lower ")+(higher?now-1:4-now)+" -> "+tier,
                     now==completed+1&&Mathf.Abs(game.Player.GetComponent<Collider2D>().bounds.min.y-expected)<.09f,
                     "feet="+game.Player.GetComponent<Collider2D>().bounds.min+" jumps="+jumps);

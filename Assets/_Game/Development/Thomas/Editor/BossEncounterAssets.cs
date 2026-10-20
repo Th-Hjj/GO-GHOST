@@ -75,7 +75,8 @@ public static class BossEncounterAssets
         {
             var rb=actor.AddComponent<Rigidbody2D>();rb.gravityScale=profile.Motion.GravityScale;rb.freezeRotation=true;rb.linearDamping=0;
             rb.collisionDetectionMode=CollisionDetectionMode2D.Continuous;rb.interpolation=RigidbodyInterpolation2D.Interpolate;
-            var body=actor.AddComponent<BoxCollider2D>();body.size=new Vector2(.7f,1.7f);
+            var body=actor.AddComponent<BoxCollider2D>();body.size=BossMotor2D.DefaultBodySize;
+            body.offset=BossMotor2D.DefaultBodyOffset;
             body.sharedMaterial=AssetDatabase.LoadAssetAtPath<PhysicsMaterial2D>(AssetDatabase.GUIDToAssetPath("64cef35f16c7ab040931472330433a3a"));
             var health=actor.AddComponent<Enemy>();var h=new SerializedObject(health);
             h.FindProperty("maxHealth").intValue=profile.Health;h.FindProperty("automaticCombat").boolValue=false;
@@ -88,6 +89,7 @@ public static class BossEncounterAssets
             {
                 var guard=new GameObject("BladeGuardContact");guard.layer=actor.layer;guard.transform.SetParent(actor.transform,false);
                 var c=guard.AddComponent<CircleCollider2D>();c.radius=profile.Guard.Range;c.isTrigger=true;c.enabled=false;
+                c.offset=body.offset;
             }
             BossSilhouetteArt.CreateRig(actor.transform,profile.Kind);
             return PrefabUtility.SaveAsPrefabAsset(actor,Root+"Prefabs/Bosses/"+profile.Kind+".prefab");

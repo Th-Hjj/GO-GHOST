@@ -105,13 +105,15 @@ namespace GoGhost.Duel
             float crouch = Mathf.Max(0, 1 - (clock-landAt)/.24f) * .16f;
             float breath = Mathf.Sin(clock * 2.4f) * .009f;
             float facingVelocity = velocity.x * (actor == null ? 1 : actor.Facing);
+            float footY = -(actor == null ? BossMotor2D.DefaultBodySize.y : actor.Motor.Size.y) * .5f
+                + (grounded ? .025f : .075f);
             Pose p = new Pose
             {
-                Hip = new Vector2(-.025f, -.10f - crouch + Mathf.Abs(wave)*motion*.028f),
-                Chest = new Vector2(.015f + facingVelocity*.008f, .37f - crouch + breath),
-                Head = new Vector2(.055f, .61f - crouch + breath),
-                FrontFoot = new Vector2(.15f + wave*.31f*motion, -.87f + Mathf.Max(0,lift)*.16f*motion),
-                BackFoot = new Vector2(-.16f - wave*.31f*motion, -.87f + Mathf.Max(0,-lift)*.16f*motion),
+                Hip = new Vector2(0, -.12f - crouch + Mathf.Abs(wave)*motion*.025f),
+                Chest = new Vector2(.015f + facingVelocity*.008f, .34f - crouch + breath),
+                Head = new Vector2(.055f, .57f - crouch + breath),
+                FrontFoot = new Vector2(.15f + wave*.30f*motion, footY + Mathf.Max(0,lift)*.15f*motion),
+                BackFoot = new Vector2(-.15f - wave*.30f*motion, footY + Mathf.Max(0,-lift)*.15f*motion),
                 Weapon = new Vector2(.28f,.24f), WeaponAngle = gunner ? 0 : -28,
                 FrontHand = new Vector2(.20f,.05f), BackHand = new Vector2(-.05f,-.05f), CoatAngle = -facingVelocity*2f
             };
@@ -119,8 +121,8 @@ namespace GoGhost.Duel
             {
                 bool rising = velocity.y > .2f;
                 p.Hip.y -= .035f; p.Chest.x += .06f;
-                p.FrontFoot = new Vector2(rising ? .25f : .22f, rising ? -.52f : -.76f);
-                p.BackFoot = new Vector2(-.23f, rising ? -.72f : -.61f);
+                p.FrontFoot = new Vector2(rising ? .25f : .22f, footY + (rising ? .34f : .10f));
+                p.BackFoot = new Vector2(-.22f, footY + (rising ? .14f : .26f));
                 p.CoatAngle -= Mathf.Clamp(velocity.y*2,-18,18);
             }
             var a = actor == null ? null : actor.Actions;
@@ -187,8 +189,8 @@ namespace GoGhost.Duel
                 float sink = Ease(Mathf.Clamp01((clock-defeatAt)/.45f));
                 p.Hip += new Vector2(-.13f,-.31f)*sink; p.Chest += new Vector2(.13f,-.40f)*sink;
                 p.Head += new Vector2(.22f,-.44f)*sink;
-                p.FrontFoot = Vector2.Lerp(p.FrontFoot,new Vector2(.40f,-.87f),sink);
-                p.BackFoot = Vector2.Lerp(p.BackFoot,new Vector2(-.38f,-.81f),sink);
+                p.FrontFoot = Vector2.Lerp(p.FrontFoot,new Vector2(.40f,footY),sink);
+                p.BackFoot = Vector2.Lerp(p.BackFoot,new Vector2(-.38f,footY+.06f),sink);
                 p.FrontHand += new Vector2(.10f,-.42f)*sink; p.BackHand += new Vector2(.08f,-.39f)*sink;
                 p.Weapon += new Vector2(.06f,-.45f)*sink; p.WeaponAngle = Mathf.Lerp(p.WeaponAngle,-30,sink);
             }
@@ -243,14 +245,14 @@ namespace GoGhost.Duel
             if (parts == null || parts.Length != 16) return;
             for (int i=0;i<parts.Length;i++) if(parts[i]!=null)
             { Color color=i==(int)Part.Weapon?weaponColor:bodyColor;color.a=alpha;parts[i].color=color; }
-            // Match the player's .46 diameter head and .16-.17 wide square segments.
-            Segment(Part.Torso,p.Hip,p.Chest+Vector2.up*.045f,.17f);
+            // Same base head/torso/limb dimensions as OfficerVisual; attacks retain their own poses.
+            Segment(Part.Torso,p.Hip,p.Chest+Vector2.up*.035f,.17f);
             Place(Part.Head,p.Head,new Vector2(.46f,.46f),0);
             Hide(Part.Hair);Hide(Part.Coat);Hide(Part.BackFoot);Hide(Part.FrontFoot);
-            Leg(Part.BackThigh,Part.BackCalf,Part.BackFoot,p.Hip+new Vector2(-.08f,0),p.BackFoot,-.05f);
-            Leg(Part.FrontThigh,Part.FrontCalf,Part.FrontFoot,p.Hip+new Vector2(.08f,0),p.FrontFoot,.08f);
-            Arm(Part.BackUpperArm,Part.BackForearm,p.Chest+new Vector2(-.11f,-.045f),p.BackHand,-.10f);
-            Arm(Part.FrontUpperArm,Part.FrontForearm,p.Chest+new Vector2(.08f,-.035f),p.FrontHand,.10f);
+            Leg(Part.BackThigh,Part.BackCalf,Part.BackFoot,p.Hip+new Vector2(-.075f,0),p.BackFoot,.12f);
+            Leg(Part.FrontThigh,Part.FrontCalf,Part.FrontFoot,p.Hip+new Vector2(.075f,0),p.FrontFoot,.18f);
+            Arm(Part.BackUpperArm,Part.BackForearm,p.Chest+new Vector2(-.10f,-.04f),p.BackHand,-.08f);
+            Arm(Part.FrontUpperArm,Part.FrontForearm,p.Chest+new Vector2(.08f,-.04f),p.FrontHand,.06f);
             bool gunner=visualKind==BossKind.Refraction;
             float bladeLength=SwordBladeLength;
             Place(Part.Weapon,p.Weapon,gunner?new Vector2(.54f,.14f):new Vector2(bladeLength,.075f),p.WeaponAngle);
@@ -260,7 +262,7 @@ namespace GoGhost.Duel
         }
         void Leg(Part thigh,Part calf,Part foot,Vector2 hip,Vector2 toe,float offset)
         {
-            Vector2 knee=Vector2.Lerp(hip,toe,.51f)+new Vector2(.14f+offset,.005f);
+            Vector2 knee=(hip+toe)*.5f+new Vector2(offset,0);
             Segment(thigh,hip,knee,.17f);Segment(calf,knee,toe,.17f);
         }
         void Arm(Part upper,Part lower,Vector2 shoulder,Vector2 hand,float bend)

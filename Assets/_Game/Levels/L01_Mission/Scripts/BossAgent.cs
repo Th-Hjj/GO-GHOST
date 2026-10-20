@@ -30,7 +30,7 @@ namespace GoGhost.Duel
         public float Facing {get;private set;}=-1;
         public SfxSet Sounds {get;private set;}
         public bool Diagnostics {get;private set;}
-        BossContact lastContact;
+        BossContact lastContact, lastPlayerRuleContact;
         float previousFootstep;
         Vector2 projectileContact;
         float projectileContactAt=-100;
@@ -49,6 +49,7 @@ namespace GoGhost.Duel
             Actions.Configure(this);View?.Configure(this);
             wasGrounded=Motor.Grounded;
             if(BossPerception.CanSee(player.transform.position,Body.bounds))PublishContact(true);
+            if(PlayerRuleBodyVisible())lastPlayerRuleContact=CreateContact(true);
         }
         public void StartCombat() {Running=true;Motor.SetCombatEnabled(true);}
         public void SetPaused(bool paused) {View?.SetPaused(paused);}
@@ -84,7 +85,7 @@ namespace GoGhost.Duel
         {
             if(!Running||!IsAlive||Time.deltaTime<=0)return;
             Perception.Tick(Position+Vector2.up*.35f);
-            if(!Actions.Committed)
+            if(!IsTrainingEnemy&&!Actions.Committed)
             {
                 var facts=Perception.Facts;
                 if(facts.Confidence>.1f)Face(facts.Position-Position);
@@ -103,28 +104,36 @@ namespace GoGhost.Duel
             if(close&&!wasClose)PublishCue(.08f);
             wasClose=close;
         }
-        void PublishContact(bool visible)
+        BossContact CreateContact(bool visible)
         {
-            lastContact=new BossContact {ActorId=ActorId,Bounds=Body.bounds,Velocity=visible?Velocity:Vector2.zero,
+            bool preparing=Actions.TryGetPublicPreparation(out int preparationId);
+            return new BossContact {ActorId=ActorId,Bounds=Body.bounds,Velocity=visible?Velocity:Vector2.zero,
                 VelocityKnown=visible,Visible=visible,Dynamic=true,Gravity=Mathf.Abs(Physics2D.gravity.y*profile.Motion.GravityScale),
                 GroundedKnown=visible,Grounded=visible&&Motor.Grounded,
-                Preparing=visible&&Actions.PublicThreats.Count>0&&(Actions.Phase==BossActionPhase.Prepare||Actions.Phase==BossActionPhase.Locked),
-                PreparationId=visible?Actions.PreparationId:0,
+                Preparing=visible&&preparing,PreparationId=visible&&preparing?preparationId:0,
                 Recovering=visible&&Actions.Phase==BossActionPhase.Recovery&&!Actions.SwordResidualWaiting,Reloading=visible&&Actions.Reloading,
                 HealthFraction=visible?(float)Health.CurrentHealth/Health.MaxHealth:0,
                 ObservedAt=Time.time,ExpiresAt=Time.time+(IsCamo?profile.CamoContactMemory:profile.SightMemory)};
         }
+        void PublishContact(bool visible)=>lastContact=CreateContact(visible);
         public void BeginCamo()
         {
             // Retire the old visible velocity/memory even if departure is behind terrain.
             lastContact.Visible=false;lastContact.VelocityKnown=false;lastContact.Velocity=Vector2.zero;
             lastContact.ExpiresAt=Mathf.Min(lastContact.ExpiresAt,Time.time+.10f);
+            lastPlayerRuleContact.Visible=false;lastPlayerRuleContact.VelocityKnown=false;lastPlayerRuleContact.Velocity=Vector2.zero;
+            lastPlayerRuleContact.ExpiresAt=Mathf.Min(lastPlayerRuleContact.ExpiresAt,Time.time+.10f);
             PublishCue(.10f);
         }
         public void PublishCue(float duration) => PublishCue(duration,null);
         void PublishCue(float duration,Vector2? point)
         {
             View?.CamoCue(duration,point);
+            if(Player!=null&&BodyInPlayerView())
+            {
+                lastPlayerRuleContact=CreateContact(false);
+                if(IsCamo)lastPlayerRuleContact.ExpiresAt=Time.time+Mathf.Min(duration,profile.CamoContactMemory);
+            }
             if(Player!=null&&BossPerception.CanSee(Player.transform.position,Body.bounds))
             {
                 PublishContact(false);
@@ -140,6 +149,32 @@ namespace GoGhost.Duel
             else lastContact.Visible=false;
             contact=lastContact;
             return Time.time<=contact.ExpiresAt;
+        }
+        // Player rules describe what is on screen; a one-way platform is not a visual
+        // occluder. This is deliberately separate from BossPerception's terrain LOS.
+        public bool TryGetPlayerRuleContact(out BossContact contact)
+        {
+            if(!IsAlive||!isActiveAndEnabled||Body==null||!Body.enabled){contact=default;return false;}
+            if(PlayerRuleBodyVisible())lastPlayerRuleContact=CreateContact(true);
+            else lastPlayerRuleContact.Visible=false;
+            contact=lastPlayerRuleContact;
+            return Time.time<=contact.ExpiresAt;
+        }
+        bool PlayerRuleBodyVisible()=>!IsCamo&&Player!=null&&BodyInPlayerView();
+        bool BodyInPlayerView()
+        {
+            var camera=Camera.main;
+            if(camera==null||!camera.isActiveAndEnabled||Body==null||!Body.enabled||!gameObject.activeInHierarchy)return false;
+            var bounds=Body.bounds;
+            float left=float.PositiveInfinity,right=float.NegativeInfinity,bottom=float.PositiveInfinity,top=float.NegativeInfinity;
+            for(int i=0;i<4;i++)
+            {
+                var point=camera.WorldToViewportPoint(new Vector3((i&1)==0?bounds.min.x:bounds.max.x,
+                    (i&2)==0?bounds.min.y:bounds.max.y,bounds.center.z));
+                if(point.z<=0)return false;
+                left=Mathf.Min(left,point.x);right=Mathf.Max(right,point.x);bottom=Mathf.Min(bottom,point.y);top=Mathf.Max(top,point.y);
+            }
+            return right>=0&&left<=1&&top>=0&&bottom<=1;
         }
         public bool GuardBlocksRay(Vector2 origin,Vector2 point)=>Actions.GuardBlocksRay(origin,point);
         public bool ReceiveProjectile(Projectile shot,Collider2D contact)

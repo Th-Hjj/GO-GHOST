@@ -33,6 +33,8 @@ namespace GoGhost.Duel
         public bool TerrainBlocked, Valid;
         public bool HasLandingX;
         public float LandingX;
+        // Classification follows the expressed attack form, never target distance.
+        public bool IsRanged=>Shape==BossThreatShape.Projectile||Shape==BossThreatShape.Ray||Shape==BossThreatShape.MovingBlade;
         // Copied executable jump samples. They never read a live target during prediction.
         public Vector2[] OriginPath;
         public float PathStartsAt, PathStep;

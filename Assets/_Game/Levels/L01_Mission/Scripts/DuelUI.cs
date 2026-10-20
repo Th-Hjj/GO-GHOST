@@ -114,6 +114,7 @@ namespace GoGhost.Duel
             ClearRuleHud();BuildRuleHud();UpdateBattleLayout();
             playerHealth=resources=null; playerFill=null;
             preparationCount=null; lastPreparationCount=-1;
+            ResetBattleStatus();
             policeHealth=System.Array.Empty<TMP_Text>(); policeFill=System.Array.Empty<UnityEngine.UI.Image>();
             if(game.DeveloperToolsOpen)
             {
@@ -156,6 +157,7 @@ namespace GoGhost.Duel
             Text(game.Phase==DuelPhase.Training?"TRAINING":"WAVE "+game.Wave,hud,new Vector2(0,400),new Vector2(280,50),30,face:headingFont);
             policeHealth = new TMP_Text[game.Bosses.Count];
             policeFill = new UnityEngine.UI.Image[game.Bosses.Count];
+            bossHealthText = new HealthTextState[game.Bosses.Count];
             for (int i=0; i<game.Bosses.Count; i++)
             {
                 float y=345-i*40;
@@ -181,27 +183,8 @@ namespace GoGhost.Duel
             if(game==null||game.DeveloperToolsOpen)return;
             if (RefreshConfigurationLayout()) return;
             UpdateRuleHud();
-            if(playerHealth==null||game.Player==null)return;
-            if(preparationCount!=null)
-            {
-                int count=Mathf.CeilToInt(game.PreparationRemaining);
-                if(count!=lastPreparationCount) {lastPreparationCount=count;preparationCount.text=count.ToString();}
-            }
-            playerHealth.text="YOU  "+game.Player.CurrentHealth;
-            for (int i=0; i<policeHealth.Length && i<game.Bosses.Count; i++)
-            {
-                var actor=game.Bosses[i];
-                if(actor==null)continue;
-                policeHealth[i].text=(actor.IsTrainingEnemy?"TRAINING ENEMY  ":actor.ActorId==1?"GUNNER  ":"SWORDSMAN  ")+actor.Health.CurrentHealth;
-                policeFill[i].rectTransform.sizeDelta=new Vector2(430f*actor.Health.CurrentHealth/actor.Health.MaxHealth,12);
-            }
-
-            string ammo=game.Rifle.IsReloading?"Reloading":$"Ammo {game.Rifle.AmmoInMagazine} / {game.Rifle.MagazineSize}";
-            resources.text=$"{ammo}     Dodge: {Ready(game.Dodge.CooldownRemaining)}";
-            playerFill.rectTransform.sizeDelta=new Vector2(430f*game.Player.CurrentHealth/game.Player.MaxHealth,12);
-            playerFill.color=game.Rules!=null&&game.Rules.IsLowHealth?NeuralPalette.Danger:NeuralPalette.Primary;
+            UpdateBattleStatus();
         }
-        string Ready(float remaining)=>remaining<=.01f?"Ready":$"{remaining:0.0}s";
     }
     public sealed class DuelButtonOutline : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, ISelectHandler, IDeselectHandler, IMoveHandler
     {

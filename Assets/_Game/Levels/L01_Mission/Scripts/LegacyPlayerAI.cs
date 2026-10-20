@@ -612,11 +612,13 @@ public sealed class LegacyPlayerAI
     // Conditional rules reuse only executable geometry, never the old Legs/Arms/Spine decisions.
     public bool ConditionalThreat(int kind,float move,bool jump,out Vector2 source,out int actorId,int requiredActorId=0)
     {
-        Sense(); source=default;actorId=0;
+        source=default;actorId=0;
+        // 41 retains the old Bullet storage key but now means Ranged. The retired Low
+        // key remains invalid instead of silently selecting a different attack form.
+        if(kind!=0&&kind!=41&&kind!=42)return false;
+        Sense();
         int count=PredictPath(new Motion(move,jump,dodge.IsDodging?Mathf.Sign(body.linearVelocity.x):0),SpineThreatWindow);
         Vector2 half=selfBounds.extents;
-        if(kind==43) half.y*=.5f;
-        Vector2 offset=kind==43?Vector2.down*selfBounds.extents.y*.5f:Vector2.zero;
         for(int i=1;i<count;i++)
         {
             float t=i*Step;
@@ -627,8 +629,7 @@ public sealed class LegacyPlayerAI
                     var rb=shot.GetComponent<Rigidbody2D>();
                     if(rb==null||!rb.simulated)continue;
                     Vector2 a=rb.position+rb.linearVelocity*(t-Step),b=rb.position+rb.linearVelocity*t;
-                    if(!SegmentBox(a-path[i-1]-offset,b-path[i]-offset,half+Vector2.one*shot.Radius))continue;
-                    if(kind==43&&SegmentBox(a-path[i-1]+offset,b-path[i]+offset,half+Vector2.one*shot.Radius))continue;
+                    if(!SegmentBox(a-path[i-1],b-path[i],half+Vector2.one*shot.Radius))continue;
                     var owner=shot.Owner!=null?shot.Owner.GetComponentInParent<BossAgent>():null;
                     int candidateId=owner!=null?owner.ActorId:0;
                     if(requiredActorId!=0&&candidateId!=requiredActorId)continue;
@@ -637,12 +638,8 @@ public sealed class LegacyPlayerAI
             foreach(var expressed in threats)
             {
                 if(requiredActorId!=0&&expressed.ActorId!=requiredActorId)continue;
-                // Emitted sword waves share the public projectile rule; a windup is not a bullet.
-                if(kind==41&&(expressed.Shape!=BossThreatShape.MovingBlade||expressed.Phase!=BossThreatPhase.Active))continue;
-                bool melee=expressed.Shape!=BossThreatShape.Projectile&&expressed.Shape!=BossThreatShape.Ray&&expressed.Shape!=BossThreatShape.MovingBlade;
-                if(kind==42&&!melee)continue;
-                if(!expressed.IntersectsMotion(path[i-1]+offset,path[i]+offset,half,Time.time+t-Step,Time.time+t))continue;
-                if(kind==43&&expressed.IntersectsMotion(path[i-1]-offset,path[i]-offset,half,Time.time+t-Step,Time.time+t))continue;
+                if(kind==41&&!expressed.IsRanged||kind==42&&expressed.IsRanged)continue;
+                if(!expressed.IntersectsMotion(path[i-1],path[i],half,Time.time+t-Step,Time.time+t))continue;
                 source=expressed.Origin;actorId=expressed.ActorId;return true;
             }
         }

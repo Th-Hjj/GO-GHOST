@@ -3,8 +3,8 @@ using UnityEngine;
 /// <summary>
 /// Side-scroller movement: horizontal velocity from Move input, real
 /// gravity-driven jump (Space), snapshot-owned extra jump and bounded descent hover. Facing
-/// follows the resolved manual/AI aim direction, independently of movement
-/// and horizontal dodge facing. Yields control of the
+/// follows horizontal movement in conditional combat; the weapon aims independently.
+/// A short forward/back Move retains its starting facing. Yields control of the
 /// Rigidbody2D to PlayerDodge while a dodge is in progress.
 /// Requires the Rigidbody2D's Gravity Scale to be > 0.
 /// </summary>
@@ -29,7 +29,7 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
     [Header("Legacy (test only)")]
     public bool doubleJumpUnlocked = false;
 
-    /// <summary>Visual aim facing: 1 = right, -1 = left. Independent of movement/dodge.</summary>
+    /// <summary>Visible body facing: 1 = right, -1 = left. Independent of weapon aim.</summary>
     public int FacingDirection { get; private set; } = 1;
 
     // Movement facing is independent of the mouse; it owns the idle dodge direction.
@@ -62,6 +62,11 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
     private Vector2 moveInput;
     private Collider2D movementShape;
     private readonly RaycastHit2D[] pushHits = new RaycastHit2D[16];
+    private readonly RaycastHit2D[] groundHits = new RaycastHit2D[16];
+    private Collider2D groundSupport, droppingThrough;
+    private float dropStartedAt;
+    public Collider2D DropThroughSupport => droppingThrough;
+    public int DropThroughCount { get; private set; }
     private float hitPushSpeed, hitPushRemaining, hitPushUntil, hitPushPreviousX;
     public bool HitPushActive => hitPushRemaining > 0 && Time.time < hitPushUntil;
     public int HitPushCount { get; private set; }
@@ -93,6 +98,7 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
 
     public void CleanupAttempt()
     {
+        RestoreDropThrough();
         attemptActive = false;
         airJumpsRemaining = 0;
         HoverRemaining = 0;
@@ -103,6 +109,8 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         jumpInFlight = jumpWasAscending = physicsObserved = false;
         ordinaryDirection = 0;
         hitPushRemaining = 0; HitPushCount = 0;
+        groundSupport = null;
+        DropThroughCount = 0;
     }
 
     private void OnDisable() => CleanupAttempt();
@@ -131,9 +139,11 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
     private void Update()
     {
         if (input.NarrativePaused) return;
-        // Facing follows the aim so the player can move left while shooting right.
+        UpdateDropThrough();
+        // Preserve historical aim-facing outside conditional combat. In Duel, the body faces
+        // its movement and the gun keeps its independent aim; short Move reads the prior facing.
         Vector2 aim = input.AimDirection;
-        if (Mathf.Abs(aim.x) > 0.01f)
+        if (!input.ConditionalControlsActive && Mathf.Abs(aim.x) > 0.01f)
             FacingDirection = aim.x > 0 ? 1 : -1;
 
         // flipX only mirrors the sprite; flipping localScale would also mirror FirePoint and CameraTarget.
@@ -141,12 +151,23 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
             spriteRenderer.flipX = FacingDirection < 0;
 
         IsGrounded = false;
+        groundSupport = null;
         if (groundCheck != null && rb.linearVelocity.y <= 0.1f)
         {
             // A downward foot probe avoids treating a wall as a landing surface.
-            var hit = Physics2D.Raycast(groundCheck.position + Vector3.up * groundCheckRadius,
-                Vector2.down, groundCheckRadius + 0.08f, groundLayer);
-            IsGrounded = hit.collider != null && hit.normal.y > 0.5f;
+            var groundFilter = new ContactFilter2D { useLayerMask = true, layerMask = groundLayer, useTriggers = false };
+            int groundCount = Physics2D.Raycast(groundCheck.position + Vector3.up * groundCheckRadius,
+                Vector2.down, groundFilter, groundHits, groundCheckRadius + 0.08f);
+            for (int i = 0; i < groundCount; i++)
+            {
+                var hit = groundHits[i];
+                // Queries do not inherit the actor/platform IgnoreCollision pair.
+                if (hit.collider == null || hit.collider == droppingThrough || hit.normal.y <= .5f
+                    || Physics2D.GetIgnoreCollision(movementShape, hit.collider)) continue;
+                IsGrounded = true;
+                groundSupport = hit.collider;
+                break;
+            }
             if (!IsGrounded)
             {
                 // Enemy bodies can physically support the officer without belonging to Ground.
@@ -182,8 +203,15 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         input.ResolveConditionalInputs();
         moveInput = input.MoveInput;
         if (Mathf.Abs(moveInput.x) > .01f) MovementFacingDirection = moveInput.x > 0 ? 1 : -1;
-        // Conditional Aim is resolved after grounding; visual facing follows that same final output.
-        if (Mathf.Abs(input.AimDirection.x) > .01f) FacingDirection=input.AimDirection.x>0?1:-1;
+        // Do not turn a backward short Move into forward locomotion. Idle keeps the last
+        // body orientation, so moving the cursor alone never spins the body back around.
+        if(input.ConditionalControlsActive)
+        {
+            if(Mathf.Abs(moveInput.x)>.01f&&!input.ConditionalFrame.MovementKeepsFacing
+                && (dodge==null||!dodge.IsDodging)&&!HitPushActive)
+                FacingDirection=MovementFacingDirection;
+        }
+        else if(Mathf.Abs(input.AimDirection.x)>.01f) FacingDirection=input.AimDirection.x>0?1:-1;
         if(spriteRenderer!=null) spriteRenderer.flipX=FacingDirection<0;
         bool executableJump = input.JumpPressedThisFrame && (IsGrounded || HasDoubleJump && airJumpsRemaining > 0)
             && (dodge == null || !dodge.IsDodging) && input.GameplayInputEnabled;
@@ -201,10 +229,19 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         }
         if(input.ConditionalFrame.JumpOwned && input.JumpPressedThisFrame)
             input.NotifyConditionalAction(ControlOperation.Jump,executableJump&&!acceptedDodge);
+        // Dodge wins the existing Jump arbitration; a real Jump wins a simultaneous S press.
+        // S is a press edge, so a held key cannot drop through a second support.
+        if (input.DropPressedThisFrame)
+        {
+            bool acceptedDrop = !acceptedDodge && !executableJump && TryDropThrough();
+            if (input.ConditionalFrame.JumpOwned && input.ConditionalFrame.Drop)
+                input.NotifyConditionalAction(ControlOperation.Jump, acceptedDrop);
+        }
     }
 
     private void FixedUpdate()
     {
+        UpdateDropThrough();
         // Observe the last physics result, not an input or a velocity requested against a wall.
         IsOrdinaryMoving = physicsObserved && ordinaryDirection != 0 && rb.simulated
             && input.GameplayInputEnabled && !input.NarrativePaused
@@ -254,6 +291,60 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         if(input.ConditionalFrame.MovementOwned)
             input.NotifyConditionalAction(ControlOperation.Movement,input.GameplayInputEnabled&&rb.simulated
                 && (Mathf.Abs(input.ConditionalFrame.Move)<.01f || IsOrdinaryMoving));
+    }
+
+    public static bool IsDropThroughSupport(Collider2D support)
+    {
+        if (support == null || !support.enabled || !support.gameObject.activeInHierarchy || !support.usedByEffector) return false;
+        var effector = support.GetComponent<PlatformEffector2D>();
+        return effector != null && effector.enabled && effector.useOneWay
+            && Vector2.Dot(effector.transform.up, Vector2.up) > .999f && Mathf.Abs(effector.rotationalOffset) < .01f;
+    }
+
+    public bool CanDropThrough(Collider2D expectedSupport = null)
+    {
+        return isActiveAndEnabled && IsGrounded && rb != null && rb.simulated && movementShape != null
+            && input != null && input.GameplayInputEnabled && !input.NarrativePaused
+            && (dodge == null || !dodge.IsDodging) && !HitPushActive && droppingThrough == null
+            && IsDropThroughSupport(groundSupport) && (expectedSupport == null || groundSupport == expectedSupport)
+            && !Physics2D.GetIgnoreCollision(movementShape, groundSupport);
+    }
+
+    // Manual S and an automatic lower-platform transition enter the same real ability.
+    // Gravity moves the body; only its current one-way support pair is temporarily ignored.
+    public bool TryDropThrough(Collider2D expectedSupport = null)
+    {
+        if (!CanDropThrough(expectedSupport)) return false;
+        droppingThrough = groundSupport;
+        dropStartedAt = Time.time;
+        Physics2D.IgnoreCollision(movementShape, droppingThrough, true);
+        DropThroughCount++;
+        groundSupport = null;
+        IsGrounded = false;
+        jumpInFlight = jumpWasAscending = false;
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x, Mathf.Min(0, rb.linearVelocity.y));
+        return true;
+    }
+
+    private void UpdateDropThrough()
+    {
+        if (droppingThrough == null) return;
+        if (movementShape == null || !droppingThrough.enabled || !droppingThrough.gameObject.activeInHierarchy)
+        { RestoreDropThrough(); return; }
+        var playerBounds = movementShape.bounds;
+        var supportBounds = droppingThrough.bounds;
+        bool below = playerBounds.max.y < supportBounds.min.y - .01f;
+        bool beside = playerBounds.max.x < supportBounds.min.x - .01f || playerBounds.min.x > supportBounds.max.x + .01f;
+        // A physical obstruction may prevent descent; this ability must not leave a permanent ignored pair.
+        if (below || beside || Time.time - dropStartedAt > 1.5f) RestoreDropThrough();
+    }
+
+    private void RestoreDropThrough()
+    {
+        if (droppingThrough != null && movementShape != null)
+            Physics2D.IgnoreCollision(movementShape, droppingThrough, false);
+        droppingThrough = null;
+        dropStartedAt = 0;
     }
 
     // A real damaging hit may request one bounded horizontal reaction. Physics and gravity still own position.

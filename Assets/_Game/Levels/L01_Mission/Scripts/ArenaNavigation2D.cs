@@ -67,6 +67,8 @@ namespace GoGhost.Duel
         readonly List<Collider2D> standingHits = new List<Collider2D>(16);
         readonly List<Node> routeNodes = new List<Node>(128);
         readonly List<RouteStep> reversedSteps = new List<RouteStep>(16);
+        // Synchronous simulation scratch only; published trajectories remain independent arrays.
+        readonly List<Vector2> trajectorySamples = new List<Vector2>(128);
         float[] routeStartCosts = Array.Empty<float>(), routeCosts = Array.Empty<float>();
         int[] routePrevious = Array.Empty<int>();
         RouteStep[] routeIncoming = Array.Empty<RouteStep>();
@@ -98,6 +100,7 @@ namespace GoGhost.Duel
             arena = legalBounds; groundMask = LayerMask.GetMask("Ground"); initialized = true;
             geometry.Clear(); links.Clear(); blocked.Clear(); nodes.Clear(); surfaces.Clear();
             routeStartReady = false; routeBatchDepth = 0; routeNodes.Clear(); reversedSteps.Clear();
+            trajectorySamples.Clear();
             Array.Clear(routeIncoming, 0, routeIncoming.Length);
             Version = 0; nextId = 1; Refresh();
         }
@@ -313,7 +316,8 @@ namespace GoGhost.Duel
             }
             return support != null;
         }
-        public bool SweepTraversal(Vector2 from, Vector2 to, Vector2 size, out RaycastHit2D blocker, out Vector2 safeEnd)
+        public bool SweepTraversal(Vector2 from, Vector2 to, Vector2 size, out RaycastHit2D blocker, out Vector2 safeEnd,
+            Collider2D ignoredSupport = null)
         {
             Vector2 delta = to - from; blocker = default; safeEnd = to;
             if (delta.sqrMagnitude < .0000001f) return true;
@@ -321,7 +325,7 @@ namespace GoGhost.Duel
             Physics2D.BoxCast(from, size - Vector2.one * .035f, 0, delta / distance, GroundFilter(), traversalHits, distance);
             foreach (var hit in traversalHits)
             {
-                if (hit.collider == null || hit.collider.isTrigger) continue;
+                if (hit.collider == null || hit.collider.isTrigger || hit.collider == ignoredSupport) continue;
                 if (OneWay(hit.collider, out var effector))
                 {
                     if (delta.y >= -.0001f || hit.normal.y < .5f || from.y - size.y * .5f < hit.point.y - .045f) continue;
@@ -518,13 +522,13 @@ namespace GoGhost.Duel
         public bool TryJumpTrajectory(Vector2 from, Vector2 destination, BossMotionProfile motion, Vector2 size, out Route route, out Vector2[] trajectory)
         {
             route = null; trajectory = null;
-            var samples = new List<Vector2>();
+            trajectorySamples.Clear();
             if (!CanStand(destination,size) || !TrySupport(destination,size,out var support)
-                || !Simulate(from,destination,motion,size,true,support,out float flight,samples)) return false;
+                || !Simulate(from,destination,motion,size,true,support,out float flight,trajectorySamples)) return false;
             route = new Route { Version=Version, Duration=flight+.3f };
             route.Steps.Add(new RouteStep { Kind=TravelKind.Jump, Start=from, Launch=from,
                 End=destination, Support=support, Duration=flight+.3f });
-            trajectory = samples.ToArray(); return true;
+            trajectory = trajectorySamples.ToArray(); return true;
         }
         public Vector2[] PredictAirPath(Vector2 point, Vector2 velocity, Vector2 destination,
             BossMotionProfile profile, Vector2 size, float seconds)

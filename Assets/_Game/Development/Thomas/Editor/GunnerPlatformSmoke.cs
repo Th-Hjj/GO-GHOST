@@ -180,8 +180,9 @@ public static partial class BossEncounterSmoke
         for (int wave = 2; wave <= 3; wave++)
         {
             game.ConfigurePlaytestWave(wave); game.StartFight(); yield return Frames(4);
-            Check("W" + wave + " retains original five-platform geometry and policy", LayoutSupports().Length == 6
-                && game.Bosses.All(b => !b.Tactics.PlatformPressureEnabled) && game.Bosses[0].Navigation.SameLevelSpacing == 8.75f);
+            Check("W" + wave + " retains original geometry; only real gunner uses platform policy", LayoutSupports().Length == 6
+                && game.Bosses.All(b => b.Tactics.PlatformPressureEnabled == (b.Profile.Kind == BossKind.Refraction))
+                && game.Bosses[0].Navigation.SameLevelSpacing == 8.75f);
             game.Player.SetRuntimeHealth(10000, 10000);
             yield return Until(() => game.Phase == DuelPhase.Fight, 4); yield return Seconds(2);
             Check("W" + wave + " short live combat", game.Phase == DuelPhase.Fight && game.Bosses.Any(b => b.Actions.AttackId > 0));

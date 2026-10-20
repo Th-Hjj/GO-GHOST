@@ -144,7 +144,9 @@ namespace GoGhost.Duel
                     Wave == 2 ? new Vector2(soloX, swordsmanSpawn.y) : swordsmanSpawn, 2));
             }
             actors = activeActors.ToArray();
-            if (!training && Wave == 1) actors[0].Tactics.ConfigurePlatformPressure(ActivePlatforms);
+            if (!training)
+                foreach (var actor in actors) actor.Tactics.ConfigurePlatformPressure(ActivePlatforms);
+            ConfigureDodgeBodies();
             ApplyDeveloperTuning(true);
             Police = actors[0].Health; // Historical development consumers; gameplay uses the full actor list.
             coordinator?.Configure(actors, navigation);
@@ -175,6 +177,12 @@ namespace GoGhost.Duel
             SetPhase(DuelPhase.Prepare);
             music?.PlayWave(Wave);
             Trace($"start wave={Wave} player={Player.CurrentHealth} bosses={HealthSummary()} observation=empty");
+        }
+        void ConfigureDodgeBodies()
+        {
+            var bodies = new Collider2D[actors.Length];
+            for (int i = 0; i < actors.Length; i++) bodies[i] = actors[i].Body;
+            Dodge.ConfigurePassThroughBodies(bodies);
         }
         void AlignPlayerOpeningSupport()
         {

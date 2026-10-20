@@ -64,6 +64,51 @@ public class PlayerDodge : MonoBehaviour
     private PlayerHealth health;
     private PlayerInputReader input;
     private PlayerMovement movement;
+    private Collider2D bodyShape;
+    private Collider2D[] passThroughBodies = System.Array.Empty<Collider2D>();
+    private readonly List<Collider2D> ignoredBodies = new List<Collider2D>(2);
+
+    // The encounter supplies bodies, keeping Shared independent of level-specific Boss types.
+    public void ConfigurePassThroughBodies(Collider2D[] bodies)
+    {
+        RestoreBodyCollisions(true);
+        passThroughBodies = bodies ?? System.Array.Empty<Collider2D>();
+        if (IsDodging) IgnoreBodyCollisions();
+    }
+
+    public bool CanPassThroughBody(Collider2D other)
+        => other != null && System.Array.IndexOf(passThroughBodies, other) >= 0;
+
+    private void IgnoreBodyCollisions()
+    {
+        if (bodyShape == null) return;
+        foreach (var other in passThroughBodies)
+            if (other != null && other.enabled && other.gameObject.activeInHierarchy
+                && !Physics2D.GetIgnoreCollision(bodyShape, other))
+            {
+                Physics2D.IgnoreCollision(bodyShape, other, true);
+                ignoredBodies.Add(other);
+            }
+    }
+
+    private void RestoreBodyCollisions(bool force)
+    {
+        for (int i = ignoredBodies.Count - 1; i >= 0; i--)
+        {
+            var other = ignoredBodies[i];
+            // If movement ends inside a body, restore once separated rather than ejecting either actor.
+            // This grants no extra movement or invulnerability.
+            if (!force && bodyShape != null && other != null && other.enabled && other.gameObject.activeInHierarchy
+                && Physics2D.Distance(bodyShape, other).isOverlapped) continue;
+            if (bodyShape != null && other != null) Physics2D.IgnoreCollision(bodyShape, other, false);
+            ignoredBodies.RemoveAt(i);
+        }
+    }
+
+    private void LateUpdate()
+    {
+        if (!IsDodging && ignoredBodies.Count > 0) RestoreBodyCollisions(false);
+    }
 
     public void ConfigureLegacyCombat()
     {
@@ -76,6 +121,7 @@ public class PlayerDodge : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        bodyShape = GetComponent<Collider2D>();
         health = GetComponent<PlayerHealth>();
         input = GetComponent<PlayerInputReader>();
         movement = GetComponent<PlayerMovement>();
@@ -133,6 +179,7 @@ public class PlayerDodge : MonoBehaviour
         StopAllCoroutines();
         IsDodging = false;
         CommittedHorizontalSpeed = 0;
+        RestoreBodyCollisions(true);
         if (health != null) health.IsInvulnerable = false;
         if (rb != null) rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
     }
@@ -156,6 +203,7 @@ public class PlayerDodge : MonoBehaviour
     private IEnumerator DodgeRoutine(Vector2 direction)
     {
         IsDodging = true;
+        IgnoreBodyCollisions();
 
         float distance = Distance + (slashDodgeUnlocked ? stats.slashDodgeBonusDistance : 0f);
         float duration = Duration;
@@ -186,6 +234,7 @@ public class PlayerDodge : MonoBehaviour
         rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
         IsDodging = false;
         CommittedHorizontalSpeed = 0;
+        RestoreBodyCollisions(false);
         DodgeFinished?.Invoke();
 
         // Immunity has its own deadline; it need not cover the entire movement.

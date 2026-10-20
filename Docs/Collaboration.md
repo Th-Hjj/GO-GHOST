@@ -2,31 +2,30 @@
 
 Two developers, one Unity project, one GitHub repository (`Th-Hjj/GO-GHOST`). GitHub `main` is the only shared source of truth. The rules below are deliberately light. Their purpose is to avoid losing work and to avoid two people, two machines, or two agents editing the same Unity file at the same time.
 
-Last updated: 2026-10-03. Current confirmed design lives in `Docs/GO_GHOST_VS/Legacy_Combat_Implementation_Spec.md`; `START_HERE.md` gives the read order and `Docs/VerticalSlice.md` summarizes scope. Earlier Duel/tower/baseline/Macro/prompts are Historical where superseded. Progress lives only in `Docs/GO_GHOST_VS/Implementation_Log.md`. Items marked **Proposed** are waiting for confirmation.
+Last updated: 2026-10-20. Current authority/read order: `Docs/Game/README.md`; current structure: `Docs/ProjectMap.md`. Superseded documents are in `Legacy/Docs`. Progress lives only in `Docs/Game/ImplementationLog.md`. Items marked **Proposed** need confirmation. Thomas explicitly authorized this naming-cleanup delivery's verified Windows x64 build/ZIP, direct main commit/push and new GitHub Release. Earlier task-specific Editor-only limits do not restrict this delivery.
 
 ## 0. Current period: Thomas leads (from 2026-09-25)
 
 Walker is busy, so Thomas leads development alone until further notice.
 - Thomas's confirmation alone makes a decision Confirmed.
-- Finished, working changes are committed directly to `main`. The pull request flow in sections 2 and 5 resumes when both developers are active again.
-- Walker may still have uncommitted local work. `Assets/_Game/Development/Walker/`, `Assets/Cyborg-Assets/`, and Walker's `TitleScene.unity` and freeze-ability files stay untouched unless Thomas decides otherwise.
+- Delivery requires authorization for the current task. Earlier direct-main delivery instructions do not override a newer no-commit/no-push scope. The pull request flow in sections 2 and 5 resumes when both developers are active again.
+- Walker may still have uncommitted local work. Thomas explicitly approved moving the preserved local prototypes into `Legacy/Assets/_Legacy/Prototypes/Walker` and the old shared-player files into `Legacy/Assets/_Legacy/Prototypes/SharedPlayer`. Keep their GUIDs; do not treat this as authorization to discard work.
 - When Walker returns: read the `main` commit log since 2026-09-25 and the Implementation_Log, then pull before editing anything.
 
-## 1. Where things live: Shared, Level, Development
+## 1. Current game and archive
 
-| Folder | What goes there | Rule |
-|---|---|---|
-| `Assets/_Game/Shared/` | Code and assets used by more than one level: player scripts, projectiles, shared prefabs, data (ScriptableObjects), later UI, art, audio | Must not reference anything in `Levels/` or `Development/` |
-| `Assets/_Game/Levels/<Lxx_Name>/` | Content unique to one formal level: its scenes, level-only prefabs, scripts, data, art, audio | Levels do not reference each other's internal assets. Never copy a player, weapon, or upgrade system into a level |
-| `Assets/_Game/Development/Thomas/`, `Assets/_Game/Development/Walker/` | Personal test scenes, scratch assets, editor-only test drivers | Never referenced by formal content. Everything here must still compile |
-| `Assets/Settings/`, `Assets/Welcome/`, `Packages/`, `ProjectSettings/` | Template, third-party, and project configuration | Keep in place. Change only after coordinating |
-| `Docs/`, `Docs/GO_GHOST_VS/` | Design, rules, slice execution package, implementation log | Keep one progress log (`Implementation_Log.md`) |
+| Folder | Ownership |
+|---|---|
+| `Assets/_Game/Levels/L01_Duel/` | Current formal scene, Bosses, conditional runtime/UI, training and level assets |
+| `Assets/_Game/Shared/` | Retained player/projectile executors, presentation, audio/fonts and explicit compatibility contracts |
+| `Assets/_Game/Editor/` | Current Build, Playtest and Authoring tools |
+| `Legacy/Assets/_Legacy/Tower/` | Tower scenes, story, persistence, encounters and historical development checks |
+| `Legacy/Assets/_Legacy/PolicePrototype/` | Retired Police policies, authoring/conversion tools and historical validation |
+| `Legacy/Assets/_Legacy/Prototypes/` | Preserved Thomas/Walker prototypes and retired shared-player experiments |
+| `Docs/Game/`, `Legacy/Docs/` | Current authority/single log, and superseded documentation respectively |
+| `Assets/Settings/`, `Assets/TextMesh Pro/`, `Assets/Welcome/`, `Packages/`, `ProjectSettings/` | Existing packages, template assets and configuration; keep in place |
 
-How to decide: if a second level could reasonably need it, it is Shared. If it only makes sense in one level, it is level-local. If it exists only to try something out, it is Development.
-
-Example: `Levels/L01_Mission/Prefabs/CombatAttempt.prefab` nests the shared Player and Enemy prefabs and keeps the slice's overrides (gravity, Boss setup, physics material) in the level folder, so the shared prefabs stay unchanged.
-
-Formal game content is never split by developer name. Create a new `Lxx_Name` or `Shared` subfolder only when something goes into it.
+Current runtime assets must not reference `_Legacy`. Retained types used by original executors live in `Shared/Scripts/Compatibility`, with their limitations documented there. Optional Editor partial hooks preserve conversion of old content. The root Legacy directory is outside Unity import/compilation and is optional for the current game. Recovery is explicit; see `Docs/LegacyRestoration.md`. Formal game content is organized by responsibility, not developer name. See `ProjectMap.md` and `StructureMigration.csv`.
 
 ## 2. Branches
 
@@ -41,8 +40,8 @@ Formal game content is never split by developer name. Create a new `Lxx_Name` or
 Before starting a task, say in chat which files or folders you will touch, which shared files may be affected, and who integrates the final scene.
 
 At any one time only one person edits a given:
-- `.unity` scene. `Cyberpunk World.unity` binds GameSession/MissionUI; UI is built at runtime, and changes to scene bindings still require coordination.
-- shared `.prefab` (Player, Bullet, Enemies/Enemy_Basic) and `Levels/L01_Mission/Prefabs/CombatAttempt.prefab`, which nests Player and Enemy
+- `.unity` scene. The formal scene is `GO GHOST Duel.unity`; its runtime UI and serialized bindings require coordination.
+- shared `.prefab` (Player, Bullet) and `Levels/L01_Duel/Prefabs/DuelCombatAttempt.prefab`, which retains the original player foundation
 - `Assets/Settings/InputSystem_Actions.inputactions`
 - `Assets/Settings/` render pipeline assets and `Build Profiles/`
 - `Assets/_Game/Shared/Data/PlayerStats.asset` and other shared data assets
@@ -52,12 +51,12 @@ At any one time only one person edits a given:
 These are the files most likely to conflict. Notes in this repository are not a live file lock: a note on your branch does not prove the other person is not editing the file. Ask first.
 
 Roles: both developers do design, code, and content.
-- `Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity` is integrated by **Thomas** (decided 2026-09-25). Anyone else who needs a change in that scene agrees it with Thomas first, or builds the content as a prefab for Thomas to place.
+- The formal `Assets/_Game/Levels/L01_Duel/Scenes/GO GHOST Duel.unity` is integrated by Thomas; coordinate edits to its serialized bindings.
 - Other assignments are decided per task.
 
 ## 4. Shared systems
 
-- Coordinate before changing shared scripts, the Player prefab, `CombatAttempt.prefab`, core UI, or the loadout or data format (`LoadoutState.cs`).
+- Coordinate before changing shared scripts, the Player prefab, `DuelCombatAttempt.prefab`, core UI, or the loadout or data format (`LoadoutState.cs`).
 - Customize per level through level config, separate prefabs, or Prefab Variants. Do not edit a shared asset to suit one level.
 - Do not save changing runtime state back into shared config assets. ScriptableObjects are configuration, not save data. Current combat uses the confirmed fixed legacy profile and level prefab overrides, not the historical deployment/upgrade snapshot or edits to `PlayerStats.asset`.
 - Never keep two parallel implementations of the same system. Extend the existing one.
@@ -136,8 +135,8 @@ Thomas works on a laptop and a Windows PC. **Proposed** rules for moving between
 1. Install Unity 6000.6.0f1 through Unity Hub.
 2. Install Git LFS and run `git lfs install` before cloning.
 3. Clone, then open the repository root as a Unity project with 6000.6.0f1. Do not upgrade the Unity version.
-4. Entry scene: `Assets/_Game/Levels/L01_Mission/Scenes/GO GHOST Duel.unity` (the retained scene filename). `GO GHOST > Combat > Open Arena` opens it; the editor Play entry and Windows build use it. New Game opens wave permissions, then the restored legacy arena combat. The old Cyberpunk World/tower scene is historical. Current controls: `README.md`.
-5. Current authority: `Docs/GO_GHOST_VS/Boss_Encounter_Spec.md`; compatible player rules remain in `Legacy_Combat_Implementation_Spec.md`. Actual checks and limits: `Docs/GO_GHOST_VS/Implementation_Log.md`.
+4. Entry scene: `Assets/_Game/Levels/L01_Duel/Scenes/GO GHOST Duel.unity` (the retained scene filename). `GO GHOST > Combat > Open Arena` opens it; the editor Play entry and Windows build use it. New Game opens the current conditional-rule configuration, then the three-wave arena. The old Cyberpunk World/tower scene is historical. Current controls: `README.md`.
+5. Current authority: `Docs/Game/BossEncounters.md`; compatible player rules remain in `RetainedCombatReference.md`. Actual checks and limits: `Docs/Game/ImplementationLog.md`.
 
 ## 9. Before you push or merge
 
@@ -147,10 +146,10 @@ Thomas works on a laptop and a Windows PC. **Proposed** rules for moving between
 - No build or test residue (section 6).
 - No `Library/`, `Temp/`, `Logs/`, `UserSettings/`, `.csproj`, `.sln`, or `.slnx` files. They are ignored; never force-add them. Test evidence in `Logs/GO_GHOST_VS/` stays local.
 - Build Settings still list the right scenes.
-- If you moved assets, `git status` shows renames, not delete plus add.
+- For moves, verify original/current paths and unchanged GUIDs against the migration map. Before staging, Git may display a tracked deletion and untracked destination; rename detection happens when both sides are included in a diff/index.
 
 ## 10. History
 
-- 2026-09-17, Stage 1: project reorganized into `Assets/_Game` on `chore/project-organization` (commits 3c3c73b, d036a5d). Old-to-new paths are in `ProjectMap.md`. `Assets/Cyborg-Assets/` was left in place until Walker confirms whether it holds uncommitted art; still pending.
+- 2026-09-17, Stage 1: project reorganized into `Assets/_Game` on `chore/project-organization` (commits 3c3c73b, d036a5d). Old-to-new paths are in `ProjectMap.md`. Those files stayed in place then; Thomas approved their preserved move to `Legacy/Assets/_Legacy/Prototypes/Walker/Cyborg-Assets` on 2026-10-20.
 - 2026-09-17 to 2026-09-21, Stage 2A: top-down combat foundation (`feature/topdown-combat-foundation`, PR #1). Superseded.
-- 2026-09-24: side-view Boss slice built with Codex on `codex/sideview-boss-slice` (PR #2 and #3). Details in `Implementation_Log.md`.
+- 2026-09-24: side-view Boss slice built with Codex on `codex/sideview-boss-slice` (PR #2 and #3). Details in `ImplementationLog.md`.

@@ -1,0 +1,43 @@
+# Prompt 03 — 新游戏、失败接替与完整重试闭环
+
+> Historical execution prompt; do not apply as current instructions. See [current authority](../../../../Docs/Game/README.md).
+
+**Astra 思考档位：最高。请在客户端选择；本文件不修改客户端配置。**
+
+先读取并遵守：
+- 当前适用的 AGENTS.md、工程协作规则；
+- Docs/GO_GHOST_VS/Execution_Contract.md；
+- Docs/GO_GHOST_VS/GO_GHOST_Design_Baseline_ZH.md；
+- Docs/GO_GHOST_VS/Prototype_Test_Profile.md；
+- Docs/GO_GHOST_VS/Implementation_Log.md（若存在）。
+需要核对 Macro 时，读取同目录原表或 Macro_Readable_Extract.md；不要从旧 README 推断新玩法已实现。
+只执行本阶段，按 Execution_Contract 的格式交付，完成后停止。
+
+目标：打通真实的单任务流程，并为后续配装留出正确状态边界。
+
+实现：
+Title / New Game → 第一位 0% 警察 → Combat；
+战败 → 本位警察结束 → 下一位警察 → 配装入口 → 确认部署 → 同一个 Boss；
+胜利 → Result / Ending 占位 → 可重新开始 New Game。
+
+具体要求：
+1. 每次真正 New Game 强制首位 0% 加基础枪，不能继承上一轮的改造或绕过首次出击；第一次胜利直接抵达结果。
+2. 用简单文案和不同的 officer/attempt 标识说明“下一位警察接替”，不写复活/复生。复用角色 GameObject 可以，但逻辑身份必须是新警察。
+3. 首次真实失败开放 slice 目录状态；后续失败不再新增奖励/解锁。此阶段目录暂只有基础项，04/05 后实现的项自动遵守同一开放规则。
+4. 下一次部署重置双方完整战斗状态，包括 HP、位置、速度、攻击过程、冷却、无敌、弹体、旧回调、计时器及战斗 UI。不累计 Boss 伤害。
+5. 采用足够简单的数据边界：会话进度、配装草稿、本次锁定配装、胜利记录分开。此时配置可以只有基础项，但不能依赖以后补丁修补结局读取来源。
+6. 战斗结束事件只结算一次；以 TEST-v0 的同时死亡规则处理双方同一结算步致死。
+7. 配装入口和部署需要玩家操作，不能死后自动给下一位装更多改造。先做功能性的界面骨架，不需要精细美术。
+8. 后续会从胜利记录读取结果，不能胜利后回配装界面修改本次获胜数据。
+
+验收：
+- 真实死亡→下一位→部署能走通；Boss 确实回满血。
+- 连续至少 5 次重试无重复玩家/攻击/事件/界面，输入正常。
+- 首次 0% 胜利不访问仅在失败后才初始化的数据，也不强制打开配装。
+- 返回 New Game 后再次是第一位 0% 警察，目录回到首次失败前的状态。
+- 通过调试事件验证的分支必须标记为调试验证；真实胜败的验收独立记录。
+
+只做流程与状态正确性，具体模块交给后续阶段。
+
+## 你验收后再推进
+真实死亡后出现下一位警察；重打 Boss 回满血；New Game 重置到第一位 0%。

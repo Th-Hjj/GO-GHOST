@@ -1,56 +1,40 @@
 # GO GHOST
 
-Single-player, fixed-camera 2D combat: Refraction (gunner), Severance (swordsman), then both together. Condition–Action V2 offers 26 conditions and 21 actions across five independent operations, sharing a total budget of five rules. Each rule is Primary Condition [AND Optional State Condition] → One Action. USC CTIN 489 — Thomas Hong and Walker Grupp.
+A single-player 2D arena combat prototype. Face **Refraction**, the gunner; **Severance**, the swordsman; then fight both together.
 
-## Open and play
+Play manually or configure up to five **Condition → Action** rules across Move, Jump, Aim, Fire and Dodge. Rules can combine a primary condition with one optional state. Operations without an executable rule use manual control.
 
-Use **Unity 6000.6.0f1**, the existing packages and URP 2D renderer. Thomas uses Rider. The formal scene is `Assets/_Game/Levels/L01_Mission/Scenes/GO GHOST Duel.unity`; **GO GHOST > Combat > Open Arena** opens it. The Editor Play entry and Windows build use this scene, including when a different historical scene was last open.
+[Download the latest Windows playtest](https://github.com/Th-Hjj/GO-GHOST/releases/latest)
 
-Choose **New Game**, then **Add Rule → Select Condition → Select Action**. A fixed complete expression (`A → C` / `A + B → C`) stays above the body preview, selector and rule cards. Click its parts to edit, or use **+ Condition** for one optional state. Hover/focus candidates preview without changing the draft. Grounded/Airborne, distance, threat and movement-direction branches require explicit choices. Fire 1 Shot and Keep Firing retain Ammo Use; Short Burst commits without a parameter step. Cancel/Escape restores the full original rule. Both right-hand lists use continuous numbering and global DisplayOrder, with measured wrapping and scrolling; Add Rule / Start Fight stay fixed. The current budget is five, independent of UI capacity. Operation-local priority, impossible-action/manual fallback and independent operation arbitration remain. Finish or cancel editing before **Start Fight**.
+## Play
 
-The first configuration is empty/manual. The fight deep-copies rules and priorities; retry/next wave preserve them, New Game/Restart clears them. Each fight has a three-second stationary preparation and fresh actors/resources/observation. Victory advances; defeat opens reconfiguration; both Bosses defeated in wave three opens Complete.
+Choose **New Game**, add or edit rules, then select **Enter Test Room**. Select **Continue** to return to Rule Setup, then **Start Fight** to begin Wave 1. An empty configuration gives full manual control. Retry and the next wave retain your configuration; New Game clears it.
 
-The formal scene includes IBM Plex Sans for UI and IBM Plex Mono for compact counters. Rule activation changes color and a narrow glow while preserving glyph positions and wrapping. Add Rule and Start Fight share the right panel's bottom row. Layout targets are 1280x720, 1920x1080, 2560x1440 and 3840x2160; see the latest [validation log](Docs/GO_GHOST_VS/Implementation_Log.md) for actual checks.
-
-Controls use closed inset frames, distinct hover/selection/keyboard-focus cues and dim disabled labels. Configuration and HUD share compact expression cards, including optional state and selected parameters, with a separate body preview and one description area. Lists grow and scroll without shrinking text; combat action text wraps beside a fixed arrow column.
-
-Wave 1/2 Bosses mirror the player's horizontal opening across the arena centre (currently player x=-9, Boss x=9). Wave 3 keeps the original x=9/x=3 Boss arrangement.
-
-| Module | Manual controls |
+| Input | Action |
 |---|---|
-| Legs | A/D move; Space jump; press S once to drop through the current one-way platform |
-| Arms | Mouse freely aims; hold LMB for Rifle |
-| Spine | Left Shift horizontal Dodge, on ground or in air, in current/last movement direction |
+| A / D | Move |
+| Space | Jump |
+| S | Drop through the current one-way platform |
+| Mouse | Aim |
+| Left mouse button | Fire |
+| Left Shift | Dodge |
+| Escape | Pause |
+| F8 | Developer tuning |
 
-The body turns with horizontal movement and keeps its facing when idle. Mouse/automatic Aim controls the rifle independently, so you can move left while aiming right. Short Move (Forward / Back) retains its starting body facing.
+The Rifle reloads automatically. Body facing follows movement while the weapon aims independently. F8 tuning lasts for the current application session.
 
-Dodge: distance 3, movement .18 s, immunity .20 s, start cooldown 2.0 s; landing does not refresh it. Dodge passes through Boss bodies while walls and terrain remain solid. Severance can intercept platform jumps, follow a landed Leap with one cut, and use a telegraphed physical Flank Leap with a separate arrival slash.
-| Pause | Escape: Resume or Main Menu |
+## Open the project
 
-The fixed Rifle has 8 rounds, 12 damage, a .25 s interval and 1.2 s automatic reload. Aim rules select only eligible visible targets; Fire rules never change Aim. Arms use cyan, Legs mint and Dodge a narrow violet Spine. The right-side **Rules** list shows full conditions and parameters. The complete condition match lights the whole card uniformly. Paid automatic Fire and accepted Jump/Dodge retain their existing local actor pulses. Manual actions stay neutral. The list is hidden for an empty loadout. The camera fits the entire arena beside it, and pause freezes feedback. Camo ends live target tracking. All player and enemy bullets pass through walls/platforms; bullets and the locked piercing beam still stop at allied Boss bodies. Each Boss has independent health. Both must die to clear wave three; simultaneous player death is defeat.
+1. Install **Git LFS** and run `git lfs install` before cloning.
+2. Open the repository with **Unity 6000.6.0f1**, using its existing packages.
+3. Select **GO GHOST > Combat > Open Arena**, then enter Play Mode.
 
-States last while true; events act briefly; complete actions finish their current round. **Move (Forward / Back)** travels one short distance in the visible facing direction captured at its start; no enemy is required. Its state conditions remain required, and only completed travel emits **Move Finished**. **Keep Moving (Left / Right)** is continuous. Approach Enemy stops when horizontally aligned. Keep Mid Range and Move Toward Center retain their arrival behavior. **Move to Platform (Higher / Lower)** commits to one reachable destination using ordinary jumps, edge descent or the same drop-through as manual S, retaining Move/Jump until the transfer finishes or physically fails. S ignores only the current one-way support, so lower platforms catch you and the floor remains solid. Holding S does not repeat the drop.
+Current source lives in `Assets/_Game`. The optional root `Legacy` archive stays outside Unity compilation; recovery instructions are in the documentation.
 
-**Short Burst** keeps its name and has no parameters: once its first real shot starts, it fires all remaining rounds in that magazine despite condition changes, trigger release or other Fire matches. The last real shot emits **Burst Finished** once before normal reload. Aim and other operations stay independent. **Fine-Tune Aim** makes small stable corrections toward the enemy closest to raw aim intent; Nearest and Lowest-Health Aim retain their own all-visible selection. **Enemy in Firing Line** checks current body geometry against the current physical muzzle ray, including guarding enemies. Platforms do not hide on-screen enemies from player rules; Camo still does. **Enemy Preparing an Attack** includes visible internal subattack wind-ups. **Incoming Attack** offers Any / Melee / Ranged; bullets, beams and flying sword waves are Ranged at any distance.
+[Documentation](Docs/Game/README.md) · [Project map](Docs/ProjectMap.md) · [Implementation log](Docs/Game/ImplementationLog.md)
 
-**Hold Position** owns ordinary Move at zero without cancelling gravity, Dodge or knockback. **Hold Fire** blocks ordinary lower/manual Fire without cancelling an accepted Burst, reload or existing bullets. Fire 1 Shot and Keep Firing retain their ammo floor and normal unavailable/manual fallback. **Dodge in Move Direction** uses resolved movement or last movement direction; **Dodge Toward Cursor** uses the raw cursor's horizontal side. Dodge Away from Threat still needs its condition/event source. Automatic and manual Dodge share Boss pass-through and terrain blocking. No player or weapon tuning changes.
+## Credits and licenses
 
-Manual and automatic actions create actual Jump Started, Jump Apex Reached, Landed, Dodge Finished, Shot Fired, Reload Finished and Hit Enemy events; falling through a platform does not invent jump events. All rule events remain matchable for 0.5 seconds from occurrence. Event-triggered ordinary actions respond for 0.5 seconds from acceptance while any additional state stays true; complete commitments use their actual completion rules. Pause freezes both clocks. Rows consume events independently, and two enemy-specific conditions still require the same enemy. Real action loops remain bounded by physics, ammo and cadence. Old Step Back data becomes Move (Back), old Bullet becomes Ranged, and old Low requires a new choice without deleting the remaining rules. See the [complete 26/21 catalog](Docs/GO_GHOST_VS/Alpha50_Conditional_Loadout.md). In Editor/development Wave 3, **P** still requests existing cooperative attacks with normal legal rejection.
+**Thomas Hong and Walker Grupp** — USC CTIN 489.
 
-
-The shared arena uses one Training platform, seven Wave 1 platforms (mirrored stairs plus a center bridge), and the original five platforms in Waves 2/3. Refraction uses physical platform jumps and concealed platform relocation in both Waves 1/3. The original player controls, tuning and stickman are retained. The Bosses reuse the player's round head and bar limbs in warm orange/coral red, with simple limb animation, neutral weapons with owner accents, source-colored attacks, restrained Bloom and CC0 Kenney audio. Player HP is cold white with Danger red from the existing Low Health latch. Player bullets stay neutral regardless of manual/automatic Fire. HeadReserved is future-only; no Head/Ultimate system. See [Art Direction](Docs/GO_GHOST_VS/Art_Direction.md). No player Arm-Blade, Shield, Counter or E; no tower, historical ability upgrades, save.json flow, narrative route or permanent progression.
-
-Temporary CC0 music: Wave 1 **Open Warfare** (Ruskerdax), Wave 2 **Boss Fight 2** (Ansimuz), Wave 3 **Achilles** (Zane Little Music). Music starts when **Start Fight** is selected, continues through preparation, pauses with the game and stops at results/menu. Retry starts the recording again. The dedicated `Wave Music` child in the formal scene exposes independent volume (0.18) and fade duration (0.35 s); full-song loop seams and subjective mixing still need listening. [Music sources and licenses](Assets/_Game/Levels/L01_Mission/Audio/Music/Licenses/music-manifest.json).
-
-Per-wave playback gains **1 / 0.524807 / 0.699842** match the full-recording average loudness to Wave 1; the music master remains independent. Original audio and musical dynamics are preserved. The same provenance file records loudness measurements; subjective matching still needs listening.
-
-**F8 developer tuning** is available in the Windows player and Editor. F8 opens/closes the panel; Escape also closes it. Opening pauses combat, and closing restores the previous pause state. Player, Weapon and Health tabs expose movement/jump speed, Dodge distance/movement time/cooldown/immunity, Rifle damage/bullet speed/shot interval/magazine/reload, and player/gunner/swordsman max/current HP. Type a value and press Enter or use - / +; ranges are enforced. Current HP requires a living actor and cannot exceed max HP. Values survive retry, waves and New Game for this app session; restarting the app or **Restore defaults** restores normal tuning. Shared assets and saved data are untouched. Existing shots, Dodge commitments and cooldown/reload deadlines finish with their original timing; new actions use edited values. Magazine increases fill on the next normal reload. Max-HP edits clamp current HP without healing. Controlled tuned fights are not normal-balance evidence.
-## Development and evidence
-
-The retained `DuelGame`/`DuelUI` own the shell. `ConditionalCatalog` feeds UI/runtime/documentation; a fresh `ConditionalController` evaluates copied public facts and gated raw input. `PlayerInputReader` arbitrates five operations; existing player executors and `Projectile` retain real combat. `LegacyPlayerAI` supplies only executable threat/direction geometry in the formal path. Boss motor, action executor, perception, tactics and coordinator retain their existing behavior. Policies cannot write damage or outcomes.
-
-**GO GHOST > Playtest > Wave 1 / Wave 2 / Wave 3** opens the normal empty/manual configuration. Choose from Edit Mode or Menu/Configure, then configure rules and Start Fight. The shortcut never alters a running fight. The current focused validation entries under **GO GHOST > Playtest** are **Condition Action Behavior Corrections**, **Behavior Public Facts**, **Behavior Platforms** and **Behavior Catalog**. They reuse the existing harness for corrected mechanisms, public observations, real platform movement and configuration/compatibility checks. See the latest log for executed results and remaining limits. The older **Condition Action V2** suites and Alpha/Condition-First/Cold-Light aliases are historical: some assertions still describe interruptible Short Burst, old platform labels or previous pickers, so they are not current acceptance evidence. Historical full-AI fixtures remain retired.
-
-The previous Windows x64 player/ZIP under ignored `Builds/ConditionFirst/` predates Condition–Action V2. This task delivers the Unity Editor version only: no full Build, Release, commit or push. See [Implementation_Log](Docs/GO_GHOST_VS/Implementation_Log.md) for actual verification and limitations. No combination/win-rate matrix or mandatory all-AI outcome is used.
-
-[Alpha50_Conditional_Loadout.md](Docs/GO_GHOST_VS/Alpha50_Conditional_Loadout.md) is current for player rules/configuration/feedback. [Boss_Encounter_Spec.md](Docs/GO_GHOST_VS/Boss_Encounter_Spec.md) retains Boss combat; [Legacy_Combat_Implementation_Spec.md](Docs/GO_GHOST_VS/Legacy_Combat_Implementation_Spec.md) retains compatible executors/tuning. See the newest [Implementation_Log.md](Docs/GO_GHOST_VS/Implementation_Log.md) for actual checks and NOT TESTED limits. [Audio provenance](Assets/_Game/Shared/Audio/Licenses/boss-manifest.json) records clip licenses. Historical assets and existing saved data are untouched.
+Third-party attribution and license records: [sound effects](Assets/_Game/Shared/Audio/Licenses/boss-manifest.json), [music](Assets/_Game/Levels/L01_Duel/Audio/Music/Licenses/music-manifest.json), and [IBM Plex fonts](Assets/_Game/Shared/Fonts/IBMPlex/license.txt).

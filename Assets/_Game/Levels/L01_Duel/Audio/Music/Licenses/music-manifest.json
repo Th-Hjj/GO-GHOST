@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "purpose": "Thomas's temporary three-wave BGM selection, confirmed and authorized for implementation on 2026-10-05.",
+  "license_checked_date": "2026-10-05",
+  "license": "CC0-1.0",
+  "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "playback": "A dedicated WaveMusicPlayer starts at Start Fight, including the three-second preparation. Native full-clip loop, volume 0.18, fade 0.35 seconds, pause with the existing AudioListener. Retry starts at zero.",
+  "import": "Stereo preserved; Streaming; Vorbis quality 0.8; original sample rate; preload metadata/audio enabled; load in background enabled. No platform override.",
+  "loudness_matching": {
+    "date": "2026-10-05",
+    "method": "FFmpeg 7.1 EBU R128 integrated LUFS scanner on original full stereo recordings; constant playback attenuation only.",
+    "method_reference": "https://ffmpeg.org/ffmpeg-filters.html#ebur128",
+    "target_before_master_lufs": -13.6,
+    "original_full_track_lufs_by_wave": [-13.6, -8.0, -10.5],
+    "trim_db_by_wave": [0.0, -5.6, -3.1],
+    "playback_gain_by_wave": [1.0, 0.524807, 0.699842],
+    "remeasured_full_track_lufs_by_wave": [-13.6, -13.6, -13.6],
+    "original_first_60_seconds_lufs_by_wave": [-14.4, -8.0, -11.0],
+    "remeasured_first_60_seconds_lufs_by_wave": [-14.4, -13.6, -14.1],
+    "remeasured_true_peak_before_master_dbfs_by_wave": [-2.7, -3.2, -3.5],
+    "master_volume": 0.18,
+    "note": "The source recordings and their internal dynamics are unchanged. Unity codec/device effects and subjective perception are not measured by the source-file scanner. Existing local importer quality edits were preserved and excluded from this change."
+  },
+  "files": [
+    {
+      "wave": 1,
+      "title": "Open Warfare",
+      "author": "Ruskerdax",
+      "file": "Assets/_Game/Levels/L01_Duel/Audio/Music/open_warfare.mp3",
+      "original_file": "ruskerdax_-_open_warfare.mp3",
+      "source": "https://opengameart.org/content/open-warfare",
+      "download": "https://opengameart.org/sites/default/files/ruskerdax_-_open_warfare.mp3",
+      "license_evidence": "Original author upload page explicitly lists CC0 and permits commercial use and modification without restriction.",
+      "bytes": 3669348,
+      "sha256": "0a278b6d3941386ea2b8f324569dfdb0d4e8631766f7d4e0688a0b8b5f4bddcb",
+      "unity_duration_seconds": 114.5992,
+      "modifications": "Original audio bytes unchanged; local filename shortened. Original source is lossy MP3.",
+      "loop": "Repeat full recording; musical seam not auditioned."
+    },
+    {
+      "wave": 2,
+      "title": "Boss Fight 2",
+      "author": "Ansimuz (Luis Zuno)",
+      "file": "Assets/_Game/Levels/L01_Duel/Audio/Music/boss_fight_2.wav",
+      "original_file": "Boss Fight 2 Files/Boss Fight 2.wav",
+      "source": "https://opengameart.org/content/boss-fight-2",
+      "download": "https://opengameart.org/sites/default/files/boss_fight_2_files.zip",
+      "license_evidence": "Original upload explicitly lists CC0. The archive's public-license.txt permits commercial use, modification and redistribution, with optional credit.",
+      "license_file": "Ansimuz-public-license.txt",
+      "bytes": 17014302,
+      "sha256": "1ff4cd3c43cc6be81084e5e8192d3aa3094a35d80bb32ebf483b18c15337d6bb",
+      "unity_duration_seconds": 88.61539,
+      "modifications": "Original WAV bytes unchanged; local filename shortened. Other archive audio variants were not imported.",
+      "loop": "Author describes the track as looped; musical seam not auditioned."
+    },
+    {
+      "wave": 3,
+      "title": "Achilles",
+      "author": "Zane Little Music",
+      "file": "Assets/_Game/Levels/L01_Duel/Audio/Music/achilles.wav",
+      "original_file": "achilles.wav",
+      "source": "https://opengameart.org/content/achilles",
+      "download": "https://opengameart.org/sites/default/files/achilles.wav",
+      "license_evidence": "Original author upload explicitly lists CC0. This is the public full-song WAV, not the separately linked Deluxe pack.",
+      "bytes": 57242922,
+      "sha256": "ac934b5a31ad8375f66f290836015fce7f5f774259c73d850f5de173cdb5a7d2",
+      "unity_duration_seconds": 162.2512,
+      "modifications": "Original audio bytes unchanged.",
+      "loop": "Repeat full recording; a bespoke seamless loop is not included in this free download and has not been created."
+    }
+  ],
+  "audibility": "NOT TESTED: human audition, musical loop seams and subjective SFX/music balance. Native playback/sample progression is verified separately in Implementation_Log."
+}

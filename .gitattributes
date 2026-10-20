@@ -177,3 +177,6 @@ Packages/packages-lock.json linguist-generated
 
 # Exceptions for .asset files such as lightning pre-baking
 LightingData.asset     binary
+
+# Immutable recovery mirror: preserve the bytes recorded in Legacy/manifest.json.
+Legacy/Assets/**       -text

@@ -82,6 +82,7 @@ mono_crash.*
 *.apk
 *.aab
 *.unitypackage
+!/Legacy/GO-GHOST-Legacy.unitypackage
 *.unitypackage.meta
 *.app
 

@@ -1,0 +1,1953 @@
+{
+  "schema": 1,
+  "created": "2026-10-20",
+  "restore_root": "Assets/_Legacy",
+  "package": {
+    "file": "GO-GHOST-Legacy.unitypackage",
+    "sha256": "94a579e88863b260fb311594fd05c63c7d246ce3bc5bb6ef93ce3980990f23e6"
+  },
+  "assets": [
+    {
+      "path": "Assets/_Legacy",
+      "guid": "f262d74db1482c34f86884408b79cf5b",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype",
+      "guid": "878a1ab198f18a54f90c195d42d5aabb",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Editor",
+      "guid": "0a9cd36a5751f0e4d9e080f60c90f321",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Editor/Authoring",
+      "guid": "4a2e88e00ede40345ba71ac30f330e4b",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Editor/Authoring/BossEncounterAssets.LegacyConversion.cs",
+      "guid": "e3b6a03ecc0528b4c80ea906fe3fd234",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Editor/Authoring/DuelBuild.LegacyAuthoring.cs",
+      "guid": "4c314c60b89f2094ab7d684e77fb364f",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Editor/Validation",
+      "guid": "e2ef1e553835f92479bbd6e106e96699",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Editor/Validation/Alpha50Smoke.cs",
+      "guid": "ea102dc5f51ddb04eaa219887debd381",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Editor/Validation/BossEncounterSmoke.RetiredPolicies.cs",
+      "guid": "bf31e676d3a5f41468d2321acefae5c4",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/L02_Duel",
+      "guid": "558666c9f5493db40848b299cbcd4f91",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/L02_Duel/Scenes",
+      "guid": "7a9f48cb6252081418abf33bce3a2422",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/L02_Duel/Scripts",
+      "guid": "61910d80ba243b54f88e52736e109fd1",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts",
+      "guid": "0b82afa3c8521f84db08a927f180bd5a",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/CyberpsychoBoss.cs",
+      "guid": "acf5cb1caefeb2149addd3ef60beee75",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/CyberpsychoBossBlackout.cs",
+      "guid": "bc5f32a8128f46e99bc13e962e8908e9",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/CyberpsychoBossCamoRush.cs",
+      "guid": "306b1490a68e472489b96012bdb7cf1c",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/CyberpsychoBossCamouflage.cs",
+      "guid": "784de70349814332bbaf68c39caa30e9",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/CyberpsychoBossEncounter.cs",
+      "guid": "21775ab32d68de64cb40c43c46ac43c4",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/CyberpsychoBossLegacyPolice.cs",
+      "guid": "4e18957b6fc53a2469ff150ca441853f",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/CyberpsychoBossOpeningLaser.cs",
+      "guid": "3b2e7bf83d354c74dbd0c9eba372e972",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/LegacyPlayerAI.cs",
+      "guid": "0f05ab533ba315645b0f96d6d1e18028",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/LegacyPolicePolicy.cs",
+      "guid": "6013f6a58afca8042920551446d55a10",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/LegacyPolicePublicFacts.cs",
+      "guid": "dadb2e47f833151458b3dfd6a66412ed",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes",
+      "guid": "8a452750b1b4fff4ba48f939dc46d8a3",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer",
+      "guid": "5afceedd8c5a6a240baa92f7e17e401f",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Abilitydefinition.cs",
+      "guid": "b69cfba8d25e42889a63359db672fb48",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Abilityoptionbutton.cs",
+      "guid": "5baf7cc706f34e44af1a7f93cc186bfc",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Abilitytext.cs",
+      "guid": "793928fc7f2044a4b5e2dafbcfe2b7df",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Bodypartbutton.cs",
+      "guid": "991d15f401b24f47b90c0f392e3b3058",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Camerafollow.cs",
+      "guid": "fd60d28af6524c3eabdd7b548677ee83",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Confirmpopup.cs",
+      "guid": "b29c5882ecf9451299b8eb2fcda58519",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Exampleblastabilityso.cs",
+      "guid": "0a9b0f8b28e2400189af2f6cd52a38f1",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/FreezeEnemyAbilityso.cs",
+      "guid": "20852d60eec34421869b9f11ccbb53b3",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Gamemanager.cs",
+      "guid": "8f8267679bc8470a9109af3d0c58b383",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/LegacyLoadout.cs",
+      "guid": "4157c00c14486164fb0f04742814fa12",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Loadoutbridge.cs",
+      "guid": "cf97ec3d4354454b997e893025495cda",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/PlayerDetachedDroneArm.cs",
+      "guid": "58b23f1392c6cbb40b8c07362850acb6",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/READEME.md",
+      "guid": "6fa8fba3fedc4476bc5f6838faf0831e",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Savedata.cs",
+      "guid": "975dbd8071da47459f2f62a46d301339",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Savesystem.cs",
+      "guid": "6c2f25175a124006a97ee8928b7a6032",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Upgradescreen.cs",
+      "guid": "2de018d19eb142c7bddc8a35b1012726",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/Thomas",
+      "guid": "31bc7131534cd1840b5bfa381ffae98e",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/Thomas/Scenes",
+      "guid": "9a6e05fae8c465b4da060b4fd715e87c",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/Thomas/Scenes/Random Scene.unity",
+      "guid": "020c02ae62c438c48b2421de71eb7ad4",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/Walker",
+      "guid": "95a5f5036300fa8468e1bbce616689c5",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/Walker/Cyborg-Assets",
+      "guid": "ad7af8bbddf39b140b2830aa0835ea79",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/Walker/Cyborg-Assets/SpritesForChars",
+      "guid": "7cded3b7b03494b4393b5a55593d19eb",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/Walker/Cyborg-Assets/TilesToUse",
+      "guid": "d99cf9ddfa936b24f942cfa603a9aa39",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/Walker/Scenes",
+      "guid": "1d1843a867089c9469b749cdf7209c29",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/Walker/Scenes/Scene1.unity",
+      "guid": "3dd46098d3c6eb2429ceab50b3bc3ea7",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/Walker/Scenes/TitleScene.unity",
+      "guid": "faa6d8fa1a24ef941a824b10df10dd4b",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/README.md",
+      "guid": "f9c7a0a71bc9eaf4aa1358adae076aef",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower",
+      "guid": "433a8304ab6d38b4eadb62fff812856f",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Art",
+      "guid": "0b0504e88b0273846a95e50730afda78",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Art/GG_PP02_Bloom.asset",
+      "guid": "1c235c6fd71f1ff42ac6972899b2b6a0",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Data",
+      "guid": "547c736b1206d604f95785e6f6748b5d",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Data/Narrative",
+      "guid": "296c47961d2d0d248948785915a12a36",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Data/Narrative/S01_DialogueFont.asset",
+      "guid": "e231f7f74777c0c4a88c8c982972717b",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Data/Narrative/go_ghost_narrative.json",
+      "guid": "893abc75319b87440b3782e6e2faa8fc",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development",
+      "guid": "8bc51e8db9449e3438fd22b8ec669578",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts",
+      "guid": "4c998594111c688479d045b014e35b6f",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTest.cs",
+      "guid": "b8ff654358409bb46afde60453a1d624",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestAirDash.cs",
+      "guid": "0292417aaa489f949baf3707501b25c6",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestArchiveFinal.cs",
+      "guid": "7f035294bef79fb4e97c3e403dbad138",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestArmBlade.cs",
+      "guid": "b13fd4c16c6790d4bba61efd0dc9bc20",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestBlackout.cs",
+      "guid": "3f07ad90ddbf4ae4ba4cad35560bd3f8",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestBossPhases.cs",
+      "guid": "52183d8e637e5964fb21a2feccd8cbda",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestContact.cs",
+      "guid": "e313d694d88a4a74ca63d235e753b5d8",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestDemo.cs",
+      "guid": "8b1ee1e490adf6e4796414e2cd957085",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestDialogue.cs",
+      "guid": "df96b9c19a538884b88efd672173e726",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestFlow.cs",
+      "guid": "c5bf7264ae2dd134aa00b5cf0a3b4881",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestIncrement.cs",
+      "guid": "4d40a1c5716ae234aa29acfd4fba0c04",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestIncrements06.cs",
+      "guid": "296b8400b0ad0a84dbb0af5a7c3b5315",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestManualFix.cs",
+      "guid": "68758ba0b3d37a84d97fde818e1e455a",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPerfInput.cs",
+      "guid": "bdcc6c45d655e884d82874bd6672ec94",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase1.cs",
+      "guid": "f6512a7243286c7479992676351664ec",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase10.cs",
+      "guid": "31b0e1076791d2c40a8102498f2e4e91",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase2.cs",
+      "guid": "81f483959af24e749a3ffe6d187c9835",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase3.cs",
+      "guid": "202649e18f0f20d4498f125a4b72def1",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase4.cs",
+      "guid": "b87f26a0900946e4f94240bd6c66182e",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase5.cs",
+      "guid": "42c5fcb8aea4832469f27c7569c196cb",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase6.cs",
+      "guid": "0abb50f78ddac7f4383d0181b060c47f",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase7.cs",
+      "guid": "981b0fccafbb57c4d8185af627c57ff5",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase8.cs",
+      "guid": "bc07640b3e9f6b747a6fa90ea3914c2b",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase9.cs",
+      "guid": "245c49a1eec3ee545ae6ea558e2b8e1e",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPolish.cs",
+      "guid": "d8229d1d7ea8b5f4fb09496861ff3589",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPolish03.cs",
+      "guid": "1c0b1b82150d887479c3d59373d57f30",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPracticeFlow.cs",
+      "guid": "7c91d9839e89c0946a7c19d546207372",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestProduction.cs",
+      "guid": "5b37d270a177b0d4ea17f162606e3417",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestResultArena.cs",
+      "guid": "8baff5140eb73f54898615ccd52d34b0",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestRunArchive.cs",
+      "guid": "ef9fceb735d14a209329a082ec21d850",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestS01.cs",
+      "guid": "4f21c7fe86381b64793f3871c3291ce6",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestS02.cs",
+      "guid": "c4f4a6e3596112c42b0c95f0c7a5fb43",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestS02Delta.cs",
+      "guid": "64769dc620ac2d14995aadff886765b3",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestStrictUI.cs",
+      "guid": "311991d3246ee0b4b8873af291fb260d",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestTerminalUi.cs",
+      "guid": "2fb2865f409449a4c8d6bbb306adf86c",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestUiPolish.cs",
+      "guid": "e617436a879815142ab17d5a95ee4be4",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestV2.cs",
+      "guid": "1f6a2a1f2bc367a4e84fa30655dee64b",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestWeapons.cs",
+      "guid": "9344679212140144aabce961716d293c",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Prefabs",
+      "guid": "9824fc7ee24846f4e9baa57808115786",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Prefabs/CombatAttempt.prefab",
+      "guid": "2b9f8cf13ff978547ab7cd69e5bacb6f",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Prefabs/Enemies",
+      "guid": "35fc8f178fad61240b45f0117f2bbea9",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Prefabs/Enemies/Enemy_Basic.prefab",
+      "guid": "9b0665bfb8517d442bcb9a73560551df",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scenes",
+      "guid": "0c10362a135a40c44973061f57cb814c",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scenes/Cyberpunk World.unity",
+      "guid": "8c9cfa26abfee488c85f1582747f6a02",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts",
+      "guid": "41a8548c55ef89b47860b9c8b3f9ba62",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/BossFight.cs",
+      "guid": "5911c3f2ef1043a4f892e6edc1662806",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/BossFightTower.cs",
+      "guid": "0d58d919ce5e57b4f82e6bda9db88734",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/ChandelierEncounter.cs",
+      "guid": "30396e5ca45eb0f4aa041d47bcfb79a8",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/DeveloperRouteJump.cs",
+      "guid": "a6c22c21da4d52c4eac74b2b25933301",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Diagnostics",
+      "guid": "ea3279f988fb7d443acf094ae8fa131d",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Diagnostics/FrameTimeLog.cs",
+      "guid": "183cd7f82a267f94cac4abb75ca51df4",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Encounters",
+      "guid": "44ccb7d9e240a3346baa289ef49d079f",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Encounters/EncounterZone.cs",
+      "guid": "22fa6b461849d4445b74112d25ff5576",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Floor50Receptionist.cs",
+      "guid": "4dedc80c7235269428eb33b0a7df100d",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/GameSessionDevelopment.cs",
+      "guid": "8b3a438893129844dbb4232e37393963",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/GameSessionDisposition.cs",
+      "guid": "f3c5df2e8c0312c4cb6dddbbc91f5585",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/GameSessionFlow.cs",
+      "guid": "eaf886b27d944c942b684ead2ca9a760",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/GameSessionIntervention.cs",
+      "guid": "c5841b7f6d84cb649a3a01375a2031e6",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/GameSessionNarrative.cs",
+      "guid": "e958f8d6df84e2345992dd78d563c364",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/GameSessionPerception.cs",
+      "guid": "49e7cd86dfa998e4593690c9b35737f4",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/GameSessionTower.cs",
+      "guid": "e39dbdc55a3549642acbc894e284ecb1",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/MissionAugmentationGuide.cs",
+      "guid": "039983f1a2584c03b59eaeda84bf8ca4",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/MissionTerminalFrame.cs",
+      "guid": "2fb832bd8d53459cb92916fb8279f93a",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/MissionUI.cs",
+      "guid": "3920370b827186042b50582c03c0cd38",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/MissionUIDialogue.cs",
+      "guid": "831cc453ce58f2342b95dbab060ca20d",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/MissionUITerminal.cs",
+      "guid": "13e27c4738d544548b6437eef5ca393a",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Persistence",
+      "guid": "1e9ae57386d70a0468eaf88acd3e18aa",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Persistence/PoliceArchive.cs",
+      "guid": "0468e4cc3c3d645489eb8f37221e6a5d",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Persistence/PoliceArchiveStore.cs",
+      "guid": "49677c48eae82834f91c9a3c3de2db9a",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/PracticeDoor.cs",
+      "guid": "dac0ea8bb0b526245b8d6ed4a3d80d90",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Presentation",
+      "guid": "df804858c47a21843938ffbe38d58805",
+      "is_folder": true
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Presentation/InteractionOutline.cs",
+      "guid": "042e54fec52f1004eaf80453cf54889f",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Presentation/NarrativeContent.cs",
+      "guid": "9ff369e4eb567774a8c09a0b0b033efc",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Presentation/WorldSpeechBubble.cs",
+      "guid": "28912e8e7afc46e4ba4eb568895ef6a2",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/TowerCharacter.cs",
+      "guid": "dae83cef0b67389489cc0ad7fc2bace9",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/TowerDoor.cs",
+      "guid": "99d5588f3633cf643bd374a10f6efa9a",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/TowerManagementBarrier.cs",
+      "guid": "cfe69815d53de794fb25cbc2e9f2ea8f",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/TowerNarrativeState.cs",
+      "guid": "b8e6cbd1e8a4f6847bb9aa0ddafe9278",
+      "is_folder": false
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/TowerRoom.cs",
+      "guid": "d0c2ea9969cf0be438c172096b68d430",
+      "is_folder": false
+    }
+  ],
+  "files": [
+    {
+      "path": "Assets/_Legacy.meta",
+      "sha256": "3071ff5d74e2eae8472d7c7d3b0517735896b526e96a8708fffc28e0628070e4",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype.meta",
+      "sha256": "bf31fbf50ae7bc96f2f7d69aef0e793308d580260e8d16d804a3853f2ad40c37",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Editor.meta",
+      "sha256": "1dc4e37b3fa2bc002504322f8e63e7a97155932238eb9a994229846eedba3e32",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Editor/Authoring.meta",
+      "sha256": "b2ba23e82e53d5ca27a249af289d72594c67877ce8e6d7acbf365d8adff3b5fd",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Editor/Authoring/BossEncounterAssets.LegacyConversion.cs",
+      "sha256": "b609aaffdc03ba891769f630b34968f6f50c027967f91a1990fd4fabad98df19",
+      "bytes": 374
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Editor/Authoring/BossEncounterAssets.LegacyConversion.cs.meta",
+      "sha256": "a8860a22bb848b507febd3635d7ce959df4c822530a985c1becc9ffbef7df56d",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Editor/Authoring/DuelBuild.LegacyAuthoring.cs",
+      "sha256": "24cf11c0826909a9391679a30bc79991035b8c1c60b89886605362b0b2265f35",
+      "bytes": 7849
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Editor/Authoring/DuelBuild.LegacyAuthoring.cs.meta",
+      "sha256": "c78be7e50dd63969ba2dc48504cd279958b82e99deeff64ee1de7ac25b525acc",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Editor/Validation.meta",
+      "sha256": "c985a5a52639c51789fb3af86d59d4989b39ca2ed63abd4ab8516c6c112283b1",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Editor/Validation/Alpha50Smoke.cs",
+      "sha256": "c27d57551336cc68f5dd4afb97242c194bb5861d8dbc8a4372f7aea8e9564ce6",
+      "bytes": 138627
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Editor/Validation/Alpha50Smoke.cs.meta",
+      "sha256": "e445de821e446e7453d122140a76f8a42ab4a1ce793af06b104195b253786e26",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Editor/Validation/BossEncounterSmoke.RetiredPolicies.cs",
+      "sha256": "a8c6901bcac215c6c704f8229307aff21db2d06ad3e1cf6f17597f3d7a4fd3f5",
+      "bytes": 16643
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Editor/Validation/BossEncounterSmoke.RetiredPolicies.cs.meta",
+      "sha256": "fe139f09f16f1ebfca52c42ea96c020918750d8ecca4a7539f90b62f603d3dc3",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/L02_Duel.meta",
+      "sha256": "602daaa5a859d2c729c49e5711473eee496758117ba5062e92708baefb203cc3",
+      "bytes": 169
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/L02_Duel/Scenes.meta",
+      "sha256": "8a3332a123a07f07e3e59b6b0ee4040576b0abc101dbe767c6d3ad58659198f9",
+      "bytes": 169
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/L02_Duel/Scripts.meta",
+      "sha256": "060baab09fee617a599377f3a7f5e014d9e36f0781050cb489a6bd91b3d2c2dc",
+      "bytes": 169
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts.meta",
+      "sha256": "76f1cffad4224186be0f4820465a05dd0249d0f9dfe51028c2e020a9063462b3",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/CyberpsychoBoss.cs",
+      "sha256": "9ec8f6342aeb6571dade18c2b49916158b5e1fb0c2014a939681f8248f0166f7",
+      "bytes": 38777
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/CyberpsychoBoss.cs.meta",
+      "sha256": "984a835370a95c19420988db4da22ca4d62f3e1cb5cef2fc77ebc063ff445ee1",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/CyberpsychoBossBlackout.cs",
+      "sha256": "5b491ec3fe5177b4b52ae58be38417ca8fb3d6b37185cceae138a06c05e9545f",
+      "bytes": 16246
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/CyberpsychoBossBlackout.cs.meta",
+      "sha256": "ba660c2e9c45c7543b94a756ba7b8452141c94edadeb3c69f88a5f4bf885294c",
+      "bytes": 60
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/CyberpsychoBossCamoRush.cs",
+      "sha256": "a13780fd64e803958e6aefe6691aae45e54983efde6a73f8f2229964dbbea7cb",
+      "bytes": 6859
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/CyberpsychoBossCamoRush.cs.meta",
+      "sha256": "63cbe0bd41fe6db120888da411619bb0064c12c53a134eca8ac8cb180f112a85",
+      "bytes": 60
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/CyberpsychoBossCamouflage.cs",
+      "sha256": "6dde8c1649a421cb1b9d4070d5590daeec084cb440a7fd3c9b3fdc6003ae6101",
+      "bytes": 4873
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/CyberpsychoBossCamouflage.cs.meta",
+      "sha256": "85dc43c38eeed2fcc3bfb15fc4edf947e3d5aa1e54d5a5dd4f1a2a0adf8fd428",
+      "bytes": 60
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/CyberpsychoBossEncounter.cs",
+      "sha256": "3631cd1571ec836651a445377fd08965aa9d62749564869006f6a25d6870c6d4",
+      "bytes": 2856
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/CyberpsychoBossEncounter.cs.meta",
+      "sha256": "418aed33895bde641c9e52ed9a6b9244f8290601476d411c1b0d51593a5df1d8",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/CyberpsychoBossLegacyPolice.cs",
+      "sha256": "324d6a647587db5f3311e388e714c1e1f8ce26a9245890b47ec01f8c524bd545",
+      "bytes": 17755
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/CyberpsychoBossLegacyPolice.cs.meta",
+      "sha256": "17ab151dbb5b019e6271d73ca60f9d3067b3efeb0b5513ec92c1176d212b87ab",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/CyberpsychoBossOpeningLaser.cs",
+      "sha256": "9e5acb674907c413c8815e1a43288a238e3f3f1e3084c78859fbb879b8d8664e",
+      "bytes": 5629
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/CyberpsychoBossOpeningLaser.cs.meta",
+      "sha256": "0d612c7cff3a667e2d41b0b871c8f3b9e1b58af8fccf9e0f3be0de932a3b5dd7",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/LegacyPlayerAI.cs",
+      "sha256": "0b229feb2872739240211d2ea2c615b90e0ef7771283990dbfe9709382ff06b2",
+      "bytes": 46386
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/LegacyPlayerAI.cs.meta",
+      "sha256": "d40a9ddd7b72a1903cb772a649b96a0bd84d04f795e524f02d8a82e053003287",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/LegacyPolicePolicy.cs",
+      "sha256": "a99f2f2d561afa1439f5995e042ffe822379df7ffb07e6c5256a31daceb0ab43",
+      "bytes": 17725
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/LegacyPolicePolicy.cs.meta",
+      "sha256": "cbf475a43eb5364beaf6211aaf8c85a1340847943f6860ded7b489008cddbf1f",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/LegacyPolicePublicFacts.cs",
+      "sha256": "e8c3e0b30e299aee687f93b2b0e183bc1ff2a8d6fef223fcc00b5c78ae172ef5",
+      "bytes": 2475
+    },
+    {
+      "path": "Assets/_Legacy/PolicePrototype/Scripts/LegacyPolicePublicFacts.cs.meta",
+      "sha256": "f9a338d04742a6a7e5e3ad6401bb9e8375f7d43a1e24d6b07ac696daf408dd10",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes.meta",
+      "sha256": "9cd10a7a2d6722b14c90cb3824c3f67bcf9ea59a4c1b1bd85c870de1b423b4d7",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer.meta",
+      "sha256": "7c4fa4e270beb5c6f22b4782b44868c7601c093f1319e608fab0f56cc883fcec",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Abilitydefinition.cs",
+      "sha256": "d24a752848ce1488632fd9d09a857f16a3fb81e150e2dab4a38952d7fe0038f0",
+      "bytes": 976
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Abilitydefinition.cs.meta",
+      "sha256": "828529d9b97d44e8dff50ae2dcfa270ea61274f9f7d841aaaa32b29ca4351cd7",
+      "bytes": 86
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Abilityoptionbutton.cs",
+      "sha256": "93ff80ad5a985cf22192a6bde190ab179baec7ccc7fc46c60a6c69e6062cb89b",
+      "bytes": 1070
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Abilityoptionbutton.cs.meta",
+      "sha256": "8779d7855604fc7e744004bd65f126175a7073ef868459bd07caa0c47ea9963a",
+      "bytes": 86
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Abilitytext.cs",
+      "sha256": "c237f0f8136647f64f3cba002e46cd0d826b7dbaa1771370ee30641b52a1e4f6",
+      "bytes": 1926
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Abilitytext.cs.meta",
+      "sha256": "590fac1c3c5b3c3ac6456170c7356263063446b6f877d0e90eaa0ff35336ac93",
+      "bytes": 86
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Bodypartbutton.cs",
+      "sha256": "8e52c85f2d2fb05fc36ced5920166251aacb2d1e1ddec2af053c9b3a16d9fff0",
+      "bytes": 1375
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Bodypartbutton.cs.meta",
+      "sha256": "aeb1e068f69cd5ac41988590d1155165a7fba31ab61067018cac02299814bd2a",
+      "bytes": 86
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Camerafollow.cs",
+      "sha256": "2631282da24956ef2c7933aab2b06b73855071d898dcd4174fdefbe6d311d5d3",
+      "bytes": 533
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Camerafollow.cs.meta",
+      "sha256": "b419aed6dcf21bfbe26cc3d43b944c90c1d91b89eeceafa7baf1baa889138d71",
+      "bytes": 86
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Confirmpopup.cs",
+      "sha256": "35024e13246340078da29d90989d908b2f8602833ae840695f585407705735e5",
+      "bytes": 990
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Confirmpopup.cs.meta",
+      "sha256": "117a866ba491e51e66b949d97beabd097155e616b8f871f6a752dfe537e07ec6",
+      "bytes": 86
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Exampleblastabilityso.cs",
+      "sha256": "06bd7ae3365091d302be4296b430c96d8a3487899cda76ed8fa8e60ab383bb0f",
+      "bytes": 1030
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Exampleblastabilityso.cs.meta",
+      "sha256": "b6d01acbc1705bc1a56f4e09a2465efabf44048cfcedec403b048d3c21a64fbb",
+      "bytes": 86
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/FreezeEnemyAbilityso.cs",
+      "sha256": "8dcebaa28b589330f581585af4a74e822d99107f67b31b6df892e038dac17d24",
+      "bytes": 1881
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/FreezeEnemyAbilityso.cs.meta",
+      "sha256": "80bc35d8357d77be99acd0c11a079b76aaaa08affe84fa47244e396369d949f7",
+      "bytes": 86
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Gamemanager.cs",
+      "sha256": "25e9f483bccad3256acde8aab1587c05fc86e719c9fbed0a088b8f4697cb6baf",
+      "bytes": 1679
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Gamemanager.cs.meta",
+      "sha256": "2a499add9f1a736ff41140c1379584114ff3ff05607078040ca6671fc8b24942",
+      "bytes": 86
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/LegacyLoadout.cs",
+      "sha256": "4de490789b541efca1fb024aec7a68e0937bef63dec7a07be870db9306910835",
+      "bytes": 6650
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/LegacyLoadout.cs.meta",
+      "sha256": "7e9f517702e3902d67ef114b9fad633fcf62a6fc205b93aa6d6dd942cece6962",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Loadoutbridge.cs",
+      "sha256": "43bddf5c8de812a5fbc16b3d5f9130aa42145009a6c306e9d3d637f420411bd0",
+      "bytes": 1913
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Loadoutbridge.cs.meta",
+      "sha256": "14679302fbace2db4807c3517cd66df1c0668406d799e4126917121269921fb8",
+      "bytes": 86
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/PlayerDetachedDroneArm.cs",
+      "sha256": "f1b67194f9d3c0d49e8be5dc408bd95cec3474c8c0c01c46774ddd4fd89ec7c6",
+      "bytes": 4229
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/PlayerDetachedDroneArm.cs.meta",
+      "sha256": "52756bbbb0b626bdf718a64d5bb4856f54fd045a056765ce0480f47ade10306c",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/READEME.md",
+      "sha256": "e6c132d042c715adebf2340710110f15fdd2452aeaff6722f3962156858f11ae",
+      "bytes": 3977
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/READEME.md.meta",
+      "sha256": "33e8bf97c2a66d6a7cc93769c3f4da57fffa5d643db69466686ad71b66e5cf1a",
+      "bytes": 86
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Savedata.cs",
+      "sha256": "dd03ae0d4a5564b04bc28265f02e8ad1d98d402c495d605233ca405730c97151",
+      "bytes": 1084
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Savedata.cs.meta",
+      "sha256": "9785433a2f7ca51aa296e52ac01d886eb65ccb72f0b925da0bf2b79a651f93a5",
+      "bytes": 86
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Savesystem.cs",
+      "sha256": "69a35c09e2c78983d808c1a7b0b27b7a7d9b6740acf9c0e49e8027bc2224afe7",
+      "bytes": 1284
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Savesystem.cs.meta",
+      "sha256": "3c83f564cabe9b604c204ecf2d20bdd7cc5f8ad4c2938a1910acec915c913222",
+      "bytes": 86
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Upgradescreen.cs",
+      "sha256": "adc5c3644b94acc6ab2167b0d7be9a1871adf16c9755a6ccf0194b92dd352650",
+      "bytes": 6564
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/SharedPlayer/Upgradescreen.cs.meta",
+      "sha256": "23d77b66222c21c8c0f1df8c16bc5a0f0c713dcc5e7a70e31b00f425e08f20b5",
+      "bytes": 86
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/Thomas.meta",
+      "sha256": "842180aa7ab27e9905b89a3390cb70e32477826393b6d5c0495d477bbd44aff8",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/Thomas/Scenes.meta",
+      "sha256": "4368bc6f7ef09526a4d2dfb1a9d576fd40818f4b1415437d6d21b804dde02fb2",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/Thomas/Scenes/Random Scene.unity",
+      "sha256": "f7fd45dbd29127e5c7972f20a4726843bf0f5d51c58092e930fbe92396d34ccf",
+      "bytes": 5783
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/Thomas/Scenes/Random Scene.unity.meta",
+      "sha256": "45eec18bdf3b9883c89be1812fc61d3507979b81a7f202175aae5351e28a61f8",
+      "bytes": 155
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/Walker.meta",
+      "sha256": "85275926526ec855886c1bd9610e84790dc517ed2afca263622634645cfb76ae",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/Walker/Cyborg-Assets.meta",
+      "sha256": "87451d466cf6a1164ea52ffcc3dca7c84c5269bc45cd5f531781aa9b3a963e62",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/Walker/Cyborg-Assets/SpritesForChars.meta",
+      "sha256": "2b53225d981d5fe62102e6571a5fa5d8f4d8d487c03fdbbc3c675a4d834579ff",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/Walker/Cyborg-Assets/TilesToUse.meta",
+      "sha256": "e6488f2a663072723ecbd35d6638c5ba4b2af60c25e4f7e831779090e6b39659",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/Walker/Scenes.meta",
+      "sha256": "d9e8f62404e9ecc4d5ddac6f2459bd818d1afd242ab9e58785bde7f2bad1711a",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/Walker/Scenes/Scene1.unity",
+      "sha256": "4e3a950264a037e1dd94df0031919f4b65e5e523e87151a37cbaa276992fd9c1",
+      "bytes": 10218
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/Walker/Scenes/Scene1.unity.meta",
+      "sha256": "332e33ca4710362eaf5b5c218ce2655ae71cbb6855727326c3207288b6491e17",
+      "bytes": 155
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/Walker/Scenes/TitleScene.unity",
+      "sha256": "739282b9e2a3240cb0b7783ef1272f424b9d25d914f4c0914c6d8b702d6da9da",
+      "bytes": 7078
+    },
+    {
+      "path": "Assets/_Legacy/Prototypes/Walker/Scenes/TitleScene.unity.meta",
+      "sha256": "36c80c25507237af2b52fc1b6e2578b13c29b4436f00460159f9cb14db85c6d9",
+      "bytes": 155
+    },
+    {
+      "path": "Assets/_Legacy/README.md",
+      "sha256": "a867332c5cba9993586b156123ece7a0b8f5e9ad764523b1f9dd63d3ac8f40cc",
+      "bytes": 1447
+    },
+    {
+      "path": "Assets/_Legacy/README.md.meta",
+      "sha256": "66f201222ab5fb0c04df5a843bc590f28fdd22fb182e3dc43283af51e2237037",
+      "bytes": 158
+    },
+    {
+      "path": "Assets/_Legacy/Tower.meta",
+      "sha256": "42cc8c98564759f886d557238c77986917e8864eef0fa17a51173aa6e8d1029a",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Art.meta",
+      "sha256": "10177352aa6c7232b2ecf0f00f60593b305354faa98d9b980ab4623bd6a5ea40",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Art/GG_PP02_Bloom.asset",
+      "sha256": "5decbb7fa36815c18d303dc951b6b004162bc07140922753316e7c7ce75dfe83",
+      "bytes": 1663
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Art/GG_PP02_Bloom.asset.meta",
+      "sha256": "d801d586911c1224c05c207563106770959e7d092168092484d56fad73dfbdfc",
+      "bytes": 189
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Data.meta",
+      "sha256": "b72d662edd19e4d2d7ecdaeab0a81177fd2d5f3f8646a6e9f56b056de265399a",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Data/Narrative.meta",
+      "sha256": "d53ba0947b85a82f7439a07f6b6fad7b8ea32233add2074ff0ab669a3f0ed1ef",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Data/Narrative/S01_DialogueFont.asset",
+      "sha256": "a828a8f9156f23f1c4bd7678fb161208333a6d0b5891f3314eff47cf1ab1d3e5",
+      "bytes": 547304
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Data/Narrative/S01_DialogueFont.asset.meta",
+      "sha256": "033c2c83291ecaba30371bf70dcef28c5114b701ecadbf28a25c40d9f1a02802",
+      "bytes": 189
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Data/Narrative/go_ghost_narrative.json",
+      "sha256": "72ffc3916a88c5ea51d696b1f1bc9d12763b7fafdfaa2675ff0168d3207e0937",
+      "bytes": 13174
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Data/Narrative/go_ghost_narrative.json.meta",
+      "sha256": "929b093e2a8500195a8978cabee6603975814dd4c6ea160ac4732ddd28d3e327",
+      "bytes": 158
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development.meta",
+      "sha256": "4d86bff2053fd02b9ca065031979a4af5f837aa80635b337c31daaeb353097a9",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts.meta",
+      "sha256": "61912498454cecaafd22fe0ae34b1165317eb719cd01d221d305100ebbbd6405",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTest.cs",
+      "sha256": "b6fac9a3bf4c67fd367360ebdf87cac6880c0ab162dc4381b975149571e191ae",
+      "bytes": 73206
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTest.cs.meta",
+      "sha256": "26853defd1cca334567d56e6970fa5f7aadc4c87262f3d0822a0c1a9f528394a",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestAirDash.cs",
+      "sha256": "102b3af0a6d78ab9dbfd22efe987428836a1f844c74f8e2e9925a2c1a0f8f351",
+      "bytes": 7465
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestAirDash.cs.meta",
+      "sha256": "1641a4829f1a5fc2eb06587d803cba4d1d252c5395fa849726bc45b25968d93a",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestArchiveFinal.cs",
+      "sha256": "e61ca783d38019cb8d42df379b0775ee322d59ea01ce8b5b1c72a0fdc3cbb446",
+      "bytes": 14435
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestArchiveFinal.cs.meta",
+      "sha256": "1eb3aba3a1b99bf57ccc83e26f64b42a577193678bc300d32ae129471ca84a89",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestArmBlade.cs",
+      "sha256": "77941a163622a5c374c66ad8aba7ff54ffb1e5306ed99286ce671ebab894aec9",
+      "bytes": 10407
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestArmBlade.cs.meta",
+      "sha256": "967237e712734f148668f57d64c62bcbe36ddd9dc2f241496fca452a7e06b9d0",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestBlackout.cs",
+      "sha256": "18b7c485a24770bd12282a77a6dde8bef2aecf3773b2253c39cc5afcac22f073",
+      "bytes": 15493
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestBlackout.cs.meta",
+      "sha256": "41aa373f8fb1da12a0a1f995699c94aeb9b95fefe40547e6d31fd9ad9661534c",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestBossPhases.cs",
+      "sha256": "02c5e1ece9fbdfb0a90c7dc81889957ab31edaac2f97a2e2a821d080315497ee",
+      "bytes": 10592
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestBossPhases.cs.meta",
+      "sha256": "7d86f2caa949adeb2a32bd1975c272e0c9de707f66ee08f7bd980c5ec860d477",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestContact.cs",
+      "sha256": "dc192b8801e10a70136c88113c01449d748ac1b6aeffca7b16cc090d1f855edc",
+      "bytes": 13085
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestContact.cs.meta",
+      "sha256": "492ae57887e4393fa980fa0ed2a0cd180be5950896c9844595be40e121e6118a",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestDemo.cs",
+      "sha256": "db76d695d8548bdd46bee8c3cf3b289af9d38eeb38452f663fee54a30be55321",
+      "bytes": 11997
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestDemo.cs.meta",
+      "sha256": "f8125a38ead511ab2688e6a8cce2ab7f032d90295dd7118485953e6713f58163",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestDialogue.cs",
+      "sha256": "9799a96333beb95fd9858666982f07fdef9357406b49df58477e9b4754dfa4b5",
+      "bytes": 8195
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestDialogue.cs.meta",
+      "sha256": "15b80c0ae821d9ee6bc7b84932579d53ae93f49b7cc9b077a73c1d4b05c303a5",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestFlow.cs",
+      "sha256": "f54faa3c154c7e9a001500c3da72f006e00186be41131850db0eb32eaf670d87",
+      "bytes": 21500
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestFlow.cs.meta",
+      "sha256": "392d473e12dfafaa06f1c9901608e8f6a323d00232c8764d333beb575945dce7",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestIncrement.cs",
+      "sha256": "f69197db8baf0a1dcfb90d105c4999ab5169380e3d328cf7b4f9c53c3c27ccd5",
+      "bytes": 19180
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestIncrement.cs.meta",
+      "sha256": "bb0f987350977b68b0e9c7dbb817f648339687e8d6fb83cee7851fc219d45273",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestIncrements06.cs",
+      "sha256": "eb175a10049ead1d9a23803ca1f70d1db057812c2eaac707e6400c39ff4ec5bd",
+      "bytes": 9655
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestIncrements06.cs.meta",
+      "sha256": "72748f2edb5c3b22cfac73929eaabe7971010b0d60a15cb95d1c7df04b2d0ebe",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestManualFix.cs",
+      "sha256": "b785e1e7e00e3fc781524ce77f2347eae03c448fc502dee6ec4ce04a75b744d3",
+      "bytes": 9898
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestManualFix.cs.meta",
+      "sha256": "e2ab8988b33ae26613d0923c571363df6c92d2cf7a193cdd592f57e8700026a7",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPerfInput.cs",
+      "sha256": "a3e0c5a0ffe36749c050a4d571a556e060739b493435941a7445bb2c30b50923",
+      "bytes": 5830
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPerfInput.cs.meta",
+      "sha256": "5056083978b9b9bb18840e6dae43d4e9b1dfbefcc05bdda3dec59ce10f87565a",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase1.cs",
+      "sha256": "02eea3f26825c38345d548138fbb81204247205e8d0f097ed00c4779be42e067",
+      "bytes": 15100
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase1.cs.meta",
+      "sha256": "a2608788c10aea65e196d3cec71feff93a68579a74da7242971881102ac234b9",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase10.cs",
+      "sha256": "63037dd0ee421a8c8baf924c081c78515b270838f095151b2c47fae9f1d5c617",
+      "bytes": 6107
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase10.cs.meta",
+      "sha256": "12f6e759db638c9a4456419028f42a5076a80226dc309d3185913e0f3300102f",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase2.cs",
+      "sha256": "28e191f5e633d3cd175638f7c422c692d21ee8b179c3fa72ac37472e44cf630f",
+      "bytes": 23877
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase2.cs.meta",
+      "sha256": "df8ae3021e9362a40d41cf10a2d7a217836ccc33ad66945a6194212f9ec3719d",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase3.cs",
+      "sha256": "721f3226d1260125d686da37acf43562c5912cacae346ad5b027d62c140295e4",
+      "bytes": 16293
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase3.cs.meta",
+      "sha256": "c0dac0deb1ccb1a316ccc3c07d06e4669868b61b1a3a1432e2980d7d1c6aca31",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase4.cs",
+      "sha256": "4ef389d4f22b445060a2521f8ba60f445e27a242bb5733349aba8af4cf11439b",
+      "bytes": 6391
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase4.cs.meta",
+      "sha256": "e263f1465f07e09ae063fc3f43652d96b87362cfe9d8caf969b9ef38776b9814",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase5.cs",
+      "sha256": "3fb53da982d7a99bb8e07c91bb268c498f57ea49e96ed96b1ee7aaa01be59601",
+      "bytes": 5362
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase5.cs.meta",
+      "sha256": "ac794f1557ba312a0a27794672d6d579d1054d9a68764221072e0af7db1ba1a1",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase6.cs",
+      "sha256": "64a86979d5945492cdefd86d69c236445005844644f6dc7573b65162f22b3c5e",
+      "bytes": 7666
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase6.cs.meta",
+      "sha256": "bf60788d59956a5debf3c2cda730759efc7967418c906ad386349a6fa570da14",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase7.cs",
+      "sha256": "8c994ffca035c05c9a0de3772e3c5d38a96159f6dc777d587c677d54d0fe25aa",
+      "bytes": 6465
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase7.cs.meta",
+      "sha256": "187d1f0449ebc20ccd4699a200cb11ba03c436e175f01e5938df247b5d5e5e41",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase8.cs",
+      "sha256": "f67489b3ede3c6072762a59e1c8e3a7084a72383a0231967bdcf5e51b924aaec",
+      "bytes": 12272
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase8.cs.meta",
+      "sha256": "8c4a834165f911eed2ffb98f6a5d8cc6797771b8af091da1ed488cba2602d3ab",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase9.cs",
+      "sha256": "d61df3430bbd322b346663848598506692940df804a0451328009fcc9e1c617d",
+      "bytes": 2863
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPhase9.cs.meta",
+      "sha256": "e6295aedb2c203d6bc1c12f1cb6f576ffc894700f8cdfbdcb6852c4f916525b7",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPolish.cs",
+      "sha256": "8c138b5e4fe2b97be8a726facb9c6e897252536e46fdd1b28d7c3478b1b3f1ca",
+      "bytes": 12843
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPolish.cs.meta",
+      "sha256": "8076d53b5e514592c428d9a61c58314a1cce7ad0c85716b94cf7b0e3068a7e58",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPolish03.cs",
+      "sha256": "3eac8fa49b9c2604ae75cfa820b5d9964dcd0e6b747d07b2b3fcf4790ba24d29",
+      "bytes": 3634
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPolish03.cs.meta",
+      "sha256": "c4f6946bd08f04e33ae3612c88429bc1f63f3e160bf3a55e2939c5c1ad839365",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPracticeFlow.cs",
+      "sha256": "ca4a37c94a5994193b552295b3a3376d5c3003611733c35bfb2da06b3ad7e992",
+      "bytes": 23370
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestPracticeFlow.cs.meta",
+      "sha256": "dded84dff4df241b4d4ef54f0cd22154da2bbea2dc44ca54fcfec6d84dcc36eb",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestProduction.cs",
+      "sha256": "9ec061b5274fc0c39771d1548c868253e959d3a62a2b3a657ee9e801f6052934",
+      "bytes": 22145
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestProduction.cs.meta",
+      "sha256": "25a26e1dc679bca68edc97dedceaf027773dbadd9d8c38ad88d636f964a47c4f",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestResultArena.cs",
+      "sha256": "f878c3960c8b39d819b4c38380bb66c1f07b2c9c06d910ebed93c02f5a758405",
+      "bytes": 6645
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestResultArena.cs.meta",
+      "sha256": "a9b8fac2a28834b5c73b5f6afcaa969e4357d433f088cdb3537989c6e77b6ba6",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestRunArchive.cs",
+      "sha256": "cc54c9cf7f32d5ff6e203964a681c95399189314656112c41353148f9f16f4a7",
+      "bytes": 8677
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestRunArchive.cs.meta",
+      "sha256": "e1f7d7ec7504ef45f007f1a3c28d0299bd41fbb2d533fff9d05fa46e8755a629",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestS01.cs",
+      "sha256": "cae573438e7d7da27fe149da46a73e277f756191fd34d6c31f3ceb132d7d138d",
+      "bytes": 15248
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestS01.cs.meta",
+      "sha256": "2d9a8e6f6490b25cd97927fccfeba06bad8239bdc3c8ae6d1b903e6e72b91e12",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestS02.cs",
+      "sha256": "299b48cf0182735a4d86b2d5c7ccf4cac659fcd7f09a5235a1c8e6762f3e5e78",
+      "bytes": 14055
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestS02.cs.meta",
+      "sha256": "2c4c7f9291550464e34defb050f0dce401695e3db49187cb8391238858417ece",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestS02Delta.cs",
+      "sha256": "03b56c9b1c1d7bf26894c0c19d70ebe478cf3ed52fc4ceea2c145f2a6524dce7",
+      "bytes": 12730
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestS02Delta.cs.meta",
+      "sha256": "ee52d8a34e50b30cb108a49506e861d80be2a96c0738095dcab3c59f0f0bf115",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestStrictUI.cs",
+      "sha256": "401a89c55187bc294dbc3104fb990b5a51eb5f60af683bc9e659d16d506c153a",
+      "bytes": 21158
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestStrictUI.cs.meta",
+      "sha256": "76fd723a2c3fcd45c4a782e7dc6cf9468a6263f583f4eed1bb9b55f17c85e634",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestTerminalUi.cs",
+      "sha256": "1ba0b169cd775ba97df3c2ac0efbb7565145f74fc52d29ddc2bb78532a59091f",
+      "bytes": 4566
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestTerminalUi.cs.meta",
+      "sha256": "4061eb31f0f391ef675dea7c4c9633a113d196fe014a620c140bfff68ee94b81",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestUiPolish.cs",
+      "sha256": "8590bc16b49b8daecc1d69b765e8fb672c1cb93fbe31d36652bb933ade1b9629",
+      "bytes": 3767
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestUiPolish.cs.meta",
+      "sha256": "7686dce524471b86d606db4ba23f7e2400dc0e2469381b9d2f893936c0a3006c",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestV2.cs",
+      "sha256": "96d78ed03c32a764aeb79160c8db9e1dc08d30b1f332ca3d28dcade00e6f9708",
+      "bytes": 21712
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestV2.cs.meta",
+      "sha256": "428e6310501bd3c5c57a6eb7e6cad7c161b93d7bd5a2bcccfa22f51163051596",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestWeapons.cs",
+      "sha256": "9f9d4aa6845e036dc1a759e657ab607b80d9578aaabccf5b8bebe7735bdb3cdf",
+      "bytes": 10642
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Development/Scripts/TopDownSmokeTestWeapons.cs.meta",
+      "sha256": "00ab82cd5329eb795a78c7e8c5445d4d8d7bb0a8a8253b4187973403cd8f01a9",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Prefabs.meta",
+      "sha256": "ec3751b386dae05ff683c1837d0eedc2cfbc6a3641dcdaf533954ea3d714f292",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Prefabs/CombatAttempt.prefab",
+      "sha256": "9d7a534d6ce57b13140ff7c8524c8e76d83c65b6d220a052c3ecfa8c56c0f4e7",
+      "bytes": 94200
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Prefabs/CombatAttempt.prefab.meta",
+      "sha256": "144347b20bb211843471c1692363f8d051bdcb6c7714f292bac5e5eb6c9fb0d2",
+      "bytes": 154
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Prefabs/Enemies.meta",
+      "sha256": "734f9c471d6c1a781da0119e75cf7069422fcbba74002f2eefab9954515a8450",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Prefabs/Enemies/Enemy_Basic.prefab",
+      "sha256": "dc39de34a2601a7e2a7732d28b2929922fde9e10dfb444d8f0f1a095799e5fbe",
+      "bytes": 5132
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Prefabs/Enemies/Enemy_Basic.prefab.meta",
+      "sha256": "1488ff06775f07dc61e5d6be82e5dfc563fd2467bc592b8e0a4f3b9e87188238",
+      "bytes": 154
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scenes.meta",
+      "sha256": "8b74537c87318bf4263c2ab16562ccdc263bece8252e87f2611740dd359b463e",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scenes/Cyberpunk World.unity",
+      "sha256": "5463f82d1700a9d8d691e9c5f4560d1ab6b906c78303c6f60f8dd4843301841a",
+      "bytes": 432599
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scenes/Cyberpunk World.unity.meta",
+      "sha256": "204f446bc13539151c15af875550a7fa6f791662e967572a1b4b06fd0005dad1",
+      "bytes": 155
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts.meta",
+      "sha256": "7f3ac1f536045cc285804ac959a80d44533a95ab81c206aa94ddd8b700832177",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/BossFight.cs",
+      "sha256": "7f1038990cb0b598847a30d8992cca9abbbf3fd650fc0e0efa8e1c2b179fcd98",
+      "bytes": 9368
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/BossFight.cs.meta",
+      "sha256": "7c48cb39340324912c82b5ac3c07f3819e433b83e9c40a67a6cebb2b2c29314a",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/BossFightTower.cs",
+      "sha256": "3e30ac6733244239746c9285f6398f53d53020e5ac89d302803fb0a267798283",
+      "bytes": 5049
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/BossFightTower.cs.meta",
+      "sha256": "5ca631583916bc3261078dd107a644358f40671a1cc677ea4f350fb44f19db89",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/ChandelierEncounter.cs",
+      "sha256": "9cbfdc9b51a36e372b25f1340d7d06e67e24f87a97870b86e83d959f02e94f2e",
+      "bytes": 4139
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/ChandelierEncounter.cs.meta",
+      "sha256": "7a72fc5cd524107967fb0bfd696175f553b18ff81ee89833e6f1ef15aed8fb48",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/DeveloperRouteJump.cs",
+      "sha256": "bf4cc931d62e243cb31990e5ed4c43acb58d2f3f1b01d387f2f0852d9a305220",
+      "bytes": 7921
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/DeveloperRouteJump.cs.meta",
+      "sha256": "760984bbe0416182ee22b19d797cd4e9cfcea69904d70fbf6e4d8fda5d85fb5c",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Diagnostics.meta",
+      "sha256": "afa029569ea52a06548b09649e8be5cb5ebf013174df30a93d8c9970f67b4cd6",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Diagnostics/FrameTimeLog.cs",
+      "sha256": "6920aa59dbfdf005ede5befe1e5e27a23278c40b7ed38873340463f926a37997",
+      "bytes": 1600
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Diagnostics/FrameTimeLog.cs.meta",
+      "sha256": "f09910c11eb2926ea65fa313182fb45addc5bbcae304d6748d857fe0fc32e9f1",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Encounters.meta",
+      "sha256": "5cbbf5f2442aa87eb6b8ceb6178a84a0b31b0c517769dddd384bc18371e4b2a3",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Encounters/EncounterZone.cs",
+      "sha256": "2769b0996bf0bf6f74fb7c03c0475c0f295b7032df71febca34a184897bf0967",
+      "bytes": 3877
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Encounters/EncounterZone.cs.meta",
+      "sha256": "572b6146dc7764e9860c61389b278fc7580ab4d8e9ee27eae5be53d170ac5ad1",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Floor50Receptionist.cs",
+      "sha256": "21c31add7810477b9129ded0e4cb3b93cb864cb17d170a0d1d2f95532fd922d9",
+      "bytes": 735
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Floor50Receptionist.cs.meta",
+      "sha256": "21adf800b9bc0edb37acf38af1ad7696049f2b870944aed0821f63208110d1e7",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/GameSessionDevelopment.cs",
+      "sha256": "39cca6dbb62dfbc9cfdb9ac46be1b405eca0434c1d12311f46bfb5aaeff959fa",
+      "bytes": 4149
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/GameSessionDevelopment.cs.meta",
+      "sha256": "fc166d42e36ec91b3e4cb79d42fa649704b2a82ecfd36f8d23bc68fe374458bf",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/GameSessionDisposition.cs",
+      "sha256": "5f3e50b4214aa7befafca2a5c61406e59167ce1da104951c205dde3aaa4c1adf",
+      "bytes": 5564
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/GameSessionDisposition.cs.meta",
+      "sha256": "a72b5aababacecc5155991fdbe4b4ae34310b6e2fed1d5e136664f1ece1af5d8",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/GameSessionFlow.cs",
+      "sha256": "46365e4d12d6273efd2458c22c7d06e721942289e10763713ae9a40353bd39b0",
+      "bytes": 11707
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/GameSessionFlow.cs.meta",
+      "sha256": "acbb73efa4ac115ad001027d800e04789a0940051ca89e0b1753c83cd647e238",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/GameSessionIntervention.cs",
+      "sha256": "11344a26439ef3bb6537a12a2709f24d2e33c482f2f4ec8041145a1d3e2d420c",
+      "bytes": 4485
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/GameSessionIntervention.cs.meta",
+      "sha256": "48e5280318fb228bbaab2be7a62b29e4bf436c9a242c56c81bc349858b662a88",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/GameSessionNarrative.cs",
+      "sha256": "a31d46f9960d43275623e98885c2b698b5238ab8824dce52b9814e800fda5a6c",
+      "bytes": 17058
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/GameSessionNarrative.cs.meta",
+      "sha256": "1c8601cf45d3710295bd32e0b4b2c2c2c3528aeda5bbf41742e8ad842c32e5bf",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/GameSessionPerception.cs",
+      "sha256": "654a826862faa9ea0b216e9179bd1023b9c7ec2e9297c591f586777bccb6d7ad",
+      "bytes": 2367
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/GameSessionPerception.cs.meta",
+      "sha256": "332829de0e09e2e2c91b8d4446f72fa6338fb1d85081cde5b7c5d8b212f11a49",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/GameSessionTower.cs",
+      "sha256": "97e70dc783c93aa73c4f0a8cc7bc7db6e0778bc37675c18b0a4548354eec01b0",
+      "bytes": 13225
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/GameSessionTower.cs.meta",
+      "sha256": "0eeda9b2865794c176d8aa4cbcd46922481db147a1fc68dab6fb4dc5711886fe",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/MissionAugmentationGuide.cs",
+      "sha256": "1a0fda352120dc9a22ab9f1e4ce8dc0c8d585c01dc5aa2f96de43ef8616cffde",
+      "bytes": 2295
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/MissionAugmentationGuide.cs.meta",
+      "sha256": "192a4956474e588d418a193a8672ba71762220c4e7ae232ab3f43eb7873d85b5",
+      "bytes": 60
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/MissionTerminalFrame.cs",
+      "sha256": "66b7fea65356e8c7fa26685320b2256116f3b7df6ecbcc645014b8a6d06e2f35",
+      "bytes": 2058
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/MissionTerminalFrame.cs.meta",
+      "sha256": "d4674368463c0349d024f468481770f815db65638e86b24c8fa5f616262a8631",
+      "bytes": 60
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/MissionUI.cs",
+      "sha256": "404274bbedbff15028842a677d8d8e8f8d056729c3e7630fb23b3618e433eb3b",
+      "bytes": 33155
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/MissionUI.cs.meta",
+      "sha256": "ff95337e42c34cf6547cc568e7558d570e9e5149476ff8cdbd1567577ca96c00",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/MissionUIDialogue.cs",
+      "sha256": "247812970afdfa56aeab8a104bab69a149c9cd4407e9cb8700ad224b474f6f3c",
+      "bytes": 17569
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/MissionUIDialogue.cs.meta",
+      "sha256": "b237eec6a38b3c5de4662ee8ce310866a9cc918327649192edab9decd44f99d2",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/MissionUITerminal.cs",
+      "sha256": "05f5f6ed28c4c996228f2fc2ef2e4d6c3e54352f783b4e0ec6e2eb2c1726af07",
+      "bytes": 3707
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/MissionUITerminal.cs.meta",
+      "sha256": "6664212382919960434a3147d22b487240ec2512f09db5c434838b49e9b8ea77",
+      "bytes": 60
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Persistence.meta",
+      "sha256": "0ce784f9904ea2c1881ee45b2f02cf0d42185c6deb6ba584224b6f8481cad63a",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Persistence/PoliceArchive.cs",
+      "sha256": "73ad44cab888411d9deb20936dea083f3e3788cf27eb79d2b332f0ea219eea35",
+      "bytes": 15059
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Persistence/PoliceArchive.cs.meta",
+      "sha256": "a6c1a2b98b5cf311245aae11cdf882f4510d4090ef8b9c3e61ed3c2562cf25e2",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Persistence/PoliceArchiveStore.cs",
+      "sha256": "20927ee786982cf029ea71444df86b20381737dbfdd62aa76d58d75d7f16c455",
+      "bytes": 5634
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Persistence/PoliceArchiveStore.cs.meta",
+      "sha256": "c5aeff19318a5575dd5f26d919abf4edef055f6cb4bb30b86ba37085df6d5b84",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/PracticeDoor.cs",
+      "sha256": "c7f712321addfc03a421da62b3825fed77be25735d2becfa6336608a87605de7",
+      "bytes": 423
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/PracticeDoor.cs.meta",
+      "sha256": "6de276ddc7910929d0b36cc5778b3c9734bd961e733c2ed281d7d4748a6198f5",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Presentation.meta",
+      "sha256": "70f71727b84e25ab431ced9a632e7a3a0f43c15a68e28d61bb82076ee67b3761",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Presentation/InteractionOutline.cs",
+      "sha256": "c0d02665b8178380ea557bc1c7990b3627b4e2ce9d8c05aabd97f6a95471bcef",
+      "bytes": 3572
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Presentation/InteractionOutline.cs.meta",
+      "sha256": "98ac4064df3090ec9c91cc88a7cd958ac8045cb943631f1a0a573ccebeaec85b",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Presentation/NarrativeContent.cs",
+      "sha256": "37a7889a9f05b5615aca8f6fea23ddc2e3aeb0cdb317792a14f3955fa1a504f1",
+      "bytes": 4635
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Presentation/NarrativeContent.cs.meta",
+      "sha256": "a013ed19e9dde065f4c91dc91bedf87f23bdded4a4f9e40454bc545a0a46a68f",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Presentation/WorldSpeechBubble.cs",
+      "sha256": "521653cc15e61cffea5f7efa5a09ded150f77428d0ee8f83d2cbe7394ab51efc",
+      "bytes": 3678
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/Presentation/WorldSpeechBubble.cs.meta",
+      "sha256": "1f787e2db7487042a4a954863596973734a3baadc6c2ecf3539bace4244b5f56",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/TowerCharacter.cs",
+      "sha256": "e6fff871ea3509da568051bf19d01c68e7b89138e72811a92397c04f21280ed7",
+      "bytes": 2960
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/TowerCharacter.cs.meta",
+      "sha256": "479877cb85ac54c60f0c8dc2105eee833b6230ffa32f122d698eaec917ffe428",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/TowerDoor.cs",
+      "sha256": "c351ea800007e550acc74adbd907a509ee60b5f28e9d63e04dbd01317b885a25",
+      "bytes": 503
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/TowerDoor.cs.meta",
+      "sha256": "99fc70476cc76161a310490d697b33c476ca58024fccac4ee271efc976f5e9df",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/TowerManagementBarrier.cs",
+      "sha256": "97c77aa8dbebae304ccedb0103bd27131f9437f291a911968c2d36d4e0cd11fd",
+      "bytes": 303
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/TowerManagementBarrier.cs.meta",
+      "sha256": "dfb8ca9b69a3481d81f35e8c35800524977f642b961e5b21b956dab2e9fce1a8",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/TowerNarrativeState.cs",
+      "sha256": "62999c34bb651ef56ca29cfc18ada915b6d059e56a02b65a536c53e5fd628354",
+      "bytes": 8481
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/TowerNarrativeState.cs.meta",
+      "sha256": "d5c91301158399815ccf569045150fe5c5ca05ee5f90673f5831a14f8c17777a",
+      "bytes": 59
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/TowerRoom.cs",
+      "sha256": "3c36b7cc252116308789a34c1f18b314433ccb53884928385d439d529a52820b",
+      "bytes": 3019
+    },
+    {
+      "path": "Assets/_Legacy/Tower/Scripts/TowerRoom.cs.meta",
+      "sha256": "df630bf96f7b59224aa8a7acd8c4f18d2ac473a1ae56d592030b4d8aec23baf3",
+      "bytes": 59
+    }
+  ]
+}

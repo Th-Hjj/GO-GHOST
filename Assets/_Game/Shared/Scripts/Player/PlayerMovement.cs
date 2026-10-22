@@ -220,6 +220,7 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         {
             input.ResolveLegacyDodge(executableJump);
             acceptedDodge = input.DodgePressedThisFrame && dodge != null && dodge.TryDodge(input.DodgeDirection);
+            if (acceptedDodge) PlayMetrics.CountDodge();   // METRICS: an accepted dodge
             if(input.ConditionalFrame.DodgeOwned && input.DodgePressedThisFrame)
                 input.NotifyConditionalAction(ControlOperation.Dodge,acceptedDodge);
         }
@@ -380,6 +381,7 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
             jumpInFlight = true;
             jumpWasAscending = rb.linearVelocity.y > 0;
             JumpStarted?.Invoke();
+            PlayMetrics.CountJump();   // METRICS: an accepted jump
         }
     }
 

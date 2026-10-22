@@ -180,6 +180,7 @@ namespace GoGhost.Duel
         }
         void LateUpdate()
         {
+            UpdateMetrics();
             if(game==null||game.DeveloperToolsOpen)return;
             if (RefreshConfigurationLayout()) return;
             UpdateRuleHud();

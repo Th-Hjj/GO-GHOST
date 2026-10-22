@@ -92,6 +92,7 @@ namespace GoGhost.Duel
         }
         public void NewGame()
         {
+            PlayMetrics.ResetRun();   // METRICS: fresh stats for a new run
             ClearEncounter();
             Wave = 1;
             DraftLegs = DraftArms = DraftSpine = false;
@@ -164,6 +165,7 @@ namespace GoGhost.Duel
             effects?.SetPaused(true);
             Physics2D.SyncTransforms();
             FightClock = 0;
+            if (!training) PlayMetrics.BeginAttempt(Wave);   // METRICS: new fight (training is not counted)
             if (training)
             {
                 foreach (var body in encounter.GetComponentsInChildren<Rigidbody2D>()) body.simulated = true;
@@ -222,6 +224,7 @@ namespace GoGhost.Duel
             input.SetGameplayInputEnabled(true);
             foreach (var actor in actors) actor.StartCombat();
             coordinator.BeginCombat();
+            PlayMetrics.StartCounting();   // METRICS: jumps and dodges count from here
             SetPhase(DuelPhase.Fight);
         }
         public void Reconfigure()
@@ -321,6 +324,8 @@ namespace GoGhost.Duel
             bool defeat = Player.IsDead;
             Trace($"result wave={Wave} player={Player.CurrentHealth} bosses={HealthSummary()} elapsed={FightClock:0.00}");
             StopCombat();
+            // METRICS: record the finished fight (death or win)
+            PlayMetrics.EndAttempt(Wave, defeat, FightClock, Rifle != null ? Rifle.ShotsFired : 0, !defeat && Wave == 3);
             sounds?.Play(defeat ? Sfx.Defeat : Sfx.Victory);
             SetPhase(defeat ? DuelPhase.Failed : Wave == 3 ? DuelPhase.Complete : DuelPhase.Between);
         }

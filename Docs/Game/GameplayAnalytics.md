@@ -1,6 +1,6 @@
 # Gameplay Analytics
 
-Local playtest telemetry, approved 2026-10-22. F8 opens **Tuning / Waves / Analytics**; F1 has no analytics binding. Opening F8 pauses combat; closing restores the prior pause state. Analytics provides Fight, Run, Actions and paginated History views. Actions shows executed action IDs for the current or last fight; JSON also retains aggregate action details.
+Local playtest telemetry, approved 2026-10-22. F8 opens **Tuning / Waves / Analytics / Presets**; F1 has no analytics binding. Opening F8 pauses combat; closing restores the prior pause state. Analytics provides Fight, Run, Actions and paginated History views. Actions shows executed action IDs for the current or last fight; JSON also retains aggregate action details.
 
 ## Measurement
 

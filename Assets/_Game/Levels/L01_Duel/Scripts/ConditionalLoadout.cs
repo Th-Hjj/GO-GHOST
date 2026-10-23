@@ -87,7 +87,7 @@ namespace GoGhost.Duel
             var copy=new ConditionalLoadout();
             for(int i=0;i<5;i++)
             {
-                // Preserve invalid data for validation; copying must never silently discard a sixth rule.
+                // Preserve invalid data for validation; copying must never silently discard excess rows.
                 if(Operations[i]==null){copy.Operations[i]=null;continue;}
                 if(Operations[i].Rules==null){copy.Operations[i].Rules=null;continue;}
                 foreach(var rule in Operations[i].Rules)copy.Operations[i].Rules.Add(rule?.Copy());
@@ -125,7 +125,7 @@ namespace GoGhost.Duel
     // One catalog feeds the UI, runtime validation and documentation export.
     public static class ConditionalCatalog
     {
-        public const int MaxRulesTotal = 5;
+        public const int MaxRulesTotal = 20;
         public const int GroundStateCondition=51, EnemyDistanceCondition=52, IncomingAttackCondition=53;
         public const int MovingCondition=54, DodgingCondition=55, FiringCondition=56;
         public const int JumpStartedCondition=57, JumpApexReachedCondition=58, ShotFiredCondition=59;

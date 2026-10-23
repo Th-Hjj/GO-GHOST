@@ -73,9 +73,9 @@ public static partial class BossEncounterSmoke
         yield return Until(()=>game.Rifle.ShotsFired>=1,.6f);mouseHeld=false;yield return Seconds(2.2f);
         Check("Auto jump and event Dodge recorded",Metric(ControlOperation.Jump).automaticCount==1&&Metric(ControlOperation.Dodge).automaticCount==1,
             "jump="+Metric(ControlOperation.Jump).automaticCount+" dodge="+Metric(ControlOperation.Dodge).automaticCount);
-        Check("Committed Burst retains automatic provenance after trigger release",Metric(ControlOperation.Fire).automaticCount==8&&Metric(ControlOperation.Fire).manualCount==0&&game.Rifle.ShotsFired==8);
+        Check("Six-round Burst retains automatic provenance after trigger release",Metric(ControlOperation.Fire).automaticCount==6&&Metric(ControlOperation.Fire).manualCount==0&&game.Rifle.ShotsFired==6);
         Check("Automatic aim then manual fallback are both measured",Metric(ControlOperation.Aim).automaticSeconds>0&&Metric(ControlOperation.Aim).manualSeconds>0);
-        Check("Action detail uses actual action IDs",Metric(ControlOperation.Fire).actions.Any(a=>a.action=="F02"&&a.count==8));
+        Check("Action detail uses actual action IDs",Metric(ControlOperation.Fire).actions.Any(a=>a.action=="F02"&&a.count==6));
         PlayMetrics.Calculate(PlayMetrics.Current.operations,out valid,out pct);
         var used=PlayMetrics.Current.operations.Where(o=>o.hasData).ToArray();
         Check("Total percentage uses equal nonempty operation mean",valid&&Mathf.Abs(pct-used.Average(o=>o.automaticPercent))<.001f);

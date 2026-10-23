@@ -105,7 +105,10 @@ namespace GoGhost.Duel
         public void Show()
         {
             if (canvas == null) return;
+            CaptureDeveloperPresetView();
             CaptureConfigurationView();
+            CapturePresetHelpView();
+            if(game.Phase!=DuelPhase.Configure||presetHelpDraft!=game.DraftLoadout)presetHelpOpen=false;
             ConfigurePageScale();
             if(page!=null){page.gameObject.SetActive(false);Destroy(page.gameObject);}
             page=Rect("Page",canvas,Vector2.zero,new Vector2(1600,900));
@@ -139,6 +142,7 @@ namespace GoGhost.Duel
             }
             if(game.Phase==DuelPhase.Configure)
             {
+                if(presetHelpOpen){BuildPresetHelp();return;}
                 BuildConditionalLoadout();RestoreConfigurationView();return;
             }
             if(game.Phase==DuelPhase.Failed || game.Phase==DuelPhase.Complete)
@@ -173,7 +177,6 @@ namespace GoGhost.Duel
             playerFill=Image(hud,new Vector2(-215,-360),new Vector2(430,12),NeuralPalette.Primary);
             playerFill.rectTransform.pivot=new Vector2(0,.5f);
             resources=Text("",hud,new Vector2(0,-397),new Vector2(430,40),22,face:numericFont);
-            Text("LMB: Fire  |  RMB: Burst",hud,new Vector2(0,-430),new Vector2(430,28),18);
             if(game.Phase==DuelPhase.Prepare)
                 preparationCount=Text("3",hud,Vector2.zero,new Vector2(300,100),72,face:numericFont);
             if(game.Phase==DuelPhase.Training)BuildTrainingButtons();

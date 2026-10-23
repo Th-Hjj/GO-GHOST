@@ -47,11 +47,12 @@ namespace GoGhost.Duel
         bool builtCondition, builtAdditional;
         static readonly string[] ShortOperationLabels = { "Move", "Jump", "Aim", "Fire", "Dodge" };
         public int SelectedOperation => actionCategory;
-        public bool ConfigurationReady => pendingRule == null && selectorRow < 0 && ConditionalCatalog.IsValid(game.DraftLoadout);
+        public bool ConfigurationReady => !presetHelpOpen && pendingRule == null && selectorRow < 0 && ConditionalCatalog.IsValid(game.DraftLoadout);
 
         string ScrollKey(string name,int row,bool condition,bool additional,int category) => name=="EquippedRules"?name:name+"/"+row+"/"+condition+"/"+additional+"/"+category;
         void CaptureConfigurationView()
         {
+            if(page!=null&&page==presetHelpPage)return;
             focusName=focusLabel=null;
             if(page==null||game.Phase!=DuelPhase.Configure||displayedDraft!=game.DraftLoadout)
             {configurationScroll.Clear();return;}
@@ -117,6 +118,11 @@ namespace GoGhost.Duel
                 Show();
                 return true;
             }
+            if(presetHelpOpen)
+            {
+                if(!DeveloperShortcutConsumed&&Keyboard.current!=null&&Keyboard.current.escapeKey.wasPressedThisFrame)ClosePresetHelp();
+                return true;
+            }
             if (!DeveloperShortcutConsumed && selectorRow >= 0 && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
             {
                 CancelRuleEdit();
@@ -140,6 +146,24 @@ namespace GoGhost.Duel
             selectingAdditional=false;
             inspectedDescription = null;
             Show();
+        }
+
+        // A validated developer replacement starts a new setup/encounter. Do not rebuild here:
+        // its lifecycle owner updates the phase and draws the final page once it is ready.
+        public void DiscardRulePicker()
+        {
+            presetHelpOpen=false;presetHelpDraft=null;
+            pendingRule=completedPreview=candidatePreview=null;
+            pendingRow=selectorRow=completedPreviewRow=-1;
+            selectingCondition=selectingAdditional=false;
+            displayedDraft=null;displayedRules.Clear();
+            selectedDescription=inspectedDescription=null;
+            focusName=focusLabel=null;configurationScroll.Clear();
+            builtSelector=builtCategory=-1;builtCondition=builtAdditional=false;
+            previewRow=installedRow=-1;installedAt=float.NegativeInfinity;
+            previewSystem=installedSystem=NeuralBodySystem.None;
+            previewParts.Clear();previewDashes.Clear();equippedAccents.Clear();
+            EventSystem.current?.SetSelectedGameObject(null);
         }
 
         UnityEngine.UI.Button ConfigButton(string name, string label, Transform parent, Vector2 pos,
@@ -205,7 +229,7 @@ namespace GoGhost.Duel
                 selectedDescription="";SetOptionDescription(selectedDescription);
             }
             BuildRuleRows();
-
+            ConfigButton("PresetHelp","Help",page,new Vector2(left+60,bottom+24),new Vector2(120,48),OpenPresetHelp);
         }
 
         void BuildConfigurationBody()

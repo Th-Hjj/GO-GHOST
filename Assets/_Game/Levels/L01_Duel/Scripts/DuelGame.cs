@@ -39,7 +39,7 @@ namespace GoGhost.Duel
         public ConditionalLoadout DraftLoadout {get;private set;}=new ConditionalLoadout();
         public ConditionalController Rules {get;private set;}
         public Bounds ArenaBounds => arenaBounds;
-        public bool TrainingPending => FirstConfiguration && Wave == 1;
+        public bool TrainingPending => developerTrainingSelected || FirstConfiguration && Wave == 1;
         public bool LegsAI => lockedLegs;
         public bool ArmsAI => lockedArms;
         public bool SpineAI => lockedSpine;
@@ -100,6 +100,7 @@ namespace GoGhost.Duel
             DraftLegs = DraftArms = DraftSpine = false;
             DraftLoadout=new ConditionalLoadout();
             FirstConfiguration = true;
+            developerTrainingSelected = false;
             SetPhase(DuelPhase.Configure);
         }
         public void SetDraft(int module, bool automatic)
@@ -109,6 +110,16 @@ namespace GoGhost.Duel
         }
         public void EditLoadout(System.Action<ConditionalLoadout> edit)
         {if(Phase==DuelPhase.Configure&&!Paused){edit(DraftLoadout);ui.Show();}}
+        public bool ApplyPresetToSetup(OfficialRulePreset preset)
+        {
+            if(Phase!=DuelPhase.Configure||Paused||DeveloperToolsOpen||preset==null)return false;
+            var replacement=preset.CreateLoadout();
+            if(!ConditionalCatalog.IsValid(replacement))return false;
+            ui.DiscardRulePicker();
+            DraftLoadout=replacement;
+            ui.Show();
+            return true;
+        }
         public void StartFight()
         {
             if (Phase != DuelPhase.Configure || Paused || !ui.ConfigurationReady) return;
@@ -117,6 +128,7 @@ namespace GoGhost.Duel
         void CreateEncounter(bool training)
         {
             ClearEncounter();
+            developerTrainingSelected = training;
             ApplyPlatformLayout(training);
             lockedLegs = lockedArms = lockedSpine = false;
             encounter = Instantiate(combatPrefab, transform);

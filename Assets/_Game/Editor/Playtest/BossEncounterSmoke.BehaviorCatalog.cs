@@ -39,7 +39,7 @@ public static partial class BossEncounterSmoke
         Check("Copy keeps invalid Low row and unrelated valid rule",mixedCopy.TotalRules==2&&!ConditionalCatalog.IsValid(mixedCopy)
             &&ConditionalCatalog.IsAllowed(0,mixedCopy.Operations[0].Rules[0])&&mixedCopy.Operations[4].Rules[0].IncomingAttack==IncomingAttackOption.Low);
         Check("Catalog IDs counts and shared timing stay explicit",ConditionalCatalog.Conditions.Length==26&&ConditionalCatalog.Responses.Length==21
-            &&ConditionalCatalog.MoveFinishedCondition==61&&ConditionalCatalog.MaxRulesTotal==5
+            &&ConditionalCatalog.MoveFinishedCondition==61&&ConditionalCatalog.MaxRulesTotal==20
             &&ConditionalDefaults.EventWindow==.5f&&ConditionalDefaults.ResponseWindow==.5f);
         Check("Fine-Tune pair and source-dependent Dodge add no pairing ban",ConditionalCatalog.IsAllowed(2,new ConditionalRule{Condition=18,Action="Q06"})
             &&ConditionalCatalog.IsAllowed(4,new ConditionalRule{Condition=17,Action="D01"}));

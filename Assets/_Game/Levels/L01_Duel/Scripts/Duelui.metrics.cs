@@ -55,15 +55,14 @@ namespace GoGhost.Duel
                     }
                     AnalyticsText("Auto holds  Position: "+MetricNumber(operations[0].automaticHoldSeconds)+"s   Fire: "+MetricNumber(operations[3].automaticHoldSeconds)
                         +"s    |    Drops  Auto: "+operations[1].automaticDrops+"  Manual: "+operations[1].manualDrops,0,-265,1300,21);
-                    AnalyticsText("Equal mean of available operation ratios; holds and drops are separate.\nAim measures control time, including a stationary aim. No activity = N/A.",0,-317,1300,20,58);
                     if(total&&run.levelCleared)AnalyticsText("Level clear: "+MetricNumber(run.levelClearSeconds)+" combat seconds",0,-370,1300,22);
                 }
             }
             var open=Button("Open data folder",page,new Vector2(500,-400),new Vector2(300,48),
                 ()=>Application.OpenURL(new System.Uri(PlayMetrics.DirectoryPath).AbsoluteUri));
             open.interactable=Directory.Exists(PlayMetrics.DirectoryPath);
-            AnalyticsText(string.IsNullOrEmpty(PlayMetrics.LastSaveError)?"JSON + CSV saved after each finished / abandoned fight.":"Save failed: "+PlayMetrics.LastSaveError,
-                -200,-400,900,18,44);
+            if(!string.IsNullOrEmpty(PlayMetrics.LastSaveError))
+                AnalyticsText("Save failed: "+PlayMetrics.LastSaveError,-200,-400,900,18,44);
         }
         void BuildAnalyticsActions(PlayMetrics.OperationStats[] operations)
         {

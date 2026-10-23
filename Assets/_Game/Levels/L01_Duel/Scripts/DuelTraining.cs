@@ -25,6 +25,7 @@ namespace GoGhost.Duel
             if (Phase != DuelPhase.Training) return;
             ClearEncounter();
             FirstConfiguration = false;
+            developerTrainingSelected = false;
             Wave = 1;
             SetPhase(DuelPhase.Configure);
         }

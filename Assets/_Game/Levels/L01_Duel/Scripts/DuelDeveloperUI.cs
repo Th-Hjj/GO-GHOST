@@ -34,13 +34,14 @@ namespace GoGhost.Duel
             Image(page,Vector2.zero,new Vector2(4000,4000),new Color(.025f,.025f,.025f,.98f)).raycastTarget=true;
             Text("Developer",page,new Vector2(-390,380),new Vector2(650,60),36,TextAlignmentOptions.Left,headingFont);
             Button("Close  [F8]",page,new Vector2(565,380),new Vector2(260,54),game.ToggleDeveloperTools);
-            string[] sections={"Tuning","Waves","Analytics"};
+            string[] sections={"Tuning","Waves","Analytics","Presets"};
             for(int i=0;i<sections.Length;i++)
             {
                 int section=i;
-                Button(sections[i],page,new Vector2(-430+i*430,305),new Vector2(390,52),
+                Button(sections[i],page,new Vector2(-495+i*330,305),new Vector2(300,52),
                     ()=>{developerSection=section;Show();},i==developerSection);
             }
+            if(developerSection==3){BuildDeveloperPresets();return;}
             if(developerSection==2){BuildAnalytics();return;}
             if(developerSection==1){BuildDeveloperWaves();return;}
             BuildDeveloperTuning();
@@ -57,8 +58,6 @@ namespace GoGhost.Duel
                 jump.name="Dev_Wave"+wave;
                 jump.interactable=ConditionalCatalog.IsValid(game.DraftLoadout);
             }
-            Text("Restarts combat with your equipped rules and session tuning.\nAnalytics marks these attempts as test data.",
-                page,new Vector2(0,-60),new Vector2(1300,90),24);
         }
 
         void BuildDeveloperTuning()
@@ -91,7 +90,6 @@ namespace GoGhost.Duel
                     y-=68;
                 }
             }
-            Text("Session only  /  Tuning changes mark the attempt as test data.",page,new Vector2(0,-285),new Vector2(1400,40),20);
             developerStatus=Text("",page,new Vector2(0,-335),new Vector2(1400,45),20);
             Button("Restore defaults",page,new Vector2(0,-400),new Vector2(300,54),()=>
             {game.ResetDeveloperTuning();RefreshDeveloperFields();developerStatus.text="Defaults restored.";});

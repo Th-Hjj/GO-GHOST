@@ -16,12 +16,13 @@ Choose **New Game**, add or edit rules, then select **Enter Test Room**. Select 
 | Space | Jump |
 | S | Drop through the current one-way platform |
 | Mouse | Aim |
-| Left mouse button | Fire |
+| Left mouse button | Fire one precise shot per press |
+| Right mouse button | Burst through remaining rounds |
 | Left Shift | Dodge |
 | Escape | Pause |
-| F8 | Developer tuning |
+| F8 | Tuning, wave selection and gameplay analytics |
 
-The Rifle reloads automatically. Body facing follows movement while the weapon aims independently. F8 tuning lasts for the current application session.
+The six-round Revolver reloads automatically. LMB: Fire | RMB: Burst. Body facing follows movement while the weapon aims independently. F8 tuning lasts for the current application session.
 
 ## Open the project
 

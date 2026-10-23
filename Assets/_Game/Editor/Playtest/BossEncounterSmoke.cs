@@ -25,7 +25,7 @@ public static partial class BossEncounterSmoke
     static Mouse mouse;
     static Key[] heldKeys = Array.Empty<Key>();
     static Vector2 mousePosition;
-    static bool mouseHeld, batch, inputReady, checkingPause;
+    static bool mouseHeld, mouseBurstHeld, batch, inputReady, checkingPause;
     static InputSettings.BackgroundBehavior previousBackground;
     static InputSettings.EditorInputBehaviorInPlayMode previousEditorInput;
     static bool previousRunInBackground;
@@ -140,7 +140,7 @@ public static partial class BossEncounterSmoke
                 if (!checkingPause && game.Paused) game.SetPause(false);
             }
             InputSystem.QueueStateEvent(keyboard, new KeyboardState(heldKeys));
-            InputSystem.QueueStateEvent(mouse, new MouseState { position = mousePosition }.WithButton(MouseButton.Left, mouseHeld));
+            InputSystem.QueueStateEvent(mouse, new MouseState { position = mousePosition }.WithButton(MouseButton.Left, mouseHeld).WithButton(MouseButton.Right, mouseBurstHeld));
             // Nested IEnumerators keep this file independent of a new runtime testing MonoBehaviour.
             while (work.Count > 0)
             {
@@ -166,6 +166,12 @@ public static partial class BossEncounterSmoke
     static IEnumerator Run()
     {
         Record("Editor Play Mode; simulated focus and virtual keyboard/mouse. No physical-input or audibility claim.");
+        if(mode=="revolver") {yield return Revolver();yield break;}
+        if(mode=="revolver-edges") {yield return RevolverEdges();yield break;}
+        if(mode=="revolver-links") {yield return RevolverLinks();yield break;}
+        if(mode=="fire-actions") {yield return FireActions();yield break;}
+        if(mode=="analytics") {yield return Analytics();yield break;}
+        if(mode=="analytics-edges") {yield return AnalyticsEdges();yield break;}
         IEnumerator legacyScenario = null;
         SelectLegacyScenario(mode, ref legacyScenario);
         if (legacyScenario != null) { yield return legacyScenario; yield break; }
@@ -1126,7 +1132,7 @@ public static partial class BossEncounterSmoke
         Record("CONTROLLED INPUT ONLY: virtual events enter the unchanged action maps; no property/input/velocity override.");
         var player = game.Player; var body = player.GetComponent<Rigidbody2D>();
         var reader = player.GetComponent<PlayerInputReader>(); var movement = player.GetComponent<PlayerMovement>();
-        heldKeys = Array.Empty<Key>(); mouseHeld = false;
+        heldKeys = Array.Empty<Key>(); mouseHeld = mouseBurstHeld = false;
         yield return Frames(4); yield return Until(() => movement.IsGrounded, 2);
         InputProbe("neutral");
         float x = body.position.x; int ammo = game.Rifle.AmmoInMagazine;

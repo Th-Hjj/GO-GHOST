@@ -570,7 +570,7 @@ namespace GoGhost.Duel
         {
             if(action==null){SelectCondition(condition);return;}
             if(!ConditionalCatalog.ConditionsAreComplete(pendingRule)||ConditionalCatalog.IncompatibilityReasonForActionChoice(pendingRule,action)!=null)return;
-            if(pendingRule.Action!=action&&ConditionalCatalog.ActionOptions(action).Length>0&&!ConditionalCatalog.UsesAmmoOption(action))
+            if(pendingRule.Action!=action&&ConditionalCatalog.ActionOptions(action).Length>0)
             {pendingRule.MoveDirection=MoveDirectionOption.Unspecified;pendingRule.ShortMoveDirection=ShortMoveDirectionOption.Back;pendingRule.PlatformDirection=PlatformDirectionOption.Unspecified;}
             pendingRule.Action=action;inspectedDescription=null;
             if(ConditionalCatalog.ActionOptions(action).Length>0)Show();else CommitRuleChoice();
@@ -666,10 +666,9 @@ namespace GoGhost.Duel
 
         void BuildRuleParameters(string[] options,int condition,float w,float h)
         {
-            bool ammo=!selectingCondition&&ConditionalCatalog.UsesAmmoOption(pendingRule.Action);
             string label=selectingCondition?ConditionalCatalog.Condition(condition).Label:ConditionalCatalog.ActionOptionLabel(pendingRule.Action);
             Text(label,ruleEditor,new Vector2(0,-h/2+254),new Vector2(w,28),20,TextAlignmentOptions.Left);
-            int columns=options.Length+(ammo?1:0);
+            int columns=options.Length;
             float width=(w-(columns-1)*8)/columns;
             int selected=selectingCondition?ConditionalCatalog.ConditionOption(pendingRule,selectingAdditional):ConditionalCatalog.ActionOption(pendingRule);
             for(int i=0;i<options.Length;i++)
@@ -684,14 +683,9 @@ namespace GoGhost.Duel
                 {
                     if(selectingCondition){SelectConditionOption(index);return;}
                     ConditionalCatalog.SetActionOption(pendingRule,index);inspectedDescription=null;
-                    if(ammo)Show();else CommitRuleChoice();
+                    CommitRuleChoice();
                 },selected==i);
                 option.interactable=allowed;
-            }
-            if(ammo)
-            {
-                var commit=ConfigButton("UseAction","Use Action",ruleEditor,new Vector2(w/2-width/2,-h/2+208),new Vector2(width,60),CommitRuleChoice);
-                commit.interactable=ConditionalCatalog.IsAllowed((int)ConditionalCatalog.Response(pendingRule.Action).Operation,pendingRule);
             }
         }
 
@@ -762,7 +756,7 @@ namespace GoGhost.Duel
                 if(action!=null&&pendingRule!=null)
                 {
                     candidatePreview=pendingRule.Copy();
-                    if(candidatePreview.Action!=action&&ConditionalCatalog.ActionOptions(action).Length>0&&!ConditionalCatalog.UsesAmmoOption(action))
+                    if(candidatePreview.Action!=action&&ConditionalCatalog.ActionOptions(action).Length>0)
                     {candidatePreview.MoveDirection=MoveDirectionOption.Unspecified;candidatePreview.PlatformDirection=PlatformDirectionOption.Unspecified;}
                     candidatePreview.Action=action;
                 }

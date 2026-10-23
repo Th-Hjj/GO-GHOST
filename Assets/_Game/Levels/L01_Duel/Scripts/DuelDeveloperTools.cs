@@ -8,7 +8,8 @@ namespace GoGhost.Duel
     public enum DeveloperSetting
     {
         MoveSpeed, JumpSpeed, DodgeDistance, DodgeDuration, DodgeCooldown, DodgeImmunity,
-        Damage, BulletSpeed, FireInterval, Magazine, Reload, PlayerMaxHealth, GunnerMaxHealth, SwordMaxHealth
+        Damage, BulletSpeed, FireInterval, Magazine, Reload, PlayerMaxHealth, GunnerMaxHealth, SwordMaxHealth,
+        BurstInterval, BurstSpread
     }
 
     public sealed class DeveloperParameter
@@ -47,12 +48,14 @@ namespace GoGhost.Duel
                 new DeveloperParameter(DeveloperSetting.DodgeImmunity,"Dodge immunity (s)",0,PlayerDodge.LegacyImmunity,0,2,.05f),
                 new DeveloperParameter(DeveloperSetting.Damage,"Bullet damage",1,weapon.Damage,1,500,1),
                 new DeveloperParameter(DeveloperSetting.BulletSpeed,"Bullet speed",1,gun.BulletSpeed,1,80,1),
-                new DeveloperParameter(DeveloperSetting.FireInterval,"Shot interval (s)",1,weapon.FireInterval,.05f,3,.05f),
+                new DeveloperParameter(DeveloperSetting.FireInterval,"Primary interval (s)",1,weapon.FireInterval,.05f,3,.05f),
                 new DeveloperParameter(DeveloperSetting.Magazine,"Magazine capacity",1,weapon.MagazineSize,1,100,1),
                 new DeveloperParameter(DeveloperSetting.Reload,"Reload time (s)",1,weapon.ReloadSeconds,.1f,10,.1f),
                 new DeveloperParameter(DeveloperSetting.PlayerMaxHealth,"Player max HP",2,player.MaxHealth,1,10000,10),
                 new DeveloperParameter(DeveloperSetting.GunnerMaxHealth,"Gunner max HP",2,gunnerPrefab.GetComponent<BossAgent>().Profile.Health,1,10000,10),
-                new DeveloperParameter(DeveloperSetting.SwordMaxHealth,"Swordsman max HP",2,swordsmanPrefab.GetComponent<BossAgent>().Profile.Health,1,10000,10)
+                new DeveloperParameter(DeveloperSetting.SwordMaxHealth,"Swordsman max HP",2,swordsmanPrefab.GetComponent<BossAgent>().Profile.Health,1,10000,10),
+                new DeveloperParameter(DeveloperSetting.BurstInterval,"Burst interval (s)",1,weapon.BurstInterval,.02f,1,.01f),
+                new DeveloperParameter(DeveloperSetting.BurstSpread,"Burst spread (+/- deg)",1,weapon.BurstSpread,0,45,1)
             };
             developerValues=new float[developerParameters.Length];
             foreach(var p in developerParameters)developerValues[(int)p.Id]=p.Default;
@@ -67,6 +70,7 @@ namespace GoGhost.Duel
             value=Mathf.Clamp(value,p.Min,p.Max);
             if(p.Step>=1)value=Mathf.Round(value);
             developerValues[index]=value;
+            PlayMetrics.MarkTuning(developerValues);
             ApplyDeveloperTuning();
             return true;
         }
@@ -75,6 +79,7 @@ namespace GoGhost.Duel
         {
             if(!DeveloperToolsOpen)return;
             foreach(var p in developerParameters)developerValues[(int)p.Id]=p.Default;
+            PlayMetrics.MarkTuning(developerValues);
             ApplyDeveloperTuning();
         }
 
@@ -85,7 +90,8 @@ namespace GoGhost.Duel
             Dodge.SetRuntimeDodge(GetDeveloperValue(DeveloperSetting.DodgeDistance),GetDeveloperValue(DeveloperSetting.DodgeDuration),
                 GetDeveloperValue(DeveloperSetting.DodgeCooldown),GetDeveloperValue(DeveloperSetting.DodgeImmunity));
             Rifle.SetRuntimeWeapon(new WeaponProfile((int)GetDeveloperValue(DeveloperSetting.Damage),GetDeveloperValue(DeveloperSetting.FireInterval),
-                (int)GetDeveloperValue(DeveloperSetting.Magazine),GetDeveloperValue(DeveloperSetting.Reload)),GetDeveloperValue(DeveloperSetting.BulletSpeed),fresh);
+                (int)GetDeveloperValue(DeveloperSetting.Magazine),GetDeveloperValue(DeveloperSetting.Reload),
+                GetDeveloperValue(DeveloperSetting.BurstInterval),GetDeveloperValue(DeveloperSetting.BurstSpread)),GetDeveloperValue(DeveloperSetting.BulletSpeed),fresh);
             int max=(int)GetDeveloperValue(DeveloperSetting.PlayerMaxHealth);
             Player.SetRuntimeHealth(max,fresh?max:Player.CurrentHealth);
             foreach(var boss in actors)
@@ -113,6 +119,7 @@ namespace GoGhost.Duel
         public void SetDeveloperHealth(int actor,int value)
         {
             if(!DeveloperToolsOpen||!GetDeveloperHealth(actor,out _,out int maximum))return;
+            PlayMetrics.MarkTuning(developerValues);
             if(actor==0)Player.SetRuntimeHealth(maximum,value);
             else foreach(var boss in actors)if(boss!=null&&boss.ActorId==actor)boss.Health.SetRuntimeHealth(maximum,value);
         }
@@ -122,6 +129,7 @@ namespace GoGhost.Duel
             if(!DeveloperToolsOpen||wave<1||wave>3||!ConditionalCatalog.IsValid(DraftLoadout))return;
             EventSystem.current?.SetSelectedGameObject(null);
             ClearEncounter();
+            metricsWaveJumpPending = true;
             // Keep equipped rules/order, but discard any incomplete picker draft.
             DraftLoadout=DraftLoadout.Copy();
             Wave=wave;

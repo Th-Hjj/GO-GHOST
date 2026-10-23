@@ -39,6 +39,12 @@ namespace GoGhost.Duel
             if(r.Row>=0&&!r.Completed&&loadout.Operations[(int)ControlOperation.Fire].Rules[r.Row].Action=="F02")r.Row=-1;
         }
         void ReloadFinished()=>Record(11);
+        void BurstFinished()
+        {
+            Record(60);
+            var r=running[(int)ControlOperation.Fire];
+            if(r.Row>=0&&r.Accepted&&loadout.Operations[3].Rules[r.Row].Action=="F02")r.Completed=true;
+        }
         void DodgeFinished()=>Record(7);
         void JumpStarted()=>Record(57);
         void JumpApexReached()=>Record(58);
@@ -47,18 +53,16 @@ namespace GoGhost.Duel
             // The public fact includes manual shots; only the owning response receives auto credit.
             Record(59);
             var r=running[3];
-            if(disposed||!input.ConditionalFrame.FireOwned||!input.ConditionalFrame.Fire||r.Row<0)return;
+            if(disposed||gun.LastShotActor!=ProjectileActor.InnerAI||r.Row<0)return;
             string action=loadout.Operations[3].Rules[r.Row].Action;
-            if(action=="F06"||r.Completed)return;
+            if(action!=gun.LastShotActionId||action=="F06"||r.Completed)return;
             if(action=="F02"&&!r.Accepted)
             {
                 // ShotFired follows the real ammo spend: capture this magazine at actual acceptance.
-                r.ShotLimit=gun.AmmoInMagazine+1;
+                r.ShotLimit=gun.BurstBudget;
                 r.Deadline=float.PositiveInfinity;
             }
             AutomaticShots++;r.Shots++;acceptedAt[3,r.Row]=Time.time;acceptedFrame[3,r.Row]=Time.frameCount;Accept(3,r);
-            if(action=="F02"&&r.Shots>=r.ShotLimit)
-            {r.Completed=true;Record(60);}
         }
         int Index(GameObject source)
         {
@@ -82,7 +86,6 @@ namespace GoGhost.Duel
             else if(source>=0&&visible[source]){ctx.HasPosition=true;ctx.Position=contacts[source].Bounds.center;}
             events.Add(new Notice {Condition=condition,At=Time.time,Context=ctx});
         }
-        int AmmoFloor(ConditionalRule rule)=>ConditionalCatalog.UsesAmmoOption(rule.Action)&&rule.AmmoUse==AmmoUseOption.KeepTwoRounds?ConditionalDefaults.Reserve:0;
         bool Start(int op,ConditionalRule rule,Running r)
         {
             string action=rule.Action;
@@ -113,7 +116,7 @@ namespace GoGhost.Duel
                 case ControlOperation.Fire:
                     if(action=="F06")
                     {output.FireOwned=true;output.Fire=false;Accept(op,r);return true;}
-                    if(!gun.isActiveAndEnabled||gun.IsReloading||gun.AmmoInMagazine<=AmmoFloor(rule))return false;
+                    if(!gun.isActiveAndEnabled||gun.IsReloading||gun.AmmoInMagazine<=0)return false;
                     if(!gun.CanFireNow)
                     {
                         var state=states[op,r.Row];
@@ -126,7 +129,7 @@ namespace GoGhost.Duel
                     r.Shots=0;
                     r.ShotLimit=action=="F01"?1:action=="F02"?gun.AmmoInMagazine:int.MaxValue;
                     if(action!="F03")r.Deadline=Time.time+r.ShotLimit*gun.FireInterval+.5f;
-                    output.FireOwned=true;output.Fire=true;return true;
+                    WriteFireRequest(rule);return true;
                 case ControlOperation.Dodge:
                     if(!dodge.CanDodge)return false;
                     if(action=="D01") {if(!SourcePoint(r,out var source))return false;r.Direction=Away(source.x);}
@@ -153,16 +156,23 @@ namespace GoGhost.Duel
                 case ControlOperation.Aim:return WriteAim(action,r);
                 case ControlOperation.Fire:
                     if(action=="F06"){output.FireOwned=true;output.Fire=false;Accept(op,r);return true;}
-                    if(!gun.isActiveAndEnabled||gun.IsReloading||gun.AmmoInMagazine<=AmmoFloor(rule))return false;
+                    if(action=="F02"&&r.Accepted)return false; // Only the weapon may continue a burst.
+                    if(!gun.isActiveAndEnabled||gun.IsReloading||gun.AmmoInMagazine<=0)return false;
                     if(!r.Accepted&&!gun.CanFireNow)return false;
                     if(action!="F03"&&r.Shots>=r.ShotLimit)return false;
-                    output.FireOwned=true;output.Fire=true;return true;
+                    WriteFireRequest(rule);return true;
                 case ControlOperation.Jump:
                     if(!CanJump())return false;
                     output.JumpOwned=true;output.Jump=true;return true;
                 case ControlOperation.Dodge:return false;
                 default:throw new InvalidOperationException("Unknown running operation");
             }
+        }
+        void WriteFireRequest(ConditionalRule rule)
+        {
+            output.FireOwned=true;output.Fire=true;output.FireActionId=rule.Action;
+            output.FireRequest=rule.Action=="F02"?WeaponFireRequest.Burst
+                :rule.Action=="F03"?WeaponFireRequest.Continuous:WeaponFireRequest.Single;
         }
         bool CompleteShortMove(Running r)
         {

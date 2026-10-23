@@ -31,7 +31,7 @@ namespace GoGhost.Duel
         public float CamoAlpha=0, CamoFade=.14f, RevealFade=.12f, CamoDuration=1.8f, CamoCueInterval=.35f, CamoContactMemory=.35f;
         public float ReactionSeconds=.12f, SightMemory=.8f, TacticTick=.2f, PlanHold=.7f, PlanTimeout=3.2f;
         public float DashSpeed=25, ReturnSpeed=24, GuardArc=120, GuardWalkScale=.60f;
-        public int GuardCapacity=5, PiercingInterruptHits=3, SweepInterruptHits=2; // Last two retained for serialized compatibility only.
+        public int GuardCapacity=5, PiercingInterruptHits=3, SweepInterruptHits=2; // Inert serialized compatibility; Guard lasts its full active window.
         public float InterruptRecovery=.3f, BladeRadius=.22f, BeamRadius=.07f;
         public float DesiredDistance=7, RepositionWeight=1, ExposureWeight=.7f, RepetitionWeight=.25f;
         public BossAbilitySettings Burst=new BossAbilitySettings(.24f,0,.28f,.26f,1,24,12,1);

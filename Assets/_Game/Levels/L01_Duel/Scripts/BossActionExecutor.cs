@@ -312,8 +312,7 @@ namespace GoGhost.Duel
             }
             else if (Ability == BossAbility.Guard)
             {
-                if (Time.time >= phaseUntil || Time.time - phaseAt >= .18f && Ready(BossAbility.Rhythm)
-                    && actor.Tactics.LegalAt(BossAbility.Rhythm, actor.Position, actor.Perception.Facts, out _))
+                if (Time.time >= phaseUntil)
                     Recover();
             }
             else if (Time.time >= phaseUntil)

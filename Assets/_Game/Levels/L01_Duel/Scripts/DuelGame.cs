@@ -77,6 +77,7 @@ namespace GoGhost.Duel
         void Start() { if (sounds != null) sounds.BeginScope(); }
         void OnDestroy()
         {
+            FinishMetrics("abandoned");
             ClearPlatformLayout();
             playerRespawnAt = enemyRespawnAt = 0;
             Player?.GetComponent<OfficerVisual>()?.ClearConditionalGlow();
@@ -92,8 +93,9 @@ namespace GoGhost.Duel
         }
         public void NewGame()
         {
-            PlayMetrics.ResetRun();   // METRICS: fresh stats for a new run
             ClearEncounter();
+            PlayMetrics.ResetRun();
+            metricsWaveJumpPending = false;
             Wave = 1;
             DraftLegs = DraftArms = DraftSpine = false;
             DraftLoadout=new ConditionalLoadout();
@@ -165,7 +167,7 @@ namespace GoGhost.Duel
             effects?.SetPaused(true);
             Physics2D.SyncTransforms();
             FightClock = 0;
-            if (!training) PlayMetrics.BeginAttempt(Wave);   // METRICS: new fight (training is not counted)
+            if (!training) BeginMetrics();
             if (training)
             {
                 foreach (var body in encounter.GetComponentsInChildren<Rigidbody2D>()) body.simulated = true;
@@ -275,6 +277,7 @@ namespace GoGhost.Duel
         }
         void ClearEncounter()
         {
+            FinishMetrics("abandoned");
             DeveloperToolsOpen = developerResumeOnClose = false;
             StopCombat();
             music?.StopMusic(true);
@@ -312,6 +315,7 @@ namespace GoGhost.Duel
         void FixedUpdate()
         {
             if ((Phase == DuelPhase.Fight || Phase == DuelPhase.Training) && !Paused) FightClock += Time.fixedDeltaTime;
+            if (Phase == DuelPhase.Fight) PlayMetrics.SetClock(FightClock);
         }
         void LateUpdate()
         {
@@ -323,9 +327,8 @@ namespace GoGhost.Duel
             if (!Player.IsDead && !allDead) return;
             bool defeat = Player.IsDead;
             Trace($"result wave={Wave} player={Player.CurrentHealth} bosses={HealthSummary()} elapsed={FightClock:0.00}");
+            FinishMetrics(defeat ? "died" : "won", !defeat && Wave == 3);
             StopCombat();
-            // METRICS: record the finished fight (death or win)
-            PlayMetrics.EndAttempt(Wave, defeat, FightClock, Rifle != null ? Rifle.ShotsFired : 0, !defeat && Wave == 3);
             sounds?.Play(defeat ? Sfx.Defeat : Sfx.Victory);
             SetPhase(defeat ? DuelPhase.Failed : Wave == 3 ? DuelPhase.Complete : DuelPhase.Between);
         }
@@ -339,7 +342,7 @@ namespace GoGhost.Duel
         // Entry selects only the normal configuration; no fight-state injection.
         public void ConfigurePlaytestWave(int wave)
         {
-            NewGame(); Wave = Mathf.Clamp(wave, 1, 3); ui.Show();
+            NewGame(); Wave = Mathf.Clamp(wave, 1, 3); metricsWaveJumpPending = true; ui.Show();
         }
         public void ObserveThirdWave()
         {

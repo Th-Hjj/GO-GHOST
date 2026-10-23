@@ -37,6 +37,7 @@ public class PlayerDodge : MonoBehaviour
     public float CommittedHorizontalSpeed { get; private set; }
     public float MovementRemaining => IsDodging ? Mathf.Max(0,committedMovementEndsAt-Time.time) : 0;
     public event System.Action DodgeFinished;
+    public event System.Action DodgeStarted;
     private float nextDodgeTime;
     // Formal Air Dash (leg upgrade in the DeploymentSnapshot): one horizontal dash per airtime, same cooldown as the
     // ground dash. The base Human stays ground-only; the legacy airDodgeUnlocked field is not a progression path.
@@ -184,6 +185,7 @@ public class PlayerDodge : MonoBehaviour
         LastDodgeStartedAt = Time.time;
         nextDodgeTime = Time.time + DodgeStartInterval;
         StartCoroutine(DodgeRoutine(Mathf.Abs(direction) > .01f ? Vector2.right * Mathf.Sign(direction) : GetDodgeDirection()));
+        DodgeStarted?.Invoke();
         return true;
     }
 

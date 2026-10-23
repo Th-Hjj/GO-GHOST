@@ -10,6 +10,7 @@ namespace GoGhost.Duel
     public enum MoveDirectionOption { Unspecified, Left, Right }
     // Zero migrates old M04 data without a direction field to Move (Back).
     public enum ShortMoveDirectionOption { Back=0, Forward=1 }
+    // Inert serialized compatibility only. Fire actions no longer have ammo policies.
     public enum AmmoUseOption { AllowEmpty, KeepTwoRounds }
     public enum PlatformDirectionOption { Unspecified, Higher, Lower }
 
@@ -24,7 +25,7 @@ namespace GoGhost.Duel
         public IncomingAttackOption IncomingAttack, AdditionalIncomingAttack;
         public MoveDirectionOption MoveDirection;
         public ShortMoveDirectionOption ShortMoveDirection;
-        public AmmoUseOption AmmoUse;
+        [UnityEngine.HideInInspector] public AmmoUseOption AmmoUse;
         public PlatformDirectionOption PlatformDirection;
         // Each operation keeps its own list; J04 also uses this order for its shared Legs claim.
         public int DisplayOrder = -1;
@@ -34,7 +35,7 @@ namespace GoGhost.Duel
             Distance=Distance, AdditionalDistance=AdditionalDistance,
             IncomingAttack=IncomingAttack, AdditionalIncomingAttack=AdditionalIncomingAttack,
             MoveDirection=MoveDirection, ShortMoveDirection=ShortMoveDirection, PlatformDirection=PlatformDirection,
-            AmmoUse=Action=="F02"?AmmoUseOption.AllowEmpty:AmmoUse, DisplayOrder=DisplayOrder
+            AmmoUse=default, DisplayOrder=DisplayOrder
         };
     }
     [Serializable] public sealed class OperationRules
@@ -194,14 +195,14 @@ namespace GoGhost.Duel
         static readonly string[] IncomingOptions={"Any","Melee","Ranged"},DirectionOptions={"Left","Right"};
         static readonly IncomingAttackOption[] IncomingValues={IncomingAttackOption.Any,IncomingAttackOption.Melee,IncomingAttackOption.Ranged};
         static readonly string[] ShortMoveOptions={"Forward","Back"};
-        static readonly string[] AmmoOptions={"Allow Empty","Keep Two Rounds"};
         static readonly string[] PlatformOptions={"Higher","Lower"};
         public static bool IsSelectableCondition(int id)=>Array.IndexOf(SharedConditionIds,id)>=0;
         public static bool IsStateCondition(int id)=>IsSelectableCondition(id)&&!Condition(id).Event;
         public static bool IsSelectableResponse(string id)
         {foreach(var response in Responses)if(response.Id==id)return true;return false;}
-        public static bool UsesAmmoOption(string action)=>action=="F01"||action=="F03";
-        public static bool IsShootingAction(string action)=>UsesAmmoOption(action)||action=="F02";
+        // Retained source API for old callers; no action exposes an ammo option.
+        public static bool UsesAmmoOption(string action)=>false;
+        public static bool IsShootingAction(string action)=>action=="F01"||action=="F02"||action=="F03";
         public static ConditionEntry Condition(int id)
         {foreach(var c in Conditions)if(c.Id==id)return c;foreach(var c in HistoricalConditions)if(c.Id==id)return c;throw new ArgumentException("Unknown condition "+id);}
         public static ResponseEntry Response(string id)
@@ -238,9 +239,9 @@ namespace GoGhost.Duel
                     if(additional)rule.AdditionalIncomingAttack=incoming;else rule.IncomingAttack=incoming;break;
             }
         }
-        public static string[] ActionOptions(string action)=>action=="J04"?PlatformOptions:action=="M04"?ShortMoveOptions:action=="M11"?DirectionOptions:UsesAmmoOption(action)?AmmoOptions:NoOptions;
-        public static string ActionOptionLabel(string action)=>action=="J04"||action=="M04"||action=="M11"?"Direction":UsesAmmoOption(action)?"Ammo Use":"";
-        public static int ActionOption(ConditionalRule rule)=>rule==null?-1:rule.Action=="J04"?(int)rule.PlatformDirection-1:rule.Action=="M04"?(rule.ShortMoveDirection==ShortMoveDirectionOption.Forward?0:rule.ShortMoveDirection==ShortMoveDirectionOption.Back?1:-1):rule.Action=="M11"?(int)rule.MoveDirection-1:UsesAmmoOption(rule.Action)?(int)rule.AmmoUse:-1;
+        public static string[] ActionOptions(string action)=>action=="J04"?PlatformOptions:action=="M04"?ShortMoveOptions:action=="M11"?DirectionOptions:NoOptions;
+        public static string ActionOptionLabel(string action)=>action=="J04"||action=="M04"||action=="M11"?"Direction":"";
+        public static int ActionOption(ConditionalRule rule)=>rule==null?-1:rule.Action=="J04"?(int)rule.PlatformDirection-1:rule.Action=="M04"?(rule.ShortMoveDirection==ShortMoveDirectionOption.Forward?0:rule.ShortMoveDirection==ShortMoveDirectionOption.Back?1:-1):rule.Action=="M11"?(int)rule.MoveDirection-1:-1;
         public static void SetActionOption(ConditionalRule rule,int index)
         {
             if(rule==null)return;
@@ -248,7 +249,6 @@ namespace GoGhost.Duel
             if(rule.Action=="M11")rule.MoveDirection=(MoveDirectionOption)(index+1);
             else if(rule.Action=="M04")rule.ShortMoveDirection=index==0?ShortMoveDirectionOption.Forward:ShortMoveDirectionOption.Back;
             else if(rule.Action=="J04")rule.PlatformDirection=(PlatformDirectionOption)(index+1);
-            else if(UsesAmmoOption(rule.Action))rule.AmmoUse=(AmmoUseOption)index;
         }
         public static bool ConditionsAreComplete(ConditionalRule rule)=>ConditionRuleReason(rule,true)==null;
         public static bool HasAnyCompatibleAction(ConditionalRule rule)
@@ -281,7 +281,6 @@ namespace GoGhost.Duel
             if(Array.IndexOf(FormalResponses[operation],rule.Action)<0)return "Choose an action for this operation.";
             if(operation==(int)ControlOperation.Jump&&HasGroundState(rule,GroundStateOption.Airborne))return "Jump requires being grounded.";
             if(IsShootingAction(rule.Action)&&(rule.Condition==9||rule.AdditionalCondition==9))return "Cannot fire while reloading.";
-            if(UsesAmmoOption(rule.Action)&&!Enum.IsDefined(typeof(AmmoUseOption),rule.AmmoUse))return "Choose an Ammo Use option.";
             if(rule.Action=="M04"&&!Enum.IsDefined(typeof(ShortMoveDirectionOption),rule.ShortMoveDirection))return "Choose Forward or Back.";
             if(rule.Action=="M11"&&(rule.MoveDirection<MoveDirectionOption.Unspecified||rule.MoveDirection>MoveDirectionOption.Right
                 ||requireComplete&&rule.MoveDirection==MoveDirectionOption.Unspecified))return "Choose Left or Right.";
@@ -371,11 +370,6 @@ namespace GoGhost.Duel
             string label=Response(rule.Action).Label;
             if(rule.Action=="J04"&&rule.PlatformDirection!=PlatformDirectionOption.Unspecified)
                 label+=rule.PlatformDirection==PlatformDirectionOption.Higher?" (Higher) ↑":" (Lower) ↓";
-            if(UsesAmmoOption(rule.Action))
-            {
-                int option=(int)rule.AmmoUse;
-                if(option>=0&&option<AmmoOptions.Length)label+=" ("+AmmoOptions[option]+")";
-            }
             return label;
         }
         public static string ConditionDescription(ConditionalRule rule,bool additional=false)
@@ -394,8 +388,8 @@ namespace GoGhost.Duel
                 case 6:return "You just took damage.";
                 case 54:return "Your ordinary horizontal movement is actually moving you; dodges, knockback and blocked input do not count.";
                 case 55:return "Your accepted dodge is still moving you.";
-                case 9:return "Your Rifle is reloading.";
-                case 12:return "Your Rifle has only one or two rounds left.";
+                case 9:return "Your Revolver is reloading.";
+                case 12:return "Your Revolver has only one or two rounds left.";
                 case 17:return "You are holding the weapon's trigger.";
                 case 18:return "A visible enemy is close to your raw aim direction.";
                 case 40:return "A visible enemy's current body intersects your current muzzle ray.";
@@ -410,9 +404,9 @@ namespace GoGhost.Duel
                 case 58:return "Your active jump has reached its highest point.";
                 case 3:return "You have actually landed from the air.";
                 case 7:return "Your accepted dodge movement has finished.";
-                case 59:return "Your Rifle has spent a round and fired a bullet.";
-                case 60:return "A Short Burst has fired every remaining round in its magazine.";
-                case 11:return "Your Rifle just finished reloading.";
+                case 59:return "Your Revolver has spent a round and fired a bullet.";
+                case 60:return "A manual or automatic burst has fired all its committed rounds.";
+                case 11:return "Your Revolver just finished reloading.";
                 case 61:return "A short Move has completed its planned distance.";
                 case 13:return "Your attack has actually damaged an enemy.";
                 case 1:return "You are off the ground.";
@@ -436,9 +430,9 @@ namespace GoGhost.Duel
                 case "Q02":return "Aim at the visible enemy with the lowest health percentage.";
                 case "Q03":return "Aim at the visible enemy associated with the detected situation.";
                 case "Q06":return "Make small corrections toward the visible enemy you are aiming at.";
-                case "F01":return "Fire one shot in your current aim direction with the selected Ammo Use.";
-                case "F02":return "Once started, fire all remaining rounds in the current magazine.";
-                case "F03":return "Keep firing at the normal rate with the selected Ammo Use.";
+                case "F01":return "Fire one shot in your current aim direction.";
+                case "F02":return "Rapidly fire all remaining rounds with spread at 75% damage (rounded).";
+                case "F03":return "Fire at the normal rate while the condition holds. Stop when it ends.";
                 case "F06":return "Stop firing while active.";
                 case "F05":return "Shoot until only two rounds remain in the magazine.";
                 case "D01":return "Dodge away from the threat that triggered this rule.";
@@ -465,6 +459,6 @@ namespace GoGhost.Duel
         public const float RuleEventResponseDuration=.5f;
         public const float ResponseWindow=RuleEventResponseDuration,EventWindow=RuleEventResponseDuration;
         public const float StepBack=1.5f,JumpDelay=.20f,Calibration=.12f,StuckWindow=.25f;
-        public const int Reserve=2;
+        public const int Reserve=2; // Historical source compatibility; no runtime ammo floor.
     }
 }

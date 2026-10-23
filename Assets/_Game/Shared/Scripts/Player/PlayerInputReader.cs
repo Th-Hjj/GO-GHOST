@@ -47,6 +47,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     public bool AutomaticFireOwned => ConditionalControlsActive ? ConditionalFrame.FireOwned : LegacyArmsAI;
     private System.Func<RawPlayerInput, ConditionalControlFrame> conditionalPolicy;
     public event System.Action<ControlOperation, bool> ConditionalActionResolved;
+    public event System.Action ConditionalInputsResolved;
 
     public void ConfigureConditionalControls(System.Func<RawPlayerInput, ConditionalControlFrame> policy)
     {
@@ -59,6 +60,13 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     public System.Func<bool> UiBlocksManualFire { get; set; }
     public bool AttackHeld { get; private set; }
     public bool AttackPressedThisFrame { get; private set; }
+    public bool BurstHeld { get; private set; }
+    public bool BurstPressedThisFrame { get; private set; }
+    public WeaponFireRequest FireRequest => ConditionalControlsActive && ConditionalFrame.FireOwned
+        ? ConditionalFrame.FireRequest
+        : LegacyArmsAI ? (AttackHeld ? WeaponFireRequest.Continuous : WeaponFireRequest.None)
+        : BurstPressedThisFrame ? WeaponFireRequest.Burst
+        : AttackPressedThisFrame ? WeaponFireRequest.Single : WeaponFireRequest.None;
     public bool JumpPressedThisFrame { get; private set; }
     public bool JumpHeld { get; private set; }
     public bool DropPressedThisFrame { get; private set; }
@@ -86,7 +94,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     private bool hasFocus = true;
     // Release gates are (re)armed whenever input starts or focus returns. See Update.
     private bool waitingForRelease = true;
-    private bool attackGated, jumpGated, dodgeGated, dropGated, abilityGated, secondaryGated;
+    private bool attackGated, burstGated, jumpGated, dodgeGated, dropGated, abilityGated, secondaryGated;
     private OfficerIdentity officer;
     private PlayerShooting shooting;
     private Enemy aimTarget;
@@ -136,6 +144,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     private void OnDestroy()
     {
         dropAction?.Dispose();
+        burstAction?.Dispose();
         if (legacyActions != null) { legacyActions.Disable(); Destroy(legacyActions); }
     }
 
@@ -162,6 +171,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     private InputAction dodgeAction;
     // Actor-local action follows the same enable/focus/release gates without changing the shared asset.
     private InputAction dropAction;
+    private InputAction burstAction;
     private InputAction abilityAction;
     private InputAction secondaryAbilityAction;
     private InputAction previousAction;
@@ -188,6 +198,8 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         nextAction = Find(asset, "Player/Next");
         if (dropAction == null) dropAction = new InputAction("Drop Through", InputActionType.Button, "<Keyboard>/s");
         dropAction.Enable();
+        if (burstAction == null) burstAction = new InputAction("Revolver Burst", InputActionType.Button, "<Mouse>/rightButton");
+        burstAction.Enable();
 
         IsReady = moveAction != null && aimAction != null && attackAction != null && jumpAction != null
                   && dodgeAction != null && abilityAction != null && secondaryAbilityAction != null;
@@ -217,6 +229,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     private void OnDisable()
     {
         dropAction?.Disable();
+        burstAction?.Disable();
         EndAimOverride();
         // Preserve the legacy temporary-disable behavior. Permanent input shutdown belongs to CleanupAttempt.
         ClearFrameState();
@@ -263,6 +276,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         {
             waitingForRelease = false;
             attackGated = attackAction.IsPressed();
+            burstGated = burstAction.IsPressed();
             jumpGated = jumpAction.IsPressed();
             dodgeGated = dodgeAction.IsPressed();
             dropGated = dropAction.IsPressed();
@@ -270,7 +284,8 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
             secondaryGated = secondaryAbilityAction.IsPressed();
         }
         attackGated &= attackAction.IsPressed();
-        if (attackAction.IsPressed() && UiBlocksManualFire?.Invoke() == true) SuppressUiFireUntilRelease();
+        burstGated &= burstAction.IsPressed();
+        if ((attackAction.IsPressed() || burstAction.IsPressed()) && UiBlocksManualFire?.Invoke() == true) SuppressUiFireUntilRelease();
         jumpGated &= jumpAction.IsPressed();
         dodgeGated &= dodgeAction.IsPressed();
         dropGated &= dropAction.IsPressed();
@@ -280,6 +295,8 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
 
         AttackHeld = Time.frameCount > suppressAttackFrame && !attackGated && attackAction.IsPressed();
         AttackPressedThisFrame = Time.frameCount > suppressAttackFrame && !attackGated && attackAction.WasPressedThisFrame();
+        BurstHeld = Time.frameCount > suppressAttackFrame && !burstGated && burstAction.IsPressed();
+        BurstPressedThisFrame = Time.frameCount > suppressAttackFrame && !burstGated && burstAction.WasPressedThisFrame();
         if (overrideRunning && AttackHeld) overridePlayerRequestedFire = true;
         JumpPressedThisFrame = !jumpGated && jumpAction.WasPressedThisFrame();
         JumpHeld = !jumpGated && jumpAction.IsPressed();
@@ -295,6 +312,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
             RawInput = new RawPlayerInput { Move=MoveInput.x, Aim=AimDirection, CommittedAim=committedAim,
                 Cursor=camera != null ? (Vector2)camera.ScreenToWorldPoint(AimScreenPosition) : (Vector2)transform.position,
                 Fire=AttackHeld, FirePressed=AttackPressedThisFrame, Jump=JumpPressedThisFrame, JumpHeld=JumpHeld,
+                Burst=BurstHeld, BurstPressed=BurstPressedThisFrame,
                 Dodge=DodgePressedThisFrame, Drop=DropPressedThisFrame };
             AbilityPressedThisFrame = SecondaryAbilityPressedThisFrame = PreviousPressedThisFrame = NextPressedThisFrame = false;
         }
@@ -314,10 +332,10 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
             NotifyConditionalAction(ControlOperation.Aim,f.Aim.sqrMagnitude>.0001f);
         }
         if(f.JumpOwned) {JumpPressedThisFrame=f.Jump;JumpHeld=false;DropPressedThisFrame=f.Drop;}
-        if(f.FireOwned) {AttackHeld=f.Fire;AttackPressedThisFrame=f.Fire&&!legacyFireHeld;}
-        legacyFireHeld=AttackHeld;
+        // Raw LMB held stays raw; the weapon consumes the explicit resolved fire request.
         DodgeDirection=f.DodgeOwned?f.DodgeDirection:0;
         if(f.DodgeOwned) DodgePressedThisFrame=f.Dodge;
+        ConditionalInputsResolved?.Invoke();
     }
     public void NotifyConditionalAction(ControlOperation operation,bool accepted)
     {
@@ -437,8 +455,10 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     public void SuppressUiFireUntilRelease()
     {
         attackGated = true;
+        burstGated = true;
         suppressAttackFrame = Time.frameCount;
         AttackHeld = AttackPressedThisFrame = false;
+        BurstHeld = BurstPressedThisFrame = false;
     }
 
     public void SetNarrativePaused(bool paused)
@@ -457,6 +477,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         MoveInput = Vector2.zero;
         AttackHeld = false;
         AttackPressedThisFrame = false;
+        BurstHeld = BurstPressedThisFrame = false;
         JumpPressedThisFrame = false;
         JumpHeld = false;
         DropPressedThisFrame = false;

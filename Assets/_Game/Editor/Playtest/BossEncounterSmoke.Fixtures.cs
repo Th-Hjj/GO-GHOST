@@ -61,7 +61,7 @@ public static partial class BossEncounterSmoke
     {d.Operations[op].Rules.Add(new ConditionalRule{Condition=condition,Action=response});}
     static IEnumerator AlphaFresh(int wave,Action<ConditionalLoadout> configure,bool stop=true)
     {
-        RestoreFixture();heldKeys=Array.Empty<Key>();mouseHeld=false;game.ConfigurePlaytestWave(wave);configure?.Invoke(game.DraftLoadout);
+        RestoreFixture();heldKeys=Array.Empty<Key>();mouseHeld=mouseBurstHeld=false;game.ConfigurePlaytestWave(wave);configure?.Invoke(game.DraftLoadout);
         game.StartFight();yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);
         if(stop)StopPolicies();yield return Frames(4);
     }
@@ -137,7 +137,6 @@ public static partial class BossEncounterSmoke
         ClickConfig("ActionCategory"+(int)ConditionalCatalog.Response(action).Operation);yield return Frames(2);
         ClickConfig("Option",ConditionalCatalog.Response(action).Label);yield return Frames(2);
         if(option>=0){ClickConfig("RuleParameter"+option);yield return Frames(2);}
-        if(ConditionalCatalog.UsesAmmoOption(action)){ClickConfig("UseAction");yield return Frames(2);}
     }
     static DuelUI CardsUI()=>Object.FindAnyObjectByType<DuelUI>();
     static TMPro.TMP_Text CardsText(Transform root,string name)=>root.GetComponentsInChildren<TMPro.TMP_Text>().First(t=>t.name==name);

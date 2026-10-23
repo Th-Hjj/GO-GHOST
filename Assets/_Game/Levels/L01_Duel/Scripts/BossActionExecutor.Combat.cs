@@ -262,7 +262,7 @@ namespace GoGhost.Duel
         }
         public bool GuardBlocksRay(Vector2 origin,Vector2 point)
         {
-            if(Ability!=BossAbility.Guard||Phase!=BossActionPhase.Active||Guarded>=p.GuardCapacity)return false;
+            if(Ability!=BossAbility.Guard||Phase!=BossActionPhase.Active||Time.time>=phaseUntil)return false;
             Vector2 outward=(origin-actor.Position).normalized;
             return Vector2.Dot(outward,Aim)>Mathf.Cos(p.GuardArc*.5f*Mathf.Deg2Rad);
         }
@@ -274,7 +274,7 @@ namespace GoGhost.Duel
             if(!shot.Deflect(gameObject,ProjectileActor.Environment))return false;
             if(shot.TryGetComponent<SpriteRenderer>(out var sprite))sprite.color=NeuralPalette.Severance;
             Guarded++;actor.Sounds?.Play(Sfx.GuardBlock,actor.ActorId,AttackId,Guarded);actor.View?.Impact(shot.transform.position);
-            if(Guarded>=p.GuardCapacity)Recover();return true;
+            return true;
         }
     }
 }

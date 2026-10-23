@@ -75,19 +75,31 @@ public static partial class BossEncounterSmoke
             Check("walking resumes after guard", Mathf.Abs(sword.Position.x - startX) > .05f);
         }
 
-        yield return Fresh(2); StopPolicies(); AlphaPlace(5, 0);
+        yield return Fresh(2); StopPolicies(); AlphaPlace(2, 0);
         var capacitySword = game.Bosses[0]; var capacityAction = capacitySword.Actions;
+        game.Player.SetRuntimeHealth(10000, 10000);
         yield return Until(() => capacitySword.Motor.Grounded, 1); yield return Seconds(.2f);
-        Check("capacity guard accepted", capacityAction.TryStart(BossAbility.Guard, game.Player.transform.position));
+        Check("full-window guard accepted at close range", capacityAction.TryStart(BossAbility.Guard, game.Player.transform.position));
         yield return Until(() => capacityAction.Phase == BossActionPhase.Active, .5f);
+        float guardEnd = Private<float>(capacityAction, "phaseUntil");
         int capacityHp = capacitySword.Health.CurrentHealth;
-        var volley = Enumerable.Range(0, 5).Select(i => GuardShot(capacitySword, capacitySword.Position + Vector2.right * .9f, Vector2.left)).ToArray();
-        yield return Until(() => capacityAction.Guarded == 5, .2f);
-        Check("five real contacts exhaust guard and keep reflected bullets alive", capacityAction.Guarded == 5
-            && capacityAction.Phase == BossActionPhase.Recovery && volley.All(s => s != null && s.Deflected));
+        var volley = Enumerable.Range(0, 8).Select(i => GuardShot(capacitySword, capacitySword.Position + Vector2.right * .9f, Vector2.left)).ToArray();
+        yield return Until(() => capacityAction.Guarded == 8, .2f);
+        Check("eight same-step contacts all reflect without exhausting guard", capacityAction.Guarded == 8
+            && capacityAction.Phase == BossActionPhase.Active && volley.All(s => s != null && s.Deflected));
+        yield return Until(() => Time.time >= guardEnd - .18f, .7f);
+        Check("close melee opportunity does not end guard early", capacityAction.Phase == BossActionPhase.Active
+            && capacityAction.Ready(BossAbility.Rhythm)
+            && capacitySword.Tactics.LegalAt(BossAbility.Rhythm, capacitySword.Position, capacitySword.Perception.Facts, out _));
+        var late = GuardShot(capacitySword, capacitySword.Position + Vector2.right * .9f, Vector2.left);
+        yield return Until(() => capacityAction.Guarded == 9, .1f);
+        Check("late bullet still reflects before the fixed deadline", capacityAction.Guarded == 9 && late != null && late.Deflected
+            && capacitySword.Health.CurrentHealth == capacityHp && Private<float>(capacityAction, "phaseUntil") == guardEnd);
+        yield return Until(() => capacityAction.Phase == BossActionPhase.Recovery, .3f);
+        Check("guard recovers at its original deadline", Time.time >= guardEnd && Time.time < guardEnd + .08f);
         GuardShot(capacitySword, capacitySword.Position + Vector2.right * .9f, Vector2.left);
         yield return Until(() => capacitySword.Health.CurrentHealth < capacityHp, .2f);
-        Check("exhausted guard allows next bullet damage", capacitySword.Health.CurrentHealth == capacityHp - 12);
+        Check("expired guard allows next bullet damage", capacitySword.Health.CurrentHealth == capacityHp - 12);
 
         // Reflected ownership must retain the existing allied-body blocking rule in Wave 3.
         yield return Fresh(3); StopPolicies();

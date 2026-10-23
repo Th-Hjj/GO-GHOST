@@ -12,6 +12,7 @@ public sealed class OfficerVisual : MonoBehaviour
     [SerializeField] private SpriteRenderer weapon;
     [SerializeField] private SpriteRenderer weaponGrip;
     private bool reloading;
+    private float reloadVisualStartedAt;
     private bool animate, wasGrounded = true;
     private PlayerMovement movement;
     private PlayerInputReader input;
@@ -21,7 +22,8 @@ public sealed class OfficerVisual : MonoBehaviour
     private Rigidbody2D body;
     private Collider2D bodyCollider;
     private SpriteRenderer leftForearm, rightForearm, leftCalf, rightCalf;
-    private float clock, gait, stride, landing, recoil, reloadDuration = 1.2f;
+    private SpriteRenderer cylinder;
+    private float clock, gait, stride, landing, recoil;
     private int lastShots;
     private SpriteRenderer[] glowParts;
     private Material[] originalMaterials;
@@ -51,6 +53,7 @@ public sealed class OfficerVisual : MonoBehaviour
         glowParts=null;originalMaterials=null;
     }
     void OnDestroy()=>ClearConditionalGlow();
+    void OnDisable()=>SetReloading(false);
     void UpdateConditionalGlow()
     {
         if(!glowBound||feedback==null)return;
@@ -62,6 +65,8 @@ public sealed class OfficerVisual : MonoBehaviour
         for(int i=0;i<glowParts.Length;i++)
         {
             float strength=i<4?legs:i<8?arms:i<10?Mathf.Max(fire.Signal*.7f,Mathf.Max(fire.Pulse,fire.Afterglow*.22f)):dodgeSignal;
+            // Keep the gun's reload signal red while arm feedback continues independently.
+            if(reloading&&(i==8||i==9))strength=0;
             var renderer=glowParts[i];if(renderer==null)continue;
             if(i==10)renderer.enabled=strength>.001f;
             renderer.GetPropertyBlock(glowBlock);glowBlock.SetFloat(GlowStrength,Mathf.Clamp01(strength));
@@ -90,6 +95,15 @@ public sealed class OfficerVisual : MonoBehaviour
         if (rightForearm == null) rightForearm = AddSegment(rightArm, "RightForearm");
         if (leftCalf == null) leftCalf = AddSegment(leftLeg, "LeftCalf");
         if (rightCalf == null) rightCalf = AddSegment(rightLeg, "RightCalf");
+        if (cylinder == null)
+        {
+            cylinder = AddSegment(head, "RevolverCylinder");
+            cylinder.transform.SetParent(weapon.transform.parent, false);
+            cylinder.sortingOrder = weapon.sortingOrder + 1;
+        }
+        weapon.transform.localScale = new Vector3(.26f / weapon.sprite.bounds.size.x, .095f / weapon.sprite.bounds.size.y, 1);
+        weaponGrip.transform.localScale = new Vector3(.085f / weaponGrip.sprite.bounds.size.x, .20f / weaponGrip.sprite.bounds.size.y, 1);
+        cylinder.transform.localScale = new Vector3(.18f / cylinder.sprite.bounds.size.x, .20f / cylinder.sprite.bounds.size.y, 1);
         clock = gait = stride = landing = recoil = 0;
         wasGrounded = true;
         lastShots = shooting.ShotsFired;
@@ -99,9 +113,10 @@ public sealed class OfficerVisual : MonoBehaviour
     // Physical weapon feedback, shared by the player and the observer. It never changes muzzle aim.
     public void SetReloading(bool value)
     {
-        if (value && !reloading && shooting != null) reloadDuration = Mathf.Max(.01f, shooting.ReloadRemaining);
+        if (value && !reloading) reloadVisualStartedAt = Time.time;
         reloading = value;
         UpdateReloadVisual();
+        UpdateConditionalGlow();
     }
 
     private void LateUpdate()
@@ -144,9 +159,9 @@ public sealed class OfficerVisual : MonoBehaviour
 
     private void Pose(bool grounded, Vector2 velocity, float dashDirection)
     {
-        Vector2 aim = input.AimDirection.normalized;
+        Vector2 aim = shooting.CurrentBarrelDirection;
         int facing = movement.FacingDirection;
-        // Arms stay attached to the independently aimed rifle when the legs face the other way.
+        // Arms stay attached to the independently aimed Revolver when the legs face the other way.
         int aimFacing = aim.x < 0 ? -1 : 1;
         float wave = Mathf.Sin(gait), lift = Mathf.Cos(gait);
         float crouch = landing * .12f + (dashDirection != 0 ? .17f : 0);
@@ -177,17 +192,15 @@ public sealed class OfficerVisual : MonoBehaviour
         Limb(rightLeg, rightCalf, hip + Vector2.right * (.075f * facing), front, new Vector2(.18f * facing, 0), .17f);
 
         // FirePoint remains entirely owned by PlayerShooting. The barrel ends at its real muzzle.
-        float reload = reloading ? Mathf.Sin(Mathf.PI * Mathf.Clamp01(1 - shooting.ReloadRemaining / reloadDuration)) : 0;
-        float angle = -35 * aimFacing * reload;
-        Quaternion rotation = Quaternion.Euler(0, 0, angle);
-        Vector3 barrel = new Vector3(-.24f - reload * .10f, -.12f * aimFacing * reload, 0);
-        weapon.transform.localPosition = barrel;
-        weapon.transform.localRotation = rotation;
-        weaponGrip.transform.localPosition = barrel + rotation * new Vector3(-.12f, -.08f * aimFacing, 0);
-        weaponGrip.transform.localRotation = rotation;
-        Vector2 triggerHand = transform.InverseTransformPoint(weapon.transform.TransformPoint(new Vector3(-.28f, -.45f * aimFacing, 0)));
-        Vector2 supportHand = transform.InverseTransformPoint(weapon.transform.TransformPoint(new Vector3(.25f, -.30f * aimFacing, 0)));
-        supportHand = Vector2.Lerp(supportHand, chest + new Vector2(.12f * aimFacing, -.24f), reload);
+        weapon.transform.localPosition = new Vector3(-.13f, 0, 0);
+        weapon.transform.localRotation = Quaternion.identity;
+        weaponGrip.transform.localPosition = new Vector3(-.29f, -.10f * aimFacing, 0);
+        weaponGrip.transform.localRotation = Quaternion.Euler(0, 0, -12 * aimFacing);
+        cylinder.transform.localPosition = new Vector3(-.23f, -.025f * aimFacing, 0);
+        cylinder.transform.localRotation = Quaternion.identity;
+        var anchor = weapon.transform.parent;
+        Vector2 triggerHand = transform.InverseTransformPoint(anchor.TransformPoint(new Vector3(-.29f, -.11f * aimFacing, 0)));
+        Vector2 supportHand = transform.InverseTransformPoint(anchor.TransformPoint(new Vector3(-.22f, -.14f * aimFacing, 0)));
         Limb(leftArm, leftForearm, chest + new Vector2(-.10f * aimFacing, -.04f), supportHand, new Vector2(-.08f * aimFacing, -.12f), .16f);
         Limb(rightArm, rightForearm, chest + new Vector2(.08f * aimFacing, -.04f), triggerHand, new Vector2(.06f * aimFacing, -.12f), .16f);
     }
@@ -215,10 +228,11 @@ public sealed class OfficerVisual : MonoBehaviour
 
     private void UpdateReloadVisual()
     {
-        float shade = reloading ? .32f + .18f * Mathf.Sin(Time.time * 16f) : 1f;
-        Color tint = NeuralPalette.Primary * new Color(shade, shade, shade, 1f);
+        float pulse = reloading ? .5f + .5f * Mathf.Cos((Time.time - reloadVisualStartedAt) * Mathf.PI * 6f) : 0;
+        Color tint = Color.Lerp(NeuralPalette.Primary, NeuralPalette.Danger, pulse);
         if (weapon != null) weapon.color = tint;
         if (weaponGrip != null) weaponGrip.color = tint;
+        if (cylinder != null) cylinder.color = tint;
     }
     // The UI and actor share this palette. Brightened indigo stays readable against black.
     public static Color SlotColor(LoadoutSlot slot) => slot switch

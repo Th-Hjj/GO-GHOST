@@ -89,6 +89,13 @@ namespace GoGhost.Duel
         bool initialized,grounded,lowHealth,disposed;
         Vector2 previousTargetPosition;
         public ConditionalControlFrame Ownership => output;
+        // Read-only provenance; platform transfers share the Jump action's Move claim.
+        public string ActionId(ControlOperation operation)
+        {
+            int op = operation == ControlOperation.Movement && platformOwnsMovement ? (int)ControlOperation.Jump : (int)operation;
+            int row = running[op].Row;
+            return !disposed && row >= 0 ? loadout.Operations[op].Rules[row].Action : null;
+        }
         public int Starts { get; private set; }
         public int AcceptedJumps {get;private set;}
         public int AcceptedDodges {get;private set;}
@@ -139,6 +146,7 @@ namespace GoGhost.Duel
             gun.ReloadFinished += ReloadFinished;
             gun.EnemyHit += EnemyHit;
             gun.ShotFired += Shot;
+            gun.BurstFinished += BurstFinished;
             player.DamageTaken += Damaged;
             dodge.DodgeFinished += DodgeFinished;
             input.ConditionalActionResolved += ActionResolved;
@@ -155,6 +163,7 @@ namespace GoGhost.Duel
             gun.ReloadFinished -= ReloadFinished;
             gun.EnemyHit -= EnemyHit;
             gun.ShotFired -= Shot;
+            gun.BurstFinished -= BurstFinished;
             player.DamageTaken -= Damaged;
             dodge.DodgeFinished -= DodgeFinished;
             input.ConditionalActionResolved -= ActionResolved;
@@ -194,6 +203,7 @@ namespace GoGhost.Duel
             if (!output.AimOwned)
                 currentTarget = AlignedTarget(raw.Aim, allVisible);
             previousTarget = currentTarget;
+            if (output.MovementOwned) output.MovementActionId = ActionId(ControlOperation.Movement);
             if (previousTarget >= 0)
                 previousTargetPosition = contacts[previousTarget].Bounds.center;
             return output;
@@ -284,12 +294,13 @@ namespace GoGhost.Duel
 
             // The first paid Burst shot commits Fire through this magazine,
             // before higher ordinary rows (including Hold Fire) can be considered.
-            if (operation == ControlOperation.Fire && active.Row >= 0
-                && active.Accepted && rules[active.Row].Action == "F02")
+            if (operation == ControlOperation.Fire && gun.IsBursting)
             {
-                if (Continue(op, rules[active.Row], active))
-                    return true;
-                active.Row = -1;
+                // Manual RMB and F02 share the weapon's single committed process.
+                output.FireOwned = true;
+                if (active.Row >= 0 && active.Accepted && rules[active.Row].Action == "F02")
+                { output.FireActionId = "F02"; Executed(op, active); }
+                return true;
             }
 
             // Physical Dodge is already committed. Completed Jump is not canceled here.

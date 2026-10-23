@@ -1,5 +1,7 @@
 > **Boss-body Dodge — Thomas, 2026-10-19:** formal manual/rule Dodge passes through registered Boss body colliders on ground or in air. Only those collision pairs are ignored during movement. Restore at movement end, or after separation if still overlapping; cancellation/death/disable clears owned pairs. No extra immunity, distance, cooldown refresh or terrain pass-through. Rule path prediction uses the same eligibility.
 
+> **Revolver override — Thomas, 2026-10-22:** [ConditionalRules.md](ConditionalRules.md) now specifies the formal six-round Revolver, precise LMB and committed RMB / F02 burst. Older Rifle parameters below are historical. Other player executors and serialized compatibility remain; local Editor delivery only.
+
 > **Current player authority — Thomas, 2026-10-15:** [ConditionalRules.md](ConditionalRules.md) replaces permanent three-group Player/AI permissions, the old autonomous Legs policy and no-configuration/no-Build requirements below. Five independent temporary conditional operations, body configuration, real takeover feedback and Windows x64 delivery are authorized. Retain original executors, tuning and Boss combat. The previous overrides/specification below are historical where they conflict.
 
 > **Dodge correction — Thomas, 2026-10-15:** formal Dodge now uses a 2.0 s start cooldown and .20 s immunity, retaining distance 3 and .18 s movement. Manual/AI and ground/air share these values; landing never refreshes cooldown. This supersedes older unchanged-Dodge requirements below.

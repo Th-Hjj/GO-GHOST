@@ -202,8 +202,8 @@ public static partial class BossEncounterSmoke
         }
         yield return AlphaFresh(1,d=>V2Rule(d,new ConditionalRule{Condition=59,Action="F01",AmmoUse=AmmoUseOption.KeepTwoRounds}));
         MouseAt(game.Rifle.AimOrigin+Vector2.up*10,true);yield return Until(()=>game.Rifle.ShotsFired>0,.4f);mouseHeld=false;
-        yield return Seconds(1.6f);
-        Check("Real Shot Fired -> Fire 1 Shot loop retains independent occurrences and cadence",game.Rifle.ShotsFired==6&&game.Rules.AutomaticShots==5&&game.Rifle.AmmoInMagazine==2);
+        yield return Until(()=>game.Rifle.IsReloading,2.3f);
+        Check("Real Shot Fired -> Fire 1 Shot loop uses all rounds despite legacy ammo policy",game.Rifle.ShotsFired==8&&game.Rules.AutomaticShots==7&&game.Rifle.AmmoInMagazine==0);
 
         yield return AlphaFresh(3,d=>V2Rule(d,V2Ground("Q06")));
         AlphaPlace(-10,2);

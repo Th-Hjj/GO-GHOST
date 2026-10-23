@@ -56,7 +56,7 @@ namespace GoGhost.Duel
                     var pending=state.CadenceContext;
                     bool inside=Time.time<=pending.ExpiresAt;
                     if(inside&&!state.ConsumedEvents.Contains(pending.Occurrence)
-                        &&gun.isActiveAndEnabled&&!gun.IsReloading&&gun.AmmoInMagazine>AmmoFloor(rule)
+                        &&gun.isActiveAndEnabled&&!gun.IsReloading&&gun.AmmoInMagazine>0
                         &&AdditionalMatches(rule,op,ref pending))
                     {ctx=pending;observed=inside;return true;}
                     state.CadencePending=false;
@@ -197,7 +197,7 @@ namespace GoGhost.Duel
                 case 52:return option==(int)EnemyDistanceOption.Close?close[i]:option==(int)EnemyDistanceOption.Far?far[i]:!close[i]&&!far[i];
                 case 35:return c.VelocityKnown&&delta.sqrMagnitude>=.01f
                     &&Vector2.Dot(c.Velocity-body.linearVelocity,delta.normalized)<-ConditionalDefaults.VelocityDeadzone;
-                case 40:return RayAligned(i,raw.CommittedAim);
+                case 40:return RayAligned(i,gun.CurrentBarrelDirection,gun.CurrentMuzzlePosition);
                 default:throw new InvalidOperationException("Unhandled enemy condition");
             }
         }
@@ -242,10 +242,10 @@ namespace GoGhost.Duel
             for(int i=0;i<actors.Count;i++)if(visible[i]&&(mask&(1<<i))!=0&&RayAligned(i,aim))return i;
             return -1;
         }
-        bool RayAligned(int i,Vector2 aim)
+        bool RayAligned(int i,Vector2 aim,Vector2? actualOrigin=null)
         {
             if(!visible[i]||aim.sqrMagnitude<.01f)return false;
-            Vector2 origin=gun.GetMuzzlePosition(aim.normalized);
+            Vector2 origin=actualOrigin??gun.GetMuzzlePosition(aim.normalized);
             // Current body geometry only: no bullet radius, prediction, guard or damage policy.
             var bounds=contacts[i].Bounds;
             if(!bounds.IntersectRay(new Ray(origin,aim.normalized),out float distance)||distance<0)return false;

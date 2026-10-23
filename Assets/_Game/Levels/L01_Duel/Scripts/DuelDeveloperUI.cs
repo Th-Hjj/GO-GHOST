@@ -17,7 +17,7 @@ namespace GoGhost.Duel
             public UnityEngine.UI.Button Minus,Plus;
         }
         readonly List<DeveloperFieldView> developerFields=new List<DeveloperFieldView>();
-        int developerTab,developerShortcutFrame=-1;
+        int developerTab,developerSection,developerShortcutFrame=-1;
         TMP_Text developerStatus;
         public bool DeveloperShortcutConsumed=>developerShortcutFrame==Time.frameCount;
 
@@ -34,15 +34,35 @@ namespace GoGhost.Duel
             Image(page,Vector2.zero,new Vector2(4000,4000),new Color(.025f,.025f,.025f,.98f)).raycastTarget=true;
             Text("Developer",page,new Vector2(-390,380),new Vector2(650,60),36,TextAlignmentOptions.Left,headingFont);
             Button("Close  [F8]",page,new Vector2(565,380),new Vector2(260,54),game.ToggleDeveloperTools);
-            Text("Jump to wave",page,new Vector2(-565,310),new Vector2(300,48),24,TextAlignmentOptions.Left);
+            string[] sections={"Tuning","Waves","Analytics"};
+            for(int i=0;i<sections.Length;i++)
+            {
+                int section=i;
+                Button(sections[i],page,new Vector2(-430+i*430,305),new Vector2(390,52),
+                    ()=>{developerSection=section;Show();},i==developerSection);
+            }
+            if(developerSection==2){BuildAnalytics();return;}
+            if(developerSection==1){BuildDeveloperWaves();return;}
+            BuildDeveloperTuning();
+        }
+
+        void BuildDeveloperWaves()
+        {
+            Text("Jump to wave",page,new Vector2(0,175),new Vector2(1000,48),30);
             for(int wave=1;wave<=3;wave++)
             {
                 int target=wave;
-                var jump=Button("Wave "+wave,page,new Vector2(-235+(wave-1)*350,310),new Vector2(300,48),
+                var jump=Button("Wave "+wave,page,new Vector2(-430+(wave-1)*430,70),new Vector2(390,60),
                     ()=>game.JumpToDeveloperWave(target),game.Wave==wave);
                 jump.name="Dev_Wave"+wave;
                 jump.interactable=ConditionalCatalog.IsValid(game.DraftLoadout);
             }
+            Text("Restarts combat with your equipped rules and session tuning.\nAnalytics marks these attempts as test data.",
+                page,new Vector2(0,-60),new Vector2(1300,90),24);
+        }
+
+        void BuildDeveloperTuning()
+        {
             string[] tabs={"Player","Weapon","Health"};
             for(int i=0;i<tabs.Length;i++)
             {
@@ -56,7 +76,7 @@ namespace GoGhost.Duel
                 var p=parameter;
                 AddDeveloperField(p.Id.ToString(),p.Label,y,p.Min,p.Max,p.Step,()=>game.GetDeveloperValue(p.Id),
                     value=>game.SetDeveloperValue(p.Id,value),()=>true);
-                y-=68;
+                y-=developerTab==1?58:68;
             }
             if(developerTab==2)
             {
@@ -71,7 +91,7 @@ namespace GoGhost.Duel
                     y-=68;
                 }
             }
-            Text("Session only  /  Wave jump restarts combat; rules stay equipped.",page,new Vector2(0,-285),new Vector2(1400,40),20);
+            Text("Session only  /  Tuning changes mark the attempt as test data.",page,new Vector2(0,-285),new Vector2(1400,40),20);
             developerStatus=Text("",page,new Vector2(0,-335),new Vector2(1400,45),20);
             Button("Restore defaults",page,new Vector2(0,-400),new Vector2(300,54),()=>
             {game.ResetDeveloperTuning();RefreshDeveloperFields();developerStatus.text="Defaults restored.";});

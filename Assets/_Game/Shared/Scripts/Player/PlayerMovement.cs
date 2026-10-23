@@ -42,9 +42,12 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
     public bool IsGrounded { get; private set; }
     public bool IsOrdinaryMoving { get; private set; }
     public event System.Action JumpStarted;
+    public event System.Action DropStarted;
+    public event System.Action<string, float> OrdinaryMovementObserved;
     public event System.Action JumpApexReached;
     private bool jumpInFlight, jumpWasAscending, physicsObserved;
     private float previousPhysicsX, ordinaryDirection;
+    private string ordinaryActionId;
 
     private Rigidbody2D rb;
     private readonly ContactPoint2D[] supportContacts = new ContactPoint2D[8];
@@ -108,6 +111,7 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         IsOrdinaryMoving = false;
         jumpInFlight = jumpWasAscending = physicsObserved = false;
         ordinaryDirection = 0;
+        ordinaryActionId = null;
         hitPushRemaining = 0; HitPushCount = 0;
         groundSupport = null;
         DropThroughCount = 0;
@@ -220,7 +224,6 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         {
             input.ResolveLegacyDodge(executableJump);
             acceptedDodge = input.DodgePressedThisFrame && dodge != null && dodge.TryDodge(input.DodgeDirection);
-            if (acceptedDodge) PlayMetrics.CountDodge();   // METRICS: an accepted dodge
             if(input.ConditionalFrame.DodgeOwned && input.DodgePressedThisFrame)
                 input.NotifyConditionalAction(ControlOperation.Dodge,acceptedDodge);
         }
@@ -248,6 +251,7 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
             && input.GameplayInputEnabled && !input.NarrativePaused
             && (dodge == null || !dodge.IsDodging) && !HitPushActive
             && (rb.position.x - previousPhysicsX) * ordinaryDirection > .0005f;
+        if (IsOrdinaryMoving) OrdinaryMovementObserved?.Invoke(ordinaryActionId, Time.fixedDeltaTime);
         previousPhysicsX = rb.position.x;
         physicsObserved = true;
         ordinaryDirection = 0;
@@ -289,6 +293,7 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         }
         rb.linearVelocity = new Vector2(moveInput.x * MoveSpeed, vertical);
         ordinaryDirection = Mathf.Abs(moveInput.x) > .01f ? Mathf.Sign(moveInput.x) : 0;
+        ordinaryActionId = input.ConditionalFrame.MovementOwned ? input.ConditionalFrame.MovementActionId : null;
         if(input.ConditionalFrame.MovementOwned)
             input.NotifyConditionalAction(ControlOperation.Movement,input.GameplayInputEnabled&&rb.simulated
                 && (Mathf.Abs(input.ConditionalFrame.Move)<.01f || IsOrdinaryMoving));
@@ -324,6 +329,7 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         IsGrounded = false;
         jumpInFlight = jumpWasAscending = false;
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, Mathf.Min(0, rb.linearVelocity.y));
+        DropStarted?.Invoke();
         return true;
     }
 
@@ -381,7 +387,6 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
             jumpInFlight = true;
             jumpWasAscending = rb.linearVelocity.y > 0;
             JumpStarted?.Invoke();
-            PlayMetrics.CountJump();   // METRICS: an accepted jump
         }
     }
 

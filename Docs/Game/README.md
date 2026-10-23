@@ -7,6 +7,7 @@ Start with the current assignment in [AGENTS.md](../../AGENTS.md) / [CLAUDE.md](
 | [Conditional Rules](ConditionalRules.md) | Current player controls, condition/action catalog, configuration, arbitration and feedback |
 | [Boss Encounters](BossEncounters.md) | Current arena, Boss combat, public observations and third-wave coordination |
 | [Art Direction](ArtDirection.md) | Current visual language, typography, body diagram and combat readability |
+| [Gameplay Analytics](GameplayAnalytics.md) | Manual/automatic measurement, F8 views and local JSON/CSV exports |
 | [Implementation Log](ImplementationLog.md) | Changes, actual verification, artifacts and explicit untested limits; the only progress log |
 | [Retained Combat Reference](RetainedCombatReference.md) | Compatibility reference for retained player executors and serialized contracts; superseded gameplay is historical |
 | [Severance Design Reference](SeveranceDesignReference.md) | Design rationale for the approved sword rework; later Boss requirements govern the implementation |
@@ -17,9 +18,9 @@ GO GHOST is a single-player, fixed-camera 2D arena: Refraction, Severance, then 
 
 `Assets/_Game/Levels/L01_Duel/Scenes/GO GHOST Duel.unity`
 
-The player has 26 conditions and 21 actions across Move, Jump, Aim, Fire and Dodge, with one five-rule budget. Each rule is `Primary Condition [AND Optional State] -> One Action`. Displayed order governs priority within each operation; impossible actions fall through and otherwise controls remain manual. Preserve real action commitments, independent event consumption, same-enemy AND, public observations and physical collision. Body facing and rifle aim are independent.
+The player has 26 conditions and 21 actions across Move, Jump, Aim, Fire and Dodge, with one five-rule budget. Each rule is `Primary Condition [AND Optional State] -> One Action`. Displayed order governs priority within each operation; impossible actions fall through and otherwise controls remain manual. Preserve real action commitments, independent event consumption, same-enemy AND, public observations and physical collision. Body facing and Revolver aim are independent.
 
-Start Fight copies the complete configuration into a fresh fight. Retry and next wave retain it; New Game/Restart clears it. Pause freezes combat. Current play retains the existing player tuning, Boss behavior, Camo, Cold-Light presentation and F8 session tuning. Historical tower, permanent progression and autonomous-player systems are disconnected.
+Start Fight copies the complete configuration into a fresh fight. Retry and next wave retain it; New Game/Restart clears it. Pause freezes combat. Current play uses the six-round Revolver and retains other player tuning, Boss behavior, Camo, Cold-Light presentation and F8 session tuning. Historical tower, permanent progression and autonomous-player systems are disconnected.
 
 ## Validation and delivery
 

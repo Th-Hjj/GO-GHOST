@@ -24,19 +24,11 @@ namespace GoGhost.Duel
         float PlatformSteer(float target)
             =>Mathf.Clamp((target-shape.bounds.center.x)/(Mathf.Max(.01f,movement.MoveSpeed)*Time.fixedDeltaTime),-1,1);
 
-        bool PlatformHasMovementPriority(ConditionalRule rule)
-        {
-            if(!output.MovementOwned||running[0].Row<0)return true;
-            var moveRule=loadout.Operations[0].Rules[running[0].Row];
-            // Global displayed order is used only for this action's two-operation claim.
-            // Older unnumbered snapshots retain their normal operation order (Move before Jump).
-            return rule.DisplayOrder>=0&&moveRule.DisplayOrder>=0&&rule.DisplayOrder<moveRule.DisplayOrder;
-        }
         bool StartPlatform(ConditionalRule rule,Running r)
         {
             var nav=PlatformGeometry;
-            if(!CanJump()||movement.HitPushActive||!body.simulated||movement.MoveSpeed<=.01f||nav==null
-                ||!PlatformHasMovementPriority(rule))return false;
+            // The controller checks that this row's shared Move/Jump claim is free before admission.
+            if(!CanJump()||movement.HitPushActive||!body.simulated||movement.MoveSpeed<=.01f||nav==null)return false;
             var state=states[1,r.Row];
             if(state.PlatformFailed&&state.PlatformFailureVersion==nav.Version
                 &&Vector2.Distance(state.PlatformFailurePosition,body.position)<.25f)return false;

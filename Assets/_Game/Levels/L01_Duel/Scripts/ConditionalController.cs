@@ -58,6 +58,7 @@ namespace GoGhost.Duel
         readonly Bounds arena;
         readonly ConditionalThreatGeometry geometry;
         readonly ConditionalLoadout loadout;
+        readonly List<(int Op, int Row)> priorityRows = new List<(int, int)>();
         readonly RuleState[,] states=new RuleState[5,ConditionalCatalog.MaxRulesTotal];
         readonly bool[,] matches=new bool[5,ConditionalCatalog.MaxRulesTotal];
         readonly bool[,] visualMatches=new bool[5,ConditionalCatalog.MaxRulesTotal];
@@ -114,6 +115,12 @@ namespace GoGhost.Duel
             this.platforms = platforms;
             this.arena = arena;
             loadout = snapshot.Copy();
+            // Keep operation-local row identities for events/feedback; only traversal is global.
+            foreach (var rule in loadout.OrderedRules())
+            {
+                int op = (int)ConditionalCatalog.Response(rule.Action).Operation;
+                priorityRows.Add((op, loadout.Operations[op].Rules.IndexOf(rule)));
+            }
             expiredEvent = IsExpiredEvent;
 
             movement = player.GetComponent<PlayerMovement>();
@@ -191,15 +198,28 @@ namespace GoGhost.Duel
             output.Move = raw.Move;
             output.Aim = raw.Aim;
 
-            // Conditions sample the already adopted muzzle direction; D03 sees resolved Move.
-            // Each operation arbitrates its own priority list independently.
-            bool committedPlatform = TryContinueCommittedPlatform();
+            // Observe every row before any winner consumes an occurrence or emits a result.
+            for (int op = 0; op < 5; op++)
+                ObserveOperationRules(op);
+
+            // Physical commitments precede ordinary priority. Move and Jump can run together;
+            // Dodge writes both axes, and a platform transition owns Move plus Jump.
+            int claimed = TryContinueCommittedPlatform() ? (1 << 0) | (1 << 1) : 0;
             for (int op = 0; op < 5; op++)
             {
-                bool platformOwnsOperation = committedPlatform
-                    && ((ControlOperation)op == ControlOperation.Movement || (ControlOperation)op == ControlOperation.Jump);
-                ResolveOperation(op, platformOwnsOperation);
+                if ((claimed & (1 << op)) == 0 && TryContinueCommittedResponse(op))
+                    claimed |= OperationClaims(op);
             }
+            foreach (var entry in priorityRows)
+            {
+                var rule = loadout.Operations[entry.Op].Rules[entry.Row];
+                int request = OperationClaims(entry.Op, rule);
+                if ((claimed & request) == 0 && TryResolveRule(entry.Op, entry.Row, rule))
+                    claimed |= request;
+            }
+            // Suppressed rows retain occurrence consumption, never a hidden running response.
+            for (int op = 0; op < 5; op++)
+                if (!OwnsOperation(op)) running[op].Row = -1;
             if (!output.AimOwned)
                 currentTarget = AlignedTarget(raw.Aim, allVisible);
             previousTarget = currentTarget;
@@ -221,42 +241,52 @@ namespace GoGhost.Duel
             return false;
         }
 
-        void ResolveOperation(int op, bool observeOnly = false)
+        static int OperationClaims(int op, ConditionalRule rule = null)
         {
-            ObserveOperationRules(op);
-            if (observeOnly || TryContinueCommittedResponse(op))
-                return;
+            int claims = 1 << op;
+            if ((ControlOperation)op == ControlOperation.Dodge || rule?.Action == "J04")
+                claims |= (1 << (int)ControlOperation.Movement) | (1 << (int)ControlOperation.Jump);
+            return claims;
+        }
 
-            var rules = loadout.Operations[op].Rules;
-            var active = running[op];
-            for (int row = 0; row < rules.Count; row++)
+        bool OwnsOperation(int op)
+        {
+            switch ((ControlOperation)op)
             {
-                var rule = rules[row];
-                if (active.Row == row)
-                {
-                    if (TryContinueCurrentResponse(op, rule, active))
-                        return;
-                    active.Row = -1;
-                }
-
-                // Continuation eligibility must not replace this frame's original observation.
-                // A failed/completed attempt does not create a fresh state occurrence.
-                var context = contexts[op, row];
-                if (!CanStartObservedRule(op, row, rule, context))
-                    continue;
-
-                var candidate = CreateResponseCandidate(row, rule, context);
-                if (!Start(op, rule, candidate))
-                    continue;
-
-                // Failed higher rows leave the existing lower response untouched.
-                if ((ControlOperation)op == ControlOperation.Fire)
-                    ClearPendingFireCadence();
-                running[op] = candidate;
-                Starts++;
-                return;
+                case ControlOperation.Movement: return output.MovementOwned && !platformOwnsMovement;
+                case ControlOperation.Jump: return output.JumpOwned;
+                case ControlOperation.Aim: return output.AimOwned;
+                case ControlOperation.Fire: return output.FireOwned;
+                case ControlOperation.Dodge: return output.DodgeOwned;
+                default: return false;
             }
-            running[op].Row = -1;
+        }
+
+        bool TryResolveRule(int op, int row, ConditionalRule rule)
+        {
+            var active = running[op];
+            if (active.Row == row)
+            {
+                if (TryContinueCurrentResponse(op, rule, active))
+                    return true;
+                active.Row = -1;
+            }
+
+            // Continuation eligibility must not replace this frame's original observation.
+            // A failed/completed attempt does not create a fresh state occurrence.
+            var context = contexts[op, row];
+            if (!CanStartObservedRule(op, row, rule, context))
+                return false;
+            var candidate = CreateResponseCandidate(row, rule, context);
+            if (!Start(op, rule, candidate))
+                return false;
+
+            // Failed higher rows leave the existing lower response untouched.
+            if ((ControlOperation)op == ControlOperation.Fire)
+                ClearPendingFireCadence();
+            running[op] = candidate;
+            Starts++;
+            return true;
         }
 
         void ObserveOperationRules(int op)
@@ -313,6 +343,15 @@ namespace GoGhost.Duel
             }
             if (operation == ControlOperation.Dodge && active.Accepted)
                 active.Row = -1;
+
+            // An accepted automatic Jump owns vertical control through its real landing.
+            // Otherwise a lower Dodge can win the next frame and erase its vertical velocity.
+            if (operation == ControlOperation.Jump && active.Row >= 0 && active.Platform == null
+                && active.Accepted && !movement.IsGrounded)
+            {
+                output.JumpOwned = true;
+                return true;
+            }
             return false;
         }
 

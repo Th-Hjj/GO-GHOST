@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-10-22 — Action text uses body-system colors
+
+- **Baseline / change:** the clean main checkout displayed most action names in neutral white, with HUD color appearing only during a match. Action picker labels, editable expression/candidate previews, equipped rules, shared Help/F8 preset previews and HUD action text now use the existing Arms cyan, Legs mint and Spine violet identities. Button refresh includes the identity in its cached state, preserving it through hover/focus and preview changes. Disabled choices remain gray. Complete-match glow, typography, layout, rules, tuning and gameplay are unchanged.
+- **Files:** four Duel UI scripts (`DuelUI.cs`, `DuelConditionalUI.cs`, `DuelRuleHUD.cs`, `DuelDeveloperUI.Presets.cs`), ArtDirection, ConditionalRules and this log. No scene, prefab, profile, settings, package or Legacy edits.
+- **Verified:** normal Unity compilation and `git diff --check` pass. In the formal scene at 2560x1440, the existing Kiting Gunner preset displayed all three exact palette colors; actual hover/focus callbacks retained them, disabled/re-enabled option states restored correctly, and the live candidate preview used Arms cyan. Help and F8 previews reported the same six colored actions. Training HUD retained all six action colors with neutral unmatched conditions, including a pause rebuild. Training -> Continue -> setup retained six rules; Start reached Wave 1 Fight and then ordinary defeat. Screenshots inspected: `Logs/ActionTextColors/setup.png`, `picker.png`, `help.png`, `training.png`, `wave1.png`; the training image includes the pause overlay. Console Error/Exception/Assert queries were empty. Returned to Edit Mode.
+- **Limits:** focused UI callbacks and short real lifecycle only; physical input, other resolutions, matched-glow timing, full-run balance and standalone were **NOT TESTED**. No new Build or Release was made for this text-color change.
+
 ## 2026-10-22 — Alpha 75% classroom release
 
 - **Scope:** Thomas authorized a quick playability/metrics check, Windows x64 package, direct main push and latest GitHub Release. Preserved the current six-round Revolver, Boss tuning, 16 presets, Help, 20-rule capacity and minimal UI. Version metadata is now `0.75.0`. The only code correction in this delivery updates two obsolete eight-round analytics test expectations to the approved six rounds; no runtime gameplay change was needed.

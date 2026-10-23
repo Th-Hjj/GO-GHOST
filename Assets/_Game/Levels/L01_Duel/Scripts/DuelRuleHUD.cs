@@ -124,6 +124,7 @@ namespace GoGhost.Duel
                 row.Arrow.name="ActionArrow";
                 row.Action=Text(expression.Action,row.Root,Vector2.zero,Vector2.zero,22,TextAlignmentOptions.TopLeft,controlFont);
                 row.Action.name="ActionText";
+                row.Action.color=NeuralPalette.Operation(row.Operation);
                 // Preserve each font atlas and fixed geometry; the entire card shares one match signal.
                 var texts=new[]{row.Number,row.Condition,row.Arrow,row.Action};
                 row.Signals=new Material[texts.Length];
@@ -260,7 +261,8 @@ namespace GoGhost.Duel
                     ?row.Controller.Feedback(row.Operation,row.Row).Visual:default;
                 var color=NeuralPalette.Operation(row.Operation);
                 bool matched=f.Matched;
-                row.Condition.color=row.Action.color=row.Arrow.color=matched?color:NeuralPalette.Primary;
+                row.Action.color=color;
+                row.Condition.color=row.Arrow.color=matched?color:NeuralPalette.Primary;
                 row.Number.color=matched?color:NeuralPalette.Secondary;
                 row.Background.color=matched?Color.Lerp(NeuralPalette.Panel,color,.08f):NeuralPalette.Panel;
                 if(row.Matched!=matched)

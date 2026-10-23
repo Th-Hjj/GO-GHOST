@@ -196,6 +196,7 @@ namespace GoGhost.Duel
         public UnityEngine.UI.Image[] Edges;
         public UnityEngine.UI.Image Selection;
         public TMP_Text Label;
+        public NeuralBodySystem LabelSystem;
         public bool Persistent, Primary, Subtle, TextRegion;
         public bool KeyboardFocused => focused;
         bool hovered,focused;
@@ -207,7 +208,7 @@ namespace GoGhost.Duel
             if(Edges==null||Button==null)return;
             bool available=Button.IsInteractable();
             float scale=Mathf.Max(.01f,transform.lossyScale.x);
-            int state=(available?1:0)|(hovered?2:0)|(focused?4:0)|(Persistent?8:0)|(Primary?16:0)|(Subtle?32:0)|(TextRegion?64:0);
+            int state=(available?1:0)|(hovered?2:0)|(focused?4:0)|(Persistent?8:0)|(Primary?16:0)|(Subtle?32:0)|(TextRegion?64:0)|((int)LabelSystem<<7);
             if(state==lastState&&Mathf.Approximately(scale,lastScale))return;
             lastState=state;lastScale=scale;
             var color=!available?NeuralPalette.Border:focused||Primary?NeuralPalette.Primary:
@@ -217,7 +218,8 @@ namespace GoGhost.Duel
             if(available&&focused)pixels=Mathf.Max(pixels+1,Mathf.Round(3*scale));
             for(int i=0;i<Edges.Length;i++)
             {Edges[i].color=color;Edges[i].rectTransform.sizeDelta=i<2?new Vector2(0,pixels/scale):new Vector2(pixels/scale,0);}
-            if(Label!=null)Label.color=!available?NeuralPalette.DisabledText:Subtle&&!TextRegion&&!hovered&&!focused?NeuralPalette.Secondary:NeuralPalette.Primary;
+            if(Label!=null)Label.color=!available?NeuralPalette.DisabledText:LabelSystem!=NeuralBodySystem.None?NeuralPalette.Body(LabelSystem):
+                Subtle&&!TextRegion&&!hovered&&!focused?NeuralPalette.Secondary:NeuralPalette.Primary;
             if(Selection!=null)Selection.enabled=available&&Persistent;
         }
         public void OnPointerDown(PointerEventData data){focused=false;Refresh();}

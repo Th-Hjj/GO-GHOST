@@ -85,6 +85,7 @@ namespace GoGhost.Duel
                 arrow.name="ActionArrow";
                 var action=Text(expression.Action,card,Vector2.zero,Vector2.zero,22,TextAlignmentOptions.TopLeft,controlFont);
                 action.name="ActionText";
+                action.color=NeuralPalette.Body(RuleSystem(rule));
                 PresetRowHeight(card.gameObject,LayoutRuleCard(card,index,condition,arrow,action,cardWidth));
             }
         }

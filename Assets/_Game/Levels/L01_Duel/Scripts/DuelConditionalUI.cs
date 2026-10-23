@@ -328,14 +328,17 @@ namespace GoGhost.Duel
 
         void UpdateRulePreview()
         {
-            var expression=ConditionalCatalog.Expression(candidatePreview??pendingRule??completedPreview);
+            var rule=candidatePreview??pendingRule??completedPreview;
+            var expression=ConditionalCatalog.Expression(rule);
             int current=selectingAdditional?1:selectingCondition?0:2;
             for(int i=0;i<previewParts.Count;i++)
             {
                 var button=previewParts[i];if(button==null)continue;
                 int part=button.GetComponent<RulePreviewPart>().Part;
                 button.GetComponentInChildren<TMP_Text>().text=part==0?expression.Primary:part==1?(expression.HasAdditional?expression.Additional:"Select State"):expression.Action;
-                var outline=button.GetComponent<DuelButtonOutline>();outline.Persistent=pendingRule!=null&&current==part;outline.Refresh();
+                var outline=button.GetComponent<DuelButtonOutline>();outline.Persistent=pendingRule!=null&&current==part;
+                outline.LabelSystem=part==2&&!string.IsNullOrEmpty(rule?.Action)?RuleSystem(rule):NeuralBodySystem.None;
+                outline.Refresh();
                 previewDashes[i].SetActive(candidatePreview!=null&&current==part);
             }
         }
@@ -412,11 +415,12 @@ namespace GoGhost.Duel
                 condition.name="ConditionText";
                 var arrow=Text("→",line,Vector2.zero,Vector2.zero,22,TextAlignmentOptions.TopLeft,controlFont);arrow.name="ActionArrow";
                 var action=Text(expression.Action,line,Vector2.zero,Vector2.zero,22,TextAlignmentOptions.TopLeft,controlFont);action.name="ActionText";
+                action.color=NeuralPalette.Body(RuleSystem(rule));
                 float height=LayoutRuleCard(line,number,condition,arrow,action,rw,52,84);
                 var layout=line.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();layout.minHeight=layout.preferredHeight=height;
                 bool editing=pendingRule!=null&&pendingRow==i;
                 CardEditArea("Rule"+i+"Condition",condition,line,()=>ChooseRule(row,true),editing&&selectingCondition,rule,row);
-                CardEditArea("Rule"+i+"Action",action,line,()=>ChooseRule(row,false),editing&&!selectingCondition,rule,row);
+                CardEditArea("Rule"+i+"Action",action,line,()=>ChooseRule(row,false),editing&&!selectingCondition,rule,row,RuleSystem(rule));
                 var accent=Image(line,new Vector2(-rw/2+2,0),new Vector2(2,height-16),NeuralPalette.Body(RuleSystem(rule)));
                 accent.name="RuleIdentity";equippedAccents.Add(accent);
                 var up=ConfigButton("MoveRuleUp"+i,"▲",line,new Vector2(rw/2-24,26),new Vector2(36,24),()=>MoveRule(row,-1));
@@ -444,13 +448,14 @@ namespace GoGhost.Duel
 #endif
         }
 
-        void CardEditArea(string name,TMP_Text text,RectTransform root,UnityEngine.Events.UnityAction click,bool selected,ConditionalRule rule,int row)
+        void CardEditArea(string name,TMP_Text text,RectTransform root,UnityEngine.Events.UnityAction click,bool selected,ConditionalRule rule,int row,NeuralBodySystem labelSystem=NeuralBodySystem.None)
         {
             var target=text.rectTransform;
             var button=ConfigButton(name,"",root,target.anchoredPosition,target.sizeDelta,click,selected);
             var empty=button.GetComponentInChildren<TMP_Text>();empty.gameObject.SetActive(false);Destroy(empty.gameObject);
             target.SetParent(button.transform,false);target.anchoredPosition=Vector2.zero;
             var outline=button.GetComponent<DuelButtonOutline>();outline.Label=text;outline.Subtle=true;outline.TextRegion=true;
+            outline.LabelSystem=labelSystem;outline.Refresh();
             var image=button.GetComponent<UnityEngine.UI.Image>();image.color=Color.clear;
             var inspect=button.gameObject.AddComponent<ConditionalOptionDescription>();
             inspect.Inspect=()=>{PreviewRule(RuleSystem(rule),row);SetOptionDescription("Click the condition or action to edit rule "+(row+1)+".");};
@@ -769,6 +774,9 @@ namespace GoGhost.Duel
         {
             var option = ConfigButton("Option", label, parent, Vector2.zero, new Vector2(parent.rect.width, selectorRowHeight), click, selected, true);
             option.interactable = reason == null;
+            var outline=option.GetComponent<DuelButtonOutline>();
+            outline.LabelSystem=action!=null?NeuralPalette.System(ConditionalCatalog.Response(action).Operation):NeuralBodySystem.None;
+            outline.Refresh();
             var inspect=option.gameObject.AddComponent<ConditionalOptionDescription>();
             inspect.Inspect=()=>
             {

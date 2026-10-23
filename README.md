@@ -2,7 +2,7 @@
 
 A single-player 2D boss-fight prototype where you decide what to control and what to automate.
 
-Build up to **20 Condition → Action rules** across Move, Jump, Aim, Fire and Dodge, or start from **16 editable presets**. Each operation falls back to manual control when no rule can execute. Face **Refraction**, the gunner; **Severance**, the swordsman; then both together.
+Build up to **20 Condition → Action rules** across Move, Jump, Aim, Fire and Dodge, or start from **16 editable presets**. Each operation falls back to manual control when no rule can execute.
 
 **[Download Alpha 75% — Windows x64](https://github.com/Th-Hjj/GO-GHOST/releases/tag/alpha75-2026-10-22)** · Version 0.75.0 · Classroom playtest
 

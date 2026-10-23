@@ -1,30 +1,44 @@
 # GO GHOST
 
-A single-player 2D arena combat prototype. Face **Refraction**, the gunner; **Severance**, the swordsman; then fight both together.
+A single-player 2D boss-fight prototype where you decide what to control and what to automate.
 
-Play manually or configure up to 20 **Condition → Action** rules across Move, Jump, Aim, Fire and Dodge. Rules can combine a primary condition with one optional state. Operations without an executable rule use manual control.
+Build up to **20 Condition → Action rules** across Move, Jump, Aim, Fire and Dodge, or start from **16 editable presets**. Each operation falls back to manual control when no rule can execute. Face **Refraction**, the gunner; **Severance**, the swordsman; then both together.
 
-[Download Alpha 75% for Windows x64](https://github.com/Th-Hjj/GO-GHOST/releases/latest) — version 0.75.0. Extract the complete ZIP before launching `GO-GHOST.exe`.
+**[Download Alpha 75% — Windows x64](https://github.com/Th-Hjj/GO-GHOST/releases/tag/alpha75-2026-10-22)** · Version 0.75.0 · Classroom playtest
 
 ## Play
 
-Choose **New Game**, add or edit rules (or choose **Help** at the bottom left for presets), then select **Enter Test Room**. Select **Continue** to return to Rule Setup, then **Start Fight** to begin Wave 1. An empty configuration gives full manual control. Retry and the next wave retain your configuration; New Game clears it.
+1. Extract the complete ZIP and run `GO-GHOST.exe`.
+2. Choose **New Game**. Add rules, choose a preset through **Help**, or leave the rules empty for manual play.
+3. **Enter Test Room** to try your setup. Select **Continue**, then **Start Fight**.
+
+Retry and the next wave keep your rules. New Game clears them.
+
+## Controls
 
 | Input | Action |
 |---|---|
 | A / D | Move |
 | Space | Jump |
-| S | Drop through the current one-way platform |
+| S | Drop through a platform |
 | Mouse | Aim |
-| Left mouse button | Fire one precise shot per press |
-| Right mouse button | Burst through remaining rounds |
+| LMB | Fire one precise shot per press |
+| RMB | Burst through remaining rounds |
 | Left Shift | Dodge |
 | Escape | Pause |
-| F8 | Tuning, rule presets, wave selection and gameplay analytics |
+| F8 | Tuning, Waves, Analytics and Presets |
 
-The six-round Revolver reloads automatically. LMB: Fire | RMB: Burst. Body facing follows movement while the weapon aims independently. F8 tuning lasts for the current application session.
+The six-round Revolver reloads automatically. F8 tuning lasts only for the current application session.
 
-Playtest metrics save locally as matching JSON and CSV files after a finished or abandoned fight and on normal exit. Use **F8 > Analytics > Open data folder**, or open `%USERPROFILE%\AppData\LocalLow\DefaultCompany\GO GHOST\Analytics`. Collect both files after each tester. Training is excluded; developer wave jumps and tuning changes are marked as test data. Close normally to save the current attempt.
+## Playtest data
+
+Combat time, deaths and manual/automatic actions are saved as matching **JSON + CSV** files on the computer running the game. Use **F8 → Analytics → Open data folder**, or open:
+
+```text
+%USERPROFILE%\AppData\LocalLow\DefaultCompany\GO GHOST\Analytics
+```
+
+Files save after a fight ends, when you leave it, or on normal exit. Training is excluded. Collect both files after each tester; developer wave jumps and tuning changes mark test data. [Metrics details](Docs/Game/GameplayAnalytics.md).
 
 ## Open the project
 
@@ -32,9 +46,7 @@ Playtest metrics save locally as matching JSON and CSV files after a finished or
 2. Open the repository with **Unity 6000.6.0f1**, using its existing packages.
 3. Select **GO GHOST > Combat > Open Arena**, then enter Play Mode.
 
-Current source lives in `Assets/_Game`. The optional root `Legacy` archive stays outside Unity compilation; recovery instructions are in the documentation.
-
-[Documentation](Docs/Game/README.md) · [Project map](Docs/ProjectMap.md) · [Implementation log](Docs/Game/ImplementationLog.md)
+[Documentation](Docs/Game/README.md) · [Rules and presets](Docs/Game/OfficialPresets.md) · [Project map](Docs/ProjectMap.md)
 
 ## Credits and licenses
 

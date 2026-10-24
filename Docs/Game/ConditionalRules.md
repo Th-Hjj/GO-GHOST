@@ -8,6 +8,8 @@ Rule Setup > Help offers 16 editable templates with names, complete rule preview
 
 ## Configuration and priority
 
+**Selector alignment — Thomas, 2026-10-24:** show Condition above the left picker when choosing the primary or optional condition, and Action when choosing an action. Match the right Rules heading's typography and vertical position. Lower both category and option viewport tops to align with the right rule-list top. Preserve the fixed description area and Cancel / Add Rule footer; screenshot red marks are not UI elements. These two headings are an explicit exception to the earlier no-new-copy constraint.
+
 **Body turning — Thomas, 2026-10-20 follow-up:** A/D and ordinary resolved horizontal movement turn the body; idle retains that facing. Mouse/automatic Aim still owns the Revolver independently. A formal short Move preserves its starting body facing while traveling Forward or Back, so Back remains a backward step. This replaces aim-driven body facing in conditional Duel/Training only.
 
 **Move to Platform — Thomas, 2026-10-20:** J04 retains required **Higher / Lower** under Legs/Jump; the catalog has 21 actions and the same 26 conditions / 20-rule budget. Ordinary Jump remains unchanged. Rules display `Move to Platform (Higher) ↑` or `Move to Platform (Lower) ↓` throughout editing, setup and combat; copies and fight snapshots preserve the direction.

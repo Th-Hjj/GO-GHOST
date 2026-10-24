@@ -702,6 +702,7 @@ namespace GoGhost.Duel
         void BuildRuleSelector()
         {
             float w=ruleEditor.sizeDelta.x,h=ruleEditor.sizeDelta.y,top=h/2;
+            Text(selectingCondition?"Condition":"Action",ruleEditor,new Vector2(0,top-20),new Vector2(w,40),28,TextAlignmentOptions.Left,headingFont).name="RuleSelectorHeading";
             var rule=EditingRule;
             int selectedCondition=selectingAdditional?rule.AdditionalCondition:rule.Condition;
             bool selectedAction=!selectingCondition&&!string.IsNullOrEmpty(rule.Action)&&(int)ConditionalCatalog.Response(rule.Action).Operation==actionCategory;
@@ -710,7 +711,7 @@ namespace GoGhost.Duel
             bool hasParameters=parameters.Length>0;
             float categoryWidth=Mathf.Clamp(w*.34f,176,234);
             float optionsWidth=w-categoryWidth-20,optionsX=-w/2+categoryWidth+20+optionsWidth/2;
-            float optionsTop=top-2,optionsBottom=-h/2+(hasParameters?128:16);
+            float optionsTop=top-56,optionsBottom=-h/2+(hasParameters?128:16);
             selectorRowHeight=64;
             var categories=BuildRuleOptions("SelectorCategories",ruleEditor,new Vector2(-w/2+categoryWidth/2,(optionsTop+optionsBottom)/2),new Vector2(categoryWidth,optionsTop-optionsBottom));
             var choices=BuildRuleOptions("RuleOptions",ruleEditor,new Vector2(optionsX,(optionsTop+optionsBottom)/2),new Vector2(optionsWidth,optionsTop-optionsBottom));

@@ -34,6 +34,7 @@ namespace GoGhost.Duel
 
         void SelectHelpPreset(int index)
         {
+            if(index<0||index>=OfficialRulePresets.All.Count||!OfficialRulePresets.IsUnlocked(OfficialRulePresets.All[index]))return;
             CapturePresetHelpView();
             if(helpPreset!=index)helpPreviewPosition=1;
             helpPreset=index;
@@ -57,9 +58,10 @@ namespace GoGhost.Duel
             var list=BuildRuleOptions("HelpPresetList",page,new Vector2(left+listWidth/2,center),new Vector2(listWidth,height));
             helpPresetList=list.GetComponentInParent<UnityEngine.UI.ScrollRect>();
             var presets=OfficialRulePresets.All;
-            helpPreset=Mathf.Clamp(helpPreset,0,presets.Count-1);
+            helpPreset=Mathf.Clamp(helpPreset,0,OfficialRulePresets.UnlockedCount-1);
             for(int i=0;i<presets.Count;i++)
             {
+                if(!OfficialRulePresets.IsUnlocked(presets[i]))continue;
                 int index=i;
                 var button=ConfigButton("HelpPreset_"+presets[i].Id,presets[i].Name,list,Vector2.zero,Vector2.zero,
                     ()=>SelectHelpPreset(index),i==helpPreset,true,DuelControlStyle.Navigation);

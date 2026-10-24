@@ -1683,6 +1683,7 @@ public static partial class BossEncounterSmoke
     }
     static void SetupInput()
     {
+        ProtectPresetUnlockProgress();
         previousBackground = InputSystem.settings.backgroundBehavior;
         previousEditorInput = InputSystem.settings.editorInputBehaviorInPlayMode;
         previousRunInBackground = Application.runInBackground;
@@ -1704,6 +1705,7 @@ public static partial class BossEncounterSmoke
         while (work.Count > 0) (work.Pop() as IDisposable)?.Dispose();
         RestoreFixture();
         if (game != null && EditorApplication.isPlaying) game.MainMenu();
+        restorePresetUnlockProgress?.Invoke();restorePresetUnlockProgress=null;
         if (inputReady)
         {
             if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);

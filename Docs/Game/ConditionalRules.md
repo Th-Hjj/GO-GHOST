@@ -4,7 +4,9 @@ Confirmed assignment: Thomas, 2026-10-22, six-round Revolver (Prompt 01), with t
 
 ## Official presets
 
-Rule Setup > Help offers 16 editable templates with names, complete rule previews, Back and Apply only. Apply replaces the configuration and returns to setup; Back/Escape preserves unfinished edits. F8 > Presets retains its developer controls. The global capacity is 20 rules. Preview is read-only; Apply replaces the whole setup, restarting the current Training/Wave when active. Try in Training uses the normal training world and Back/Continue flow. Clear Rules uses the same stage-aware path. Session tuning persists; defaults reset tuning only. [OfficialPresets.md](OfficialPresets.md) lists the definitions and stage behavior. Thomas explicitly replaces Two-Round Reserve with Low-Ammo Rush; AmmoUse remains inert.
+Rule Setup > Help offers six progressive editable presets with names, complete previews and Back / Apply only. Initially only the first is unlocked; each real player death (including Training) unlocks one more, capped at six. One saved PlayerPrefs integer survives New Game, Retry, next wave and restart. Robot deaths, rebuilds and F8 actions do not unlock. The Help list and Apply share unlock validation. Preview/Back preserve configuration and drafts; only explicit Apply deep-copies and replaces the setup. New Game remains empty, Help never opens automatically, and entry/death flow stays unchanged.
+
+F8 > Presets exposes all six for development without changing unlock progress. Its existing stage-aware Apply / Try in Training / Clear Rules behavior remains. Global capacity stays 20 rules, and all applied rows remain ordinary editable rules. R5/R6 use Ground State → Keep Mid Range, independent of Firing and per-enemy distance conditions. [OfficialPresets.md](OfficialPresets.md) lists the exact six definitions, unlock lifecycle and F8 stage behavior. AmmoUse remains inert.
 
 ## Configuration and priority
 
@@ -128,7 +130,7 @@ Start Fight deep-copies all rule fields. Combat/pause cannot edit them. Retry/ne
 
 ## Configuration compatibility
 
-The indexed condition sequence preserves the original `Condition` / `AdditionalCondition` fields and typed parameters as its first two serialized slots, with `ExtraConditions` storing the unbounded tail. Missing/null tails mean older one-/two-condition rules; they retain their original IDs, options and behavior. Copying, presets, fight snapshots and analytics JSON retain the full sequence. Existing templates are unchanged and produce independent editable copies.
+The indexed condition sequence preserves the original `Condition` / `AdditionalCondition` fields and typed parameters as its first two serialized slots, with `ExtraConditions` storing the unbounded tail. Missing/null tails mean older one-/two-condition rules; they retain their original IDs, options and behavior. Copying, presets, fight snapshots and analytics JSON retain the full sequence. The six official templates produce independent editable copies.
 
 
 Condition/action IDs and historical enum values remain stable. M04 remains the short Move ID and missing direction data defaults explicitly to Back; Forward/Back is separate from M11 Left/Right. Old Incoming Bullet value 2 maps to Ranged. Removed Low keeps value 4 and is invalid with a clear reselect reason; it must never silently become another attack type. Invalid rows remain in the editable loadout and block Start Fight until corrected; copying never discards unrelated rules. Valid but temporarily unavailable rows retain normal lower-row/manual fallback. Copy, local drafts, Cancel, reorder, JSON, Retry and fight snapshots preserve all parameter fields. A61 remains ID 61 with the new Move Finished label.

@@ -56,6 +56,7 @@ namespace GoGhost.Duel
         SfxSet encounterSounds;
         bool lockedLegs, lockedArms, lockedSpine;
         float phaseTime;
+        bool presetDeathRecorded;
 
         void Awake()
         {
@@ -77,6 +78,7 @@ namespace GoGhost.Duel
         void Start() { if (sounds != null) sounds.BeginScope(); }
         void OnDestroy()
         {
+            UnbindPresetDeath();
             FinishMetrics("abandoned");
             ClearPlatformLayout();
             playerRespawnAt = enemyRespawnAt = 0;
@@ -112,7 +114,7 @@ namespace GoGhost.Duel
         {if(Phase==DuelPhase.Configure&&!Paused){edit(DraftLoadout);ui.Show();}}
         public bool ApplyPresetToSetup(OfficialRulePreset preset)
         {
-            if(Phase!=DuelPhase.Configure||Paused||DeveloperToolsOpen||preset==null)return false;
+            if(Phase!=DuelPhase.Configure||Paused||DeveloperToolsOpen||!OfficialRulePresets.IsUnlocked(preset))return false;
             var replacement=preset.CreateLoadout();
             if(!ConditionalCatalog.IsValid(replacement))return false;
             ui.DiscardRulePicker();
@@ -135,6 +137,8 @@ namespace GoGhost.Duel
             encounter.name = "CombatAttempt";
             encounter.AddComponent<ArenaBoundary2D>().Initialize(ArenaBounds);
             Player = encounter.GetComponentInChildren<PlayerHealth>();
+            presetDeathRecorded = false;
+            Player.OnDeath += RecordPresetDeath;
             input = Player.GetComponent<PlayerInputReader>();
             input.SetGameplayInputEnabled(false);
             Rifle = Player.GetComponent<PlayerShooting>();
@@ -288,8 +292,19 @@ namespace GoGhost.Duel
             effects?.EndAttempt();
             encounterSounds?.EndScope();
         }
+        void RecordPresetDeath()
+        {
+            if (presetDeathRecorded || Player == null || !Player.IsDead) return;
+            presetDeathRecorded = true;
+            OfficialRulePresets.RecordPlayerDeath();
+        }
+        void UnbindPresetDeath()
+        {
+            if (Player != null) Player.OnDeath -= RecordPresetDeath;
+        }
         void ClearEncounter()
         {
+            UnbindPresetDeath();
             FinishMetrics("abandoned");
             DeveloperToolsOpen = developerResumeOnClose = false;
             StopCombat();

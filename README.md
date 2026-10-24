@@ -2,17 +2,19 @@
 
 A single-player 2D boss-fight prototype where you decide what to control and what to automate.
 
-Build up to **20 Condition → Action rules** across Move, Jump, Aim, Fire and Dodge, or start from **16 editable presets**. Each operation falls back to manual control when no rule can execute.
+Build up to **20 Condition → Action rules** across Move, Jump, Aim, Fire and Dodge, or start from **six editable presets** (the first is available immediately; each player death unlocks the next). Each operation falls back to manual control when no rule can execute.
 
 **[Download Alpha 75% — Windows x64](https://github.com/Th-Hjj/GO-GHOST/releases/tag/alpha75-2026-10-22)** · Version 0.75.0 · Classroom playtest
+
+The six-preset system describes the current source/Editor version; the linked release predates it.
 
 ## Play
 
 1. Extract the complete ZIP and run `GO-GHOST.exe`.
-2. Choose **New Game**. Add rules, choose a preset through **Help**, or leave the rules empty for manual play.
+2. Choose **New Game** to begin with empty rules. Add rules, choose a preset through **Help**, or leave the rules empty for manual play.
 3. **Enter Test Room** to try your setup. Select **Continue**, then **Start Fight**.
 
-Retry and the next wave keep your rules. New Game clears them.
+Retry and the next wave keep your rules. New Game clears them; preset unlock progress is retained.
 
 ## Controls
 

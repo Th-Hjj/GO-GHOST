@@ -4,7 +4,7 @@ Start with the current assignment in [AGENTS.md](../../AGENTS.md) / [CLAUDE.md](
 
 | Document | Scope |
 |---|---|
-| [Official Presets](OfficialPresets.md) | Help picker, F8 templates and stage-aware application |
+| [Official Presets](OfficialPresets.md) | Six presets, persistent death unlocks, Help and F8 application |
 | [Conditional Rules](ConditionalRules.md) | Current player controls, condition/action catalog, configuration, arbitration and feedback |
 | [Boss Encounters](BossEncounters.md) | Current arena, Boss combat, public observations and third-wave coordination |
 | [Art Direction](ArtDirection.md) | Current visual language, typography, body diagram and combat readability |

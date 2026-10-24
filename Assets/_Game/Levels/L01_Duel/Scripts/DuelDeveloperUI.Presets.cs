@@ -66,9 +66,9 @@ namespace GoGhost.Duel
             PresetRowHeight(title.gameObject,40);
             if(descriptions)
             {
-                AddPresetText(selected.Summary,preview,cardWidth);
-                AddPresetText("Try: "+selected.Try,preview,cardWidth);
-                AddPresetText("Tweak: "+selected.Tweak,preview,cardWidth);
+                if(!string.IsNullOrEmpty(selected.Summary))AddPresetText(selected.Summary,preview,cardWidth);
+                if(!string.IsNullOrEmpty(selected.Try))AddPresetText("Try: "+selected.Try,preview,cardWidth);
+                if(!string.IsNullOrEmpty(selected.Tweak))AddPresetText("Tweak: "+selected.Tweak,preview,cardWidth);
             }
             int number=0;
             foreach(var rule in selected.CreateLoadout().OrderedRules())

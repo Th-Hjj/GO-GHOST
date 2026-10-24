@@ -293,8 +293,14 @@ namespace GoGhost.Duel
             line.useWorldSpace=true;line.positionCount=count;line.sortingOrder=25;line.numCapVertices=2;
             line.shadowCastingMode=ShadowCastingMode.Off;line.receiveShadows=false;return line;
         }
-        static void SetLine(LineRenderer line,Vector2 from,Vector2 to,float width,Color color)
-        {line.enabled=true;line.positionCount=2;line.SetPosition(0,from);line.SetPosition(1,to);line.startWidth=line.endWidth=width;line.startColor=line.endColor=color;}
+        void SetLine(LineRenderer line,Vector2 from,Vector2 to,float width,Color color)
+        {
+            if(actor!=null&&actor.Navigation!=null&&!ArenaBoundary2D.ClipSegment(actor.Navigation.ArenaBounds,ref from,ref to,width*.5f))
+            {line.enabled=false;return;}
+            line.enabled=true;line.positionCount=2;line.SetPosition(0,from);line.SetPosition(1,to);line.startWidth=line.endWidth=width;line.startColor=line.endColor=color;
+        }
+        Vector2 ClipTellPoint(Vector2 point,float width)
+            => actor!=null&&actor.Navigation!=null?ArenaBoundary2D.ClampPoint(actor.Navigation.ArenaBounds,point,width*.5f):point;
         void UpdateTells()
         {
             foreach(var line in tells)if(line!=null)line.enabled=false;
@@ -323,7 +329,7 @@ namespace GoGhost.Duel
                 {
                     Vector2 tip=root+action.BladeDirection(Mathf.Lerp(start,finish,i/24f))*action.BladeReach;
                     if(Projectile.TerrainHit(root,tip,actor.Profile.BladeRadius,out var wall))tip=root+(tip-root).normalized*wall.distance;
-                    line.SetPosition(i,tip);
+                    line.SetPosition(i,ClipTellPoint(tip,SwordTellWidth(cutting,action.Phase==BossActionPhase.Locked||action.Phase==BossActionPhase.Active)));
                 }
                 bool locked=action.Phase==BossActionPhase.Locked||action.Phase==BossActionPhase.Active;
                 line.startWidth=line.endWidth=SwordTellWidth(cutting,locked);
@@ -362,7 +368,7 @@ namespace GoGhost.Duel
                 var line=tells[guardSlot];line.enabled=true;line.positionCount=11;
                 float angle=Mathf.Atan2(actor.Actions.Aim.y,actor.Actions.Aim.x)*Mathf.Rad2Deg;
                 float halfArc=actor.Profile.GuardArc*.5f;
-                for(int i=0;i<11;i++)line.SetPosition(i,actor.Position+Angle(angle+Mathf.Lerp(-halfArc,halfArc,i/10f))*actor.Profile.Guard.Range);
+                for(int i=0;i<11;i++)line.SetPosition(i,ClipTellPoint(actor.Position+Angle(angle+Mathf.Lerp(-halfArc,halfArc,i/10f))*actor.Profile.Guard.Range,SwordTellWidth(false,true)));
                 // Defense shows the committed coral boundary; white is reserved for damaging motion.
                 line.startWidth=line.endWidth=SwordTellWidth(false,true);
                 line.startColor=line.endColor=SwordTellColor(false,true);
@@ -398,7 +404,7 @@ namespace GoGhost.Duel
                 AddFlash(trail,.09f);return;
             }
             var line=NewLine("BladeArc",true,11);float angle=Mathf.Atan2(aim.y,aim.x)*Mathf.Rad2Deg;
-            for(int i=0;i<11;i++)line.SetPosition(i,actor.Position+Angle(angle+Mathf.Lerp(-48,48,i/10f))*reach);
+            for(int i=0;i<11;i++)line.SetPosition(i,ClipTellPoint(actor.Position+Angle(angle+Mathf.Lerp(-48,48,i/10f))*reach,.027f));
             line.startWidth=line.endWidth=dash?.04f:.027f;line.startColor=line.endColor=NeuralPalette.Alpha(bodyColor,.92f);AddFlash(line,dash?.09f:.11f);
         }
         void Spark(Vector2 at,Vector2 forward,float reach,int count,bool glow)

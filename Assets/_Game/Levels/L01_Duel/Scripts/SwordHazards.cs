@@ -11,7 +11,7 @@ namespace GoGhost.Duel
             public BossThreat Threat;
             public float WarningAt,BornAt;
             public int Damage;
-            public bool Wave,Deferred,Hit,Warned,Sounded;
+            public bool Wave,Deferred,Hit,Warned,Sounded,Retired;
             public Vector2 A(float time)=>Threat.Origin+(!Deferred&&Threat.Shape==BossThreatShape.MovingBlade?Threat.Direction*Threat.ProjectileSpeed*Mathf.Max(0,time-Threat.StartsAt):Vector2.zero);
             public Vector2 B(float time)=>Threat.End+(!Deferred&&Threat.Shape==BossThreatShape.MovingBlade?Threat.Direction*Threat.ProjectileSpeed*Mathf.Max(0,time-Threat.StartsAt):Vector2.zero);
         }
@@ -30,14 +30,34 @@ namespace GoGhost.Duel
         public SwordHazards(BossAgent owner){actor=owner;ResetSample();}
         void ResetSample(){previousPlayer=actor.Player!=null?(Vector2)actor.Player.transform.position:Vector2.zero;previousTime=Time.time;}
         public void Clear(){traces.Clear();ResetSample();}
+        // EndsAt is a prediction for public threat sampling, derived from physical boundary contact.
+        // Runtime removal below checks the moving segment, never a configured lifetime/travel budget.
+        float BoundaryEnd(BossThreat threat)
+        {
+            var bounds=actor.Navigation.ArenaBounds;
+            float distance=Mathf.Min(ArenaBoundary2D.ExitDistance(bounds,threat.Origin,threat.Direction,threat.Radius),
+                ArenaBoundary2D.ExitDistance(bounds,threat.End,threat.Direction,threat.Radius));
+            return threat.StartsAt+distance/threat.ProjectileSpeed;
+        }
+        bool AtBoundary(Trace trace,float time)
+        {
+            var bounds=actor.Navigation.ArenaBounds;
+            return !ArenaBoundary2D.Contains(bounds,trace.A(time),trace.Threat.Radius)
+                ||!ArenaBoundary2D.Contains(bounds,trace.B(time),trace.Threat.Radius);
+        }
         public void Wave(Vector2 centre,Vector2 direction)
         {
             if(traces.Count>=6)return;
+            direction=direction.sqrMagnitude>.01f?direction.normalized:Vector2.right*actor.Facing;
             var s=actor.Profile.Sword;Vector2 side=new Vector2(-direction.y,direction.x)*s.WaveLength*.5f;
+            Vector2 a=centre-side,b=centre+side;
+            if(!ArenaBoundary2D.ClipSegment(actor.Navigation.ArenaBounds,ref a,ref b,.09f))return;
+            var threat=new BossThreat {ActorId=actor.ActorId,AttackId=nextId++,Valid=true,Phase=BossThreatPhase.Active,
+                Shape=BossThreatShape.MovingBlade,Origin=a,End=b,Direction=direction,
+                Radius=.09f,ProjectileSpeed=s.WaveSpeed,StartsAt=Time.time};
+            threat.EndsAt=BoundaryEnd(threat);
             traces.Add(new Trace {Wave=true,Damage=s.WaveDamage,WarningAt=Time.time,BornAt=Time.time,
-                Threat=new BossThreat {ActorId=actor.ActorId,AttackId=nextId++,Valid=true,Phase=BossThreatPhase.Active,
-                    Shape=BossThreatShape.MovingBlade,Origin=centre-side,End=centre+side,Direction=direction,
-                    Radius=.09f,ProjectileSpeed=s.WaveSpeed,StartsAt=Time.time,EndsAt=Time.time+s.WaveLife}});
+                Threat=threat});
             Emitted++;
         }
         public void Echo(Vector2 from,Vector2 to,bool deferred)
@@ -55,13 +75,13 @@ namespace GoGhost.Duel
             Vector2 side=new Vector2(-direction.y,direction.x)*s.EchoLength*.5f;
             centre+=Vector2.up*.35f;
             Vector2 a=centre-side,b=centre+side;var bounds=actor.Navigation.ArenaBounds;
-            a=new Vector2(Mathf.Clamp(a.x,bounds.min.x,bounds.max.x),Mathf.Clamp(a.y,bounds.min.y,bounds.max.y));
-            b=new Vector2(Mathf.Clamp(b.x,bounds.min.x,bounds.max.x),Mathf.Clamp(b.y,bounds.min.y,bounds.max.y));
+            if(!ArenaBoundary2D.ClipSegment(bounds,ref a,ref b,.18f))return;
             float start=Time.time+s.EchoDelay+s.EchoWarning;
             foreach(var trace in traces)if(!trace.Wave&&!trace.Deferred)start=Mathf.Max(start,trace.Threat.StartsAt+s.EchoStagger);
             var threat=new BossThreat {ActorId=actor.ActorId,AttackId=nextId++,Valid=true,Phase=BossThreatPhase.Locked,
                 Shape=BossThreatShape.MovingBlade,Origin=a,End=b,Radius=.18f,Direction=direction,ProjectileSpeed=s.EchoSpeed,
-                StartsAt=start,EndsAt=start+s.EchoTravel/s.EchoSpeed};
+                StartsAt=start};
+            threat.EndsAt=BoundaryEnd(threat);
             candidate.Clear();foreach(var trace in traces)if(!trace.Deferred)candidate.Add(trace.Threat);
             candidate.Add(threat);
             if(actor.Actions.HasLivingPartner&&!deferred&&!SwordEscape.HasRoute(actor,candidate,Mathf.Min(2.5f,threat.EndsAt-Time.time)))return;
@@ -75,11 +95,12 @@ namespace GoGhost.Duel
             {
                 if(!trace.Deferred)continue;
                 trace.Deferred=false;trace.WarningAt=start-s.EchoWarning;
-                var t=trace.Threat;t.StartsAt=start;t.EndsAt=start+s.EchoTravel/s.EchoSpeed;trace.Threat=t;
+                var t=trace.Threat;t.StartsAt=start;t.EndsAt=BoundaryEnd(t);trace.Threat=t;
                 start+=s.EchoStagger;
             }
             candidate.Clear();foreach(var trace in traces)candidate.Add(trace.Threat);
-            if(actor.Actions.HasLivingPartner&&!SwordEscape.HasRoute(actor,candidate,Mathf.Min(2.5f,start-Time.time+s.EchoTravel/s.EchoSpeed)))
+            float lastEnd=start;foreach(var threat in candidate)lastEnd=Mathf.Max(lastEnd,threat.EndsAt);
+            if(actor.Actions.HasLivingPartner&&!SwordEscape.HasRoute(actor,candidate,Mathf.Min(2.5f,lastEnd-Time.time)))
             {
                 // Retire the second mark rather than create an unavoidable crossing.
                 for(int i=traces.Count-1;i>=0;i--)if(!traces[i].Wave){traces.RemoveAt(i);break;}
@@ -123,16 +144,16 @@ namespace GoGhost.Duel
                         }
                     }
                 }
-                if(blocked){threat.EndsAt=now-.001f;trace.Threat=threat;continue;}
+                if(blocked){trace.Retired=true;continue;}
                 if(!trace.Hit&&threat.IntersectsMotion(previousPlayer,player,body.bounds.extents,from,now))
                 {
                     trace.Hit=true;int before=actor.Player.CurrentHealth;
                     actor.Player.TakeDamage(trace.Damage,actor.gameObject);
                     if(actor.Player.CurrentHealth<before){Hits++;actor.View?.Impact(body.ClosestPoint(trace.A(now)));}
-                    if(trace.Wave){threat.EndsAt=now-.001f;trace.Threat=threat;}
+                    if(trace.Wave)trace.Retired=true;
                 }
             }
-            traces.RemoveAll(t=>!t.Deferred&&now>t.Threat.EndsAt);
+            traces.RemoveAll(t=>t.Retired||!t.Deferred&&now>=t.Threat.StartsAt&&AtBoundary(t,now));
             previousPlayer=player;previousTime=now;
         }
     }

@@ -133,6 +133,7 @@ namespace GoGhost.Duel
             lockedLegs = lockedArms = lockedSpine = false;
             encounter = Instantiate(combatPrefab, transform);
             encounter.name = "CombatAttempt";
+            encounter.AddComponent<ArenaBoundary2D>().Initialize(ArenaBounds);
             Player = encounter.GetComponentInChildren<PlayerHealth>();
             input = Player.GetComponent<PlayerInputReader>();
             input.SetGameplayInputEnabled(false);

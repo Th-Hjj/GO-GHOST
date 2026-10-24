@@ -43,7 +43,7 @@ public class PlayerDodge : MonoBehaviour
     // ground dash. The base Human stays ground-only; the legacy airDodgeUnlocked field is not a progression path.
     private bool airDashAvailable = true;
     private bool legacyCombat;
-    public const float LegacyCooldown = 2f, LegacyImmunity = .2f;
+    public const float LegacyCooldown = 1.7f, LegacyImmunity = .2f;
     private float runtimeCooldown = -1, runtimeDistance = -1, runtimeDuration = -1, runtimeImmunity = -1;
     public bool HasAirDash => !legacyCombat && officer != null && officer.Deployment != null && officer.Deployment.HasAirDash;
     public bool AirDashAvailable => HasAirDash && airDashAvailable;

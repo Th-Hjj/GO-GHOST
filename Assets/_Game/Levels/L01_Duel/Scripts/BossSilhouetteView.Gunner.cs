@@ -65,7 +65,7 @@ namespace GoGhost.Duel
         {
             foreach (var visual in gunBullets)
             {
-                if (visual.Shot == null || visual.Shot.Deflected)
+                if (visual.Shot == null || visual.Shot.Deflected || visual.Sprite != null && !visual.Sprite.enabled)
                 { ReleaseGunBullet(visual); continue; }
                 Vector2 at = visual.Shot.transform.position;
                 visual.Travel = Mathf.Min(GunTrailLength, visual.Travel + Vector2.Distance(at, visual.Previous));
@@ -77,7 +77,7 @@ namespace GoGhost.Duel
                     NeuralPalette.Alpha(bodyColor, .65f));
                 visual.Tail.endWidth = 0;
                 visual.Tail.endColor = NeuralPalette.Alpha(bodyColor, 0);
-                visual.Tail.enabled = visual.Travel > .01f;
+                visual.Tail.enabled &= visual.Travel > .01f;
             }
         }
 

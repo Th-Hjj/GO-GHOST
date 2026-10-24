@@ -90,7 +90,7 @@ namespace GoGhost.Duel
                         float angle=Mathf.Lerp(threat.ArcFrom,threat.ArcTo,progress)*Mathf.Deg2Rad;
                         Vector2 tip=root+new Vector2(threat.Facing*Mathf.Cos(angle),Mathf.Sin(angle))*threat.Reach;
                         if(Projectile.TerrainHit(root,tip,threat.Radius,out var wall))tip=root+(tip-root).normalized*wall.distance;
-                        line.SetPosition(i,tip);
+                        line.SetPosition(i,ClipTellPoint(tip,SwordTellWidth(active,locked)));
                     }
                     line.startWidth=line.endWidth=SwordTellWidth(active,locked);line.startColor=line.endColor=color;
                 }

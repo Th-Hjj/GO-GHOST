@@ -314,7 +314,9 @@ namespace GoGhost.Duel
             {
                 Origin=actor.Position+Vector2.up*(p.Sword.WaveLength*.5f+.08f-actor.Motor.Size.y*.5f);
                 targetPoint+=Vector2.up*(p.Sword.WaveLength*.5f+.08f-actor.Perception.Facts.Body.extents.y);
-                Aim=(targetPoint-Origin).normalized;End=Origin+Aim*p.Sword.WaveSpeed*p.Sword.WaveLife;
+                Aim=(targetPoint-Origin).normalized;
+                if(Aim.sqrMagnitude<.01f)Aim=Vector2.right*actor.Facing;
+                End=Origin+Aim*ArenaBoundary2D.ExitDistance(actor.Navigation.ArenaBounds,Origin,Aim,.09f);
             }
             else if(CurrentSwordBeat==SwordBeat.Draw)
             {
@@ -343,7 +345,10 @@ namespace GoGhost.Duel
                 swordThreat.Shape=BossThreatShape.MovingBlade;swordThreat.TerrainBlocked=false;
                 Vector2 side=new Vector2(-Aim.y,Aim.x)*p.Sword.WaveLength*.5f;
                 swordThreat.Origin=Origin-side;swordThreat.End=Origin+side;swordThreat.Radius=.09f;
-                swordThreat.ProjectileSpeed=p.Sword.WaveSpeed;swordThreat.EndsAt=starts+p.Sword.WaveLife;
+                swordThreat.Valid=ArenaBoundary2D.ClipSegment(actor.Navigation.ArenaBounds,ref swordThreat.Origin,ref swordThreat.End,.09f);
+                float distance=Mathf.Min(ArenaBoundary2D.ExitDistance(actor.Navigation.ArenaBounds,swordThreat.Origin,Aim,.09f),
+                    ArenaBoundary2D.ExitDistance(actor.Navigation.ArenaBounds,swordThreat.End,Aim,.09f));
+                swordThreat.ProjectileSpeed=p.Sword.WaveSpeed;swordThreat.EndsAt=starts+distance/p.Sword.WaveSpeed;
             }
             else if(CurrentSwordBeat==SwordBeat.JumpCut)
             {

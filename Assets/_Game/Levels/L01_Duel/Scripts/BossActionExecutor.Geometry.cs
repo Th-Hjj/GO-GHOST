@@ -103,6 +103,7 @@ namespace GoGhost.Duel
                         start=Phase==BossActionPhase.Active?nextShot+(i-shotIndex)*p.SweepInterval:activeStarts+i*p.SweepInterval;
                     }
                     float range=BurstAction?p.Burst.Range:settings.Range;
+                    range=Mathf.Min(range,ArenaBoundary2D.ExitDistance(actor.Navigation.ArenaBounds,origin,direction,radius));
                     end=origin+direction*range;finish=start+range/speed;
                 }
                 else if(Ability==BossAbility.DrawDash||Ability==BossAbility.ReturnCut)

@@ -66,7 +66,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         ? ConditionalFrame.FireRequest
         : LegacyArmsAI ? (AttackHeld ? WeaponFireRequest.Continuous : WeaponFireRequest.None)
         : BurstPressedThisFrame ? WeaponFireRequest.Burst
-        : AttackPressedThisFrame ? WeaponFireRequest.Single : WeaponFireRequest.None;
+        : AttackHeld ? WeaponFireRequest.Continuous : WeaponFireRequest.None;
     public bool JumpPressedThisFrame { get; private set; }
     public bool JumpHeld { get; private set; }
     public bool DropPressedThisFrame { get; private set; }

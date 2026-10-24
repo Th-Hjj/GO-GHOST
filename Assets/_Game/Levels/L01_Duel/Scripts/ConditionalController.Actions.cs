@@ -90,7 +90,7 @@ namespace GoGhost.Duel
         {
             string action=rule.Action;
             bool targetAction=op==2||action=="M01"||action=="M02"||action=="M03"||action=="D02";
-            // Explicit Nearest/Lowest-Health/Fine-Tune strategies retain their own visible target policy.
+            // Explicit Auto Aim/Aim Assist strategies retain their own visible target policy.
             r.Target=targetAction?Choose(op==2||!r.Context.EnemyBound?allVisible:r.Context.Candidates,action):-1;
             if(action=="Q03")r.Target=r.Context.Source>=0&&visible[r.Context.Source]?r.Context.Source:-1;
             r.Aim=raw.CommittedAim;
@@ -232,12 +232,24 @@ namespace GoGhost.Duel
             if(action=="Q06"||action=="Q09")
             {
                 int best=Choose(allVisible,action);
-                bool valid=r.Target>=0&&visible[r.Target]&&MouseAngle(r.Target)<=ConditionalDefaults.MouseExit;
+                float cone=action=="Q06"?ConditionalDefaults.AimAssistCone:ConditionalDefaults.MouseExit;
+                bool valid=r.Target>=0&&visible[r.Target]&&MouseAngle(r.Target)<=cone;
                 if(!valid||best>=0&&MouseAngle(best)+2f<MouseAngle(r.Target))r.Target=best;
                 if(r.Target<0)return false;
             }
             output.AimOwned=true;output.Aim=action=="Q08"?r.Aim:AimAt(r.Target);
-            if(action=="Q06"||action=="Q09")
+            if(action=="Q06")
+            {
+                // Smooth only the additive assistance: the raw mouse direction responds immediately.
+                // Reach 95% of a stationary correction in .15 combat seconds, without prediction.
+                float desired=Vector2.SignedAngle(raw.Aim,output.Aim);
+                float blend=1-Mathf.Exp(-Time.deltaTime/ConditionalDefaults.AimAssistTimeConstant);
+                r.AssistOffset=Mathf.Lerp(r.AssistOffset,desired,blend);
+                // Never pull past the body or oppose a mouse movement across the target.
+                r.AssistOffset=Mathf.Clamp(r.AssistOffset,Mathf.Min(0,desired),Mathf.Max(0,desired));
+                output.Aim=((Vector2)(Quaternion.Euler(0,0,r.AssistOffset)*raw.Aim.normalized)).normalized;
+            }
+            else if(action=="Q09")
                 output.Aim=((Vector2)Vector3.RotateTowards(raw.Aim.normalized,output.Aim,
                     ConditionalDefaults.MouseEnter*Mathf.Deg2Rad,0)).normalized;
             currentTarget=action=="Q08"?AlignedTarget(r.Aim,allVisible):r.Target;return true;

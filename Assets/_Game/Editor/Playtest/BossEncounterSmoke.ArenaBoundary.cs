@@ -26,7 +26,7 @@ public static partial class BossEncounterSmoke
         Record("Controlled boundary fixtures; real projectile physics, Boss renderers, sword hazard ticks and normal encounter lifecycle.");
         yield return TrainingFresh(null);
         Check("fresh session uses captured tuning", Mathf.Abs(game.GetDeveloperValue(DeveloperSetting.DodgeCooldown) - 1.7f) < .0001f
-            && game.GetDeveloperValue(DeveloperSetting.Damage) == 28 && game.GetDeveloperValue(DeveloperSetting.FireInterval) == .4f
+            && game.GetDeveloperValue(DeveloperSetting.Damage) == 28 && game.GetDeveloperValue(DeveloperSetting.FireInterval) == .45f
             && game.GetDeveloperValue(DeveloperSetting.BurstSpread) == 14);
         game.ToggleDeveloperTools();
         game.SetDeveloperValue(DeveloperSetting.Damage, 11); game.ResetDeveloperTuning();

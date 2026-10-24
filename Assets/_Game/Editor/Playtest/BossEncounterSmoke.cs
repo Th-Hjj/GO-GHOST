@@ -166,6 +166,8 @@ public static partial class BossEncounterSmoke
     static IEnumerator Run()
     {
         Record("Editor Play Mode; simulated focus and virtual keyboard/mouse. No physical-input or audibility claim.");
+        if(mode=="aim-assist") {yield return AimAssist();yield break;}
+        if(mode=="hold-fire") {yield return HoldFire();yield break;}
         if(mode=="arena-boundary") {yield return ArenaBoundary();yield break;}
         if(mode=="rule-conflicts") {yield return RuleConflicts();yield break;}
         if(mode=="official-presets") {yield return OfficialPresets();yield break;}

@@ -222,7 +222,8 @@ namespace GoGhost.Duel
             for(int i=0;i<actors.Count;i++)
             {
                 if(!visible[i]||(mask&(1<<i))==0)continue;
-                if((response=="Q06"||response=="Q09")&&MouseAngle(i)>ConditionalDefaults.MouseEnter)continue;
+                if(response=="Q06"&&MouseAngle(i)>ConditionalDefaults.AimAssistCone)continue;
+                if(response=="Q09"&&MouseAngle(i)>ConditionalDefaults.MouseEnter)continue;
                 float score=((Vector2)contacts[i].Bounds.center-(Vector2)shape.bounds.center).sqrMagnitude;
                 if(response=="Q06"||response=="Q09")score=MouseAngle(i);
                 if(response=="Q02"&&best>=0)
@@ -258,16 +259,8 @@ namespace GoGhost.Duel
         }
         Vector2 AimAt(int target)
         {
-            var c=contacts[target];Vector2 point=c.Bounds.center;
-            for(int k=0;k<3;k++)
-            {
-                float flight=Vector2.Distance(gun.GetMuzzlePosition((point-gun.AimOrigin).normalized),point)/Mathf.Max(.01f,gun.BulletSpeed);
-                flight=Mathf.Min(.35f,flight);
-                point=(Vector2)c.Bounds.center+(c.VelocityKnown?c.Velocity*flight:Vector2.zero);
-                if(c.GroundedKnown&&!c.Grounded)point.y-=.5f*c.Gravity*flight*flight;
-                if(actors[target].Navigation!=null&&!actors[target].Navigation.SweepTraversal(c.Bounds.center,point,c.Bounds.size,out _,out var safe))point=safe;
-            }
-            return (point-gun.AimOrigin).normalized;
+            // All player Aim actions use the current visible body, never a predicted intercept.
+            return ((Vector2)contacts[target].Bounds.center-gun.AimOrigin).normalized;
         }
     }
 }

@@ -148,7 +148,7 @@ namespace GoGhost.Duel
             new OfficialRulePreset("shot_step_chain", "Shot-Step Chain", "Playstyles",
                 "Start with one precise shot; completed backward steps trigger the next shot until the magazine empties.",
                 "Leave space behind you, fire one LMB shot, and keep aiming without pressing movement keys.",
-                "Remove Fine-Tune Aim to keep every shot fully manually aimed.",
+                "Remove Aim Assist to keep every shot fully manually aimed.",
                 R(59,"M04"),
                 R(61,"Q06"),
                 R(61,"F01")),

@@ -1,4 +1,11 @@
 # GO GHOST slice implementation
+## 2026-10-24 — Matching selector and Rules headings
+
+- **Baseline / request:** clean main `64e9a5c`. Thomas confirmed lowering the left category/option list tops to the right rule-list top and adding a Condition / Action heading aligned with Rules. Screenshot red marks were alignment guides, not requested UI lines.
+- **Implemented:** the existing selector now uses the same 28-unit heading font, 40-unit title height and title position as Rules. Both left viewport tops reserve the same 56-unit header space. The title follows the active picker, including Condition for the optional-state picker. Description, parameters, row spacing, footer and gameplay are unchanged; these two requested titles are the only additional displayed copy.
+- **Verified:** normal Editor compilation and `git diff --check`; **16 PASS / 0 FAIL** in `Logs/SelectorHeading/checks.txt`. Virtual-pointer checks cover primary/optional Condition and Action title switching, matching heading position/font/size, equal category/option/rule viewport tops, parameter placement, fixed description/divider and row spacing, Cancel preserving all six saved rules, Training entry, Continue to advancing W1 and menu cleanup. Inspected actual 2560x1440 [Condition](../../Logs/SelectorHeading/condition.png) and [Action](../../Logs/SelectorHeading/action.png) captures. Console Error/Assert/Exception query is empty. Restored the six saved rules and empty Add draft in Configure, with a clean scene.
+- **Limits:** other resolutions, physical-input feel and standalone NOT TESTED. No Build or Release.
+
 ## 2026-10-24 — Cancel beside Add Rule
 
 - **Follow-up:** before the preceding footer fix was pushed, Thomas requested moving the upper-right Cancel immediately left of Add Rule. Moved the existing control into the same fixed footer, with matching height and a 16-unit gap. The active editor now shows Cancel / Add Rule; encounter entry remains overview-only. No new copy or changes to cancellation/commit behavior.

@@ -48,7 +48,7 @@ public static partial class BossEncounterSmoke
             Check(width+" all unequipped contours have no pulse geometry",Enumerable.Range(0,6).All(i=>NoPulse(Region(i))));
             yield return ColdCapture("pulse-static-idle-"+width);
             ClickConfig("AddRule");yield return Frames(2);yield return SelectEditorCondition(33);
-            FocusOption("Option","Aim at Nearest Enemy");yield return RealSeconds(.5);
+            FocusOption("Option","Auto Aim at Nearest Enemy");yield return RealSeconds(.5);
             Check(width+" action preview pulses only arms",!NoPulse(Region(2))&&!NoPulse(Region(3))&&NoPulse(Region(0))&&NoPulse(Region(1))&&NoPulse(Region(4))&&NoPulse(Region(5)));
             var colors=Region(2).canvasRenderer.GetMesh().colors32;bool mirror=true;
             for(int frame=0;frame<12;frame++){mirror&=MirroredPulse(2,3);yield return Frames(1);}
@@ -95,12 +95,12 @@ public static partial class BossEncounterSmoke
                 Check(width+" region "+i+" mesh confined to actual outline",farthest<=11.3f*pixel&&region.NeuralStyle);
             }
             ClickConfig("AddRule");yield return Frames(2);yield return SelectEditorCondition(33);
-            var option=ConfigButtonNamed("Option","Aim at Nearest Enemy");
+            var option=ConfigButtonNamed("Option","Auto Aim at Nearest Enemy");
             ExecuteEvents.Execute(option.gameObject,new PointerEventData(EventSystem.current),ExecuteEvents.pointerEnterHandler);
             yield return RealSeconds(.4);
             Check(width+" legal action hover raises arms only without committing",Region(2).NeuralSignal==1&&Private<float>(Region(2),"activity")>.85f&&Region(4).NeuralSignal==0&&game.DraftLoadout.TotalRules==0);
             yield return ColdCapture("pulse-highlight-"+width);
-            ClickConfig("Option","Aim at Nearest Enemy");yield return RealSeconds(.7);
+            ClickConfig("Option","Auto Aim at Nearest Enemy");yield return RealSeconds(.7);
             Check(width+" legal action commits existing workflow",game.DraftLoadout.TotalRules==1&&ConfigButtonNamed("StartFight").interactable);
             ClickConfig("Rule0Action");yield return RealSeconds(.35);
             Check(width+" selected equipped rule retains region preview",Region(2).NeuralSignal==1);
@@ -248,10 +248,10 @@ public static partial class BossEncounterSmoke
         Record("COLD LIGHT: real rules/executors, virtual UI/input; controlled placements and paused policies, no fabricated visual values.");
         game.NewGame();SetAlphaGameSize(1280,720);yield return Frames(8);
         yield return PointerConfig("AddRule");yield return SelectEditorCondition(33);
-        FocusOption("Option","Aim at Nearest Enemy");yield return Frames(3);
+        FocusOption("Option","Auto Aim at Nearest Enemy");yield return Frames(3);
         Check("legal Aim focus previews both arms without committing",Region(2).NeuralSignal>.9f&&Region(3).NeuralSignal>.9f&&Region(1).NeuralSignal==0&&game.DraftLoadout.TotalRules==0);
         yield return ColdCapture("config-aim-preview-1280");
-        ClickConfig("Option","Aim at Nearest Enemy");yield return Frames(2);float flow=Region(2).NeuralFlow;
+        ClickConfig("Option","Auto Aim at Nearest Enemy");yield return Frames(2);float flow=Region(2).NeuralFlow;
         yield return Seconds(.14f);
         Check("legal Aim commit produces directional circuit flow",flow>=0&&Region(2).NeuralFlow>flow&&game.DraftLoadout.TotalRules==1);
         yield return Seconds(.65f);Object.FindAnyObjectByType<DuelUI>().Show();yield return Frames(2);
@@ -279,10 +279,10 @@ public static partial class BossEncounterSmoke
             ClickConfig("CancelRuleEdit");yield return Frames(2);
             Check(width+" cancel restores committed Spine row",game.DraftLoadout.Operations[4].Rules[0].Action=="D04"&&ConfigButtonNamed("StartFight").interactable);
             ClickConfig("Rule4Action");yield return Frames(2);ClickConfig("ActionCategory2");yield return Frames(2);
-            FocusOption("Option","Aim at Nearest Enemy");yield return Frames(2);ColdLayout(width);yield return ColdCapture("config-action-"+width);
+            FocusOption("Option","Auto Aim at Nearest Enemy");yield return Frames(2);ColdLayout(width);yield return ColdCapture("config-action-"+width);
             ClickConfig("CancelRuleEdit");yield return Frames(2);
         }
-        ClickConfig("Rule4Action");yield return Frames(2);ClickConfig("ActionCategory2");yield return Frames(2);ClickConfig("Option","Aim at Nearest Enemy");yield return Seconds(.65f);
+        ClickConfig("Rule4Action");yield return Frames(2);ClickConfig("ActionCategory2");yield return Frames(2);ClickConfig("Option","Auto Aim at Nearest Enemy");yield return Seconds(.65f);
         Check("full-budget cross-body edit removes last Spine connection",game.DraftLoadout.TotalRules==5&&Region(1).NeuralSignal==0&&Region(2).NeuralSignal>0);
         ClickConfig("RemoveRule3");yield return Frames(2);Check("removing Jump retains Move leg connection",Region(4).NeuralSignal>0);
         ClickConfig("RemoveRule2");yield return Frames(2);Check("removing last Legs rule restores neutral contour",Region(4).NeuralSignal==0&&Region(5).NeuralSignal==0);
@@ -390,7 +390,7 @@ public static partial class BossEncounterSmoke
             ExecuteEvents.Execute(ConfigButtonNamed("Rule0Action").gameObject,new PointerEventData(EventSystem.current),ExecuteEvents.pointerExitHandler);yield return Frames(2);
             Check(width+" keyboard rule focus survives pointer exit",Region(2).NeuralSignal>.9f);
             yield return ColdCapture("config-equipped-"+width);
-            ClickConfig("Rule4Action");yield return Frames(2);ClickConfig("ActionCategory2");yield return Frames(2);FocusOption("Option","Aim at Nearest Enemy");yield return Frames(3);ColdLayout(width);
+            ClickConfig("Rule4Action");yield return Frames(2);ClickConfig("ActionCategory2");yield return Frames(2);FocusOption("Option","Auto Aim at Nearest Enemy");yield return Frames(3);ColdLayout(width);
             yield return ColdCapture("config-action-"+width);
             ClickConfig("CancelRuleEdit");yield return Frames(2);
         }
@@ -445,14 +445,14 @@ public static partial class BossEncounterSmoke
         Record("Final targeted fixes: EventSystem deselection, inactive callbacks, narrow Bloom-off signals and real automatic/manual bullet identity.");
         game.NewGame();SetAlphaGameSize(1280,720);yield return Frames(6);
         ClickConfig("AddRule");yield return SelectEditorCondition(33);
-        FocusOption("Option","Aim at Nearest Enemy");yield return Frames(2);
+        FocusOption("Option","Auto Aim at Nearest Enemy");yield return Frames(2);
         Check("legal Action focus previews Arms",Region(2).NeuralSignal>.9f);
         FocusOption("ActionCategory2");yield return Frames(2);
         Check("neutral category focus clears former Action preview",Region(2).NeuralSignal==0);
-        FocusOption("Option","Aim at Nearest Enemy");yield return Frames(2);
+        FocusOption("Option","Auto Aim at Nearest Enemy");yield return Frames(2);
         EventSystem.current.SetSelectedGameObject(null);yield return Frames(2);
         Check("clearing keyboard focus restores uncommitted neutral body",Region(2).NeuralSignal==0);
-        ClickConfig("Option","Aim at Nearest Enemy");yield return Seconds(.65f);
+        ClickConfig("Option","Auto Aim at Nearest Enemy");yield return Seconds(.65f);
         var old=ConfigButtonNamed("Rule0Action").GetComponent<ConditionalOptionDescription>();
         ClickConfig("Rule0Condition");
         old.OnPointerClick(new PointerEventData(EventSystem.current));
@@ -618,7 +618,7 @@ public static partial class BossEncounterSmoke
             Check(width+" pointer leave restores neutral border",hover.Edges[0].color==NeuralPalette.ControlBorder);
             FocusOption("Option","Reloading");ExecuteEvents.Execute(EventSystem.current.currentSelectedGameObject,new BaseEventData(EventSystem.current),ExecuteEvents.submitHandler);yield return Frames(2);
             Check(width+" keyboard condition step focuses a legal action without committing",EventSystem.current.currentSelectedGameObject!=null&&EventSystem.current.currentSelectedGameObject.name=="Option"&&game.DraftLoadout.TotalRules==0&&!ConfigButtonNamed("StartFight").interactable);
-            FocusOption("Option","Aim at Lowest-Health Enemy");ExecuteEvents.Execute(EventSystem.current.currentSelectedGameObject,new BaseEventData(EventSystem.current),ExecuteEvents.submitHandler);yield return Frames(2);
+            FocusOption("Option","Auto Aim at Lowest-Health Enemy");ExecuteEvents.Execute(EventSystem.current.currentSelectedGameObject,new BaseEventData(EventSystem.current),ExecuteEvents.submitHandler);yield return Frames(2);
             Check(width+" keyboard legal action commits once and restores Add focus",game.DraftLoadout.TotalRules==1&&game.DraftLoadout.Operations[2].Rules[0].Action=="Q02"&&EventSystem.current.currentSelectedGameObject!=null&&EventSystem.current.currentSelectedGameObject.name=="AddRule"&&ConfigButtonNamed("StartFight").interactable);
             ClickConfig("Rule0Condition");yield return Frames(2);FocusOption("CancelRuleEdit");ExecuteEvents.Execute(EventSystem.current.currentSelectedGameObject,new BaseEventData(EventSystem.current),ExecuteEvents.submitHandler);yield return Frames(2);
             Check(width+" keyboard cancel retains committed rule",game.DraftLoadout.TotalRules==1&&game.DraftLoadout.Operations[2].Rules[0].Condition==9&&ConfigButtonNamed("StartFight").interactable);

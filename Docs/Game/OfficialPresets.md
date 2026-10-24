@@ -38,7 +38,7 @@ Try: Let a bullet trigger the jump, or jump manually and watch the follow-up.
 Tweak: Replace Fire 1 Shot with Short Burst to compare the two attacks.
 
 1. Incoming Attack (Ranged) → Jump Once
-2. Ground State (Airborne) → Aim at Nearest Enemy
+2. Ground State (Airborne) → Auto Aim at Nearest Enemy
 3. Jump Apex Reached → Fire 1 Shot
 
 ### 03. Roll and Fan (`roll_and_fan`)
@@ -49,8 +49,8 @@ Try: Dodge manually at different distances. Compare a close finish with a distan
 
 Tweak: Use Fire 1 Shot for a slower, precise follow-up.
 
-1. Dodge Finished → Aim at Nearest Enemy
-2. Firing → Aim at Nearest Enemy
+1. Dodge Finished → Auto Aim at Nearest Enemy
+2. Firing → Auto Aim at Nearest Enemy
 3. Dodge Finished + Horizontal Distance (Close) → Short Burst
 
 ### 04. Shot Step (`shot_step`)
@@ -88,7 +88,7 @@ Tweak: Replace Keep Mid Range with Approach Enemy for a more aggressive version.
 1. Near Wall → Move Toward Center
 2. Reloading → Retreat from Enemy
 3. Trigger Held → Keep Mid Range
-4. Trigger Held → Aim at Nearest Enemy
+4. Trigger Held → Auto Aim at Nearest Enemy
 5. Trigger Held → Keep Firing
 6. Incoming Attack (Any) → Dodge in Move Direction
 
@@ -100,8 +100,8 @@ Try: Cross into close range, then stay nearby through one reload.
 
 Tweak: Change Dodge Toward Enemy to Dodge Away from Threat.
 
-1. Horizontal Distance (Close) → Aim at Nearest Enemy
-2. Firing → Aim at Nearest Enemy
+1. Horizontal Distance (Close) → Auto Aim at Nearest Enemy
+2. Firing → Auto Aim at Nearest Enemy
 3. Horizontal Distance (Close) → Short Burst
 4. Reload Finished + Horizontal Distance (Close) → Short Burst
 5. Enemy Preparing an Attack + Horizontal Distance (Close) → Dodge Toward Enemy
@@ -115,8 +115,8 @@ Try: At mid range, compare a missed shot with a hit. Leave enough room for the d
 Tweak: Remove the Mid condition to make more hits request another rush.
 
 1. Hit Enemy + Horizontal Distance (Mid) → Dodge Toward Enemy
-2. Dodge Finished → Aim at Nearest Enemy
-3. Firing → Aim at Nearest Enemy
+2. Dodge Finished → Auto Aim at Nearest Enemy
+3. Firing → Auto Aim at Nearest Enemy
 4. Dodge Finished + Horizontal Distance (Close) → Short Burst
 5. Burst Finished → Retreat from Enemy
 
@@ -142,7 +142,7 @@ Tweak: Swap Higher and Lower to reverse the height rhythm.
 
 1. Reloading → Move to Platform (Higher)
 2. Firing → Move to Platform (Lower)
-3. Enemy Near Aim Direction → Fine-Tune Aim
+3. Enemy Near Aim Direction → Aim Assist
 4. Enemy in Firing Line → Keep Firing
 
 ### 11. Aerial Gunslinger (`aerial_gunslinger`)
@@ -157,8 +157,8 @@ Tweak: Remove the Grounded → Repeat Jumps rule and trigger jumps manually.
 2. Reloading → Retreat from Enemy
 3. Ground State (Grounded) → Repeat Jumps
 4. Incoming Attack (Any) + Ground State (Grounded) → Dodge Away from Threat
-5. Ground State (Airborne) → Aim at Nearest Enemy
-6. Firing → Aim at Nearest Enemy
+5. Ground State (Airborne) → Auto Aim at Nearest Enemy
+6. Firing → Auto Aim at Nearest Enemy
 7. Jump Apex Reached + Horizontal Distance (Close) → Short Burst
 8. Jump Apex Reached + Horizontal Distance (Mid) → Fire 1 Shot
 9. Jump Apex Reached + Horizontal Distance (Far) → Fire 1 Shot
@@ -173,7 +173,7 @@ Tweak: Replace Hold Position with Keep Mid Range for a mobile version.
 
 1. Reloading → Move Toward Center
 2. Trigger Held → Hold Position
-3. Trigger Held → Aim at Lowest-Health Enemy
+3. Trigger Held → Auto Aim at Lowest-Health Enemy
 4. Trigger Held → Keep Firing
 5. Incoming Attack (Ranged) + Trigger Held → Dodge Toward Cursor
 
@@ -186,7 +186,7 @@ Try: Hold LMB, then approach with one or two rounds left. Fire does not stop at 
 Tweak: Change Dodge Toward Enemy to Dodge Away from Threat.
 
 1. Incoming Attack (Any) + Low Ammo → Dodge Toward Enemy
-2. Low Ammo + Horizontal Distance (Close) → Aim at Nearest Enemy
+2. Low Ammo + Horizontal Distance (Close) → Auto Aim at Nearest Enemy
 3. Low Ammo + Horizontal Distance (Close) → Short Burst
 4. Trigger Held → Keep Firing
 
@@ -202,7 +202,7 @@ Tweak: Remove automatic fire and keep only the low-health movement assistance.
 
 1. Near Wall + Low Health → Move Toward Center
 2. Reloading + Low Health → Retreat from Enemy
-3. Low Health → Aim at Lowest-Health Enemy
+3. Low Health → Auto Aim at Lowest-Health Enemy
 4. Low Health → Keep Firing
 5. Incoming Attack (Any) + Low Health → Dodge Away from Threat
 6. Took Damage + Low Health → Jump Once
@@ -213,10 +213,10 @@ Start with one precise shot; completed backward steps trigger the next shot unti
 
 Try: Leave space behind you, fire one LMB shot, and keep aiming without pressing movement keys.
 
-Tweak: Remove Fine-Tune Aim to keep every shot fully manually aimed.
+Tweak: Remove Aim Assist to keep every shot fully manually aimed.
 
 1. Shot Fired → Move (Back)
-2. Move Finished → Fine-Tune Aim
+2. Move Finished → Aim Assist
 3. Move Finished → Fire 1 Shot
 
 ### 16. Full Cycle (`full_cycle`)
@@ -232,8 +232,8 @@ Tweak: Change the two approach rules to Keep Mid Range and redesign the firing r
 3. Horizontal Distance (Far) → Approach Enemy
 4. Horizontal Distance (Mid) → Approach Enemy
 5. Horizontal Distance (Close) → Hold Position
-6. Horizontal Distance (Close) → Aim at Nearest Enemy
-7. Firing → Aim at Nearest Enemy
+6. Horizontal Distance (Close) → Auto Aim at Nearest Enemy
+7. Firing → Auto Aim at Nearest Enemy
 8. Horizontal Distance (Close) → Short Burst
 9. Reload Finished + Horizontal Distance (Close) → Short Burst
 10. Incoming Attack (Any) → Dodge Away from Threat

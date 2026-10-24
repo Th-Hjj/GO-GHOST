@@ -22,7 +22,7 @@ Retry and the next wave keep your rules. New Game clears them.
 | Space | Jump |
 | S | Drop through a platform |
 | Mouse | Aim |
-| LMB | Fire one precise shot per press |
+| LMB | Hold to fire precise shots continuously |
 | RMB | Burst through remaining rounds |
 | Left Shift | Dodge |
 | Escape | Pause |

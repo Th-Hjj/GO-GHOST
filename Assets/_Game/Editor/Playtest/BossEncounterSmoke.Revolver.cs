@@ -11,6 +11,59 @@ using Object = UnityEngine.Object;
 
 public static partial class BossEncounterSmoke
 {
+    [MenuItem("GO GHOST/Playtest/Hold LMB Fire")]
+    public static void RunHoldFire() => Start("hold-fire", false);
+
+    static IEnumerator HoldFire()
+    {
+        yield return TrainingFresh(null);RevolverAim();yield return Frames(4);
+        var gun=game.Rifle;
+        Check("Fresh primary interval defaults to .45 seconds",gun.FireInterval==.45f
+            &&game.GetDeveloperValue(DeveloperSetting.FireInterval)==.45f);
+        game.ToggleDeveloperTools();game.SetDeveloperValue(DeveloperSetting.FireInterval,.7f);game.ResetDeveloperTuning();
+        Check("Restore defaults applies .45 seconds to F8 and weapon",gun.FireInterval==.45f
+            &&game.GetDeveloperValue(DeveloperSetting.FireInterval)==.45f);
+        game.ToggleDeveloperTools();yield return Frames(4);
+        using(var p=new RevolverProbe(gun))
+        {
+            mouseHeld=true;yield return Until(()=>gun.IsReloading,3.5f);
+            Check("Held LMB empties six rounds at primary cadence with full damage and manual attribution",
+                gun.ShotsFired==6&&p.Bursts==0&&p.Sources.All(s=>s=="Manual")&&p.Damages.All(d=>d==gun.BulletDamage)
+                &&p.Angles.All(a=>Mathf.Abs(a)<.01f)&&p.Times.Zip(p.Times.Skip(1),(a,b)=>b-a).All(t=>t>=gun.FireInterval-.01f));
+            yield return Until(()=>gun.ShotsFired>6,2.2f);
+            Check("Held LMB resumes after automatic reload",gun.ShotsFired==7);
+            mouseHeld=false;yield return Frames(3);int stopped=gun.ShotsFired;yield return Seconds(.55f);
+            Check("Release stops continuous fire",gun.ShotsFired==stopped&&!gun.IsFiring);
+            yield return RevolverClick();yield return Seconds(.55f);
+            Check("A short click still fires one shot",gun.ShotsFired==stopped+1);
+            mouseHeld=mouseBurstHeld=true;yield return Until(()=>gun.IsReloading,1);
+            mouseHeld=false;yield return Until(()=>!gun.IsReloading,2.2f);yield return Seconds(.55f);
+            Check("RMB wins simultaneous buttons and held RMB does not repeat after reload",
+                p.Bursts==1&&gun.ShotsFired==12&&gun.AmmoInMagazine==6);
+        }
+        mouseBurstHeld=false;yield return Frames(3);
+        var reader=game.Player.GetComponent<PlayerInputReader>();
+        reader.UiBlocksManualFire=()=>true;mouseHeld=true;yield return Frames(4);
+        reader.UiBlocksManualFire=null;yield return Seconds(.55f);
+        Check("UI-blocked LMB stays suppressed until release",gun.ShotsFired==12);
+        mouseHeld=false;yield return Frames(4);mouseHeld=true;yield return Until(()=>gun.ShotsFired>12,.6f);
+        checkingPause=true;game.SetPause(true);int paused=gun.ShotsFired;yield return RealSeconds(.55);
+        Check("Pause stops held fire",gun.ShotsFired==paused);
+        game.SetPause(false);checkingPause=false;yield return Seconds(.55f);
+        Check("Resume requires releasing held LMB",gun.ShotsFired==paused);
+        mouseHeld=false;yield return Frames(4);
+        game.ContinueFromTraining();yield return Frames(3);game.StartFight();yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);
+        RevolverAim();yield return Frames(4);mouseHeld=true;yield return Seconds(.9f);mouseHeld=false;
+        Check("Training Continue enters live W1 with manual held fire",game.Phase==DuelPhase.Fight&&game.Rifle.ShotsFired>=2);
+        yield return AlphaFresh(1,d=>V2Rule(d,V2Ground("F06")));RevolverAim();mouseHeld=true;yield return Seconds(.7f);
+        Check("Automatic Hold Fire still blocks held LMB",game.Rifle.ShotsFired==0);
+        yield return AlphaFresh(1,d=>V2Rule(d,new ConditionalRule{Condition=17,Action="F03"}));RevolverAim();mouseHeld=true;yield return Seconds(.9f);
+        Check("F03 keeps automatic attribution",game.Rifle.ShotsFired>=2&&game.Rules.AutomaticShots==game.Rifle.ShotsFired);
+        mouseHeld=false;game.MainMenu();yield return Frames(3);
+        Check("Menu clears the combat actor",game.Player==null);
+        Record("NOT TESTED: physical mouse, long sessions, standalone/build.");
+    }
+
     [MenuItem("GO GHOST/Playtest/Revolver")]
     public static void RunRevolver() => Start("revolver", false);
     [MenuItem("GO GHOST/Playtest/Revolver Edges")]

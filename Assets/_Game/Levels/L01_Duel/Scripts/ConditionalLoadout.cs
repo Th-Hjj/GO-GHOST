@@ -175,8 +175,8 @@ namespace GoGhost.Duel
             new ResponseEntry("M10","Hold Position",ControlOperation.Movement),
             new ResponseEntry("J01","Jump Once",ControlOperation.Jump,true),new ResponseEntry("J03","Repeat Jumps",ControlOperation.Jump),
             new ResponseEntry("J04","Move to Platform",ControlOperation.Jump),
-            new ResponseEntry("Q01","Aim at Nearest Enemy",ControlOperation.Aim),new ResponseEntry("Q02","Aim at Lowest-Health Enemy",ControlOperation.Aim),
-            new ResponseEntry("Q06","Fine-Tune Aim",ControlOperation.Aim),
+            new ResponseEntry("Q01","Auto Aim at Nearest Enemy",ControlOperation.Aim),new ResponseEntry("Q02","Auto Aim at Lowest-Health Enemy",ControlOperation.Aim),
+            new ResponseEntry("Q06","Aim Assist",ControlOperation.Aim),
             new ResponseEntry("F01","Fire 1 Shot",ControlOperation.Fire,true),new ResponseEntry("F02","Short Burst",ControlOperation.Fire,true),
             new ResponseEntry("F03","Keep Firing",ControlOperation.Fire),new ResponseEntry("F06","Hold Fire",ControlOperation.Fire),
             new ResponseEntry("D01","Dodge Away from Threat",ControlOperation.Dodge,true),new ResponseEntry("D02","Dodge Toward Enemy",ControlOperation.Dodge,true),
@@ -426,10 +426,10 @@ namespace GoGhost.Duel
             switch(id)
             {
                 case "J04":return "Finish one transfer to a reachable higher or lower platform using a jump, edge descent or drop-through.";
-                case "Q01":return "Aim at the nearest visible enemy.";
-                case "Q02":return "Aim at the visible enemy with the lowest health percentage.";
+                case "Q01":return "Automatically aim at the nearest visible enemy's current position.";
+                case "Q02":return "Automatically aim at the current position of the visible enemy with the lowest health percentage.";
                 case "Q03":return "Aim at the visible enemy associated with the detected situation.";
-                case "Q06":return "Make small corrections toward the visible enemy you are aiming at.";
+                case "Q06":return "Smoothly assist your aim toward a visible enemy near your mouse direction.";
                 case "F01":return "Fire one shot in your current aim direction.";
                 case "F02":return "Rapidly fire all remaining rounds with spread at 75% damage (rounded).";
                 case "F03":return "Fire at the normal rate while the condition holds. Stop when it ends.";
@@ -456,6 +456,7 @@ namespace GoGhost.Duel
     {
         public const float LowEnter=.4f,LowExit=.45f,Close=5.3f,Far=8.5f,Hysteresis=.35f;
         public const float MouseEnter=12,MouseExit=16,ThreatWindow=.20f,VelocityDeadzone=.35f;
+        public const float AimAssistCone=10,AimAssistTimeConstant=.05f;
         public const float RuleEventResponseDuration=.5f;
         public const float ResponseWindow=RuleEventResponseDuration,EventWindow=RuleEventResponseDuration;
         public const float StepBack=1.5f,JumpDelay=.20f,Calibration=.12f,StuckWindow=.25f;

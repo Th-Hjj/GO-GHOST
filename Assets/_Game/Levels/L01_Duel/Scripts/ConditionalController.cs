@@ -36,6 +36,7 @@ namespace GoGhost.Duel
             public int Row=-1, Target=-1, Shots, ShotLimit;
             public float Started, Deadline, Direction, Destination, PreviousX, Stuck;
             public Vector2 Aim;
+            public float AssistOffset;
             public bool Accepted, Completed, ResponseStarted, ApproachStopped;
             public TriggerContext Context, EventContext;
             public PlatformTransition Platform;

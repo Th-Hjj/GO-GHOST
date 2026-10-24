@@ -6,6 +6,7 @@ namespace GoGhost.Duel
     public sealed partial class DuelGame
     {
         float playerRespawnAt, enemyRespawnAt;
+        Vector3 trainingEnemySpawn;
 
         public void StartConfiguredEncounter()
         {
@@ -39,11 +40,15 @@ namespace GoGhost.Duel
             Player.GetComponent<OfficerVisual>()?.ConfigureConditionalGlow(conditionalGlow, Rules.VisualFeedback);
         }
 
-        BossAgent CreateTrainingEnemy()
+        BossAgent CreateTrainingEnemy(bool respawning = false)
         {
-            float spawnX = Mathf.Abs(Player.transform.position.x - gunnerSpawn.x) < 2
-                ? 2 * arenaBounds.center.x - gunnerSpawn.x : gunnerSpawn.x;
-            var instance = Instantiate(gunnerPrefab, new Vector3(spawnX, gunnerSpawn.y), Quaternion.identity, encounter.transform);
+            if (!respawning)
+            {
+                float spawnX = Mathf.Abs(Player.transform.position.x - gunnerSpawn.x) < 2
+                    ? 2 * arenaBounds.center.x - gunnerSpawn.x : gunnerSpawn.x;
+                trainingEnemySpawn = new Vector3(spawnX, gunnerSpawn.y);
+            }
+            var instance = Instantiate(gunnerPrefab, trainingEnemySpawn, Quaternion.identity, encounter.transform);
             instance.name = "TrainingEnemy";
             var actor = instance.GetComponent<BossAgent>();
             actor.ConfigureTraining(Player, navigation);
@@ -60,14 +65,14 @@ namespace GoGhost.Duel
                 return;
             }
             if (actors.Length == 0 || actors[0].IsAlive) return;
-            if (enemyRespawnAt == 0) enemyRespawnAt = Time.time + 1.2f;
+            if (enemyRespawnAt == 0) enemyRespawnAt = Time.time + 3f;
             if (Time.time < enemyRespawnAt) return;
             var previous = actors[0];
             foreach (var shot in encounter.GetComponentsInChildren<Projectile>())
                 if (shot.Owner == previous.gameObject) shot.Retire();
             previous.gameObject.SetActive(false);
             Destroy(previous.gameObject);
-            actors[0] = CreateTrainingEnemy();
+            actors[0] = CreateTrainingEnemy(true);
             ConfigureDodgeBodies();
             Police = actors[0].Health;
             // Fresh source identity/occurrences and subscriptions, with existing player resources and physical commitments.

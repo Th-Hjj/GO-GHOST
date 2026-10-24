@@ -14,7 +14,7 @@ namespace GoGhost.Duel
             profile = ScriptableObject.CreateInstance<BossProfile>();
             profile.name = "Training enemy (runtime)";
             profile.hideFlags = HideFlags.DontSave;
-            profile.Health = 99999;
+            profile.Health = 200;
             profile.Magazine = 1;
             profile.BulletSpeed = 10;
             profile.ReloadSeconds = 1.3f;

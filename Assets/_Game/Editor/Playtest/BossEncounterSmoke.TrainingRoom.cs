@@ -15,13 +15,88 @@ public static partial class BossEncounterSmoke
     public static void RunTrainingRoom() => Start("training-room", false);
     public static void RunTrainingThreat() => Start("training-threat", false);
     public static void RunTrainingPatrol() => Start("training-patrol", false);
+    [MenuItem("GO GHOST/Playtest/Training Respawn")]
+    public static void RunTrainingRespawn() => Start("training-respawn", false);
+
+    static IEnumerator TrainingRespawn()
+    {
+        game.NewGame();
+        game.EditLoadout(d => V2Rule(d, new ConditionalRule { Condition = 18, Action = "Q06" }));
+        game.StartConfiguredEncounter();
+        var trainer = game.Bosses[0];
+        Vector3 spawn = trainer.transform.position;
+        var player = game.Player;
+        Check("training starts at 200/200 HP", trainer.Health.CurrentHealth == 200 && trainer.Health.MaxHealth == 200);
+        yield return Frames(5);
+        float deadline = Time.time + 15;
+        while (trainer.IsAlive && Time.time < deadline)
+        {
+            MouseAt(trainer.Position, true);
+            yield return null;
+        }
+        mouseHeld = false;
+        Check("real held primary fire kills the 200 HP patrol", !trainer.IsAlive && game.Phase == DuelPhase.Training);
+        if (trainer.IsAlive) yield break;
+        float diedAt = Time.time;
+        var oldRules = game.Rules;
+        Check("death disables body and combat", !trainer.Body.enabled && !trainer.Running);
+        // Occupying the original spawn must not mirror the replacement to the opposite side.
+        OnFloor(player.gameObject, trainer.Navigation, spawn.x);
+        yield return Seconds(.5f);
+        checkingPause = true; game.SetPause(true);
+        float pausedAt = Time.time;
+        yield return RealSeconds(.3);
+        Check("pause freezes respawn countdown", Time.time == pausedAt && game.Bosses[0] == trainer);
+        game.SetPause(false); checkingPause = false;
+        while (Time.time < diedAt + 2.8f) yield return null;
+        Check("no respawn before three seconds", game.Bosses[0] == trainer && !trainer.IsAlive);
+        yield return Until(() => game.Bosses[0] != trainer, .5f);
+        float elapsed = Time.time - diedAt;
+        var replacement = game.Bosses[0];
+        Check("fresh robot returns after three combat seconds", replacement != trainer && replacement.IsAlive
+            && replacement.Health.CurrentHealth == 200 && replacement.Health.MaxHealth == 200
+            && elapsed >= 3f && elapsed < 3.2f, "elapsed=" + elapsed);
+        Check("respawn uses initial location even with player nearby", Vector3.Distance(replacement.transform.position, spawn) < .1f,
+            "spawn=" + spawn + " actual=" + replacement.transform.position);
+        Check("player and rules survive with one fresh subscription", game.Player == player && game.DraftLoadout.TotalRules == 1
+            && game.Rules != oldRules && Private<bool>(oldRules, "disposed")
+            && ((Delegate)typeof(PlayerShooting).GetField("EnemyHit", PrivateInstance).GetValue(game.Rifle)).GetInvocationList().Length == 1);
+        yield return Frames(3);
+        Check("one live robot after replacement", Object.FindObjectsByType<BossAgent>(FindObjectsSortMode.None).Length == 1);
+        // A second cycle exercises countdown reset and the same frozen spawn.
+        replacement.Health.TakeDamage(200, player.gameObject);
+        diedAt = Time.time;
+        yield return Until(() => game.Bosses[0] != replacement, 3.3f);
+        Check("repeated death resets the full delay and health", game.Bosses[0] != replacement
+            && game.Bosses[0].Health.CurrentHealth == 200 && Time.time - diedAt >= 3f
+            && Vector3.Distance(game.Bosses[0].transform.position, spawn) < .1f);
+        game.Bosses[0].Health.TakeDamage(200, player.gameObject);
+        yield return Frames(2);
+        game.BackFromTraining();
+        yield return Seconds(3.2f);
+        Check("Back cancels pending respawn and cleans encounter", game.Phase == DuelPhase.Configure
+            && game.Bosses.Count == 0 && Object.FindObjectsByType<BossAgent>(FindObjectsSortMode.None).Length == 0 && Projectile.Active.Count == 0);
+        game.StartConfiguredEncounter();
+        Check("reentry starts a fresh 200 HP robot", game.Bosses[0].Health.CurrentHealth == 200);
+        game.Bosses[0].Health.TakeDamage(200, game.Player.gameObject);
+        yield return Frames(2);
+        game.ContinueFromTraining(); game.StartConfiguredEncounter();
+        PlayMetrics.MarkTestData();
+        yield return Until(() => game.Phase == DuelPhase.Fight, 4);
+        yield return Seconds(.4f);
+        Check("Continue cancels training respawn and advances normal W1", game.Phase == DuelPhase.Fight && game.FightClock > 0
+            && game.Bosses.Count == 1 && !game.Bosses[0].IsTrainingEnemy
+            && game.Bosses[0].Health.MaxHealth == game.Bosses[0].Profile.Health);
+        game.MainMenu(); yield return Frames(3);
+        Check("menu clears all actors and projectiles", game.Bosses.Count == 0 && Projectile.Active.Count == 0);
+    }
 
     static IEnumerator TrainingPatrol()
     {
         yield return TrainingFresh(null);
         var trainer = game.Bosses[0];
-        Check("training starts with 99999 HP and one-round magazine",
-            trainer.Health.CurrentHealth == 99999 && trainer.Health.MaxHealth == 99999 && trainer.Profile.Magazine == 1);
+        Check("training starts with 200 HP and one-round magazine",
+            trainer.Health.CurrentHealth == 200 && trainer.Health.MaxHealth == 200 && trainer.Profile.Magazine == 1);
         // Keep the player on the existing low platform, clear of the walking lane and above the gun.
         OnFloor(game.Player.gameObject, trainer.Navigation, -5.5f);
         yield return Frames(5);
@@ -64,7 +139,7 @@ public static partial class BossEncounterSmoke
         Check("no complex abilities or jump", trainer.Actions.Started.Where((v,i) => i != (int)BossAbility.Burst).All(v => v == 0)
             && trainer.Motor.Grounded);
         MouseAt(trainer.Position, true); yield return Seconds(.8f); mouseHeld = false; yield return Seconds(1);
-        Check("99999 HP remains damageable by real player bullets", trainer.Health.CurrentHealth < 99999 && trainer.IsAlive);
+        Check("200 HP remains damageable by real player bullets", trainer.Health.CurrentHealth < 200 && trainer.IsAlive);
         checkingPause = true; game.SetPause(true);
         var position = trainer.Position; int attack = trainer.Actions.AttackId; float clock = Time.time;
         yield return RealSeconds(.2);
@@ -74,15 +149,15 @@ public static partial class BossEncounterSmoke
         game.BackFromTraining(); yield return Frames(3);
         Check("Back cleans training actors and shots", game.Phase == DuelPhase.Configure && game.Bosses.Count == 0 && Projectile.Active.Count == 0);
         game.StartConfiguredEncounter(); yield return Frames(5);
-        Check("re-entry restores training health and initial left direction", game.Bosses[0].Health.CurrentHealth == 99999 && game.Bosses[0].Facing < 0);
+        Check("re-entry restores training health and initial left direction", game.Bosses[0].Health.CurrentHealth == 200 && game.Bosses[0].Facing < 0);
         game.ContinueFromTraining(); game.StartConfiguredEncounter(); yield return Seconds(5);
         Check("Continue starts normal W1 profile", game.Phase == DuelPhase.Fight && !game.Bosses[0].IsTrainingEnemy
-            && game.Bosses[0].Health.MaxHealth == game.Bosses[0].Profile.Health && game.Bosses[0].Health.MaxHealth != 99999);
+            && game.Bosses[0].Health.MaxHealth == game.Bosses[0].Profile.Health && game.Bosses[0].Health.MaxHealth != 200);
         for (int wave = 2; wave <= 3; wave++)
         {
             game.ToggleDeveloperTools(); game.JumpToDeveloperWave(wave); yield return Seconds(5);
             Check("short W" + wave + " retains normal Boss policies/profiles", game.Phase == DuelPhase.Fight
-                && game.Bosses.All(b => !b.IsTrainingEnemy && b.Health.MaxHealth == b.Profile.Health && b.Health.MaxHealth != 99999));
+                && game.Bosses.All(b => !b.IsTrainingEnemy && b.Health.MaxHealth == b.Profile.Health && b.Health.MaxHealth != 200));
         }
     }
 
@@ -211,12 +286,12 @@ public static partial class BossEncounterSmoke
             TrainingLayout(width);yield return TrainingCapture(width.ToString());
         }
         heldKeys=Array.Empty<Key>();mouseHeld=false;
-        // Bound the high-HP fixture, then finish with paid player bullets to verify replacement/subscriptions.
+        // Bound the remaining health fixture, then finish with paid player bullets to verify replacement/subscriptions.
         until=Time.time+7;var killed=game.Bosses[0];
-        killed.Health.SetRuntimeHealth(99999, 48);
+        killed.Health.SetRuntimeHealth(200, 48);
         while(Time.time<until&&killed.IsAlive){MouseAt(killed.Position,true);yield return null;}
-        mouseHeld=false;yield return Until(()=>game.Bosses[0]!=killed,2);
-        Check("enemy real bullet death and delayed fresh respawn",killed==null&&game.Bosses[0].IsAlive&&game.Bosses[0].Health.CurrentHealth==99999);
+        mouseHeld=false;yield return Until(()=>game.Bosses[0]!=killed,3.4f);
+        Check("enemy real bullet death and delayed fresh respawn",killed==null&&game.Bosses[0].IsAlive&&game.Bosses[0].Health.CurrentHealth==200);
         Check("respawn preserves loadout without duplicate rule subscriptions",JsonUtility.ToJson(game.DraftLoadout)==saved
             &&Object.FindObjectsByType<BossAgent>(FindObjectsSortMode.None).Length==1
             &&((Delegate)typeof(PlayerShooting).GetField("EnemyHit",PrivateInstance).GetValue(game.Rifle)).GetInvocationList().Length==1);

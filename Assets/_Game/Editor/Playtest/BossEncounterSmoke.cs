@@ -197,6 +197,7 @@ public static partial class BossEncounterSmoke
         if(mode=="gunner-platforms") {yield return GunnerPlatforms();yield break;}
         if(mode=="gunner-crossings") {yield return GunnerPlatformCrossings();yield break;}
         if(mode=="training-room") {yield return TrainingRoom();yield break;}
+        if(mode=="training-respawn") {yield return TrainingRespawn();yield break;}
         if(mode=="training-patrol") {yield return TrainingPatrol();yield break;}
         if(mode=="training-threat") {yield return TrainingThreat();yield break;}
         if(mode=="gunner-vfx") {yield return GunnerVfx();yield break;}

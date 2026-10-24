@@ -1,4 +1,11 @@
 # GO GHOST slice implementation
+## 2026-10-24 — Training robot health and fixed-position respawn
+
+- **Baseline / request:** clean main; formal Editor in Play Mode at empty Configure. The robot had 99999 HP, a 1.2-second respawn delay and a spawn-side check based on the player's current position. Thomas requested 200 HP and revival after three seconds at the initial position.
+- **Implemented:** training-only runtime profile now has 200 HP; each attempt captures the initial robot spawn and reuses it on every replacement after three combat seconds. Existing pause, old-projectile cleanup, fresh rule subscriptions, player recovery and exit gates are retained. Updated existing training expectations and added a focused scenario to the existing Editor smoke runner. Mirrored AGENTS/CLAUDE and current Boss specification; no serialized assets, settings, packages or Legacy changes.
+- **Verified:** normal Unity compilation and `git diff --check` passed. `RunTrainingRespawn` reports **14 PASS / 0 FAIL** in `Logs/BossEncounter/training-respawn.txt`: real virtual-input primary fire kills the full 200 HP robot; death disables combat/collision; pause freezes the delay; no early respawn; replacement at 3.001177 combat seconds has 200/200 HP at the exact initial position (9, -1.6), even with the player nearby. Repeated death, single actor/subscription, retained player/rules, Back cancellation, reentry, Continue to advancing W1 and menu cleanup pass. Console Error/Assert/Exception query is empty. Restored the original empty Configure Play Mode state with a clean scene.
+- **Limits:** controlled Editor checks only; physical input, long sessions, full-fight balance and standalone NOT TESTED. No new Build or Release.
+
 
 ## 2026-10-24 — .45-second primary default and main delivery
 

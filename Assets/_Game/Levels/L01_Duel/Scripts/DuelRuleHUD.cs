@@ -150,26 +150,23 @@ namespace GoGhost.Duel
         float LayoutRuleCard(RectTransform root,TMP_Text number,TMP_Text condition,TMP_Text arrow,TMP_Text action,
             float width,float rightInset=14,float minHeight=0)
         {
-            const float left=42,pad=12,gap=4,arrowWidth=24;
+            const float left=48,pad=16,gap=8,arrowWidth=24;
             float available=Mathf.Max(60,width-left-rightInset);
             condition.lineSpacing=action.lineSpacing=2;
-            float conditionNatural=condition.GetPreferredValues(condition.text,Mathf.Infinity,Mathf.Infinity).x+2;
-            float actionNatural=action.GetPreferredValues(action.text,Mathf.Infinity,Mathf.Infinity).x+2;
-            bool inline=conditionNatural+arrowWidth+actionNatural+12<=available;
-            float conditionWidth=inline?conditionNatural:available;
-            float actionWidth=inline?available-conditionNatural-arrowWidth-12:available-arrowWidth;
+            // Every rule keeps the same reading order, regardless of label length or view width.
+            float conditionWidth=available;
+            float actionWidth=available-arrowWidth;
             float conditionHeight=Mathf.Max(28,TextHeight(condition,conditionWidth));
             float actionHeight=Mathf.Max(28,TextHeight(action,actionWidth));
             float arrowHeight=Mathf.Max(28,TextHeight(arrow,arrowWidth));
-            float actionTop=inline?pad:pad+conditionHeight+gap;
-            float height=Mathf.Max(minHeight,(inline?Mathf.Max(conditionHeight,Mathf.Max(actionHeight,arrowHeight)):
-                conditionHeight+gap+Mathf.Max(actionHeight,arrowHeight))+pad*2);
+            float actionTop=pad+conditionHeight+gap;
+            float height=Mathf.Max(minHeight,conditionHeight+gap+Mathf.Max(actionHeight,arrowHeight)+pad*2);
             root.sizeDelta=new Vector2(width,height);
             SetCardTextRect(condition,left,pad,conditionWidth,conditionHeight,width,height);
-            float arrowLeft=inline?left+conditionNatural+6:left;
+            float arrowLeft=left;
             SetCardTextRect(arrow,arrowLeft,actionTop,arrowWidth,arrowHeight,width,height);
             SetCardTextRect(action,arrowLeft+arrowWidth,actionTop,actionWidth,actionHeight,width,height);
-            if(number!=null)SetCardTextRect(number,12,pad,24,28,width,height);
+            if(number!=null)SetCardTextRect(number,16,pad,24,28,width,height);
             return height;
         }
         static void SetCardTextRect(TMP_Text text,float left,float top,float width,float height,float cardWidth,float cardHeight)

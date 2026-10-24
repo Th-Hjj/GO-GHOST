@@ -47,7 +47,7 @@ namespace GoGhost.Duel
             page.sizeDelta=new Vector2(Screen.width/scale,Screen.height/scale);
             float left=-page.sizeDelta.x/2+32,right=page.sizeDelta.x/2-32;
             float top=page.sizeDelta.y/2-32,bottom=-page.sizeDelta.y/2+32;
-            ConfigButton("PresetHelpBack","Back",page,new Vector2(left+48,top-22),new Vector2(96,44),ClosePresetHelp);
+            ConfigButton("PresetHelpBack","Back",page,new Vector2(left+48,top-24),new Vector2(96,48),ClosePresetHelp,style:DuelControlStyle.Navigation);
             Text("Presets",page,new Vector2(0,top-22),new Vector2(360,44),30,TextAlignmentOptions.Center,headingFont);
 
             float listWidth=Mathf.Min(400,(right-left)*.3f);
@@ -62,14 +62,14 @@ namespace GoGhost.Duel
             {
                 int index=i;
                 var button=ConfigButton("HelpPreset_"+presets[i].Id,presets[i].Name,list,Vector2.zero,Vector2.zero,
-                    ()=>SelectHelpPreset(index),i==helpPreset,true);
+                    ()=>SelectHelpPreset(index),i==helpPreset,true,DuelControlStyle.Navigation);
                 PresetRowHeight(button.gameObject,48);
             }
             var preview=BuildRuleOptions("HelpPresetPreview",page,new Vector2((previewLeft+right)/2,center),new Vector2(previewWidth,height));
             helpPresetPreview=preview.GetComponentInParent<UnityEngine.UI.ScrollRect>();
             BuildPresetRulePreview(presets[helpPreset],preview,previewWidth-24,false);
             ConfigButton("ApplyHelpPreset","Apply",page,new Vector2(right-90,bottom+24),new Vector2(180,48),
-                ()=>game.ApplyPresetToSetup(presets[helpPreset]));
+                ()=>game.ApplyPresetToSetup(presets[helpPreset]),style:DuelControlStyle.Primary);
             Canvas.ForceUpdateCanvases();
             helpPresetList.verticalNormalizedPosition=helpListPosition;
             helpPresetPreview.verticalNormalizedPosition=helpPreviewPosition;

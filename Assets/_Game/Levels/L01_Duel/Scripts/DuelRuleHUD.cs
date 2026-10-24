@@ -7,7 +7,21 @@ namespace GoGhost.Duel
     public sealed partial class DuelUI
     {
         const float RulePanelWidth = 350;
+        const float RuleGlowMinimumSeconds = .30f, RuleGlowFadeSeconds = .15f;
         float rulePanelWidth=RulePanelWidth;
+        sealed class RuleGlowState
+        {
+            public bool Matched;
+            public float HoldUntil, FadeFrom=float.NegativeInfinity, Strength;
+
+            public void Update(bool matched,float now)
+            {
+                if(matched&&!Matched)HoldUntil=now+RuleGlowMinimumSeconds;
+                if(!matched&&Matched)FadeFrom=Mathf.Max(HoldUntil,now);
+                Matched=matched;
+                Strength=matched?1:Mathf.Clamp01(1-(now-FadeFrom)/RuleGlowFadeSeconds);
+            }
+        }
         sealed class RuleRowView
         {
             public ConditionalController Controller;
@@ -19,8 +33,12 @@ namespace GoGhost.Duel
             public UnityEngine.UI.Image[] Border;
             public TMP_Text Number, Condition, Action, Arrow;
             public Material[] Signals;
-            public bool Matched;
+            public RuleGlowState Glow;
+            public float RenderedGlow=-1;
         }
+        // Pause/F8 rebuild the page: retain only timing for the same controller's rules.
+        readonly Dictionary<(ControlOperation,int),RuleGlowState> ruleGlowStates = new Dictionary<(ControlOperation,int),RuleGlowState>();
+        ConditionalController ruleGlowController;
         // View capacity is independent of the current five-rule gameplay budget.
         readonly List<RuleRowView> ruleRows = new List<RuleRowView>();
         ConditionalController hudRules, hudScrollController;
@@ -49,10 +67,14 @@ namespace GoGhost.Duel
             ruleSidebar=battleUi=ruleScrollRoot=ruleViewport=ruleContent=ruleScrollbarRoot=null;
             ruleScroll=null;ruleHeading=null;ruleHudSize=Vector2.zero;
         }
-        void OnDestroy()=>ClearRuleHud();
+        void OnDestroy()
+        {ClearRuleHud();ruleGlowStates.Clear();ruleGlowController=null;}
         void BuildRuleHud()
         {
-            if(game.Phase!=DuelPhase.Prepare&&game.Phase!=DuelPhase.Fight&&game.Phase!=DuelPhase.Training)return;
+            bool battle=game.Phase==DuelPhase.Prepare||game.Phase==DuelPhase.Fight||game.Phase==DuelPhase.Training;
+            if(!battle||ruleGlowController!=game.Rules)
+            {ruleGlowStates.Clear();ruleGlowController=battle?game.Rules:null;}
+            if(!battle)return;
             battleUi=Rect("BattleHUD",page,Vector2.zero,new Vector2(1600,900));
             hudRules=game.Rules;
             if(hudScrollController!=hudRules){hudScrollPosition=1;hudScrollController=hudRules;}
@@ -112,6 +134,14 @@ namespace GoGhost.Duel
             for(int i=0;i<ruleRows.Count;i++)
             {
                 var row=ruleRows[i];var expression=ConditionalCatalog.Expression(row.Rule);
+                if(row.Controller==null)row.Glow=new RuleGlowState();
+                else
+                {
+                    var key=(row.Operation,row.Row);
+                    if(!ruleGlowStates.TryGetValue(key,out var glow))
+                        ruleGlowStates.Add(key,glow=new RuleGlowState());
+                    row.Glow=glow;
+                }
                 row.Root=Rect("RuleFeedback_"+row.Operation+"_"+row.Row+"_"+i,ruleContent,Vector2.zero,Vector2.zero);
                 row.Root.anchorMin=row.Root.anchorMax=new Vector2(.5f,1);
                 row.Background=row.Root.gameObject.AddComponent<UnityEngine.UI.Image>();
@@ -254,24 +284,26 @@ namespace GoGhost.Duel
             foreach(var row in ruleRows)
             {
                 AlignRuleGlow(row,scale);
-                var f=(game.Phase==DuelPhase.Fight||game.Phase==DuelPhase.Training)&&row.Controller!=null&&row.Controller==game.Rules
+                bool live=(game.Phase==DuelPhase.Fight||game.Phase==DuelPhase.Training)&&row.Controller!=null&&row.Controller==game.Rules;
+                var f=live
                     ?row.Controller.Feedback(row.Operation,row.Row).Visual:default;
                 var color=NeuralPalette.Operation(row.Operation);
-                bool matched=f.Matched;
+                if(live&&!game.Paused)row.Glow.Update(f.Matched,Time.time);
+                float strength=live?row.Glow.Strength:0;
                 row.Action.color=color;
-                row.Condition.color=row.Arrow.color=matched?color:NeuralPalette.Primary;
-                row.Number.color=matched?color:NeuralPalette.Secondary;
-                row.Background.color=matched?Color.Lerp(NeuralPalette.Panel,color,.08f):NeuralPalette.Panel;
-                if(row.Matched!=matched)
+                row.Condition.color=row.Arrow.color=Color.Lerp(NeuralPalette.Primary,color,strength);
+                row.Number.color=Color.Lerp(NeuralPalette.Secondary,color,strength);
+                row.Background.color=Color.Lerp(NeuralPalette.Panel,color,.08f*strength);
+                if(row.RenderedGlow!=strength)
                 {
-                    row.Matched=matched;
+                    row.RenderedGlow=strength;
                     foreach(var signal in row.Signals)
-                        signal.SetColor(ShaderUtilities.ID_GlowColor,NeuralPalette.Alpha(color,matched?.28f:0));
+                        signal.SetColor(ShaderUtilities.ID_GlowColor,NeuralPalette.Alpha(color,.28f*strength));
                 }
-                // Match already includes optional AND and source intersection, independent of execution.
+                // The full AND/source match drives a presentation-only minimum hold and fade.
                 // Feedback never reorders, scrolls, remeasures, or changes typography.
                 for(int i=0;i<row.Border.Length;i++)row.Border[i].color=NeuralPalette.Alpha(color,
-                    matched?(i/4==0?.65f:i/4==1?.16f:.05f):0);
+                    strength*(i/4==0?.65f:i/4==1?.16f:.05f));
             }
         }
     }

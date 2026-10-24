@@ -231,7 +231,6 @@ namespace GoGhost.Duel
             bool editing=selectorRow>=0;
             float listLeft=editing?selectorLeft+selectorWidth+32:selectorLeft;
             BuildRulePreview(selectorLeft,right,top-112);
-            if(pendingRule!=null)ConfigButton("CancelRuleEdit","Cancel",page,new Vector2(right-48,top-24),new Vector2(96,48),CancelRuleEdit,style:DuelControlStyle.Navigation);
             bodyPreview=Rect("BodyPreview",page,new Vector2(left+bodyWidth/2,(top-64+editorBottom)/2),new Vector2(bodyWidth,top-64-editorBottom));
             ruleEditor = Rect("RuleEditor", page, new Vector2(selectorLeft + selectorWidth / 2, (editorTop + editorBottom) / 2),
                 new Vector2(selectorWidth, editorTop - editorBottom));
@@ -465,6 +464,8 @@ namespace GoGhost.Duel
             float buttonWidth=Mathf.Min(256,(w-16)/2);
             bool editingRule=pendingRule!=null;
             float addX=w/2-buttonWidth/2-(editingRule?0:buttonWidth+16);
+            if(editingRule)
+                ConfigButton("CancelRuleEdit","Cancel",ruleList,new Vector2(addX-buttonWidth-16,-h/2-56),new Vector2(buttonWidth,48),CancelRuleEdit,style:DuelControlStyle.Navigation);
             var add=ConfigButton("AddRule","+ Add Rule",ruleList,new Vector2(addX,-h/2-56),new Vector2(buttonWidth,48),AddRule);
             add.interactable=game.DraftLoadout.TotalRules<ConditionalCatalog.MaxRulesTotal&&pendingRule==null;
             UnityEngine.UI.Button start=null;

@@ -67,20 +67,21 @@ public static partial class BossEncounterSmoke
                 result.AimOwned&&assist.CurrentTargetId==far.ActorId&&firstError>.2f&&firstError<8,
                 "error="+firstError+" dt="+Time.deltaTime);
             float started=Time.time;float lastError=firstError;bool smooth=true;
-            while(Time.time-started<.15f)
+            while(Time.time-started<.09f)
             {
                 yield return null;result=assist.Resolve(raw);
                 float error=Vector2.Angle(result.Aim,direct);smooth&=error<=lastError+.02f;lastError=error;
             }
-            Check("stationary assistance converges within .15 combat seconds",smooth&&lastError<.45f,"error="+lastError);
+            Check("stationary assistance reaches seventy-percent correction within .09 combat seconds without locking",
+                smooth&&lastError>=2.39f&&lastError<2.8f,"error="+lastError);
             raw.Aim=AimRotate(direct,-9);var moved=assist.Resolve(raw);
             Check("mouse movement updates immediately while additive correction stays bounded",
-                Vector2.SignedAngle(result.Aim,moved.Aim)<-.3f&&Vector2.Angle(raw.Aim,moved.Aim)<=10);
+                Vector2.SignedAngle(result.Aim,moved.Aim)<-.3f&&Vector2.Angle(raw.Aim,moved.Aim)<=6.31f);
             raw.Aim=AimRotate(direct,2);result=assist.Resolve(raw);
             Check("crossing target never leaves assistance pulling away from it",
                 Vector2.Angle(result.Aim,direct)<=2.01f&&Vector2.SignedAngle(raw.Aim,result.Aim)<=.01f);
-            raw.Aim=AimRotate(direct,-11);result=assist.Resolve(raw);
-            Check("leaving ten-degree cone immediately restores raw aim",!result.AimOwned&&Vector2.Angle(result.Aim,raw.Aim)<.01f);
+            raw.Aim=AimRotate(direct,-21);result=assist.Resolve(raw);
+            Check("leaving twenty-degree cone immediately restores raw aim",!result.AimOwned&&Vector2.Angle(result.Aim,raw.Aim)<.01f);
             raw.Aim=AimRotate(direct,-8);result=assist.Resolve(raw);
             Check("reacquisition starts with fresh soft correction",result.AimOwned&&Vector2.Angle(result.Aim,direct)>.2f);
             checkingPause=true;game.SetPause(true);yield return Frames(2);
@@ -106,7 +107,8 @@ public static partial class BossEncounterSmoke
         Vector2 toward=((Vector2)trainer.Body.bounds.center-game.Rifle.AimOrigin).normalized;
         MouseAt(game.Rifle.AimOrigin+AimRotate(toward,-6)*10,false);yield return Seconds(.25f);
         Check("live Training input adopts soft assistance",reader.ConditionalFrame.AimOwned
-            &&Vector2.Angle(reader.AimDirection,toward)<1&&Vector2.Angle(reader.RawInput.Aim,toward)>3);
+            &&Vector2.Angle(reader.AimDirection,toward)>1.5f&&Vector2.Angle(reader.AimDirection,toward)<2.2f
+            &&Vector2.Angle(reader.RawInput.Aim,toward)>3);
         int health=trainer.Health.CurrentHealth;mouseHeld=true;yield return Seconds(.65f);mouseHeld=false;
         Check("assisted real shots spend ammo and hit current body",game.Rifle.ShotsFired>0&&trainer.Health.CurrentHealth<health);
         game.ContinueFromTraining();game.StartFight();yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);

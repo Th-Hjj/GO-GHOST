@@ -1,4 +1,11 @@
 # GO GHOST slice implementation
+## 2026-10-24 — Wider, faster partial Aim Assist
+
+- **Baseline / request:** clean main `f227b50`; Thomas revised the requested Q06 cone from +/-30 to +/-20 degrees, then requested faster or percentage-based correction that is noticeable without a centre lock. Previous values were +/-10 degrees, .05-second smoothing and full correction.
+- **Implemented:** shared AimAssistCone is 20; acquisition and retention both use it. Correction targets 70% of raw angular error with a .03-second exponential time constant (95% of that partial correction in about .09 combat seconds). The remaining 30% stays manual, raw mouse response remains immediate and cone exit releases assistance. Auto Aim and the separate Near Aim Direction 12/16-degree condition are unchanged. Updated mirrored authority, current rules and existing smoke expectations for partial correction and 21-degree exit.
+- **Verified:** normal Editor compilation completed with zero errors/warnings; live Editor readback reports cone 20, smoothing .03 and correction fraction .7. `git diff --check` passed. Kept Play Mode running; final readback is Menu.
+- **Limits:** the state-changing Aim Assist smoke, combat/continue flow, physical-input feel and standalone were NOT RUN for this tuning change. No Build or Release.
+
 ## 2026-10-24 — Matching selector and Rules headings
 
 - **Baseline / request:** clean main `64e9a5c`. Thomas confirmed lowering the left category/option list tops to the right rule-list top and adding a Condition / Action heading aligned with Rules. Screenshot red marks were alignment guides, not requested UI lines.

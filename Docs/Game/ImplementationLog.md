@@ -1,4 +1,11 @@
 # GO GHOST slice implementation
+## 2026-10-24 — Only Add Rule in the editing footer
+
+- **Baseline / request:** clean main `50d93ef`; Configure contained six user rules and an empty new-rule draft. Thomas requested that this editing screen show only Add Rule at the bottom right, without Enter Test Room, followed by a main push.
+- **Implemented:** `BuildRuleRows` creates the encounter button only when no rule draft is open. During new/existing-rule editing, Add Rule occupies the rightmost footer position. Completion/cancellation restores the overview's encounter entry. Existing auto-commit, draft cancellation, Add capacity/disabled behavior and gameplay remain unchanged; no new UI copy or serialized assets.
+- **Verified:** normal Unity compilation, static diff check and actual 2560x1440 [Editor capture](../../Logs/RuleFooter/final.png). Virtual-pointer checks in `Logs/RuleFooter/checks.txt` passed all nine footer/editing/Training/cleanup checks; its nine-second wait did not observe advancing W1. A focused follow-up with a 25-second bound (`flow-followup.txt`) passed **5 / 5** checks, recording Prepare immediately after clicking the restored button and Fight at .52 combat seconds, then menu cleanup. Both pre-training and post-training editors show exactly one right-aligned footer button; existing-rule cancel preserves its data. Console Error/Assert/Exception query is empty. Restored all six saved rules and the empty Add draft, with input devices re-enabled and scene clean.
+- **Limits:** other resolutions, physical-input feel and standalone are NOT TESTED. No Build or Release.
+
 ## 2026-10-24 — Rule Setup hierarchy and fixed scrolling description
 
 - **Baseline / request:** main `5726a60` with the completed hover preview controls. Thomas requested a more consistent UI without additional text, then wider option spacing and a lower description area. The final clarification fixes its divider at the bottom of the right rule-list viewport and gives long descriptions their own fixed-size scrolling area.

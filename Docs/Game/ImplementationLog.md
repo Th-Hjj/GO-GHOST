@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-10-24 — Align preview boundaries with the lower cards
+
+- **Baseline / request:** clean main `f4a2d1c`, after the parallel unlimited-conditions task finished as Thomas requested. Align the Condition group's right edge with the option cards below and the Action preview's left edge with the rule cards below, preserving the outside edges and lower layout.
+- **Implemented:** pass the existing selector/card boundaries, including scroll-content padding, into the preview layout. Condition count now subdivides only the fixed aligned condition group; Action keeps the same bounds for one or many conditions. The arrow centers in the gap. No lower layout, visible copy, fitted-text policy, condition behavior or serialized assets changed.
+- **Verified:** normal Editor compilation and `git diff --check`; **35 PASS / 0 FAIL** in `Logs/PreviewAlignment/checks.txt`. Virtual-pointer checks measured actual card edges and arrow center at 1, 2, 5, 12 and 13 conditions; verified unchanged Action bounds, fitted on-screen text, add/remove/cancel preservation, Training entry, Continue to advancing W1 and menu cleanup. Inspected actual 2560x1440 [single-condition](../../Logs/PreviewAlignment/aligned-1.png), [five-condition](../../Logs/PreviewAlignment/aligned-5.png) and [twelve-condition](../../Logs/PreviewAlignment/aligned-12.png) captures. Console Error/Assert/Exception query is empty. Restored the empty Configure loadout saved immediately before this pass, with an Add draft open.
+- **Limits:** other resolutions, physical-input feel and standalone NOT TESTED for this pass. Many conditions retain the prior fitted small text. No Build or Release.
+
 ## 2026-10-24 — Unlimited AND Conditions per Rule
 
 - **Baseline / request:** clean main `36f43d6`; rules stored a primary and one optional state. Thomas requested any number of Conditions (minimum one), AND only, with individual fitted preview boxes and no surrounding layout changes.

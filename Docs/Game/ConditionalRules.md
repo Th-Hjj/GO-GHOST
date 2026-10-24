@@ -8,6 +8,8 @@ Rule Setup > Help offers 16 editable templates with names, complete rule preview
 
 ## Configuration and priority
 
+**Preview alignment — Thomas, 2026-10-24:** keep the outer preview edges fixed; align the Condition group's right edge with the option-card right edge and Action's left edge with the rule-card left edge. The arrow stays centered between them. Subdivide that same condition width for every condition count; the lower layout and Action boundary stay fixed.
+
 **Selector alignment — Thomas, 2026-10-24:** show Condition above the left picker when choosing any condition, and Action when choosing an action. Match the right Rules heading's typography and vertical position. Lower both category and option viewport tops to align with the right rule-list top. Preserve the fixed description area and Cancel / Add Rule footer; screenshot red marks are not UI elements. These two headings are an explicit exception to the earlier no-new-copy constraint.
 
 **Body turning — Thomas, 2026-10-20 follow-up:** A/D and ordinary resolved horizontal movement turn the body; idle retains that facing. Mouse/automatic Aim still owns the Revolver independently. A formal short Move preserves its starting body facing while traveling Forward or Back, so Back remains a backward step. This replaces aim-driven body facing in conditional Duel/Training only.

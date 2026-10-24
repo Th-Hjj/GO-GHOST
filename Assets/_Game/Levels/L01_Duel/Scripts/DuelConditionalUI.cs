@@ -38,6 +38,7 @@ namespace GoGhost.Duel
         int completedPreviewRow=-1;
         readonly List<UnityEngine.UI.Button> previewParts=new List<UnityEngine.UI.Button>();
         readonly List<GameObject> previewDashes=new List<GameObject>();
+        TMP_Text previewConditionJoin;
         string selectedDescription;
         string inspectedDescription;
         float selectorRowHeight;
@@ -275,41 +276,55 @@ namespace GoGhost.Duel
             var expression=ConditionalCatalog.Expression(rule);
             bool additional=expression.HasAdditional||selectingAdditional;
             float tools=pendingRule!=null?114:0;
-            float addWidth=additional?0:172;
-            float available=w-32-tools-addWidth-(additional?88:48);
+            float available=w-32-tools-(additional?88:48);
             int count=additional?3:2;
             float partWidth=available/count,x=-w/2+16;
-            PreviewPart("PreviewCondition",expression.Primary,strip,x+partWidth/2,partWidth,0,()=>EditPreview(0));x+=partWidth;
+            PreviewPart("PreviewCondition",expression.Primary,strip,x+partWidth/2,partWidth,0,()=>EditPreview(0),!additional);x+=partWidth;
+            previewConditionJoin=null;
             if(additional)
             {
-                Text("+",strip,new Vector2(x+20,0),new Vector2(40,44),24);x+=40;
+                previewConditionJoin=Text("+",strip,new Vector2(x+20,0),new Vector2(40,44),24);
+                previewConditionJoin.name="PreviewConditionJoin";x+=40;
                 PreviewPart("PreviewAdditional",expression.HasAdditional?expression.Additional:"Select State",strip,x+partWidth/2,partWidth,1,()=>EditPreview(1));x+=partWidth;
             }
             Text("→",strip,new Vector2(x+24,0),new Vector2(48,44),26);x+=48;
             PreviewPart("PreviewAction",expression.Action,strip,x+partWidth/2,partWidth,2,()=>EditPreview(2));x+=partWidth;
-            if(!additional)
-            {
-                var add=ConfigButton("AdditionalCondition","+ Condition",strip,new Vector2(x+86,0),new Vector2(156,44),()=>EditPreview(1));
-                add.interactable=rule!=null&&rule.Condition!=0&&(ConditionalCatalog.ConditionOptions(rule.Condition).Length==0||ConditionalCatalog.ConditionOption(rule)>=0);
-            }
             if(pendingRule!=null)
-            {
-                ConfigButton("CancelRuleEdit","Cancel",strip,new Vector2(w/2-57,additional?22:0),new Vector2(98,40),CancelRuleEdit);
-                if(additional)ConfigButton("RemoveAdditionalCondition","Remove +",strip,new Vector2(w/2-57,-24),new Vector2(98,40),RemoveAdditionalCondition).GetComponentInChildren<TMP_Text>().fontSize=18;
-            }
+                ConfigButton("CancelRuleEdit","Cancel",strip,new Vector2(w/2-57,0),new Vector2(98,40),CancelRuleEdit);
             UpdateRulePreview();
         }
 
-        void PreviewPart(string name,string label,RectTransform parent,float x,float w,int part,UnityEngine.Events.UnityAction click)
+        void PreviewPart(string name,string label,RectTransform parent,float x,float w,int part,UnityEngine.Events.UnityAction click,bool canAdd=false)
         {
             var button=ConfigButton(name,label,parent,new Vector2(x,0),new Vector2(w,76),click,false,true);
-            button.GetComponentInChildren<TMP_Text>().font=part==2?controlFont:font;
+            var text=button.GetComponentInChildren<TMP_Text>();
+            text.font=part==2?controlFont:font;
+            // Reserve the controls' space even when hidden so hovering never moves the text.
+            text.margin=new Vector4(14,4,canAdd?168:48,4);
             button.GetComponent<DuelButtonOutline>().Subtle=true;
-            button.gameObject.AddComponent<RulePreviewPart>().Part=part;
+            var preview=button.gameObject.AddComponent<RulePreviewPart>();preview.Part=part;
             previewParts.Add(button);
             var dashes=Rect("CandidatePreview",button.transform,new Vector2(0,-34),new Vector2(w-16,2));
             for(int i=0;i<12;i++)Image(dashes,new Vector2(-(w-16)/2+(i+.5f)*(w-16)/12,0),new Vector2((w-16)/20,2),NeuralPalette.Secondary);
             dashes.gameObject.SetActive(false);previewDashes.Add(dashes.gameObject);
+            var controls=Rect("HoverControls",button.transform,Vector2.zero,new Vector2(w,76));
+            preview.HoverControls=controls.gameObject.AddComponent<CanvasGroup>();
+            preview.SetControlsVisible(false);
+            var rule=pendingRule??completedPreview;
+            bool hasContent=part==0?rule!=null&&rule.Condition!=0:part==1?rule!=null&&rule.AdditionalCondition!=0:!string.IsNullOrEmpty(rule?.Action);
+            if(hasContent)
+            {
+                string removeName=part==0?"RemovePrimaryCondition":part==1?"RemoveAdditionalCondition":"RemoveAction";
+                var remove=ConfigButton(removeName,"",controls,new Vector2(w/2-22,18),new Vector2(32,32),()=>ClearPreviewPart(part));
+                for(int i=0;i<2;i++)
+                    Image(remove.transform,Vector2.zero,new Vector2(15,2),NeuralPalette.Primary).rectTransform.localRotation=Quaternion.Euler(0,0,i==0?45:-45);
+            }
+            if(canAdd)
+            {
+                var add=ConfigButton("AdditionalCondition","+ Condition",controls,new Vector2(w/2-84,-19),new Vector2(152,28),()=>EditPreview(1));
+                add.GetComponentInChildren<TMP_Text>().fontSize=18;
+                add.interactable=rule!=null&&rule.Condition!=0&&(ConditionalCatalog.ConditionOptions(rule.Condition).Length==0||ConditionalCatalog.ConditionOption(rule)>=0);
+            }
         }
 
         void EditPreview(int part)
@@ -330,6 +345,7 @@ namespace GoGhost.Duel
         {
             var rule=candidatePreview??pendingRule??completedPreview;
             var expression=ConditionalCatalog.Expression(rule);
+            if(previewConditionJoin!=null)previewConditionJoin.gameObject.SetActive(rule!=null&&rule.Condition!=0&&expression.HasAdditional);
             int current=selectingAdditional?1:selectingCondition?0:2;
             for(int i=0;i<previewParts.Count;i++)
             {
@@ -560,8 +576,38 @@ namespace GoGhost.Duel
 
         void RemoveAdditionalCondition()
         {
-            pendingRule.AdditionalCondition=0;ConditionalCatalog.SetConditionOption(pendingRule,-1,true);
+            ClearAdditionalCondition();
             ReturnToAction();
+        }
+
+        void ClearAdditionalCondition()
+        {
+            pendingRule.AdditionalCondition=0;
+            pendingRule.AdditionalGroundState=default;pendingRule.AdditionalDistance=default;pendingRule.AdditionalIncomingAttack=default;
+        }
+
+        void ClearPreviewPart(int part)
+        {
+            EditPreview(part);
+            if(pendingRule==null)return;
+            candidatePreview=null;
+            if(part==1){RemoveAdditionalCondition();return;}
+            if(part==0)
+            {
+                // Deleting A keeps B, including its branch, as the remaining primary condition.
+                pendingRule.Condition=pendingRule.AdditionalCondition;
+                pendingRule.GroundState=pendingRule.AdditionalGroundState;
+                pendingRule.Distance=pendingRule.AdditionalDistance;
+                pendingRule.IncomingAttack=pendingRule.AdditionalIncomingAttack;
+                ClearAdditionalCondition();
+                ChooseRule(pendingRow,true);
+            }
+            else
+            {
+                pendingRule.Action=null;
+                pendingRule.MoveDirection=default;pendingRule.ShortMoveDirection=default;pendingRule.PlatformDirection=default;
+                ChooseRule(pendingRow,false);
+            }
         }
 
         void ReturnToAction()
@@ -807,7 +853,19 @@ namespace GoGhost.Duel
         }
     }
 
-    public sealed class RulePreviewPart : MonoBehaviour { public int Part; }
+    public sealed class RulePreviewPart : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+    {
+        public int Part;
+        public CanvasGroup HoverControls;
+        public void SetControlsVisible(bool visible)
+        {
+            if(HoverControls==null)return;
+            HoverControls.alpha=visible?1:0;
+            HoverControls.interactable=HoverControls.blocksRaycasts=visible;
+        }
+        public void OnPointerEnter(PointerEventData data)=>SetControlsVisible(true);
+        public void OnPointerExit(PointerEventData data)=>SetControlsVisible(false);
+    }
 
     // Inspect disabled choices without making them selectable. Scroll/drag still bubble to ScrollRect.
     public sealed class ConditionalOptionDescription : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, ISelectHandler, IDeselectHandler, IPointerClickHandler

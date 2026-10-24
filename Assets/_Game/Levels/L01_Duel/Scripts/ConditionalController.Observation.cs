@@ -43,33 +43,26 @@ namespace GoGhost.Duel
         }
         bool IsExpiredEvent(long occurrence)=>!liveEvents.Contains(occurrence);
         static bool HysteresisLow(float ratio,bool wasLow)=>wasLow?ratio<ConditionalDefaults.LowExit:ratio<=ConditionalDefaults.LowEnter;
-        static bool HasPreparation(ConditionalRule rule)=>rule.Condition==25||rule.AdditionalCondition==25;
+        static bool HasPreparation(ConditionalRule rule)=>rule.HasCondition(25);
         TriggerContext EmptyContext()=>new TriggerContext {Candidates=allVisible,Source=-1,PreparationSource=-1};
         bool Evaluate(ConditionalRule rule,int op,int row,out TriggerContext ctx,out bool observed)
         {
             var state=states[op,row];ctx=EmptyContext();observed=false;
-            if(ConditionalCatalog.Condition(rule.Condition).Event)
+            if(rule.HasEvents)
             {
                 // A cadence wait may use only the original occurrence's live window.
                 if(state.CadencePending)
                 {
-                    var pending=state.CadenceContext;
+                    var pending=OriginalEventContext(state.CadenceContext);
                     bool inside=Time.time<=pending.ExpiresAt;
-                    if(inside&&!state.ConsumedEvents.Contains(pending.Occurrence)
+                    if(inside&&EventsAvailable(state,pending)
                         &&gun.isActiveAndEnabled&&!gun.IsReloading&&gun.AmmoInMagazine>0
-                        &&AdditionalMatches(rule,op,ref pending))
+                        &&MatchStates(rule,op,ref pending))
                     {ctx=pending;observed=inside;return true;}
                     state.CadencePending=false;
                 }
-                bool found=false;
-                foreach(var notice in events)
-                {
-                    if(notice.Condition!=rule.Condition||notice.Context.Occurrence>observedSequence)continue;
-                    var candidate=notice.Context;
-                    if(!AdditionalMatches(rule,op,ref candidate))continue;
-                    observed=true;
-                    if(!found&&!state.ConsumedEvents.Contains(candidate.Occurrence)){ctx=candidate;found=true;}
-                }
+                bool found=MatchEvents(rule,op,state,true,out ctx);
+                observed=found||MatchEvents(rule,op,state,false,out _);
                 return found;
             }
             if(!StateRuleMatches(rule,op,out ctx))return false;
@@ -86,13 +79,25 @@ namespace GoGhost.Duel
         }
         bool StateRuleMatches(ConditionalRule rule,int op,out TriggerContext ctx)
         {
-            if(!StateFact(rule,false,op,out ctx))return false;
-            return AdditionalMatches(rule,op,ref ctx);
+            ctx=EmptyContext();
+            return MatchStates(rule,op,ref ctx);
         }
-        bool AdditionalMatches(ConditionalRule rule,int op,ref TriggerContext ctx)
+        bool MatchStates(ConditionalRule rule,int op,ref TriggerContext ctx)
         {
-            if(rule.AdditionalCondition==0)return true;
-            if(!StateFact(rule,true,op,out var extra))return false;
+            bool hasContext=ctx.Occurrence!=0;
+            for(int i=0;i<rule.ConditionCount;i++)
+            {
+                var condition=rule.GetCondition(i);
+                if(ConditionalCatalog.Condition(condition.Id).Event)continue;
+                if(!StateFact(condition,op,out var extra))return false;
+                // Preserve the first fact's original source/position, including anonymous threats.
+                if(!hasContext){ctx=extra;hasContext=true;}
+                else if(!MergeContext(ref ctx,extra))return false;
+            }
+            return true;
+        }
+        bool MergeContext(ref TriggerContext ctx,TriggerContext extra)
+        {
             if(ctx.EnemyBound&&extra.EnemyBound)
             {
                 ctx.Candidates&=extra.Candidates;
@@ -101,14 +106,95 @@ namespace GoGhost.Duel
             else if(extra.EnemyBound)
             {ctx.Candidates=extra.Candidates;ctx.EnemyBound=true;}
             if(!ctx.IsThreat&&extra.IsThreat&&(ctx.Occurrence==0||ctx.Source<0))
-            {ctx.IsThreat=true;ctx.ThreatKind=extra.ThreatKind;ctx.HasPosition=false;}
+            {
+                ctx.IsThreat=true;ctx.ThreatKind=extra.ThreatKind;
+                ctx.HasPosition=extra.HasPosition&&extra.Source<0;
+                if(ctx.HasPosition)ctx.Position=extra.Position;
+            }
             if(extra.PreparationSource>=0)ctx.PreparationSource=extra.PreparationSource;
             SelectSource(ref ctx);
             return true;
         }
+
+        static bool EventsAvailable(RuleState state,TriggerContext context)
+        {
+            if(context.EventOccurrences==null)return !state.ConsumedEvents.Contains(context.Occurrence);
+            foreach(long id in context.EventOccurrences)if(state.ConsumedEvents.Contains(id))return false;
+            return true;
+        }
+        // Each event must have a live occurrence, and every enemy-bound fact must agree.
+        // Try the small set of actual enemy identities, rather than a Cartesian event product.
+        bool MatchEvents(ConditionalRule rule,int op,RuleState state,bool unconsumed,out TriggerContext ctx)
+        {
+            ctx=EmptyContext();
+            int first=0;
+            while(!ConditionalCatalog.Condition(rule.GetCondition(first).Id).Event)first++;
+            foreach(var anchor in events)
+            {
+                if(anchor.Condition!=rule.GetCondition(first).Id||anchor.Context.Occurrence>observedSequence
+                    ||unconsumed&&state.ConsumedEvents.Contains(anchor.Context.Occurrence))continue;
+                var basis=anchor.Context;
+                if(!MatchStates(rule,op,ref basis))continue;
+                for(int source=-1;source<actors.Count;source++)
+                {
+                    // -1 permits only source-free later events; named sources intersect normally.
+                    if(source>=0&&basis.EnemyBound&&(basis.Candidates&(1<<source))==0)continue;
+                    var candidate=basis;
+                    state.EventScratch.Clear();state.EventScratch.Add(anchor.Context.Occurrence);
+                    bool match=true;
+                    for(int i=first+1;i<rule.ConditionCount;i++)
+                    {
+                        int id=rule.GetCondition(i).Id;
+                        if(!ConditionalCatalog.Condition(id).Event)continue;
+                        bool found=false;
+                        foreach(var notice in events)
+                        {
+                            if(notice.Condition!=id||notice.Context.Occurrence>observedSequence
+                                ||unconsumed&&state.ConsumedEvents.Contains(notice.Context.Occurrence))continue;
+                            var extra=notice.Context;
+                            if(extra.EnemyBound&&(source<0||(extra.Candidates&(1<<source))==0))continue;
+                            var merged=candidate;
+                            if(!MergeContext(ref merged,extra))continue;
+                            candidate=merged;candidate.ExpiresAt=Mathf.Min(candidate.ExpiresAt,extra.ExpiresAt);
+                            state.EventScratch.Add(extra.Occurrence);found=true;break;
+                        }
+                        if(!found){match=false;break;}
+                    }
+                    if(!match)continue;
+                    if(state.EventScratch.Count>1&&unconsumed)
+                    {
+                        bool same=state.EventSnapshot!=null&&state.EventSnapshot.Length==state.EventScratch.Count;
+                        if(same)for(int i=0;i<state.EventSnapshot.Length;i++)if(state.EventSnapshot[i]!=state.EventScratch[i]){same=false;break;}
+                        if(!same)state.EventSnapshot=state.EventScratch.ToArray();
+                        candidate.EventOccurrences=state.EventSnapshot;
+                    }
+                    ctx=candidate;return true;
+                }
+            }
+            return false;
+        }
+        TriggerContext OriginalEventContext(TriggerContext context)
+        {
+            var original=EmptyContext();bool found=false;
+            int count=context.EventOccurrences?.Length??1;
+            for(int i=0;i<count;i++)
+            {
+                long id=context.EventOccurrences==null?context.Occurrence:context.EventOccurrences[i];
+                foreach(var notice in events)if(notice.Context.Occurrence==id)
+                {
+                    if(!found){original=notice.Context;found=true;}
+                    else MergeContext(ref original,notice.Context);
+                    break;
+                }
+            }
+            if(!found)return context;
+            original.Occurrence=context.Occurrence;original.EventOccurrences=context.EventOccurrences;original.ExpiresAt=context.ExpiresAt;
+            return original;
+        }
         void SelectSource(ref TriggerContext ctx)
         {
-            if(!ctx.EnemyBound)return;
+            // Anonymous public geometry has an origin but no selectable body identity.
+            if(!ctx.EnemyBound||ctx.Candidates==0)return;
             if(ctx.Source<0||(ctx.Candidates&(1<<ctx.Source))==0)
             {
                 ctx.Source=Choose(ctx.Candidates,"Q01");
@@ -128,12 +214,10 @@ namespace GoGhost.Duel
             if(ctx.PreparationSource>=0&&ctx.Source>=0&&visible[ctx.Source]&&contacts[ctx.Source].Preparing)
             {ctx.PreparationSource=ctx.Source;ctx.PreparationId=contacts[ctx.Source].PreparationId;}
         }
-        bool StateFact(ConditionalRule rule,bool additional,int op,out TriggerContext ctx)
+        bool StateFact(RuleCondition condition,int op,out TriggerContext ctx)
         {
-            int id=additional?rule.AdditionalCondition:rule.Condition;
-            int option=id==51?(int)(additional?rule.AdditionalGroundState:rule.GroundState)
-                :id==52?(int)(additional?rule.AdditionalDistance:rule.Distance)
-                :id==53?(int)(additional?rule.AdditionalIncomingAttack:rule.IncomingAttack):0;
+            int id=condition.Id;
+            int option=id==51?(int)condition.GroundState:id==52?(int)condition.Distance:id==53?(int)condition.IncomingAttack:0;
             int key=id*32+option*2;
             if(!facts.TryGetValue(key,out var fact))
             {

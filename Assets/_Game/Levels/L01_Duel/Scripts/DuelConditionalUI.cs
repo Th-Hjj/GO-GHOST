@@ -11,6 +11,7 @@ namespace GoGhost.Duel
         int actionCategory = 2, conditionCategory;
         int selectorRow = -1, pendingRow = -1;
         bool selectingCondition, selectingAdditional;
+        int selectedConditionIndex;
         ConditionalRule pendingRule;
         ConditionalLoadout displayedDraft;
         // Presentation order only. Runtime priority remains the relative order within each operation.
@@ -41,7 +42,7 @@ namespace GoGhost.Duel
         int completedPreviewRow=-1;
         readonly List<UnityEngine.UI.Button> previewParts=new List<UnityEngine.UI.Button>();
         readonly List<GameObject> previewDashes=new List<GameObject>();
-        TMP_Text previewConditionJoin;
+        readonly List<TMP_Text> previewConditionJoins=new List<TMP_Text>();
         string selectedDescription;
         string inspectedDescription;
         float selectorRowHeight;
@@ -288,20 +289,27 @@ namespace GoGhost.Duel
             var strip=Rect("RulePreview",page,new Vector2((left+right)/2,y),new Vector2(w,100));
             var rule=pendingRule??completedPreview;
             var expression=ConditionalCatalog.Expression(rule);
-            bool additional=expression.HasAdditional||selectingAdditional;
-            float available=w-(additional?88:48);
-            int count=additional?3:2;
-            float partWidth=available/count,x=-w/2;
-            PreviewPart("PreviewCondition",expression.Primary,strip,x+partWidth/2,partWidth,0,()=>EditPreview(0),!additional);x+=partWidth;
-            previewConditionJoin=null;
-            if(additional)
+            int count=Mathf.Max(rule?.ConditionCount??1,pendingRule!=null&&selectingCondition?selectedConditionIndex+1:1);
+            // Keep the strip and action area in place; subdivide only the condition area.
+            float actionWidth=count==1?(w-48)/2:(w-88)/3;
+            float conditionWidth=w-48-actionWidth;
+            float gap=Mathf.Min(40,conditionWidth/(count*3));
+            float partWidth=(conditionWidth-gap*(count-1))/count,x=-w/2;
+            previewConditionJoins.Clear();
+            for(int i=0;i<count;i++)
             {
-                previewConditionJoin=Text("+",strip,new Vector2(x+20,0),new Vector2(40,44),24);
-                previewConditionJoin.name="PreviewConditionJoin";x+=40;
-                PreviewPart("PreviewAdditional",expression.HasAdditional?expression.Additional:"Select State",strip,x+partWidth/2,partWidth,1,()=>EditPreview(1));x+=partWidth;
+                int index=i;
+                if(i>0)
+                {
+                    var join=Text("+",strip,new Vector2(x+gap/2,0),new Vector2(gap,44),Mathf.Max(1,(int)Mathf.Min(24,gap)));
+                    join.name="PreviewConditionJoin";previewConditionJoins.Add(join);x+=gap;
+                }
+                PreviewPart(i==0?"PreviewCondition":i==1?"PreviewAdditional":"PreviewCondition"+i,
+                    ConditionalCatalog.ConditionLabel(rule,i),strip,x+partWidth/2,partWidth,i,()=>EditPreview(index),i==0);
+                x+=partWidth;
             }
             Text("→",strip,new Vector2(x+24,0),new Vector2(48,44),26);x+=48;
-            PreviewPart("PreviewAction",expression.Action,strip,x+partWidth/2,partWidth,2,()=>EditPreview(2));x+=partWidth;
+            PreviewPart("PreviewAction",expression.Action,strip,x+actionWidth/2,actionWidth,-1,()=>EditPreview(-1));
             UpdateRulePreview();
         }
 
@@ -309,9 +317,10 @@ namespace GoGhost.Duel
         {
             var button=ConfigButton(name,label,parent,new Vector2(x,0),new Vector2(w,88),click,false,true,DuelControlStyle.Preview);
             var text=button.GetComponentInChildren<TMP_Text>();
-            text.font=part==2?controlFont:font;
+            text.font=part<0?controlFont:font;
             // Reserve the controls' space even when hidden so hovering never moves the text.
-            text.margin=new Vector4(16,8,canAdd?168:48,8);
+            text.margin=part<0?new Vector4(16,8,48,8):new Vector4(Mathf.Min(16,w*.08f),28,Mathf.Min(16,w*.08f),canAdd?30:8);
+            if(part>=0){text.enableAutoSizing=true;text.fontSizeMin=.1f;text.fontSizeMax=text.fontSize;}
             button.GetComponent<DuelButtonOutline>().Subtle=true;
             var preview=button.gameObject.AddComponent<RulePreviewPart>();preview.Part=part;
             previewParts.Add(button);
@@ -322,19 +331,21 @@ namespace GoGhost.Duel
             preview.HoverControls=controls.gameObject.AddComponent<CanvasGroup>();
             preview.SetControlsVisible(false);
             var rule=pendingRule??completedPreview;
-            bool hasContent=part==0?rule!=null&&rule.Condition!=0:part==1?rule!=null&&rule.AdditionalCondition!=0:!string.IsNullOrEmpty(rule?.Action);
+            bool hasContent=part>=0?rule!=null&&part<rule.ConditionCount&&rule.GetCondition(part).Id!=0:!string.IsNullOrEmpty(rule?.Action);
             if(hasContent)
             {
-                string removeName=part==0?"RemovePrimaryCondition":part==1?"RemoveAdditionalCondition":"RemoveAction";
-                var remove=ConfigButton(removeName,"",controls,new Vector2(w/2-24,20),new Vector2(32,32),()=>ClearPreviewPart(part),style:DuelControlStyle.Tool);
+                string removeName=part==0?"RemovePrimaryCondition":part==1?"RemoveAdditionalCondition":part<0?"RemoveAction":"RemoveCondition"+part;
+                float controlWidth=Mathf.Min(32,w*.7f);
+                var remove=ConfigButton(removeName,"",controls,new Vector2(w/2-controlWidth/2-Mathf.Min(8,w*.1f),20),new Vector2(controlWidth,32),()=>ClearPreviewPart(part),style:DuelControlStyle.Tool);
                 for(int i=0;i<2;i++)
-                    Image(remove.transform,Vector2.zero,new Vector2(15,2),NeuralPalette.Primary).rectTransform.localRotation=Quaternion.Euler(0,0,i==0?45:-45);
+                    Image(remove.transform,Vector2.zero,new Vector2(Mathf.Min(15,controlWidth*.6f),2),NeuralPalette.Primary).rectTransform.localRotation=Quaternion.Euler(0,0,i==0?45:-45);
             }
             if(canAdd)
             {
-                var add=ConfigButton("AdditionalCondition","+ Condition",controls,new Vector2(w/2-84,-20),new Vector2(152,32),()=>EditPreview(1),style:DuelControlStyle.Tool);
-                add.GetComponentInChildren<TMP_Text>().fontSize=18;
-                add.interactable=rule!=null&&rule.Condition!=0&&(ConditionalCatalog.ConditionOptions(rule.Condition).Length==0||ConditionalCatalog.ConditionOption(rule)>=0);
+                float addWidth=Mathf.Min(152,w*.9f);
+                var add=ConfigButton("AdditionalCondition","+ Condition",controls,new Vector2(w/2-addWidth/2-Mathf.Min(8,w*.05f),-20),new Vector2(addWidth,32),()=>EditPreview((pendingRule??completedPreview)?.ConditionCount??1),style:DuelControlStyle.Tool);
+                var addText=add.GetComponentInChildren<TMP_Text>();addText.fontSize=18;addText.enableAutoSizing=true;addText.fontSizeMax=18;addText.fontSizeMin=.1f;addText.margin=Vector4.zero;
+                add.interactable=ConditionalCatalog.ConditionsAreComplete(rule);
             }
         }
 
@@ -345,27 +356,27 @@ namespace GoGhost.Duel
 #endif
             if(pendingRule==null)
             {
-                if(completedPreviewRow>=0&&completedPreviewRow<displayedRules.Count)ChooseRule(completedPreviewRow,part!=2);
+                if(completedPreviewRow>=0&&completedPreviewRow<displayedRules.Count)ChooseRule(completedPreviewRow,part>=0);
                 else {AddRule();if(pendingRule==null)return;}
             }
-            if(part==1)ChooseAdditionalCondition(pendingRow);
-            else ChooseRule(pendingRow,part==0);
+            if(part>=0)ChooseCondition(pendingRow,part);
+            else ChooseRule(pendingRow,false);
         }
 
         void UpdateRulePreview()
         {
             var rule=candidatePreview??pendingRule??completedPreview;
             var expression=ConditionalCatalog.Expression(rule);
-            if(previewConditionJoin!=null)previewConditionJoin.gameObject.SetActive(rule!=null&&rule.Condition!=0&&expression.HasAdditional);
-            int current=selectingAdditional?1:selectingCondition?0:2;
+            for(int i=0;i<previewConditionJoins.Count;i++)previewConditionJoins[i].gameObject.SetActive(rule!=null&&i+1<rule.ConditionCount&&rule.GetCondition(i).Id!=0&&rule.GetCondition(i+1).Id!=0);
+            int current=selectingCondition?selectedConditionIndex:-1;
             for(int i=0;i<previewParts.Count;i++)
             {
                 var button=previewParts[i];if(button==null)continue;
                 int part=button.GetComponent<RulePreviewPart>().Part;
-                button.GetComponentInChildren<TMP_Text>().text=part==0?expression.Primary:part==1?(expression.HasAdditional?expression.Additional:"Select State"):expression.Action;
+                button.GetComponentInChildren<TMP_Text>().text=part>=0?ConditionalCatalog.ConditionLabel(rule,part):expression.Action;
                 var outline=button.GetComponent<DuelButtonOutline>();outline.Persistent=pendingRule!=null&&current==part;
-                outline.Placeholder=part==0?rule==null||rule.Condition==0:part==1?rule==null||rule.AdditionalCondition==0:string.IsNullOrEmpty(rule?.Action);
-                outline.LabelSystem=part==2&&!string.IsNullOrEmpty(rule?.Action)?RuleSystem(rule):NeuralBodySystem.None;
+                outline.Placeholder=part>=0?rule==null||part>=rule.ConditionCount||rule.GetCondition(part).Id==0:string.IsNullOrEmpty(rule?.Action);
+                outline.LabelSystem=part<0&&!string.IsNullOrEmpty(rule?.Action)?RuleSystem(rule):NeuralBodySystem.None;
                 outline.Refresh();
                 previewDashes[i].SetActive(candidatePreview!=null&&current==part);
             }
@@ -576,7 +587,7 @@ namespace GoGhost.Duel
                 pendingRow = row;
                 completedPreview=displayedRules[row].Copy();completedPreviewRow=row;
             }
-            selectorRow = row;selectingAdditional=false;
+            selectorRow = row;selectingAdditional=false;selectedConditionIndex=0;
             selectingCondition = condition || pendingRule.Condition == 0;
             inspectedDescription = null;
             if (selectingCondition && pendingRule.Condition != 0)
@@ -586,25 +597,15 @@ namespace GoGhost.Duel
             Show();
         }
 
-        void ChooseAdditionalCondition(int row)
+        void ChooseAdditionalCondition(int row)=>ChooseCondition(row,1);
+        void ChooseCondition(int row,int index)
         {
             if(pendingRule==null||pendingRow!=row)
             {pendingRule=displayedRules[row].Copy();pendingRow=row;completedPreview=pendingRule.Copy();completedPreviewRow=row;}
-            selectorRow=row;selectingCondition=selectingAdditional=true;inspectedDescription=null;
-            conditionCategory=pendingRule.AdditionalCondition==0?0:ConditionalCatalog.Condition(pendingRule.AdditionalCondition).Category;
+            selectorRow=row;selectingCondition=true;selectingAdditional=index>0;selectedConditionIndex=index;inspectedDescription=null;
+            int id=index<pendingRule.ConditionCount?pendingRule.GetCondition(index).Id:0;
+            conditionCategory=id==0?0:ConditionalCatalog.Condition(id).Category;
             Show();
-        }
-
-        void RemoveAdditionalCondition()
-        {
-            ClearAdditionalCondition();
-            ReturnToAction();
-        }
-
-        void ClearAdditionalCondition()
-        {
-            pendingRule.AdditionalCondition=0;
-            pendingRule.AdditionalGroundState=default;pendingRule.AdditionalDistance=default;pendingRule.AdditionalIncomingAttack=default;
         }
 
         void ClearPreviewPart(int part)
@@ -612,16 +613,10 @@ namespace GoGhost.Duel
             EditPreview(part);
             if(pendingRule==null)return;
             candidatePreview=null;
-            if(part==1){RemoveAdditionalCondition();return;}
-            if(part==0)
+            if(part>=0)
             {
-                // Deleting A keeps B, including its branch, as the remaining primary condition.
-                pendingRule.Condition=pendingRule.AdditionalCondition;
-                pendingRule.GroundState=pendingRule.AdditionalGroundState;
-                pendingRule.Distance=pendingRule.AdditionalDistance;
-                pendingRule.IncomingAttack=pendingRule.AdditionalIncomingAttack;
-                ClearAdditionalCondition();
-                ChooseRule(pendingRow,true);
+                pendingRule.RemoveCondition(part);
+                ChooseCondition(pendingRow,Mathf.Min(part,pendingRule.ConditionCount-1));
             }
             else
             {
@@ -647,9 +642,8 @@ namespace GoGhost.Duel
 
         void SelectCondition(int condition)
         {
-            int previous=selectingAdditional?pendingRule.AdditionalCondition:pendingRule.Condition;
-            if(selectingAdditional)pendingRule.AdditionalCondition=condition;else pendingRule.Condition=condition;
-            if(previous!=condition)ConditionalCatalog.SetConditionOption(pendingRule,-1,selectingAdditional);
+            int previous=selectedConditionIndex<pendingRule.ConditionCount?pendingRule.GetCondition(selectedConditionIndex).Id:0;
+            if(previous!=condition)pendingRule.SetCondition(selectedConditionIndex,new RuleCondition(condition));
             inspectedDescription=null;
             if(ConditionalCatalog.ConditionOptions(condition).Length==0)FinishConditionChoice();
             else Show();
@@ -657,7 +651,7 @@ namespace GoGhost.Duel
 
         void SelectConditionOption(int option)
         {
-            ConditionalCatalog.SetConditionOption(pendingRule,option,selectingAdditional);
+            ConditionalCatalog.SetConditionOption(pendingRule,option,selectedConditionIndex);
             FinishConditionChoice();
         }
 
@@ -695,7 +689,7 @@ namespace GoGhost.Duel
         bool CategoryHasSelectableCondition(int category)
         {
             foreach(var entry in ConditionalCatalog.Conditions)
-                if(entry.Category==category&&(!selectingAdditional||!entry.Event))return true;
+                if(entry.Category==category)return true;
             return false;
         }
 
@@ -704,7 +698,7 @@ namespace GoGhost.Duel
             float w=ruleEditor.sizeDelta.x,h=ruleEditor.sizeDelta.y,top=h/2;
             Text(selectingCondition?"Condition":"Action",ruleEditor,new Vector2(0,top-20),new Vector2(w,40),28,TextAlignmentOptions.Left,headingFont).name="RuleSelectorHeading";
             var rule=EditingRule;
-            int selectedCondition=selectingAdditional?rule.AdditionalCondition:rule.Condition;
+            int selectedCondition=selectedConditionIndex<rule.ConditionCount?rule.GetCondition(selectedConditionIndex).Id:0;
             bool selectedAction=!selectingCondition&&!string.IsNullOrEmpty(rule.Action)&&(int)ConditionalCatalog.Response(rule.Action).Operation==actionCategory;
             string[] parameters=selectingCondition?selectedCondition==0?System.Array.Empty<string>():ConditionalCatalog.ConditionOptions(selectedCondition)
                 :selectedAction?ConditionalCatalog.ActionOptions(rule.Action):System.Array.Empty<string>();
@@ -733,11 +727,10 @@ namespace GoGhost.Duel
                 }
                 foreach(var entry in ConditionalCatalog.Conditions)
                 {
-                    if(entry.Category!=conditionCategory||selectingAdditional&&entry.Event)continue;
+                    if(entry.Category!=conditionCategory)continue;
                     int condition=entry.Id;
                     var candidate=rule.Copy();
-                    if(selectingAdditional)candidate.AdditionalCondition=condition;else candidate.Condition=condition;
-                    if(condition!=selectedCondition)ConditionalCatalog.SetConditionOption(candidate,-1,selectingAdditional);
+                    if(condition!=selectedCondition)candidate.SetCondition(selectedConditionIndex,new RuleCondition(condition));
                     string reason=ConditionalCatalog.HasAnyCompatibleAction(candidate)?null:"These conditions cannot be true together.";
                     RuleOption(entry.Label,choices,()=>ApplyChoice(condition,false,null),selectedCondition==condition,
                         ConditionalCatalog.ConditionDescription(condition),reason,null,candidate);
@@ -760,7 +753,7 @@ namespace GoGhost.Duel
             }
             if(hasParameters)BuildRuleParameters(parameters,selectedCondition,w,h);
             selectedDescription=selectingCondition
-                ?selectedCondition==0?null:ConditionalCatalog.ConditionLabel(rule,selectingAdditional)+"\n"+ConditionalCatalog.ConditionDescription(rule,selectingAdditional)
+                ?selectedCondition==0?null:ConditionalCatalog.ConditionLabel(rule,selectedConditionIndex)+"\n"+ConditionalCatalog.ConditionDescription(rule,selectedConditionIndex)
                 :selectedAction?ConditionalCatalog.RuleActionLabel(rule)+"\n"+ConditionalCatalog.ResponseDescription(rule.Action):null;
             SetOptionDescription(inspectedDescription??selectedDescription);
         }
@@ -771,13 +764,13 @@ namespace GoGhost.Duel
             Text(label,ruleEditor,new Vector2(0,-h/2+104),new Vector2(w,28),20,TextAlignmentOptions.Left);
             int columns=options.Length;
             float width=(w-(columns-1)*8)/columns;
-            int selected=selectingCondition?ConditionalCatalog.ConditionOption(pendingRule,selectingAdditional):ConditionalCatalog.ActionOption(pendingRule);
+            int selected=selectingCondition?ConditionalCatalog.ConditionOption(pendingRule,selectedConditionIndex):ConditionalCatalog.ActionOption(pendingRule);
             for(int i=0;i<options.Length;i++)
             {
                 int index=i;bool allowed=true;
                 if(selectingCondition)
                 {
-                    var candidate=pendingRule.Copy();ConditionalCatalog.SetConditionOption(candidate,index,selectingAdditional);
+                    var candidate=pendingRule.Copy();ConditionalCatalog.SetConditionOption(candidate,index,selectedConditionIndex);
                     allowed=ConditionalCatalog.HasAnyCompatibleAction(candidate);
                 }
                 var option=ConfigButton("RuleParameter"+i,options[i],ruleEditor,new Vector2(-w/2+width/2+i*(width+8),-h/2+56),new Vector2(width,56),()=>

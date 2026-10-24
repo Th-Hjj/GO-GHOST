@@ -14,6 +14,15 @@ namespace GoGhost.Duel
     public enum AmmoUseOption { AllowEmpty, KeepTwoRounds }
     public enum PlatformDirectionOption { Unspecified, Higher, Lower }
 
+    [Serializable] public struct RuleCondition
+    {
+        public int Id;
+        public GroundStateOption GroundState;
+        public EnemyDistanceOption Distance;
+        public IncomingAttackOption IncomingAttack;
+        public RuleCondition(int id) { Id=id;GroundState=default;Distance=default;IncomingAttack=default; }
+    }
+
     [Serializable] public sealed class ConditionalRule
     {
         public int Condition;
@@ -23,6 +32,44 @@ namespace GoGhost.Duel
         public GroundStateOption GroundState, AdditionalGroundState;
         public EnemyDistanceOption Distance, AdditionalDistance;
         public IncomingAttackOption IncomingAttack, AdditionalIncomingAttack;
+        // Keep the original two serialized slots/API intact for existing assets and presets.
+        // All consumers use the indexed sequence; its serialized tail has no capacity limit.
+        public List<RuleCondition> ExtraConditions = new List<RuleCondition>();
+        public int ConditionCount => 1+(AdditionalCondition!=0?1:0)+(ExtraConditions?.Count??0);
+        public RuleCondition GetCondition(int index)
+        {
+            if(index<0||index>=ConditionCount)throw new ArgumentOutOfRangeException(nameof(index));
+            if(index==0)return new RuleCondition(Condition){GroundState=GroundState,Distance=Distance,IncomingAttack=IncomingAttack};
+            if(AdditionalCondition!=0&&index==1)return new RuleCondition(AdditionalCondition){GroundState=AdditionalGroundState,Distance=AdditionalDistance,IncomingAttack=AdditionalIncomingAttack};
+            return ExtraConditions[index-(AdditionalCondition!=0?2:1)];
+        }
+        public void SetCondition(int index,RuleCondition condition)
+        {
+            if(index<0||index>ConditionCount)throw new ArgumentOutOfRangeException(nameof(index));
+            if(index==0){Condition=condition.Id;GroundState=condition.GroundState;Distance=condition.Distance;IncomingAttack=condition.IncomingAttack;}
+            else if(index==1&&(AdditionalCondition!=0||ConditionCount==1))
+            {AdditionalCondition=condition.Id;AdditionalGroundState=condition.GroundState;AdditionalDistance=condition.Distance;AdditionalIncomingAttack=condition.IncomingAttack;}
+            else
+            {
+                if(ExtraConditions==null)ExtraConditions=new List<RuleCondition>();
+                int tail=index-(AdditionalCondition!=0?2:1);
+                if(tail==ExtraConditions.Count)ExtraConditions.Add(condition);else ExtraConditions[tail]=condition;
+            }
+        }
+        public void AddCondition(RuleCondition condition)=>SetCondition(ConditionCount,condition);
+        public void RemoveCondition(int index)
+        {
+            int count=ConditionCount;
+            if(index<0||index>=count)throw new ArgumentOutOfRangeException(nameof(index));
+            for(int i=index;i<count-1;i++)SetCondition(i,GetCondition(i+1));
+            if(ExtraConditions?.Count>0)ExtraConditions.RemoveAt(ExtraConditions.Count-1);
+            else if(count>1){AdditionalCondition=0;AdditionalGroundState=default;AdditionalDistance=default;AdditionalIncomingAttack=default;}
+            else SetCondition(0,default); // Incomplete local draft; validation prevents an empty committed rule.
+        }
+        public bool HasCondition(int id)
+        {for(int i=0;i<ConditionCount;i++)if(GetCondition(i).Id==id)return true;return false;}
+        public bool HasEvents
+        {get{for(int i=0;i<ConditionCount;i++)if(ConditionalCatalog.Condition(GetCondition(i).Id).Event)return true;return false;}}
         public MoveDirectionOption MoveDirection;
         public ShortMoveDirectionOption ShortMoveDirection;
         [UnityEngine.HideInInspector] public AmmoUseOption AmmoUse;
@@ -34,6 +81,7 @@ namespace GoGhost.Duel
             GroundState=GroundState, AdditionalGroundState=AdditionalGroundState,
             Distance=Distance, AdditionalDistance=AdditionalDistance,
             IncomingAttack=IncomingAttack, AdditionalIncomingAttack=AdditionalIncomingAttack,
+            ExtraConditions=ExtraConditions==null?null:new List<RuleCondition>(ExtraConditions),
             MoveDirection=MoveDirection, ShortMoveDirection=ShortMoveDirection, PlatformDirection=PlatformDirection,
             AmmoUse=default, DisplayOrder=DisplayOrder
         };
@@ -211,33 +259,38 @@ namespace GoGhost.Duel
         public static string[] ConditionOptions(int id)
         {switch(id){case 51:return GroundOptions;case 52:return DistanceOptions;case 53:return IncomingOptions;default:return NoOptions;}}
         // Options use zero-based menu indices. -1 means the required branch has not been chosen.
-        public static int ConditionOption(ConditionalRule rule,bool additional=false)
+        public static int ConditionOption(ConditionalRule rule,bool additional=false)=>ConditionOption(rule,additional?1:0);
+        public static int ConditionOption(ConditionalRule rule,int index)
         {
-            if(rule==null)return -1;
-            switch(additional?rule.AdditionalCondition:rule.Condition)
+            if(rule==null||index>=rule.ConditionCount)return -1;
+            var condition=rule.GetCondition(index);
+            switch(condition.Id)
             {
-                case 51:return (int)(additional?rule.AdditionalGroundState:rule.GroundState)-1;
-                case 52:return (int)(additional?rule.AdditionalDistance:rule.Distance)-1;
+                case 51:return (int)condition.GroundState-1;
+                case 52:return (int)condition.Distance-1;
                 case 53:
-                    var incoming=additional?rule.AdditionalIncomingAttack:rule.IncomingAttack;
-                    int index=Array.IndexOf(IncomingValues,incoming);
-                    return incoming==IncomingAttackOption.Unspecified?-1:index>=0?index:-2;
+                    var incoming=condition.IncomingAttack;
+                    int option=Array.IndexOf(IncomingValues,incoming);
+                    return incoming==IncomingAttackOption.Unspecified?-1:option>=0?option:-2;
                 default:return -1;
             }
         }
-        public static void SetConditionOption(ConditionalRule rule,int index,bool additional=false)
+        public static void SetConditionOption(ConditionalRule rule,int index,bool additional=false)=>SetConditionOption(rule,index,additional?1:0);
+        public static void SetConditionOption(ConditionalRule rule,int index,int conditionIndex)
         {
-            if(rule==null)return;
-            int id=additional?rule.AdditionalCondition:rule.Condition;
+            if(rule==null||conditionIndex>=rule.ConditionCount)return;
+            var condition=rule.GetCondition(conditionIndex);
+            int id=condition.Id;
             if(index<-1||index>=ConditionOptions(id).Length)throw new ArgumentOutOfRangeException(nameof(index));
             switch(id)
             {
-                case 51:if(additional)rule.AdditionalGroundState=(GroundStateOption)(index+1);else rule.GroundState=(GroundStateOption)(index+1);break;
-                case 52:if(additional)rule.AdditionalDistance=(EnemyDistanceOption)(index+1);else rule.Distance=(EnemyDistanceOption)(index+1);break;
+                case 51:condition.GroundState=(GroundStateOption)(index+1);break;
+                case 52:condition.Distance=(EnemyDistanceOption)(index+1);break;
                 case 53:
                     var incoming=index<0?IncomingAttackOption.Unspecified:IncomingValues[index];
-                    if(additional)rule.AdditionalIncomingAttack=incoming;else rule.IncomingAttack=incoming;break;
+                    condition.IncomingAttack=incoming;break;
             }
+            rule.SetCondition(conditionIndex,condition);
         }
         public static string[] ActionOptions(string action)=>action=="J04"?PlatformOptions:action=="M04"?ShortMoveOptions:action=="M11"?DirectionOptions:NoOptions;
         public static string ActionOptionLabel(string action)=>action=="J04"||action=="M04"||action=="M11"?"Direction":"";
@@ -280,7 +333,7 @@ namespace GoGhost.Duel
             if(conditionReason!=null)return conditionReason;
             if(Array.IndexOf(FormalResponses[operation],rule.Action)<0)return "Choose an action for this operation.";
             if(operation==(int)ControlOperation.Jump&&HasGroundState(rule,GroundStateOption.Airborne))return "Jump requires being grounded.";
-            if(IsShootingAction(rule.Action)&&(rule.Condition==9||rule.AdditionalCondition==9))return "Cannot fire while reloading.";
+            if(IsShootingAction(rule.Action)&&rule.HasCondition(9))return "Cannot fire while reloading.";
             if(rule.Action=="M04"&&!Enum.IsDefined(typeof(ShortMoveDirectionOption),rule.ShortMoveDirection))return "Choose Forward or Back.";
             if(rule.Action=="M11"&&(rule.MoveDirection<MoveDirectionOption.Unspecified||rule.MoveDirection>MoveDirectionOption.Right
                 ||requireComplete&&rule.MoveDirection==MoveDirectionOption.Unspecified))return "Choose Left or Right.";
@@ -289,30 +342,31 @@ namespace GoGhost.Duel
             return null;
         }
         static bool HasGroundState(ConditionalRule rule,GroundStateOption option)
-            =>rule.Condition==51&&rule.GroundState==option||rule.AdditionalCondition==51&&rule.AdditionalGroundState==option;
+        {for(int i=0;i<rule.ConditionCount;i++){var c=rule.GetCondition(i);if(c.Id==51&&c.GroundState==option)return true;}return false;}
         static string ConditionRuleReason(ConditionalRule rule,bool requireComplete)
         {
-            if(rule==null||!IsSelectableCondition(rule.Condition))return "Choose a condition.";
-            if(rule.AdditionalCondition!=0&&!IsStateCondition(rule.AdditionalCondition))return "The additional condition must be a state.";
-            string primary=ConditionParameterReason(rule,false,requireComplete);
-            if(primary!=null)return primary;
-            if(rule.AdditionalCondition!=0)
+            if(rule==null)return "Choose a condition.";
+            int ground=-1,distance=-1;
+            for(int i=0;i<rule.ConditionCount;i++)
             {
-                string additional=ConditionParameterReason(rule,true,requireComplete);
-                if(additional!=null)return additional;
-                if(rule.Condition==rule.AdditionalCondition&&(rule.Condition==51||rule.Condition==52)
-                    &&ConditionOption(rule)>=0&&ConditionOption(rule,true)>=0&&ConditionOption(rule)!=ConditionOption(rule,true))
-                    return rule.Condition==51?"Grounded and Airborne cannot both be true.":"The same enemy cannot be in two distance ranges.";
+                int id=rule.GetCondition(i).Id;
+                if(!IsSelectableCondition(id))return "Choose a condition.";
+                string reason=ConditionParameterReason(rule,i,requireComplete);
+                if(reason!=null)return reason;
+                int option=ConditionOption(rule,i);
+                if(option<0)continue;
+                if(id==51){if(ground>=0&&ground!=option)return "Grounded and Airborne cannot both be true.";ground=option;}
+                if(id==52){if(distance>=0&&distance!=option)return "The same enemy cannot be in two distance ranges.";distance=option;}
             }
             return null;
         }
-        static string ConditionParameterReason(ConditionalRule rule,bool additional,bool requireComplete)
+        static string ConditionParameterReason(ConditionalRule rule,int conditionIndex,bool requireComplete)
         {
-            int id=additional?rule.AdditionalCondition:rule.Condition;
+            int id=rule.GetCondition(conditionIndex).Id;
             string[] options=ConditionOptions(id);
             if(options.Length==0)return null;
-            int index=ConditionOption(rule,additional);
-            if(id==53&&(additional?rule.AdditionalIncomingAttack:rule.IncomingAttack)==IncomingAttackOption.Low)
+            int index=ConditionOption(rule,conditionIndex);
+            if(id==53&&rule.GetCondition(conditionIndex).IncomingAttack==IncomingAttackOption.Low)
                 return "Low is no longer available. Choose Any, Melee or Ranged.";
             if(index>=0&&index<options.Length)return null;
             if(!requireComplete&&index==-1)return null;
@@ -341,12 +395,14 @@ namespace GoGhost.Duel
             }
             return true;
         }
-        public static string ConditionLabel(ConditionalRule rule,bool additional=false)
+        public static string ConditionLabel(ConditionalRule rule,bool additional=false)=>ConditionLabel(rule,additional?1:0);
+        public static string ConditionLabel(ConditionalRule rule,int conditionIndex)
         {
-            if(rule==null)return "Select Condition";
-            int id=additional?rule.AdditionalCondition:rule.Condition;
-            if(id==0)return additional?"Select State":"Select Condition";
-            int option=ConditionOption(rule,additional);
+            if(rule==null||conditionIndex>=rule.ConditionCount)return "Select Condition";
+            var condition=rule.GetCondition(conditionIndex);
+            int id=condition.Id;
+            if(id==0)return "Select Condition";
+            int option=ConditionOption(rule,conditionIndex);
             string[] options=ConditionOptions(id);
             if(option>=0&&option<options.Length)
             {
@@ -354,12 +410,17 @@ namespace GoGhost.Duel
                 if(id==52)return "Horizontal Distance ("+options[option]+")";
                 if(id==53)return "Incoming Attack ("+options[option]+")";
             }
-            if(id==53&&(additional?rule.AdditionalIncomingAttack:rule.IncomingAttack)==IncomingAttackOption.Low)
+            if(id==53&&condition.IncomingAttack==IncomingAttackOption.Low)
                 return "Incoming Attack (Reselect)";
             return id==37?(rule.Below?"Enemy Below":"Enemy Above"):Condition(id).Label;
         }
         public static RuleExpression Expression(ConditionalRule rule)
-            =>new RuleExpression(ConditionLabel(rule),rule!=null&&rule.AdditionalCondition!=0?ConditionLabel(rule,true):"",RuleActionLabel(rule));
+        {
+            var additional=new System.Text.StringBuilder();
+            if(rule!=null)for(int i=1;i<rule.ConditionCount;i++)
+            {if(i>1)additional.Append(" + ");additional.Append(ConditionLabel(rule,i));}
+            return new RuleExpression(ConditionLabel(rule),additional.ToString(),RuleActionLabel(rule));
+        }
         public static string RuleConditionLabel(ConditionalRule rule)=>Expression(rule).Conditions;
         public static string RuleActionLabel(ConditionalRule rule)
         {
@@ -372,10 +433,11 @@ namespace GoGhost.Duel
                 label+=rule.PlatformDirection==PlatformDirectionOption.Higher?" (Higher) ↑":" (Lower) ↓";
             return label;
         }
-        public static string ConditionDescription(ConditionalRule rule,bool additional=false)
+        public static string ConditionDescription(ConditionalRule rule,bool additional=false)=>ConditionDescription(rule,additional?1:0);
+        public static string ConditionDescription(ConditionalRule rule,int conditionIndex)
         {
-            if(rule==null)return "";
-            int id=additional?rule.AdditionalCondition:rule.Condition;
+            if(rule==null||conditionIndex>=rule.ConditionCount)return "";
+            int id=rule.GetCondition(conditionIndex).Id;
             if(id==0)return "";
             return ConditionDescription(id);
         }

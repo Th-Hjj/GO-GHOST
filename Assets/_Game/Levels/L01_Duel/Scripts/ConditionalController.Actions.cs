@@ -241,8 +241,8 @@ namespace GoGhost.Duel
             if(action=="Q06")
             {
                 // Smooth only the additive assistance: the raw mouse direction responds immediately.
-                // Reach 95% of a stationary correction in .15 combat seconds, without prediction.
-                float desired=Vector2.SignedAngle(raw.Aim,output.Aim);
+                // Reach 95% of a 70% correction in .09 combat seconds; leave the final aim to the player.
+                float desired=Vector2.SignedAngle(raw.Aim,output.Aim)*ConditionalDefaults.AimAssistCorrectionFraction;
                 float blend=1-Mathf.Exp(-Time.deltaTime/ConditionalDefaults.AimAssistTimeConstant);
                 r.AssistOffset=Mathf.Lerp(r.AssistOffset,desired,blend);
                 // Never pull past the body or oppose a mouse movement across the target.

@@ -1,5 +1,9 @@
 # GO GHOST — Boss Encounter
 
+## Training robot override — 2026-10-24
+
+The training robot starts with 200 HP. On death it returns with full health after three combat seconds at the initial spawn captured for that attempt, even if the player is near that position. Pause freezes the countdown; Back, Continue and encounter cleanup cancel pending respawns. Patrol, attacks, player recovery and numbered-wave Boss profiles are unchanged.
+
 Player-control authority: [ConditionalRules.md](ConditionalRules.md), Thomas 2026-10-15. Five conditional operations replace permanent module AI and the old autonomous Legs policy; Windows delivery is authorized. This file retains Boss combat. Boss foundation: Thomas's **2026-10-05 solo Boss pressure / gunner mobility upgrade**, including his correction that Drop Cut pushes the player while the sword keeps its locked landing. It extends Optical Camo, Player Legs Platform Use + Light Duo and the focused Boss pressure pass. This specification records confirmed scope and implemented source. Runtime checks and limits belong in [ImplementationLog.md](ImplementationLog.md); controlled fixtures do not prove balance or a normal all-AI result.
 
 ## Arena containment and sword-wave retirement — approved 2026-10-24

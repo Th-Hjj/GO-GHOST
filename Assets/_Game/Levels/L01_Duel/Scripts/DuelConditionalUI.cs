@@ -463,16 +463,23 @@ namespace GoGhost.Duel
                 DescribeControl(remove,"Delete rule "+(row+1)+".");
             }
             float buttonWidth=Mathf.Min(256,(w-16)/2);
-            var add=ConfigButton("AddRule","+ Add Rule",ruleList,new Vector2(w/2-buttonWidth*1.5f-16,-h/2-56),new Vector2(buttonWidth,48),AddRule);
+            bool editingRule=pendingRule!=null;
+            float addX=w/2-buttonWidth/2-(editingRule?0:buttonWidth+16);
+            var add=ConfigButton("AddRule","+ Add Rule",ruleList,new Vector2(addX,-h/2-56),new Vector2(buttonWidth,48),AddRule);
             add.interactable=game.DraftLoadout.TotalRules<ConditionalCatalog.MaxRulesTotal&&pendingRule==null;
-            var start=ConfigButton("StartFight",game.TrainingPending?"Enter Test Room":"Start Fight",ruleList,new Vector2(w/2-buttonWidth/2,-h/2-56),new Vector2(buttonWidth,48),game.StartConfiguredEncounter,style:DuelControlStyle.Primary);
-            start.GetComponent<DuelButtonOutline>().Primary=true;start.interactable=ConfigurationReady;
+            UnityEngine.UI.Button start=null;
+            if(!editingRule)
+            {
+                start=ConfigButton("StartFight",game.TrainingPending?"Enter Test Room":"Start Fight",ruleList,new Vector2(w/2-buttonWidth/2,-h/2-56),new Vector2(buttonWidth,48),game.StartConfiguredEncounter,style:DuelControlStyle.Primary);
+                start.GetComponent<DuelButtonOutline>().Primary=true;start.interactable=ConfigurationReady;
+            }
 #if UNITY_EDITOR
             if(ruleSetupViewSample!=null)
             {
                 // Samples exercise sizing/scrolling/focus, never commit over-budget gameplay.
                 foreach(var button in ruleList.GetComponentsInChildren<UnityEngine.UI.Button>())button.onClick.RemoveAllListeners();
-                add.interactable=start.interactable=false;
+                add.interactable=false;
+                if(start!=null)start.interactable=false;
             }
 #endif
         }

@@ -231,7 +231,8 @@ namespace GoGhost.Duel
             float selectorWidth=Mathf.Clamp((right-selectorLeft)*.52f,520,760);
             bool editing=selectorRow>=0;
             float listLeft=editing?selectorLeft+selectorWidth+32:selectorLeft;
-            BuildRulePreview(selectorLeft,right,top-112);
+            // Match the visible option right edge and rule-card left edge, including scroll padding.
+            BuildRulePreview(selectorLeft,selectorLeft+selectorWidth-20,selectorLeft+selectorWidth+36,right,top-112);
             bodyPreview=Rect("BodyPreview",page,new Vector2(left+bodyWidth/2,(top-64+editorBottom)/2),new Vector2(bodyWidth,top-64-editorBottom));
             ruleEditor = Rect("RuleEditor", page, new Vector2(selectorLeft + selectorWidth / 2, (editorTop + editorBottom) / 2),
                 new Vector2(selectorWidth, editorTop - editorBottom));
@@ -282,7 +283,7 @@ namespace GoGhost.Duel
             UpdateConfigurationSignals();
         }
 
-        void BuildRulePreview(float left,float right,float y)
+        void BuildRulePreview(float left,float conditionRight,float actionLeft,float right,float y)
         {
             candidatePreview=null;previewParts.Clear();previewDashes.Clear();
             float w=right-left;
@@ -290,9 +291,8 @@ namespace GoGhost.Duel
             var rule=pendingRule??completedPreview;
             var expression=ConditionalCatalog.Expression(rule);
             int count=Mathf.Max(rule?.ConditionCount??1,pendingRule!=null&&selectingCondition?selectedConditionIndex+1:1);
-            // Keep the strip and action area in place; subdivide only the condition area.
-            float actionWidth=count==1?(w-48)/2:(w-88)/3;
-            float conditionWidth=w-48-actionWidth;
+            // Condition count changes only the subdivisions, never the aligned group boundaries.
+            float conditionWidth=conditionRight-left,arrowWidth=actionLeft-conditionRight,actionWidth=right-actionLeft;
             float gap=Mathf.Min(40,conditionWidth/(count*3));
             float partWidth=(conditionWidth-gap*(count-1))/count,x=-w/2;
             previewConditionJoins.Clear();
@@ -308,7 +308,7 @@ namespace GoGhost.Duel
                     ConditionalCatalog.ConditionLabel(rule,i),strip,x+partWidth/2,partWidth,i,()=>EditPreview(index),i==0);
                 x+=partWidth;
             }
-            Text("→",strip,new Vector2(x+24,0),new Vector2(48,44),26);x+=48;
+            Text("→",strip,new Vector2(x+arrowWidth/2,0),new Vector2(arrowWidth,44),26).name="PreviewActionArrow";x+=arrowWidth;
             PreviewPart("PreviewAction",expression.Action,strip,x+actionWidth/2,actionWidth,-1,()=>EditPreview(-1));
             UpdateRulePreview();
         }

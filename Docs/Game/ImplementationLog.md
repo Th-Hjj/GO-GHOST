@@ -1,4 +1,9 @@
 # GO GHOST slice implementation
+## 2026-10-24 — Cancel beside Add Rule
+
+- **Follow-up:** before the preceding footer fix was pushed, Thomas requested moving the upper-right Cancel immediately left of Add Rule. Moved the existing control into the same fixed footer, with matching height and a 16-unit gap. The active editor now shows Cancel / Add Rule; encounter entry remains overview-only. No new copy or changes to cancellation/commit behavior.
+- **Verified:** normal Editor compilation, `git diff --check`, and **10 PASS / 0 FAIL** in `Logs/RuleFooter/cancel-checks.txt`. Virtual-pointer checks cover both new/existing-rule footer positions, actual lower Cancel click, exact cancellation data preservation, completed-rule overview, Training entry, post-training footer and advancing W1/menu cleanup. Inspected the actual 2560x1440 [final layout](../../Logs/RuleFooter/cancel-final.png). All six saved user rules and the empty Add draft were restored with a clean scene; Console Error/Assert/Exception query is empty. Other resolutions, human-input feel and standalone NOT TESTED; no Build or Release.
+
 ## 2026-10-24 — Only Add Rule in the editing footer
 
 - **Baseline / request:** clean main `50d93ef`; Configure contained six user rules and an empty new-rule draft. Thomas requested that this editing screen show only Add Rule at the bottom right, without Enter Test Room, followed by a main push.

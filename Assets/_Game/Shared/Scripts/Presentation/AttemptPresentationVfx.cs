@@ -24,6 +24,7 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
 
     private readonly List<Flash> flashes = new List<Flash>();
     private Transform owned;
+    private ArenaBoundary2D arena;
     private bool running, ghosting;
     private float nextEcho;
     private bool paused;
@@ -43,6 +44,7 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
     public void BeginAttempt()
     {
         EndAttempt();
+        arena = GetComponent<ArenaBoundary2D>();
         running = isActiveAndEnabled;
         PrepareBlackoutLines();
     }
@@ -102,7 +104,22 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
         line.receiveShadows = false;
         line.lightProbeUsage = LightProbeUsage.Off;
         line.reflectionProbeUsage = ReflectionProbeUsage.Off;
+        ClipToArena(line);
         return line;
+    }
+
+    private void ClipToArena(LineRenderer line)
+    {
+        if (arena == null) return;
+        float inset = Mathf.Max(line.startWidth, line.endWidth) * .5f;
+        if (line.positionCount == 2)
+        {
+            Vector2 from = line.GetPosition(0), to = line.GetPosition(1);
+            line.enabled = ArenaBoundary2D.ClipSegment(arena.Bounds, ref from, ref to, inset);
+            if (line.enabled) { line.SetPosition(0, from); line.SetPosition(1, to); }
+        }
+        else for (int i = 0; i < line.positionCount; i++)
+            line.SetPosition(i, ArenaBoundary2D.ClampPoint(arena.Bounds, line.GetPosition(i), inset));
     }
 
     private void Rays(Vector3 point, Vector2 direction, int count, float length, float life)
@@ -273,6 +290,7 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
                 if (f.velocity != Vector3.zero)
                     for (int j = 0; j < line.positionCount; j++)
                         line.SetPosition(j, line.GetPosition(j) + f.velocity * Time.unscaledDeltaTime);
+                ClipToArena(line);
             }
             if (f.sprites != null) foreach (var sprite in f.sprites)
                 if (sprite != null) sprite.color = new Color(.75f, .75f, .75f, alpha);

@@ -5,7 +5,7 @@ using UnityEngine;
 /// Simple straight-line bullet. Requires a Rigidbody2D and a Collider2D
 /// marked "Is Trigger" on the prefab. Used by the player and by enemies:
 /// it never damages its shooter or team, but living allied Boss bodies stop it.
-/// All bullets pass through walls/platforms, independently of character terrain contacts.
+/// Bullets pass through interior terrain; an attempt's ArenaBoundary2D stops them at its perimeter.
 /// Penetrating laser attacks have their own ray executor and do not use Projectile.
 /// </summary>
 // FUNCTION SUMMARY
@@ -41,6 +41,8 @@ public class Projectile : MonoBehaviour
     private Vector2 fullVelocity;
     private float remainingLife;
     private bool launched;
+    private ArenaBoundary2D arena;
+    private float boundaryRadius;
     private SfxSet sfx;
     private AttemptPresentationVfx vfx;
     public float SimulationRate => timeSlow != null ? timeSlow.WorldRate : 1f;
@@ -89,6 +91,10 @@ public class Projectile : MonoBehaviour
         ownerLayer = shooter != null ? shooter.layer : -1;
         // The actors' container owns transient bullets too; disposing an attempt removes all of them.
         if (shooter != null) transform.SetParent(shooter.transform.parent, true);
+        arena = GetComponentInParent<ArenaBoundary2D>();
+        boundaryRadius = Radius * 1.2f; // Include the narrow Boss bullet halo.
+        if (TryGetComponent<SpriteRenderer>(out var bodySprite))
+            boundaryRadius = Mathf.Max(boundaryRadius, ((Vector2)bodySprite.bounds.extents).magnitude);
         sfx = GetComponentInParent<SfxSet>();
         vfx = GetComponentInParent<AttemptPresentationVfx>();
         timeSlow = hostileClock;
@@ -97,6 +103,7 @@ public class Projectile : MonoBehaviour
         remainingLife = lifetime;
         launched = true;
         if (!active.Contains(this)) active.Add(this);
+        if (arena != null && !ArenaBoundary2D.Contains(arena.Bounds, rb.position, boundaryRadius)) Retire();
     }
 
     /// <summary>
@@ -137,15 +144,24 @@ public class Projectile : MonoBehaviour
         // Sweep in contact order before the physics step so fast bullets cannot skip actor bodies.
         // Terrain contacts are ignored, including either side of a one-way platform.
         Vector2 travel = rb.linearVelocity * Time.fixedDeltaTime;
-        foreach (var hit in Physics2D.CircleCastAll(rb.position, Radius, travel.normalized, travel.magnitude))
+        float distance = travel.magnitude;
+        bool reachesBoundary = false;
+        if (arena != null)
+        {
+            float edge = ArenaBoundary2D.ExitDistance(arena.Bounds, rb.position, travel.normalized, boundaryRadius);
+            reachesBoundary = edge <= distance;
+            distance = Mathf.Min(distance, edge);
+        }
+        foreach (var hit in Physics2D.CircleCastAll(rb.position, Radius, travel.normalized, distance))
         {
             if (hit.collider == null || hit.collider.gameObject == gameObject) continue;
             var ownerBefore = owner;
             OnTriggerEnter2D(hit.collider);
             if (spent) return;
             // A receiver can reverse this bullet; the remaining hits describe its obsolete forward path.
-            if (owner != ownerBefore) break;
+            if (owner != ownerBefore) { reachesBoundary = false; break; }
         }
+        if (reachesBoundary) { Retire(); return; }
         remainingLife -= Time.fixedDeltaTime * SimulationRate;
         if (remainingLife <= 0f) Retire();
     }
@@ -229,6 +245,8 @@ public class Projectile : MonoBehaviour
         if (rb != null) rb.simulated = false;
         var hitbox = GetComponent<Collider2D>();
         if (hitbox != null) hitbox.enabled = false;
+        var sprite = GetComponent<SpriteRenderer>();
+        if (sprite != null) sprite.enabled = false;
         Destroy(gameObject);
     }
 }

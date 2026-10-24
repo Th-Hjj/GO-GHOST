@@ -31,7 +31,7 @@ public partial class PlayerShooting : MonoBehaviour, IAttemptAugmentation
     private OfficerVisual visual;
     private bool legacyCombat;
     // Retained API name; formal combat uses the six-round Revolver.
-    public static readonly WeaponProfile LegacyRifle = new WeaponProfile(30, .50f, 6, 1.80f, .10f, 10f);
+    public static readonly WeaponProfile LegacyRifle = new WeaponProfile(28, .40f, 6, 1.80f, .10f, 14f);
     private WeaponProfile? runtimeRifle;
     private float runtimeBulletSpeed = -1;
     private WeaponProfile Weapon => legacyCombat ? runtimeRifle ?? LegacyRifle : officer.Deployment.Weapon;

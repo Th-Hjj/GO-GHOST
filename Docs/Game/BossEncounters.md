@@ -1,5 +1,9 @@
 # GO GHOST — Boss Encounter
 
+## Unbound threshold and silhouette trails — approved 2026-10-24
+
+Severance enters Unbound once at **33% remaining health**, at the existing idle decision boundary after the current action and recovery. This supersedes the former 45% threshold. In Unbound, ordinary physical movement, jumping and falling also emit the existing human-shaped silhouette afterimages. A small velocity dead zone excludes stationary physics noise; first-phase dash/flank trails retain their existing condition. Appearance remains unchanged: .055 s sampling, .14 s fade, .16 starting opacity and at most three silhouettes. Pause freezes the effect, death/encounter cleanup removes it, and a fresh encounter starts in Hunt. These silhouettes have no independent damage; damaging afterblades are unchanged. Any attack-aggression tuning is still Proposed, awaiting Thomas's selection.
+
 ## Training robot override — 2026-10-24
 
 The training robot starts with 200 HP. On death it returns with full health after three combat seconds at the initial spawn captured for that attempt, even if the player is near that position. Pause freezes the countdown; Back, Continue and encounter cleanup cancel pending respawns. Patrol, attacks, player recovery and numbered-wave Boss profiles are unchanged.
@@ -83,7 +87,7 @@ The local implementation selects one finite authored phrase from public distance
 | Still Blade | Stationary downward-blade reflection; original arc and timing, unlimited eligible contacts through the full active window, reverse incoming path, unchanged bullet damage/speed/lifetime and rear vulnerability. A reflected shot biases the next legal offense after recovery. |
 | Redline Execution | Unbound-only finite draw/traverse/draw/finish/release phrase; one authored aerial continuation can follow traversal. Independent airborne initiation remains forbidden. Blocked/illegal links retire; .80 s actor recovery runs alongside the released afterblades. Disabled while the gunner lives. |
 
-Hunt transitions once to Unbound at the prototype 45% health threshold, at an action boundary. Health, damage immunity and player abilities do not change. Visual stance and phrase composition change. Individual phrase clocks have a finite deadline; physical drives also retire on no progress. A grounded body with partial lower-platform support and upper-platform overlap first settles physically onto its actual support. A valid platform is held until a purposeful departure is chosen. Lost public contact reuses bounded visible-angle search, without reading hidden player position.
+Hunt transitions once to Unbound at the 33% health threshold, at an action boundary. Health, damage immunity and player abilities do not change. Visual stance and phrase composition change. Individual phrase clocks have a finite deadline; physical drives also retire on no progress. A grounded body with partial lower-platform support and upper-platform overlap first settles physically onto its actual support. A valid platform is held until a purposeful departure is chosen. Lost public contact reuses bounded visible-angle search, without reading hidden player position.
 
 Terminal recovery cannot be canceled by incoming fire and contains no newly initiated attack; existing delayed blades continue independently. W3 walk/jump sampling retains the shared escape intent; solo pressure is not vetoed by that heuristic. Prototype damage/timing values live in `SwordCombatSettings` and require human playtesting.
 

@@ -7,7 +7,7 @@ namespace GoGhost.Duel
     [Serializable]
     public sealed class SwordCombatSettings
     {
-        [Range(.1f,.8f)] public float UnboundHealth=.45f;
+        [Range(.1f,.8f)] public float UnboundHealth=.33f;
         public float AdvanceSpeed=34, AdvanceDistance=22, TravelSpeed=15;
         public float DrawPrepare=.20f, DrawLock=.14f, WavePrepare=.30f, WaveLock=.18f;
         public float WaveSpeed=15, WaveLength=1.35f, WaveLife=2.4f;

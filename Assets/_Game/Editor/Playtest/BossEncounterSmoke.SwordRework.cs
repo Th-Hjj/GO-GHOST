@@ -193,7 +193,7 @@ public static partial class BossEncounterSmoke
             int before=sword.Actions.SwordEchoCount+sword.Actions.SwordWaveCount;
             if(ability==BossAbility.SwordRedline)
             {
-                sword.Health.TakeDamage(Mathf.CeilToInt(sword.Health.MaxHealth*.6f),game.Player.gameObject);
+                sword.Health.TakeDamage(Mathf.CeilToInt(sword.Health.MaxHealth*(1-sword.Profile.Sword.UnboundHealth)),game.Player.gameObject);
                 sword.Actions.TickSwordDecision();
                 Check("Redline starts naturally at low health",sword.Actions.Ability==ability);
             }
@@ -439,7 +439,7 @@ public static partial class BossEncounterSmoke
 
         yield return Fresh(2);StopPolicies();yield return Frames(2);sword=game.Bosses[0];
         OnFloor(sword.gameObject,sword.Navigation,-3);OnFloor(game.Player.gameObject,sword.Navigation,-13);
-        yield return Seconds(.3f);sword.Health.TakeDamage(Mathf.CeilToInt(sword.Health.MaxHealth*.6f),game.Player.gameObject);
+        yield return Seconds(.3f);sword.Health.TakeDamage(Mathf.CeilToInt(sword.Health.MaxHealth*(1-sword.Profile.Sword.UnboundHealth)),game.Player.gameObject);
         sword.Actions.TickSwordDecision();sword.Tactics.Enabled=false;
         Check("Unbound naturally chooses Redline",sword.Actions.Ability==BossAbility.SwordRedline);
         bool deferred=false,released=false;float end=Time.time+10;int peak=0;
@@ -619,7 +619,7 @@ public static partial class BossEncounterSmoke
 
         yield return Fresh(2);StopPolicies();sword=game.Bosses[0];
         OnFloor(sword.gameObject,sword.Navigation,-3);OnFloor(game.Player.gameObject,sword.Navigation,-13);
-        yield return Seconds(.3f);sword.Health.TakeDamage(Mathf.CeilToInt(sword.Health.MaxHealth*.6f),game.Player.gameObject);
+        yield return Seconds(.3f);sword.Health.TakeDamage(Mathf.CeilToInt(sword.Health.MaxHealth*(1-sword.Profile.Sword.UnboundHealth)),game.Player.gameObject);
         sword.Actions.TickSwordDecision();sword.Tactics.Enabled=false;
         Check("retained Redline starts in Unbound",sword.Actions.Ability==BossAbility.SwordRedline);
         yield return Until(()=>!sword.Actions.Busy,11);
@@ -881,7 +881,7 @@ public static partial class BossEncounterSmoke
 
         yield return Fresh(2);StopPolicies();sword=game.Bosses[0];
         OnFloor(sword.gameObject,sword.Navigation,-3);OnFloor(game.Player.gameObject,sword.Navigation,-13);
-        yield return Seconds(.3f);sword.Health.TakeDamage(Mathf.CeilToInt(sword.Health.MaxHealth*.6f),game.Player.gameObject);
+        yield return Seconds(.3f);sword.Health.TakeDamage(Mathf.CeilToInt(sword.Health.MaxHealth*(1-sword.Profile.Sword.UnboundHealth)),game.Player.gameObject);
         sword.Actions.TickSwordDecision();sword.Tactics.Enabled=false;
         Check("low health enters unbound and enables redline",sword.Actions.SwordUnbound&&sword.Actions.Ability==BossAbility.SwordRedline);
         ScreenCapture.CaptureScreenshot(Output+"sword-redline.png");yield return Frames(2);
@@ -909,7 +909,7 @@ public static partial class BossEncounterSmoke
         var gun=game.Bosses.First(a=>a.Profile.Kind==BossKind.Refraction);var duo=game.GetComponentInChildren<DuoCoordinator>();
         OnFloor(sword.gameObject,sword.Navigation,-13);OnFloor(gun.gameObject,sword.Navigation,-7);OnFloor(game.Player.gameObject,sword.Navigation,-3);
         yield return Seconds(.3f);
-        sword.Health.TakeDamage(Mathf.CeilToInt(sword.Health.MaxHealth*.6f),game.Player.gameObject);
+        sword.Health.TakeDamage(Mathf.CeilToInt(sword.Health.MaxHealth*(1-sword.Profile.Sword.UnboundHealth)),game.Player.gameObject);
         sword.Actions.TickSwordDecision();sword.Actions.StopCombat();
         Check("idle unbound sword cannot start finale with living partner",sword.Actions.SwordUnbound&&!sword.Actions.Busy&&!sword.Actions.TryStartSword(BossAbility.SwordRedline));
         Check("W3 solo wave phrase starts",sword.Actions.TryStartSword(BossAbility.SwordDislodge));

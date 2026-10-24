@@ -22,7 +22,7 @@ MonoBehaviour:
     GravityScale: 3
     AirControl: 0.55
   Sword:
-    UnboundHealth: 0.45
+    UnboundHealth: 0.33
     AdvanceSpeed: 34
     AdvanceDistance: 22
     TravelSpeed: 15

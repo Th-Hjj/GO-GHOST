@@ -92,7 +92,10 @@ namespace GoGhost.Duel
             transform.position = actor.Position;
             transform.localScale = new Vector3(actor.Facing >= 0 ? 1 : -1, 1, 1);
             ApplyPose(BuildPose()); UpdateTells(); UpdateFlashes(); UpdateGunBullets();
-            if (!defeated && actor.Running && (actor.Motor.DashActive||actor.Actions.FlankTravelling) && clock >= nextEcho)
+            // Unbound carries the same silhouette trail through ordinary movement, jumps and falls.
+            bool unboundMoving = visualKind == BossKind.Severance && actor.Actions.SwordUnbound
+                && actor.Velocity.sqrMagnitude > .01f;
+            if (!defeated && actor.Running && (actor.Motor.DashActive||actor.Actions.FlankTravelling||unboundMoving) && clock >= nextEcho)
             { nextEcho = clock + .055f; CaptureEcho(); }
         }
         Pose BuildPose()

@@ -19,7 +19,7 @@ GO GHOST is a single-player, fixed-camera 2D arena: Refraction, Severance, then 
 
 `Assets/_Game/Levels/L01_Duel/Scenes/GO GHOST Duel.unity`
 
-The player has 26 conditions and 21 actions across Move, Jump, Aim, Fire and Dodge, with one 20-rule budget. Each rule is `Primary Condition [AND Optional State] -> One Action`. Global DisplayOrder governs competing Rules, including shared physical controls; impossible actions fall through and unowned controls remain manual. Preserve real action commitments, nonconflicting parallel operations, independent event consumption, same-enemy AND, public observations and physical collision. Body facing and Revolver aim are independent.
+The player has 26 conditions and 21 actions across Move, Jump, Aim, Fire and Dodge, with one 20-rule budget. Each rule is `Condition 1 + Condition 2 + ... -> One Action` (one or more conditions, all AND). Global DisplayOrder governs competing Rules, including shared physical controls; impossible actions fall through and unowned controls remain manual. Preserve real action commitments, nonconflicting parallel operations, independent event consumption, same-enemy AND, public observations and physical collision. Body facing and Revolver aim are independent.
 
 Start Fight copies the complete configuration into a fresh fight. Retry and next wave retain it; New Game/Restart clears it. Pause freezes combat. Current play uses the six-round Revolver and retains other player tuning, Boss behavior, Camo, Cold-Light presentation and F8 session tuning. Historical tower, permanent progression and autonomous-player systems are disconnected.
 

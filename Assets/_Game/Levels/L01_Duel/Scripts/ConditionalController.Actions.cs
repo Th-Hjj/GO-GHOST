@@ -17,7 +17,11 @@ namespace GoGhost.Duel
             if(r.Context.PreparationSource>=0&&r.Context.PreparationId!=0&&ConditionalCatalog.Response(rule.Action).Finite)
                 state.Preparations[r.Context.PreparationSource]=r.Context.PreparationId;
             if(ConditionalCatalog.Response(rule.Action).Finite)state.Consumed=true;
-            if(ConditionalCatalog.Condition(rule.Condition).Event)state.ConsumedEvents.Add(r.Context.Occurrence);
+            if(rule.HasEvents)
+            {
+                if(r.Context.EventOccurrences!=null)foreach(long id in r.Context.EventOccurrences)state.ConsumedEvents.Add(id);
+                else state.ConsumedEvents.Add(r.Context.Occurrence);
+            }
         }
         void Accept(int op,Running r)
         {
@@ -25,7 +29,7 @@ namespace GoGhost.Duel
             {
                 r.ResponseStarted=true;r.Started=Time.time;
                 var rule=loadout.Operations[op].Rules[r.Row];
-                if(ConditionalCatalog.Condition(rule.Condition).Event&&!ConditionalCatalog.Response(rule.Action).Finite)
+                if(rule.HasEvents&&!ConditionalCatalog.Response(rule.Action).Finite)
                     r.Deadline=Time.time+ConditionalDefaults.ResponseWindow;
             }
             if(!r.Accepted){acceptedAt[op,r.Row]=Time.time;acceptedFrame[op,r.Row]=Time.frameCount;}
@@ -120,7 +124,7 @@ namespace GoGhost.Duel
                     if(!gun.CanFireNow)
                     {
                         var state=states[op,r.Row];
-                        if((action=="F01"||action=="F02")&&ConditionalCatalog.Condition(rule.Condition).Event
+                        if((action=="F01"||action=="F02")&&rule.HasEvents
                             &&!state.CadencePending&&Time.time<=r.Context.ExpiresAt
                             &&gun.NextShotReadyAt<=r.Context.ExpiresAt+.0001f)
                         {state.CadencePending=true;state.CadenceContext=r.Context;}

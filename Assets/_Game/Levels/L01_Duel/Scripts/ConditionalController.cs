@@ -12,6 +12,7 @@ namespace GoGhost.Duel
         public struct TriggerContext
         {
             public long Occurrence;
+            public long[] EventOccurrences;
             public int Candidates, Source;
             public bool HasPosition, EnemyBound, IsThreat;
             public int ThreatKind, PreparationSource, PreparationId;
@@ -26,6 +27,8 @@ namespace GoGhost.Duel
             public int RangeMode;
             public bool CadencePending;
             public TriggerContext CadenceContext;
+            public readonly List<long> EventScratch = new List<long>();
+            public long[] EventSnapshot;
             public bool PlatformFailed;
             public Vector2 PlatformFailurePosition;
             public int PlatformFailureVersion;
@@ -300,7 +303,7 @@ namespace GoGhost.Duel
                 var state = states[op, row];
                 bool match = Evaluate(rule, op, row, out var context, out bool observed);
                 visualMatches[op, row] = observed;
-                if (!ConditionalCatalog.Condition(rule.Condition).Event)
+                if (!rule.HasEvents)
                 {
                     if (observed && !state.WasTrue)
                     {
@@ -359,7 +362,7 @@ namespace GoGhost.Duel
         bool TryContinueCurrentResponse(int op, ConditionalRule rule, Running active)
         {
             var response = ConditionalCatalog.Response(rule.Action);
-            bool isEvent = ConditionalCatalog.Condition(rule.Condition).Event;
+            bool isEvent = rule.HasEvents;
             TriggerContext context;
             bool eligible;
             if (isEvent)
@@ -370,7 +373,7 @@ namespace GoGhost.Duel
                 context = retainsContext ? active.Context : active.EventContext;
                 eligible = active.Accepted || Time.time <= context.ExpiresAt;
                 if (!retainsContext)
-                    eligible &= AdditionalMatches(rule, op, ref context);
+                    eligible &= MatchStates(rule, op, ref context);
             }
             else
             {
@@ -403,8 +406,8 @@ namespace GoGhost.Duel
             if (!matches[op, row] || (int)response.Operation != op)
                 return false;
             var state = states[op, row];
-            if (ConditionalCatalog.Condition(rule.Condition).Event)
-                return !state.ConsumedEvents.Contains(context.Occurrence);
+            if (rule.HasEvents)
+                return EventsAvailable(state,context);
             return !response.Finite || HasPreparation(rule) || !state.Consumed;
         }
 
@@ -418,16 +421,9 @@ namespace GoGhost.Duel
                 PreviousX = body.position.x,
                 Deadline = float.PositiveInfinity
             };
-            if (ConditionalCatalog.Condition(rule.Condition).Event)
+            if (rule.HasEvents)
             {
-                candidate.EventContext = context;
-                foreach (var notice in events)
-                {
-                    if (notice.Context.Occurrence != context.Occurrence)
-                        continue;
-                    candidate.EventContext = notice.Context;
-                    break;
-                }
+                candidate.EventContext = OriginalEventContext(context);
             }
             return candidate;
         }

@@ -92,10 +92,11 @@ namespace GoGhost.Duel
             transform.position = actor.Position;
             transform.localScale = new Vector3(actor.Facing >= 0 ? 1 : -1, 1, 1);
             ApplyPose(BuildPose()); UpdateTells(); UpdateFlashes(); UpdateGunBullets();
-            // Unbound carries the same silhouette trail through ordinary movement, jumps and falls.
+            // Severance's body silhouettes are exclusive to Unbound, including dash/flank trails.
             bool unboundMoving = visualKind == BossKind.Severance && actor.Actions.SwordUnbound
                 && actor.Velocity.sqrMagnitude > .01f;
-            if (!defeated && actor.Running && (actor.Motor.DashActive||actor.Actions.FlankTravelling||unboundMoving) && clock >= nextEcho)
+            if (!defeated && actor.Running && (visualKind != BossKind.Severance || actor.Actions.SwordUnbound)
+                && (actor.Motor.DashActive||actor.Actions.FlankTravelling||unboundMoving) && clock >= nextEcho)
             { nextEcho = clock + .055f; CaptureEcho(); }
         }
         Pose BuildPose()

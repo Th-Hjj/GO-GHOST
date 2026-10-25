@@ -1,5 +1,9 @@
 # GO GHOST — Boss Encounter
 
+## Hunt has no body silhouettes — approved 2026-10-24
+
+Severance emits no human-shaped silhouette afterimages during Hunt, including dash and flank movement. Only Unbound enables his existing movement silhouettes. Preserve their .055 s cadence, .14 s lifetime, .16 opacity, three-silhouette cap and pause/death/cleanup behavior, along with other actors' effects. Damaging sword waves/afterblades and combat timing are unchanged. This supersedes retaining first-phase dash/flank trails in the earlier entry below.
+
 ## Shorter recovery between Unbound combos — approved 2026-10-24
 
 Thomas clarified that the goal is tighter spacing between complete combos, with their individual swings unchanged. Ordinary phrase terminal recovery in solo Unbound is **.40 s** (from .50 s); Redline terminal recovery is **.80 s** (from 1 s). These include the W3 sword survivor. Hunt / two-live-Boss ordinary recovery remains .65 s, Redline cooldown remains 9 s and the living-partner exclusion remains. Preserve all per-beat preparation, lock and active timing, damage, movement, silhouettes and residual budgets. This supersedes the recovery values in the earlier A+B entry below. The landing-finisher proposal is deferred; this delivery changes recovery only.

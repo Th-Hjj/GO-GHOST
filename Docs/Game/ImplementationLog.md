@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-10-24 — No sword body silhouettes in Hunt
+
+- **Baseline / request:** main `2ca9a72`, with unrelated body-geometry, Art Direction and shoulder-log edits already present and preserved. Thomas requested no first-phase human-shaped afterimages, including dash/flank trails.
+- **Implemented:** `BossSilhouetteView.LateUpdate` requires Unbound before Severance can enter the existing silhouette-emission branch. Other actors retain their previous branch. Unbound appearance, .055 s cadence, .14 s fade, .16 opacity, cap three, pause/death/cleanup, damaging afterblades and combat timings are unchanged. Updated mirrored authority and Boss documentation.
+- **Compile / focused Editor evidence:** opened this project with Unity 6000.6.0f1 after the stale plugin query and CLI confirmed no running Editor connection. Normal compilation completed without compilation failure. **16 PASS / 0 FAIL** in `Logs/HuntNoTrails/checks.txt`: actual Hunt walking/dash/jump/fall without silhouettes, Unbound walk/dash/ascent/descent with silhouettes, idle suppression, pause/fade/death/menu cleanup, fresh natural Hunt attacks and advancing combat. The single phase gate statically covers flank emission too; a separate real flank was not exercised. Inspected actual `hunt-dash.png` and `unbound-walk.png` captures.
+- **Cleanup / limits:** returned to Menu then stopped the Play session started for verification; formal scene remained clean and the real preset record was restored (count 3). Physical input was re-enabled. Full fights, standalone and full Build/Release **NOT TESTED**. Unrelated working changes remain unstaged.
+
 ## 2026-10-24 — Shoulder attachment correction
 
 - **Baseline / accepted scope:** clean main `85c5f85`. Thomas accepted the simplified body and its effects, rejected an anatomical redraw, and approved correcting the arm/torso connection. The old raised arm caps did not follow the torso shoulder slope.

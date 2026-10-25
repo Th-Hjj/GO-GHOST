@@ -190,10 +190,10 @@ namespace GoGhost.Duel
             new ConditionEntry(51,"Ground State",0),new ConditionEntry(4,"Low Health",0),new ConditionEntry(6,"Took Damage",0,true,true),
             new ConditionEntry(54,"Moving",0),new ConditionEntry(55,"Dodging",0),
             new ConditionEntry(9,"Reloading",1),new ConditionEntry(12,"Low Ammo",1),new ConditionEntry(17,"Trigger Held",1),
-            new ConditionEntry(18,"Enemy Near Aim Direction",1,enemySource:true),new ConditionEntry(40,"Enemy in Firing Line",1,enemySource:true),
+            new ConditionEntry(18,"Enemy Near Aim Direction",1,enemySource:true),
             new ConditionEntry(56,"Firing",1),
             new ConditionEntry(52,"Horizontal Distance",2,enemySource:true),new ConditionEntry(35,"Enemy Getting Closer",2,enemySource:true),
-            new ConditionEntry(39,"Enemies on Both Sides",2,enemySource:true,global:true),new ConditionEntry(45,"Near Wall",2),
+            new ConditionEntry(45,"Near Wall",2),
             new ConditionEntry(25,"Enemy Preparing an Attack",3,enemySource:true),new ConditionEntry(53,"Incoming Attack",3,enemySource:true),
             new ConditionEntry(57,"Jump Started",4,true),new ConditionEntry(58,"Jump Apex Reached",4,true),new ConditionEntry(3,"Landed",4,true),
             new ConditionEntry(7,"Dodge Finished",4,true),new ConditionEntry(59,"Shot Fired",4,true),new ConditionEntry(60,"Burst Finished",4,true),
@@ -204,6 +204,8 @@ namespace GoGhost.Duel
         public static readonly int[][] FormalConditions={SharedConditionIds,SharedConditionIds,SharedConditionIds,SharedConditionIds,SharedConditionIds};
         // IDs retain their original meaning even when no longer selectable.
         static readonly ConditionEntry[] HistoricalConditions={
+            new ConditionEntry(40,"Enemy in Firing Line",1,enemySource:true),
+            new ConditionEntry(39,"Enemies on Both Sides",2,enemySource:true,global:true),
             new ConditionEntry(1,"Airborne",0),new ConditionEntry(2,"Left Ground",0,true),new ConditionEntry(5,"Entered Low Health",0,true),
             new ConditionEntry(10,"Reload Started",1,true),new ConditionEntry(14,"Defeated an Enemy",4,true),new ConditionEntry(15,"Dodge on Cooldown",0),
             new ConditionEntry(19,"Jump Pressed",1,true),new ConditionEntry(20,"Dodge Pressed",1,true),
@@ -445,32 +447,32 @@ namespace GoGhost.Duel
         {
             switch(id)
             {
-                case 51:return "Choose whether you are grounded or airborne.";
-                case 4:return "Your health has dropped to 40% or less.";
-                case 6:return "You just took damage.";
-                case 54:return "Your ordinary horizontal movement is actually moving you; dodges, knockback and blocked input do not count.";
-                case 55:return "Your accepted dodge is still moving you.";
-                case 9:return "Your Revolver is reloading.";
-                case 12:return "Your Revolver has only one or two rounds left.";
-                case 17:return "You are holding the weapon's trigger.";
-                case 18:return "A visible enemy is close to your raw aim direction.";
+                case 51:return "When you're on the ground, or not.";
+                case 4:return "Your health is less than 40%.";
+                case 6:return "When you take damage.";
+                case 54:return "When moving horizontally.";
+                case 55:return "When you're dodging.";
+                case 9:return "When you're reloading.";
+                case 12:return "When there's one or two bullets left.";
+                case 17:return "When you're holding the trigger.";
+                case 18:return "An enemy is close to where you're aiming.";
                 case 40:return "A visible enemy's current body intersects your current muzzle ray.";
-                case 56:return "Actual firing has begun and is continuing, including the normal gaps between shots.";
-                case 52:return "Choose a visible enemy's horizontal distance: Close, Mid or Far.";
-                case 35:return "You and a visible enemy are getting closer together.";
+                case 56:return "When you're actively firing.";
+                case 52:return "An enemy's horizontal distance to you.";
+                case 35:return "When an enemy is getting closer.";
                 case 39:return "You can see enemies on both sides of you.";
-                case 45:return "You are close to an outer wall.";
-                case 25:return "An enemy you can see is visibly preparing its next attack.";
-                case 53:return "An incoming attack is Melee or Ranged; Ranged includes bullets, beams and flying sword waves.";
-                case 57:return "An accepted jump has actually started.";
-                case 58:return "Your active jump has reached its highest point.";
-                case 3:return "You have actually landed from the air.";
-                case 7:return "Your accepted dodge movement has finished.";
-                case 59:return "Your Revolver has spent a round and fired a bullet.";
-                case 60:return "A manual or automatic burst has fired all its committed rounds.";
-                case 11:return "Your Revolver just finished reloading.";
-                case 61:return "A short Move has completed its planned distance.";
-                case 13:return "Your attack has actually damaged an enemy.";
+                case 45:return "When you're close to the wall.";
+                case 25:return "When enemy is preparing an attack.";
+                case 53:return "When an attack is incoming.";
+                case 57:return "When a jump has started.";
+                case 58:return "When your jump reached the highest point.";
+                case 3:return "When you've landed from the air.";
+                case 7:return "When your dodge finished.";
+                case 59:return "When you fired a bullet.";
+                case 60:return "When a burst finished.";
+                case 11:return "When you finished reloading.";
+                case 61:return "When you've stopped moving.";
+                case 13:return "When your bullet hit an enemy.";
                 case 1:return "You are off the ground.";
                 case 27:return "A visible enemy is recovering from an action.";
                 case 28:return "A visible enemy is reloading.";

@@ -67,7 +67,7 @@ namespace GoGhost.Duel
                 R(52,"Q01",distance:EnemyDistanceOption.Close),
                 R(52,"Q01",distance:EnemyDistanceOption.Mid),
                 R(52,"Q01",distance:EnemyDistanceOption.Far),
-                R(40,"F03")),
+                R(18,"F03")),
             new OfficialRulePreset("reload_retreat", "Retreat while reloading", "Presets", "", "", "",
                 R(53,"D02",45,incoming:IncomingAttackOption.Any),
                 R(53,"D01",incoming:IncomingAttackOption.Any),
@@ -76,7 +76,7 @@ namespace GoGhost.Duel
                 R(52,"Q01",distance:EnemyDistanceOption.Close),
                 R(52,"Q01",distance:EnemyDistanceOption.Mid),
                 R(52,"Q01",distance:EnemyDistanceOption.Far),
-                R(40,"F03")),
+                R(18,"F03")),
             new OfficialRulePreset("do_nothing", "I don't want to do anything", "Presets", "", "", "",
                 R(53,"D02",45,incoming:IncomingAttackOption.Any),
                 R(53,"D01",incoming:IncomingAttackOption.Any),
@@ -87,7 +87,7 @@ namespace GoGhost.Duel
                 R(52,"Q01",distance:EnemyDistanceOption.Close),
                 R(52,"Q01",distance:EnemyDistanceOption.Mid),
                 R(52,"Q01",distance:EnemyDistanceOption.Far),
-                R(40,"F03")),
+                R(18,"F03")),
         });
 
         // Explicit catalog IDs and typed fields, never labels or preset-specific execution.

@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-10-25 — Condition descriptions and catalog simplification
+
+- **Baseline / scope:** main `147f633`, preserving unrelated body-geometry, Art Direction and shoulder-log edits. Thomas supplied 24 replacement descriptions and removed A40/A39; follow-up explicitly replaces shared R10 with A18 -> Keep Firing in presets 4, 5 and 6.
+- **Implemented:** retained descriptions use the supplied English verbatim. Catalog has 24 conditions / 21 unchanged actions. A39/A40 remain readable historical IDs but cannot validate/equip; no silent conversion of old rules. The six preset counts (1/2/5/6/8/10), priority, copies and unlock behavior stay intact. Updated mirrored authority, current docs and affected existing count/preset expectations. Predicates remain unchanged: A04 enters at <=40%, A61 emits only on successful short Move completion, and A13 requires positive damage. Duo bonus flow is future work.
+- **Compile / focused Editor checks:** Unity 6000.6.0f1 normal compilation completed without compilation failure; git diff --check passed. `Logs/ConditionCopy/checks.txt`: **63 PASS / 0 FAIL**, covering all 24 actual UI descriptions, removed options absent, historical-ID rejection/readability, six valid fresh-copy presets with unchanged counts/order, all three A18/F03 replacements, advancing Training entry and return to configuration, and unchanged saved unlock record. Actual UI capture: `Logs/ConditionCopy/condition-description.png`.
+- **Verifier correction / limits:** first readback expected the option title inside the description widget; the UI intentionally strips it. Corrected that verifier assumption and reran, retaining the initial report. Console errors were unsupported `editor status` tool dispatch, not game/compile exceptions. Returned to Menu, restored input devices and stopped the Play Mode session started here. Physical-input play, full combat/preset effectiveness, standalone and Build/Release NOT TESTED.
+
 ## 2026-10-24 — No sword body silhouettes in Hunt
 
 - **Baseline / request:** main `2ca9a72`, with unrelated body-geometry, Art Direction and shoulder-log edits already present and preserved. Thomas requested no first-phase human-shaped afterimages, including dash/flank trails.

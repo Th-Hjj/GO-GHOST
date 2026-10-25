@@ -18,7 +18,7 @@ F8 > Presets exposes all six for development without changing unlock progress. I
 
 **Body turning — Thomas, 2026-10-20 follow-up:** A/D and ordinary resolved horizontal movement turn the body; idle retains that facing. Mouse/automatic Aim still owns the Revolver independently. A formal short Move preserves its starting body facing while traveling Forward or Back, so Back remains a backward step. This replaces aim-driven body facing in conditional Duel/Training only.
 
-**Move to Platform — Thomas, 2026-10-20:** J04 retains required **Higher / Lower** under Legs/Jump; the catalog has 21 actions and the same 26 conditions / 20-rule budget. Ordinary Jump remains unchanged. Rules display `Move to Platform (Higher) ↑` or `Move to Platform (Lower) ↓` throughout editing, setup and combat; copies and fight snapshots preserve the direction.
+**Move to Platform — Thomas, 2026-10-20:** J04 retains required **Higher / Lower** under Legs/Jump; the catalog has 21 actions and the same 24 conditions / 20-rule budget. Ordinary Jump remains unchanged. Rules display `Move to Platform (Higher) ↑` or `Move to Platform (Lower) ↓` throughout editing, setup and combat; copies and fight snapshots preserve the direction.
 
 J04 claims Move and Jump for one complete transition. Before acceptance, global DisplayOrder decides competition with Move, Jump and Dodge rows. After acceptance, ordinary rule rematching cannot preempt either claim. Aim and Fire remain independent. Unavailable destinations release both claims to lower rows/manual input.
 
@@ -43,19 +43,21 @@ Use the approved tall six-region standing figure from ArtDirection.md. Arms are 
 
 ## Formal catalog
 
-There are exactly **26 selectable conditions in five categories** and **21 selectable actions in five operations**. Fixed branches are parameters of one entry, not separate catalog entries. IDs stay internal. New merged conditions use new IDs; historical IDs keep their old meanings. Historical definitions are not selectable rules.
+**2026-10-25 copy/removal update:** Thomas supplied the current descriptions verbatim for all 24 retained conditions. A40 Enemy in Firing Line and A39 Enemies on Both Sides are removed from selection and complete-rule validation; historical IDs/labels remain readable and are not silently converted. Shared preset R10 now uses A18 Enemy Near Aim Direction in presets 4/5/6, with unchanged counts and order. Action descriptions and all condition predicates remain unchanged. In particular, A04 still enters at <=40% despite the requested "less than 40%" copy; A61 still means successful short Move completion, not arbitrary movement stopping; A13 still requires actual positive damage. The requested future duo bonus flow is outside this change.
+
+There are exactly **24 selectable conditions in five categories** and **21 selectable actions in five operations**. Fixed branches are parameters of one entry, not separate catalog entries. IDs stay internal. New merged conditions use new IDs; historical IDs keep their old meanings. Historical definitions are not selectable rules.
 
 **Enemy State** and its Enemy Recovering, Enemy Reloading and Enemy Reappeared entries are removed from the selectable catalog. **Q03 Aim at Detected Enemy** remains hidden. **F05 Fire and Keep a Reserve** remains historical and nonselectable; its former Ammo Use replacement is also removed. No Always or replacement Enemy Vulnerable entry is introduced. Old removed rules must not silently re-equip or become a different tactic.
 
 | Category | Ordered conditions and fixed options |
 |---|---|
 | Body State | A51 Ground State (Grounded / Airborne); A04 Low Health; A06 Took Damage; A54 Moving; A55 Dodging |
-| Weapon | A09 Reloading; A12 Low Ammo; A17 Trigger Held; A18 Enemy Near Aim Direction; A40 Enemy in Firing Line; A56 Firing |
-| Position | A52 Horizontal Distance (Close / Mid / Far); A35 Enemy Getting Closer; A39 Enemies on Both Sides; A45 Near Wall |
+| Weapon | A09 Reloading; A12 Low Ammo; A17 Trigger Held; A18 Enemy Near Aim Direction; A56 Firing |
+| Position | A52 Horizontal Distance (Close / Mid / Far); A35 Enemy Getting Closer; A45 Near Wall |
 | Threats | A25 Enemy Preparing an Attack; A53 Incoming Attack (Any / Melee / Ranged) |
 | Action | A57 Jump Started; A58 Jump Apex Reached; A03 Landed; A07 Dodge Finished; A59 Shot Fired; A60 Burst Finished; A11 Reload Finished; A61 Move Finished; A13 Hit Enemy |
 
-Took Damage and all nine Action entries are events. The other 16 entries are states; Enemy Preparing an Attack also retains each real preparation's public identity. Both states and events are available in every condition slot.
+Took Damage and all nine Action entries are events. The other 14 entries are states; Enemy Preparing an Attack also retains each real preparation's public identity. Both states and events are available in every condition slot.
 
 | Condition | Required observation |
 |---|---|
@@ -68,11 +70,9 @@ Took Damage and all nine Action entries are events. The other 16 entries are sta
 | Low Ammo | Existing one-or-two-round definition. |
 | Trigger Held | Focus/UI-gated raw LMB held, never RMB or automatic Fire output. |
 | Enemy Near Aim Direction | Visible enemy within the existing manual-aim angular latch, 12-degree entry / 16-degree exit. |
-| Enemy in Firing Line | The current visible enemy body intersects the actual current muzzle ray, identically for every operation. No pending Aim result, prediction, Guard or damageability check. |
 | Firing | A real firing process has started and remains active across normal shot intervals; ends on actual stop, completion or reload. |
 | Horizontal Distance | Visible enemy's horizontal collider-centre distance; existing Close 5.3 / Far 8.5 and .35 hysteresis. No visible enemy is not Far. |
 | Enemy Getting Closer | Relative distance is shrinking, including when the player approaches; never hidden intent. |
-| Enemies on Both Sides | Valid visible enemies on both sides; this remains a global situation. |
 | Near Wall | Existing arena-boundary proximity. |
 | Enemy Preparing an Attack | Visible preparation/lock of the actual upcoming subattack, including an outer Active skill. Each continuous wind-up has one stable public identity; a later real wind-up gets a new identity. Guard/Camo preparation is not an attack tell. |
 | Incoming Attack | Existing executable .20 s public-threat geometry. Melee means direct physical slashes/dashes; Ranged means bullets, Piercing beams and flying sword waves regardless of distance. Any includes both; Low is removed. |
@@ -102,9 +102,9 @@ All Fire actions remain parameterless with no confirmation or ammo suffix. Per T
 
 ## Execution, events and ownership
 
-`ConditionalController` resolves the five-operation input frame from public observations and gated raw `PlayerInputReader` input. Existing movement, shooting and Dodge executors accept actions and spend resources. Fire shoots using final Aim; all Enemy in Firing Line conditions instead inspect the same current physical muzzle ray captured before this frame's rule resolution. D03 sees resolved Move (raw Move when no movement Rule wins). Aim does not fire and Fire does not change aim. Conflicting automatic Jump/Dodge requests are resolved by DisplayOrder before reaching the executor; the retained manual tie-break still gives a successful Dodge priority over a same-frame Jump. Dodge retains its original committed direction. Overridden manual press edges are not queued.
+`ConditionalController` resolves the five-operation input frame from public observations and gated raw `PlayerInputReader` input. Existing movement, shooting and Dodge executors accept actions and spend resources. Fire shoots using final Aim. Historical A40 observes the current physical muzzle ray but is no longer a valid selectable condition. D03 sees resolved Move (raw Move when no movement Rule wins). Aim does not fire and Fire does not change aim. Conflicting automatic Jump/Dodge requests are resolved by DisplayOrder before reaching the executor; the retained manual tie-break still gives a successful Dodge priority over a same-frame Jump. Dodge retains its original committed direction. Overridden manual press edges are not queued.
 
-All conditions must match. Intersect every enemy-constraining candidate set so the **same enemy/source** satisfies all those facts, subject to each condition's visibility requirements. Do not combine two Bosses' unrelated facts. Explicit damage/hit/threat sources remain associated with their event; a visible public projectile can identify its source without revealing a concealed body. Enemies on Both Sides remains global. Q01 Nearest and Q02 Lowest-Health retain their own explicit visible-target strategies rather than becoming source-target Aim. Player rules consider on-screen publicly visible bodies without terrain LOS rejection from platforms; Camo and genuinely unobservable bodies remain excluded. Event source binding retains its own legality and does not reveal concealed bodies. This player-only observation change does not alter Boss LOS/perception. Boss policy receives no rules, private input or hidden player intentions.
+All conditions must match. Intersect every enemy-constraining candidate set so the **same enemy/source** satisfies all those facts, subject to each condition's visibility requirements. Do not combine two Bosses' unrelated facts. Explicit damage/hit/threat sources remain associated with their event; a visible public projectile can identify its source without revealing a concealed body. Historical A39 remains a global observation but is no longer selectable. Q01 Nearest and Q02 Lowest-Health retain their own explicit visible-target strategies rather than becoming source-target Aim. Player rules consider on-screen publicly visible bodies without terrain LOS rejection from platforms; Camo and genuinely unobservable bodies remain excluded. Event source binding retains its own legality and does not reveal concealed bodies. This player-only observation change does not alter Boss LOS/perception. Boss policy receives no rules, private input or hidden player intentions.
 
 Each real event has an identity, occurrence time and necessary source. Rows consume independently only when their action is accepted. One public `ConditionalDefaults.RuleEventResponseDuration = 0.5` defines both **event lifetime from the actual event** and **ordinary event-response duration from actual action acceptance**, including Took Damage. Every event needs a live occurrence overlapping all other conditions at acceptance. Multiple event conditions consume their matched occurrences together, independently for each rule; repeated copies of the same event condition may use the same occurrence. A state becoming true during those windows may enable the action, but cannot revive a consumed/expired event. Running ordinary responses still require all their state conditions, and new events never refresh their acceptance deadline. Hold Position/Fire count as accepted zero output. All timers use the same scaled combat clock, so pause freezes both. New events enter normal frame resolution, never recursive callback evaluation.
 

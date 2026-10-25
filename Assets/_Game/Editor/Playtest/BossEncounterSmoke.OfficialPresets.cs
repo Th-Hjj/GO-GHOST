@@ -70,9 +70,9 @@ public static partial class BossEncounterSmoke
             "53:J01:i2",
             "53:D01:i1;53:J01:i2",
             "53:D01:i1;53:J01:i2;52:Q01:d1;52:Q01:d2;52:Q01:d3",
-            "53:D01:i1;53:J01:i2;52:Q01:d1;52:Q01:d2;52:Q01:d3;40:F03",
-            "53:D02:a45:i1;53:D01:i1;53:J01:i2;9:M02;52:Q01:d1;52:Q01:d2;52:Q01:d3;40:F03",
-            "53:D02:a45:i1;53:D01:i1;53:J01:i2;9:M02;51:M03:g1;51:M03:g2;52:Q01:d1;52:Q01:d2;52:Q01:d3;40:F03"
+            "53:D01:i1;53:J01:i2;52:Q01:d1;52:Q01:d2;52:Q01:d3;18:F03",
+            "53:D02:a45:i1;53:D01:i1;53:J01:i2;9:M02;52:Q01:d1;52:Q01:d2;52:Q01:d3;18:F03",
+            "53:D02:a45:i1;53:D01:i1;53:J01:i2;9:M02;51:M03:g1;51:M03:g2;52:Q01:d1;52:Q01:d2;52:Q01:d3;18:F03"
         };
         Check("exact six IDs and requested names",OfficialRulePresets.All.Select(p=>p.Id).SequenceEqual(ids)&&OfficialRulePresets.All.Select(p=>p.Name).SequenceEqual(names));
         for(int i=0;i<ids.Length;i++)

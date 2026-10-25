@@ -2,6 +2,8 @@
 
 Confirmed by Thomas, 2026-10-24. Six progressive presets replace the previous sixteen. New Game starts with an empty loadout. Nothing equips automatically, replaces a player's configuration without Apply, opens Help automatically, or changes Training, combat, defeat, Retry or next-wave flow. There is no onboarding/tutorial or new execution logic.
 
+2026-10-25: Thomas removed A40 and approved replacing shared R10 with A18 (Enemy Near Aim Direction) in presets 4, 5 and 6. Counts, order and unlock behavior are unchanged.
+
 ## Definitions and global priority
 
 `OfficialRulePresets.cs` is the code authority. These are ordinary catalog conditions, actions and parameters, ordered globally from top to bottom:
@@ -17,7 +19,7 @@ Confirmed by Thomas, 2026-10-24. Six progressive presets replace the previous si
 | R7 | Horizontal Distance (Close) | Auto Aim at Nearest Enemy |
 | R8 | Horizontal Distance (Mid) | Auto Aim at Nearest Enemy |
 | R9 | Horizontal Distance (Far) | Auto Aim at Nearest Enemy |
-| R10 | Enemy in Firing Line | Keep Firing |
+| R10 | Enemy Near Aim Direction | Keep Firing |
 
 | Preset | Stable ID | Included rules, in order |
 |---|---|---|

@@ -32,6 +32,7 @@ namespace GoGhost.Duel
         BossThreat swordThreat;
         public SwordBeat CurrentSwordBeat {get;private set;}
         public bool SwordUnbound=>swordUnbound;
+        bool SoloSwordUnbound=>SwordUnbound&&!HasLivingPartner;
         public bool PendingSwordThreats=>swordHazards!=null&&swordHazards.Pending;
         public IReadOnlyList<SwordHazards.Trace> SwordTraces=>swordHazards?.Traces;
         public int SwordPhrasesCompleted {get;private set;}
@@ -165,7 +166,8 @@ namespace GoGhost.Duel
                 case BossAbility.SwordCrossing:swordPhrase.Add(SwordBeat.Traverse);swordPhrase.Add(SwordBeat.RisingCut);swordPhrase.Add(SwordBeat.DownCut);break;
                 case BossAbility.SwordRedline:swordPhrase.Add(SwordBeat.Draw);swordPhrase.Add(SwordBeat.Traverse);swordPhrase.Add(SwordBeat.Draw);swordPhrase.Add(SwordBeat.DownCut);swordPhrase.Add(SwordBeat.Replay);break;
             }
-            readyAt[(int)ability]=Time.time+(ability==BossAbility.SwordRedline?p.Sword.FinaleCooldown:ability==BossAbility.SwordDislodge?3.2f:1.4f);
+            float finaleCooldown=SoloSwordUnbound?p.Sword.UnboundFinaleCooldown:p.Sword.FinaleCooldown;
+            readyAt[(int)ability]=Time.time+(ability==BossAbility.SwordRedline?finaleCooldown:ability==BossAbility.SwordDislodge?3.2f:1.4f);
             swordPlanner.Accepted(ability);Guarded=0;actor.Perception.ExpressedPressure(actor.Position);
             swordPreviousPlayer=actor.Player.GetComponent<Collider2D>().bounds.center;
             actor.Motor.HoldHorizontal();NextSwordBeat();return true;
@@ -482,7 +484,8 @@ namespace GoGhost.Duel
         void RecoverSword()
         {
             swordHazards.Replay();actor.Motor.EndAttackMotion();CurrentSwordBeat=SwordBeat.None;
-            SetPhase(BossActionPhase.Recovery,Ability==BossAbility.SwordRedline?p.Sword.FinaleRecovery:p.Sword.Recovery);
+            float recovery=SoloSwordUnbound?p.Sword.UnboundRecovery:p.Sword.Recovery;
+            SetPhase(BossActionPhase.Recovery,Ability==BossAbility.SwordRedline?p.Sword.FinaleRecovery:recovery);
             swordRecoveryStarted=Time.time;swordThreat.Valid=false;
             swordResidualStepTried=swordResidualMoving=false;swordPreviewAt=0;
         }

@@ -53,6 +53,8 @@ MonoBehaviour:
     Recovery: 0.65
     FinaleRecovery: 1
     FinaleCooldown: 10
+    UnboundRecovery: 0.5
+    UnboundFinaleCooldown: 9
     DrawDamage: 28
     WaveDamage: 14
     CutDamage: 18

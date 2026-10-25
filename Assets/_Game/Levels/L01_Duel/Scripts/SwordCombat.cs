@@ -16,6 +16,7 @@ namespace GoGhost.Duel
         public float CutPrepare=.30f, FinisherPrepare=.38f, CutLock=.16f, CutAdvance=1.1f, CutStepSpeed=12;
         public float JumpPrepare=.24f, JumpLock=.12f, JumpCutActive=.28f;
         public float Recovery=.65f, FinaleRecovery=1f, FinaleCooldown=10;
+        public float UnboundRecovery=.50f, UnboundFinaleCooldown=9;
         public int DrawDamage=28, WaveDamage=14, CutDamage=18, FinisherDamage=26, EchoDamage=24;
         public BossMotionProfile TravelMotion(BossMotionProfile basis) => new BossMotionProfile {
             Speed=TravelSpeed, Acceleration=90, Braking=90, JumpSpeed=basis.JumpSpeed,

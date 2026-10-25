@@ -1,8 +1,12 @@
 # GO GHOST — Boss Encounter
 
+## Solo Unbound pacing A+B — approved 2026-10-24
+
+Thomas accepted proposals A+B: when Severance is Unbound with no living partner, ordinary phrase recovery is **.50 s** (from .65 s) and Redline cooldown is **9 s** (from 10 s). This includes W2 and the W3 sword survivor. Hunt and two-live-Boss ordinary recovery stay at .65 s; Redline remains forbidden with a living partner and retains its full **1.00 s** recovery. Cooldown starts at action acceptance, as before; eligibility does not guarantee immediate selection. Recovery duration is chosen at recovery entry, and an existing deadline is never shortened by a later partner death. Preserve the 33% action-boundary phase change, all silhouette presentation, per-beat preparation/lock/active timing, damage, movement, finite phrases and afterblade budgets. The suggested platform attack preference and second chase link remain Proposed, not implemented.
+
 ## Unbound threshold and silhouette trails — approved 2026-10-24
 
-Severance enters Unbound once at **33% remaining health**, at the existing idle decision boundary after the current action and recovery. This supersedes the former 45% threshold. In Unbound, ordinary physical movement, jumping and falling also emit the existing human-shaped silhouette afterimages. A small velocity dead zone excludes stationary physics noise; first-phase dash/flank trails retain their existing condition. Appearance remains unchanged: .055 s sampling, .14 s fade, .16 starting opacity and at most three silhouettes. Pause freezes the effect, death/encounter cleanup removes it, and a fresh encounter starts in Hunt. These silhouettes have no independent damage; damaging afterblades are unchanged. Any attack-aggression tuning is still Proposed, awaiting Thomas's selection.
+Severance enters Unbound once at **33% remaining health**, at the existing idle decision boundary after the current action and recovery. This supersedes the former 45% threshold. In Unbound, ordinary physical movement, jumping and falling also emit the existing human-shaped silhouette afterimages. A small velocity dead zone excludes stationary physics noise; first-phase dash/flank trails retain their existing condition. Appearance remains unchanged: .055 s sampling, .14 s fade, .16 starting opacity and at most three silhouettes. Pause freezes the effect, death/encounter cleanup removes it, and a fresh encounter starts in Hunt. These silhouettes have no independent damage; damaging afterblades are unchanged. Pacing A+B is governed by the later approved override above; other aggression proposals remain unapproved.
 
 ## Training robot override — 2026-10-24
 

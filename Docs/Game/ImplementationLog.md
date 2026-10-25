@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-10-24 — Configure Your Body wording
+
+- **Baseline / request:** clean main `c489394`; the configuration title read Rule Setup and the defeat-page return button read Reconfigure. Thomas requested player-facing Configure Your Body wording, followed by a concise proposal for the body illustration. Body proportions/effects remain Proposed.
+- **Implemented:** changed both visible labels to Configure Your Body, keeping the defeat button's internal Reconfigure identity/callback, existing typography, bounds, configuration and combat behavior. Updated current rule documentation and mirrored instructions; historical log entries retain their original wording.
+- **Validation:** normal Editor script compilation completed with no errors; `git diff --check` passed. In the existing 2560x1440 Play Mode session, the title measured 283.33 x 39.01 inside its unchanged 360 x 44 bounds, one line with no overflow and no old Rule Setup label. The defeat button also remained one line without overflow; its real click callback returned to Configure. Defeat was a UI-only phase fixture with no actor/death. Inspected the actual Overlay-inclusive capture at `Logs/body-configuration-overlay.png`; the Pipeline camera-only screenshot omitted the Overlay and was not used as UI evidence. Advancing frame counts confirmed the session was running.
+- **Cleanup / limits:** returned to the original Play Mode main menu with the formal scene clean. Saved preset progress remained present at 2 before/after; no death or progress write was performed. The Editor reported no current Console errors; cached Pipeline history includes older tool-dispatch diagnostics. The first inspection snippet used the wrong namespace and was corrected without changing project code. After hot compilation, rebuilt the UI before checking callbacks. Other resolutions, standalone, combat balance and full Build/Release were not tested; this change only renames UI text.
+
 ## 2026-10-24 — Shorter recovery between complete Unbound combos
 
 - **Baseline / confirmed scope:** main `5cd3cbb` used .50 s ordinary solo Unbound recovery and 1 s Redline recovery. Thomas clarified that he wants tighter spacing between whole combos, with final values **.40 s ordinary / .80 s Redline**. He explicitly deferred the landing-finisher proposal; its uncommitted executor/view draft was removed. This delivery changes recovery only.

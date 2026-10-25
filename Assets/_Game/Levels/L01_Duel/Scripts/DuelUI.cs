@@ -149,7 +149,7 @@ namespace GoGhost.Duel
             {
                 Image(page,Vector2.zero,new Vector2(4000,4000),new Color(0,0,0,.86f));
                 Text(game.Phase==DuelPhase.Failed?"DEFEAT":"COMPLETE",page,new Vector2(0,160),new Vector2(800,90),64,face:headingFont);
-                if(game.Phase==DuelPhase.Failed)Button("Reconfigure",page,Vector2.zero,new Vector2(360,65),game.Reconfigure);
+                if(game.Phase==DuelPhase.Failed)Button("Configure Your Body",page,Vector2.zero,new Vector2(360,65),game.Reconfigure).name="Reconfigure";
                 else
                 {
                     Button("Restart",page,Vector2.zero,new Vector2(360,65),game.NewGame);

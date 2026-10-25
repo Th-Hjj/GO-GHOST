@@ -34,6 +34,7 @@ namespace GoGhost.Duel
         NeuralBodySystem previewSystem, installedSystem;
         int previewRow=-1,installedRow=-1;
         float installedAt=float.NegativeInfinity;
+        const float BodyInstallSeconds=.6f;
         TMP_Text optionDescription;
         UnityEngine.UI.ScrollRect descriptionScroll;
         UnityEngine.UI.LayoutElement descriptionLayout;
@@ -252,25 +253,28 @@ namespace GoGhost.Duel
 
         void BuildConfigurationBody()
         {
-            float bodyScale = Mathf.Min((bodyPreview.sizeDelta.x-12)/660f,(bodyPreview.sizeDelta.y-40)/680f);
-            var body = Rect("ConditionalBody", bodyPreview, new Vector2(0, -10), new Vector2(810, 810));
+            // Fit the relaxed standing silhouette by its actual bounds, without stretching anatomy.
+            float bodyScale = Mathf.Min((bodyPreview.sizeDelta.x-24)/272f,bodyPreview.sizeDelta.y*.75f/680f);
+            var body = Rect("ConditionalBody", bodyPreview, Vector2.zero, new Vector2(272, 680));
             body.localScale = Vector3.one * bodyScale;
             var group = body.gameObject.AddComponent<CanvasGroup>();
             group.alpha = 1;
             group.blocksRaycasts = false;
             group.interactable = false;
-            Vector2[] positions = { new Vector2(860,821), new Vector2(860,645), new Vector2(663,757.5f), new Vector2(1057,757.5f), new Vector2(801.5f,364), new Vector2(918.5f,364) };
-            Vector2[] sizes = { new Vector2(72,88), new Vector2(146,222), new Vector2(264,117), new Vector2(264,117), new Vector2(103,334), new Vector2(103,334) };
+            Vector2[] positions = { new Vector2(0,296), new Vector2(0,140), new Vector2(-104,106), new Vector2(104,106), new Vector2(-34,-155), new Vector2(34,-155) };
+            Vector2[] sizes = { new Vector2(66,88), new Vector2(140,200), new Vector2(64,260), new Vector2(64,260), new Vector2(60,370), new Vector2(60,370) };
             for (int i = 0; i < 6; i++)
             {
-                var rect = Rect("BodyRegion" + i, body, positions[i] - new Vector2(860,570), sizes[i]);
+                var rect = Rect("BodyRegion" + i, body, positions[i], sizes[i]);
                 var graphic = rect.gameObject.AddComponent<MissionBodyRegion>();
                 graphic.Round = i == 0;
-                graphic.Contour = BodyDiagramGeometry.BodyContour(i);
+                graphic.Contour = BodyDiagramGeometry.ConfigurationContour(i);
                 graphic.Monochrome = true;
                 graphic.raycastTarget = false;
                 graphic.Selected = false;
                 graphic.NeuralStyle=true;graphic.NeuralRegion=i;neuralRegions[i]=graphic;
+                graphic.EmphasizeState=true;
+                graphic.PulseSpeed=150;graphic.PulseLength=170;graphic.PulseIntensity=1.1f;graphic.PulseFrequency=2;
                 if (i == 0)
                 {
                     var brainRect = Rect("ParticleBrain", rect, Vector2.zero, Vector2.zero);
@@ -405,15 +409,15 @@ namespace GoGhost.Duel
                 var region=neuralRegions[i];if(region==null)continue;
                 var system=i==0?NeuralBodySystem.None:i==1?NeuralBodySystem.Spine:i<4?NeuralBodySystem.Arms:NeuralBodySystem.Legs;
                 bool connected=system!=NeuralBodySystem.None&&(connectedSystems&(1<<(int)system))!=0;
-                float signal=system!=NeuralBodySystem.None&&highlightedSystem==system?1:connected?.38f:0;
-                float flow=connected&&system==installedSystem&&age<.55f?age/.55f:-1;
-                if(flow>=0)signal=Mathf.Max(signal,.8f);
+                float signal=system!=NeuralBodySystem.None&&highlightedSystem==system?1:connected?.55f:0;
+                float flow=connected&&system==installedSystem&&age<BodyInstallSeconds?age/BodyInstallSeconds:-1;
+                if(flow>=0)signal=1;
                 if(!Mathf.Approximately(region.NeuralSignal,signal)||!Mathf.Approximately(region.NeuralFlow,flow))
                 {region.NeuralSignal=signal;region.NeuralFlow=flow;region.SetVerticesDirty();}
             }
             for(int i=0;i<equippedAccents.Count;i++)if(equippedAccents[i]!=null)
             {
-                float strength=i==highlightedRow?1:i==installedRow&&age<.55f?Mathf.Lerp(1,.45f,age/.55f):.45f;
+                float strength=i==highlightedRow?1:i==installedRow&&age<BodyInstallSeconds?Mathf.Lerp(1,.45f,age/BodyInstallSeconds):.45f;
                 equippedAccents[i].color=NeuralPalette.Alpha(NeuralPalette.Body(RuleSystem(displayedRules[i])),strength);
             }
         }

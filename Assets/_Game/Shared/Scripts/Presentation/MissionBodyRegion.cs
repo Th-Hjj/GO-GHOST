@@ -15,6 +15,8 @@ public sealed class MissionBodyRegion : UnityEngine.UI.MaskableGraphic, ICanvasR
     public bool NeuralStyle;
     public int NeuralRegion;
     public float NeuralSignal, NeuralFlow = -1;
+    [Tooltip("Stronger configured/preview states and an installation flash; opt in per view.")]
+    public bool EmphasizeState;
     [Header("Contour pulse (local path units)")]
     [Min(0)] public float PulseSpeed = 100;
     [Min(8)] public float PulseLength = 90;
@@ -141,8 +143,13 @@ public sealed class MissionBodyRegion : UnityEngine.UI.MaskableGraphic, ICanvasR
         CacheContourPath();
         if (pathLength < .001f) return;
         float pixel = NeuralStrokeScale / Mathf.Max(.05f, rectTransform.lossyScale.x);
-        Color outline = NeuralPalette.Alpha(NeuralPalette.Secondary, .62f);
+        Color outline = NeuralPalette.Alpha(NeuralPalette.Secondary, EmphasizeState ? .78f : .62f);
         Color identity = NeuralPalette.Region(NeuralRegion);
+        if(EmphasizeState&&NeuralRegion!=0)
+        {
+            outline=Color.Lerp(outline,identity,pulseVisibility*Mathf.Lerp(.65f,1,activity));
+            outline.a=Mathf.Lerp(.78f,1,activity);
+        }
         float spacing = pathLength / Mathf.Clamp(PulseFrequency, 1, 3);
         float length = Mathf.Clamp(PulseLength, 8, spacing * .7f);
         // Double precision avoids long-session phase jitter. Both ends of the trail reach zero.
@@ -150,10 +157,11 @@ public sealed class MissionBodyRegion : UnityEngine.UI.MaskableGraphic, ICanvasR
         int phaseRegion = NeuralRegion == 3 ? 2 : NeuralRegion == 5 ? 4 : NeuralRegion;
         float head = (float)((Time.unscaledTimeAsDouble * Mathf.Max(0, PulseSpeed) + phaseRegion * 97.0) % spacing);
         float intensity = Mathf.Clamp01(PulseIntensity * Mathf.Lerp(.62f, 1, activity)) * pulseVisibility;
-        DrawContourBand(mesh, pixel, outline, identity, spacing, length, head, intensity, false);
+        float width=EmphasizeState?Mathf.Lerp(1.2f,1.65f,activity):1;
+        DrawContourBand(mesh, pixel*width, outline, identity, spacing, length, head, intensity, false);
         // Head is reserved for its own future effect, including in the legacy Upgrade screen.
         if (NeuralRegion != 0 && pulseVisibility > .001f)
-            DrawContourBand(mesh, pixel, outline, identity, spacing, length, head, intensity, true);
+            DrawContourBand(mesh, pixel*width, outline, identity, spacing, length, head, intensity, true);
     }
 
     // Feathered strips use the default UI material: Overlay-compatible, no texture or Bloom needed.
@@ -163,6 +171,8 @@ public sealed class MissionBodyRegion : UnityEngine.UI.MaskableGraphic, ICanvasR
         float spacing, float length, float head, float intensity, bool pulse)
     {
         float[] offsets = pulse ? PulseOffsets : OutlineOffsets;
+        float install=EmphasizeState&&NeuralRegion!=0&&NeuralFlow>=0&&NeuralFlow<1?Mathf.Sin(NeuralFlow*Mathf.PI):0;
+        float wash=EmphasizeState?pulseVisibility*Mathf.Lerp(.08f,.26f,activity)+install*.4f:0;
         int start = mesh.currentVertCount, columns = offsets.Length, count = pathPoints.Count;
         for (int i = 0; i < count; i++)
         {
@@ -175,7 +185,9 @@ public sealed class MissionBodyRegion : UnityEngine.UI.MaskableGraphic, ICanvasR
                 if (pulse)
                 {
                     c = j == 3 || j == 4 ? Color.white : identity;
-                    c.a = edge ? 0 : (j == 1 || j == 6 ? .18f : 1) * strength;
+                    bool core=j==3||j==4;
+                    float light=core?Mathf.Max(strength,install*.9f):Mathf.Max(strength,wash);
+                    c.a = edge ? 0 : (j == 1 || j == 6 ? (EmphasizeState?.28f:.18f) : 1) * light;
                 }
                 else if (edge) c.a = 0;
                 mesh.AddVert(pathPoints[i] + pathNormals[i] * (offsets[j] * pixel), c, Vector2.zero);

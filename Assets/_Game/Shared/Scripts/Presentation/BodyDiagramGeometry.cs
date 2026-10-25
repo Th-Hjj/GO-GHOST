@@ -3,6 +3,22 @@ using UnityEngine;
 // Shared authored contours; both current and historical screens use this geometry.
 internal static class BodyDiagramGeometry
 {
+    // Configure Your Body uses a narrower, relaxed pose. Historical callers keep BodyContour.
+    internal static Vector2[] ConfigurationContour(int index)
+    {
+        Vector2[] points;
+        if(index==0)return null;
+        if(index==1)
+            return new[] { new Vector2(.30f,.50f),new Vector2(-.30f,.50f),new Vector2(-.50f,.38f),new Vector2(-.34f,-.25f),new Vector2(-.26f,-.50f),new Vector2(.26f,-.50f),new Vector2(.34f,-.25f),new Vector2(.50f,.38f) };
+        if(index<4)
+            points=new[] { new Vector2(.44f,.47f),new Vector2(.20f,.50f),new Vector2(-.03f,.42f),new Vector2(-.50f,-.44f),new Vector2(-.34f,-.50f),new Vector2(-.13f,-.48f),new Vector2(.11f,0),new Vector2(.38f,.32f) };
+        else
+            points=new[] { new Vector2(-.10f,.50f),new Vector2(.50f,.485f),new Vector2(.044f,-.449f),new Vector2(-.325f,-.50f),new Vector2(-.50f,-.488f),new Vector2(-.32f,.036f) };
+        if(index==3||index==5)
+            for(int i=0;i<points.Length;i++)points[i].x=-points[i].x;
+        return points;
+    }
+
     internal static Vector2[] BodyContour(int index)
     {
         switch (index)

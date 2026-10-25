@@ -206,9 +206,12 @@ namespace GoGhost.Duel
                 case "M02":move=-toward;break;
                 case "M03":
                     var state=states[0,r.Row];
-                    if(state.RangeMode<0&&distance>=ConditionalDefaults.Close+ConditionalDefaults.Hysteresis
-                        ||state.RangeMode>0&&distance<=ConditionalDefaults.Far-ConditionalDefaults.Hysteresis)state.RangeMode=0;
-                    if(state.RangeMode==0)state.RangeMode=distance<ConditionalDefaults.Close?-1:distance>ConditionalDefaults.Far?1:0;
+                    var range=loadout.Operations[0].Rules[r.Row].KeepRange;
+                    float near=range==KeepRangeOption.Short?ConditionalDefaults.ShortRangeMin:range==KeepRangeOption.Long?ConditionalDefaults.Far:ConditionalDefaults.Close;
+                    float far=range==KeepRangeOption.Short?ConditionalDefaults.Close:range==KeepRangeOption.Long?ConditionalDefaults.LongRangeMax:ConditionalDefaults.Far;
+                    if(state.RangeMode<0&&distance>=near+ConditionalDefaults.Hysteresis
+                        ||state.RangeMode>0&&distance<=far-ConditionalDefaults.Hysteresis)state.RangeMode=0;
+                    if(state.RangeMode==0)state.RangeMode=distance<near?-1:distance>far?1:0;
                     if(state.RangeMode==0)return false;
                     move=state.RangeMode*toward;break;
                 case "M04":

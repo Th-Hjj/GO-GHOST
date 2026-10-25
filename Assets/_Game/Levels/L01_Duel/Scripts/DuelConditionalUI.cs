@@ -626,6 +626,7 @@ namespace GoGhost.Duel
             {
                 pendingRule.Action=null;
                 pendingRule.MoveDirection=default;pendingRule.ShortMoveDirection=default;pendingRule.PlatformDirection=default;
+                pendingRule.KeepRange=KeepRangeOption.Mid;
                 ChooseRule(pendingRow,false);
             }
         }
@@ -665,7 +666,7 @@ namespace GoGhost.Duel
             if(action==null){SelectCondition(condition);return;}
             if(!ConditionalCatalog.ConditionsAreComplete(pendingRule)||ConditionalCatalog.IncompatibilityReasonForActionChoice(pendingRule,action)!=null)return;
             if(pendingRule.Action!=action&&ConditionalCatalog.ActionOptions(action).Length>0)
-            {pendingRule.MoveDirection=MoveDirectionOption.Unspecified;pendingRule.ShortMoveDirection=ShortMoveDirectionOption.Back;pendingRule.PlatformDirection=PlatformDirectionOption.Unspecified;}
+            {pendingRule.MoveDirection=MoveDirectionOption.Unspecified;pendingRule.ShortMoveDirection=ShortMoveDirectionOption.Back;pendingRule.PlatformDirection=PlatformDirectionOption.Unspecified;pendingRule.KeepRange=KeepRangeOption.Mid;}
             pendingRule.Action=action;inspectedDescription=null;
             if(ConditionalCatalog.ActionOptions(action).Length>0)Show();else CommitRuleChoice();
         }
@@ -858,7 +859,7 @@ namespace GoGhost.Duel
                 {
                     candidatePreview=pendingRule.Copy();
                     if(candidatePreview.Action!=action&&ConditionalCatalog.ActionOptions(action).Length>0)
-                    {candidatePreview.MoveDirection=MoveDirectionOption.Unspecified;candidatePreview.PlatformDirection=PlatformDirectionOption.Unspecified;}
+                    {candidatePreview.MoveDirection=MoveDirectionOption.Unspecified;candidatePreview.PlatformDirection=PlatformDirectionOption.Unspecified;candidatePreview.KeepRange=KeepRangeOption.Mid;}
                     candidatePreview.Action=action;
                 }
                 UpdateRulePreview();

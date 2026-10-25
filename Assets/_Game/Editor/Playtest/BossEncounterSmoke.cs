@@ -189,6 +189,7 @@ public static partial class BossEncounterSmoke
         if(mode=="behavior-public-facts") {yield return BehaviorPublicFacts();yield break;}
         if(mode=="behavior-platforms") {yield return BehaviorPlatforms();yield break;}
         if(mode=="behavior-catalog") {yield return BehaviorCatalog();yield break;}
+        if(mode=="keep-range") {yield return KeepRange();yield break;}
         if(mode=="boss-body-scale") {yield return BossBodyScale();yield break;}
         if(mode=="jump-platform") {yield return JumpPlatform();yield break;}
         if(mode=="jump-platform-edges") {yield return JumpPlatformEdges();yield break;}

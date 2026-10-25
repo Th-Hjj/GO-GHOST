@@ -14,8 +14,8 @@ Confirmed by Thomas, 2026-10-24. Six progressive presets replace the previous si
 | R2 | Incoming Attack (Any) | Dodge Away from Threat |
 | R3 | Incoming Attack (Ranged) | Jump Once |
 | R4 | Reloading | Retreat from Enemy |
-| R5 | Ground State (Grounded) | Keep Mid Range |
-| R6 | Ground State (Airborne) | Keep Mid Range |
+| R5 | Ground State (Grounded) | Keep Range (Mid) |
+| R6 | Ground State (Airborne) | Keep Range (Mid) |
 | R7 | Horizontal Distance (Close) | Auto Aim at Nearest Enemy |
 | R8 | Horizontal Distance (Mid) | Auto Aim at Nearest Enemy |
 | R9 | Horizontal Distance (Far) | Auto Aim at Nearest Enemy |
@@ -32,7 +32,7 @@ Confirmed by Thomas, 2026-10-24. Six progressive presets replace the previous si
 
 Each creates a complete independent deep copy with contiguous global DisplayOrder. All rows and their conditions remain editable, reorderable and removable under the existing 20-rule budget and unlimited AND conditions. No preset changes weapon/Boss/map values, action commitments, unavailable-action fallback or manual input semantics.
 
-R5/R6 deliberately use Ground State and the existing Keep Mid Range target policy. Do not substitute Close → Retreat / Far → Approach: in a two-enemy encounter those conditions can bind different targets. Distance control is independent of Firing, so interruptions in shooting do not themselves cancel movement. Names describe the requested assistance, not a guarantee of evasion or victory.
+R5/R6 deliberately use Ground State and the existing Keep Range (Mid) target policy. Do not substitute Close → Retreat / Far → Approach: in a two-enemy encounter those conditions can bind different targets. Distance control is independent of Firing, so interruptions in shooting do not themselves cancel movement. Names describe the requested assistance, not a guarantee of evasion or victory.
 
 ## Help and persistent unlocks
 

@@ -3,11 +3,83 @@ using System;
 using System.Collections;
 using System.Linq;
 using GoGhost.Duel;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public static partial class BossEncounterSmoke
 {
+    [MenuItem("GO GHOST/Playtest/Keep Range")]
+    public static void RunKeepRange()=>Start("keep-range",false);
+    static float RangeDistance()=>Mathf.Abs(game.Player.GetComponent<Collider2D>().bounds.center.x-game.Bosses[0].GetComponent<Collider2D>().bounds.center.x);
+    static IEnumerator KeepRange()
+    {
+        Record("Keep Range: real UI callbacks, controller and movement; virtual input and stopped Boss policies for bounded spacing checks.");
+        var legacy=JsonUtility.FromJson<ConditionalRule>("{\"Condition\":17,\"Action\":\"M03\"}");
+        Check("Old M03 defaults to valid Mid",legacy.KeepRange==KeepRangeOption.Mid&&ConditionalCatalog.IsAllowed(0,legacy)
+            &&ConditionalCatalog.ActionOption(legacy)==1&&ConditionalCatalog.RuleActionLabel(legacy)=="Keep Range (Mid)");
+        Check("Catalog stays at 21 actions with three ordered range choices",ConditionalCatalog.Responses.Length==21
+            &&ConditionalCatalog.ActionOptions("M03").SequenceEqual(new[]{"Short","Mid","Long"}));
+        var invalid=legacy.Copy();invalid.KeepRange=(KeepRangeOption)99;
+        Check("Invalid range rejected by normal validation",!ConditionalCatalog.IsAllowed(0,invalid));
+        foreach(var preset in OfficialRulePresets.All)
+        {
+            var loadout=preset.CreateLoadout();
+            Check("Preset remains valid with original Mid spacing: "+preset.Id,ConditionalCatalog.IsValid(loadout)
+                &&loadout.OrderedRules().Where(r=>r.Action=="M03").All(r=>r.KeepRange==KeepRangeOption.Mid));
+        }
+        game.NewGame();SetAlphaGameSize(1280,720);yield return Frames(6);
+        ClickConfig("AddRule");yield return Frames(2);yield return V2UISelect(17);yield return V2UIAction("M03");
+        Check("UI shows Short Mid Long before commit",game.DraftLoadout.TotalRules==0
+            &&ConfigButtonNamed("RuleParameter0","Short")!=null&&ConfigButtonNamed("RuleParameter1","Mid")!=null
+            &&ConfigButtonNamed("RuleParameter2","Long")!=null&&ConditionalCatalog.ActionOption(V2UIPending())==1);
+        yield return CardsCapture("keep-range-options");
+        foreach(int option in new[]{0,1,2})
+        {
+            if(option>0){ClickConfig("Rule0Action");yield return Frames(2);}
+            ClickConfig("RuleParameter"+option);yield return Frames(3);
+            var row=game.DraftLoadout.Operations[0].Rules[0];
+            var copy=game.DraftLoadout.Copy();var json=JsonUtility.FromJson<ConditionalRule>(JsonUtility.ToJson(row));
+            string label="Keep Range ("+new[]{"Short","Mid","Long"}[option]+")";
+            Check("UI commits and previews "+label,game.DraftLoadout.TotalRules==1&&CardsPreview("PreviewAction")==label
+                &&ConditionalCatalog.ActionOption(row)==option&&ConditionalCatalog.RuleActionLabel(json)==label);
+            ConditionalCatalog.SetActionOption(copy.Operations[0].Rules[0],(option+1)%3);
+            Check("Independent snapshot preserves "+label,ConditionalCatalog.ActionOption(row)==option
+                &&ConditionalCatalog.ActionOption(copy.Operations[0].Rules[0])!=option);
+        }
+        ClickConfig("Rule0Action");yield return Frames(2);yield return V2UIAction("M04");
+        ClickConfig("CancelRuleEdit");yield return Frames(3);
+        Check("Cancel preserves Long and complete draft",game.DraftLoadout.Operations[0].Rules[0].KeepRange==KeepRangeOption.Long&&V2UIPending()==null);
+        yield return CardsCapture("keep-range-long-setup");
+        foreach(var range in new[]{KeepRangeOption.Short,KeepRangeOption.Mid,KeepRangeOption.Long})
+        {
+            yield return AlphaFresh(1,d=>{V2Rule(d,new ConditionalRule{Condition=17,Action="M03",KeepRange=range});V2Rule(d,V2Ground("F06"));});
+            float near=range==KeepRangeOption.Short?2.1f:range==KeepRangeOption.Mid?5.3f:8.5f;
+            float far=range==KeepRangeOption.Short?5.3f:range==KeepRangeOption.Mid?8.5f:11.7f;
+            Check("Fight snapshot retains "+range,Private<ConditionalLoadout>(game.Rules,"loadout").Operations[0].Rules[0].KeepRange==range);
+            foreach(bool tooClose in new[]{true,false})
+            {
+                mouseHeld=false;yield return Frames(3);AlphaPlace(-7,-7+(tooClose?near-1:far+1));yield return Frames(3);
+                TurningCursor(1,true);yield return Seconds(.08f);
+                Check(range+(tooClose?" retreats when too close":" approaches when too far"),game.Rules.Ownership.MovementOwned
+                    &&game.Rules.Ownership.Move*(tooClose?-1:1)>.5f,"distance="+RangeDistance()+" move="+game.Rules.Ownership.Move);
+                yield return Until(()=>!game.Rules.Ownership.MovementOwned,1.2f);
+                float distance=RangeDistance();
+                Check(range+" settles in selected band and releases Move",!game.Rules.Ownership.MovementOwned&&distance>=near-.15f&&distance<=far+.15f,"distance="+distance);
+                yield return Seconds(.15f);
+                Check(range+" stays stable after arrival",!game.Rules.Ownership.MovementOwned&&Mathf.Abs(RangeDistance()-distance)<.1f);
+            }
+            mouseHeld=false;yield return Frames(3);AlphaPlace(-7,-7+(near+far)/2);TurningCursor(1,true);yield return Frames(4);
+            float x=game.Player.transform.position.x;heldKeys=new[]{Key.D};yield return Seconds(.12f);heldKeys=Array.Empty<Key>();
+            Check(range+" permits manual movement inside band",!game.Rules.Ownership.MovementOwned&&game.Player.transform.position.x>x+.1f);
+            checkingPause=true;game.SetPause(true);float pausedX=game.Player.transform.position.x;yield return RealSeconds(.12);
+            Check(range+" pause freezes position",Mathf.Abs(game.Player.transform.position.x-pausedX)<.01f);
+            game.SetPause(false);checkingPause=false;mouseHeld=false;yield return Frames(3);
+            Check(range+" condition loss releases movement",!game.Rules.Ownership.MovementOwned);
+        }
+        game.MainMenu();yield return Frames(3);
+        Check("Cleanup releases actors and rules",game.Rules==null&&game.Player==null);
+    }
     static IEnumerator BehaviorCatalog()
     {
         Record("Behavior catalog: serialization compatibility and real Rule Setup Button callbacks. Controlled UI/defeat fixtures; no physical-input or balance claim.");

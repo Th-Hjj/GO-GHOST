@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-10-25 — Keep Range: Short / Mid / Long
+
+- **Baseline / scope:** waited for the Action-copy chat to finish at main `0ee82ae`, then extended only M03 and its shared parameter paths. Preserved unrelated body geometry, Art Direction and shoulder-log edits, plus all other approved Action copy.
+- **Implemented:** Keep Range exposes Short / Mid / Long through the existing parameter buttons. Serialized zero remains Mid for old M03 data and the six presets; full copies, edit/cancel, preview and fight snapshots retain the selected range. Normal validation rejects unknown values. Horizontal bands are Short 2.1–5.3, unchanged Mid 5.3–8.5 and Long 8.5–11.7 with the existing .35 hysteresis, target selection, collision, in-band release, priority and lifecycle. Catalog stays at 21 actions.
+- **Validation:** normal Unity 6000.6.0f1 compilation completed with zero errors/warnings; focused `GO GHOST > Playtest > Keep Range` recorded **49 PASS / 0 FAIL** in `Logs/BossEncounter/keep-range.txt`. Actual UI buttons, all three previews, independent copies/JSON, old-data migration, six presets, invalid parameter rejection, cancellation, fight snapshots, real approach/retreat and settled distances, manual fallback, pause, condition loss and cleanup passed. Inspected actual 1280x720 captures `rule-cards-keep-range-options.png` and `rule-cards-keep-range-long-setup.png` in the same folder. Frames advanced throughout the run.
+- **Cleanup / limits:** returned to Menu and stopped the Play session started here. Real preset unlock record restored to 3, physical keyboard/mouse re-enabled and formal scene clean. Boss policies were stopped for controlled spacing checks; no full-fight balance, physical-input, standalone or Build/Release claim. Those checks are NOT TESTED. CLI update lookup encountered a network error; elevated local discovery resolved the sandbox-only Editor descriptor restriction.
+
 ## 2026-10-25 — Concise Action descriptions and in-character aim wording
 
 - **Baseline / scope:** main `8596ee3`, preserving unrelated body geometry, Art Direction and shoulder-log edits. Thomas accepted the proposed 21 Action descriptions with Q06 "Auto aim assistance" and D04 "Dodge toward your aim."; no cursor wording in these options.

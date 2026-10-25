@@ -10,6 +10,8 @@ namespace GoGhost.Duel
     public enum MoveDirectionOption { Unspecified, Left, Right }
     // Zero migrates old M04 data without a direction field to Move (Back).
     public enum ShortMoveDirectionOption { Back=0, Forward=1 }
+    // Zero preserves the original M03 behavior in older rules and preset snapshots.
+    public enum KeepRangeOption { Mid=0, Short=1, Long=2 }
     // Inert serialized compatibility only. Fire actions no longer have ammo policies.
     public enum AmmoUseOption { AllowEmpty, KeepTwoRounds }
     public enum PlatformDirectionOption { Unspecified, Higher, Lower }
@@ -72,6 +74,7 @@ namespace GoGhost.Duel
         {get{for(int i=0;i<ConditionCount;i++)if(ConditionalCatalog.Condition(GetCondition(i).Id).Event)return true;return false;}}
         public MoveDirectionOption MoveDirection;
         public ShortMoveDirectionOption ShortMoveDirection;
+        public KeepRangeOption KeepRange;
         [UnityEngine.HideInInspector] public AmmoUseOption AmmoUse;
         public PlatformDirectionOption PlatformDirection;
         // Each operation keeps its own list; J04 also uses this order for its shared Legs claim.
@@ -83,6 +86,7 @@ namespace GoGhost.Duel
             IncomingAttack=IncomingAttack, AdditionalIncomingAttack=AdditionalIncomingAttack,
             ExtraConditions=ExtraConditions==null?null:new List<RuleCondition>(ExtraConditions),
             MoveDirection=MoveDirection, ShortMoveDirection=ShortMoveDirection, PlatformDirection=PlatformDirection,
+            KeepRange=KeepRange,
             AmmoUse=default, DisplayOrder=DisplayOrder
         };
     }
@@ -220,7 +224,7 @@ namespace GoGhost.Duel
         };
         public static readonly ResponseEntry[] Responses={
             new ResponseEntry("M01","Approach Enemy",ControlOperation.Movement),new ResponseEntry("M02","Retreat from Enemy",ControlOperation.Movement),
-            new ResponseEntry("M03","Keep Mid Range",ControlOperation.Movement),new ResponseEntry("M04","Move",ControlOperation.Movement,true),
+            new ResponseEntry("M03","Keep Range",ControlOperation.Movement),new ResponseEntry("M04","Move",ControlOperation.Movement,true),
             new ResponseEntry("M09","Move Toward Center",ControlOperation.Movement),new ResponseEntry("M11","Keep Moving",ControlOperation.Movement),
             new ResponseEntry("M10","Hold Position",ControlOperation.Movement),
             new ResponseEntry("J01","Jump Once",ControlOperation.Jump,true),new ResponseEntry("J03","Repeat Jumps",ControlOperation.Jump),
@@ -246,6 +250,8 @@ namespace GoGhost.Duel
         static readonly IncomingAttackOption[] IncomingValues={IncomingAttackOption.Any,IncomingAttackOption.Melee,IncomingAttackOption.Ranged};
         static readonly string[] ShortMoveOptions={"Forward","Back"};
         static readonly string[] PlatformOptions={"Higher","Lower"};
+        static readonly string[] RangeOptions={"Short","Mid","Long"};
+        static readonly KeepRangeOption[] RangeValues={KeepRangeOption.Short,KeepRangeOption.Mid,KeepRangeOption.Long};
         public static bool IsSelectableCondition(int id)=>Array.IndexOf(SharedConditionIds,id)>=0;
         public static bool IsStateCondition(int id)=>IsSelectableCondition(id)&&!Condition(id).Event;
         public static bool IsSelectableResponse(string id)
@@ -294,14 +300,15 @@ namespace GoGhost.Duel
             }
             rule.SetCondition(conditionIndex,condition);
         }
-        public static string[] ActionOptions(string action)=>action=="J04"?PlatformOptions:action=="M04"?ShortMoveOptions:action=="M11"?DirectionOptions:NoOptions;
-        public static string ActionOptionLabel(string action)=>action=="J04"||action=="M04"||action=="M11"?"Direction":"";
-        public static int ActionOption(ConditionalRule rule)=>rule==null?-1:rule.Action=="J04"?(int)rule.PlatformDirection-1:rule.Action=="M04"?(rule.ShortMoveDirection==ShortMoveDirectionOption.Forward?0:rule.ShortMoveDirection==ShortMoveDirectionOption.Back?1:-1):rule.Action=="M11"?(int)rule.MoveDirection-1:-1;
+        public static string[] ActionOptions(string action)=>action=="M03"?RangeOptions:action=="J04"?PlatformOptions:action=="M04"?ShortMoveOptions:action=="M11"?DirectionOptions:NoOptions;
+        public static string ActionOptionLabel(string action)=>action=="M03"?"Range":action=="J04"||action=="M04"||action=="M11"?"Direction":"";
+        public static int ActionOption(ConditionalRule rule)=>rule==null?-1:rule.Action=="M03"?Array.IndexOf(RangeValues,rule.KeepRange):rule.Action=="J04"?(int)rule.PlatformDirection-1:rule.Action=="M04"?(rule.ShortMoveDirection==ShortMoveDirectionOption.Forward?0:rule.ShortMoveDirection==ShortMoveDirectionOption.Back?1:-1):rule.Action=="M11"?(int)rule.MoveDirection-1:-1;
         public static void SetActionOption(ConditionalRule rule,int index)
         {
             if(rule==null)return;
             if(index<0||index>=ActionOptions(rule.Action).Length)throw new ArgumentOutOfRangeException(nameof(index));
             if(rule.Action=="M11")rule.MoveDirection=(MoveDirectionOption)(index+1);
+            else if(rule.Action=="M03")rule.KeepRange=RangeValues[index];
             else if(rule.Action=="M04")rule.ShortMoveDirection=index==0?ShortMoveDirectionOption.Forward:ShortMoveDirectionOption.Back;
             else if(rule.Action=="J04")rule.PlatformDirection=(PlatformDirectionOption)(index+1);
         }
@@ -336,6 +343,7 @@ namespace GoGhost.Duel
             if(Array.IndexOf(FormalResponses[operation],rule.Action)<0)return "Choose an action for this operation.";
             if(operation==(int)ControlOperation.Jump&&HasGroundState(rule,GroundStateOption.Airborne))return "Jump requires being grounded.";
             if(IsShootingAction(rule.Action)&&rule.HasCondition(9))return "Cannot fire while reloading.";
+            if(rule.Action=="M03"&&!Enum.IsDefined(typeof(KeepRangeOption),rule.KeepRange))return "Choose Short, Mid or Long.";
             if(rule.Action=="M04"&&!Enum.IsDefined(typeof(ShortMoveDirectionOption),rule.ShortMoveDirection))return "Choose Forward or Back.";
             if(rule.Action=="M11"&&(rule.MoveDirection<MoveDirectionOption.Unspecified||rule.MoveDirection>MoveDirectionOption.Right
                 ||requireComplete&&rule.MoveDirection==MoveDirectionOption.Unspecified))return "Choose Left or Right.";
@@ -427,6 +435,7 @@ namespace GoGhost.Duel
         public static string RuleActionLabel(ConditionalRule rule)
         {
             if(rule==null||string.IsNullOrEmpty(rule.Action))return "Select Action";
+            if(rule.Action=="M03")return "Keep Range ("+rule.KeepRange+")";
             if(rule.Action=="M11"&&rule.MoveDirection!=MoveDirectionOption.Unspecified)
                 return rule.MoveDirection==MoveDirectionOption.Left?"Keep Moving (Left)":"Keep Moving (Right)";
             if(rule.Action=="M04")return "Move ("+(rule.ShortMoveDirection==ShortMoveDirectionOption.Forward?"Forward":"Back")+")";
@@ -505,7 +514,7 @@ namespace GoGhost.Duel
                 case "D04":return "Dodge toward your aim.";
                 case "M01":return "Move closer to an enemy.";
                 case "M02":return "Move away from an enemy.";
-                case "M03":return "Keep a medium distance from an enemy.";
+                case "M03":return "Keep a short, medium or long distance from an enemy.";
                 case "M04":return "Move a short distance forward or backward.";
                 case "M09":return "Move toward the center of the arena.";
                 case "M11":return "Keep moving left or right.";
@@ -519,6 +528,7 @@ namespace GoGhost.Duel
     public static class ConditionalDefaults
     {
         public const float LowEnter=.4f,LowExit=.45f,Close=5.3f,Far=8.5f,Hysteresis=.35f;
+        public const float ShortRangeMin=Close-(Far-Close),LongRangeMax=Far+(Far-Close);
         public const float MouseEnter=12,MouseExit=16,ThreatWindow=.20f,VelocityDeadzone=.35f;
         public const float AimAssistCone=20,AimAssistTimeConstant=.03f,AimAssistCorrectionFraction=.7f;
         public const float RuleEventResponseDuration=.5f;

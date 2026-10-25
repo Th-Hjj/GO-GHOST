@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-10-24 — Shorter recovery between complete Unbound combos
+
+- **Baseline / confirmed scope:** main `5cd3cbb` used .50 s ordinary solo Unbound recovery and 1 s Redline recovery. Thomas clarified that he wants tighter spacing between whole combos, with final values **.40 s ordinary / .80 s Redline**. He explicitly deferred the landing-finisher proposal; its uncommitted executor/view draft was removed. This delivery changes recovery only.
+- **Implemented / files:** changed these two defaults in `SwordCombat.cs` and saved the matching `Severance.asset` values through Unity. The executor and silhouette view match the preceding commit exactly. Per-beat preparation/lock/active timing, moves, damage, movement, afterblade budgets, 33% threshold and silhouettes remain unchanged. Redline cooldown remains 9 s. Existing phase/partner gating retains Hunt / two-live-Boss ordinary recovery at .65 s; the shorter timings apply to solo Unbound, including the W3 survivor. Updated mirrored instructions and current Boss documentation.
+- **Compile / actual Editor checks:** normal compilation and `git diff --check` passed. After removing the deferred feature, **49 PASS / 0 FAIL** in `Logs/UnboundRecoveryFinal/checks.txt` with the temporary public-API verifier outside Assets. Actual accepted phrases measured .40 s ordinary Unbound and .80 s Redline recovery; checks also cover .65 s Hunt / two-live-Boss timing, complete paused recoveries, an unchanged accepted recovery deadline across partner death, W3 survivor timing, 9 s cooldown, actual attack activation, fresh Hunt reset, short advancing natural combat and menu cleanup.
+- **Cleanup / limits:** restored Menu and physical keyboard/mouse, preserved real preset unlock count 2, and left the formal scene clean. Full-fight balance, physical-input feel, standalone and full Build/Release **NOT TESTED**. The deferred landing-finisher checks are not acceptance evidence for this delivery.
+
 ## 2026-10-24 — Solo Unbound pacing A+B
 
 - **Baseline / request:** clean main `3fd1260`; ordinary phrase recovery was .65 s and Redline cooldown 10 s. Thomas accepted proposals A+B: .50 s ordinary recovery and 9 s Redline cooldown only in Unbound without a living partner. The prior suspected high-platform attack stall was not reproduced and received no speculative fix; platform attack preference and extra chase links remain unapproved.

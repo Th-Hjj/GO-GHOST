@@ -1,5 +1,9 @@
 # GO GHOST — Boss Encounter
 
+## Shorter recovery between Unbound combos — approved 2026-10-24
+
+Thomas clarified that the goal is tighter spacing between complete combos, with their individual swings unchanged. Ordinary phrase terminal recovery in solo Unbound is **.40 s** (from .50 s); Redline terminal recovery is **.80 s** (from 1 s). These include the W3 sword survivor. Hunt / two-live-Boss ordinary recovery remains .65 s, Redline cooldown remains 9 s and the living-partner exclusion remains. Preserve all per-beat preparation, lock and active timing, damage, movement, silhouettes and residual budgets. This supersedes the recovery values in the earlier A+B entry below. The landing-finisher proposal is deferred; this delivery changes recovery only.
+
 ## Solo Unbound pacing A+B — approved 2026-10-24
 
 Thomas accepted proposals A+B: when Severance is Unbound with no living partner, ordinary phrase recovery is **.50 s** (from .65 s) and Redline cooldown is **9 s** (from 10 s). This includes W2 and the W3 sword survivor. Hunt and two-live-Boss ordinary recovery stay at .65 s; Redline remains forbidden with a living partner and retains its full **1.00 s** recovery. Cooldown starts at action acceptance, as before; eligibility does not guarantee immediate selection. Recovery duration is chosen at recovery entry, and an existing deadline is never shortened by a later partner death. Preserve the 33% action-boundary phase change, all silhouette presentation, per-beat preparation/lock/active timing, damage, movement, finite phrases and afterblade budgets. The suggested platform attack preference and second chase link remain Proposed, not implemented.

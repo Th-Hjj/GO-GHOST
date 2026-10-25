@@ -51,9 +51,9 @@ MonoBehaviour:
     JumpLock: 0.12
     JumpCutActive: 0.28
     Recovery: 0.65
-    FinaleRecovery: 1
+    FinaleRecovery: 0.8
     FinaleCooldown: 10
-    UnboundRecovery: 0.5
+    UnboundRecovery: 0.4
     UnboundFinaleCooldown: 9
     DrawDamage: 28
     WaveDamage: 14

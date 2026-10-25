@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-10-25 — Concise Action descriptions and in-character aim wording
+
+- **Baseline / scope:** main `8596ee3`, preserving unrelated body geometry, Art Direction and shoulder-log edits. Thomas accepted the proposed 21 Action descriptions with Q06 "Auto aim assistance" and D04 "Dodge toward your aim."; no cursor wording in these options.
+- **Implemented:** updated all 21 selectable descriptions in the shared catalog and renamed the D04 label to Dodge Toward Aim so the option title also follows the wording restriction. IDs, parameters, raw-input/aim behavior, commitments, tuning and presets are unchanged. Mirrored authority and current rules documentation updated.
+- **Validation:** normal Unity compilation completed (`scriptCompilationFailed=false`, `isCompiling=false`); read all 21 compiled catalog descriptions and the D04 label back from the actual Editor. git diff --check passed; formal scene remained clean. The Editor initially reported Play Mode, so no game-state/UI callbacks, start/stop commands or new playtest were invoked. One read-only eval lost its connection; subsequent status was ready and readback succeeded, reporting Play Mode stopped. Cause of the transition was not established. This pass did not verify rendered UI or combat flow; full Build/Release and standalone NOT RUN.
+
 ## 2026-10-25 — Condition descriptions and catalog simplification
 
 - **Baseline / scope:** main `147f633`, preserving unrelated body-geometry, Art Direction and shoulder-log edits. Thomas supplied 24 replacement descriptions and removed A40/A39; follow-up explicitly replaces shared R10 with A18 -> Keep Firing in presets 4, 5 and 6.

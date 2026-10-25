@@ -230,7 +230,7 @@ namespace GoGhost.Duel
             new ResponseEntry("F01","Fire 1 Shot",ControlOperation.Fire,true),new ResponseEntry("F02","Short Burst",ControlOperation.Fire,true),
             new ResponseEntry("F03","Keep Firing",ControlOperation.Fire),new ResponseEntry("F06","Hold Fire",ControlOperation.Fire),
             new ResponseEntry("D01","Dodge Away from Threat",ControlOperation.Dodge,true),new ResponseEntry("D02","Dodge Toward Enemy",ControlOperation.Dodge,true),
-            new ResponseEntry("D03","Dodge in Move Direction",ControlOperation.Dodge,true),new ResponseEntry("D04","Dodge Toward Cursor",ControlOperation.Dodge,true)
+            new ResponseEntry("D03","Dodge in Move Direction",ControlOperation.Dodge,true),new ResponseEntry("D04","Dodge Toward Aim",ControlOperation.Dodge,true)
         };
         static readonly ResponseEntry[] HistoricalResponses={
             new ResponseEntry("M05","Hold Movement Direction",ControlOperation.Movement),new ResponseEntry("M06","Move to Cursor X",ControlOperation.Movement,true),
@@ -489,29 +489,29 @@ namespace GoGhost.Duel
         {
             switch(id)
             {
-                case "J04":return "Finish one transfer to a reachable higher or lower platform using a jump, edge descent or drop-through.";
-                case "Q01":return "Automatically aim at the nearest visible enemy's current position.";
-                case "Q02":return "Automatically aim at the current position of the visible enemy with the lowest health percentage.";
+                case "J04":return "Move to a higher or lower platform.";
+                case "Q01":return "Aim at the nearest enemy.";
+                case "Q02":return "Aim at the enemy with the lowest health percentage.";
                 case "Q03":return "Aim at the visible enemy associated with the detected situation.";
-                case "Q06":return "Smoothly assist your aim toward a visible enemy near your mouse direction.";
-                case "F01":return "Fire one shot in your current aim direction.";
-                case "F02":return "Rapidly fire all remaining rounds with spread at 75% damage (rounded).";
-                case "F03":return "Fire at the normal rate while the condition holds. Stop when it ends.";
-                case "F06":return "Stop firing while active.";
+                case "Q06":return "Auto aim assistance";
+                case "F01":return "Fire one bullet.";
+                case "F02":return "Quickly fire all remaining bullets with spread and reduced damage.";
+                case "F03":return "Keep firing while the conditions are met.";
+                case "F06":return "Stop firing.";
                 case "F05":return "Shoot until only two rounds remain in the magazine.";
-                case "D01":return "Dodge away from the threat that triggered this rule.";
-                case "D02":return "Dodge toward a visible enemy.";
-                case "D03":return "Dodge in your current movement direction, or your last movement direction when still.";
-                case "D04":return "Dodge toward the horizontal side of your raw cursor.";
-                case "M01":return "Approach a visible enemy horizontally and stop when aligned.";
-                case "M02":return "Move away from a visible enemy.";
-                case "M03":return "Keep a medium horizontal distance from the enemy.";
-                case "M04":return "Move a short distance forward or back from your starting facing direction.";
-                case "M09":return "Move toward the arena center.";
-                case "M11":return "Keep moving horizontally in the selected direction.";
-                case "M10":return "Stop ordinary horizontal movement while active.";
-                case "J01":return "Make one ordinary grounded jump.";
-                case "J03":return "Repeat grounded jumps while active.";
+                case "D01":return "Dodge away from the incoming threat.";
+                case "D02":return "Dodge toward an enemy.";
+                case "D03":return "Dodge in your movement direction, or your last direction if stopped.";
+                case "D04":return "Dodge toward your aim.";
+                case "M01":return "Move closer to an enemy.";
+                case "M02":return "Move away from an enemy.";
+                case "M03":return "Keep a medium distance from an enemy.";
+                case "M04":return "Move a short distance forward or backward.";
+                case "M09":return "Move toward the center of the arena.";
+                case "M11":return "Keep moving left or right.";
+                case "M10":return "Stop moving horizontally.";
+                case "J01":return "Jump once.";
+                case "J03":return "Keep jumping.";
                 default:return "";
             }
         }

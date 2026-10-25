@@ -92,13 +92,15 @@ Took Damage and all nine Action entries are events. The other 14 entries are sta
 | Jump | J01 Jump Once; J03 Repeat Jumps; J04 Move to Platform (Higher / Lower) |
 | Aim | Q01 Auto Aim at Nearest Enemy; Q02 Auto Aim at Lowest-Health Enemy; Q06 Aim Assist |
 | Fire | F01 Fire 1 Shot; F02 Short Burst; F03 Keep Firing; F06 Hold Fire |
-| Dodge | D01 Dodge Away from Threat; D02 Dodge Toward Enemy; D03 Dodge in Move Direction; D04 Dodge Toward Cursor |
+| Dodge | D01 Dodge Away from Threat; D02 Dodge Toward Enemy; D03 Dodge in Move Direction; D04 Dodge Toward Aim |
 
 **Fire 1 Shot** requests one precise round per accepted occurrence. **Keep Firing** requests precise single rounds at the primary interval while the complete state remains true, including after automatic reload; event responses retain their 0.5-second acceptance deadline. **Short Burst** (F02) calls the same rapid, per-shot-spread process as manual RMB. Its first successful paid shot snapshots all remaining rounds, including itself. Zero rounds cannot accept or complete. The weapon exclusively owns its budget, cadence, completion and source; no Controller-side second burst simulation exists. Trigger/primary/additional-state loss and higher Hold Fire cannot interrupt an accepted burst. Aim, Move, Jump and Dodge remain independent. Each shot uses the latest resolved Aim plus fresh uniform spread, at the current actual muzzle. The last paid shot raises ShotFired, then BurstFinished exactly once, then ReloadStarted. It never crosses reload. Death, disable and encounter cleanup cancel without completion; pause freezes it. Events enter the next normal solve, never recursive rule execution. Manual consecutive single shots are not bursts.
 
 All Fire actions remain parameterless with no confirmation or ammo suffix. Per Thomas's explicit follow-up, Keep Two Rounds is **not restored**: old AmmoUse enum/fields remain inert compatibility data, normalize to zero on copies and never reserve rounds. Keep IDs, other fields, priority and independent occurrence consumption. Hold Fire owns legal zero output and blocks new manual/automatic requests while leaving accepted bursts, reloads and emitted bullets intact. Temporarily unavailable unstarted rows retain lower/manual fallback.
 
 `ConditionalCatalog.IncompatibilityReason(operation, rule)` validates the complete rule and relevant parameters for UI commit, Start Fight and runtime snapshots. Structural impossibilities may be grey: Airborne with a ground-only Jump, contradictory Grounded AND Airborne, mutually exclusive distances for the same enemy, and Reloading with an actual shooting action. **Reloading → Hold Fire is legal and executable. Enemy Near Aim Direction → Aim Assist is fully legal without an additional state.** Cooldowns, current targets, collision and resources remain runtime checks. Do not prohibit strong combinations or real feedback loops.
+
+**Action copy — 2026-10-25:** Thomas approved the concise descriptions for all 21 actions. Q06 reads "Auto aim assistance"; D04 reads "Dodge toward your aim." and is named Dodge Toward Aim. These player-facing descriptions avoid cursor/mouse terminology. This is wording only: D04 retains its existing raw-input horizontal-side resolution, and Q06 retains its existing assistance behavior.
 
 ## Execution, events and ownership
 

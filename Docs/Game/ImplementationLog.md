@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-10-24 — Shoulder attachment correction
+
+- **Baseline / accepted scope:** clean main `85c5f85`. Thomas accepted the simplified body and its effects, rejected an anatomical redraw, and approved correcting the arm/torso connection. The old raised arm caps did not follow the torso shoulder slope.
+- **Implemented:** changed four upper-arm vertices in `BodyDiagramGeometry.ConfigurationContour`. Each arm now starts at the existing torso shoulder corner, continues its outer slope and shares a short upper-side edge, opening into a distinct armpit angle. The other four arm vertices, torso/head/legs, region transforms, overall proportions, effects, UI and gameplay are unchanged. Mirrored instructions and Art Direction record the scope.
+- **Compile / actual Editor verification:** normal recompile completed with zero errors/warnings; `git diff --check` passed. In the advancing 2560x1440 Play Mode configuration, shoulder endpoint and attachment-edge errors measured zero, left/right paths mirrored, all six rendered regions stayed inside the body panel, and flow parameters remained 150/170/1.1. Invoked the existing arm preview, observed both arms at signal 1 with rendered pulse meshes, then restored the prior preview. Actual captures are `Logs/BodyShoulderJoin/before.png`, `after-live.png`, `arms-preview.png` and `final.png`.
+- **Reload recovery / cleanup:** the pre-existing Play Mode session was left running. Unity assembly reload reset its nonserialized loadout and materialized the optional view-sample list as empty. Restored the original single A04 Low Health -> J03 Repeat Jumps rule from the surviving complete edit draft (saved as `restored-rule.json`), reset the empty view sample to null and rebuilt the normal UI; both model and displayed list report one rule, with its original condition editor open. Real preset progress remains 2; no progress writes, input-device changes or scene edits. Console entries were tool-dispatch/transport errors, with no game exception identified. Combat/Training transition, other resolutions, standalone and full Build/Release **NOT RUN** for this geometry-only correction.
+
 ## 2026-10-24 — Taller body configuration figure and stronger feedback
 
 - **Baseline / confirmed scope:** clean main `712a934`. Thomas approved the four proposed changes: taller natural standing proportions, clearer idle/equipped/preview effects, existing action-to-body highlighting and a .6 s installation pulse, with actual UI captures.

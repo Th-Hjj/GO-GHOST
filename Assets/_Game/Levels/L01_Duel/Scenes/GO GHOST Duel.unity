@@ -2006,11 +2006,11 @@ MonoBehaviour:
   output: {fileID: 2030619741}
   waveTracks:
   - {fileID: 8300000, guid: 1c8ed0b0684ee7843b796cf30903006e, type: 3}
-  - {fileID: 8300000, guid: 3e168f92c8878ce4d81fb567bb5a5e7b, type: 3}
+  - {fileID: 8300000, guid: 5795cb7b383c120478e4d6557cc13690, type: 3}
   - {fileID: 8300000, guid: 10aff52404332ed4f9538b15ef400c6b, type: 3}
   waveGains:
   - 1
-  - 0.524807
+  - 1.513561
   - 0.699842
   musicVolume: 0.18
   fadeSeconds: 0.35

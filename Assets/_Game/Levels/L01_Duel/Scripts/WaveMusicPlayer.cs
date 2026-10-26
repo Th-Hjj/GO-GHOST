@@ -10,8 +10,8 @@ namespace GoGhost.Duel
         [SerializeField] AudioSource output;
         [Tooltip("Wave 1, Wave 2, Wave 3. Each retry starts the selected track from the beginning.")]
         [SerializeField] AudioClip[] waveTracks = new AudioClip[3];
-        [Tooltip("Per-wave loudness trims, measured against Wave 1. These multiply the independent music volume.")]
-        [SerializeField] float[] waveGains = { 1f, .524807f, .699842f };
+        [Tooltip("Per-wave loudness trims, measured against Wave 1. Values above 1 boost quieter tracks before the independent music volume.")]
+        [SerializeField] float[] waveGains = { 1f, 1.513561f, .699842f };
         [SerializeField, Range(0, 1)] float musicVolume = .18f;
         [SerializeField, Min(0)] float fadeSeconds = .35f;
         float fade, targetFade, loadingSeconds;
@@ -20,7 +20,7 @@ namespace GoGhost.Duel
         public int CurrentWave { get; private set; }
         public float Volume => musicVolume;
         public float CurrentTrackGain => waveGains != null && CurrentWave > 0 && CurrentWave <= waveGains.Length
-            ? Mathf.Clamp01(waveGains[CurrentWave - 1]) : 1f;
+            ? Mathf.Max(0, waveGains[CurrentWave - 1]) : 1f;
 
         void Awake()
         {

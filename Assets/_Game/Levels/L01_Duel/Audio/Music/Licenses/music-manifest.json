@@ -1,25 +1,50 @@
 {
-  "schema": 1,
-  "purpose": "Thomas's temporary three-wave BGM selection, confirmed and authorized for implementation on 2026-10-05.",
-  "license_checked_date": "2026-10-05",
-  "license": "CC0-1.0",
-  "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "schema": 2,
+  "purpose": "Current three-wave music; Thomas requested Efe Inan's supplied Wave 2 recording on 2026-10-25. Wave 1/3 retain the temporary selections from 2026-10-05.",
   "playback": "A dedicated WaveMusicPlayer starts at Start Fight, including the three-second preparation. Native full-clip loop, volume 0.18, fade 0.35 seconds, pause with the existing AudioListener. Retry starts at zero.",
   "import": "Stereo preserved; Streaming; Vorbis quality 0.8; original sample rate; preload metadata/audio enabled; load in background enabled. No platform override.",
   "loudness_matching": {
-    "date": "2026-10-05",
-    "method": "FFmpeg 7.1 EBU R128 integrated LUFS scanner on original full stereo recordings; constant playback attenuation only.",
+    "date": "2026-10-25",
+    "method": "FFmpeg EBU R128 integrated LUFS scan on original full stereo recordings; constant playback gain only. Wave 2 remeasured 2026-10-25; unchanged Wave 1/3 results retained from 2026-10-05.",
     "method_reference": "https://ffmpeg.org/ffmpeg-filters.html#ebur128",
     "target_before_master_lufs": -13.6,
-    "original_full_track_lufs_by_wave": [-13.6, -8.0, -10.5],
-    "trim_db_by_wave": [0.0, -5.6, -3.1],
-    "playback_gain_by_wave": [1.0, 0.524807, 0.699842],
-    "remeasured_full_track_lufs_by_wave": [-13.6, -13.6, -13.6],
-    "original_first_60_seconds_lufs_by_wave": [-14.4, -8.0, -11.0],
-    "remeasured_first_60_seconds_lufs_by_wave": [-14.4, -13.6, -14.1],
-    "remeasured_true_peak_before_master_dbfs_by_wave": [-2.7, -3.2, -3.5],
+    "original_full_track_lufs_by_wave": [
+      -13.6,
+      -17.2,
+      -10.5
+    ],
+    "trim_db_by_wave": [
+      0.0,
+      3.6,
+      -3.1
+    ],
+    "playback_gain_by_wave": [
+      1.0,
+      1.513561,
+      0.699842
+    ],
+    "remeasured_full_track_lufs_by_wave": [
+      -13.6,
+      -13.6,
+      -13.6
+    ],
+    "original_first_60_seconds_lufs_by_wave": [
+      -14.4,
+      -17.3,
+      -11.0
+    ],
+    "remeasured_first_60_seconds_lufs_by_wave": [
+      -14.4,
+      -13.7,
+      -14.1
+    ],
+    "remeasured_true_peak_before_master_dbfs_by_wave": [
+      -2.7,
+      -1.1,
+      -3.5
+    ],
     "master_volume": 0.18,
-    "note": "The source recordings and their internal dynamics are unchanged. Unity codec/device effects and subjective perception are not measured by the source-file scanner. Existing local importer quality edits were preserved and excluded from this change."
+    "note": "Source bytes and internal dynamics are unchanged. Unity codec/device effects and subjective perception are not measured by the source-file scanner. The .18 music master follows the per-wave gain."
   },
   "files": [
     {
@@ -35,23 +60,28 @@
       "sha256": "0a278b6d3941386ea2b8f324569dfdb0d4e8631766f7d4e0688a0b8b5f4bddcb",
       "unity_duration_seconds": 114.5992,
       "modifications": "Original audio bytes unchanged; local filename shortened. Original source is lossy MP3.",
-      "loop": "Repeat full recording; musical seam not auditioned."
+      "loop": "Repeat full recording; musical seam not auditioned.",
+      "license": "CC0-1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "license_checked_date": "2026-10-05"
     },
     {
       "wave": 2,
-      "title": "Boss Fight 2",
-      "author": "Ansimuz (Luis Zuno)",
-      "file": "Assets/_Game/Levels/L01_Duel/Audio/Music/boss_fight_2.wav",
-      "original_file": "Boss Fight 2 Files/Boss Fight 2.wav",
-      "source": "https://opengameart.org/content/boss-fight-2",
-      "download": "https://opengameart.org/sites/default/files/boss_fight_2_files.zip",
-      "license_evidence": "Original upload explicitly lists CC0. The archive's public-license.txt permits commercial use, modification and redistribution, with optional credit.",
-      "license_file": "Ansimuz-public-license.txt",
-      "bytes": 17014302,
-      "sha256": "1ff4cd3c43cc6be81084e5e8192d3aa3094a35d80bb32ebf483b18c15337d6bb",
-      "unity_duration_seconds": 88.61539,
-      "modifications": "Original WAV bytes unchanged; local filename shortened. Other archive audio variants were not imported.",
-      "loop": "Author describes the track as looped; musical seam not auditioned."
+      "title": "mx_bosstheme1_wip1 (working title)",
+      "author": "Efe Inan",
+      "file": "Assets/_Game/Levels/L01_Duel/Audio/Music/mx_bosstheme1_wip1.wav",
+      "original_file": "mx_bosstheme1_wip1.wav",
+      "source": "WAV supplied by Thomas with collaborator attribution in the accompanying screenshot.",
+      "authorization": "Thomas explicitly requested integration into the Wave 2 swordsman encounter on 2026-10-25.",
+      "license": "Collaborator-supplied project music; no public license supplied or inferred.",
+      "bytes": 29184906,
+      "sha256": "85bfd5a8421a96e45bb11cfb85558fba3d77e075cc88e3c778f42df14fb3b981",
+      "unity_duration_seconds": 101.3334,
+      "sample_rate_hz": 48000,
+      "channels": 2,
+      "source_bit_depth": 24,
+      "modifications": "Original WAV bytes unchanged. Unity streaming import and +3.6 dB playback trim only.",
+      "loop": "Repeat full recording through the existing native loop. Musical seam not auditioned; no bespoke loop edit made."
     },
     {
       "wave": 3,
@@ -66,8 +96,34 @@
       "sha256": "ac934b5a31ad8375f66f290836015fce7f5f774259c73d850f5de173cdb5a7d2",
       "unity_duration_seconds": 162.2512,
       "modifications": "Original audio bytes unchanged.",
-      "loop": "Repeat full recording; a bespoke seamless loop is not included in this free download and has not been created."
+      "loop": "Repeat full recording; a bespoke seamless loop is not included in this free download and has not been created.",
+      "license": "CC0-1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "license_checked_date": "2026-10-05"
     }
   ],
-  "audibility": "NOT TESTED: human audition, musical loop seams and subjective SFX/music balance. Native playback/sample progression is verified separately in Implementation_Log."
+  "audibility": "NOT TESTED: human audition, musical loop seams and subjective SFX/music balance. Native playback/sample progression is verified separately in Implementation_Log.",
+  "license_scope": "Per-file provenance: CC0 applies only to the original placeholder recordings. The collaborator track is supplied for this project, with no public license asserted.",
+  "inactive_files": [
+    {
+      "title": "Boss Fight 2",
+      "author": "Ansimuz (Luis Zuno)",
+      "file": "Assets/_Game/Levels/L01_Duel/Audio/Music/boss_fight_2.wav",
+      "original_file": "Boss Fight 2 Files/Boss Fight 2.wav",
+      "source": "https://opengameart.org/content/boss-fight-2",
+      "download": "https://opengameart.org/sites/default/files/boss_fight_2_files.zip",
+      "license_evidence": "Original upload explicitly lists CC0. The archive's public-license.txt permits commercial use, modification and redistribution, with optional credit.",
+      "license_file": "Ansimuz-public-license.txt",
+      "bytes": 17014302,
+      "sha256": "1ff4cd3c43cc6be81084e5e8192d3aa3094a35d80bb32ebf483b18c15337d6bb",
+      "unity_duration_seconds": 88.61539,
+      "modifications": "Original WAV bytes unchanged; local filename shortened. Other archive audio variants were not imported.",
+      "loop": "Author describes the track as looped; musical seam not auditioned.",
+      "license": "CC0-1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "license_checked_date": "2026-10-05",
+      "former_wave": 2,
+      "status": "Retained historical placeholder; replaced in Wave 2 on 2026-10-25 and unassigned in the formal scene."
+    }
+  ]
 }

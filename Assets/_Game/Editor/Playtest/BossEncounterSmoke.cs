@@ -475,7 +475,7 @@ public static partial class BossEncounterSmoke
         if(music==null){Check("music player exists",false);yield break;}
         var source=music.GetComponent<AudioSource>();float original=music.Volume;
         restoration.Add(()=>music.SetVolume(original));
-        float[] gains={1f,.524807f,.699842f};
+        float[] gains={1f,1.513561f,.699842f};
         for(int wave=1;wave<=3;wave++)
         {
             game.ConfigurePlaytestWave(wave);game.StartFight();
@@ -506,13 +506,12 @@ public static partial class BossEncounterSmoke
         Check("one dedicated music player",music!=null&&game.GetComponentsInChildren<WaveMusicPlayer>().Length==1);
         if(music==null)yield break;
         var source=music.GetComponent<AudioSource>();
-        string[] names={"open_warfare","boss_fight_2","achilles"};
+        string[] names={"open_warfare","mx_bosstheme1_wip1","achilles"};
         game.MainMenu();yield return Frames(2);
         Check("menu starts silent",music.CurrentWave==0&&source.clip==null&&!source.isPlaying);
         for(int wave=1;wave<=3;wave++)
         {
             game.ConfigurePlaytestWave(wave);
-            if(wave==3)for(int i=0;i<3;i++)game.SetDraft(i,true);
             Check("W"+wave+" configuration silent",source.clip==null&&!source.isPlaying);
             game.StartFight();
             Check("W"+wave+" track selected at Start Fight",game.Phase==DuelPhase.Prepare&&music.CurrentWave==wave
@@ -530,20 +529,19 @@ public static partial class BossEncounterSmoke
             yield return Until(()=>game.Phase==DuelPhase.Fight,DuelGame.PreparationSeconds+1);
             float before=source.time;yield return Seconds(.25f);
             Check("W"+wave+" continues across preparation/combat",source.isPlaying&&source.time>before+.1f&&music.CurrentWave==wave);
-            if(wave<3)
-            {
-                MouseAt(game.Bosses[0].Position,true);int shots=game.Rifle.ShotsFired;
-                yield return Seconds(.55f);mouseHeld=false;
-                Check("W"+wave+" real shots coexist with music",game.Rifle.ShotsFired>shots&&source.isPlaying
-                    &&game.Player.GetComponentInParent<PresentationOneShot>().PlayedCount>0);
-            }
-            else
-            {
-                yield return Seconds(2);
-                Check("W3 short all-AI combat coexists with music",game.Phase==DuelPhase.Fight&&game.Rifle.ShotsFired>0&&source.isPlaying,
-                    "shots="+game.Rifle.ShotsFired+" seconds="+game.FightClock);
-            }
+            MouseAt(game.Bosses[0].Position,true);int shots=game.Rifle.ShotsFired;
+            yield return Seconds(.55f);mouseHeld=false;
+            Check("W"+wave+" real shots coexist with music",game.Rifle.ShotsFired>shots&&source.isPlaying
+                &&game.Player.GetComponentInParent<PresentationOneShot>().PlayedCount>0);
             StopPolicies();
+            if(wave==2)
+            {
+                checkingPause=true;game.ToggleDeveloperTools();float toolsTime=source.time;
+                yield return RealSeconds(.25f);
+                Check("W2 F8 freezes music",game.DeveloperToolsOpen&&AudioListener.pause&&Mathf.Abs(source.time-toolsTime)<.05f);
+                game.ToggleDeveloperTools();checkingPause=false;yield return Seconds(.15f);
+                Check("W2 F8 close resumes music",!game.DeveloperToolsOpen&&!game.Paused&&source.isPlaying&&source.time>toolsTime);
+            }
             checkingPause=true;game.SetPause(true);pausedTime=source.time;
             yield return RealSeconds(.25f);
             Check("W"+wave+" combat pause freezes music",Mathf.Abs(source.time-pausedTime)<.05f);

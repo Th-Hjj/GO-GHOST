@@ -54,4 +54,6 @@ Files save after a fight ends, when you leave it, or on normal exit. Training is
 
 **Thomas Hong and Walker Grupp** — USC CTIN 489.
 
+**Efe Inan** — Wave 2 / Severance music (`mx_bosstheme1_wip1`).
+
 Third-party attribution and license records: [sound effects](Assets/_Game/Shared/Audio/Licenses/boss-manifest.json), [music](Assets/_Game/Levels/L01_Duel/Audio/Music/Licenses/music-manifest.json), and [IBM Plex fonts](Assets/_Game/Shared/Fonts/IBMPlex/license.txt).

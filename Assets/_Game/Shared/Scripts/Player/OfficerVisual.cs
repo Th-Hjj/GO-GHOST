@@ -22,7 +22,7 @@ public sealed class OfficerVisual : MonoBehaviour
     private Rigidbody2D body;
     private Collider2D bodyCollider;
     private SpriteRenderer leftForearm, rightForearm, leftCalf, rightCalf;
-    private SpriteRenderer cylinder;
+    private SpriteRenderer cylinder, cylinderHalo, triggerPalm, supportPalm;
     private float clock, gait, stride, landing, recoil;
     private int lastShots;
     private SpriteRenderer[] glowParts;
@@ -39,7 +39,8 @@ public sealed class OfficerVisual : MonoBehaviour
         ClearConditionalGlow();
         if(spineSignal==null){spineSignal=AddSegment(torso,"SpineSignal");spineSignal.sortingOrder=torso.sortingOrder+1;}
         spineSignal.enabled=true;
-        glowParts=new[]{leftLeg,rightLeg,leftCalf,rightCalf,leftArm,rightArm,leftForearm,rightForearm,weaponGrip,weapon,spineSignal};
+        // Keep the approved gun silhouette gray-blue; weapon signals live only in its core.
+        glowParts=new[]{leftLeg,rightLeg,leftCalf,rightCalf,leftArm,rightArm,leftForearm,rightForearm,cylinderHalo,cylinder,spineSignal,supportPalm,triggerPalm};
         originalMaterials=new Material[glowParts.Length];glowBlock=new MaterialPropertyBlock();
         for(int i=0;i<glowParts.Length;i++)if(glowParts[i]!=null){originalMaterials[i]=glowParts[i].sharedMaterial;glowParts[i].sharedMaterial=material;}
         feedback=source;health.OnDeath+=ClearConditionalGlow;glowBound=true;
@@ -51,9 +52,10 @@ public sealed class OfficerVisual : MonoBehaviour
         if(glowParts!=null)for(int i=0;i<glowParts.Length;i++)if(glowParts[i]!=null){glowParts[i].SetPropertyBlock(null);glowParts[i].sharedMaterial=originalMaterials[i];}
         if(spineSignal!=null)spineSignal.enabled=false;
         glowParts=null;originalMaterials=null;
+        if (health != null && health.IsDead && cylinderHalo != null) cylinderHalo.enabled = false;
     }
     void OnDestroy()=>ClearConditionalGlow();
-    void OnDisable()=>SetReloading(false);
+    void OnDisable(){SetReloading(false);if(cylinderHalo!=null)cylinderHalo.enabled=false;}
     void UpdateConditionalGlow()
     {
         if(!glowBound||feedback==null)return;
@@ -64,13 +66,13 @@ public sealed class OfficerVisual : MonoBehaviour
         float dodgeSignal=Mathf.Max(spine.Matched?.2f:0,Mathf.Max(spine.Pulse,spine.Afterglow*.22f));
         for(int i=0;i<glowParts.Length;i++)
         {
-            float strength=i<4?legs:i<8?arms:i<10?Mathf.Max(fire.Signal*.7f,Mathf.Max(fire.Pulse,fire.Afterglow*.22f)):dodgeSignal;
+            float strength=i<4?legs:i<8||i>10?arms:i<10?Mathf.Max(fire.Signal*.7f,Mathf.Max(fire.Pulse,fire.Afterglow*.22f)):dodgeSignal;
             // Keep the gun's reload signal red while arm feedback continues independently.
             if(reloading&&(i==8||i==9))strength=0;
             var renderer=glowParts[i];if(renderer==null)continue;
             if(i==10)renderer.enabled=strength>.001f;
             renderer.GetPropertyBlock(glowBlock);glowBlock.SetFloat(GlowStrength,Mathf.Clamp01(strength));
-            glowBlock.SetColor(GlowColor,i<4?NeuralPalette.Legs:i<10?NeuralPalette.Arms:NeuralPalette.Spine);renderer.SetPropertyBlock(glowBlock);
+            glowBlock.SetColor(GlowColor,i<4?NeuralPalette.Legs:i==10?NeuralPalette.Spine:NeuralPalette.Arms);renderer.SetPropertyBlock(glowBlock);
         }
     }
     public bool ReloadVisible => reloading && weapon != null && weapon.enabled && weapon.gameObject.activeInHierarchy;
@@ -101,9 +103,27 @@ public sealed class OfficerVisual : MonoBehaviour
             cylinder.transform.SetParent(weapon.transform.parent, false);
             cylinder.sortingOrder = weapon.sortingOrder + 1;
         }
-        weapon.transform.localScale = new Vector3(.26f / weapon.sprite.bounds.size.x, .095f / weapon.sprite.bounds.size.y, 1);
-        weaponGrip.transform.localScale = new Vector3(.085f / weaponGrip.sprite.bounds.size.x, .20f / weaponGrip.sprite.bounds.size.y, 1);
-        cylinder.transform.localScale = new Vector3(.18f / cylinder.sprite.bounds.size.x, .20f / cylinder.sprite.bounds.size.y, 1);
+        weapon.sprite = RevolverPresentationGeometry.Body;
+        weaponGrip.enabled = false; // The connected silhouette includes the complete grip.
+        cylinder.sprite = RevolverPresentationGeometry.Core;
+        cylinder.sortingOrder = weapon.sortingOrder + 2;
+        if (cylinderHalo == null) {
+            cylinderHalo = AddSegment(cylinder, "RevolverCoreHalo");
+            cylinderHalo.sortingOrder = weapon.sortingOrder + 1;
+        }
+        cylinderHalo.sprite = RevolverPresentationGeometry.Halo;
+        foreach (var arm in new[] { leftArm, leftForearm, rightArm, rightForearm })
+            arm.sprite = RevolverPresentationGeometry.ArmSegment;
+        leftArm.flipX = rightArm.flipX = false;
+        leftForearm.flipX = rightForearm.flipX = true;
+        if (supportPalm == null) supportPalm = AddSegment(head, "RevolverSupportHand");
+        if (triggerPalm == null) triggerPalm = AddSegment(head, "RevolverTriggerHand");
+        foreach (var palm in new[] { supportPalm, triggerPalm }) {
+            palm.transform.SetParent(weapon.transform.parent, false);
+            palm.sortingOrder = weapon.sortingOrder + 3;
+            palm.color = NeuralPalette.Primary;
+        }
+        UpdateReloadVisual();
         clock = gait = stride = landing = recoil = 0;
         wasGrounded = true;
         lastShots = shooting.ShotsFired;
@@ -162,7 +182,7 @@ public sealed class OfficerVisual : MonoBehaviour
         Vector2 aim = shooting.CurrentBarrelDirection;
         int facing = movement.FacingDirection;
         // Arms stay attached to the independently aimed Revolver when the legs face the other way.
-        int aimFacing = aim.x < 0 ? -1 : 1;
+        int aimFacing = shooting.CurrentWeaponFacing;
         float wave = Mathf.Sin(gait), lift = Mathf.Cos(gait);
         float crouch = landing * .12f + (dashDirection != 0 ? .17f : 0);
         float breath = Mathf.Sin(clock * 2.4f) * .009f;
@@ -192,17 +212,58 @@ public sealed class OfficerVisual : MonoBehaviour
         Limb(rightLeg, rightCalf, hip + Vector2.right * (.075f * facing), front, new Vector2(.18f * facing, 0), .17f);
 
         // FirePoint remains entirely owned by PlayerShooting. The barrel ends at its real muzzle.
-        weapon.transform.localPosition = new Vector3(-.13f, 0, 0);
+        weapon.transform.localPosition = Vector3.zero;
         weapon.transform.localRotation = Quaternion.identity;
-        weaponGrip.transform.localPosition = new Vector3(-.29f, -.10f * aimFacing, 0);
-        weaponGrip.transform.localRotation = Quaternion.Euler(0, 0, -12 * aimFacing);
-        cylinder.transform.localPosition = new Vector3(-.23f, -.025f * aimFacing, 0);
+        weapon.transform.localScale = new Vector3(1, aimFacing, 1);
+        Vector2 corePoint = RevolverPresentationGeometry.CorePosition;
+        cylinder.transform.localPosition = new Vector3(corePoint.x, corePoint.y * aimFacing, 0);
         cylinder.transform.localRotation = Quaternion.identity;
+        cylinder.transform.localScale = Vector3.one;
+        cylinderHalo.transform.localPosition = cylinder.transform.localPosition;
+        cylinderHalo.transform.localRotation = Quaternion.identity;
+        cylinderHalo.transform.localScale = Vector3.one;
+        cylinderHalo.enabled = isActiveAndEnabled && (health == null || !health.IsDead);
         var anchor = weapon.transform.parent;
-        Vector2 triggerHand = transform.InverseTransformPoint(anchor.TransformPoint(new Vector3(-.29f, -.11f * aimFacing, 0)));
-        Vector2 supportHand = transform.InverseTransformPoint(anchor.TransformPoint(new Vector3(-.22f, -.14f * aimFacing, 0)));
-        Limb(leftArm, leftForearm, chest + new Vector2(-.10f * aimFacing, -.04f), supportHand, new Vector2(-.08f * aimFacing, -.12f), .16f);
-        Limb(rightArm, rightForearm, chest + new Vector2(.08f * aimFacing, -.04f), triggerHand, new Vector2(.06f * aimFacing, -.12f), .16f);
+        Vector2 grip = RevolverPresentationGeometry.GripPosition;
+        Vector2 support = RevolverPresentationGeometry.SupportPosition;
+        Vector2 triggerHand = transform.InverseTransformPoint(anchor.TransformPoint(new Vector3(grip.x, grip.y * aimFacing, 0)));
+        Vector2 supportHand = transform.InverseTransformPoint(anchor.TransformPoint(new Vector3(support.x, support.y * aimFacing, 0)));
+        PositionPalm(triggerPalm, grip, aimFacing, new Vector2(.10f,.075f));
+        PositionPalm(supportPalm, support, aimFacing, new Vector2(.095f,.065f));
+        Arm(leftArm, leftForearm, chest + new Vector2(-.10f * aimFacing, -.04f), supportHand, aimFacing);
+        Arm(rightArm, rightForearm, chest + new Vector2(.08f * aimFacing, -.04f), triggerHand, aimFacing);
+    }
+
+    private static void PositionPalm(SpriteRenderer palm, Vector2 point, int facing, Vector2 size)
+    {
+        palm.transform.localPosition = new Vector3(point.x, point.y * facing, 0);
+        palm.transform.localRotation = Quaternion.Euler(0, 0, 12 * facing);
+        Vector2 source = palm.sprite.bounds.size;
+        palm.transform.localScale = new Vector3(size.x/source.x,size.y/source.y,1);
+    }
+
+    private void Arm(SpriteRenderer upper, SpriteRenderer lower, Vector2 shoulder, Vector2 hand, int facing)
+    {
+        // Two .30-unit bones: aiming/reloading bends the elbow instead of scaling a midpoint offset.
+        const float length = .30f;
+        Vector2 delta = hand - shoulder;
+        float distance = delta.magnitude;
+        Vector2 direction = distance > .0001f ? delta / distance : Vector2.right * facing;
+        float half = distance * .5f;
+        float bend = Mathf.Sqrt(Mathf.Max(0, length * length - half * half));
+        Vector2 normal = new Vector2(-direction.y, direction.x);
+        // Stable lower/outside elbow solution for each handedness, including vertical aim.
+        Vector2 elbow = (shoulder + hand) * .5f - normal * (bend * facing);
+        RoundedArmSegment(upper, shoulder, elbow);
+        RoundedArmSegment(lower, elbow, hand);
+    }
+
+    private void RoundedArmSegment(SpriteRenderer part, Vector2 start, Vector2 end)
+    {
+        const float width = .16f;
+        Vector2 delta = end - start;
+        Place(part, (start + end) * .5f, new Vector2(delta.magnitude + .0125f + width*.5f, width),
+            Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
     }
 
     private void Limb(SpriteRenderer upper, SpriteRenderer lower, Vector2 start, Vector2 end, Vector2 bend, float width)
@@ -229,10 +290,11 @@ public sealed class OfficerVisual : MonoBehaviour
     private void UpdateReloadVisual()
     {
         float pulse = reloading ? .5f + .5f * Mathf.Cos((Time.time - reloadVisualStartedAt) * Mathf.PI * 6f) : 0;
-        Color tint = Color.Lerp(NeuralPalette.Primary, NeuralPalette.Danger, pulse);
+        Color tint = Color.Lerp(animate ? RevolverPresentationGeometry.BodyColor : NeuralPalette.Primary, NeuralPalette.Danger, pulse);
         if (weapon != null) weapon.color = tint;
         if (weaponGrip != null) weaponGrip.color = tint;
-        if (cylinder != null) cylinder.color = tint;
+        if (cylinder != null) cylinder.color = Color.Lerp(RevolverPresentationGeometry.CoreColor, NeuralPalette.Danger, pulse);
+        if (cylinderHalo != null) cylinderHalo.color = Color.Lerp(new Color(.35f,.78f,1f,1f), NeuralPalette.Danger, pulse);
     }
     // The UI and actor share this palette. Brightened indigo stays readable against black.
     public static Color SlotColor(LoadoutSlot slot) => slot switch

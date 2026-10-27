@@ -285,9 +285,6 @@ public partial class PlayerShooting : MonoBehaviour, IAttemptAugmentation
         IsReloading=true; IsFiring=false;
         reloadStartedAt=Time.time; reloadDuration=Mathf.Max(.01f,Weapon.ReloadSeconds);
         reloadDoneAt=reloadStartedAt+reloadDuration;
-        reloadFromDirection=CurrentBarrelDirection;
-        reloadSide = Mathf.Abs(reloadFromDirection.x) > .01f ? Mathf.Sign(reloadFromDirection.x)
-            : GetComponent<PlayerMovement>().FacingDirection;
         if (visual != null) visual.SetReloading(true);
         if (sfx != null) sfx.Play(Sfx.Equip);
         ReloadStarted?.Invoke();
@@ -296,7 +293,7 @@ public partial class PlayerShooting : MonoBehaviour, IAttemptAugmentation
     /// <summary>World-space muzzle position for the given (normalized) aim direction.</summary>
     public Vector2 GetMuzzlePosition(Vector2 aimDirection)
     {
-        return AimOrigin + aimDirection * firePointRadius;
+        return AimOrigin + aimDirection * (firePointRadius + (legacyCombat ? RevolverForwardReach : 0));
     }
 
     // An explicit player choice can request one ordinary shot; failed cadence/reload never creates damage or free ammo.

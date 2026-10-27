@@ -178,6 +178,7 @@ public static partial class BossEncounterSmoke
         if(mode=="official-presets-edges") {yield return OfficialPresetsEdges();yield break;}
         if(mode=="official-presets-gameplay") {yield return OfficialPresetsGameplay();yield break;}
         if(mode=="revolver") {yield return Revolver();yield break;}
+        if(mode=="revolver-art") {yield return RevolverArt();yield break;}
         if(mode=="revolver-edges") {yield return RevolverEdges();yield break;}
         if(mode=="revolver-links") {yield return RevolverLinks();yield break;}
         if(mode=="fire-actions") {yield return FireActions();yield break;}

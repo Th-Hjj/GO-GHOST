@@ -1,0 +1,99 @@
+{
+  "title": "GO GHOST approved player reload",
+  "author": "PercyFrench",
+  "source_page": "https://freesound.org/people/PercyFrench/sounds/652631/",
+  "input_url": "https://cdn.freesound.org/previews/652/652631_14348004-hq.mp3",
+  "source_kind": "Freesound HQ MP3 preview, not authenticated original download",
+  "license": "CC0 1.0",
+  "source_sha256": "5806872572c7143628bdb3b4b9ad75d439096f8bdd07f8543ea23f8802f707a4",
+  "source_duration": 3.2049791666666665,
+  "output_duration": 1.8,
+  "rate": 48000,
+  "channels": 2,
+  "gain_db": -5.0,
+  "peak_dbfs": -5.000377362660108,
+  "clipped_output_samples": 0,
+  "edits": [
+    {
+      "event": "loading_1",
+      "source_start": 0.0,
+      "source_end": 0.1991875,
+      "output_start": 0.0,
+      "output_end": 0.1991875,
+      "playback_rate": 1
+    },
+    {
+      "event": "loading_2",
+      "source_start": 0.43,
+      "source_end": 0.6291666666666667,
+      "output_start": 0.1991875,
+      "output_end": 0.3983541666666667,
+      "playback_rate": 1
+    },
+    {
+      "event": "loading_3",
+      "source_start": 0.86,
+      "source_end": 1.0591666666666666,
+      "output_start": 0.3983541666666667,
+      "output_end": 0.5975208333333333,
+      "playback_rate": 1
+    },
+    {
+      "event": "loading_4",
+      "source_start": 1.29,
+      "source_end": 1.4891666666666667,
+      "output_start": 0.5975208333333333,
+      "output_end": 0.7966875,
+      "playback_rate": 1
+    },
+    {
+      "event": "loading_5",
+      "source_start": 1.72,
+      "source_end": 1.9191666666666667,
+      "output_start": 0.7966875,
+      "output_end": 0.9958541666666667,
+      "playback_rate": 1
+    },
+    {
+      "event": "loading_6",
+      "source_start": 2.15,
+      "source_end": 2.3491666666666666,
+      "output_start": 0.9958541666666667,
+      "output_end": 1.1950208333333334,
+      "playback_rate": 1
+    },
+    {
+      "event": "complete_spin_and_tail",
+      "source_start": 2.6,
+      "source_end": 3.2049791666666665,
+      "output_start": 1.1950208333333334,
+      "output_end": 1.8,
+      "playback_rate": 1
+    }
+  ],
+  "verified": [
+    "exact 86400-frame / 1.8-second WAV",
+    "all six loading events retained",
+    "source 2.600 s through end retained at original speed",
+    "no clipped output samples",
+    "short boundary fades and uniform -5 dB gain total"
+  ],
+  "limits": [
+    "Input is the Freesound HQ MP3 preview, not the authenticated original download.",
+    "Standalone audition accepted by Thomas; in-game hardware listening and standalone build not tested."
+  ],
+  "integration": {
+    "date": "2026-10-27",
+    "asset": "Assets/_Game/Shared/Audio/player_reload_percyfrench_180.wav",
+    "asset_sha256": "4d0e7cccd619b61da848b61ed7ac9f504ff9395d18bb261e30ab58ec86a13c00",
+    "prefab": "Assets/_Game/Levels/L01_Duel/Prefabs/DuelCombatAttempt.prefab",
+    "cue": "Sfx.Equip (7), player reload",
+    "replaced_clip": "switch_001.ogg",
+    "import": "PCM, DecompressOnLoad, preload, stereo, preserve 48000 Hz",
+    "boundary_fades": "Loading segments: 1.5 ms in/out; final tail: 2 ms in, 8 ms out",
+    "approval": "Thomas accepted v1, requested integration, then requested a slightly quieter reload. V2 applies an additional -2 dB only.",
+    "unchanged": "Reload timing 1.80 s, runtime code, source volume, other 25 cue bindings",
+    "audition_v1_sha256": "efea2652c57d4bf4f0b793e61788adea51e328545f9dca8e3dcf586f2dca3431",
+    "additional_gain_db_vs_audition_v1": -2
+  }
+}

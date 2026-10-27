@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-10-27 — Approved player reload sound
+
+- **Request / baseline:** main `dc3c17a` with unrelated body-feedback work present. Thomas accepted the 1.80-second PercyFrench R2 edit, requested player-only integration, then requested slightly lower volume. The previous `Sfx.Equip` was the 0.6177-second `switch_001.ogg`; actual reload events already triggered it.
+- **Implemented:** import `player_reload_percyfrench_180.wav` as stereo 48 kHz PCM/DecompressOnLoad with preload; change only cue 7 in `DuelCombatAttempt`. Preserve six loading events and the complete final spin tail, original pitch/speed and exactly 86400 frames. Apply another -2 dB to the approved audition (-5 dB total source gain, peak -5.0004 dBFS), preserving GUID and timing. Add source/CC0/edit provenance in `player-reload-manifest.json`. No runtime code, weapon timing, global gain, other 25 cue bindings or Boss reload changes. Gunshot alternatives remain audition-only, pending selection.
+- **Editor / flow:** initial integration recorded **17 PASS / 0 FAIL** in `Logs/ReloadAudio/checks.txt`: fresh Training, six actual policy-driven shots, one audio start at original pitch, pause freezing both audio position and reload deadline, completion after exactly 1.800 combat seconds, held-fire resumption, audio-scope cleanup and a fresh attempt retaining the binding. Preserved real preset unlock count. The volume follow-up verified sample-for-sample uniform attenuation within 16-bit rounding, unchanged frames/GUID and all other bindings; no gameplay retest needed for uniform sample gain alone.
+- **Cleanup / limits:** returned the owned test session to Menu and stopped Play. Final normal Editor compilation is successful, ground-truth Console errors/warnings are zero, formal scene is clean and missing-script count is zero. `git diff --check` passed. Physical-input feel, hardware listening of the quieter mix, sustained combat, standalone and Windows Build/Release **NOT TESTED / NOT RUN**. Source is the documented Freesound HQ preview, not an authenticated original download; Thomas accepted its edited audition. Unrelated body-feedback changes are excluded from this stage.
+
+
 ## 2026-10-26 — Synchronize the edited rule card with its draft
 
 - **Baseline:** clean main `4c8ceea`. Reproduced the reported Low Health -> Grounded edit through the actual Editor selection callbacks: the fixed preview read Grounded while the right-hand card still read Low Health. The card formatted the committed rule instead of the pending copy.

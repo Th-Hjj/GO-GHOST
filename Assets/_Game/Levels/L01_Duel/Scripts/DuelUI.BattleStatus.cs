@@ -22,6 +22,8 @@ namespace GoGhost.Duel
 
         HealthTextState playerHealthText;
         HealthTextState[] bossHealthText = System.Array.Empty<HealthTextState>();
+        const float WaveTitleFadeSeconds = .6f;
+        TMP_Text waveTitle;
 
         void ResetBattleStatus()
         {
@@ -46,6 +48,13 @@ namespace GoGhost.Duel
             }
 
             UpdateHealthStatus();
+            if (waveTitle != null)
+            {
+                // The encounter clock survives pause/F8 page rebuilds and resets for each attempt.
+                waveTitle.alpha = game.Phase == DuelPhase.Prepare
+                    ? 1 : Mathf.Clamp01(1 - game.FightClock / WaveTitleFadeSeconds);
+                if (waveTitle.alpha <= 0) waveTitle.gameObject.SetActive(false);
+            }
         }
 
         void UpdateHealthStatus()

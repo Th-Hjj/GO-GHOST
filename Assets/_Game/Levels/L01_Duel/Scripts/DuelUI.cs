@@ -116,7 +116,7 @@ namespace GoGhost.Duel
             trainingBack=trainingContinue=null;
             ClearRuleHud();BuildRuleHud();UpdateBattleLayout();
             playerHealth=null; playerFill=null;
-            preparationCount=null; lastPreparationCount=-1;
+            preparationCount=null; waveTitle=null; lastPreparationCount=-1;
             ResetBattleStatus();
             policeHealth=System.Array.Empty<TMP_Text>(); policeFill=System.Array.Empty<UnityEngine.UI.Image>();
             if(game.DeveloperToolsOpen)
@@ -158,21 +158,24 @@ namespace GoGhost.Duel
                 return;
             }
             var hud=battleUi!=null?battleUi:page;
-            Text(game.Phase==DuelPhase.Training?"TRAINING":"WAVE "+game.Wave,hud,new Vector2(0,400),new Vector2(280,50),30,face:headingFont);
+            if(game.Phase==DuelPhase.Training)
+                Text("TRAINING",hud,new Vector2(0,400),new Vector2(280,36),30,face:headingFont);
+            else if(game.Phase==DuelPhase.Prepare || game.Phase==DuelPhase.Fight && game.FightClock<WaveTitleFadeSeconds)
+                waveTitle=Text("WAVE "+game.Wave,hud,new Vector2(0,400),new Vector2(280,36),30,face:headingFont);
             policeHealth = new TMP_Text[game.Bosses.Count];
             policeFill = new UnityEngine.UI.Image[game.Bosses.Count];
             bossHealthText = new HealthTextState[game.Bosses.Count];
             for (int i=0; i<game.Bosses.Count; i++)
             {
-                float y=345-i*40;
-                policeHealth[i]=Text("",hud,new Vector2(-400,y),new Vector2(300,40),24,TextAlignmentOptions.Left,numericFont);
+                float y=330-i*60;
+                policeHealth[i]=Text("",hud,new Vector2(0,y+27),new Vector2(430,40),24,TextAlignmentOptions.Center,numericFont);
                 Image(hud,new Vector2(0,y),new Vector2(430,12),NeuralPalette.Border);
                 var color=game.Bosses[i].IsTrainingEnemy?NeuralPalette.Secondary:game.Bosses[i].Profile.Kind==BossKind.Refraction?NeuralPalette.Refraction:NeuralPalette.Severance;
                 policeFill[i]=Image(hud,new Vector2(-215,y),new Vector2(430,12),color);
                 policeFill[i].rectTransform.pivot=new Vector2(0,.5f);
             }
 
-            playerHealth=Text("",hud,new Vector2(-400,-360),new Vector2(300,40),24,TextAlignmentOptions.Left,numericFont);
+            playerHealth=Text("",hud,new Vector2(0,-392),new Vector2(430,40),24,TextAlignmentOptions.Center,numericFont);
             Image(hud,new Vector2(0,-360),new Vector2(430,12),NeuralPalette.Border);
             playerFill=Image(hud,new Vector2(-215,-360),new Vector2(430,12),NeuralPalette.Primary);
             playerFill.rectTransform.pivot=new Vector2(0,.5f);

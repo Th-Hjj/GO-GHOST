@@ -59,7 +59,7 @@ namespace GoGhost.Duel
 
         void UpdateHealthStatus()
         {
-            playerHealthText.Update(playerHealth, "YOU  ", game.Player.CurrentHealth);
+            playerHealthText.Update(playerHealth, game.Appearance.DisplayName + "  ", game.Player.CurrentHealth);
             for (int i = 0; i < policeHealth.Length && i < game.Bosses.Count; i++)
             {
                 var actor = game.Bosses[i];

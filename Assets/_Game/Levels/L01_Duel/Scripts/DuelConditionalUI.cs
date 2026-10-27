@@ -262,10 +262,19 @@ namespace GoGhost.Duel
             group.blocksRaycasts = false;
             group.interactable = false;
             Vector2[] positions = { new Vector2(0,296), new Vector2(0,140), new Vector2(-104,106), new Vector2(104,106), new Vector2(-34,-155), new Vector2(34,-155) };
-            Vector2[] sizes = { new Vector2(66,88), new Vector2(140,200), new Vector2(64,260), new Vector2(64,260), new Vector2(60,370), new Vector2(60,370) };
+            Vector2[] sizes = { new Vector2(88,88), new Vector2(140,200), new Vector2(64,260), new Vector2(64,260), new Vector2(60,370), new Vector2(60,370) };
             for (int i = 0; i < 6; i++)
             {
                 var rect = Rect("BodyRegion" + i, body, positions[i], sizes[i]);
+                if (i == 0)
+                {
+                    neuralRegions[i] = null;
+                    var face = rect.gameObject.AddComponent<UnityEngine.UI.Image>();
+                    face.sprite = game.Appearance.Sprite;
+                    face.color = CharacterAppearance.Tint;
+                    face.raycastTarget = false;
+                    continue;
+                }
                 var graphic = rect.gameObject.AddComponent<MissionBodyRegion>();
                 graphic.Round = i == 0;
                 graphic.Contour = BodyDiagramGeometry.ConfigurationContour(i);
@@ -275,14 +284,6 @@ namespace GoGhost.Duel
                 graphic.NeuralStyle=true;graphic.NeuralRegion=i;neuralRegions[i]=graphic;
                 graphic.EmphasizeState=true;
                 graphic.PulseSpeed=150;graphic.PulseLength=170;graphic.PulseIntensity=1.1f;graphic.PulseFrequency=2;
-                if (i == 0)
-                {
-                    var brainRect = Rect("ParticleBrain", rect, Vector2.zero, Vector2.zero);
-                    brainRect.anchorMin = Vector2.zero;
-                    brainRect.anchorMax = Vector2.one;
-                    var brain = brainRect.gameObject.AddComponent<MissionParticleBrain>();
-                    brain.color = new Color32(232, 245, 255, 255);
-                }
             }
             UpdateConfigurationSignals();
         }

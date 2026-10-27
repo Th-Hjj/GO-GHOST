@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 
 namespace GoGhost.Duel
 {
-    public enum DuelPhase { Menu, Configure, Prepare, Fight, Between, Failed, Complete, Training }
+    public enum DuelPhase { Menu, Configure, Prepare, Fight, Between, Failed, Complete, Training, CharacterCreation }
 
     // Retained three-wave shell. The legacy components own every physical action and hit.
     public sealed partial class DuelGame : MonoBehaviour
@@ -38,6 +38,7 @@ namespace GoGhost.Duel
         public float FightClock { get; private set; }
         public ConditionalLoadout DraftLoadout {get;private set;}=new ConditionalLoadout();
         public ConditionalController Rules {get;private set;}
+        public CharacterAppearance Appearance { get; private set; }
         public Bounds ArenaBounds => arenaBounds;
         public bool TrainingPending => developerTrainingSelected || FirstConfiguration && Wave == 1;
         public bool LegsAI => lockedLegs;
@@ -70,6 +71,7 @@ namespace GoGhost.Duel
                 foreach(var surface in platforms[0].transform.parent.GetComponentsInChildren<SpriteRenderer>())
                     surface.color=Color.Lerp(NeuralPalette.Panel,NeuralPalette.Secondary,.70f);
             InitializeDeveloperTuning();
+            ResetCharacterAppearance();
             ui = gameObject.AddComponent<DuelUI>();
             ui.Initialize(this, font, controlFont, headingFont, numericFont);
             Phase = DuelPhase.Menu;
@@ -87,6 +89,7 @@ namespace GoGhost.Duel
             music?.StopMusic(true);
             Time.timeScale = 1;
             AudioListener.pause = false;
+            Appearance?.Dispose();
         }
         void OnApplicationFocus(bool focus)
         {
@@ -103,6 +106,20 @@ namespace GoGhost.Duel
             DraftLoadout=new ConditionalLoadout();
             FirstConfiguration = true;
             developerTrainingSelected = false;
+            ResetCharacterAppearance();
+            SetPhase(DuelPhase.CharacterCreation);
+        }
+        void ResetCharacterAppearance()
+        {
+            Appearance?.Dispose();
+            var head = combatPrefab != null ? combatPrefab.GetComponentInChildren<OfficerVisual>()?.Part(LoadoutSlot.Brain) : null;
+            Appearance = new CharacterAppearance(head != null ? head.sprite : null);
+        }
+        public void CompleteCharacterCreation()
+        {
+            if (Phase != DuelPhase.CharacterCreation || DeveloperToolsOpen) return;
+            Appearance.Name = Appearance.Name.Trim();
+            UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
             SetPhase(DuelPhase.Configure);
         }
         public void SetDraft(int module, bool automatic)
@@ -150,6 +167,8 @@ namespace GoGhost.Duel
             Rifle.ConfigureLegacyCombat();
             Dodge.ConfigureLegacyCombat();
             Player.GetComponent<OfficerVisual>()?.ConfigureLegacyCombat();
+            var playerHead = Player.GetComponent<OfficerVisual>()?.Part(LoadoutSlot.Brain);
+            if (playerHead != null) { playerHead.sprite = Appearance.CombatSprite; playerHead.color = NeuralPalette.Primary; }
             var playerTorso = Player.GetComponent<OfficerVisual>()?.Part(LoadoutSlot.Torso);
             if (playerTorso != null)
             {
@@ -378,7 +397,7 @@ namespace GoGhost.Duel
         // Entry selects only the normal configuration; no fight-state injection.
         public void ConfigurePlaytestWave(int wave)
         {
-            NewGame(); Wave = Mathf.Clamp(wave, 1, 3); metricsWaveJumpPending = true; ui.Show();
+            NewGame(); CompleteCharacterCreation(); Wave = Mathf.Clamp(wave, 1, 3); metricsWaveJumpPending = true; ui.Show();
         }
         public void ObserveThirdWave()
         {

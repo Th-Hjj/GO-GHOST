@@ -68,7 +68,7 @@ namespace GoGhost.Duel
             ruleScroll=null;ruleHeading=null;ruleHudSize=Vector2.zero;
         }
         void OnDestroy()
-        {ClearRuleHud();ruleGlowStates.Clear();ruleGlowController=null;}
+        {ClearRuleHud();ruleGlowStates.Clear();ruleGlowController=null;DisposeCharacterFonts();}
         void BuildRuleHud()
         {
             bool battle=game.Phase==DuelPhase.Prepare||game.Phase==DuelPhase.Fight||game.Phase==DuelPhase.Training;

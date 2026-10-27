@@ -124,7 +124,7 @@ namespace GoGhost.Duel
                 if(ruleSidebar!=null)ruleSidebar.gameObject.SetActive(false);
                 BuildDeveloperTools();return;
             }
-            if(game.Phase==DuelPhase.Menu||game.Phase==DuelPhase.Configure)
+            if(game.Phase==DuelPhase.Menu||game.Phase==DuelPhase.Configure||game.Phase==DuelPhase.CharacterCreation)
                 Image(page,Vector2.zero,new Vector2(4000,4000),NeuralPalette.Background);
             if(game.Paused)
             {
@@ -140,6 +140,10 @@ namespace GoGhost.Duel
                 Text("GO GHOST",page,new Vector2(0,150),new Vector2(1000,120),78,face:headingFont);
                 Button("New Game",page,Vector2.zero,new Vector2(350,68),game.NewGame);
                 Button("Quit",page,new Vector2(0,-95),new Vector2(350,68),Application.Quit); return;
+            }
+            if(game.Phase==DuelPhase.CharacterCreation)
+            {
+                BuildCharacterCreation();return;
             }
             if(game.Phase==DuelPhase.Configure)
             {
@@ -176,7 +180,9 @@ namespace GoGhost.Duel
                 policeFill[i].rectTransform.pivot=new Vector2(0,.5f);
             }
 
-            playerHealth=Text("",hud,new Vector2(0,-392),new Vector2(430,40),24,TextAlignmentOptions.Center,numericFont);
+            playerHealth=Text("",hud,new Vector2(0,-392),new Vector2(430,40),24,TextAlignmentOptions.Center,CharacterNameFont(true));
+            playerHealth.textWrappingMode=TextWrappingModes.NoWrap;
+            playerHealth.enableAutoSizing=true;playerHealth.fontSizeMin=14;playerHealth.fontSizeMax=24;
             Image(hud,new Vector2(0,-360),new Vector2(430,12),NeuralPalette.Border);
             playerFill=Image(hud,new Vector2(-215,-360),new Vector2(430,12),NeuralPalette.Primary);
             playerFill.rectTransform.pivot=new Vector2(0,.5f);

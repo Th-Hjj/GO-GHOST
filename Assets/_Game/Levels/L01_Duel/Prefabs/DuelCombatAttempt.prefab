@@ -853,7 +853,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SfxSet
   clips:
-  - {fileID: 8300000, guid: f4c7875b09b5c8d4884f264298fe53c9, type: 3}
+  - {fileID: 8300000, guid: 34fc9f1f3f7e9ee4a830a951cac1b524, type: 3}
   - {fileID: 8300000, guid: e80ad303b63628a46a89cc31686aa768, type: 3}
   - {fileID: 8300000, guid: f8aa79b2113935744bb247bb5d6d6375, type: 3}
   - {fileID: 8300000, guid: 537a08e3800fedb4dbee7f211c10ec64, type: 3}

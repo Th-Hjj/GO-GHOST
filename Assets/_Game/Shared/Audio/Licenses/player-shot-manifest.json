@@ -15,7 +15,7 @@
   "channels": 2,
   "sample_frames": 23424,
   "import_settings": "PCM, DecompressOnLoad, preload, preserve sample rate, stereo",
-  "binding": "Sfx.Shot (0) on DuelCombatAttempt prefab",
+  "binding": "Retained unassigned A2 candidate. Thomas chose the original laserSmall_000.ogg player shot on 2026-10-27.",
   "unchanged": "Runtime weapon logic, .45s primary interval, .10s Fan the Hammer interval, damage, magazine size, reload duration and other 25 cue bindings",
   "original_gain_db": -3.5734245004956007,
   "tail_edit": {
@@ -72,5 +72,6 @@
     "measured_35_180hz_energy_delta_db": -2.0754779656591924,
     "measured_1_8khz_energy_delta_db": 0.007149194278185554
   },
-  "post_eq_gain_db": -1
+  "post_eq_gain_db": -1,
+  "active_in_game": false
 }

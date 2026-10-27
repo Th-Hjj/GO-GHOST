@@ -119,8 +119,8 @@ public sealed class SfxSet : MonoBehaviour
     {
         switch (id)
         {
-            // Player fire leads the mix; handling and impacts sit behind it.
-            case Sfx.Shot: return .80f;
+            // Original player laser mix; handling and other cues keep their tuned levels.
+            case Sfx.Shot: return .38f;
             case Sfx.BossBurst: return .38f;
             case Sfx.BulletHit: return .24f;
             case Sfx.PlayerHurt: return .50f;

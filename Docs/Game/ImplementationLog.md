@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-10-27 — Restore original player laser shot
+
+- **Request / baseline:** main `051562c`, unrelated body-feedback and Welcome-file work present. Thomas initially accepted A4, then explicitly preferred the original laser gunshot. Restore `laserSmall_000.ogg` at cue 0 in `DuelCombatAttempt` and the original .38 Shot gain. Preserve the existing .70 scope gain, reload file/gain/duration, every other cue clip/gain and all weapon behavior. A4 auditions remain outside Assets; the retained A2 WAV is restored byte-for-byte and marked unassigned in its provenance.
+- **Verified:** normal Unity compilation is successful. Final focused Editor run recorded **16 PASS / 0 FAIL** (`Logs/GunshotAudio/laser-checks.txt`): actual primary six-shot firing, .45 s cadence, six-shot Fan the Hammer at .10 s, one original-laser request per shot, actual source pitch 1 and volume .266 (.38 cue x .70 scope), existing reload on both magazines, pause, committed burst completion after input release, audio cleanup, fresh retry and preserved preset progression. Other 25 cue bindings and their audio bytes remain unchanged; source/runtime changes are confined to Shot gain. `git diff --check` passed.
+- **Fixture / cleanup / limits:** the intermediate A4 check exposed a fixture expectation that omitted the existing .70 scope gain; corrected that expectation, without changing scope gain, for the final laser check. The first check launch deferred while another Play session was active. The completed fixture returned to Menu; Thomas subsequently entered Training, which is left running. Physical-input feel, sustained combat/balance, Standalone and new Build/Release **NOT TESTED / NOT RUN**. No remaining issue in the focused restored-shot path.
+
 ## 2026-10-27 — Heavy Blast A2 player shot and SFX mix
 
 - **Scope / baseline:** main `6be9758`, with separate body-feedback work present. Thomas approved the A2 single-blast edit, requested integration, then refined gunshot/reload loudness and requested an overall SFX mix pass. Replace only the formal encounter's player Shot clip; preserve the other 25 cue bindings, all weapon logic, .45 s primary/.10 s Fan the Hammer cadence, damage and 1.80 s reload.

@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-10-27 — White Dodge bar spacing
+
+- **Request / baseline:** Thomas requested a white bar, slightly narrower and slightly farther from the player. Local main `c6482e9`. Change the fill to white at the existing .60 alpha and the track to neutral gray (.18, .18, .18, .65). Shorten width 1.6 -> 1.4 head diameters and screen minimum 32 -> 28 pixels (12.5%); increase foot gap .05 -> .09 world units / three -> five camera pixels. Retain five-pixel thickness, full-to-empty countdown and all gameplay.
+- **Verified:** normal Unity compilation passed. Actual virtual-input Dodge observations in `Logs/DodgeCooldown/WhiteBar/checks.txt` confirm full start, half-time ratio .50, RGBA (1,1,1,.60), width/head 1.4, gap .09 and hidden ready state. Inspected actual floor/platform captures; the 1080p sizing check passed and Continue cleared the indicator normally. Final Console zero errors/warnings; scene clean; input devices/preset progress restored and normal paused Training reopened. `git diff --check` passed. Earlier broader suites, physical-input feel, sustained readability, Standalone and Windows Build/Release **NOT TESTED / NOT RUN** in this refinement. Unrelated work preserved; no remote push retry.
+
 ## 2026-10-27 — Readable Dodge countdown bar
 
 - **Request / baseline:** Thomas found the two-pixel foot bar unreadable and required full-to-empty remaining-cooldown semantics. Local main `8ccc46e`. Increase width to 1.6 head diameters / at least 32 camera pixels and thickness to .06 world units / five camera pixels. Preserve foot gap, translucent palette and gameplay.

@@ -150,6 +150,13 @@ namespace GoGhost.Duel
             Rifle.ConfigureLegacyCombat();
             Dodge.ConfigureLegacyCombat();
             Player.GetComponent<OfficerVisual>()?.ConfigureLegacyCombat();
+            var playerTorso = Player.GetComponent<OfficerVisual>()?.Part(LoadoutSlot.Torso);
+            if (playerTorso != null)
+            {
+                var cooldownView = new GameObject("DodgeCooldown").AddComponent<DodgeCooldownView>();
+                cooldownView.transform.SetParent(Player.transform, false);
+                cooldownView.Initialize(this, playerTorso.sharedMaterial, playerTorso.sortingLayerID);
+            }
             if (!training) coordinator = encounter.AddComponent<DuoCoordinator>();
             var activeActors = new List<BossAgent>(2);
             // Solo opponents mirror the actual player opening across the arena centre.

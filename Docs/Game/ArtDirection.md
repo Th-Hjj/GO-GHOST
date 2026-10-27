@@ -51,6 +51,8 @@ Confirmed by Thomas, with a follow-up explicitly rejecting the initial golden-ou
 
 ## Combat feedback
 
+**Dodge cooldown side arc — Thomas, 2026-10-27:** a small violet arc follows the player's waist on the screen-left side, independent of aim/body facing and grounded state. An accepted manual or automatic Dodge empties the bright arc; it fills bottom-to-top against a dim neutral track using the real remaining cooldown and its accepted duration. Completion gives a .20-second pale-violet accent, then retains a dim complete arc. Initial geometry is radius .34, a 120-degree sweep centered at (-.32, -.06) relative to the player; stroke width is at least .032 world units / two camera pixels. Ready/charging alpha is .50/.95. Keep this resource signal separate from torso rule feedback and red weapon reload feedback. Pause/F8 freezes both progress and completion accent. Preparation, death and noncombat phases hide it; each encounter owns and destroys its two renderers. The bottom HUD keeps ammunition/reload text and removes Dodge text. No gameplay timing or tuning changes.
+
 Bind controller + operation + operation-local row. HUD cards consume only the existing complete observed match as described above. Actor signals below retain the existing distinction between match and executor acceptance; never evaluate a condition or consume an occurrence for display.
 
 - Unmatched: neutral body.

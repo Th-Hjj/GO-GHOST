@@ -24,14 +24,14 @@ namespace GoGhost.Duel
         HealthTextState[] bossHealthText = System.Array.Empty<HealthTextState>();
         int displayedAmmo, displayedMagazineSize;
         bool displayedReloading;
-        string displayedDodge;
+        bool resourceStatusValid;
 
         void ResetBattleStatus()
         {
             // Show rebuilds text objects even if combat values have not changed (pause/F8).
             playerHealthText = default;
             bossHealthText = System.Array.Empty<HealthTextState>();
-            displayedDodge = null;
+            resourceStatusValid = false;
         }
 
         void UpdateBattleStatus()
@@ -76,20 +76,15 @@ namespace GoGhost.Duel
         void UpdateResourceStatus()
         {
             var rifle = game.Rifle;
-            // Keep the original formatting/Ready threshold, including rounding and culture.
-            string dodgeStatus = Ready(game.Dodge.CooldownRemaining);
-            if (displayedDodge == dodgeStatus && displayedAmmo == rifle.AmmoInMagazine
+            if (resourceStatusValid && displayedAmmo == rifle.AmmoInMagazine
                 && displayedMagazineSize == rifle.MagazineSize && displayedReloading == rifle.IsReloading)
                 return;
 
             displayedAmmo = rifle.AmmoInMagazine;
             displayedMagazineSize = rifle.MagazineSize;
             displayedReloading = rifle.IsReloading;
-            displayedDodge = dodgeStatus;
-            string ammo = displayedReloading ? "Reloading" : $"Ammo {displayedAmmo} / {displayedMagazineSize}";
-            resources.text = $"{ammo}     Dodge: {dodgeStatus}";
+            resourceStatusValid = true;
+            resources.text = displayedReloading ? "Reloading" : $"Ammo {displayedAmmo} / {displayedMagazineSize}";
         }
-
-        string Ready(float remaining) => remaining <= .01f ? "Ready" : $"{remaining:0.0}s";
     }
 }

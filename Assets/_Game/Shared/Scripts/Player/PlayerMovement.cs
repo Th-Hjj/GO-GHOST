@@ -5,7 +5,7 @@ using UnityEngine;
 /// gravity-driven jump (Space), snapshot-owned extra jump and bounded descent hover. Facing
 /// follows horizontal movement in conditional combat; the weapon aims independently.
 /// A short forward/back Move retains its starting facing. Yields control of the
-/// Rigidbody2D to PlayerDodge while a dodge is in progress.
+/// Rigidbody2D to PlayerDodge until its movement ends or a legal formal jump interrupts it.
 /// Requires the Rigidbody2D's Gravity Scale to be > 0.
 /// </summary>
 // FUNCTION SUMMARY
@@ -218,12 +218,18 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         else if(Mathf.Abs(input.AimDirection.x)>.01f) FacingDirection=input.AimDirection.x>0?1:-1;
         if(spriteRenderer!=null) spriteRenderer.flipX=FacingDirection<0;
         bool executableJump = input.JumpPressedThisFrame && (IsGrounded || HasDoubleJump && airJumpsRemaining > 0)
-            && (dodge == null || !dodge.IsDodging) && input.GameplayInputEnabled;
+            && (input.LegacyCombatActive || dodge == null || !dodge.IsDodging) && input.GameplayInputEnabled;
+        if (executableJump && input.LegacyCombatActive && dodge != null && dodge.IsDodging)
+        {
+            dodge.InterruptForJump();
+            if (input.ConditionalFrame.DodgeOwned)
+                input.NotifyConditionalAction(ControlOperation.Dodge, false);
+        }
         bool acceptedDodge = false;
         if (input.LegacyCombatActive)
         {
             input.ResolveLegacyDodge(executableJump);
-            acceptedDodge = input.DodgePressedThisFrame && dodge != null && dodge.TryDodge(input.DodgeDirection);
+            acceptedDodge = !executableJump && input.DodgePressedThisFrame && dodge != null && dodge.TryDodge(input.DodgeDirection);
             if(input.ConditionalFrame.DodgeOwned && input.DodgePressedThisFrame)
                 input.NotifyConditionalAction(ControlOperation.Dodge,acceptedDodge);
         }
@@ -233,7 +239,7 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         }
         if(input.ConditionalFrame.JumpOwned && input.JumpPressedThisFrame)
             input.NotifyConditionalAction(ControlOperation.Jump,executableJump&&!acceptedDodge);
-        // Dodge wins the existing Jump arbitration; a real Jump wins a simultaneous S press.
+        // A legal Jump wins over Dodge and a simultaneous S press.
         // S is a press edge, so a held key cannot drop through a second support.
         if (input.DropPressedThisFrame)
         {

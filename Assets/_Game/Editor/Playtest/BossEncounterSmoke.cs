@@ -173,6 +173,7 @@ public static partial class BossEncounterSmoke
         if(mode=="unlimited-conditions") {yield return UnlimitedConditions();yield break;}
         if(mode=="condition-event-lifecycle") {yield return ConditionEventLifecycle();yield break;}
         if(mode=="rule-conflicts") {yield return RuleConflicts();yield break;}
+        if(mode=="jump-dodge-priority") {yield return JumpDodgePriority();yield break;}
         if(mode=="official-presets") {yield return OfficialPresets();yield break;}
         if(mode=="official-presets-edges") {yield return OfficialPresetsEdges();yield break;}
         if(mode=="official-presets-gameplay") {yield return OfficialPresetsGameplay();yield break;}

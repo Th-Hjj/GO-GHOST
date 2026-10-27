@@ -183,7 +183,7 @@ namespace GoGhost.Duel
             if(!r.Accepted||r.Completed||(body.position.x-r.Destination)*r.Direction<-.005f)return false;
             r.Completed=true;Record(ConditionalCatalog.MoveFinishedCondition);return true;
         }
-        bool CanJump()=>movement.IsGrounded&&!dodge.IsDodging&&input.GameplayInputEnabled&&movement.isActiveAndEnabled;
+        bool CanJump()=>movement.IsGrounded&&input.GameplayInputEnabled&&movement.isActiveAndEnabled;
         bool SourcePoint(Running r,out Vector2 point)
         {
             if(r.Context.HasPosition){point=r.Context.Position;return true;}

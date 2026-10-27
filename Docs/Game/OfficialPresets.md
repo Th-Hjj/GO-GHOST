@@ -4,6 +4,8 @@ Confirmed by Thomas, 2026-10-24. Six progressive presets replace the previous si
 
 2026-10-25: Thomas removed A40 and approved replacing shared R10 with A18 (Enemy Near Aim Direction) in presets 4, 5 and 6. Counts, order and unlock behavior are unchanged.
 
+2026-10-26: the shared Jump-priority override applies to all presets. An executable R3 Jump precedes R1/R2 Dodge despite their displayed order, and can interrupt an active Dodge. An unavailable Jump still permits Dodge. Definitions, displayed order and unlock behavior remain unchanged.
+
 ## Definitions and global priority
 
 `OfficialRulePresets.cs` is the code authority. These are ordinary catalog conditions, actions and parameters, ordered globally from top to bottom:

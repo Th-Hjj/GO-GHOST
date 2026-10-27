@@ -1,4 +1,6 @@
-> **Boss-body Dodge — Thomas, 2026-10-19:** formal manual/rule Dodge passes through registered Boss body colliders on ground or in air. Only those collision pairs are ignored during movement. Restore at movement end, or after separation if still overlapping; cancellation/death/disable clears owned pairs. No extra immunity, distance, cooldown refresh or terrain pass-through. Rule path prediction uses the same eligibility.
+> **Jump priority — Thomas, 2026-10-26:** legal manual/rule Jump interrupts active Dodge and wins same-frame requests. The interruption ends movement/immunity, retains cooldown and emits no Dodge Finished; overlapping Boss collision pairs restore after separation. Ground-only jump legality and existing pause/focus gates remain. This supersedes the historical Dodge-first lock below.
+
+> **Boss-body Dodge — Thomas, 2026-10-19:** formal manual/rule Dodge passes through registered Boss body colliders on ground or in air. Only those collision pairs are ignored during movement. Restore at movement end, or after separation if still overlapping; lifecycle cancellation/death/disable clears owned pairs immediately. No extra immunity, distance, cooldown refresh or terrain pass-through. Rule path prediction uses the same eligibility.
 
 > **Revolver override — Thomas, 2026-10-22:** [ConditionalRules.md](ConditionalRules.md) now specifies the formal six-round Revolver, precise LMB and committed RMB / F02 burst. Older Rifle parameters below are historical. Other player executors and serialized compatibility remain; local Editor delivery only.
 

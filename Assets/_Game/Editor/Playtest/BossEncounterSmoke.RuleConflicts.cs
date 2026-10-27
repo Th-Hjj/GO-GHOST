@@ -12,6 +12,109 @@ public static partial class BossEncounterSmoke
     [MenuItem("GO GHOST/Playtest/Rule Conflicts")]
     public static void RunRuleConflicts()=>Start("rule-conflicts",false);
 
+    [MenuItem("GO GHOST/Playtest/Jump Dodge Priority")]
+    public static void RunJumpDodgePriority()=>Start("jump-dodge-priority",false);
+
+    static IEnumerator JumpDodgePriority()
+    {
+        Record("Legal jumps interrupt manual/rule Dodge; real input edges, physics, events and cooldowns.");
+        foreach(bool automaticDodge in new[]{false,true})
+        foreach(bool automaticJump in new[]{false,true})
+        {
+            yield return AlphaFresh(1,d=>{
+                if(automaticDodge) V2Rule(d,new ConditionalRule{Condition=6,Action="D03"});
+                if(automaticJump) V2Rule(d,new ConditionalRule{Condition=17,Action="J01"});
+                V2Rule(d,new ConditionalRule{Condition=17,Action="F06"});
+            });
+            AlphaPlace(-4,10);yield return Seconds(.12f);
+            var movement=game.Player.GetComponent<PlayerMovement>();
+            var body=game.Player.GetComponent<Rigidbody2D>();
+            int started=0,finished=0;
+            movement.JumpStarted+=()=>started++;
+            game.Dodge.DodgeFinished+=()=>finished++;
+            if(automaticDodge) game.Player.TakeDamage(1,null); else heldKeys=new[]{Key.LeftShift};
+            yield return Until(()=>game.Dodge.IsDodging,.3f);
+            string label="auto Dodge="+automaticDodge+", auto Jump="+automaticJump;
+            Check("Dodge really starts: "+label,game.Dodge.IsDodging&&game.Player.IsInvulnerable);
+            float cooldownDeadline=Time.time+game.Dodge.CooldownRemaining;
+            float remaining=game.Dodge.MovementRemaining;
+            heldKeys=automaticJump?Array.Empty<Key>():new[]{Key.Space};
+            mouseHeld=automaticJump;
+            yield return Until(()=>started>0,.12f);
+            Check("Jump interrupts before Dodge deadline: "+label,remaining>0&&started==1
+                &&!game.Dodge.IsDodging&&!game.Player.IsInvulnerable&&body.linearVelocity.y>0
+                &&game.Dodge.CommittedHorizontalSpeed==0&&game.Dodge.MovementRemaining==0);
+            Check("Interruption keeps cooldown and honest attribution: "+label,
+                Mathf.Abs(Time.time+game.Dodge.CooldownRemaining-cooldownDeadline)<.001f
+                &&game.Rules.AcceptedJumps==(automaticJump?1:0)&&game.Rules.AcceptedDodges==(automaticDodge?1:0)
+                &&!game.Rules.Ownership.DodgeOwned&&finished==0);
+            heldKeys=Array.Empty<Key>();yield return Seconds(.25f);
+            Check("Stopped Dodge never resumes or emits completion: "+label,!game.Dodge.IsDodging
+                &&Mathf.Abs(body.linearVelocity.x)<.01f&&finished==0&&started==1);
+        }
+
+        foreach(int automatic in new[]{0,1,2})
+        {
+            yield return AlphaFresh(1,d=>{
+                if(automatic==1)V2Rule(d,new ConditionalRule{Condition=17,Action="D03"});
+                if(automatic==2)V2Rule(d,new ConditionalRule{Condition=17,Action="J01"});
+                V2Rule(d,new ConditionalRule{Condition=17,Action="F06"});
+            });
+            AlphaPlace(-4,10);yield return Seconds(.12f);
+            int jumps=0,dodges=0;
+            game.Player.GetComponent<PlayerMovement>().JumpStarted+=()=>jumps++;
+            game.Dodge.DodgeStarted+=()=>dodges++;
+            mouseHeld=automatic!=0;
+            heldKeys=automatic==0?new[]{Key.Space,Key.LeftShift}:automatic==1?new[]{Key.Space}:new[]{Key.LeftShift};
+            yield return Until(()=>jumps>0,.25f);
+            Check("Same-frame Jump wins without spending Dodge, source case="+automatic,
+                jumps==1&&dodges==0&&game.Dodge.CooldownRemaining==0&&!game.Dodge.IsDodging);
+        }
+
+        // Airborne Jump is unavailable: its press must not cancel a legal air Dodge.
+        yield return AlphaFresh(1,null);AlphaPlace(-4,10);yield return Seconds(.12f);
+        heldKeys=new[]{Key.Space};yield return Seconds(.08f);heldKeys=Array.Empty<Key>();yield return Frames(3);
+        heldKeys=new[]{Key.LeftShift};yield return Until(()=>game.Dodge.IsDodging,.3f);
+        heldKeys=new[]{Key.Space};yield return Frames(2);
+        Check("Invalid airborne Jump leaves Dodge active",game.Dodge.IsDodging
+            &&!game.Player.GetComponent<PlayerMovement>().IsGrounded&&game.Player.IsInvulnerable);
+
+        // A pause consumes no action; release gates prevent replaying its Space press on resume.
+        yield return AlphaFresh(1,null);AlphaPlace(-4,10);yield return Seconds(.12f);
+        heldKeys=new[]{Key.LeftShift};yield return Until(()=>game.Dodge.IsDodging,.3f);
+        checkingPause=true;game.SetPause(true);
+        float pauseRemaining=game.Dodge.MovementRemaining;
+        heldKeys=new[]{Key.Space};yield return Frames(4);
+        Check("Paused Jump cannot interrupt or advance Dodge",game.Dodge.IsDodging
+            &&Mathf.Abs(game.Dodge.MovementRemaining-pauseRemaining)<.001f);
+        game.SetPause(false);checkingPause=false;yield return Frames(2);
+        Check("Paused Space does not replay on resume",game.Player.GetComponent<Rigidbody2D>().linearVelocity.y<=.1f);
+        heldKeys=Array.Empty<Key>();yield return Seconds(.3f);
+
+        // End the Dodge while inside a Boss: retain only overlap-safe separation, then restore collisions.
+        yield return AlphaFresh(1,null);AlphaPlace(-4,-3.2f);yield return Seconds(.12f);
+        var playerShape=game.Player.GetComponent<Collider2D>();var bossShape=game.Bosses[0].GetComponent<Collider2D>();
+        heldKeys=new[]{Key.D,Key.LeftShift};
+        yield return Until(()=>game.Dodge.IsDodging&&Physics2D.Distance(playerShape,bossShape).isOverlapped,.14f);
+        Check("Dodge physically overlaps Boss before interruption",game.Dodge.IsDodging
+            &&Physics2D.Distance(playerShape,bossShape).isOverlapped&&Physics2D.GetIgnoreCollision(playerShape,bossShape));
+        heldKeys=new[]{Key.Space};yield return Until(()=>!game.Dodge.IsDodging,.12f);
+        Check("Overlap jump ends Dodge with real upward velocity",game.Player.GetComponent<Rigidbody2D>().linearVelocity.y>0
+            &&!game.Player.IsInvulnerable);
+        heldKeys=Array.Empty<Key>();yield return Until(()=>!Physics2D.GetIgnoreCollision(playerShape,bossShape),.6f);
+        Check("Boss collision restored after jump separation",!Physics2D.GetIgnoreCollision(playerShape,bossShape));
+
+        yield return AlphaFresh(1,null,false);int firstFrame=Time.frameCount;yield return Seconds(.7f);
+        Check("Normal encounter still advances",game.Phase==DuelPhase.Fight&&Time.frameCount>firstFrame+3);
+        game.Player.TakeDamage(10000,null);yield return Frames(4);
+        Check("Defeat flow clears interrupted movement",game.Phase==DuelPhase.Failed&&!game.Dodge.IsDodging);
+        game.Reconfigure();yield return Frames(3);
+        Check("Reconfiguration releases controller",game.Phase==DuelPhase.Configure&&game.Rules==null);
+        game.StartFight();yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);
+        Check("Retry starts a fresh playable attempt",game.Phase==DuelPhase.Fight&&game.Player!=null&&!game.Player.IsDead);
+        game.MainMenu();yield return Frames(3);
+    }
+
     static IEnumerator RuleConflicts()
     {
         Record("Focused physical arbitration: ordinary input/physics, stopped Boss policies and controlled starting positions.");
@@ -47,15 +150,11 @@ public static partial class BossEncounterSmoke
             });
             AlphaPlace(-4,10);yield return Seconds(.12f);mouseHeld=true;
             yield return Until(()=>game.Rules.AcceptedJumps+game.Rules.AcceptedDodges>0,.3f);
-            Check("First physical action follows displayed Jump/Dodge order, Jump first="+jumpFirst,
-                jumpFirst?game.Rules.AcceptedJumps==1&&game.Rules.AcceptedDodges==0
-                    :game.Rules.AcceptedDodges==1&&game.Rules.AcceptedJumps==0);
-            if(jumpFirst)
-            {
-                yield return Seconds(.35f);
-                Check("Lower Dodge cannot cancel an accepted Jump",game.Rules.AcceptedDodges==0
-                    &&!game.Player.GetComponent<PlayerMovement>().IsGrounded);
-            }
+            Check("Jump wins regardless of displayed Dodge order, Jump first="+jumpFirst,
+                game.Rules.AcceptedJumps==1&&game.Rules.AcceptedDodges==0);
+            yield return Seconds(.35f);
+            Check("Dodge cannot cancel an accepted automatic Jump",game.Rules.AcceptedDodges==0
+                &&!game.Player.GetComponent<PlayerMovement>().IsGrounded);
         }
         foreach(bool moveFirst in new[]{true,false})
         {

@@ -18,13 +18,26 @@ public static partial class BossEncounterSmoke
         mouseHeld=mouseBurstHeld=false;heldKeys=Array.Empty<Key>();game.MainMenu();PresetApply(id,true);yield return Frames(5);
         if(!live)game.Bosses[0].StopCombat();
     }
-    static void PresetThreat()
+    static void PresetThreat(float distance=3)
     {
         var boss=game.Bosses[0];
-        Fire(boss,boss.gameObject,(Vector2)game.Player.GetComponent<Collider2D>().bounds.center+Vector2.right*3,Vector2.left);
+        Fire(boss,boss.gameObject,(Vector2)game.Player.GetComponent<Collider2D>().bounds.center+Vector2.right*distance,Vector2.left);
     }
     static void ClearPresetShots()
     {foreach(var shot in Projectile.Active.ToArray())if(shot!=null)shot.Retire();}
+    static void PresetAimFixture()
+    {
+        // R10 now observes raw A18 aim. Supply a controlled world direction so Editor
+        // render-camera matrices cannot invalidate this weapon/reload fixture.
+        var reader=game.Player.GetComponent<PlayerInputReader>();var gun=game.Rifle;var target=game.Bosses[0];
+        var field=typeof(PlayerInputReader).GetField("conditionalPolicy",PrivateInstance);
+        var original=(Func<RawPlayerInput,ConditionalControlFrame>)field.GetValue(reader);
+        field.SetValue(reader,(Func<RawPlayerInput,ConditionalControlFrame>)(raw=>{
+            raw.Aim=((Vector2)target.Body.bounds.center-gun.AimOrigin).normalized;
+            return original(raw);
+        }));
+        restoration.Add(()=>{if(reader!=null)field.SetValue(reader,original);});
+    }
     static IEnumerator OfficialPresetsGameplay()
     {
         Record("Bounded preset checks: real projectile/executor fixtures, ordinary physics, then short live W1/W2/W3 observations. No balance/win claim.");
@@ -33,20 +46,32 @@ public static partial class BossEncounterSmoke
         Check("R3 real ranged projectile requests Jump Once",game.Rules.AcceptedJumps==1&&game.Rules.AcceptedDodges==0);
 
         yield return PresetTraining("no_dodge");AlphaPlace(-4,8);yield return Seconds(.15f);PresetThreat();
-        yield return Until(()=>game.Dodge.IsDodging,.5f);
-        Check("R2 Dodge wins before R3 Jump in global order",game.Dodge.IsDodging&&game.Rules.AcceptedDodges==1&&game.Rules.AcceptedJumps==0&&game.Dodge.CommittedHorizontalSpeed<0);
-        ClearPresetShots();yield return Until(()=>!game.Dodge.IsDodging,.5f);yield return Seconds(.12f);PresetThreat();
         yield return Until(()=>game.Rules.AcceptedJumps>0,.5f);
-        Check("cooling Dodge falls through to executable Jump",game.Rules.AcceptedJumps==1&&game.Rules.AcceptedDodges==1);
+        Check("R3 legal Jump precedes R2 Dodge despite displayed order",game.Rules.AcceptedJumps==1
+            &&game.Rules.AcceptedDodges==0&&!game.Dodge.IsDodging);
+        ClearPresetShots();
+
+        yield return PresetTraining("no_dodge");AlphaPlace(-4,8);yield return Seconds(.15f);
+        heldKeys=new[]{Key.Space};yield return Seconds(.08f);heldKeys=Array.Empty<Key>();
+        Check("Preset fallback fixture is a real manual airborne jump",!game.Player.GetComponent<PlayerMovement>().IsGrounded
+            &&game.Player.GetComponent<Rigidbody2D>().linearVelocity.y>0&&game.Rules.AcceptedJumps==0);
+        // A distant horizontal bullet misses a rising player; place this real threat within its imminent body path.
+        PresetThreat(.9f);
+        yield return Until(()=>game.Dodge.IsDodging,.5f);
+        Check("Unavailable airborne R3 permits R2 Dodge",game.Dodge.IsDodging
+            &&game.Rules.AcceptedJumps==0&&game.Rules.AcceptedDodges==1&&game.Dodge.CommittedHorizontalSpeed<0,
+            "grounded="+game.Player.GetComponent<PlayerMovement>().IsGrounded+" jumps="+game.Rules.AcceptedJumps+" dodges="+game.Rules.AcceptedDodges);
+        ClearPresetShots();
 
         yield return PresetTraining("do_nothing");
-        AlphaPlace(game.ArenaBounds.min.x+.65f,game.ArenaBounds.min.x+7);PresetThreat();
-        yield return Until(()=>game.Dodge.IsDodging,.5f);
-        Check("wall R1 dodges toward enemy before away/jump/movement",game.Dodge.IsDodging&&game.Dodge.CommittedHorizontalSpeed>0&&game.Rules.AcceptedJumps==0,
-            "speed="+game.Dodge.CommittedHorizontalSpeed+" jumps="+game.Rules.AcceptedJumps);
+        AlphaPlace(game.ArenaBounds.min.x+.65f,game.ArenaBounds.min.x+7);yield return Seconds(.12f);PresetThreat();
+        yield return Until(()=>game.Rules.AcceptedJumps>0,.5f);
+        Check("Legal R3 Jump also precedes wall R1 Dodge",game.Rules.AcceptedJumps==1
+            &&game.Rules.AcceptedDodges==0&&!game.Dodge.IsDodging);
         ClearPresetShots();
 
         yield return PresetTraining("only_move");AlphaPlace(-3,7);yield return Frames(2);
+        PresetAimFixture();
         // Keep the existing target alive through two magazines without changing weapon values.
         game.Bosses[0].Health.SetRuntimeHealth(10000,10000);
         int first=game.Rifle.ShotsFired;
@@ -56,6 +81,7 @@ public static partial class BossEncounterSmoke
         Check("F03 resumes after reload without manual trigger",game.Rifle.ShotsFired>atReload&&game.Rifle.LastShotActionId=="F03"&&!mouseHeld&&!mouseBurstHeld);
 
         yield return PresetTraining("reload_retreat");AlphaPlace(-3,7);game.Bosses[0].Health.SetRuntimeHealth(10000,10000);
+        PresetAimFixture();
         yield return Until(()=>game.Rifle.IsReloading,4);float reloadX=game.Player.transform.position.x;yield return Seconds(.25f);
         Check("R4 reload drives ordinary retreat",game.Rifle.IsReloading&&game.Player.transform.position.x<reloadX-.4f&&game.Rules.Ownership.Move<0);
 

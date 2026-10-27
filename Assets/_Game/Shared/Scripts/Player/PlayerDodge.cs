@@ -199,12 +199,22 @@ public class PlayerDodge : MonoBehaviour
     }
 
     /// <summary>Stops any running dash (manual or forced) and clears its state. Used by PlayerHealth when the player dies.</summary>
-    public void CancelDodge()
+    public void CancelDodge() => StopDodge(true);
+
+    /// <summary>A legal jump ends movement and immunity without refunding cooldown or emitting Dodge Finished.</summary>
+    public void InterruptForJump()
+    {
+        if (IsDodging) StopDodge(false);
+    }
+
+    private void StopDodge(bool forceBodyCollisions)
     {
         StopAllCoroutines();
         IsDodging = false;
         CommittedHorizontalSpeed = 0;
-        RestoreBodyCollisions(true);
+        committedMovementEndsAt = 0;
+        // Jumping from inside a Boss keeps only the overlapping pair ignored until separation.
+        RestoreBodyCollisions(forceBodyCollisions);
         if (health != null) health.IsInvulnerable = false;
         if (rb != null) rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
     }

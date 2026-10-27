@@ -206,17 +206,27 @@ namespace GoGhost.Duel
             for (int op = 0; op < 5; op++)
                 ObserveOperationRules(op);
 
-            // Physical commitments precede ordinary priority. Move and Jump can run together;
-            // Dodge writes both axes, and a platform transition owns Move plus Jump.
+            // A real Jump has priority over Dodge, including an already accepted Dodge.
+            // Keep committed platform routes and airborne Jumps; ordinary Jump rows retain
+            // DisplayOrder among themselves. Move still runs alongside Jump.
             int claimed = TryContinueCommittedPlatform() ? (1 << 0) | (1 << 1) : 0;
+            int jumpClaim = 1 << (int)ControlOperation.Jump;
+            if ((claimed & jumpClaim) == 0)
+            {
+                if (TryContinueCommittedResponse((int)ControlOperation.Jump) || TryResolvePriorityJump())
+                    claimed |= jumpClaim;
+                else if (raw.Jump && CanJump())
+                    claimed |= 1 << (int)ControlOperation.Dodge;
+            }
             for (int op = 0; op < 5; op++)
             {
-                if ((claimed & (1 << op)) == 0 && TryContinueCommittedResponse(op))
+                if (op != (int)ControlOperation.Jump && (claimed & OperationClaims(op)) == 0 && TryContinueCommittedResponse(op))
                     claimed |= OperationClaims(op);
             }
             foreach (var entry in priorityRows)
             {
                 var rule = loadout.Operations[entry.Op].Rules[entry.Row];
+                if (entry.Op == (int)ControlOperation.Jump && rule.Action != "J04") continue;
                 int request = OperationClaims(entry.Op, rule);
                 if ((claimed & request) == 0 && TryResolveRule(entry.Op, entry.Row, rule))
                     claimed |= request;
@@ -231,6 +241,17 @@ namespace GoGhost.Duel
             if (previousTarget >= 0)
                 previousTargetPosition = contacts[previousTarget].Bounds.center;
             return output;
+        }
+
+        bool TryResolvePriorityJump()
+        {
+            foreach (var entry in priorityRows)
+            {
+                if (entry.Op != (int)ControlOperation.Jump) continue;
+                var rule = loadout.Operations[entry.Op].Rules[entry.Row];
+                if (rule.Action != "J04" && TryResolveRule(entry.Op, entry.Row, rule)) return true;
+            }
+            return false;
         }
 
         bool TryContinueCommittedPlatform()

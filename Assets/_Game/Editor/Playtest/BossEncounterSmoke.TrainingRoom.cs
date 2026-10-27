@@ -191,8 +191,8 @@ public static partial class BossEncounterSmoke
         var back = TrainingRect((RectTransform)ConfigButtonNamed("← Back").transform);
         var next = TrainingRect((RectTransform)ConfigButtonNamed("Continue →").transform);
         var sidebar = TrainingRect(CardsRect("BattleRules"));
-        var playerBar = TrainingRect(Private<TMPro.TMP_Text>(CardsUI(), "resources").rectTransform);
-        Check(width + " training controls on-screen, separate from Rules/ammo", back.xMin >= 0 && back.yMax <= Screen.height + 1
+        var playerBar = TrainingRect(Private<UnityEngine.UI.Image>(CardsUI(), "playerFill").rectTransform);
+        Check(width + " training controls on-screen, separate from Rules/health", back.xMin >= 0 && back.yMax <= Screen.height + 1
             && next.xMax <= Screen.width && next.yMin >= 0 && !back.Overlaps(sidebar) && !next.Overlaps(sidebar)
             && !next.Overlaps(playerBar) && ConfigButtonNamed("Continue →").interactable);
         CardsLayout(true,5,width+" training cards");

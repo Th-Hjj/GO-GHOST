@@ -22,16 +22,12 @@ namespace GoGhost.Duel
 
         HealthTextState playerHealthText;
         HealthTextState[] bossHealthText = System.Array.Empty<HealthTextState>();
-        int displayedAmmo, displayedMagazineSize;
-        bool displayedReloading;
-        bool resourceStatusValid;
 
         void ResetBattleStatus()
         {
             // Show rebuilds text objects even if combat values have not changed (pause/F8).
             playerHealthText = default;
             bossHealthText = System.Array.Empty<HealthTextState>();
-            resourceStatusValid = false;
         }
 
         void UpdateBattleStatus()
@@ -50,7 +46,6 @@ namespace GoGhost.Duel
             }
 
             UpdateHealthStatus();
-            UpdateResourceStatus();
         }
 
         void UpdateHealthStatus()
@@ -73,18 +68,5 @@ namespace GoGhost.Duel
                 ? NeuralPalette.Danger : NeuralPalette.Primary;
         }
 
-        void UpdateResourceStatus()
-        {
-            var rifle = game.Rifle;
-            if (resourceStatusValid && displayedAmmo == rifle.AmmoInMagazine
-                && displayedMagazineSize == rifle.MagazineSize && displayedReloading == rifle.IsReloading)
-                return;
-
-            displayedAmmo = rifle.AmmoInMagazine;
-            displayedMagazineSize = rifle.MagazineSize;
-            displayedReloading = rifle.IsReloading;
-            resourceStatusValid = true;
-            resources.text = displayedReloading ? "Reloading" : $"Ammo {displayedAmmo} / {displayedMagazineSize}";
-        }
     }
 }

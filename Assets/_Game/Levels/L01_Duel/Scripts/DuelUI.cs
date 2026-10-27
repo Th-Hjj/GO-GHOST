@@ -11,7 +11,7 @@ namespace GoGhost.Duel
         DuelGame game;
         TMP_FontAsset font, controlFont, headingFont, numericFont;
         RectTransform canvas, page;
-        TMP_Text playerHealth, resources;
+        TMP_Text playerHealth;
         TMP_Text preparationCount;
         int lastPreparationCount;
         TMP_Text[] policeHealth = System.Array.Empty<TMP_Text>();
@@ -115,7 +115,7 @@ namespace GoGhost.Duel
             developerFields.Clear();
             trainingBack=trainingContinue=null;
             ClearRuleHud();BuildRuleHud();UpdateBattleLayout();
-            playerHealth=resources=null; playerFill=null;
+            playerHealth=null; playerFill=null;
             preparationCount=null; lastPreparationCount=-1;
             ResetBattleStatus();
             policeHealth=System.Array.Empty<TMP_Text>(); policeFill=System.Array.Empty<UnityEngine.UI.Image>();
@@ -176,7 +176,6 @@ namespace GoGhost.Duel
             Image(hud,new Vector2(0,-360),new Vector2(430,12),NeuralPalette.Border);
             playerFill=Image(hud,new Vector2(-215,-360),new Vector2(430,12),NeuralPalette.Primary);
             playerFill.rectTransform.pivot=new Vector2(0,.5f);
-            resources=Text("",hud,new Vector2(0,-397),new Vector2(430,40),22,face:numericFont);
             if(game.Phase==DuelPhase.Prepare)
                 preparationCount=Text("3",hud,Vector2.zero,new Vector2(300,100),72,face:numericFont);
             if(game.Phase==DuelPhase.Training)BuildTrainingButtons();

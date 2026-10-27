@@ -1,5 +1,15 @@
 # GO GHOST slice implementation
 
+## 2026-10-25 — Defeat button wording follow-up
+
+- Changed the defeat return button to Configuration; the page heading stays Body Configuration. Preserved button identity, callback and layout. Updated mirrored authority and current rule documentation.
+- Validation: source diff check passed; updated one actual Reconfigure button label in the running Editor. Full gameplay and Build NOT TESTED.
+
+## 2026-10-25 — Body Configuration wording
+
+- Renamed the configuration heading and matching defeat-page entry from Configure Your Body to Body Configuration; retained typography, bounds and callbacks. Updated current rule documentation and mirrored authority. Preserved existing unrelated geometry/document edits.
+- Validation: reviewed the two string-only code changes; git diff --check passed. Refreshed Unity and updated the current live label. Full gameplay, standalone and Build/Release NOT TESTED.
+
 ## 2026-10-25 — Efe Inan music for Wave 2 / Severance
 
 - **Baseline / scope:** main `ff7e4bc`; Wave 2 used the CC0 Boss Fight 2 placeholder with gain .524807. Thomas supplied Efe Inan's `mx_bosstheme1_wip1.wav` for the swordsman encounter. Preserved the pre-existing body geometry, Art Direction and shoulder-log edits. Initial Editor was stopped, compiling successfully, with a clean formal scene.
@@ -35,13 +45,6 @@
 - **Implemented:** `BossSilhouetteView.LateUpdate` requires Unbound before Severance can enter the existing silhouette-emission branch. Other actors retain their previous branch. Unbound appearance, .055 s cadence, .14 s fade, .16 opacity, cap three, pause/death/cleanup, damaging afterblades and combat timings are unchanged. Updated mirrored authority and Boss documentation.
 - **Compile / focused Editor evidence:** opened this project with Unity 6000.6.0f1 after the stale plugin query and CLI confirmed no running Editor connection. Normal compilation completed without compilation failure. **16 PASS / 0 FAIL** in `Logs/HuntNoTrails/checks.txt`: actual Hunt walking/dash/jump/fall without silhouettes, Unbound walk/dash/ascent/descent with silhouettes, idle suppression, pause/fade/death/menu cleanup, fresh natural Hunt attacks and advancing combat. The single phase gate statically covers flank emission too; a separate real flank was not exercised. Inspected actual `hunt-dash.png` and `unbound-walk.png` captures.
 - **Cleanup / limits:** returned to Menu then stopped the Play session started for verification; formal scene remained clean and the real preset record was restored (count 3). Physical input was re-enabled. Full fights, standalone and full Build/Release **NOT TESTED**. Unrelated working changes remain unstaged.
-
-## 2026-10-24 — Shoulder attachment correction
-
-- **Baseline / accepted scope:** clean main `85c5f85`. Thomas accepted the simplified body and its effects, rejected an anatomical redraw, and approved correcting the arm/torso connection. The old raised arm caps did not follow the torso shoulder slope.
-- **Implemented:** changed four upper-arm vertices in `BodyDiagramGeometry.ConfigurationContour`. Each arm now starts at the existing torso shoulder corner, continues its outer slope and shares a short upper-side edge, opening into a distinct armpit angle. The other four arm vertices, torso/head/legs, region transforms, overall proportions, effects, UI and gameplay are unchanged. Mirrored instructions and Art Direction record the scope.
-- **Compile / actual Editor verification:** normal recompile completed with zero errors/warnings; `git diff --check` passed. In the advancing 2560x1440 Play Mode configuration, shoulder endpoint and attachment-edge errors measured zero, left/right paths mirrored, all six rendered regions stayed inside the body panel, and flow parameters remained 150/170/1.1. Invoked the existing arm preview, observed both arms at signal 1 with rendered pulse meshes, then restored the prior preview. Actual captures are `Logs/BodyShoulderJoin/before.png`, `after-live.png`, `arms-preview.png` and `final.png`.
-- **Reload recovery / cleanup:** the pre-existing Play Mode session was left running. Unity assembly reload reset its nonserialized loadout and materialized the optional view-sample list as empty. Restored the original single A04 Low Health -> J03 Repeat Jumps rule from the surviving complete edit draft (saved as `restored-rule.json`), reset the empty view sample to null and rebuilt the normal UI; both model and displayed list report one rule, with its original condition editor open. Real preset progress remains 2; no progress writes, input-device changes or scene edits. Console entries were tool-dispatch/transport errors, with no game exception identified. Combat/Training transition, other resolutions, standalone and full Build/Release **NOT RUN** for this geometry-only correction.
 
 ## 2026-10-24 — Taller body configuration figure and stronger feedback
 

@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-10-27 — Softer Dodge dot opacity
+
+- **Request / baseline:** Thomas requested more transparency after the larger overhead dot, local main `61f7f63`. Reduce cooling alpha .95 -> .55 and ready-accent peak 1 -> .75 only; retain diameter, head gap, color, timing and gameplay. Preserve unrelated work.
+- **Verified:** normal Unity compilation passed. One actual virtual-keyboard Dodge in the Editor showed alpha .55 with diameter/head ratio .40, ready peak .75, then hidden; Continue returned to Configure with no indicators. Actual captures and observations are in `Logs/DodgeCooldown/Opacity/`. Final Console has zero errors/warnings; `git diff --check` passed. Input devices and preset progress restored; returned to normal paused Training. No new full suite, Standalone or Windows Build/Release was run. Remote push remains held after the earlier approval rejection.
+
 ## 2026-10-27 — Overhead Dodge cooldown dot
 
 - **Request / baseline:** replace the waist-side arc from local main `76951b9` with an overhead cooldown dot. Thomas rejected the initial five-pixel dot as too small and disconnected from the scene. The final revision uses the head's round sprite at forty percent of head diameter (minimum eight camera pixels), with a twenty-two-percent-head-height gap (minimum four pixels). Preserve unrelated whole-body feedback edits and Welcome deletions.

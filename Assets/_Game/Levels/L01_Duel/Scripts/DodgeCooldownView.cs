@@ -65,7 +65,7 @@ namespace GoGhost.Duel
             dot.transform.position = new Vector3(headBounds.center.x, headBounds.max.y + gap + diameter * .5f, headBounds.center.z);
             dot.transform.localScale = Vector3.one * (diameter * (1 - shrink) / dot.sprite.bounds.size.x);
             Color color = readyAccent ? Color.Lerp(NeuralPalette.Spine, NeuralPalette.Primary, .8f) : NeuralPalette.Spine;
-            color.a = readyAccent ? 1 - shrink : .95f;
+            color.a = readyAccent ? .75f * (1 - shrink) : .55f;
             dot.color = color;
         }
 

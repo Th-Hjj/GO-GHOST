@@ -448,7 +448,12 @@ namespace GoGhost.Duel
             var rows=BuildRuleOptions("EquippedRules",ruleList,new Vector2(0,-28),new Vector2(w,h-56));
             for(int i=0;i<displayedRules.Count;i++)
             {
-                int row=i;var rule=displayedRules[i];var expression=ConditionalCatalog.Expression(rule);
+                int row=i;var rule=displayedRules[i];
+                bool editing=pendingRule!=null&&pendingRow==i;
+                // Mirror selected edits without replacing the committed rule used by Cancel and gameplay.
+                var visibleRule=editing?pendingRule:rule;
+                var expression=ConditionalCatalog.Expression(visibleRule);
+                var actionSystem=string.IsNullOrEmpty(visibleRule.Action)?NeuralBodySystem.None:RuleSystem(visibleRule);
                 float rw=w-24;
                 var line=Rect("RuleRow"+i,rows,Vector2.zero,new Vector2(rw,84));
                 var background=line.gameObject.AddComponent<UnityEngine.UI.Image>();background.color=NeuralPalette.Panel;background.raycastTarget=false;
@@ -458,12 +463,11 @@ namespace GoGhost.Duel
                 condition.name="ConditionText";
                 var arrow=Text("→",line,Vector2.zero,Vector2.zero,22,TextAlignmentOptions.TopLeft,controlFont);arrow.name="ActionArrow";
                 var action=Text(expression.Action,line,Vector2.zero,Vector2.zero,22,TextAlignmentOptions.TopLeft,controlFont);action.name="ActionText";
-                action.color=NeuralPalette.Body(RuleSystem(rule));
+                action.color=NeuralPalette.Body(actionSystem);
                 float height=LayoutRuleCard(line,number,condition,arrow,action,rw,64,120);
                 var layout=line.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();layout.minHeight=layout.preferredHeight=height;
-                bool editing=pendingRule!=null&&pendingRow==i;
                 CardEditArea("Rule"+i+"Condition",condition,line,()=>ChooseRule(row,true),editing&&selectingCondition,rule,row);
-                CardEditArea("Rule"+i+"Action",action,line,()=>ChooseRule(row,false),editing&&!selectingCondition,rule,row,RuleSystem(rule));
+                CardEditArea("Rule"+i+"Action",action,line,()=>ChooseRule(row,false),editing&&!selectingCondition,rule,row,actionSystem);
                 var accent=Image(line,new Vector2(-rw/2+2,0),new Vector2(2,height-32),NeuralPalette.Body(RuleSystem(rule)));
                 accent.name="RuleIdentity";equippedAccents.Add(accent);
                 var up=ConfigButton("MoveRuleUp"+i,"▲",line,new Vector2(rw/2-24,height/2-24),new Vector2(32,32),()=>MoveRule(row,-1),style:DuelControlStyle.Tool);

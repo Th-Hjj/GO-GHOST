@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-10-26 — Synchronize the edited rule card with its draft
+
+- **Baseline:** clean main `4c8ceea`. Reproduced the reported Low Health -> Grounded edit through the actual Editor selection callbacks: the fixed preview read Grounded while the right-hand card still read Low Health. The card formatted the committed rule instead of the pending copy.
+- **Implemented:** `DuelConditionalUI.BuildRuleRows` formats the edited row from its pending draft, including action color and missing-part placeholders. Other rows, committed data, Cancel/commit behavior and equipped body feedback retain their existing sources. No scene, prefab, gameplay or tuning changes.
+- **Validation:** normal Unity compilation succeeded; a temporary callback-driven Editor check recorded **19 PASS / 0 FAIL** in `Logs/rule-draft-check.txt`. Covered the exact reproduction, Ground State/distance parameters, multiple AND conditions, removal/promotion/empty placeholders, incompatible or explicitly removed actions, cross-operation action preview, full cancellation, commit/reopen and another row remaining unchanged. Committed data stayed unchanged during editing. `git diff --check` passed.
+- **Limits / tooling:** Play Mode exited before the requested-state capture could be completed; its cause was not established. Left the Editor stopped and restored the background preference. Screenshot, physical pointer/keyboard interaction, combat/continue smoke, standalone and Build/Release **NOT TESTED / NOT RUN**. Temporary evaluation snippets initially needed namespace/statement-body corrections; no runtime source compilation failure resulted. CLI update lookup was unavailable; elevated local discovery connected to the existing Editor.
+
 ## 2026-10-26 — Jump interrupts Dodge
 
 - **Baseline / scope:** clean main `26127b1`; Jump admission rejected an active Dodge, manual same-frame acceptance favored Dodge, and automatic Jump/Dodge followed global row order. Thomas requested Jump priority and interruption of an ongoing Dodge. Editor initially stopped on the clean formal scene.

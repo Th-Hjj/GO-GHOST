@@ -166,6 +166,7 @@ public static partial class BossEncounterSmoke
     static IEnumerator Run()
     {
         Record("Editor Play Mode; simulated focus and virtual keyboard/mouse. No physical-input or audibility claim.");
+        if(mode=="friendly-fire") {yield return FriendlyFire();yield break;}
         if(mode=="aim-assist") {yield return AimAssist();yield break;}
         if(mode=="hold-fire") {yield return HoldFire();yield break;}
         if(mode=="arena-boundary") {yield return ArenaBoundary();yield break;}
@@ -1475,8 +1476,9 @@ public static partial class BossEncounterSmoke
         int playerHp = game.Player.CurrentHealth, swordHp = sword.Health.CurrentHealth;
         Fire(gunner, gunner.gameObject, gunner.Position + Vector2.right, Vector2.right);
         yield return Seconds(.65f);
-        Check("ally body blocks ordinary bullet with zero friendly damage", game.Player.CurrentHealth == playerHp
-            && sword.Health.CurrentHealth == swordHp && Projectile.Active.Count == 0);
+        Check("ally body takes bullet damage and protects the player behind it", game.Player.CurrentHealth == playerHp
+            && sword.Health.CurrentHealth == swordHp - 12 && Projectile.Active.Count == 0);
+        swordHp = sword.Health.CurrentHealth;
         Position(sword.gameObject, new Vector2(7, -1.65f));
         yield return Seconds(.3f);
         Check("beam starts through normal solo reservation", gunner.Actions.TryStart(BossAbility.Piercing, game.Player.GetComponent<Collider2D>().bounds.center));
@@ -1484,8 +1486,8 @@ public static partial class BossEncounterSmoke
         Position(sword.gameObject, new Vector2(-1, -1.65f));
         yield return Until(() => gunner.Actions.Activated[(int)BossAbility.Piercing] > 0, 2);
         yield return Seconds(.12f);
-        Check("ally body blocks beam with zero friendly damage", gunner.Actions.Activated[(int)BossAbility.Piercing] > 0
-            && game.Player.CurrentHealth == playerHp && sword.Health.CurrentHealth == swordHp);
+        Check("ally body takes beam damage and protects the player behind it", gunner.Actions.Activated[(int)BossAbility.Piercing] > 0
+            && game.Player.CurrentHealth == playerHp && sword.Health.CurrentHealth == swordHp - gunner.Profile.Piercing.Damage);
         Position(sword.gameObject, new Vector2(7, -1.65f));
         var cover = new GameObject("BossSmoke projectile cover") { layer = LayerMask.NameToLayer("Ground") };
         cover.transform.position = new Vector2(0, -1.4f);
@@ -1662,7 +1664,7 @@ public static partial class BossEncounterSmoke
     static void Fire(BossAgent prefabOwner, GameObject owner, Vector2 from, Vector2 direction)
     {
         var projectile = Object.Instantiate(prefabOwner.ProjectilePrefab, from, Quaternion.identity);
-        projectile.Launch(direction, 18, 12, owner);
+        projectile.Launch(direction, 18, 12, owner, friendlyFire: owner != null && owner.GetComponent<BossAgent>() != null);
     }
     static void MouseAt(Vector2 world, bool held)
     { mousePosition = Camera.main.WorldToScreenPoint(world); mouseHeld = held; }

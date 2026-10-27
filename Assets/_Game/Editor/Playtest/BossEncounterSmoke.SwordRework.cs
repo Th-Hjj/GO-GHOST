@@ -400,7 +400,7 @@ public static partial class BossEncounterSmoke
         var duo=game.GetComponentInChildren<DuoCoordinator>();
         Check("idle afterblade retains W3 major and minor fire budget",!duo.CanStart(gun,BossAbility.Piercing,false)&&!duo.CanStart(gun,BossAbility.Burst,false));
         yield return Seconds(1.5f);
-        Check("ally body blocks delayed blade without friendly or rear damage",hazards.AllyBlocks>0&&gun.Health.CurrentHealth==gunHp&&game.Player.CurrentHealth==hp,
+        Check("ally body takes delayed blade damage and protects the player behind it",hazards.AllyBlocks>0&&gun.Health.CurrentHealth==gunHp-sword.Profile.Sword.EchoDamage&&game.Player.CurrentHealth==hp,
             "blocks="+hazards.AllyBlocks+" gun damage="+(gunHp-gun.Health.CurrentHealth)+" player damage="+(hp-game.Player.CurrentHealth));
         Check("W3 still excludes Redline",!sword.Actions.TryStartSword(BossAbility.SwordRedline));
         game.MainMenu();yield return Frames(2);Check("menu destroys sword owners",game.Bosses.Count==0);

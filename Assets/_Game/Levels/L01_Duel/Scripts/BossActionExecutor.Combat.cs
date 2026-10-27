@@ -6,6 +6,8 @@ namespace GoGhost.Duel
     // Real shots, physical hit sweeps, reflection and accepted follow-up connections.
     public sealed partial class BossActionExecutor
     {
+        readonly HashSet<BossAgent> bossesHitInWindow = new HashSet<BossAgent>();
+
         void TickJump()
         {
             if(!actor.Motor.Grounded && actor.Motor.JumpStartedAt>=0 && !jumpAirborne)
@@ -64,7 +66,7 @@ namespace GoGhost.Duel
             if(!actor.Tactics.AllyBlocks(actor.Position+Vector2.up*.28f,muzzle))
             {
                 var shot=Instantiate(actor.ProjectilePrefab,muzzle,Quaternion.identity);
-                shot.Launch(direction,p.BulletSpeed,BurstAction?p.Burst.Damage:settings.Damage,actor.gameObject);
+                shot.Launch(direction,p.BulletSpeed,BurstAction?p.Burst.Damage:settings.Damage,actor.gameObject,friendlyFire:true);
                 var sprite=shot.GetComponent<SpriteRenderer>();if(sprite!=null)sprite.color=actor.Profile.Kind==BossKind.Refraction?NeuralPalette.Refraction:NeuralPalette.Severance;
                 actor.View?.Bullet(shot,direction);
                 actor.Sounds?.Play(Sfx.BossBurst,actor.ActorId,AttackId,shotIndex);actor.View?.Muzzle(muzzle,direction);
@@ -126,6 +128,16 @@ namespace GoGhost.Duel
         }
         void HitSegment(Vector2 from,Vector2 to,float radius,int damage,bool terrain)
         {
+            if(actor.Coordinator!=null)
+                foreach(var other in actor.Coordinator.Actors)
+                {
+                    if(other==actor||!other.IsAlive||!other.Body.enabled||bossesHitInWindow.Contains(other))continue;
+                    Vector2 delta=to-from;
+                    float along=delta.sqrMagnitude>.001f?Mathf.Clamp01(Vector2.Dot((Vector2)other.Body.bounds.center-from,delta)/delta.sqrMagnitude):0;
+                    Vector2 closest=from+delta*along,contact=other.Body.ClosestPoint(closest);
+                    if(Vector2.Distance(contact,closest)>radius||terrain&&Projectile.TerrainHit(from,contact,.015f,out _))continue;
+                    HitBoss(other,damage,contact);
+                }
             if(hitInWindow||actor.Player==null||actor.Player.IsDead)return;
             var body=actor.Player.GetComponent<Collider2D>();
             Vector2 point=body.ClosestPoint(to);Vector2 d=to-from;
@@ -145,6 +157,13 @@ namespace GoGhost.Duel
                         actor.Navigation.PlatformWidth*.35f,.14f);
                 }
             }
+        }
+        void HitBoss(BossAgent other,int damage,Vector2 point)
+        {
+            if(other==actor||!other.IsAlive||!bossesHitInWindow.Add(other))return;
+            int before=other.Health.CurrentHealth;
+            other.Health.TakeDamage(damage,actor.gameObject);
+            if(other.Health.CurrentHealth<before)actor.View?.Impact(point);
         }
         void NextRhythm()
         {
@@ -268,10 +287,10 @@ namespace GoGhost.Duel
         }
         public bool ReceiveProjectile(Projectile shot,Collider2D contact)
         {
-            if(shot.OwnerLayer==gameObject.layer||!GuardBlocksRay(shot.transform.position,actor.Position))return false;
+            if(shot.Owner==gameObject||!GuardBlocksRay(shot.transform.position,actor.Position))return false;
             var velocity=shot.GetComponent<Rigidbody2D>().linearVelocity;
             if(Vector2.Dot(velocity,Aim)>=0 || Vector2.Distance(shot.transform.position,actor.Position)>p.Guard.Range+shot.Radius)return false;
-            if(!shot.Deflect(gameObject,ProjectileActor.Environment))return false;
+            if(!shot.Deflect(gameObject,ProjectileActor.Environment,friendlyFire:true))return false;
             if(shot.TryGetComponent<SpriteRenderer>(out var sprite))sprite.color=NeuralPalette.Severance;
             Guarded++;actor.Sounds?.Play(Sfx.GuardBlock,actor.ActorId,AttackId,Guarded);actor.View?.Impact(shot.transform.position);
             return true;

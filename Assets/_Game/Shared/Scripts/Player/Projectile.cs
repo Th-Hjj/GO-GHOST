@@ -4,7 +4,7 @@ using UnityEngine;
 /// <summary>
 /// Simple straight-line bullet. Requires a Rigidbody2D and a Collider2D
 /// marked "Is Trigger" on the prefab. Used by the player and by enemies:
-/// it never damages its shooter or team, but living allied Boss bodies stop it.
+/// it never damages its shooter. Boss attacks opt into damage against their own team.
 /// Bullets pass through interior terrain; an attempt's ArenaBoundary2D stops them at its perimeter.
 /// Penetrating laser attacks have their own ray executor and do not use Projectile.
 /// </summary>
@@ -18,8 +18,9 @@ public class Projectile : MonoBehaviour
     [Tooltip("Legacy terrain layers, now passed through by every projectile. Ground is always included.")]
     [SerializeField] private LayerMask blockingLayers;
 
-    /// <summary>Layer of the shooter at launch time (-1 if none). Same-layer objects never take damage.</summary>
+    /// <summary>Layer of the shooter at launch time (-1 if none).</summary>
     public int OwnerLayer => ownerLayer;
+    public bool FriendlyFire { get; private set; }
     public GameObject Owner => owner;
     private static readonly List<Projectile> active = new List<Projectile>();
     private static readonly List<RaycastHit2D> terrainHits = new List<RaycastHit2D>(16);
@@ -79,8 +80,9 @@ public class Projectile : MonoBehaviour
     private void OnDestroy() => active.Remove(this);
 
     public void Launch(Vector2 direction, float speed, int dmg, GameObject shooter, PlayerTimeSlow hostileClock = null, bool counterable = false, PlayerShooting accuracyOwner = null,
-        ProjectileActor actor = ProjectileActor.Environment, int permissionTier = 0)
+        ProjectileActor actor = ProjectileActor.Environment, int permissionTier = 0, bool friendlyFire = false)
     {
+        FriendlyFire = friendlyFire;
         Actor = actor;
         if((actor==ProjectileActor.Player||actor==ProjectileActor.InnerAI)&&TryGetComponent<SpriteRenderer>(out var sprite))sprite.color=NeuralPalette.Primary;
         PermissionTier = permissionTier;
@@ -113,9 +115,10 @@ public class Projectile : MonoBehaviour
     /// </summary>
     public bool Deflect(GameObject newOwner) => Deflect(newOwner, ProjectileActor.Player);
 
-    public bool Deflect(GameObject newOwner, ProjectileActor actor)
+    public bool Deflect(GameObject newOwner, ProjectileActor actor, bool friendlyFire = false)
     {
         if (!launched || spent || Deflected || newOwner == null) return false;
+        FriendlyFire = friendlyFire;
         Deflected = true;
         Actor = actor;
         var identity = newOwner.GetComponent<OfficerIdentity>();
@@ -176,7 +179,7 @@ public class Projectile : MonoBehaviour
         var bodyHealth = other.GetComponentInParent<Enemy>();
         bool sameTeam = bodyHealth != null ? bodyHealth.gameObject.layer == ownerLayer
             : other.gameObject.layer == ownerLayer;
-        if (sameTeam)
+        if (sameTeam && !(FriendlyFire && bodyHealth != null))
         {
             if (!other.isTrigger && bodyHealth != null && !bodyHealth.IsDead
                 && other == bodyHealth.GetComponent<Collider2D>())

@@ -401,7 +401,7 @@ namespace GoGhost.Duel
         {
             if(JumpAction && !actor.Motor.StartCommittedJump(jumpPlan.Route,jumpPlan.JumpMotion)){Recover();return;}
             SetPhase(BossActionPhase.Active,Ability==BossAbility.Camo?p.CamoDuration:ActiveSeconds);
-            Activated[(int)Ability]++;LastActiveAt=Time.time;hitInWindow=false;activeStarts=Time.time;
+            Activated[(int)Ability]++;LastActiveAt=Time.time;hitInWindow=false;bossesHitInWindow.Clear();activeStarts=Time.time;
             activeEnds=Ability==BossAbility.Piercing?Time.time+.0001f:phaseUntil;actor.Trace($"active {Ability} attack={AttackId}");
             if(JumpAction)
             {

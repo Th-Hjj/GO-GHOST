@@ -1,5 +1,9 @@
 # GO GHOST — Boss Encounter
 
+## Boss friendly fire — approved 2026-10-26
+
+Boss attacks now damage the other Boss using the same attack damage as against the player. Ordinary and reflected bullets, Piercing, melee/Draw sweeps, sword waves and delayed afterblades all use normal health, hit feedback and death handling. The shooter/current reflection owner stays immune. Melee hit limits apply independently per target per active window; hitting the player does not consume the other Boss's hit. Bullets, beams and emitted blades still stop at the partner's body. Guard can reflect eligible frontal friendly bullets, transferring ownership and retaining friendly damage. AI still targets the player and retains its existing firing-lane/cooperation checks. Terrain penetration, player invulnerability/tuning, attack timing, pause and encounter cleanup are unchanged. One friendly kill leaves W3 running until both Bosses die. This supersedes all older zero-friendly-damage statements below.
+
 ## Hunt has no body silhouettes — approved 2026-10-24
 
 Severance emits no human-shaped silhouette afterimages during Hunt, including dash and flank movement. Only Unbound enables his existing movement silhouettes. Preserve their .055 s cadence, .14 s lifetime, .16 opacity, three-silhouette cap and pause/death/cleanup behavior, along with other actors' effects. Damaging sword waves/afterblades and combat timing are unchanged. This supersedes retaining first-phase dash/flank trails in the earlier entry below.

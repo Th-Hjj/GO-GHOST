@@ -132,8 +132,10 @@ public static partial class BossEncounterSmoke
         var ally = (Vector2)gunner.Body.bounds.center;
         hazards.Wave(ally + Vector2.left, Vector2.right);
         int blocks = hazards.AllyBlocks;
+        int allyHealth = gunner.Health.CurrentHealth;
         yield return Seconds(.15f);
-        Check("W3 ally body still blocks sword wave", !hazards.Pending && hazards.AllyBlocks > blocks);
+        Check("W3 ally body takes damage and blocks sword wave", !hazards.Pending && hazards.AllyBlocks > blocks
+            && gunner.Health.CurrentHealth == allyHealth - sword.Profile.Sword.WaveDamage);
         game.MainMenu(); yield return Frames(3);
         Check("menu cleans projectiles and arena boundary", Projectile.Active.Count == 0
             && Object.FindObjectsByType<ArenaBoundary2D>(FindObjectsSortMode.None).Length == 0);

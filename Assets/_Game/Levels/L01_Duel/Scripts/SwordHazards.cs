@@ -136,10 +136,13 @@ namespace GoGhost.Duel
                 {
                     foreach(var other in actor.Coordinator.Actors)
                     {
-                        if(other==actor||!other.IsAlive)continue;
-                        if(threat.IntersectsMotion(other.Position,other.Position,other.Body.bounds.extents,from,now))
+                        if(other==actor||!other.IsAlive||!other.Body.enabled)continue;
+                        if(threat.IntersectsMotion(other.Motor.PreviousPosition,other.Position,other.Body.bounds.extents,from,now))
                         {
-                            // Ally bodies are solid to emitted waves, even when the player is behind them.
+                            // A partner takes the same damage and stops the emitted blade.
+                            int before=other.Health.CurrentHealth;
+                            other.Health.TakeDamage(trace.Damage,actor.gameObject);
+                            if(other.Health.CurrentHealth<before)actor.View?.Impact(other.Body.ClosestPoint(trace.A(now)));
                             blocked=true;AllyBlocks++;break;
                         }
                     }

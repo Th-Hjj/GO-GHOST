@@ -403,7 +403,7 @@ namespace GoGhost.Duel
         }
         void ActivateSwordBeat()
         {
-            Activated[(int)Ability]++;LastActiveAt=Time.time;hitInWindow=false;previousCutProgress=0;
+            Activated[(int)Ability]++;LastActiveAt=Time.time;hitInWindow=false;bossesHitInWindow.Clear();previousCutProgress=0;
             if(CurrentSwordBeat==SwordBeat.Traverse||CurrentSwordBeat==SwordBeat.JumpCut)
             {
                 bool started;
@@ -462,6 +462,13 @@ namespace GoGhost.Duel
                 var sweep=new BossThreat {Valid=true,Phase=BossThreatPhase.Active,Shape=BossThreatShape.SweptCapsule,
                     Origin=actor.Motor.PreviousPosition+lead,End=actor.Position+lead,Radius=.48f,TerrainBlocked=true,
                     StartsAt=Time.time-Time.fixedDeltaTime,EndsAt=Time.time};
+                if(actor.Coordinator!=null)
+                    foreach(var other in actor.Coordinator.Actors)
+                    {
+                        if(other==actor||!other.IsAlive||!other.Body.enabled||bossesHitInWindow.Contains(other))continue;
+                        if(sweep.IntersectsMotion(other.Motor.PreviousPosition,other.Position,other.Body.bounds.extents,sweep.StartsAt,sweep.EndsAt))
+                            HitBoss(other,p.Sword.DrawDamage,other.Body.ClosestPoint(actor.Position+lead));
+                    }
                 if(!hitInWindow&&sweep.IntersectsMotion(previousPlayer,currentPlayer,playerBody.bounds.extents,sweep.StartsAt,sweep.EndsAt))
                 {
                     hitInWindow=true;int before=actor.Player.CurrentHealth;actor.Player.TakeDamage(p.Sword.DrawDamage,actor.gameObject);

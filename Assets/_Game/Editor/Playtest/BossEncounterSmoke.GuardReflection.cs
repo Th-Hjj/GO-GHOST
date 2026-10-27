@@ -101,7 +101,7 @@ public static partial class BossEncounterSmoke
         yield return Until(() => capacitySword.Health.CurrentHealth < capacityHp, .2f);
         Check("expired guard allows next bullet damage", capacitySword.Health.CurrentHealth == capacityHp - 12);
 
-        // Reflected ownership must retain the existing allied-body blocking rule in Wave 3.
+        // Reflected ownership damages the other Boss and still stops at its body.
         yield return Fresh(3); StopPolicies();
         var sword3 = game.Bosses.First(b => b.Profile.Kind == BossKind.Severance);
         var gun3 = game.Bosses.First(b => b.Profile.Kind == BossKind.Refraction);
@@ -113,8 +113,8 @@ public static partial class BossEncounterSmoke
         yield return Until(() => sword3.Actions.Phase == BossActionPhase.Active, .5f);
         var allied = GuardShot(sword3, sword3.Position + Vector2.right * .9f, Vector2.left);
         yield return Until(() => allied == null, .4f);
-        Check("reflected bullet stops at allied boss without friendly damage", allied == null && sword3.Actions.Guarded == 1
-            && gun3.Health.CurrentHealth == gunHp && game.Player.CurrentHealth == duoPlayerHp);
+        Check("reflected bullet damages allied boss and stops", allied == null && sword3.Actions.Guarded == 1
+            && gun3.Health.CurrentHealth == gunHp - 12 && game.Player.CurrentHealth == duoPlayerHp);
         game.MainMenu(); yield return Frames(2);
         Check("menu cleans reflected projectiles and actors", Projectile.Active.Count == 0 && Object.FindObjectsByType<BossAgent>(FindObjectsSortMode.None).Length == 0);
 

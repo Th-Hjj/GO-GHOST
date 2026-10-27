@@ -119,8 +119,15 @@ public sealed class SfxSet : MonoBehaviour
     {
         switch (id)
         {
-            case Sfx.Shot: case Sfx.BossBurst: return .38f;
-            case Sfx.BulletHit: case Sfx.PlayerHurt: return .34f;
+            // Player fire leads the mix; handling and impacts sit behind it.
+            case Sfx.Shot: return .80f;
+            case Sfx.BossBurst: return .38f;
+            case Sfx.BulletHit: return .24f;
+            case Sfx.PlayerHurt: return .50f;
+            case Sfx.Equip: return .25f;
+            case Sfx.Click: return .50f;
+            case Sfx.Victory: return .35f;
+            case Sfx.Defeat: return .40f;
             case Sfx.BeamCharge: return .32f;
             case Sfx.BeamLock: return .60f;
             case Sfx.BeamFire: return .46f;

@@ -10,8 +10,8 @@
   "output_duration": 1.8,
   "rate": 48000,
   "channels": 2,
-  "gain_db": -5.0,
-  "peak_dbfs": -5.000377362660108,
+  "gain_db": -5.5,
+  "peak_dbfs": -5.500510037522204,
   "clipped_output_samples": 0,
   "edits": [
     {
@@ -76,7 +76,7 @@
     "all six loading events retained",
     "source 2.600 s through end retained at original speed",
     "no clipped output samples",
-    "short boundary fades and uniform -5 dB gain total"
+    "short boundary fades and uniform -5.5 dB gain total"
   ],
   "limits": [
     "Input is the Freesound HQ MP3 preview, not the authenticated original download.",
@@ -85,15 +85,16 @@
   "integration": {
     "date": "2026-10-27",
     "asset": "Assets/_Game/Shared/Audio/player_reload_percyfrench_180.wav",
-    "asset_sha256": "4d0e7cccd619b61da848b61ed7ac9f504ff9395d18bb261e30ab58ec86a13c00",
+    "asset_sha256": "d949e580a7660b34dadd3b876c0ce77ca04f44d9bd3c3e5a0812596c9378c777",
     "prefab": "Assets/_Game/Levels/L01_Duel/Prefabs/DuelCombatAttempt.prefab",
     "cue": "Sfx.Equip (7), player reload",
     "replaced_clip": "switch_001.ogg",
     "import": "PCM, DecompressOnLoad, preload, stereo, preserve 48000 Hz",
     "boundary_fades": "Loading segments: 1.5 ms in/out; final tail: 2 ms in, 8 ms out",
-    "approval": "Thomas accepted v1, requested integration, then requested a slightly quieter reload. V2 applies an additional -2 dB only.",
-    "unchanged": "Reload timing 1.80 s, runtime code, source volume, other 25 cue bindings",
+    "approval": "Thomas accepted v1, requested integration, then requested a slightly quieter reload. V2 applies an additional -2 dB only. Further in-game feedback requests a slightly quieter reload: additional -2 dB, now -4 dB versus audition v1. Overall SFX mix follow-up sets player reload cue gain to .25. Final listening refinement: raise current reload by 1.5 dB; cue gain stays .25.",
+    "unchanged": "Reload duration 1.80s, pitch, edit timing and runtime weapon logic; player reload volume is intentionally reduced.",
     "audition_v1_sha256": "efea2652c57d4bf4f0b793e61788adea51e328545f9dca8e3dcf586f2dca3431",
-    "additional_gain_db_vs_audition_v1": -2
+    "additional_gain_db_vs_audition_v1": -2.5,
+    "cue_gain": 0.25
   }
 }

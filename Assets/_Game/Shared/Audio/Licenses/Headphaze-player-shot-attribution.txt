@@ -1,0 +1,16 @@
+Player gunshot: Sci-Fi Gunshot - Heavy Blast Weapon
+Author: Headphaze
+Source: https://freesound.org/people/Headphaze/sounds/742583/
+License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+License URL: https://creativecommons.org/licenses/by/4.0/
+
+Used in GO GHOST as player_shot_headphaze_a2.wav.
+Adapted from the public Freesound HQ MP3 preview: shortened and attenuated
+the tail, aligned the two initial impacts into one attack, added brief
+boundary fades, adjusted gain and applied a gentle -2 dB low shelf at 180 Hz.
+Original pitch is retained.
+The final single-shot edit is 0.488 seconds. The author does not endorse
+GO GHOST or these adaptations. Detailed provenance and reproducible edit
+parameters are in player-shot-manifest.json alongside this notice.
+
+Include this attribution with distributed builds using this sound.

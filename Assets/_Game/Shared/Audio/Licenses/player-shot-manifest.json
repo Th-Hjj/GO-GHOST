@@ -1,0 +1,76 @@
+{
+  "title": "GO GHOST approved player gunshot: Heavy Blast A2",
+  "author": "Headphaze",
+  "source_url": "https://freesound.org/people/Headphaze/sounds/742583/",
+  "license": "CC BY 4.0",
+  "license_url": "https://creativecommons.org/licenses/by/4.0/",
+  "source_kind": "Freesound HQ MP3 preview; not authenticated original download",
+  "source_preview": "https://cdn.freesound.org/previews/742/742583_847303-hq.mp3",
+  "source_preview_sha256": "81bd8900c5a62a52b83906dc6d65d6140eb6e0933d6676beafb607cbf1eaf6e4",
+  "approval": "Thomas accepted A2 audition and requested integration on 2026-10-27; follow-up requests a stronger in-game shot, implemented with +5 dB asset gain. Final listening refinement: reduce current shot by 1.5 dB, for +3.5 dB asset gain versus A2 audition; cue gain remains .80. Final tone feedback: slightly less thick; apply -2 dB low shelf at 180 Hz without added gain. Final follow-up: lower the EQ-adjusted gunshot by another 1 dB; all other audio unchanged.",
+  "asset": "Assets/_Game/Shared/Audio/player_shot_headphaze_a2.wav",
+  "asset_sha256": "05eeade9f93ec024dd3cc9506221bd58e09661ad6a17f3a8825754b8d2ac9e57",
+  "duration_seconds": 0.488,
+  "sample_rate": 48000,
+  "channels": 2,
+  "sample_frames": 23424,
+  "import_settings": "PCM, DecompressOnLoad, preload, preserve sample rate, stereo",
+  "binding": "Sfx.Shot (0) on DuelCombatAttempt prefab",
+  "unchanged": "Runtime weapon logic, .45s primary interval, .10s Fan the Hammer interval, damage, magazine size, reload duration and other 25 cue bindings",
+  "original_gain_db": -3.5734245004956007,
+  "tail_edit": {
+    "id": "A-controlled-tail",
+    "hold": 0.15,
+    "end": 0.6,
+    "tail_db": -36,
+    "final_fade": 0.06,
+    "single": {
+      "file": "heavy-A-controlled-tail-single.mp3",
+      "duration": 0.6,
+      "decoded_peak_dbfs": -6.147775173187256
+    },
+    "six-shots-045s": {
+      "file": "heavy-A-controlled-tail-six-shots-045s.mp3",
+      "duration": 3.1,
+      "decoded_peak_dbfs": -6.056072235107422
+    },
+    "tail_energy_reduction_db_after_200ms": -10.181988586161545
+  },
+  "attack_edit": {
+    "early_crack_source_seconds": [
+      0.04,
+      0.09
+    ],
+    "body_source_seconds": [
+      0.112,
+      0.6
+    ],
+    "early_crack_layer_gain": 0.65,
+    "crack_placement_seconds": 0.006,
+    "original_peak_separation_seconds": 0.078,
+    "aligned_peak_separation_seconds": 0,
+    "uniform_gain_db": -1.2507122498671635,
+    "note": "Same original pitch and A tail; 18ms crack fade-out, 0.5ms crack fade-in, 1ms body fade-in; no extra reverb or time stretching"
+  },
+  "attribution_file": "Headphaze-player-shot-attribution.txt",
+  "limits": [
+    "Audition accepted; integrated hardware mix not yet evaluated.",
+    "No standalone or new Build/Release validation."
+  ],
+  "audition_a2_sha256": "aa50aa21ac67ea95faad6b40b8c462e42b5ce5651f389ef73a396caaa79c5bdd",
+  "integration_gain_db_vs_audition_a2": 2.5,
+  "peak_dbfs": -5.002734648108415,
+  "cue_gain": 0.8,
+  "mix_followup": "Thomas requested a stronger shot, quieter reload and an overall SFX balance pass. Shot cue gain .38 -> .80; keep BossBurst at .38.",
+  "final_tone_adjustment": {
+    "filter": "FFmpeg bass=g=-2:f=180:t=q:w=0.707",
+    "purpose": "Slightly less low-frequency thickness; no extra gain, pitch or timing change",
+    "source_sha256": "ea7e9e6b67dcc0e66036c22fe6f65a44c11ee482c445c000480dae949b63cb52",
+    "output_sha256": "4f89dd98b0f525dc044fea1b6b152316f623a25cde206677ec551eeac8a1484b",
+    "frames": 23424,
+    "peak_dbfs": -4.002609394019346,
+    "measured_35_180hz_energy_delta_db": -2.0754779656591924,
+    "measured_1_8khz_energy_delta_db": 0.007149194278185554
+  },
+  "post_eq_gain_db": -1
+}

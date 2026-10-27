@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-10-27 — Readable Dodge countdown bar
+
+- **Request / baseline:** Thomas found the two-pixel foot bar unreadable and required full-to-empty remaining-cooldown semantics. Local main `8ccc46e`. Increase width to 1.6 head diameters / at least 32 camera pixels and thickness to .06 world units / five camera pixels. Preserve foot gap, translucent palette and gameplay.
+- **Implemented:** a real accepted Dodge starts a full bar; its right edge recedes left according to actual remaining cooldown divided by the accepted duration. At zero, hide both layers immediately. Remove the previous completion hold/fade and pale ready accent so no full bar reappears at readiness. Preserve live-tuning snapshots, pause/F8, Jump interruption, foot anchoring and lifecycle.
+- **Verified:** normal Unity compilation passed. The bounded Editor probe `Logs/DodgeCooldown/DrainProbe.cs` recorded **13 PASS / 0 FAIL** in `Logs/DodgeCooldown/DrainBar/checks.txt`: manual/automatic full start, half/low/zero countdown, 1080p width/thickness, F8 freeze and accepted tuning interval, Jump interruption, raised-platform clearance, Continue and Menu cleanup. Inspected actual full/half/low camera closeups and the full 1920x1080 camera render; capture settings, physical input devices and preset progress restored. Final Console zero errors/warnings; scene clean, returned to initial Edit Mode. `git diff --check` passed. Unrelated work preserved. Physical-input feel, sustained combat readability, Standalone and Windows Build/Release **NOT TESTED / NOT RUN**; broader earlier suites not rerun. Remote push remains held after the earlier approval rejection.
+
 ## 2026-10-27 — Foot-level Dodge cooldown bar
 
 - **Request / baseline:** Thomas rejected the overhead dot's appearance and accepted the proposed foot bar. Local main `5680ed9`. Replace the dot with a thin, one-head-wide dark-violet track and left-to-right violet cooldown fill; show it only while cooling down and briefly fading after completion. Preserve unrelated whole-body feedback edits and Welcome deletions.

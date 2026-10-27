@@ -7,15 +7,13 @@ namespace GoGhost.Duel
     [DefaultExecutionOrder(100)]
     public sealed class DodgeCooldownView : MonoBehaviour
     {
-        const float ReadyHoldSeconds = .08f;
-        const float ReadyFadeSeconds = .22f;
         DuelGame game;
         PlayerDodge dodge;
         Camera viewCamera;
         SpriteRenderer head;
         Collider2D body;
         LineRenderer track, fill;
-        float acceptedDuration, cooldownEndsAt = float.NegativeInfinity;
+        float acceptedDuration;
 
         public void Initialize(DuelGame owner, Material material, int sortingLayer)
         {
@@ -47,9 +45,8 @@ namespace GoGhost.Duel
 
         void OnDodgeStarted()
         {
-            // Keep the accepted deadline: tuning edits must not move the ready accent.
+            // Preserve the accepted interval when live tuning changes the next Dodge.
             acceptedDuration = dodge.CooldownRemaining;
-            cooldownEndsAt = Time.time + acceptedDuration;
         }
 
         void LateUpdate()
@@ -60,20 +57,14 @@ namespace GoGhost.Duel
             if (!visible) { SetVisible(false); return; }
 
             float remaining = dodge.CooldownRemaining;
-            float sinceReady = Time.time - cooldownEndsAt;
-            bool readyAccent = remaining <= 0 && sinceReady >= 0
-                && sinceReady < ReadyHoldSeconds + ReadyFadeSeconds;
-            SetVisible(remaining > 0 || readyAccent);
+            SetVisible(remaining > 0);
             if (!track.enabled) return;
 
-            float opacity = readyAccent
-                ? 1 - Mathf.SmoothStep(0, 1, (sinceReady - ReadyHoldSeconds) / ReadyFadeSeconds) : 1;
-            float progress = remaining > 0
-                ? 1 - Mathf.Clamp01(remaining / Mathf.Max(.0001f, acceptedDuration)) : 1;
+            float remainingFraction = Mathf.Clamp01(remaining / Mathf.Max(.0001f, acceptedDuration));
             float worldPerPixel = viewCamera != null && viewCamera.orthographic
                 ? 2 * viewCamera.orthographicSize / Mathf.Max(1, viewCamera.pixelHeight) : 0;
-            float width = Mathf.Max(head != null ? head.bounds.size.x : .46f, 20 * worldPerPixel);
-            float thickness = Mathf.Max(.025f, 2 * worldPerPixel);
+            float width = Mathf.Max((head != null ? head.bounds.size.x : .46f) * 1.6f, 32 * worldPerPixel);
+            float thickness = Mathf.Max(.06f, 5 * worldPerPixel);
             float gap = Mathf.Max(.05f, 3 * worldPerPixel);
             var bounds = body.bounds;
             // A stable foot-plane anchor follows jumps without bobbing with individual footsteps.
@@ -81,12 +72,11 @@ namespace GoGhost.Duel
             var right = left + Vector3.right * width;
             track.startWidth = track.endWidth = fill.startWidth = fill.endWidth = thickness;
             track.SetPosition(0, left); track.SetPosition(1, right);
-            fill.SetPosition(0, left); fill.SetPosition(1, Vector3.Lerp(left, right, progress));
-            track.startColor = track.endColor = new Color(.20f, .15f, .27f, .65f * opacity);
-            Color color = readyAccent ? Color.Lerp(NeuralPalette.Spine, NeuralPalette.Primary, .2f) : NeuralPalette.Spine;
-            color.a = .60f * opacity;
+            fill.SetPosition(0, left); fill.SetPosition(1, Vector3.Lerp(left, right, remainingFraction));
+            track.startColor = track.endColor = new Color(.20f, .15f, .27f, .65f);
+            Color color = NeuralPalette.Spine;
+            color.a = .60f;
             fill.startColor = fill.endColor = color;
-            fill.enabled = progress > 0;
         }
 
         void SetVisible(bool visible)

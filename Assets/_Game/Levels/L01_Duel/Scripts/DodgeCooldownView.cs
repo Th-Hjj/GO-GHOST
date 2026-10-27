@@ -63,7 +63,7 @@ namespace GoGhost.Duel
             float remainingFraction = Mathf.Clamp01(remaining / Mathf.Max(.0001f, acceptedDuration));
             float worldPerPixel = viewCamera != null && viewCamera.orthographic
                 ? 2 * viewCamera.orthographicSize / Mathf.Max(1, viewCamera.pixelHeight) : 0;
-            float width = Mathf.Max((head != null ? head.bounds.size.x : .46f) * 1.4f, 28 * worldPerPixel);
+            float width = Mathf.Max((head != null ? head.bounds.size.x : .46f) * 1.25f, 25 * worldPerPixel);
             float thickness = Mathf.Max(.06f, 5 * worldPerPixel);
             float gap = Mathf.Max(.09f, 5 * worldPerPixel);
             var bounds = body.bounds;
@@ -74,8 +74,8 @@ namespace GoGhost.Duel
             track.SetPosition(0, left); track.SetPosition(1, right);
             fill.SetPosition(0, left); fill.SetPosition(1, Vector3.Lerp(left, right, remainingFraction));
             track.startColor = track.endColor = new Color(.18f, .18f, .18f, .65f);
-            Color color = Color.white;
-            color.a = .60f;
+            Color color = NeuralPalette.Primary;
+            color.a = .80f;
             fill.startColor = fill.endColor = color;
         }
 

@@ -77,6 +77,34 @@ public sealed class OfficerVisual : MonoBehaviour
     }
     public bool ReloadVisible => reloading && weapon != null && weapon.enabled && weapon.gameObject.activeInHierarchy;
 
+    static Sprite neutralHeadSprite;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetNeutralHeadSprite()
+    {
+        if (neutralHeadSprite != null) { Destroy(neutralHeadSprite.texture); Destroy(neutralHeadSprite); }
+        neutralHeadSprite = null;
+    }
+
+    static Sprite NeutralHeadMask(Sprite source)
+    {
+        if (neutralHeadSprite != null) return neutralHeadSprite;
+        if (source == null || !source.texture.isReadable) return source;
+        // The built-in Knob contains gray RGB. Keep its exact alpha and source rectangle, so the
+        // shared palette alone controls head/hand color without changing their silhouette.
+        var pixels = source.texture.GetPixels32();
+        for (int i = 0; i < pixels.Length; i++) pixels[i] = new Color32(255, 255, 255, pixels[i].a);
+        var texture = new Texture2D(source.texture.width, source.texture.height, TextureFormat.RGBA32, false);
+        texture.name = "Player Neutral Head Mask";
+        texture.filterMode = source.texture.filterMode;
+        texture.wrapMode = TextureWrapMode.Clamp;
+        texture.SetPixels32(pixels); texture.Apply(false, true);
+        neutralHeadSprite = Sprite.Create(texture, source.rect, source.pivot / source.rect.size,
+            source.pixelsPerUnit, 0, SpriteMeshType.FullRect, source.border);
+        neutralHeadSprite.name = "Player Neutral Head";
+        return neutralHeadSprite;
+    }
+
     public void ConfigureLegacyCombat()
     {
         foreach (var part in new[] { leftArm, rightArm, leftLeg, rightLeg, torso, head, weapon, weaponGrip })
@@ -93,6 +121,7 @@ public sealed class OfficerVisual : MonoBehaviour
             && leftArm != null && rightArm != null && leftLeg != null && rightLeg != null
             && torso != null && head != null && weapon != null && weaponGrip != null;
         if (!animate) return;
+        head.sprite = NeutralHeadMask(head.sprite);
         if (leftForearm == null) leftForearm = AddSegment(leftArm, "LeftForearm");
         if (rightForearm == null) rightForearm = AddSegment(rightArm, "RightForearm");
         if (leftCalf == null) leftCalf = AddSegment(leftLeg, "LeftCalf");

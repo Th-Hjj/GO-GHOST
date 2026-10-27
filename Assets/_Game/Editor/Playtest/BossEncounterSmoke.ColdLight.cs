@@ -11,6 +11,120 @@ using Object=UnityEngine.Object;
 
 public static partial class BossEncounterSmoke
 {
+    [MenuItem("GO GHOST/Playtest/Whole Body Rule Feedback")]
+    public static void RunWholeBodyFeedback()=>Start("whole-body-feedback",false);
+
+    static IEnumerator WholeBodyFeedback()
+    {
+        Record("Whole-region rendering; real accepted rules and original signal clocks. Controlled positions/health, virtual input; no injected visual feedback.");
+
+        yield return AlphaFresh(1,d=>{V2Rule(d,V2Ground("Q01"));V2Rule(d,V2Ground("F03"));V2Rule(d,V2Ground("M02"));});
+        AlphaPlace(-5,-2);yield return Seconds(.12f);
+        int initialFrame=Time.frameCount;
+        var view=game.Player.GetComponent<OfficerVisual>();
+        var torso=view.Part(LoadoutSlot.Torso);
+        var head=view.Part(LoadoutSlot.Brain);
+        var parts=Private<SpriteRenderer[]>(view,"glowParts");
+        Check("actual Move Aim Fire drive full paired limbs",Visual(0).Executing&&Visual(2).Executing&&game.Rules.AutomaticShots>0&&parts.Take(8).All(p=>Signal(p)>.6f));
+        Check("Dodge binds existing torso, with no separate spine strip",parts[10]==torso&&!view.GetComponentsInChildren<SpriteRenderer>().Any(p=>p.name=="SpineSignal"));
+        Check("torso draws over every arm segment, below head and weapon",parts.Skip(4).Take(4).All(p=>p.sortingOrder<torso.sortingOrder)
+            &&head.sortingOrder>torso.sortingOrder&&parts[9].sortingOrder>head.sortingOrder);
+        Check("unmatched torso stays visible and head stays neutral",torso.enabled&&Signal(torso)==0&&Signal(head)==0&&head.color==NeuralPalette.Primary);
+        WholeBodyCapture("arms-legs");yield return Frames(3);
+        var controller=game.Rules;
+        checkingPause=true;game.SetPause(true);
+        float pausedTime=Time.time,pausedSignal=Signal(parts[0]);
+        yield return RealSeconds(.18);
+        Check("pause freezes existing feedback",Time.time==pausedTime&&Signal(parts[0])==pausedSignal&&game.Rules==controller);
+        game.SetPause(false);checkingPause=false;yield return Frames(3);
+        Check("resume advances actual frames",Time.frameCount>initialFrame&&Time.time>pausedTime);
+        RuleCardsAmmo(1);yield return Until(()=>game.Rifle.IsReloading,1);yield return Frames(2);
+        Check("reload retains gun red and independent arm tint",game.Rifle.IsReloading&&Signal(parts[8])==0&&Signal(parts[9])==0&&Signal(parts[4])>.6f&&parts[9].color!=NeuralPalette.Primary);
+
+        yield return AlphaFresh(1,d=>{V2Rule(d,V2Ground("Q01"));Rule(d,4,4,"D02");});
+        AlphaPlace(-5,3);yield return Frames(4);
+        view=game.Player.GetComponent<OfficerVisual>();torso=view.Part(LoadoutSlot.Torso);
+        game.Player.SetRuntimeHealth(150,55);
+        yield return Until(()=>game.Rules.AcceptedDodges>0,.6f);yield return Seconds(.04f);
+        Check("accepted automatic Dodge colors whole torso",game.Dodge.IsDodging&&Visual(4).Pulse>.5f&&Signal(torso)>.5f&&torso.enabled);
+        WholeBodyCapture("dodge-torso");yield return Frames(3);
+        yield return Until(()=>!game.Dodge.IsDodging,.4f);yield return Seconds(.12f);
+        Check("cooldown-only match retains weak torso signal",Visual(4).Matched&&!Visual(4).Executing&&Visual(4).Pulse==0&&Mathf.Approximately(Signal(torso),.2f));
+        WholeBodyCapture("dodge-matched");yield return Frames(3);
+        game.Player.SetRuntimeHealth(150,150);yield return Seconds(.4f);
+        Check("condition release restores visible neutral torso",!Visual(4).Matched&&Signal(torso)==0&&torso.enabled);
+        yield return Until(()=>game.Dodge.CooldownRemaining<=0,2);
+        game.Player.SetRuntimeHealth(150,55);int dodges=game.Rules.AcceptedDodges;
+        yield return Until(()=>game.Rules.AcceptedDodges>dodges,.5f);yield return Frames(1);
+        game.Player.SetRuntimeHealth(150,150);
+        float strong=Signal(torso);yield return Seconds(.10f);float fading=Signal(torso);
+        Check("condition loss preserves original paid Dodge pulse decay",strong>fading&&fading>0);
+        WholeBodyCapture("dodge-fading");yield return Seconds(.4f);
+        Check("Dodge fade reaches zero without hiding torso",Signal(torso)==0&&torso.enabled);
+        WholeBodyCapture("neutral-torso");yield return Frames(3);
+
+        yield return AlphaFresh(1,d=>{V2Rule(d,V2Ground("Q01"));Rule(d,1,4,"J01");});
+        AlphaPlace(-5,3);yield return Frames(4);game.Player.SetRuntimeHealth(150,55);
+        yield return Until(()=>game.Rules.AcceptedJumps>0,.6f);yield return Frames(1);
+        view=game.Player.GetComponent<OfficerVisual>();parts=Private<SpriteRenderer[]>(view,"glowParts");
+        Check("real accepted Jump colors thighs and calves together",game.Player.GetComponent<Rigidbody2D>().linearVelocity.y>1&&Visual(1).Pulse>0&&parts.Take(4).All(p=>Signal(p)>.5f));
+        WholeBodyCapture("jump-legs");game.Player.SetRuntimeHealth(150,150);yield return Seconds(.4f);
+        Check("Jump keeps original short pulse and returns neutral",Visual(1).Pulse==0&&parts.Take(4).All(p=>Signal(p)==0));
+        controller=game.Rules;torso=view.Part(LoadoutSlot.Torso);
+        int originalTorso=Private<int>(view,"originalTorsoOrder"),originalHead=Private<int>(view,"originalHeadOrder");
+        game.Player.TakeDamage(99999,null);yield return Frames(3);
+        Check("death clears limb and torso material feedback",Private<SpriteRenderer[]>(view,"glowParts")==null&&parts.All(p=>Signal(p)==0)&&torso.enabled);
+        Check("cleanup restores authored torso and head order",torso.sortingOrder==originalTorso&&view.Part(LoadoutSlot.Brain).sortingOrder==originalHead);
+        game.Reconfigure();yield return Frames(3);
+        Check("defeat returns to configuration and disposes feedback",game.Phase==DuelPhase.Configure&&game.Rules==null&&controller.VisualFeedback(ControlOperation.Jump).Pulse==0);
+        game.StartFight();yield return Frames(3);
+        Check("retry creates neutral torso with fresh feedback",game.Rules!=controller&&Signal(game.Player.GetComponent<OfficerVisual>().Part(LoadoutSlot.Torso))==0);
+        yield return AlphaFresh(1,null);heldKeys=new[]{Key.D};yield return Seconds(.12f);
+        view=game.Player.GetComponent<OfficerVisual>();parts=Private<SpriteRenderer[]>(view,"glowParts");
+        Check("manual movement remains neutral",game.Player.GetComponent<Rigidbody2D>().linearVelocity.x>1&&parts.All(p=>Signal(p)==0));
+        WholeBodyCapture("manual-neutral");heldKeys=Array.Empty<Key>();yield return Frames(3);
+        foreach(int wave in new[]{1,2,3})
+        {
+            yield return AlphaFresh(wave,null,false);float clock=game.FightClock;yield return Seconds(.35f);
+            Check("Wave "+wave+" short normal combat advances",game.Phase==DuelPhase.Fight&&game.FightClock>clock&&game.Player!=null);
+        }
+        Record("NOT TESTED: physical input, sustained combat/balance, standalone, Build/Release. Closeups are actual Editor camera renders with framing temporarily changed and restored in the same call.");
+        game.MainMenu();yield return Frames(2);
+    }
+
+    static void WholeBodyCapture(string name)
+    {
+        const string folder="Logs/WholeBodyFeedback/";
+        System.IO.Directory.CreateDirectory(folder);
+        ScreenCapture.CaptureScreenshot(folder+name+"-game.png");
+        var camera=Camera.main;
+        var position=camera.transform.position;
+        float size=camera.orthographicSize,aspect=camera.aspect;
+        Rect viewport=camera.rect;
+        var target=camera.targetTexture;var active=RenderTexture.active;
+        var render=RenderTexture.GetTemporary(640,640,24,RenderTextureFormat.ARGB32);
+        var texture=new Texture2D(640,640,TextureFormat.RGB24,false);
+        try
+        {
+            // Frame the rendered pose: physics bounds can lead the visible interpolated body during Dodge.
+            var view=game.Player.GetComponent<OfficerVisual>();
+            Bounds bounds=view.Part(LoadoutSlot.Brain).bounds;
+            foreach(var part in Private<SpriteRenderer[]>(view,"glowParts"))bounds.Encapsulate(part.bounds);
+            Vector3 center=bounds.center;
+            camera.transform.position=new Vector3(center.x,center.y,position.z);
+            camera.targetTexture=render;camera.rect=new Rect(0,0,1,1);camera.orthographicSize=1.15f;camera.aspect=1;
+            camera.Render();RenderTexture.active=render;
+            texture.ReadPixels(new Rect(0,0,640,640),0,0);texture.Apply();
+            System.IO.File.WriteAllBytes(folder+name+"-detail.png",texture.EncodeToPNG());
+        }
+        finally
+        {
+            camera.targetTexture=target;camera.rect=viewport;camera.transform.position=position;camera.orthographicSize=size;camera.aspect=aspect;
+            RenderTexture.active=active;RenderTexture.ReleaseTemporary(render);Object.DestroyImmediate(texture);
+        }
+        Record("CAPTURE "+name+" frame="+Time.frameCount+" combatTime="+Time.time);
+    }
+
     [MenuItem("GO GHOST/Playtest/Cold Light Focused Smoke")]
     public static void RunColdLight()=>Start("cold-light",false);
     public static void RunColdLightReview()=>Start("cold-light-review",false);
@@ -304,10 +418,10 @@ public static partial class BossEncounterSmoke
         Check("manual Dodge creates no automatic pulse",Visual(4).Pulse==0&&game.Rules.AcceptedDodges==0);
         yield return Until(()=>game.Dodge.CooldownRemaining<=.35f,2f);
         var movement=game.Player.GetComponent<PlayerMovement>();heldKeys=new[]{Key.Space};yield return Until(()=>!movement.IsGrounded,.3f);heldKeys=Array.Empty<Key>();yield return Frames(2);
-        Check("cooldown yields matched-only Dodge",Visual(4).Matched&&!Visual(4).Executing&&Visual(4).Pulse==0&&Signal(PlayerPart("SpineSignal"))>.1f&&Signal(PlayerPart("SpineSignal"))<.3f);
+        Check("cooldown yields matched-only Dodge",Visual(4).Matched&&!Visual(4).Executing&&Visual(4).Pulse==0&&Signal(game.Player.GetComponent<OfficerVisual>().Part(LoadoutSlot.Torso))>.1f&&Signal(game.Player.GetComponent<OfficerVisual>().Part(LoadoutSlot.Torso))<.3f);
         yield return ColdCapture("combat-matched-not-executing");
         yield return Until(()=>game.Rules.AcceptedDodges>0,.8f);yield return Frames(1);
-        Check("real accepted Dodge drives local Spine pulse",Visual(4).Pulse>0&&Signal(PlayerPart("SpineSignal"))>.5f&&game.Dodge.IsDodging);
+        Check("real accepted Dodge drives local Spine pulse",Visual(4).Pulse>0&&Signal(game.Player.GetComponent<OfficerVisual>().Part(LoadoutSlot.Torso))>.5f&&game.Dodge.IsDodging);
         yield return ColdCapture("combat-dodge");yield return Seconds(.22f);
         Check("Dodge action releases before afterglow expires",!Visual(4).Executing&&Visual(4).Afterglow>0);
         // Actual accepted Jump is a pulse, never sustained airborne ownership.
@@ -467,10 +581,10 @@ public static partial class BossEncounterSmoke
         var movement=game.Player.GetComponent<PlayerMovement>();float started=game.Dodge.LastDodgeStartedAt;
         heldKeys=new[]{Key.LeftShift};yield return Until(()=>game.Dodge.LastDodgeStartedAt>started,.3f);heldKeys=Array.Empty<Key>();
         yield return Until(()=>game.Dodge.CooldownRemaining<=.4f,2f);heldKeys=new[]{Key.Space};yield return Until(()=>!movement.IsGrounded,.3f);heldKeys=Array.Empty<Key>();yield return Frames(2);
-        Check("Bloom-off narrow Spine match has no false execution",Visual(4).Matched&&!Visual(4).Executing&&Visual(4).Pulse==0&&Mathf.Approximately(Signal(PlayerPart("SpineSignal")),.2f));
+        Check("Bloom-off whole torso match has no false execution",Visual(4).Matched&&!Visual(4).Executing&&Visual(4).Pulse==0&&Mathf.Approximately(Signal(game.Player.GetComponent<OfficerVisual>().Part(LoadoutSlot.Torso)),.2f));
         yield return ColdCapture("combat-matched-not-executing");
         yield return Until(()=>game.Rules.AcceptedDodges>0,.8f);yield return Frames(1);
-        Check("real accepted Dodge increases local pulse",Visual(4).Pulse>0&&Signal(PlayerPart("SpineSignal"))>.5f);
+        Check("real accepted Dodge increases local pulse",Visual(4).Pulse>0&&Signal(game.Player.GetComponent<OfficerVisual>().Part(LoadoutSlot.Torso))>.5f);
         yield return ColdCapture("combat-dodge");
         yield return AlphaFresh(1,d=>{Rule(d,2,33,"Q01");Rule(d,3,33,"F03");Rule(d,0,33,"M02");});AlphaPlace(-5,-2);yield return Seconds(.12f);
         Check("Bloom-off core reflects real parallel Aim Fire Move",Visual(2).Executing&&Visual(3).Executing&&Visual(0).Executing&&game.Rules.AutomaticShots>0);

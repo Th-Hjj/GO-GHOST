@@ -27,9 +27,9 @@ public sealed class OfficerVisual : MonoBehaviour
     private int lastShots;
     private SpriteRenderer[] glowParts;
     private Material[] originalMaterials;
+    private int originalTorsoOrder, originalHeadOrder;
     private MaterialPropertyBlock glowBlock;
     private System.Func<ControlOperation, ConditionalVisualFeedback> feedback;
-    private SpriteRenderer spineSignal;
     private bool glowBound;
     private static readonly int GlowStrength=Shader.PropertyToID("_AIStrength");
     private static readonly int GlowColor=Shader.PropertyToID("_AIColor");
@@ -37,10 +37,13 @@ public sealed class OfficerVisual : MonoBehaviour
     {
         if(!animate||material==null)return;
         ClearConditionalGlow();
-        if(spineSignal==null){spineSignal=AddSegment(torso,"SpineSignal");spineSignal.sortingOrder=torso.sortingOrder+1;}
-        spineSignal.enabled=true;
+        originalTorsoOrder=torso.sortingOrder;originalHeadOrder=head.sortingOrder;
+        // Explicit overlap order keeps the complete torso visible through crossed arms.
+        torso.sortingOrder=Mathf.Max(Mathf.Max(leftArm.sortingOrder,rightArm.sortingOrder),
+            Mathf.Max(leftForearm.sortingOrder,rightForearm.sortingOrder))+1;
+        head.sortingOrder=Mathf.Max(head.sortingOrder,torso.sortingOrder+1);
         // Keep the approved gun silhouette gray-blue; weapon signals live only in its core.
-        glowParts=new[]{leftLeg,rightLeg,leftCalf,rightCalf,leftArm,rightArm,leftForearm,rightForearm,cylinderHalo,cylinder,spineSignal,supportPalm,triggerPalm};
+        glowParts=new[]{leftLeg,rightLeg,leftCalf,rightCalf,leftArm,rightArm,leftForearm,rightForearm,cylinderHalo,cylinder,torso,supportPalm,triggerPalm};
         originalMaterials=new Material[glowParts.Length];glowBlock=new MaterialPropertyBlock();
         for(int i=0;i<glowParts.Length;i++)if(glowParts[i]!=null){originalMaterials[i]=glowParts[i].sharedMaterial;glowParts[i].sharedMaterial=material;}
         feedback=source;health.OnDeath+=ClearConditionalGlow;glowBound=true;
@@ -48,9 +51,13 @@ public sealed class OfficerVisual : MonoBehaviour
     public void ClearConditionalGlow()
     {
         if(glowBound&&health!=null)health.OnDeath-=ClearConditionalGlow;
+        if(glowBound)
+        {
+            if(torso!=null)torso.sortingOrder=originalTorsoOrder;
+            if(head!=null)head.sortingOrder=originalHeadOrder;
+        }
         glowBound=false;feedback=null;
         if(glowParts!=null)for(int i=0;i<glowParts.Length;i++)if(glowParts[i]!=null){glowParts[i].SetPropertyBlock(null);glowParts[i].sharedMaterial=originalMaterials[i];}
-        if(spineSignal!=null)spineSignal.enabled=false;
         glowParts=null;originalMaterials=null;
         if (health != null && health.IsDead && cylinderHalo != null) cylinderHalo.enabled = false;
     }
@@ -70,7 +77,6 @@ public sealed class OfficerVisual : MonoBehaviour
             // Keep the gun's reload signal red while arm feedback continues independently.
             if(reloading&&(i==8||i==9))strength=0;
             var renderer=glowParts[i];if(renderer==null)continue;
-            if(i==10)renderer.enabled=strength>.001f;
             renderer.GetPropertyBlock(glowBlock);glowBlock.SetFloat(GlowStrength,Mathf.Clamp01(strength));
             glowBlock.SetColor(GlowColor,i<4?NeuralPalette.Legs:i==10?NeuralPalette.Spine:NeuralPalette.Arms);renderer.SetPropertyBlock(glowBlock);
         }
@@ -235,7 +241,6 @@ public sealed class OfficerVisual : MonoBehaviour
             if (!grounded) { front.y = floor + .28f; back.y = floor + .18f; }
         }
         Segment(torso, hip, chest + Vector2.up * .035f, .17f);
-        if(spineSignal!=null)Segment(spineSignal,hip,chest+Vector2.up*.035f,.055f);
         Place(head, headPoint, new Vector2(.46f, .46f), 0);
         Limb(leftLeg, leftCalf, hip + Vector2.left * (.075f * facing), back, new Vector2(.12f * facing, 0), .17f);
         Limb(rightLeg, rightCalf, hip + Vector2.right * (.075f * facing), front, new Vector2(.18f * facing, 0), .17f);

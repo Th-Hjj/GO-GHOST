@@ -226,6 +226,7 @@ public static partial class BossEncounterSmoke
         if(mode=="sword-phrase-blades") {yield return SwordPhraseBlades();yield break;}
         if(mode=="sword-close-readability") {yield return SwordCloseReadability();yield break;}
         if(mode=="sword-performance") {yield return SwordPerformance();yield break;}
+        if(mode=="whole-body-feedback") {yield return WholeBodyFeedback();yield break;}
         if(mode=="cold-light") {yield return ColdLight();yield break;}
         if(mode=="cold-light-review") {yield return ColdLightReview();yield break;}
         if(mode=="cold-light-final") {yield return ColdLightFinal();yield break;}

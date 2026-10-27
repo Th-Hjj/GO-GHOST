@@ -42,13 +42,12 @@ Shader "GO GHOST/Conditional Takeover"
             half4 frag(Varyings i):SV_Target
             {
                 half4 c=SAMPLE_TEXTURE2D(_MainTex,sampler_MainTex,i.uv)*i.color;
-                // A narrow signal core remains readable without Bloom. The tint never reaches the head.
+                // Tint the complete sprite, retaining its alpha and the existing signal/fade curve.
                 half signal=saturate(_AIStrength);
-                half core=1-smoothstep(lerp(.08,.18,signal),lerp(.22,.46,signal),abs(i.uv.y-.5));
-                half weight=smoothstep(0,.15,signal)*core;
+                half weight=smoothstep(0,.15,signal);
                 half3 signalColor=_AIColor.rgb*(.55+.65*signal);
                 c.rgb=lerp(c.rgb,c.rgb*signalColor,weight);
-                c.rgb+=_AIColor.rgb*core*signal*.15;
+                c.rgb+=_AIColor.rgb*signal*.15;
                 return c;
             }
             ENDHLSL

@@ -231,7 +231,7 @@ namespace GoGhost.Duel
             new ResponseEntry("J04","Move to Platform",ControlOperation.Jump),
             new ResponseEntry("Q01","Auto Aim at Nearest Enemy",ControlOperation.Aim),new ResponseEntry("Q02","Auto Aim at Lowest-Health Enemy",ControlOperation.Aim),
             new ResponseEntry("Q06","Aim Assist",ControlOperation.Aim),
-            new ResponseEntry("F01","Fire 1 Shot",ControlOperation.Fire,true),new ResponseEntry("F02","Short Burst",ControlOperation.Fire,true),
+            new ResponseEntry("F01","Fire 1 Shot",ControlOperation.Fire,true),new ResponseEntry("F02","Fan the Hammer",ControlOperation.Fire,true),
             new ResponseEntry("F03","Keep Firing",ControlOperation.Fire),new ResponseEntry("F06","Hold Fire",ControlOperation.Fire),
             new ResponseEntry("D01","Dodge Away from Threat",ControlOperation.Dodge,true),new ResponseEntry("D02","Dodge Toward Enemy",ControlOperation.Dodge,true),
             new ResponseEntry("D03","Dodge in Move Direction",ControlOperation.Dodge,true),new ResponseEntry("D04","Dodge Toward Aim",ControlOperation.Dodge,true)
@@ -504,7 +504,7 @@ namespace GoGhost.Duel
                 case "Q03":return "Aim at the visible enemy associated with the detected situation.";
                 case "Q06":return "Auto aim assistance";
                 case "F01":return "Fire one bullet.";
-                case "F02":return "Quickly fire all remaining bullets with spread and reduced damage.";
+                case "F02":return "Rapidly fire all remaining bullets with reduced accuracy.";
                 case "F03":return "Keep firing while the conditions are met.";
                 case "F06":return "Stop firing.";
                 case "F05":return "Shoot until only two rounds remain in the magazine.";

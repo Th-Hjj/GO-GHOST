@@ -25,7 +25,7 @@ Retry and the next wave keep your rules. New Game clears them; preset unlock pro
 | S | Drop through a platform |
 | Mouse | Aim |
 | LMB | Hold to fire precise shots continuously |
-| RMB | Burst through remaining rounds |
+| RMB | Fan the Hammer — rapidly fire all remaining bullets with reduced accuracy |
 | Left Shift | Dodge |
 | Escape | Pause |
 | F8 | Tuning, Waves, Analytics and Presets |

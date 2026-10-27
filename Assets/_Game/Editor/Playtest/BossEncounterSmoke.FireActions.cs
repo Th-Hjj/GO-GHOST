@@ -16,7 +16,7 @@ public static partial class BossEncounterSmoke
         var text=CardsUI().GetComponentsInChildren<TMPro.TMP_Text>().Where(t=>t.gameObject.activeInHierarchy).ToArray();
         Check(context+": no old Fire names or ammo controls",text.All(t=>!t.text.Contains("Empty Magazine")&&!t.text.Contains("Magazine Emptied")
             &&!t.text.Contains("Ammo Use")&&!t.text.Contains("Allow Empty")&&!t.text.Contains("Keep Two Rounds")));
-        Check(context+": new action and event labels rendered",text.Any(t=>t.text.Contains("Short Burst"))&&text.Any(t=>t.text.Contains("Burst Finished")));
+        Check(context+": new action and event labels rendered",text.Any(t=>t.text.Contains("Fan the Hammer"))&&text.Any(t=>t.text.Contains("Burst Finished")));
     }
 
     static IEnumerator FireActions()
@@ -38,7 +38,7 @@ public static partial class BossEncounterSmoke
         }
         var oldEvent=JsonUtility.FromJson<ConditionalRule>("{\"Condition\":60,\"Action\":\"J01\"}");
         Check("A60 preserves event identity and validity",ConditionalCatalog.IsAllowed(1,oldEvent)&&ConditionalCatalog.Condition(60).Event
-            &&ConditionalCatalog.ConditionLabel(oldEvent)=="Burst Finished"&&ConditionalCatalog.Response("F02").Label=="Short Burst");
+            &&ConditionalCatalog.ConditionLabel(oldEvent)=="Burst Finished"&&ConditionalCatalog.Response("F02").Label=="Fan the Hammer");
 
         game.NewGame();SetAlphaGameSize(1280,720);yield return Frames(8);
         foreach(string action in new[]{"F01","F03","F02"})

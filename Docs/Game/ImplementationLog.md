@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-10-27 — Fan the Hammer action wording
+
+- **Baseline / implementation:** F02 displayed Short Burst and described spread/reduced damage; README called RMB a burst through remaining rounds. Rename the shared action label to **Fan the Hammer** and use **Rapidly fire all remaining bullets with reduced accuracy.** Update controls, current specification, mirrored authority and existing label assertions. Preserve F02, A60/Burst Finished, all internal APIs and weapon behavior, including reduced damage. Existing reload-audio/body-feedback work is separate.
+- **Verified:** normal Unity compilation succeeded (`scriptCompilationFailed=False`), compiled catalog returned the exact approved strings, and `git diff --check` passed. Direct Play Mode UI callbacks verified the selectable action, preview, committed row, hover description and advancing Training HUD; the HUD label reported no text overflow. Actual captures: `Logs/BossEncounter/fan-hammer-setup.png` and `fan-hammer-hud.png`. Returned to Menu/Edit Mode with no live player/controller; preset progress remained 6.
+- **Verification limit:** the older Fire Actions harness passed its first 13 compatibility/catalog checks, then stopped while looking for a configuration button after NewGame (the current entry displayed Back/Continue). It is not a passing full suite. The current UI was checked directly via ConfigurePlaytestWave and real button callbacks instead; no unrelated fixture-flow repair. Physical RMB, full combat regression, Standalone and Build/Release NOT TESTED / NOT RUN.
+
 ## 2026-10-27 — Approved player reload sound
 
 - **Request / baseline:** main `dc3c17a` with unrelated body-feedback work present. Thomas accepted the 1.80-second PercyFrench R2 edit, requested player-only integration, then requested slightly lower volume. The previous `Sfx.Equip` was the 0.6177-second `switch_001.ogg`; actual reload events already triggered it.

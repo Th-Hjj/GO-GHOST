@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace GoGhost.Duel
 {
@@ -7,92 +6,72 @@ namespace GoGhost.Duel
     [DefaultExecutionOrder(100)]
     public sealed class DodgeCooldownView : MonoBehaviour
     {
-        const int Segments = 32;
-        const float ReadyPulseSeconds = .2f;
-        readonly Vector3[] arc = new Vector3[Segments + 1];
+        const float ReadyHoldSeconds = .06f;
+        const float ReadyShrinkSeconds = .18f;
+        const float MinimumDiameterPixels = 8;
+        const float HeadGapPixels = 4;
         DuelGame game;
         PlayerDodge dodge;
         Camera viewCamera;
-        LineRenderer track, fill;
-        float acceptedDuration, cooldownEndsAt = float.NegativeInfinity;
+        SpriteRenderer head, dot;
+        float cooldownEndsAt = float.NegativeInfinity;
 
         public void Initialize(DuelGame owner, Material material, int sortingLayer)
         {
             game = owner;
             dodge = owner.Dodge;
             viewCamera = Camera.main;
-            for (int i = 0; i <= Segments; i++) arc[i] = Point(i / (float)Segments);
-            track = CreateLine("DodgeCooldownTrack", material, sortingLayer, 29);
-            fill = CreateLine("DodgeCooldownFill", material, sortingLayer, 30);
-            track.positionCount = arc.Length;
-            track.SetPositions(arc);
-            track.startColor = track.endColor = new Color(.61f, .58f, .68f, .25f);
+            head = owner.Player.GetComponent<OfficerVisual>()?.Part(LoadoutSlot.Brain);
+            if (head == null || head.sprite == null) return;
+            dot = new GameObject("DodgeCooldownDot").AddComponent<SpriteRenderer>();
+            dot.transform.SetParent(transform, false);
+            dot.sprite = head.sprite;
+            dot.sharedMaterial = material;
+            dot.sortingLayerID = sortingLayer;
+            dot.sortingOrder = 30;
             dodge.DodgeStarted += OnDodgeStarted;
             SetVisible(false);
         }
 
-        static Vector3 Point(float progress)
-        {
-            // Bottom to top on the screen-left side, independent of body and aim facing.
-            float angle = Mathf.Lerp(240, 120, progress) * Mathf.Deg2Rad;
-            return new Vector3(-.32f + Mathf.Cos(angle) * .34f, -.06f + Mathf.Sin(angle) * .34f, 0);
-        }
-
-        LineRenderer CreateLine(string label, Material material, int layer, int order)
-        {
-            var line = new GameObject(label).AddComponent<LineRenderer>();
-            line.transform.SetParent(transform, false);
-            line.sharedMaterial = material;
-            line.useWorldSpace = false;
-            line.sortingLayerID = layer;
-            line.sortingOrder = order;
-            line.numCapVertices = 4;
-            line.numCornerVertices = 2;
-            line.shadowCastingMode = ShadowCastingMode.Off;
-            line.receiveShadows = false;
-            return line;
-        }
-
         void OnDodgeStarted()
         {
-            // Capture the accepted interval, so F8 edits cannot retime an existing display.
-            acceptedDuration = dodge.CooldownRemaining;
-            cooldownEndsAt = Time.time + acceptedDuration;
+            // Keep the accepted deadline: tuning edits must not move the ready accent.
+            cooldownEndsAt = Time.time + dodge.CooldownRemaining;
         }
 
         void LateUpdate()
         {
-            bool visible = game != null && dodge != null && dodge.isActiveAndEnabled
+            bool visible = game != null && dodge != null && dodge.isActiveAndEnabled && head != null && dot != null
                 && game.Player != null && !game.Player.IsDead
                 && (game.Phase == DuelPhase.Fight || game.Phase == DuelPhase.Training);
             SetVisible(visible);
             if (!visible) return;
 
             float remaining = dodge.CooldownRemaining;
-            float progress = remaining > 0 ? 1 - Mathf.Clamp01(remaining / Mathf.Max(.0001f, acceptedDuration)) : 1;
             float sinceReady = Time.time - cooldownEndsAt;
-            float pulse = remaining <= 0 && acceptedDuration > 0 && sinceReady >= 0
-                ? Mathf.Clamp01(1 - sinceReady / ReadyPulseSeconds) : 0;
-            // Keep a readable thin stroke at the normal arena camera scale.
-            float width = viewCamera != null && viewCamera.orthographic
-                ? Mathf.Max(.032f, 2f * viewCamera.orthographicSize * 2 / Mathf.Max(1, viewCamera.pixelHeight)) : .032f;
-            track.startWidth = track.endWidth = width;
-            fill.startWidth = fill.endWidth = width * (1 + .25f * pulse);
-            Color color = Color.Lerp(NeuralPalette.Spine, NeuralPalette.Primary, pulse * .8f);
-            color.a = remaining > 0 ? .95f : Mathf.Lerp(.5f, 1, pulse);
-            fill.startColor = fill.endColor = color;
-            fill.enabled = progress > 0;
-            if (!fill.enabled) return;
-            int last = Mathf.Clamp(Mathf.CeilToInt(progress * Segments), 1, Segments);
-            fill.positionCount = last + 1;
-            for (int i = 0; i < last; i++) fill.SetPosition(i, arc[i]);
-            fill.SetPosition(last, Point(progress));
+            bool readyAccent = remaining <= 0 && sinceReady >= 0
+                && sinceReady < ReadyHoldSeconds + ReadyShrinkSeconds;
+            SetVisible(remaining > 0 || readyAccent);
+            if (!dot.enabled) return;
+
+            float shrink = readyAccent
+                ? Mathf.SmoothStep(0, 1, (sinceReady - ReadyHoldSeconds) / ReadyShrinkSeconds) : 0;
+            float worldPerPixel = viewCamera != null && viewCamera.orthographic
+                ? 2 * viewCamera.orthographicSize / Mathf.Max(1, viewCamera.pixelHeight) : 0;
+            var headBounds = head.bounds;
+            float diameter = Mathf.Max(headBounds.size.x * .4f, MinimumDiameterPixels * worldPerPixel);
+            float gap = Mathf.Max(headBounds.size.y * .22f, HeadGapPixels * worldPerPixel);
+            // Use the posed head, not facing or aim: crouch, jump and recoil keep clear separation.
+            dot.transform.position = new Vector3(headBounds.center.x, headBounds.max.y + gap + diameter * .5f, headBounds.center.z);
+            dot.transform.localScale = Vector3.one * (diameter * (1 - shrink) / dot.sprite.bounds.size.x);
+            Color color = readyAccent ? Color.Lerp(NeuralPalette.Spine, NeuralPalette.Primary, .8f) : NeuralPalette.Spine;
+            color.a = readyAccent ? 1 - shrink : .95f;
+            dot.color = color;
         }
 
         void SetVisible(bool visible)
         {
-            if (track != null) track.enabled = visible;
-            if (fill != null) fill.enabled = visible;
+            if (dot != null) dot.enabled = visible;
         }
 
         void OnDisable() => SetVisible(false);

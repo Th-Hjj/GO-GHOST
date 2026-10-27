@@ -129,8 +129,9 @@ namespace GoGhost.Duel
             if(game.Paused)
             {
                 Image(page,Vector2.zero,new Vector2(4000,4000),new Color(0,0,0,.88f));
-                Button("Resume",page,new Vector2(0,45),new Vector2(330,65),()=>game.SetPause(false));
-                Button("Main Menu",page,new Vector2(0,-45),new Vector2(330,65),game.MainMenu);
+                Button("Resume",page,new Vector2(0,90),new Vector2(360,65),()=>game.SetPause(false));
+                Button("Back to Configuration",page,Vector2.zero,new Vector2(360,65),game.Reconfigure);
+                Button("Main Menu",page,new Vector2(0,-90),new Vector2(360,65),game.MainMenu);
                 if(game.Phase==DuelPhase.Training)BuildTrainingButtons();
                 if(ruleSidebar!=null)ruleSidebar.SetAsLastSibling();return;
             }

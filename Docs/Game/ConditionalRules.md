@@ -14,6 +14,8 @@ F8 > Presets exposes all six for development without changing unlock progress. I
 
 ## Configuration and priority
 
+**Pause navigation — Thomas, 2026-10-27:** the pause page offers Resume, Back to Configuration and Main Menu. Back to Configuration abandons the current Training, preparation or fight attempt, clears pause/audio/combat state and returns to Body Configuration with the current wave and configured rules retained. Starting again creates a fresh attempt; Training retains its existing Back/Continue behavior.
+
 **Player-facing page name — Thomas, 2026-10-24:** the configuration title reads **Body Configuration**; the defeat-page return button reads **Configuration** (Thomas, 2026-10-25 follow-up). Rule remains the mechanic name; Condition, Action, Add Rule and Rules are unchanged. Thomas subsequently approved the taller standing figure and stronger body feedback in [Art Direction](ArtDirection.md): about 75% panel height, clearer idle/equipped/preview states, existing action-system mapping and a .6 s installation pulse. These are configuration presentation changes only.
 
 **Preview alignment — Thomas, 2026-10-24:** keep the outer preview edges fixed; align the Condition group's right edge with the option-card right edge and Action's left edge with the rule-card left edge. The arrow stays centered between them. Subdivide that same condition width for every condition count; the lower layout and Action boundary stay fixed.

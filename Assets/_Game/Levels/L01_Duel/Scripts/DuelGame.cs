@@ -255,7 +255,8 @@ namespace GoGhost.Duel
         }
         public void Reconfigure()
         {
-            if (Phase != DuelPhase.Failed) return;
+            bool pausedEncounter = Paused && (Phase == DuelPhase.Training || Phase == DuelPhase.Prepare || Phase == DuelPhase.Fight);
+            if (Phase != DuelPhase.Failed && !pausedEncounter) return;
             ClearEncounter();
             SetPhase(DuelPhase.Configure);
         }

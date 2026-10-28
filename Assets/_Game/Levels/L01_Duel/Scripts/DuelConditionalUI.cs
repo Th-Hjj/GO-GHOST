@@ -744,7 +744,7 @@ namespace GoGhost.Duel
                     if(condition!=selectedCondition)candidate.SetCondition(selectedConditionIndex,new RuleCondition(condition));
                     string reason=ConditionalCatalog.HasAnyCompatibleAction(candidate)?null:"These conditions cannot be true together.";
                     RuleOption(entry.Label,choices,()=>ApplyChoice(condition,false,null),selectedCondition==condition,
-                        ConditionalCatalog.ConditionDescription(condition),reason,null,candidate);
+                        ConditionalCatalog.ConditionDescription(condition),reason,null,candidate,hasParameters);
                 }
             }
             else
@@ -759,7 +759,7 @@ namespace GoGhost.Duel
                     string action=id;
                     string reason=!ConditionalCatalog.ConditionsAreComplete(rule)?"Choose the remaining condition option.":ConditionalCatalog.IncompatibilityReasonForActionChoice(rule,action);
                     RuleOption(ConditionalCatalog.Response(action).Label,choices,()=>ApplyChoice(0,false,action),rule.Action==action,
-                        ConditionalCatalog.ResponseDescription(action),reason,action);
+                        ConditionalCatalog.ResponseDescription(action),reason,action,parameterSelection:hasParameters);
                 }
             }
             if(hasParameters)BuildRuleParameters(parameters,selectedCondition,w,h);
@@ -846,7 +846,7 @@ namespace GoGhost.Duel
             return content;
         }
 
-        void RuleOption(string label, RectTransform parent, UnityEngine.Events.UnityAction click, bool selected, string description, string reason = null,string action=null,ConditionalRule candidate=null)
+        void RuleOption(string label, RectTransform parent, UnityEngine.Events.UnityAction click, bool selected, string description, string reason = null,string action=null,ConditionalRule candidate=null,bool parameterSelection=false)
         {
             var option = ConfigButton("Option", label, parent, Vector2.zero, new Vector2(parent.rect.width, selectorRowHeight), click, selected, true,DuelControlStyle.Option);
             option.interactable = reason == null;
@@ -858,6 +858,9 @@ namespace GoGhost.Duel
             {
                 // A click can replace this page before the inspection callback is dispatched.
                 if(!option.gameObject.activeInHierarchy)return;
+                // Keep the explanation and preview aligned with the visible parameter choices.
+                // Clicking another option still changes the selection through its normal callback.
+                if(parameterSelection)return;
                 inspectedDescription=label+"\n"+(reason==null?description:"Unavailable: "+reason+" "+description);
                 if(optionDescription!=null)SetOptionDescription(inspectedDescription);
                 candidatePreview=candidate;

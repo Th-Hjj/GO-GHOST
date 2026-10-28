@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-10-27 — Unity Pipeline tooling update
+
+- **Baseline / scope:** waited for both concurrent UI tasks to finish and for commits `05bcee4` and `7513849` to be pushed. Clean working tree; Unity 6000.6.0f1 and CLI 1.0.0-beta.14. Updated only `com.unity.pipeline` from 0.7.0-exp.1 to 0.9.1-exp.1 in manifest and resolved lockfile, using explicit-version CLI install and Editor package resolve. Editor, AI Assistant, gameplay and other dependencies are unchanged.
+- **Validation:** package cache and live Pipeline listing confirm 0.9.1-exp.1, reachable server and no available update. Editor is ready in stopped Play Mode. `script recompile_status` reports completed, failed=false, compilationFailed=false and no compile errors. New `editor status`, `console status`, `script eval` (1+1 returns 2), and obsolete-command mapping (170 entries) work. No Pipeline API or CLI invocation references were found in current game C# sources. `git diff --check` passed.
+- **Tooling / limits:** an in-flight `unity recompile` request lost its socket while package reload moved the server from port 7801 to 7800; subsequent new-command checks above succeeded. Console retains old command-name errors emitted while 0.7 was still loaded, plus existing warnings; it was not cleared. No post-update gameplay, Standalone or Build tests were run.
+
 ## 2026-10-27 — Three action picker categories
 
 - **Baseline / implementation:** waited for the concurrent selector-hover task to finish; started from its clean main commit `05bcee4`. `DuelConditionalUI` now lists Weapon (Auto Aim, Aim Assist, Fire 1 Shot, Short Burst, Keep Firing), Movement (Move, Keep Distance, Dodge), and Jump (Jump, Change Platform). Existing action editing and condition-to-action navigation map back to the appropriate category. The five runtime operations, ten action definitions, parameters, body colors, serialization, rule ownership and combat code are unchanged. Retained smoke fixture operation shortcuts map to the new picker groups. Mirrored authority and current documentation are synchronized.

@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-10-27 — Character creation title
+
+- Changed the creation-page heading from Create Character to Who Are You, preserving typography, position and controls. Updated current flow documentation.
+- Verified normal Unity compilation and the active Who Are You title in Editor Play Mode; Continue reaches Body Configuration. `git diff --check` passed. Build and Standalone NOT RUN.
+
 ## 2026-10-27 — Drawn character creation and two face palettes
 
 - **Request / baseline:** New Game previously entered empty configuration directly; its head had a particle cloud and a different aspect from the blank combat head. Started at `7d29ec3`; independent macOS release/documentation commits through `64c1d06` landed during this task and are preserved. Existing Settings changes and Welcome deletions are unrelated. Thomas requested a drawing/name page, then dark UI styling, thicker lines, a hollow configuration head and finally cold-white fill/black drawing specifically in real combat.

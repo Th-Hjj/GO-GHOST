@@ -53,7 +53,7 @@ namespace GoGhost.Duel
 
         void BuildCharacterCreation()
         {
-            Text("Create Character", page, new Vector2(0, 350), new Vector2(640, 60), 30, face:headingFont);
+            Text("Who Are You", page, new Vector2(0, 350), new Vector2(640, 60), 30, face:headingFont);
             var face = Rect("CharacterFace", page, new Vector2(0, 65), new Vector2(390, 390));
             var image = face.gameObject.AddComponent<Image>();
             image.sprite = game.Appearance.Sprite;

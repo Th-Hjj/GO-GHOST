@@ -68,6 +68,9 @@ public static partial class BossEncounterSmoke
     static ConditionalController.ExecutionFeedback Feedback(int op,int row=0)=>game.Rules.Feedback((ControlOperation)op,row);
     static UnityEngine.UI.Button ConfigButtonNamed(string name,string label=null)
     {
+        // Retained fixtures address operations; the picker now groups Aim/Fire and Move/Dodge.
+        if(name=="ActionCategory3")name="ActionCategory2";
+        else if(name=="ActionCategory4")name="ActionCategory0";
         return Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<UnityEngine.UI.Button>()
             .First(b=>b.gameObject.activeInHierarchy&&b.name==name&&(label==null||b.GetComponentInChildren<TMPro.TMP_Text>().text==label));
     }

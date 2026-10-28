@@ -51,7 +51,10 @@ namespace GoGhost.Duel
         string focusName, focusLabel;
         int builtSelector=-1, builtCategory=-1;
         bool builtCondition, builtAdditional;
-        static readonly string[] ShortOperationLabels = { "Move", "Jump", "Aim", "Fire", "Dodge" };
+        // Picker groups use representative operation IDs; execution still has five independent operations.
+        static readonly string[] ActionCategoryLabels = { "Movement", "Jump", "Weapon" };
+        static int ActionCategoryFor(ControlOperation operation) => operation == ControlOperation.Fire ? 2
+            : operation == ControlOperation.Dodge ? 0 : (int)operation;
         public int SelectedOperation => actionCategory;
         public bool ConfigurationReady => !presetHelpOpen && pendingRule == null && selectorRow < 0 && ConditionalCatalog.IsValid(game.DraftLoadout);
 
@@ -148,7 +151,7 @@ namespace GoGhost.Duel
 
         void SelectActionCategory(int op)
         {
-            actionCategory = op;
+            actionCategory = ActionCategoryFor((ControlOperation)op);
             inspectedDescription = null;
             Show();
         }
@@ -602,7 +605,7 @@ namespace GoGhost.Duel
             if (selectingCondition && pendingRule.Condition != 0)
                 conditionCategory = ConditionalCatalog.Condition(pendingRule.Condition).Category;
             if (!selectingCondition && !string.IsNullOrEmpty(pendingRule.Action))
-                actionCategory = (int)ConditionalCatalog.Response(pendingRule.Action).Operation;
+                actionCategory = ActionCategoryFor(ConditionalCatalog.Response(pendingRule.Action).Operation);
             Show();
         }
 
@@ -640,7 +643,7 @@ namespace GoGhost.Duel
         void ReturnToAction()
         {
             selectingAdditional=selectingCondition=false;inspectedDescription=null;
-            if(!string.IsNullOrEmpty(pendingRule.Action))actionCategory=(int)ConditionalCatalog.Response(pendingRule.Action).Operation;
+            if(!string.IsNullOrEmpty(pendingRule.Action))actionCategory=ActionCategoryFor(ConditionalCatalog.Response(pendingRule.Action).Operation);
             Show();
         }
 
@@ -710,7 +713,7 @@ namespace GoGhost.Duel
             Text(selectingCondition?"Condition":"Action",ruleEditor,new Vector2(0,top-20),new Vector2(w,40),28,TextAlignmentOptions.Left,headingFont).name="RuleSelectorHeading";
             var rule=EditingRule;
             int selectedCondition=selectedConditionIndex<rule.ConditionCount?rule.GetCondition(selectedConditionIndex).Id:0;
-            bool selectedAction=!selectingCondition&&!string.IsNullOrEmpty(rule.Action)&&(int)ConditionalCatalog.Response(rule.Action).Operation==actionCategory;
+            bool selectedAction=!selectingCondition&&!string.IsNullOrEmpty(rule.Action)&&ActionCategoryFor(ConditionalCatalog.Response(rule.Action).Operation)==actionCategory;
             string[] parameters=selectingCondition?selectedCondition==0?System.Array.Empty<string>():ConditionalCatalog.ConditionOptions(selectedCondition)
                 :selectedAction?ConditionalCatalog.ActionOptions(rule.Action):System.Array.Empty<string>();
             bool hasParameters=parameters.Length>0;
@@ -749,14 +752,15 @@ namespace GoGhost.Duel
             }
             else
             {
-                foreach(int op in new[]{2,3,4,0,1})
+                foreach(int op in new[]{2,0,1})
                 {
                     int category=op;
-                    CategoryOption("ActionCategory"+op,ShortOperationLabels[op],categories,()=>SelectActionCategory(category),actionCategory==op);
+                    CategoryOption("ActionCategory"+op,ActionCategoryLabels[op],categories,()=>SelectActionCategory(category),actionCategory==op);
                 }
-                foreach(string id in ConditionalCatalog.FormalResponses[actionCategory])
+                foreach(var entry in ConditionalCatalog.Responses)
                 {
-                    string action=id;
+                    if(ActionCategoryFor(entry.Operation)!=actionCategory)continue;
+                    string action=entry.Id;
                     string reason=!ConditionalCatalog.ConditionsAreComplete(rule)?"Choose the remaining condition option.":ConditionalCatalog.IncompatibilityReasonForActionChoice(rule,action);
                     RuleOption(ConditionalCatalog.Response(action).Label,choices,()=>ApplyChoice(0,false,action),rule.Action==action,
                         ConditionalCatalog.ResponseDescription(action),reason,action,parameterSelection:hasParameters);

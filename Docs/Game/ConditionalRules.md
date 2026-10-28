@@ -14,6 +14,8 @@ F8 > Presets exposes all six for development without changing unlock progress. I
 
 ## Configuration and priority
 
+**Action picker grouping — Thomas, 2026-10-27:** the three flat categories are Weapon (Auto Aim, Aim Assist, Fire 1 Shot, Short Burst, Keep Firing), Movement (Move, Keep Distance, Dodge), and Jump (Jump, Change Platform), in that order. Categories only organize selection. All ten actions retain their parameters, operation ownership, colors and execution; each rule still selects one action. Editing an existing action opens its new category and preserves its parameters. No serialized rule migration is required.
+
 **Character creation — Thomas, 2026-10-27:** New Game first opens Who Are You, with a freely drawn face, Clear, a dark Enter Your Name field and Continue. Creation/configuration use a black interior and body-contour gray-blue outline/ink; Training and combat use cold-white fill with the same drawing in black (latest follow-up). Continue enters the same empty rule configuration and Training flow. The formal configuration particle brain is temporarily omitted. Name and face survive Training respawn, reconfiguration, retry and wave transitions for the current run; New Game resets them along with rules. Preset unlock progression remains independent. See ArtDirection.md for head/UI details.
 
 **Pause navigation — Thomas, 2026-10-27:** the pause page offers Resume, Back to Configuration and Main Menu. Back to Configuration abandons the current Training, preparation or fight attempt, clears pause/audio/combat state and returns to Body Configuration with the current wave and configured rules retained. Starting again creates a fresh attempt; Training retains its existing Back/Continue behavior.
@@ -55,7 +57,7 @@ Use the approved tall six-region standing figure from ArtDirection.md. Arms are 
 
 **2026-10-27 consolidation — Thomas:** retain existing concise descriptions except where a removal, merge, rename or behavior change requires correction. A25 Enemy Preparing an Attack, A56 Firing and A61 Move Finished join the historical/nonselectable conditions A40/A39. A rule containing any removed condition remains intact and invalid until edited; never remove one conjunct and run the broader rule. No extra tutorial or State/Event labels.
 
-There are exactly **21 selectable conditions in five categories** and **10 selectable actions in five operations**. Fixed branches are parameters, not separate entries. IDs stay internal; historical definitions remain readable for migration or repair.
+There are exactly **21 selectable conditions in five categories** and **10 selectable actions in three picker categories**, retaining five independent runtime operations. Fixed branches are parameters, not separate entries. IDs stay internal; historical definitions remain readable for migration or repair.
 
 **Enemy State** and its Enemy Recovering, Enemy Reloading and Enemy Reappeared entries are removed from the selectable catalog. **Q03 Aim at Detected Enemy** remains hidden. **F05 Fire and Keep a Reserve** remains historical and nonselectable; its former Ammo Use replacement is also removed. No Always or replacement Enemy Vulnerable entry is introduced. Old removed rules must not silently re-equip or become a different tactic.
 

@@ -14,7 +14,7 @@ public struct RawPlayerInput
 public struct ConditionalControlFrame
 {
     public bool MovementOwned, JumpOwned, AimOwned, FireOwned, DodgeOwned;
-    // A short forward/back step keeps its starting body orientation, including when backing up.
+    // Retained compatibility flag; current Move follows ordinary resolved movement facing.
     public bool MovementKeepsFacing;
     // Observation only: source of the next physical movement step, frozen with its input.
     public string MovementActionId;

@@ -53,7 +53,7 @@ public static partial class BossEncounterSmoke
             {
                 int before=gun.ShotsFired;
                 mouseBurstHeld=true;yield return Until(()=>gun.IsReloading,1.2f);mouseBurstHeld=false;
-                Check("Fan the Hammer spends six rounds with one completion "+side,gun.IsReloading&&gun.ShotsFired-before==6
+                Check("Short Burst spends six rounds with one completion "+side,gun.IsReloading&&gun.ShotsFired-before==6
                     &&probe.Bursts==1&&probe.Reloads==1&&probe.Muzzles);
                 float began=Time.time;bool stable=true,captured=false,capturedReturn=false,armLengths=true,handContact=true;
                 int sideChanges=0,lastSide=side;

@@ -69,19 +69,19 @@ namespace GoGhost.Duel
                 R(52,"Q01",distance:EnemyDistanceOption.Far),
                 R(18,"F03")),
             new OfficialRulePreset("reload_retreat", "Retreat while reloading", "Presets", "", "", "",
-                R(53,"D02",45,incoming:IncomingAttackOption.Any),
+                R(53,"D01",45,incoming:IncomingAttackOption.Any,dodge:DodgeDirectionOption.TowardEnemy),
                 R(53,"D01",incoming:IncomingAttackOption.Any),
                 R(53,"J01",incoming:IncomingAttackOption.Ranged),
-                R(9,"M02"),
+                R(9,"M11",move:MoveDirectionOption.AwayFromEnemy),
                 R(52,"Q01",distance:EnemyDistanceOption.Close),
                 R(52,"Q01",distance:EnemyDistanceOption.Mid),
                 R(52,"Q01",distance:EnemyDistanceOption.Far),
                 R(18,"F03")),
             new OfficialRulePreset("do_nothing", "I don't want to do anything", "Presets", "", "", "",
-                R(53,"D02",45,incoming:IncomingAttackOption.Any),
+                R(53,"D01",45,incoming:IncomingAttackOption.Any,dodge:DodgeDirectionOption.TowardEnemy),
                 R(53,"D01",incoming:IncomingAttackOption.Any),
                 R(53,"J01",incoming:IncomingAttackOption.Ranged),
-                R(9,"M02"),
+                R(9,"M11",move:MoveDirectionOption.AwayFromEnemy),
                 R(51,"M03",ground:GroundStateOption.Grounded),
                 R(51,"M03",ground:GroundStateOption.Airborne),
                 R(52,"Q01",distance:EnemyDistanceOption.Close),
@@ -97,10 +97,12 @@ namespace GoGhost.Duel
             IncomingAttackOption incoming=IncomingAttackOption.Unspecified,
             GroundStateOption additionalGround=GroundStateOption.Unspecified,
             EnemyDistanceOption additionalDistance=EnemyDistanceOption.Unspecified,
-            PlatformDirectionOption platform=PlatformDirectionOption.Unspecified)
+            PlatformDirectionOption platform=PlatformDirectionOption.Unspecified,
+            MoveDirectionOption move=MoveDirectionOption.Unspecified,
+            DodgeDirectionOption dodge=DodgeDirectionOption.AwayFromThreat)
             => new ConditionalRule { Condition=condition, Action=action, AdditionalCondition=additional,
                 GroundState=ground, Distance=distance, IncomingAttack=incoming,
                 AdditionalGroundState=additionalGround, AdditionalDistance=additionalDistance,
-                ShortMoveDirection=ShortMoveDirectionOption.Back, PlatformDirection=platform };
+                MoveDirection=move, DodgeDirection=dodge, PlatformDirection=platform };
     }
 }

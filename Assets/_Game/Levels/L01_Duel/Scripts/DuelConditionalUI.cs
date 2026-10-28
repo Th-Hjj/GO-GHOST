@@ -632,6 +632,7 @@ namespace GoGhost.Duel
                 pendingRule.Action=null;
                 pendingRule.MoveDirection=default;pendingRule.ShortMoveDirection=default;pendingRule.PlatformDirection=default;
                 pendingRule.KeepRange=KeepRangeOption.Mid;
+                pendingRule.AutoAim=default;pendingRule.DodgeDirection=default;pendingRule.Jump=default;
                 ChooseRule(pendingRow,false);
             }
         }
@@ -671,7 +672,7 @@ namespace GoGhost.Duel
             if(action==null){SelectCondition(condition);return;}
             if(!ConditionalCatalog.ConditionsAreComplete(pendingRule)||ConditionalCatalog.IncompatibilityReasonForActionChoice(pendingRule,action)!=null)return;
             if(pendingRule.Action!=action&&ConditionalCatalog.ActionOptions(action).Length>0)
-            {pendingRule.MoveDirection=MoveDirectionOption.Unspecified;pendingRule.ShortMoveDirection=ShortMoveDirectionOption.Back;pendingRule.PlatformDirection=PlatformDirectionOption.Unspecified;pendingRule.KeepRange=KeepRangeOption.Mid;}
+            {pendingRule.MoveDirection=MoveDirectionOption.Unspecified;pendingRule.ShortMoveDirection=default;pendingRule.PlatformDirection=PlatformDirectionOption.Unspecified;pendingRule.KeepRange=KeepRangeOption.Mid;pendingRule.AutoAim=default;pendingRule.DodgeDirection=default;pendingRule.Jump=default;}
             pendingRule.Action=action;inspectedDescription=null;
             if(ConditionalCatalog.ActionOptions(action).Length>0)Show();else CommitRuleChoice();
         }
@@ -764,7 +765,7 @@ namespace GoGhost.Duel
             if(hasParameters)BuildRuleParameters(parameters,selectedCondition,w,h);
             selectedDescription=selectingCondition
                 ?selectedCondition==0?null:ConditionalCatalog.ConditionLabel(rule,selectedConditionIndex)+"\n"+ConditionalCatalog.ConditionDescription(rule,selectedConditionIndex)
-                :selectedAction?ConditionalCatalog.RuleActionLabel(rule)+"\n"+ConditionalCatalog.ResponseDescription(rule.Action):null;
+                :selectedAction?ConditionalCatalog.RuleActionLabel(rule)+"\n"+ConditionalCatalog.ResponseDescription(rule):null;
             SetOptionDescription(inspectedDescription??selectedDescription);
         }
 

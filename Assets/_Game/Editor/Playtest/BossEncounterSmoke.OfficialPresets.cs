@@ -27,6 +27,10 @@ public static partial class BossEncounterSmoke
         if(r.MoveDirection!=0)result+=":m"+(int)r.MoveDirection;
         if(r.ShortMoveDirection!=0)result+=":s"+(int)r.ShortMoveDirection;
         if(r.PlatformDirection!=0)result+=":p"+(int)r.PlatformDirection;
+        if(r.AutoAim!=0)result+=":aim"+(int)r.AutoAim;
+        if(r.DodgeDirection!=0)result+=":dodge"+(int)r.DodgeDirection;
+        if(r.Jump!=0)result+=":jump"+(int)r.Jump;
+        if(r.KeepRange!=0)result+=":range"+(int)r.KeepRange;
         if(r.AmmoUse!=0)result+=":ammo"+(int)r.AmmoUse;
         if(r.Below)result+=":below";
         return result;
@@ -71,8 +75,8 @@ public static partial class BossEncounterSmoke
             "53:D01:i1;53:J01:i2",
             "53:D01:i1;53:J01:i2;52:Q01:d1;52:Q01:d2;52:Q01:d3",
             "53:D01:i1;53:J01:i2;52:Q01:d1;52:Q01:d2;52:Q01:d3;18:F03",
-            "53:D02:a45:i1;53:D01:i1;53:J01:i2;9:M02;52:Q01:d1;52:Q01:d2;52:Q01:d3;18:F03",
-            "53:D02:a45:i1;53:D01:i1;53:J01:i2;9:M02;51:M03:g1;51:M03:g2;52:Q01:d1;52:Q01:d2;52:Q01:d3;18:F03"
+            "53:D01:a45:i1:dodge1;53:D01:i1;53:J01:i2;9:M11:m4;52:Q01:d1;52:Q01:d2;52:Q01:d3;18:F03",
+            "53:D01:a45:i1:dodge1;53:D01:i1;53:J01:i2;9:M11:m4;51:M03:g1;51:M03:g2;52:Q01:d1;52:Q01:d2;52:Q01:d3;18:F03"
         };
         Check("exact six IDs and requested names",OfficialRulePresets.All.Select(p=>p.Id).SequenceEqual(ids)&&OfficialRulePresets.All.Select(p=>p.Name).SequenceEqual(names));
         for(int i=0;i<ids.Length;i++)

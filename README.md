@@ -25,7 +25,7 @@ Retry and the next wave keep your rules. **Pause → Back to Configuration** ret
 | S | Drop through a platform |
 | Mouse | Aim |
 | LMB | Hold to fire precise shots continuously |
-| RMB | Fan the Hammer — rapidly fire all remaining bullets with reduced accuracy |
+| RMB | Short Burst — rapidly fire all remaining bullets with reduced accuracy |
 | Left Shift | Dodge |
 | Escape | Pause |
 | F8 (or Fn+F8 on Mac) | Tuning, Waves, Analytics and Presets |

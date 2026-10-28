@@ -2,9 +2,11 @@
 
 Confirmed by Thomas, 2026-10-24. Six progressive presets replace the previous sixteen. New Game starts with an empty loadout. Nothing equips automatically, replaces a player's configuration without Apply, opens Help automatically, or changes Training, combat, defeat, Retry or next-wave flow. There is no onboarding/tutorial or new execution logic.
 
-2026-10-25: Thomas removed A40 and approved replacing shared R10 with A18 (Enemy Near Aim Direction) in presets 4, 5 and 6. Counts, order and unlock behavior are unchanged.
+2026-10-25: Thomas removed A40 and approved replacing shared R10 with A18 (Enemy Near Your Aim) in presets 4, 5 and 6. Counts, order and unlock behavior are unchanged.
 
 2026-10-26: the shared Jump-priority override applies to all presets. An executable R3 Jump precedes R1/R2 Dodge despite their displayed order, and can interrupt an active Dodge. An unavailable Jump still permits Dodge. Definitions, displayed order and unlock behavior remain unchanged.
+
+2026-10-27: merged entries use explicit parameters throughout Help/F8, configuration and combat. The same six presets retain their rule counts, order and behavior; R4 is Move (Away from Enemy).
 
 ## Definitions and global priority
 
@@ -12,16 +14,16 @@ Confirmed by Thomas, 2026-10-24. Six progressive presets replace the previous si
 
 | Rule | Conditions | Action |
 |---|---|---|
-| R1 | Incoming Attack (Any) + Near Wall | Dodge Toward Enemy |
-| R2 | Incoming Attack (Any) | Dodge Away from Threat |
-| R3 | Incoming Attack (Ranged) | Jump Once |
-| R4 | Reloading | Retreat from Enemy |
-| R5 | Ground State (Grounded) | Keep Range (Mid) |
-| R6 | Ground State (Airborne) | Keep Range (Mid) |
-| R7 | Horizontal Distance (Close) | Auto Aim at Nearest Enemy |
-| R8 | Horizontal Distance (Mid) | Auto Aim at Nearest Enemy |
-| R9 | Horizontal Distance (Far) | Auto Aim at Nearest Enemy |
-| R10 | Enemy Near Aim Direction | Keep Firing |
+| R1 | Incoming Attack (Any) + Near Wall | Dodge (Toward Enemy) |
+| R2 | Incoming Attack (Any) | Dodge (Away from Threat) |
+| R3 | Incoming Attack (Ranged) | Jump (Once) |
+| R4 | Reloading | Move (Away from Enemy) |
+| R5 | Ground State (Grounded) | Keep Distance (Mid) |
+| R6 | Ground State (Airborne) | Keep Distance (Mid) |
+| R7 | Horizontal Enemy Distance (Close) | Auto Aim (Nearest) |
+| R8 | Horizontal Enemy Distance (Mid) | Auto Aim (Nearest) |
+| R9 | Horizontal Enemy Distance (Far) | Auto Aim (Nearest) |
+| R10 | Enemy Near Your Aim | Keep Firing |
 
 | Preset | Stable ID | Included rules, in order |
 |---|---|---|
@@ -34,7 +36,7 @@ Confirmed by Thomas, 2026-10-24. Six progressive presets replace the previous si
 
 Each creates a complete independent deep copy with contiguous global DisplayOrder. All rows and their conditions remain editable, reorderable and removable under the existing 20-rule budget and unlimited AND conditions. No preset changes weapon/Boss/map values, action commitments, unavailable-action fallback or manual input semantics.
 
-R5/R6 deliberately use Ground State and the existing Keep Range (Mid) target policy. Do not substitute Close → Retreat / Far → Approach: in a two-enemy encounter those conditions can bind different targets. Distance control is independent of Firing, so interruptions in shooting do not themselves cancel movement. Names describe the requested assistance, not a guarantee of evasion or victory.
+R5/R6 deliberately use Ground State and the existing Keep Distance (Mid) target policy. Do not substitute Close → Retreat / Far → Approach: in a two-enemy encounter those conditions can bind different targets. Distance control is independent of Firing, so interruptions in shooting do not themselves cancel movement. Names describe the requested assistance, not a guarantee of evasion or victory.
 
 ## Help and persistent unlocks
 

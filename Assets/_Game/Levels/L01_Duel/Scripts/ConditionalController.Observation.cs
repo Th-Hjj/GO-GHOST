@@ -67,7 +67,7 @@ namespace GoGhost.Duel
             }
             if(!StateRuleMatches(rule,op,out ctx))return false;
             observed=true;
-            if(HasPreparation(rule)&&ConditionalCatalog.Response(rule.Action).Finite)
+            if(HasPreparation(rule)&&ConditionalCatalog.IsFinite(rule))
             {
                 int available=0;
                 for(int i=0;i<actors.Count;i++)if((ctx.Candidates&(1<<i))!=0&&visible[i]&&contacts[i].Preparing

@@ -37,7 +37,7 @@ namespace GoGhost.Duel
         sealed class Running
         {
             public int Row=-1, Target=-1, Shots, ShotLimit;
-            public float Started, Deadline, Direction, Destination, PreviousX, Stuck;
+            public float Started, Deadline, Direction, PreviousX, Stuck;
             public Vector2 Aim;
             public float AssistOffset;
             public bool Accepted, Completed, ResponseStarted, ApproachStopped;
@@ -348,7 +348,7 @@ namespace GoGhost.Duel
             var operation = (ControlOperation)op;
 
             // The first paid Burst shot commits Fire through this magazine,
-            // before higher ordinary rows (including Hold Fire) can be considered.
+            // before higher ordinary rows can be considered.
             if (operation == ControlOperation.Fire && gun.IsBursting)
             {
                 // Manual RMB and F02 share the weapon's single committed process.
@@ -383,16 +383,17 @@ namespace GoGhost.Duel
         bool TryContinueCurrentResponse(int op, ConditionalRule rule, Running active)
         {
             var response = ConditionalCatalog.Response(rule.Action);
+            bool finite = ConditionalCatalog.IsFinite(rule);
             bool isEvent = rule.HasEvents;
             TriggerContext context;
             bool eligible;
             if (isEvent)
             {
                 // Accepted finite events own their real process. Ordinary responses
-                // and short Move must still satisfy the optional state.
-                bool retainsContext = response.Finite && active.Accepted && rule.Action != "M04";
+                // still satisfy all states; Move also ends with its event conditions.
+                bool retainsContext = finite && active.Accepted;
                 context = retainsContext ? active.Context : active.EventContext;
-                eligible = active.Accepted || Time.time <= context.ExpiresAt;
+                eligible = rule.Action=="M11" ? Time.time <= context.ExpiresAt : active.Accepted || Time.time <= context.ExpiresAt;
                 if (!retainsContext)
                     eligible &= MatchStates(rule, op, ref context);
             }
@@ -413,7 +414,7 @@ namespace GoGhost.Duel
                 eligible = (context.Candidates & (1 << active.Target)) != 0;
 
             // Finite state responses retain their context only after current eligibility.
-            if (eligible && !isEvent && response.Finite)
+            if (eligible && !isEvent && finite)
                 context = active.Context;
             if (!eligible)
                 return false;
@@ -429,7 +430,7 @@ namespace GoGhost.Duel
             var state = states[op, row];
             if (rule.HasEvents)
                 return EventsAvailable(state,context);
-            return !response.Finite || HasPreparation(rule) || !state.Consumed;
+            return !ConditionalCatalog.IsFinite(rule) || HasPreparation(rule) || !state.Consumed;
         }
 
         Running CreateResponseCandidate(int row, ConditionalRule rule, TriggerContext context)

@@ -104,7 +104,7 @@ namespace GoGhost.Duel
         }
         public void Show()
         {
-            if (canvas == null) return;
+            if (canvas == null || game.PlaytestPromptOpen) return;
             CaptureDeveloperPresetView();
             CaptureConfigurationView();
             CapturePresetHelpView();
@@ -193,7 +193,7 @@ namespace GoGhost.Duel
         }
         void LateUpdate()
         {
-            if(game==null||game.DeveloperToolsOpen)return;
+            if(game==null||game.PlaytestPromptOpen||game.DeveloperToolsOpen)return;
             if (RefreshConfigurationLayout()) return;
             UpdateRuleHud();
             UpdateBattleStatus();

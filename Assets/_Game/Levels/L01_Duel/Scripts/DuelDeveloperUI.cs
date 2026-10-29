@@ -24,7 +24,7 @@ namespace GoGhost.Duel
         // Runs before the input reader and physical action components, including in release players.
         void Update()
         {
-            if(game==null||Keyboard.current==null)return;
+            if(game==null||game.PlaytestPromptOpen||Keyboard.current==null)return;
             if(Keyboard.current.f8Key.wasPressedThisFrame||(game.DeveloperToolsOpen&&Keyboard.current.escapeKey.wasPressedThisFrame))
             {developerShortcutFrame=Time.frameCount;game.ToggleDeveloperTools();}
         }

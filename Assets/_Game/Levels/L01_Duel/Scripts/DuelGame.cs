@@ -99,6 +99,7 @@ namespace GoGhost.Duel
         public void NewGame()
         {
             ClearEncounter();
+            StartPlaytestReminder();
             PlayMetrics.ResetRun();
             metricsWaveJumpPending = false;
             Wave = 1;
@@ -282,13 +283,28 @@ namespace GoGhost.Duel
         public void MainMenu()
         {
             ClearEncounter();
+            playtestReminderArmed = false;
             SetPhase(DuelPhase.Menu);
         }
         public void SetPause(bool value)
         {
-            if (DeveloperToolsOpen && !value) return;
             if (Phase != DuelPhase.Fight && Phase != DuelPhase.Prepare && Phase != DuelPhase.Training) return;
+            if (PlaytestPromptOpen)
+            {
+                if (value && !playtestWasPaused)
+                {
+                    playtestWasPaused = true;
+                    playtestPauseMenuNeeded = true;
+                }
+                return;
+            }
+            if (DeveloperToolsOpen && !value) return;
             if (Paused == value) return;
+            ApplyPause(value);
+            ui.Show();
+        }
+        void ApplyPause(bool value)
+        {
             Paused = value;
             Rules?.SetFeedbackPaused(value);
             input?.SetNarrativePaused(value);
@@ -297,11 +313,12 @@ namespace GoGhost.Duel
             effects?.SetPaused(value || Phase == DuelPhase.Prepare);
             Time.timeScale = value ? 0 : 1;
             AudioListener.pause = value;
-            ui.Show();
         }
         void SetPhase(DuelPhase value)
         {
             Phase = value;
+            if (Wave > 1 || value == DuelPhase.Between || value == DuelPhase.Complete)
+                playtestReminderArmed = false;
             phaseTime = 0;
             ui.Show();
         }
@@ -331,6 +348,7 @@ namespace GoGhost.Duel
         }
         void ClearEncounter()
         {
+            ClosePlaytestPrompt(false);
             UnbindPresetDeath();
             FinishMetrics("abandoned");
             DeveloperToolsOpen = developerResumeOnClose = false;
@@ -349,6 +367,7 @@ namespace GoGhost.Duel
         }
         void Update()
         {
+            if (PlaytestPromptOpen) return;
             if (!ui.DeveloperShortcutConsumed && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) SetPause(!Paused);
             if (Paused || DeveloperToolsOpen) return;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -375,6 +394,11 @@ namespace GoGhost.Duel
         void LateUpdate()
         {
             ui.UpdateBattleLayout();
+            ResolveEncounterResult();
+            TickPlaytestReminder();
+        }
+        void ResolveEncounterResult()
+        {
             if (Phase == DuelPhase.Training) { TickTrainingRespawn(); return; }
             if (Phase != DuelPhase.Fight || Paused || Player == null || actors.Length == 0) return;
             bool allDead = true;

@@ -14,7 +14,7 @@ Local playtest telemetry, approved 2026-10-22. F8 opens **Tuning / Waves / Analy
 
 ## Lifecycle and files
 
-A run begins at New Game; retries and wave transitions retain it. Each attempt records its own ID, wave, result, UTC timestamps, rule snapshot and initial/final tuning. Wins and deaths finalize exactly once. Returning to the menu, starting another encounter, New Game and ordinary shutdown finalize an open attempt as `abandoned`, including a preparation cancellation with zero combat seconds. Training never opens an attempt. Domain Reload disabled is supported through explicit session reset and event cleanup.
+A run begins at New Game; retries and wave transitions retain it. Each attempt records its own ID, wave, result, UTC timestamps, rule snapshot and initial/final tuning. Wins and deaths finalize exactly once. Accepting the seven-minute playtest reminder finalizes an open Wave 1 attempt as `skipped` and starts an ordinary Wave 2 attempt; it records neither a win nor a death and does not set the developer-wave-jump flag. Returning to the menu, starting another encounter, New Game and ordinary shutdown finalize an open attempt as `abandoned`, including a preparation cancellation with zero combat seconds. Training never opens an attempt. Domain Reload disabled is supported through explicit session reset and event cleanup.
 
 Each run writes matching `<run-id>.json` and `<run-id>.csv` under `Application.persistentDataPath/Analytics`. On the current Windows project this is `%USERPROFILE%/AppData/LocalLow/DefaultCompany/GO GHOST/Analytics`. F8 Analytics includes **Open data folder**. Existing `metrics.csv` files are retained untouched.
 

@@ -19,6 +19,8 @@ namespace GoGhost.Duel
         }
         void BeginMetrics()
         {
+            // The playtest record ends at W2; the Final Boss visit and Bonus are unmeasured.
+            if (Wave > 2) return;
             PlayMetrics.SetName(Appearance.DisplayName);
             PlayMetrics.RecordConfiguration(DraftLoadout);
             PlayMetrics.BeginAttempt(Wave, DraftLoadout, developerValues, metricsWaveJumpPending, MetricsTuned());
@@ -82,6 +84,7 @@ namespace GoGhost.Duel
         }
         void MetricsStage()
         {
+            if (!PlayMetrics.RunActive) return;
             PlayMetrics.SetName(Appearance?.DisplayName);
             PlayMetrics.SetStage(Phase, Paused || DeveloperToolsOpen);
             CaptureMetricsHealth();

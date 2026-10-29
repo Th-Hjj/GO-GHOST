@@ -46,7 +46,8 @@ namespace GoGhost.Duel
 
         void ApplyPlatformLayout(bool training)
         {
-            var layout = training ? TrainingLayout : Wave == 1 ? WaveOneLayout : WaveTwoThreeLayout;
+            var layout = training ? TrainingLayout : Wave == FinalBossWave ? System.Array.Empty<PlatformPlacement>()
+                : Wave == 1 ? WaveOneLayout : WaveTwoThreeLayout;
 
             // The existing list contains the floor first, followed by the five one-way platforms.
             // Clone only a platform, preserving its collider/effector/rendering setup and Ground layer.
@@ -54,7 +55,7 @@ namespace GoGhost.Duel
             var templateBounds = template.bounds;
             var offset = templateBounds.center - template.transform.position;
             float floorY = platforms[0].bounds.max.y;
-            stagePlatforms = new GameObject(training ? "Training Platforms" : "Wave " + Wave + " Platforms");
+            stagePlatforms = new GameObject(training ? "Training Platforms" : WaveLabel + " Platforms");
             stagePlatforms.transform.SetParent(template.transform.parent, false);
             stageSupports = new Collider2D[layout.Length + 1];
             stageSupports[0] = platforms[0];

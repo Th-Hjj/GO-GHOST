@@ -15,7 +15,7 @@ Start with the current assignment in [AGENTS.md](../../AGENTS.md) / [CLAUDE.md](
 
 ## Current game
 
-GO GHOST is a single-player, fixed-camera 2D arena: Gunner, Swordsman, then both together. Use Unity **6000.6.0f1** and the existing packages. Open **GO GHOST > Combat > Open Arena** for the formal Editor Play and build scene:
+GO GHOST is a single-player, fixed-camera 2D arena: Gunner, Swordsman, a Final Boss placeholder visit, then an optional duo Bonus. Use Unity **6000.6.0f1** and the existing packages. Open **GO GHOST > Combat > Open Arena** for the formal Editor Play and build scene:
 
 `Assets/_Game/Levels/L01_Duel/Scenes/GO GHOST Duel.unity`
 
@@ -29,7 +29,9 @@ For the external playtest, New Game also starts a seven-minute real-time reminde
 
 ## Validation and delivery
 
-**GO GHOST > Playtest > Wave 1 / Wave 2 / Wave 3** opens the normal empty/manual configuration. Focused current checks under that menu include **Condition Action Behavior Corrections**, **Behavior Public Facts**, **Behavior Platforms**, **Behavior Catalog**, **Player Turning** and **Test Room Focused Smoke**. Select checks appropriate to the change; historical suites contain superseded assertions and are not current acceptance criteria.
+Wave 2 victory waits on **Meet the Final Boss**. Wave 3 is a stationary 9999-HP rainbow stickman in the shared arena without platforms, with seven lines of dialogue. Yes enters retained-rule Bonus configuration; No returns to the menu. The original duo fight is **BONUS WAVE**. Metrics finish at Wave 2 victory and exclude both the visit and Bonus, including their configuration time. [Progression details](BossEncounters.md#final-boss-and-optional-bonus--approved-2026-10-29).
+
+**GO GHOST > Playtest > Wave 1 / Wave 2 / Bonus Wave** opens empty/manual configuration; **Wave 3** opens the Final Boss visit. **Final Boss and Bonus Progression** checks the new transitions and metrics cutoff. Select checks appropriate to the change; historical suites contain superseded assertions and are not current acceptance criteria.
 
 The 2026-10-22 Alpha 75% classroom delivery authorizes focused gameplay/metrics verification, Windows x64 build/ZIP, direct main push and a latest GitHub Release. Earlier task-specific Editor-only limits do not restrict this delivery. Record static, compilation, Editor, build and standalone evidence separately in the implementation log; a successful build does not establish gameplay or balance coverage.
 

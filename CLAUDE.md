@@ -4,9 +4,10 @@ Read this file first in every session, then the docs listed at the bottom for th
 
 `CLAUDE.md` (read by Claude) and `AGENTS.md` (read by Codex) hold the same rules. When you change one, make the same change in the other.
 
-> **Current assignment — 2026-10-29 Help and named metrics:** remove presets/unlocks, provide controls/configuration help, and save one simple nickname-linked JSON record per New Game. Validate actual help/draft behavior, record lifecycle and short combat flow.
+> **Current assignment — 2026-10-29 Final Boss and Bonus progression:** Wave 2 victory opens a single Meet the Final Boss button, then a stationary rainbow Final Boss dialogue in an empty Wave 3 arena. Yes opens Bonus configuration for the former duo encounter; No returns to the menu. Metrics end at Wave 2 victory and exclude the entire Final Boss visit and Bonus flow.
 
 ## Current design authority — 2026-10-29
+- **Final Boss and Bonus progression — Thomas, 2026-10-29:** the former Wave 3 duo becomes an optional Bonus. Wave 2 victory waits on a result page containing only "Meet the Final Boss". That button enters Wave 3 in the shared arena with no platforms, a stationary rainbow-gradient combat-style stickman and 9999 HP. Display the seven exact dialogue lines in BossEncounters.md in order, then Yes / No. No returns to Main Menu; Yes opens Body Configuration with retained appearance/rules, then the original duo fight as Bonus. Preserve duo geometry, music, AI, damage, retry and pause. Metrics stop and save at successful Wave 2 completion; record no Final Boss/Bonus time, choices, configuration, actions, deaths or outcomes. This supersedes mandatory third-wave completion and W3 metrics requirements below.
 - **Boss names — Thomas, 2026-10-29:** the gunner is Gunner and the swordsman is Swordsman. The former names were AI inventions, never user-approved. Use the requested names in game text, code identifiers, asset/file names and current documentation. Preserve serialized enum values, asset GUIDs and gameplay. Historical logs and migration source paths are evidence of old names, not design authority.
 - **Help and named metrics — Thomas, 2026-10-29:** remove the preset system and sequential death unlocks, including F8 presets. Help contains controls and how to use Condition/Action configuration, with exact page names "What're the controls?" and "What is configuration?". Each New Game is an independent metrics record associated with the character nickname; no participant numbering or cross-run identity. Keep measurement simple and useful for rule use and encounter difficulty. The local implementation retains operation counts/times and rule snapshots, adds stage times, Help/configuration counters, end health and explicit skip/end reasons, separates assisted aim, and writes one checkpointed JSON. Preserve gameplay, normal empty configuration/Training, retries, waves, pause and the seven-minute reminder. This supersedes preset/unlock and dual JSON/CSV requirements below.
 - **Pause button wording — Thomas, 2026-10-29:** rename the pause-menu Back to Configuration button to Configuration. Preserve its layout and return behavior.
@@ -106,7 +107,7 @@ Read this file first in every session, then the docs listed at the bottom for th
 - Distinguish Confirmed requirements, Implemented source, actual runtime evidence, tuning and NOT TESTED work. The design requirement alone does not prove the all-AI result.
 
 ## Project
-- GO GHOST is a single-player 2D side-view, fixed-camera arena: Gunner, Swordsman, then both together.
+- GO GHOST is a single-player 2D side-view, fixed-camera arena: Gunner, Swordsman, Final Boss placeholder, then an optional duo Bonus.
 - Unity **6000.6.0f1**, URP 2D, New Input System, Windows keyboard/mouse. Never change Unity or packages for this task. Thomas uses Rider.
 - Thomas Hong and Walker Grupp share GitHub; Thomas currently leads and can confirm decisions alone. Reply in Chinese to Chinese requests; repository documentation stays concise English.
 

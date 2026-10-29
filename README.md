@@ -6,7 +6,7 @@ Build up to **20 Condition → Action rules** across Move, Jump, Aim, Fire and D
 
 **[Download Cassie Preview Version — macOS](https://github.com/Th-Hjj/GO-GHOST/releases/tag/cassie-preview-2026-10-27)** · Apple Silicon (M-series Macs)
 
-[Earlier Windows playtest — Alpha 75%](https://github.com/Th-Hjj/GO-GHOST/releases/tag/alpha75-2026-10-22). Published packages predate the current Help and metrics changes.
+[Earlier Windows playtest — Alpha 75%](https://github.com/Th-Hjj/GO-GHOST/releases/tag/alpha75-2026-10-22). Published packages predate the current Help, metrics and Final Boss/Bonus progression changes.
 
 ## Play
 
@@ -15,6 +15,8 @@ Build up to **20 Condition → Action rules** across Move, Jump, Aim, Fire and D
 3. **Enter Test Room** to try your setup. Select **Continue**, then **Start Fight**.
 
 Retry and the next wave keep your rules. **Pause → Configuration** retains rules and the current wave for a fresh attempt. New Game clears rules and appearance and starts a fresh named metrics record.
+
+After Wave 2, select **Meet the Final Boss** for a short placeholder visit. Choose Yes at the end to configure and enter the optional dual-Boss **Bonus Wave**, or No to return to the menu. Metrics end at Wave 2 victory; the Final Boss visit and Bonus flow are not recorded.
 
 ## Controls
 

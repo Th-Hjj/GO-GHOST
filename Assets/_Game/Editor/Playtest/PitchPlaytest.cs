@@ -16,6 +16,7 @@ public static class PitchPlaytest
     [MenuItem("GO GHOST/Playtest/Wave 1")] public static void Wave1()=>Open(1);
     [MenuItem("GO GHOST/Playtest/Wave 2")] public static void Wave2()=>Open(2);
     [MenuItem("GO GHOST/Playtest/Wave 3")] public static void Wave3()=>Open(3);
+    [MenuItem("GO GHOST/Playtest/Bonus Wave")] public static void BonusWave()=>Open(DuelGame.BonusWave);
     static void Open(int wave)
     {
         if(EditorApplication.isCompiling)return;

@@ -128,16 +128,18 @@ namespace GoGhost.Duel
 
         public void JumpToDeveloperWave(int wave)
         {
-            if(!DeveloperToolsOpen||wave<1||wave>3||!ConditionalCatalog.IsValid(DraftLoadout))return;
+            if(!DeveloperToolsOpen||wave<1||wave>BonusWave||!ConditionalCatalog.IsValid(DraftLoadout))return;
             EventSystem.current?.SetSelectedGameObject(null);
             ui.DiscardRulePicker();
             ClearEncounter();
             metricsWaveJumpPending = true;
+            if(wave>2){PlayMetrics.MarkTestData();PlayMetrics.EndRun("developer_wave_jump");}
             // Keep equipped rules/order, but discard any incomplete picker draft.
             DraftLoadout=DraftLoadout.Copy();
             Wave=wave;
             FirstConfiguration=false;
             developerTrainingSelected=false;
+            if(wave==FinalBossWave){CreateFinalBossPage();return;}
             SetPhase(DuelPhase.Configure);
             StartFight();
         }

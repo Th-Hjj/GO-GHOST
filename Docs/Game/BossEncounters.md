@@ -1,5 +1,21 @@
 # GO GHOST — Boss Encounter
 
+## Final Boss and optional Bonus — approved 2026-10-29
+
+Normal progression is Training -> Wave 1 Gunner -> Wave 2 Swordsman -> result -> Wave 3 Final Boss visit -> optional Bonus duo. Wave 2 victory waits on a black result page with only **Meet the Final Boss**. The visit reuses the arena perimeter/floor with no floating platforms. Its unarmed stickman reuses the combat silhouette, has a continuous vertical rainbow gradient and 9999 HP, and stays stationary. It is a dialogue visit without combat or a countdown. Next advances these exact lines at the player's pace; only the final line offers Yes / No:
+
+1. Hi, I'm the final boss.
+2. I'm glad that you made it here.
+3. The thing is, you won! Congrats!
+4. Turns out we didn't have time to present a final boss fight at the moment.
+5. But... If you enjoyed the game.
+6. There is a bonus challenge.
+7. Do you want to enter the bonus wave?
+
+No returns to Main Menu. Yes opens Body Configuration with the same appearance and equipped rules, then normal preparation for **BONUS WAVE**. Bonus retains the former duo's five-platform layout, authored spawns, independent health bars, cooperation, combat tuning, Achilles music and both-dead victory. Pause/Configuration and defeat retry remain within Bonus. Runtime wave IDs are 1/2/3/4 (4 is Bonus); older W3 duo references below describe the retained encounter mechanics. F8 and Editor playtest entries distinguish Final Boss from Bonus.
+
+The named metrics record ends at successful Wave 2 completion. Final Boss and the entire Bonus flow do not record time, choices, configuration changes, actions, deaths or results; they do not create another record. See [Gameplay Analytics](GameplayAnalytics.md).
+
 ## Boss friendly fire — approved 2026-10-26
 
 Boss attacks now damage the other Boss using the same attack damage as against the player. Ordinary and reflected bullets, Piercing, melee/Draw sweeps, sword waves and delayed afterblades all use normal health, hit feedback and death handling. The shooter/current reflection owner stays immune. Melee hit limits apply independently per target per active window; hitting the player does not consume the other Boss's hit. Bullets, beams and emitted blades still stop at the partner's body. Guard can reflect eligible frontal friendly bullets, transferring ownership and retaining friendly damage. AI still targets the player and retains its existing firing-lane/cooperation checks. Terrain penetration, player invulnerability/tuning, attack timing, pause and encounter cleanup are unchanged. One friendly kill leaves W3 running until both Bosses die. This supersedes all older zero-friendly-damage statements below.

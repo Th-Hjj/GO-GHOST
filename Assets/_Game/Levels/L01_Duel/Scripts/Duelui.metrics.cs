@@ -9,6 +9,7 @@ namespace GoGhost.Duel
     public sealed partial class DuelUI
     {
         int analyticsTab, analyticsPage;
+        static string MetricWave(int wave) => wave == DuelGame.BonusWave ? "BONUS" : "W" + wave;
         static string MetricNumber(double value) => value.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
         static string MetricPercent(bool valid, float value) => valid ? MetricNumber(value) + "%" : "N/A";
         void AnalyticsText(string value, float x, float y, float width, int size = 23, float height = 44)
@@ -33,7 +34,7 @@ namespace GoGhost.Duel
                 bool total = analyticsTab == 1;
                 var operations = total ? PlayMetrics.RunOperations(true) : fight?.operations;
                 float seconds = total ? run.combatSeconds + (PlayMetrics.Current?.seconds ?? 0) : fight?.seconds ?? 0;
-                string title = total ? "RUN" : fight == null ? "FIGHT" : "W"+fight.wave+"  "+PlayMetrics.BossName(fight.wave)+"  "+fight.result.Replace('_',' ').ToUpperInvariant();
+                string title = total ? "RUN" : fight == null ? "FIGHT" : MetricWave(fight.wave)+"  "+PlayMetrics.BossName(fight.wave)+"  "+fight.result.Replace('_',' ').ToUpperInvariant();
                 bool test = total ? run.testData || (PlayMetrics.Current?.testData ?? false) : fight?.testData ?? false;
                 AnalyticsText(title+"    "+MetricNumber(seconds)+"s"+(test?"    TEST DATA":""),0,155,1300,27);
                 if (operations == null) AnalyticsText("Start a fight to collect action data.",0,65,1300);
@@ -42,7 +43,7 @@ namespace GoGhost.Duel
                 {
                     PlayMetrics.Calculate(operations,out bool valid,out float percent);
                     AnalyticsText("Recorded operations",-390,95,520,27);
-                    AnalyticsText("Deaths  W1: "+run.deathsByWave[1]+"   W2: "+run.deathsByWave[2]+"   W3: "+run.deathsByWave[3],270,95,700);
+                    AnalyticsText("Deaths  W1: "+run.deathsByWave[1]+"   W2: "+run.deathsByWave[2],270,95,700);
                     string[] headings={"Operation","Automatic","Manual","Auto %"};
                     float[] xs={-470,-100,225,510}; float[] widths={360,300,300,240};
                     for(int c=0;c<4;c++)AnalyticsText(headings[c],xs[c],35,widths[c]);
@@ -79,7 +80,7 @@ namespace GoGhost.Duel
                 "Rules  Added: "+run.rulesAdded+"    Edited: "+run.rulesEdited+"    Removed: "+run.rulesRemoved+"    Reordered: "+run.rulesReordered,
                 "Most rules equipped: "+run.maxRulesEquipped+"    Help opened: "+run.helpOpened,
                 "First rule: "+(run.firstRuleAtSeconds<0?"N/A":MetricNumber(run.firstRuleAtSeconds)+"s")+"    First fight: "+(run.firstFightAtSeconds<0?"N/A":MetricNumber(run.firstFightAtSeconds)+"s"),
-                "Deaths  Training: "+run.trainingDeaths+"    W1: "+run.deathsByWave[1]+"    W2: "+run.deathsByWave[2]+"    W3: "+run.deathsByWave[3],
+                "Deaths  Training: "+run.trainingDeaths+"    W1: "+run.deathsByWave[1]+"    W2: "+run.deathsByWave[2],
                 "Wave 1 skipped: "+(run.waveOneSkipped?"Yes":"No")+"    "+(run.finished?"Ended: "+run.endReason:"In progress")+(run.editor?"    EDITOR":"")+(run.testData?"    TEST DATA":"")
             };
             for(int i=0;i<rows.Length;i++)AnalyticsText(rows[i],0,95-i*52,1300,23);
@@ -110,7 +111,7 @@ namespace GoGhost.Duel
             {
                 int index=run.attempts.Count-1-analyticsPage*5-i;if(index<0)break;
                 var a=run.attempts[index];
-                AnalyticsText("#"+(index+1)+"    W"+a.wave+" "+PlayMetrics.BossName(a.wave)+"    "+a.result.ToUpperInvariant()
+                AnalyticsText("#"+(index+1)+"    "+MetricWave(a.wave)+" "+PlayMetrics.BossName(a.wave)+"    "+a.result.ToUpperInvariant()
                     +"    "+MetricNumber(a.seconds)+"s    Auto "+MetricPercent(a.hasAutomationData,a.automaticPercent)+(a.testData?"    TEST":""),0,75-i*65,1300,23,58);
             }
             if(run.attempts.Count==0)AnalyticsText("No completed fights yet.",0,55,1300);

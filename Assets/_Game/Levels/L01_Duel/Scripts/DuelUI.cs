@@ -149,6 +149,16 @@ namespace GoGhost.Duel
                 if(helpOpen){BuildHelp();return;}
                 BuildConditionalLoadout();RestoreConfigurationView();return;
             }
+            if(game.Phase==DuelPhase.FinalBossReady)
+            {
+                Image(page,Vector2.zero,new Vector2(4000,4000),NeuralPalette.Background);
+                Button("Meet the Final Boss",page,Vector2.zero,new Vector2(420,68),game.MeetFinalBoss).name="MeetFinalBoss";
+                return;
+            }
+            if(game.Phase==DuelPhase.FinalBoss)
+            {
+                BuildFinalBoss();return;
+            }
             if(game.Phase==DuelPhase.Failed || game.Phase==DuelPhase.Complete)
             {
                 Image(page,Vector2.zero,new Vector2(4000,4000),new Color(0,0,0,.86f));
@@ -165,7 +175,7 @@ namespace GoGhost.Duel
             if(game.Phase==DuelPhase.Training)
                 Text("TRAINING",hud,new Vector2(0,400),new Vector2(280,36),30,face:headingFont);
             else if(game.Phase==DuelPhase.Prepare || game.Phase==DuelPhase.Fight && game.FightClock<WaveTitleFadeSeconds)
-                waveTitle=Text("WAVE "+game.Wave,hud,new Vector2(0,400),new Vector2(280,36),30,face:headingFont);
+                waveTitle=Text(game.WaveLabel,hud,new Vector2(0,400),new Vector2(320,36),30,face:headingFont);
             policeHealth = new TMP_Text[game.Bosses.Count];
             policeFill = new UnityEngine.UI.Image[game.Bosses.Count];
             bossHealthText = new HealthTextState[game.Bosses.Count];

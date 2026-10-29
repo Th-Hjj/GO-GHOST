@@ -1,6 +1,6 @@
 # Gameplay Analytics
 
-Thomas, 2026-10-29: one independent record per New Game, identified by the character nickname. No participant numbering or cross-run player account. Schema 3 extends the existing local collector; F8 has Tuning / Waves / Analytics, with Fight / Run / Actions / History views.
+Thomas, 2026-10-29: one independent record per New Game, identified by the character nickname. No participant numbering or cross-run player account. Schema 4 ends measurement at successful Wave 2 completion and excludes the Final Boss visit and all Bonus activity. F8 has Tuning / Waves / Analytics, with Fight / Run / Actions / History views.
 
 ## What is recorded
 
@@ -9,7 +9,7 @@ Thomas, 2026-10-29: one independent record per New Game, identified by the chara
 | Identity and lifecycle | Nickname (`playerName`, blank becomes YOU), character confirmation, unique run/attempt IDs, UTC timestamps, application version, platform, Editor/test flags, finished state and end reason. Identical names never overwrite each other. |
 | Time | Real elapsed play time split into character creation, configuration (including Help), Training, preparation, fight, pause/F8 and result time. Categories are mutually exclusive. Combat simulation seconds are retained separately, including failed/abandoned attempts. |
 | Rule use | Help opens, committed rule additions/edits/removals/reorders, maximum equipped count, time to first committed rule and first actual fight, latest readable configuration and each attempt's full initial rule/parameter/order snapshot. Cancelled drafts and hover choices do not count. |
-| Encounters | Attempt wave, result, reason, combat seconds, player and each present Boss's last/current and maximum HP, per-wave deaths, Training deaths separately, W3 completion, seven-minute reminder state and explicit W1 skip flag. Missing actors use HP -1. |
+| Encounters | W1/W2 attempt wave, result, reason, combat seconds, player and each present Boss's last/current and maximum HP, per-wave deaths, Training deaths separately, W2 completion, seven-minute reminder state and explicit W1 skip flag. Missing actors use HP -1. |
 | Controls | Actual manual/automatic shots, successful jumps and Dodge starts; effective Move duration; manual, assisted and automatic Aim duration. Per-Action ID details and separate drop-through counts remain. |
 
 Names are data, not identifiers. The run ID keeps same-name New Games separate; retries and wave transitions remain attempts within that run. The face drawing is not exported. Rule snapshots and action totals show usage, not comprehension or enjoyment. No per-frame input/position log or damage event stream is collected. Action totals still group by Action ID, not individual rule; snapshots retain each rule's parameters and order.
@@ -22,7 +22,9 @@ Q06 Aim Assist is stored as `assistedSeconds`, separately from fully automatic A
 
 Training records time and player deaths, not numbered-wave attempts or combat-operation totals. Stage times use real elapsed seconds and continue under pause (in the pause category); formal combat seconds use the combat clock. F8 time is in pause even outside a fight. Initial/final tuning snapshots and development flags remain. Editor records and flagged attempts must be separated from ordinary playtest samples. The readable Run page exposes the small summary without the obsolete hold rows.
 
-Remaining Boss HP measures encounter progress, not damage caused by the player: Boss friendly fire exists. W3 victory sets `levelCleared`; the separate skip flag and attempt history distinguish natural progression from assistance. The reminder's `shown` / `no` / `yes` is recorded even when no W1 attempt exists. Skipping an active W1 attempt records `skipped`, never a death/win or developer jump.
+Remaining Boss HP measures encounter progress. W2 victory sets `levelCleared` and finishes the record with `endReason=complete`; the separate skip flag and attempt history distinguish natural progression from assistance. The reminder's `shown` / `no` / `yes` is recorded even when no W1 attempt exists. Skipping an active W1 attempt records `skipped`, never a death/win or developer jump.
+
+The Final Boss room and the entire Bonus flow are outside measurement: no visit/dialogue/choice events, time, configuration/Help counters, attempts, operations, health, deaths or results. The completed W2 JSON remains unchanged through Yes/No, Bonus pause, retry and victory. Neither stage starts another record. A developer jump to either unmeasured stage ends an existing test record before entry. The old four-slot `deathsByWave` shape remains compatible; slot 3 is unused in schema 4. Old schema 3 files retain their original W3 duo interpretation and are never rewritten.
 
 ## Saving and collection
 

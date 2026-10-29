@@ -49,10 +49,11 @@ namespace GoGhost.Duel
         void BuildDeveloperWaves()
         {
             Text("Jump to wave",page,new Vector2(0,175),new Vector2(1000,48),30);
-            for(int wave=1;wave<=3;wave++)
+            for(int wave=1;wave<=DuelGame.BonusWave;wave++)
             {
                 int target=wave;
-                var jump=Button("Wave "+wave,page,new Vector2(-430+(wave-1)*430,70),new Vector2(390,60),
+                string label=wave==DuelGame.BonusWave?"Bonus":wave==DuelGame.FinalBossWave?"Final Boss":"Wave "+wave;
+                var jump=Button(label,page,new Vector2(-495+(wave-1)*330,70),new Vector2(300,60),
                     ()=>game.JumpToDeveloperWave(target),game.Wave==wave);
                 jump.name="Dev_Wave"+wave;
                 jump.interactable=ConditionalCatalog.IsValid(game.DraftLoadout);

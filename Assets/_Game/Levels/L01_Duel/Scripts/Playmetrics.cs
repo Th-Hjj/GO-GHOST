@@ -56,7 +56,7 @@ public static class PlayMetrics
     }
     [Serializable] public sealed class RunData
     {
-        public int schemaVersion = 3;
+        public int schemaVersion = 4;
         public string sessionId, runId, startedUtc, updatedUtc;
         public string playerName = "YOU", endedUtc, endReason;
         public bool characterCreated, finished, waveOneSkipped;
@@ -104,7 +104,7 @@ public static class PlayMetrics
     public static bool RunActive => run != null && !run.finished;
     public static bool CheckpointDue => RunActive && Time.realtimeSinceStartupAsDouble - lastSave >= 10;
     public static bool Counting => counting && Current != null;
-    public static string BossName(int wave) => wave switch { 1 => "Gunner", 2 => "Swordsman", 3 => "Duo", _ => "-" };
+    public static string BossName(int wave) => wave switch { 1 => "Gunner", 2 => "Swordsman", 3 => "Final Boss", DuelGame.BonusWave => "Bonus Duo", _ => "-" };
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void InitializeSession()
@@ -208,6 +208,7 @@ public static class PlayMetrics
     }
     public static void BeginAttempt(int wave, ConditionalLoadout loadout, float[] tuning, bool waveJump, bool tuned)
     {
+        if (wave < 1 || wave > 2) return;
         if (!RunActive) ResetRun();
         if (Current != null) Finish("abandoned", false);
         Current = new Attempt { attemptId = Guid.NewGuid().ToString("N"), wave = wave,
@@ -306,7 +307,7 @@ public static class PlayMetrics
         run.attempts.Add(Current);
         run.combatSeconds += Current.seconds;
         run.testData |= Current.testData;
-        if (result == "died" && Current.wave >= 1 && Current.wave <= 3) run.deathsByWave[Current.wave]++;
+        if (result == "died" && Current.wave >= 1 && Current.wave < run.deathsByWave.Length) run.deathsByWave[Current.wave]++;
         Current = null;
         run.operations = RunOperations(false);
         Calculate(run.operations, out run.hasAutomationData, out run.automaticPercent);

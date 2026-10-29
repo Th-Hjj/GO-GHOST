@@ -65,6 +65,15 @@ namespace GoGhost.Duel
             }
         }
         public void SetPaused(bool value) => paused = value;
+        // Reuse the exact combat stickman geometry without an AI, weapon or animation loop.
+        public void ConfigurePlaceholder()
+        {
+            actor = null;
+            clock = gait = 0; alpha = 1; defeated = false;
+            SetColors(); ApplyPose(BuildPose()); ClearTells();
+            Hide(Part.Weapon); Hide(Part.Sheath);
+            enabled = false;
+        }
         public void Defeat() { defeated = true; defeatAt = clock; ClearTells(); }
         public void Hit() { hitAt = clock; }
         public void Landing()

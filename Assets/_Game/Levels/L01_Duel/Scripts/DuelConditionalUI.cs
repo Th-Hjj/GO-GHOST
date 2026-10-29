@@ -227,7 +227,7 @@ namespace GoGhost.Duel
             float editorTop = top - 176;
             float editorBottom = bottom+80;
             ConfigButton("ConfigureBack", "Back", page, new Vector2(left + 48, top - 24), new Vector2(96, 48), game.MainMenu,style:DuelControlStyle.Navigation);
-            Text("WAVE " + game.Wave, page, new Vector2(left + 195, top - 22), new Vector2(170, 44), 24, TextAlignmentOptions.Left);
+            Text(game.WaveLabel, page, new Vector2(left + 195, top - 22), new Vector2(170, 44), 24, TextAlignmentOptions.Left);
             Text("Body Configuration",page,new Vector2(0,top-22),new Vector2(360,44),30,TextAlignmentOptions.Center,headingFont);
             float available=right-left-48;
             float bodyWidth=Mathf.Clamp(available*.16f,200,256);

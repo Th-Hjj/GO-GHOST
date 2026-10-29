@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-10-29 — Remove Claude co-author attribution from history
+
+- **Request:** Thomas asked to remove Claude from the repository's GitHub contributors and approved rewriting history and force-pushing. Claude appeared only through `Co-Authored-By: Claude ...` (30 commits) and `Claude-Session:` (2 commits) trailers; every commit author was Thomas or Walker.
+- **Change:** `git filter-branch --msg-filter` deleted only those trailer lines (and the blank line before them) on `main` and all ten tags. 181 commits from `3c3c73b` (2026-09-17) onward received new hashes; the five earlier commits are unchanged. [HistoryRewrite.csv](../HistoryRewrite.csv) maps every old short hash to its new one; hashes quoted in earlier entries of this log refer to the old history.
+- **Verification:** 186/186 commits keep identical trees, authors, committers and dates in the same order; the HEAD tree is unchanged; no Claude trailer remains. `main` and the ten tags were force-pushed with leases on their previous values. All ten GitHub Releases still resolve to their tags; Alpha Playtest assets keep their SHA-256 digests. Six signed commits (three PR merges and three web edits) lost their GitHub "Verified" signatures. A full pre-rewrite bundle is kept locally at `Builds/HistoryBackup/` (ignored by Git).
+- **Follow-up for other clones:** existing clones must re-clone or `git fetch` then reset `main` to `origin/main`. Walker's remote `upgrade-v2` branch still contains the old history from `336cd87`; it needs a rebase onto the new `main` before any merge. Future commits, tags and releases add no Claude attribution.
+
 ## 2026-10-29 — Alpha Playtest release (Windows x64 and macOS Universal)
 
 - **Request / scope:** Thomas asked to package the current game for the class Alpha Playtest (both platforms, telemetry export, ZIP integrity, `<names> - <title> - <platform>` folders) and publish a GitHub Release. Thomas chose version **0.80.0** and the title **Alpha Playtest**. Source: `b9581a4` plus the version bump in this commit.

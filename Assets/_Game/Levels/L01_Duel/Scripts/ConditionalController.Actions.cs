@@ -230,8 +230,11 @@ namespace GoGhost.Duel
             if(action=="Q06")
             {
                 // Smooth only the additive assistance: the raw mouse direction responds immediately.
-                // Reach 95% of a 70% correction in .09 combat seconds; leave the final aim to the player.
-                float desired=Vector2.SignedAngle(raw.Aim,output.Aim)*ConditionalDefaults.AimAssistCorrectionFraction;
+                // Inside the lock cone aim at the body centre; elsewhere pull just far enough to land
+                // inside the inset body. Aim already on the body stays where the player put it.
+                float desired=MouseAngle(r.Target)<=ConditionalDefaults.AimAssistLockCone
+                    ?Vector2.SignedAngle(raw.Aim,output.Aim)
+                    :Vector2.SignedAngle(raw.Aim,AssistBodyPoint(r.Target)-gun.AimOrigin);
                 float blend=1-Mathf.Exp(-Time.deltaTime/ConditionalDefaults.AimAssistTimeConstant);
                 r.AssistOffset=Mathf.Lerp(r.AssistOffset,desired,blend);
                 // Never pull past the body or oppose a mouse movement across the target.
@@ -242,6 +245,16 @@ namespace GoGhost.Duel
                 output.Aim=((Vector2)Vector3.RotateTowards(raw.Aim.normalized,output.Aim,
                     ConditionalDefaults.MouseEnter*Mathf.Deg2Rad,0)).normalized;
             currentTarget=action=="Q08"?AlignedTarget(r.Aim,allVisible):r.Target;return true;
+        }
+        Vector2 AssistBodyPoint(int target)
+        {
+            // Point on the raw aim ray nearest the body, clamped into the central part of its current bounds.
+            var bounds=contacts[target].Bounds;
+            Vector2 origin=gun.AimOrigin,direction=raw.Aim.normalized;
+            Vector2 closest=origin+direction*Mathf.Max(0,Vector2.Dot((Vector2)bounds.center-origin,direction));
+            Vector2 inset=(Vector2)bounds.extents*ConditionalDefaults.AimAssistBodyInset;
+            return new Vector2(Mathf.Clamp(closest.x,bounds.center.x-inset.x,bounds.center.x+inset.x),
+                Mathf.Clamp(closest.y,bounds.center.y-inset.y,bounds.center.y+inset.y));
         }
         float Travel(float direction,float distance)
         {

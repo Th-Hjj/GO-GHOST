@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-10-29 — Stronger Aim Assist
+
+- **Request / baseline:** `62ffa6c`. Playtesters could not perceive Q06. Thomas chose an inner lock plus outer pull with no visual feedback, then widened the lock cone from 6 to 10 degrees.
+- **Change:** `ConditionalController.WriteAim` keeps the 20-degree acquisition cone, target hysteresis and .03 s smoothing of the added correction. Within 10 degrees the desired Aim is the current body centre; from 10 to 20 degrees it is the point on the raw aim ray nearest the body, clamped into the central half of the current bounds. `AimAssistCorrectionFraction` is replaced by `AimAssistLockCone` / `AimAssistBodyInset`. Metrics attribution (`assistedSeconds`) is unchanged.
+- **Validation:** Unity compilation passed. Live W1 probe against the real controller with the Gunner on a platform 17.9 units away (body half-angle 2.5 / 1.1 degrees): converged residual is 0 degrees for 3/8/10-degree offsets and 1.1-1.3 degrees for 12/15/19 degrees on both sides, every ray intersecting the body; the former 70% rule left 0.9-5.7 degrees and missed beyond about 8 degrees. 25 degrees remains unassisted. Raw aim with no assist missed at every tested offset.
+- **Limits:** physical mouse feel and Standalone NOT TESTED; moving-target hit rates depend on Boss movement because there is still no lead.
+
 ## 2026-10-29 — Playtest readiness review: telemetry and font cleanup
 
 - **Request / baseline:** Thomas asked for a playtest-readiness code review against the class Alpha Playtest checklist (telemetry export/location, Windows and macOS builds, ZIP integrity, folder naming) and direct fixes for clear problems. Baseline `26d2b4a`; Editor compiled with an empty Console.

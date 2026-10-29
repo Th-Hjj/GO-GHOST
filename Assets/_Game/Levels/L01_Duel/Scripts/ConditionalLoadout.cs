@@ -588,7 +588,7 @@ namespace GoGhost.Duel
         public const float LowEnter=.4f,LowExit=.45f,Close=5.3f,Far=8.5f,Hysteresis=.35f;
         public const float ShortRangeMin=Close-(Far-Close),LongRangeMax=Far+(Far-Close);
         public const float MouseEnter=12,MouseExit=16,ThreatWindow=.20f,VelocityDeadzone=.35f;
-        public const float AimAssistCone=20,AimAssistTimeConstant=.03f,AimAssistCorrectionFraction=.7f;
+        public const float AimAssistCone=20,AimAssistLockCone=10,AimAssistTimeConstant=.03f,AimAssistBodyInset=.5f;
         public const float RuleEventResponseDuration=.5f;
         public const float ResponseWindow=RuleEventResponseDuration,EventWindow=RuleEventResponseDuration;
         public const float JumpDelay=.20f,Calibration=.12f,StuckWindow=.25f;

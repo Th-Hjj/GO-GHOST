@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-10-29 — Playtest readiness review: telemetry and font cleanup
+
+- **Request / baseline:** Thomas asked for a playtest-readiness code review against the class Alpha Playtest checklist (telemetry export/location, Windows and macOS builds, ZIP integrity, folder naming) and direct fixes for clear problems. Baseline `26d2b4a`; Editor compiled with an empty Console.
+- **Fixed:** (1) finished JSON records exported a phantom `activeAttempt` (`result=in_progress`, wave 0) because JsonUtility cannot write null; `Save` now writes an explicit `result=none` placeholder with no operations when no fight is active. (2) Destroying the runtime character-name font copies also destroyed the shared IBM Plex atlas/material through TMP's OnDestroy, which produced the four recurring "Destroying assets is not permitted" errors at Play exit; the copies now detach shared references before destruction. GameplayAnalytics.md documents the placeholder and the macOS data path.
+- **Validation:** Unity compilation passed. **Final Boss and Bonus Progression 30 PASS / 0 FAIL**; its fresh finished records contain `activeAttempt.result=none`. Help and Named Metrics: 23 PASS / 5 FAIL; four failures are stale expectations (removed Help copy, former W3 duo, schema 3) and the Aim Assist check depends on a fixture cursor outside the 20-degree cone. A direct W1 probe against the live controller confirmed Aim Assist engages at 8/15 degrees with partial correction and releases at 25 degrees. The Aim Assist harness is stale (enters the former W3 duo) and crashed in its fixture. Name-font probe with a Chinese name: two copies created, zero after exit, IBM Plex atlas/material intact, Console empty, scene clean.
+- **Limits:** Standalone Windows/macOS builds, standalone telemetry export, ZIP unpacking, physical input and balance **NOT RUN**. Stale Help/Aim Assist harness expectations were not rewritten.
+
 ## 2026-10-29 — Current documentation and GitHub overview
 
 - **Request / baseline:** clean main `1594b4d`. Audit outdated project documentation and keep GitHub concise. Thomas briefly requested a playtest release, then explicitly limited this task to GitHub/documentation with no build; no Unity or packaging operation was started.

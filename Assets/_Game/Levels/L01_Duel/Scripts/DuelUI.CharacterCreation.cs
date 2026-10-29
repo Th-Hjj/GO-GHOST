@@ -44,11 +44,20 @@ namespace GoGhost.Duel
         }
         void DisposeCharacterFonts()
         {
-            if (characterControlFont != null) Destroy(characterControlFont);
-            if (characterNumericFont != null) Destroy(characterNumericFont);
+            DestroyNameFontCopy(characterControlFont);
+            DestroyNameFontCopy(characterNumericFont);
             if (characterFallback == null) return;
             foreach (var atlas in characterFallback.atlasTextures) if (atlas != null) Destroy(atlas);
             Destroy(characterFallback.material); Destroy(characterFallback);
+        }
+        static void DestroyNameFontCopy(TMP_FontAsset copy)
+        {
+            if (copy == null) return;
+            // The copy shares the source asset's atlas and material. Detach them so TMP's
+            // OnDestroy releases only the copy, never the shared IBM Plex resources.
+            copy.atlasTextures = null;
+            copy.material = null;
+            Destroy(copy);
         }
 
         void BuildCharacterCreation()

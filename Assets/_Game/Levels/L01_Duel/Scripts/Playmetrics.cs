@@ -322,7 +322,9 @@ public static class PlayMetrics
             TrackTime();
             Directory.CreateDirectory(DirectoryPath);
             run.updatedUtc = DateTime.UtcNow.ToString("o");
-            run.activeAttempt = Current;
+            // JsonUtility cannot write null objects; mark "no active attempt" explicitly instead of
+            // exporting a default object that reads as an in-progress wave 0 fight.
+            run.activeAttempt = Current ?? new Attempt { result = "none", operations = Array.Empty<OperationStats>() };
             if (Current != null) Calculate(Current.operations, out Current.hasAutomationData, out Current.automaticPercent);
             WriteFile(JsonPath, JsonUtility.ToJson(run, true));
             lastSave = Time.realtimeSinceStartupAsDouble;

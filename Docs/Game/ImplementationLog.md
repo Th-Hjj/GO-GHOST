@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-10-29 — Current Playtest harness expectations
+
+- **Request / baseline:** `213e49e`. Thomas asked to update the stale test cases before packaging.
+- **Changed (Editor-only):** `AlphaFresh(3)` now maps the former W3 duo to the Bonus wave; ColdLight's two direct duo HUD entries use Bonus. `TrainingFresh`, Training Respawn and the developer harnesses complete the blank character step after New Game. Help and Named Metrics checks the current Condition/Action help, puts the virtual cursor inside the assist cone, and ends at W2 completion (schema 4, Swordsman endpoint, `activeAttempt.result=none`). Aim Assist checks the parameterized Auto Aim labels, the 10-degree centre lock, the 10-20 degree in-body pull and a live Training lock. The reminder, Training-room wave loop and developer wave jump expect W2 -> Meet the Final Boss and Bonus as wave 4; fixtures use current rules (Grounded -> Auto Aim / Move Toward Enemy) and current Revolver/Dodge defaults.
+- **Results:** Help and Named Metrics **28/0**, Aim Assist and Auto Aim **22/0**, Seven Minute Reminder **35/0**, Developer Wave Jump **15/0**, Developer Tuning **25/0**, Training Respawn **14/0**; Final Boss and Bonus Progression remained **30/0** earlier this session. Console empty afterwards.
+- **Not updated:** Test Room Focused Smoke still uses removed actions/conditions (M04/M02, condition 59, Fine-Tune) and stops at its first configuration step; the older `InputAndFlow`/Analytics suites remain historical.
+
 ## 2026-10-29 — Stronger Aim Assist
 
 - **Request / baseline:** `62ffa6c`. Playtesters could not perceive Q06. Thomas chose an inner lock plus outer pull with no visual feedback, then widened the lock cone from 6 to 10 degrees.

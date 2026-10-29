@@ -18,25 +18,25 @@ public static partial class BossEncounterSmoke
     static IEnumerator DeveloperWaveJump()
     {
         Record("Focused developer wave buttons, virtual F8/Escape and normal fight lifecycle.");
-        game.NewGame();
-        game.DraftLoadout.TryAddRule(2,new ConditionalRule{Condition=34,Action="Q01"});
-        game.DraftLoadout.TryAddRule(0,new ConditionalRule{Condition=34,Action="M01"});
+        game.NewGame();game.CompleteCharacterCreation();
+        V2Rule(game.DraftLoadout,V2Ground("Q01"));
+        var toward=V2Ground("M11");toward.MoveDirection=MoveDirectionOption.TowardEnemy;V2Rule(game.DraftLoadout,toward);
         ClickConfig("AddRule");yield return Frames(2);
         Check("fixture has an uncommitted picker",!Object.FindAnyObjectByType<DuelUI>().ConfigurationReady);
         yield return DeveloperKey(Key.F8);
         game.SetDeveloperValue(DeveloperSetting.MoveSpeed,9);
-        ClickConfig("Waves");ClickConfig("Dev_Wave3");
-        Check("W3 jump discards picker and starts fresh preparation",game.Wave==3&&game.Phase==DuelPhase.Prepare&&!game.DeveloperToolsOpen&&!game.Paused&&Time.timeScale==1&&!AudioListener.pause);
+        ClickConfig("Waves");ClickConfig("Dev_Wave4");
+        Check("Bonus jump discards picker and starts fresh preparation",game.Wave==DuelGame.BonusWave&&game.Phase==DuelPhase.Prepare&&!game.DeveloperToolsOpen&&!game.Paused&&Time.timeScale==1&&!AudioListener.pause);
         Check("jump keeps equipped order and tuning",game.DraftLoadout.TotalRules==2&&game.DraftLoadout.OrderedRules()[0].Action=="Q01"&&game.Player.GetComponent<PlayerMovement>().MoveSpeed==9);
-        Check("W3 has both fresh actors and full resources",game.Bosses.Count==2&&game.Bosses.All(b=>b.Health.CurrentHealth==b.Health.MaxHealth)&&game.Player.CurrentHealth==game.Player.MaxHealth&&game.Rifle.AmmoInMagazine==game.Rifle.MagazineSize);
+        Check("Bonus has both fresh actors and full resources",game.Bosses.Count==2&&game.Bosses.All(b=>b.Health.CurrentHealth==b.Health.MaxHealth)&&game.Player.CurrentHealth==game.Player.MaxHealth&&game.Rifle.AmmoInMagazine==game.Rifle.MagazineSize);
         yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);yield return Seconds(.5f);
-        Check("W3 reaches live combat",game.Phase==DuelPhase.Fight&&game.FightClock>0);
+        Check("Bonus reaches live combat",game.Phase==DuelPhase.Fight&&game.FightClock>0);
         checkingPause=true;game.SetPause(true);yield return DeveloperKey(Key.F8);yield return DeveloperKey(Key.Escape);
         Check("closing panel preserves preexisting pause",!game.DeveloperToolsOpen&&game.Paused&&Time.timeScale==0);
         yield return DeveloperKey(Key.F8);
         var oldPlayer=game.Player;var oldRules=game.Rules;
         ClickConfig("Waves");ClickConfig("Dev_Wave1");yield return Frames(3);
-        Check("paused W3 to W1 clears old encounter",game.Wave==1&&game.Phase==DuelPhase.Prepare&&oldPlayer==null&&!ReferenceEquals(oldRules,game.Rules)&&game.Bosses.Count==1&&game.Bosses[0].ActorId==1&&!game.Paused);
+        Check("paused Bonus to W1 clears old encounter",game.Wave==1&&game.Phase==DuelPhase.Prepare&&oldPlayer==null&&!ReferenceEquals(oldRules,game.Rules)&&game.Bosses.Count==1&&game.Bosses[0].ActorId==1&&!game.Paused);
         yield return DeveloperKey(Key.F8);ClickConfig("Waves");ClickConfig("Dev_Wave2");
         Check("jump during preparation selects Swordsman",game.Wave==2&&game.Phase==DuelPhase.Prepare&&game.Bosses.Count==1&&game.Bosses[0].ActorId==2);
         yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);yield return Seconds(.5f);
@@ -47,8 +47,8 @@ public static partial class BossEncounterSmoke
         yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);yield return Seconds(.5f);
         Check("W1 reaches live combat",game.Phase==DuelPhase.Fight&&game.FightClock>0);
         game.Player.TakeDamage(10000,null);yield return Until(()=>game.Phase==DuelPhase.Failed,.5f);
-        yield return DeveloperKey(Key.F8);ClickConfig("Waves");ClickConfig("Dev_Wave3");
-        Check("defeat to W3 recovers cleanly",game.Phase==DuelPhase.Prepare&&game.Wave==3&&!game.Player.IsDead&&game.DraftLoadout.TotalRules==2);
+        yield return DeveloperKey(Key.F8);ClickConfig("Waves");ClickConfig("Dev_Wave4");
+        Check("defeat to Bonus recovers cleanly",game.Phase==DuelPhase.Prepare&&game.Wave==DuelGame.BonusWave&&!game.Player.IsDead&&game.DraftLoadout.TotalRules==2);
         yield return DeveloperKey(Key.F8);
         SetAlphaGameSize(1280,720);yield return Frames(8);
         ScreenCapture.CaptureScreenshot(Output+"developer-wave-1280.png");yield return Frames(3);
@@ -131,15 +131,15 @@ public static partial class BossEncounterSmoke
         SetAlphaGameSize(1920,1080);yield return Frames(8);ScreenCapture.CaptureScreenshot(Output+"developer-health-1920.png");yield return Frames(3);
         Check("health panel contains editable living Boss values",Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<TMP_InputField>().All(f=>f.interactable));
         game.ResetDeveloperTuning();game.ToggleDeveloperTools();
-        Check("restore defaults reaches actual components",game.Player.GetComponent<PlayerMovement>().MoveSpeed==7&&game.Dodge.DodgeStartInterval==2&&game.Rifle.BulletDamage==12&&game.Rifle.MagazineSize==8);
-        yield return AlphaFresh(1,d=>Rule(d,0,34,"M01"));AlphaPlace(-8,3);yield return DeveloperKey(Key.F8);
+        Check("restore defaults reaches actual components",game.Player.GetComponent<PlayerMovement>().MoveSpeed==7&&Mathf.Approximately(game.Dodge.DodgeStartInterval,PlayerDodge.LegacyCooldown)&&game.Rifle.BulletDamage==28&&game.Rifle.MagazineSize==6);
+        yield return AlphaFresh(1,d=>{var rule=V2Ground("M11");rule.MoveDirection=MoveDirectionOption.TowardEnemy;V2Rule(d,rule);});AlphaPlace(-8,3);yield return DeveloperKey(Key.F8);
         game.SetDeveloperValue(DeveloperSetting.MoveSpeed,0);game.SetDeveloperValue(DeveloperSetting.DodgeImmunity,0);
         game.ToggleDeveloperTools();yield return Frames(8);
         Check("zero Move speed does not claim rule execution",game.Player.GetComponent<Rigidbody2D>().linearVelocity.x==0&&!game.Player.GetComponent<PlayerInputReader>().ConditionalFrame.MovementOwned&&!Feedback(0).Executing);
         bool dodged=game.Dodge.TryDodge(1);int beforeHit=game.Player.CurrentHealth;game.Player.TakeDamage(1,null);
         Check("zero Dodge immunity grants no free first physics step",dodged&&!game.Player.IsInvulnerable&&game.Player.CurrentHealth==beforeHit-1);
         yield return DeveloperKey(Key.F8);game.ResetDeveloperTuning();game.ToggleDeveloperTools();
-        game.NewGame();yield return Frames(3);ClickConfig("AddRule");yield return Frames(3);
+        game.NewGame();game.CompleteCharacterCreation();yield return Frames(3);ClickConfig("AddRule");yield return Frames(3);
         yield return DeveloperKey(Key.F8);yield return DeveloperKey(Key.Escape);
         Check("Esc closes developer panel without closing pending picker",!game.DeveloperToolsOpen&&!Object.FindAnyObjectByType<DuelUI>().ConfigurationReady
             &&Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<UnityEngine.UI.Button>().Any(b=>b.name=="Option"));
@@ -148,7 +148,7 @@ public static partial class BossEncounterSmoke
         for(int wave=1;wave<=3;wave++)
         {
             yield return AlphaFresh(wave,null,false);MouseAt(game.Bosses[0].Body.bounds.center,true);yield return Seconds(2);mouseHeld=false;
-            Record($"SHORT W{wave} phase={game.Phase} time={game.FightClock:F2} paidShots={game.Rifle.TriggerPulls} hp={game.Player.CurrentHealth}");
+            Record($"SHORT {game.WaveLabel} phase={game.Phase} time={game.FightClock:F2} paidShots={game.Rifle.TriggerPulls} hp={game.Player.CurrentHealth}");
         }
         game.MainMenu();yield return Frames(3);
         Record("NOT TESTED: physical input, balance, exhaustive tuning combinations and long sessions.");

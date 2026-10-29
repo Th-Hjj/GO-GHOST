@@ -14,9 +14,10 @@ public static partial class BossEncounterSmoke
 
     static IEnumerator AimAssist()
     {
-        Check("shared catalog and rule expressions use the three new names",
-            ConditionalCatalog.Response("Q01").Label=="Auto Aim at Nearest Enemy"
-            &&ConditionalCatalog.Response("Q02").Label=="Auto Aim at Lowest-Health Enemy"
+        Check("shared catalog labels Auto Aim targets and Aim Assist",
+            ConditionalCatalog.RuleActionLabel(new ConditionalRule{Action="Q01",AutoAim=AutoAimOption.Nearest})=="Auto Aim (Nearest)"
+            &&ConditionalCatalog.RuleActionLabel(new ConditionalRule{Action="Q01",AutoAim=AutoAimOption.LowestHealth})=="Auto Aim (Lowest Health)"
+            &&ConditionalCatalog.ExecutionAction(new ConditionalRule{Action="Q01",AutoAim=AutoAimOption.LowestHealth})=="Q02"
             &&ConditionalCatalog.RuleActionLabel(new ConditionalRule{Action="Q06"})=="Aim Assist");
         yield return AlphaFresh(3,null);
         AlphaPlace(-10,2);
@@ -30,7 +31,8 @@ public static partial class BossEncounterSmoke
         // Resolve real controllers against current public body contacts, independent of mouse pixels.
         foreach(string action in new[]{"Q01","Q02"})
         {
-            var loadout=new ConditionalLoadout();V2Rule(loadout,new ConditionalRule{Condition=17,Action=action});
+            var loadout=new ConditionalLoadout();V2Rule(loadout,new ConditionalRule{Condition=17,Action="Q01",
+                AutoAim=action=="Q02"?AutoAimOption.LowestHealth:AutoAimOption.Nearest});
             using(var controller=new ConditionalController(game.Player,game.Bosses,LayoutSupports(),game.ArenaBounds,loadout))
             {
                 var raw=new RawPlayerInput{Aim=Vector2.left,CommittedAim=Vector2.left,Fire=true};
@@ -72,11 +74,18 @@ public static partial class BossEncounterSmoke
                 yield return null;result=assist.Resolve(raw);
                 float error=Vector2.Angle(result.Aim,direct);smooth&=error<=lastError+.02f;lastError=error;
             }
-            Check("stationary assistance reaches seventy-percent correction within .09 combat seconds without locking",
-                smooth&&lastError>=2.39f&&lastError<2.8f,"error="+lastError);
+            Check("inside ten degrees assistance converges on the body centre within .09 combat seconds",
+                smooth&&lastError<.5f,"error="+lastError);
             raw.Aim=AimRotate(direct,-9);var moved=assist.Resolve(raw);
-            Check("mouse movement updates immediately while additive correction stays bounded",
-                Vector2.SignedAngle(result.Aim,moved.Aim)<-.3f&&Vector2.Angle(raw.Aim,moved.Aim)<=6.31f);
+            Check("mouse movement updates immediately while correction never exceeds the raw error",
+                Vector2.SignedAngle(result.Aim,moved.Aim)<-.3f&&Vector2.Angle(raw.Aim,moved.Aim)<=9.01f);
+            // The near Boss sits above the far one; probe the outer band on the empty lower side.
+            raw.Aim=AimRotate(direct,-15);started=Time.time;
+            while(Time.time-started<.12f){yield return null;result=assist.Resolve(raw);}
+            var bounds=far.Body.bounds;Vector2 muzzle=game.Rifle.GetMuzzlePosition(result.Aim);
+            Check("outer 15 degree assistance lands inside the body without centring",result.AimOwned&&assist.CurrentTargetId==far.ActorId
+                &&bounds.IntersectRay(new Ray(muzzle,result.Aim),out float hitDistance)&&hitDistance>=0&&Vector2.Angle(result.Aim,direct)>.05f,
+                "error="+Vector2.Angle(result.Aim,direct));
             raw.Aim=AimRotate(direct,2);result=assist.Resolve(raw);
             Check("crossing target never leaves assistance pulling away from it",
                 Vector2.Angle(result.Aim,direct)<=2.01f&&Vector2.SignedAngle(raw.Aim,result.Aim)<=.01f);
@@ -106,9 +115,9 @@ public static partial class BossEncounterSmoke
         var reader=game.Player.GetComponent<PlayerInputReader>();
         Vector2 toward=((Vector2)trainer.Body.bounds.center-game.Rifle.AimOrigin).normalized;
         MouseAt(game.Rifle.AimOrigin+AimRotate(toward,-6)*10,false);yield return Seconds(.25f);
-        Check("live Training input adopts soft assistance",reader.ConditionalFrame.AimOwned
-            &&Vector2.Angle(reader.AimDirection,toward)>1.5f&&Vector2.Angle(reader.AimDirection,toward)<2.2f
-            &&Vector2.Angle(reader.RawInput.Aim,toward)>3);
+        Check("live Training input locks inside ten degrees",reader.ConditionalFrame.AimOwned
+            &&Vector2.Angle(reader.AimDirection,toward)<.5f&&Vector2.Angle(reader.RawInput.Aim,toward)>3,
+            "error="+Vector2.Angle(reader.AimDirection,toward));
         int health=trainer.Health.CurrentHealth;mouseHeld=true;yield return Seconds(.65f);mouseHeld=false;
         Check("assisted real shots spend ammo and hit current body",game.Rifle.ShotsFired>0&&trainer.Health.CurrentHealth<health);
         game.ContinueFromTraining();game.StartFight();yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);

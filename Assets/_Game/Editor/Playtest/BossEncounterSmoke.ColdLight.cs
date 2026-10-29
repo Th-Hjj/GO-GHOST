@@ -800,7 +800,7 @@ public static partial class BossEncounterSmoke
             game.ToggleDeveloperTools();yield return Frames(2);
             foreach(string tab in new[]{"Player","Weapon","Health"}){ClickConfig(tab);yield return Frames(2);TextFits(width+" Plex F8 "+tab);}
             game.ToggleDeveloperTools();checkingPause=false;game.Player.TakeDamage(99999,null);yield return Frames(3);TextFits(width+" Plex Defeat");
-            game.ConfigurePlaytestWave(3);game.StartFight();yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);StopPolicies();TextFits(width+" Plex dual-Boss HUD");
+            game.ConfigurePlaytestWave(DuelGame.BonusWave);game.StartFight();yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);StopPolicies();TextFits(width+" Plex dual-Boss HUD");
             foreach(var boss in game.Bosses)boss.Health.TakeDamage(99999,game.Player.gameObject);
             yield return Until(()=>game.Phase==DuelPhase.Complete,1.2f);Check(width+" controlled Complete",game.Phase==DuelPhase.Complete);TextFits(width+" Plex Complete");
             game.MainMenu();yield return Frames(3);Check(width+" row materials released",Resources.FindObjectsOfTypeAll<Material>().All(m=>m.name!="Rule signal"));
@@ -825,7 +825,7 @@ public static partial class BossEncounterSmoke
             var categoryScroll=Object.FindAnyObjectByType<DuelUI>().GetComponentsInChildren<UnityEngine.UI.ScrollRect>().First(s=>s.name=="SelectorCategories");
             Check(width+" six categories retain visible height",categoryScroll.content.rect.height<=categoryScroll.viewport.rect.height+1);
             yield return ColdCapture("typography-config-"+width);
-            ClickConfig("CancelRuleEdit");game.ConfigurePlaytestWave(3);game.StartFight();yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);StopPolicies();
+            ClickConfig("CancelRuleEdit");game.ConfigurePlaytestWave(DuelGame.BonusWave);game.StartFight();yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);StopPolicies();
             foreach(var boss in game.Bosses)boss.Health.TakeDamage(99999,game.Player.gameObject);
             yield return Until(()=>game.Phase==DuelPhase.Complete,1.2f);Check(width+" controlled result reaches Complete",game.Phase==DuelPhase.Complete);TextFits(width+" Complete");
         }

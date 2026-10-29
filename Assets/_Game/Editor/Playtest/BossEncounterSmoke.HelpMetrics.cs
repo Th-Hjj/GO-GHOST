@@ -34,8 +34,9 @@ public static partial class BossEncounterSmoke
             &&!ui.GetComponentsInChildren<TMP_Text>().Any(t=>t.text=="Presets"||t.text=="Apply"));
         ScreenCapture.CaptureScreenshot(Output+"help-controls-1280.png"); yield return Frames(3);
         ClickConfig("HelpTab1"); yield return Frames(5);
-        Check("Configuration help explains AND and parameters",ui.GetComponentsInChildren<TMP_Text>().Any(t=>t.text=="What is configuration?")
-            &&ui.GetComponentsInChildren<TMP_Text>().Any(t=>t.text.Contains("(AND)")));
+        Check("Configuration help defines Condition and Action only",ui.GetComponentsInChildren<TMP_Text>().Any(t=>t.text=="What is configuration?")
+            &&ui.GetComponentsInChildren<TMP_Text>().Any(t=>t.text=="Condition: when to act.\nAction: what to do.")
+            &&!ui.GetComponentsInChildren<TMP_Text>().Any(t=>t.text.Contains("(AND)")));
         ScreenCapture.CaptureScreenshot(Output+"help-configuration-1280.png"); yield return Frames(3);
         var scroll=Private<UnityEngine.UI.ScrollRect>(ui,"helpScroll"); scroll.verticalNormalizedPosition=0;
         yield return Frames(3); ScreenCapture.CaptureScreenshot(Output+"help-configuration-bottom.png"); yield return Frames(3);
@@ -88,7 +89,9 @@ public static partial class BossEncounterSmoke
         Check("Abandoned retry records reason and no extra death",PlayMetrics.History.Count==2&&PlayMetrics.History[1].endReason=="main_menu"&&PlayMetrics.Run.deathsByWave[1]==1);
         Check("Earlier named record stays unchanged",File.ReadAllText(firstPath)==oldBytes);
 
-        yield return AlphaFresh(1,d=>V2Rule(d,V2Ground("Q06"))); PlayMetrics.MarkTestData(); AlphaPlace(-5,5); TurningCursor(1,false); yield return Seconds(.3f);
+        yield return AlphaFresh(1,d=>V2Rule(d,V2Ground("Q06"))); PlayMetrics.MarkTestData(); AlphaPlace(-5,5); yield return Frames(2);
+        // Keep the virtual cursor a few degrees off the live body centre, inside the assist cone.
+        MouseAt((Vector2)game.Bosses[0].Body.bounds.center+Vector2.up*.6f,false); yield return Seconds(.3f);
         Check("Aim Assist is distinct from full automatic aim",Metric(ControlOperation.Aim).assistedSeconds>0&&Metric(ControlOperation.Aim).automaticSeconds==0);
         game.MainMenu(); game.NewGame(); PlayMetrics.MarkTestData(); game.Appearance.Name="Skip check"; ReminderDue(); yield return Frames(3);
         ClickConfig("PlaytestYes"); yield return Frames(3);
@@ -96,13 +99,14 @@ public static partial class BossEncounterSmoke
         game.SetPause(false); yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f); yield return Seconds(.25f);
         Check("W2 after skip advances",game.Phase==DuelPhase.Fight&&game.FightClock>.2f);
         game.MainMenu();
-        yield return AlphaFresh(3,null,false); PlayMetrics.MarkTestData(); yield return Seconds(.25f);
-        Check("W3 still advances with both health snapshots",game.Phase==DuelPhase.Fight&&game.FightClock>.2f&&PlayMetrics.Current.gunnerMaxHealth>0&&PlayMetrics.Current.swordMaxHealth>0);
+        yield return AlphaFresh(2,null,false); PlayMetrics.MarkTestData(); yield return Seconds(.25f);
+        Check("W2 advances with Swordsman health snapshot",game.Phase==DuelPhase.Fight&&game.FightClock>.2f&&PlayMetrics.Current.swordMaxHealth>0&&PlayMetrics.Current.gunnerMaxHealth<0);
         foreach(var boss in game.Bosses)boss.Health.TakeDamage(100000,game.Player.gameObject);
-        yield return Until(()=>game.Phase==DuelPhase.Complete,.6f);
+        yield return Until(()=>game.Phase==DuelPhase.FinalBossReady,.6f);
         var complete=ReadNamedRun(PlayMetrics.JsonPath);
-        Check("Controlled completion closes run and retains both Boss endpoints",complete.finished&&complete.endReason=="complete"&&complete.levelCleared&&complete.attempts.Last().gunnerHealth==0&&complete.attempts.Last().swordHealth==0);
-        Check("Single JSON export and schema 3",complete.schemaVersion==3&&!File.Exists(PlayMetrics.CsvPath)&&string.IsNullOrEmpty(PlayMetrics.LastSaveError));
+        Check("Controlled W2 completion closes run with Swordsman endpoint",game.Phase==DuelPhase.FinalBossReady&&complete.finished&&complete.endReason=="complete"
+            &&complete.levelCleared&&complete.attempts.Last().wave==2&&complete.attempts.Last().swordHealth==0&&complete.activeAttempt.result=="none");
+        Check("Single JSON export and schema 4",complete.schemaVersion==4&&!File.Exists(PlayMetrics.CsvPath)&&string.IsNullOrEmpty(PlayMetrics.LastSaveError));
         Record("Named evidence files: "+firstPath+" ; "+secondPath);
         game.MainMenu(); yield return Frames(3);
     }

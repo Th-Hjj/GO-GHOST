@@ -20,7 +20,7 @@ public static partial class BossEncounterSmoke
 
     static IEnumerator TrainingRespawn()
     {
-        game.NewGame();
+        game.NewGame(); game.CompleteCharacterCreation();
         game.EditLoadout(d => V2Rule(d, new ConditionalRule { Condition = 18, Action = "Q06" }));
         game.StartConfiguredEncounter();
         var trainer = game.Bosses[0];
@@ -201,14 +201,14 @@ public static partial class BossEncounterSmoke
     static IEnumerator TrainingFresh(Action<ConditionalLoadout> configure)
     {
         mouseHeld = false; heldKeys = Array.Empty<Key>();
-        game.NewGame();
+        game.NewGame(); game.CompleteCharacterCreation();
         if(configure != null) game.EditLoadout(configure);
         game.StartConfiguredEncounter(); yield return Frames(5);
     }
     static IEnumerator TrainingRoom()
     {
         Record("Test Room: normal UI callbacks, virtual keyboard/mouse, real projectiles and rule evaluation. Controlled lethal damage only for player recovery and short wave progression; no balance/hardware-input claim.");
-        Check("V2 catalog unchanged", ConditionalCatalog.Conditions.Length == 24 && ConditionalCatalog.Responses.Length == 21 && ConditionalCatalog.MaxRulesTotal == 20);
+        Check("Current catalog unchanged", ConditionalCatalog.Conditions.Length == 21 && ConditionalCatalog.Responses.Length == 10 && ConditionalCatalog.MaxRulesTotal == 20);
         game.NewGame(); SetAlphaGameSize(1280,720); yield return Frames(6);
         Check("New Game remains empty/manual, first button enters training", game.DraftLoadout.TotalRules == 0
             && ConfigButtonNamed("StartFight").GetComponentInChildren<TMPro.TMP_Text>().text == "Enter Test Room");
@@ -324,25 +324,25 @@ public static partial class BossEncounterSmoke
         Check("training and W1 use identical camera framing with same rule count",Camera.main.rect==trainingCameraRect
             &&Mathf.Approximately(Camera.main.orthographicSize,trainingCameraSize)&&Camera.main.transform.position==trainingCameraPosition);
         Check("Start Fight creates fresh normal W1 preparation",game.Phase==DuelPhase.Prepare&&game.Wave==1&&!game.Bosses[0].IsTrainingEnemy
-            &&game.Player.CurrentHealth==game.Player.MaxHealth&&game.Rifle.AmmoInMagazine==8&&game.Dodge.CooldownRemaining==0
+            &&game.Player.CurrentHealth==game.Player.MaxHealth&&game.Rifle.AmmoInMagazine==game.Rifle.MagazineSize&&game.Dodge.CooldownRemaining==0
             &&Private<bool>(oldRules,"disposed")&&Projectile.Active.Count==0&&JsonUtility.ToJson(game.DraftLoadout)==saved
             &&Mathf.Abs(Camera.main.transform.position.x)<1&&LayoutSupports().Length==8
             &&formal.Skip(1).All(c=>!c.gameObject.activeInHierarchy));
         var geometry=Private<ConditionalThreatGeometry>(game.Rules,"geometry");
         Check("formal threat prediction retains original arena bounds",Private<float>(geometry,"leftEdge")==-15&&Private<float>(geometry,"rightEdge")==15);
-        for(int wave=1;wave<=3;wave++)
+        for(int wave=1;wave<=2;wave++)
         {
             yield return Until(()=>game.Phase==DuelPhase.Fight,4);yield return Seconds(1.5f);
-            Check("normal W"+wave+" enters with expected Bosses",game.Phase==DuelPhase.Fight&&game.Wave==wave&&game.Bosses.Count==(wave==3?2:1));
+            Check("normal W"+wave+" enters with expected Bosses",game.Phase==DuelPhase.Fight&&game.Wave==wave&&game.Bosses.Count==1);
             foreach(var boss in game.Bosses)boss.Health.TakeDamage(boss.Health.MaxHealth,game.Player.gameObject);
-            yield return Until(()=>game.Phase==(wave==3?DuelPhase.Complete:DuelPhase.Configure),2);
-            if(wave<3)
+            yield return Until(()=>game.Phase==(wave==2?DuelPhase.FinalBossReady:DuelPhase.Configure),2);
+            if(wave<2)
             {
                 Check("subsequent setup remains Start Fight",ConfigButtonNamed("StartFight").GetComponentInChildren<TMPro.TMP_Text>().text=="Start Fight");
                 yield return PointerConfig("StartFight");
             }
         }
-        Check("three-wave progress still completes",game.Phase==DuelPhase.Complete);
+        Check("two-wave progress reaches Meet the Final Boss",game.Phase==DuelPhase.FinalBossReady);
         yield return TrainingThreat();
         yield return TrainingFresh(d=>V2Rule(d,new ConditionalRule{Condition=25,Action="D01"}));
         yield return Until(()=>game.Rules.AcceptedDodges>0,5);

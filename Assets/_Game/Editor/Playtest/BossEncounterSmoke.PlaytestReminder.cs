@@ -126,10 +126,9 @@ public static partial class BossEncounterSmoke
         ReminderDue(); yield return Frames(2);
         Check("No reminder in W2", !game.PlaytestPromptOpen && !Private<bool>(game, "playtestReminderArmed"));
         game.Bosses[0].Health.TakeDamage(99999, game.Player.gameObject); yield return Seconds(1);
-        Check("Controlled W2 win continues to W3 configuration", game.Wave == 3 && game.Phase == DuelPhase.Configure);
-        game.StartFight(); yield return Until(() => game.Phase == DuelPhase.Fight, 4.2f);
-        yield return Seconds(.3f);
-        Check("W3 still runs both Bosses", game.Wave == 3 && game.Bosses.Count == 2 && game.FightClock > 0);
+        Check("Controlled W2 win waits on Meet the Final Boss", game.Wave == 2 && game.Phase == DuelPhase.FinalBossReady);
+        game.MeetFinalBoss(); yield return Frames(2);
+        Check("Final Boss visit has no reminder", game.Wave == DuelGame.FinalBossWave && game.Phase == DuelPhase.FinalBoss && !game.PlaytestPromptOpen);
 
         game.NewGame(); game.CompleteCharacterCreation(); game.StartFight();
         yield return Until(() => game.Phase == DuelPhase.Fight, 4.2f);

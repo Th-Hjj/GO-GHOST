@@ -61,6 +61,8 @@ public static partial class BossEncounterSmoke
     {d.Operations[op].Rules.Add(new ConditionalRule{Condition=condition,Action=response});}
     static IEnumerator AlphaFresh(int wave,Action<ConditionalLoadout> configure,bool stop=true)
     {
+        // Retained fixtures address the former W3 duo, now the Bonus wave; W3 is the Final Boss visit.
+        if(wave==DuelGame.FinalBossWave)wave=DuelGame.BonusWave;
         RestoreFixture();heldKeys=Array.Empty<Key>();mouseHeld=mouseBurstHeld=false;game.ConfigurePlaytestWave(wave);configure?.Invoke(game.DraftLoadout);
         game.StartFight();yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);
         if(stop)StopPolicies();yield return Frames(4);

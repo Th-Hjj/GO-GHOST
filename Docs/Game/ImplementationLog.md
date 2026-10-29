@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-10-29 — Pause Configuration button wording
+
+- **Change:** from clean main `49bc715`, shorten the pause-menu button from Back to Configuration to Configuration. Keep the same size, position, styling and `Reconfigure` callback; synchronize current wording docs and mirrored authority.
+- **Validation:** normal Unity recompile completed with zero compiler errors/warnings; compiled `DuelUI.Show` contains Configuration for both pause and defeat buttons, with no old pause label. `git diff --check` passed. No new Play Mode flow or visual capture was run for this string-only change. Console inspection found the previously documented TMP font-disposal errors; no font code changed. Standalone and Build/Release **NOT RUN**.
+
 ## 2026-10-29 — Seven-minute playtest Wave 2 reminder
 
 - **Baseline / implementation:** clean main `dc8a8a0`; Unity 6000.6.0f1, CLI 1.0.0-beta.14. No existing timed reminder; baseline compilation was healthy and Console had zero errors / one warning. New Game now arms 420 seconds of real elapsed time, including creation/configuration/Training/retries/pause. If Wave 1 is uncleared, one paused modal displays exactly "The playtest is ending soon. Do you want to jump to wave 2?" with Yes / No. A real W1 clear cancels it, including a clear on the deadline frame. Menu cancels it and New Game resets it.

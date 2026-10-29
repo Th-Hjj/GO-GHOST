@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-10-29 — Simple procedural defeat cue
+
+- **Request / baseline:** clean main `1d26540`. Replace the strange death sound with a simple failure cue; no human/robot death voice or comic jingle. User explicitly accepts code-generated audio.
+- **Change:** `SfxSet` resolves Defeat to a cached, instance-owned 0.32-second mono clip: 220 Hz then 165 Hz sine tones, a 20 ms gap and smooth attack/release. Retain existing gain, priority, deduplication and playback lifecycle; destroy the generated clip with its owner. Serialized clip slots and all other cues are unchanged.
+- **Validation:** Unity compilation succeeded. Live W2 preparation reached advancing combat (2.48 seconds); controlled lethal damage reached Failed, requested Defeat exactly once and assigned the generated clip to the existing AudioSource with zero dropped cues. Clip duration 0.32 seconds, peak 0.65 before existing gain, cache reuse confirmed. An initial probe called StartFight directly from Failed, which correctly did nothing. Before the continuation probe, the live game had returned to Menu; Reconfigure/StartFight remained gated there, so retry continuation is NOT VERIFIED. Left that live session untouched thereafter. Preview exported from the actual runtime clip to `Logs/DefeatAudio/simple-defeat.wav` at the existing 0.40 cue gain. Diff whitespace check passed.
+- **Limits:** controlled death proves playback routing, not subjective listening quality. Hardware audio, extended combat, Standalone and Build/Release NOT TESTED / NOT RUN. No gameplay tuning or serialized asset changes.
+
 ## 2026-10-29 — Final Boss visit, optional Bonus and W2 metrics cutoff
 
 - **Request / baseline:** clean main `207271b`. Move the former mandatory W3 duo to Bonus, replace W3 with a stationary 9999-HP rainbow stickman visit, and show the supplied seven dialogue lines. Follow-up explicitly excludes the Final Boss room and Bonus stats from metrics.

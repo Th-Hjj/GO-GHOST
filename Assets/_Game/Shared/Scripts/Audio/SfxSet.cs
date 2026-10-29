@@ -22,6 +22,7 @@ public sealed class SfxSet : MonoBehaviour
     [SerializeField] private AudioClip[] clips = new AudioClip[CueCount];
     [SerializeField] private float gain = 1f;
     private PresentationOneShot output;
+    private AudioClip defeatCue;
     private readonly int[] requested = new int[CueCount];
     private readonly Dictionary<(int actor, int cue), int> lastFrame = new Dictionary<(int, int), int>();
     private readonly HashSet<(int actor, int attack, int phase, int cue)> accepted = new HashSet<(int, int, int, int)>();
@@ -63,7 +64,9 @@ public sealed class SfxSet : MonoBehaviour
     {
         int index = (int)id;
         if (output == null || !output.ScopeOpen || AudioListener.pause || output.Paused
-            || index < 0 || index >= CueCount || clips == null || index >= clips.Length || clips[index] == null) return;
+            || index < 0 || index >= CueCount) return;
+        AudioClip clip = Clip(id);
+        if (clip == null) return;
         if (attackId != 0)
         {
             var key = (actorId, attackId, phase, index);
@@ -85,13 +88,45 @@ public sealed class SfxSet : MonoBehaviour
             uint variation = unchecked((uint)(actorId * 397 ^ attackId * 31 ^ phase * 17 ^ requested[index]));
             pitch += ((variation % 7) - 3f) * .01f;
         }
-        output.TryPlay(clips[index], gain * Level(id), Priority(id), pitch, 0f, actorId, attackId);
+        output.TryPlay(clip, gain * Level(id), Priority(id), pitch, 0f, actorId, attackId);
     }
 
     public AudioClip Clip(Sfx id)
     {
+        if (id == Sfx.Defeat)
+        {
+            if (defeatCue == null) defeatCue = CreateDefeatCue();
+            return defeatCue;
+        }
         int index = (int)id;
         return clips != null && index >= 0 && index < clips.Length ? clips[index] : null;
+    }
+
+    // Two quiet, fixed-pitch sine tones: no voice, pitch slide, noise or reverb.
+    private static AudioClip CreateDefeatCue()
+    {
+        const int sampleRate = 44100;
+        const float duration = .32f;
+        var samples = new float[Mathf.RoundToInt(sampleRate * duration)];
+        for (int i = 0; i < samples.Length; i++)
+        {
+            float time = i / (float)sampleRate;
+            bool first = time < .12f;
+            float localTime = first ? time : time - .14f;
+            float length = first ? .12f : .18f;
+            if (localTime < 0f) continue;
+            float envelope = Mathf.SmoothStep(0f, 1f, localTime / .008f)
+                * Mathf.SmoothStep(0f, 1f, (length - localTime) / .045f);
+            samples[i] = .65f * envelope * Mathf.Sin(2f * Mathf.PI * (first ? 220f : 165f) * localTime);
+        }
+        var clip = AudioClip.Create("Simple defeat cue", samples.Length, 1, sampleRate, false);
+        clip.SetData(samples, 0);
+        return clip;
+    }
+
+    private void OnDestroy()
+    {
+        if (defeatCue != null) Destroy(defeatCue);
     }
 
     /// <summary>Gameplay request evidence only; this does not claim an audible listening check.</summary>

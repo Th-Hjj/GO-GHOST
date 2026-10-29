@@ -4,7 +4,7 @@ Confirmed by Thomas, 2026-10-29. Body Configuration's Help opens two read-only p
 
 The first page contains only A/D movement, mouse aim, Space jump, Left Shift Dodge, left mouse Fire, right mouse Rapidly fire and Escape pause/resume. Thomas's screenshot corrections remove the S entry, extra aim/fire/reload explanations, Training/Configuration navigation and the Pause and practice heading.
 
-The second uses three short sections: Condition (when) and Action (what); Add Rule, parameters, editing/removal; multiple AND conditions and row priority. Long examples and extended system explanations are omitted at Thomas's request. The help does not install a loadout or alter gameplay.
+The second contains only Condition (when) and Action (what). Thomas's follow-up removes the Add and edit and Conditions and priority sections, including their headings and explanations. The help does not install a loadout or alter gameplay.
 
 Presets, their preview/Apply workflow, the F8 Presets section and death-based unlocking have been removed. Old unlock PlayerPrefs are unused and left untouched. New Game starts with empty rules. F8 retains Tuning, Waves and Analytics.
 

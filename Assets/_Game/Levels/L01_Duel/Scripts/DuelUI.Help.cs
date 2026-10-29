@@ -69,8 +69,6 @@ namespace GoGhost.Duel
             else
             {
                 HelpEntry(content,width,"Condition → Action","Condition: when to act.\nAction: what to do.");
-                HelpEntry(content,width,"Add and edit","Click Add Rule, then choose a Condition and an Action.\nChoose parameters when shown. Click a rule to edit; × removes it.");
-                HelpEntry(content,width,"Conditions and priority","Hover a condition and use + Condition. All conditions must be true (AND).\nHigher rules take priority. Use ▲ / ▼ to reorder.");
             }
             Canvas.ForceUpdateCanvases();
             helpScroll.verticalNormalizedPosition=helpPositions[helpTab];

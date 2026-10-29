@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-10-29 — Remove remaining configuration instructions
+
+- **Request / baseline:** waited for the Boss naming chat to finish; clean main `f46f23a`. Remove the screenshot's Add and edit and Conditions and priority sections, including headings and bodies. Keep Condition / Action definitions and controls unchanged.
+- **Change:** delete the two HelpEntry calls, so their layout elements and spacing are no longer created; synchronize Help.md. No rule behavior changes.
+- **Validation:** diff whitespace check passed. Editor script recompile reports up to date; live Editor readback confirms compilation is idle and scriptCompilationFailed is false. The CLI recompile shortcut returned HTTP 400; the supported Pipeline command and state readback succeeded. Play Mode page inspection, combat, physical input and Build/Release NOT RUN for this two-call removal.
+
 ## 2026-10-29 — Gunner and Swordsman names
 
 - **Request / baseline:** clean main `d4b0dad`. Thomas corrected the AI-invented Boss names and explicitly requested file names be changed too. Gunner and Swordsman are the authoritative names; earlier log entries retain historical wording only.

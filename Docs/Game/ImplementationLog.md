@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-10-29 — Shorter Alpha Playtest README
+
+- Thomas replaced each package's PLAYTEST-README.txt with only the title and three control lines (`GO GHOST - Alpha Playtest - Windows x64` / `macOS`). Both ZIPs were rebuilt from the unchanged players: Windows 224 files, 64,240,326 bytes, SHA-256 `df2fc597…992cd`; macOS 223 files, 63,654,456 bytes, SHA-256 `8a84cf85…6b259`. Expand-Archive/Python extraction matched every source file and the seven macOS binaries keep 0755. The three Release assets were replaced and their uploaded digests match; the release notes now describe the README as controls only. Game builds, version and telemetry are unchanged.
+
 ## 2026-10-29 — Remove Claude co-author attribution from history
 
 - **Request:** Thomas asked to remove Claude from the repository's GitHub contributors and approved rewriting history and force-pushing. Claude appeared only through `Co-Authored-By: Claude ...` (30 commits) and `Claude-Session:` (2 commits) trailers; every commit author was Thomas or Walker.

@@ -34,14 +34,13 @@ namespace GoGhost.Duel
             Image(page,Vector2.zero,new Vector2(4000,4000),new Color(.025f,.025f,.025f,.98f)).raycastTarget=true;
             Text("Developer",page,new Vector2(-390,380),new Vector2(650,60),36,TextAlignmentOptions.Left,headingFont);
             Button("Close  [F8]",page,new Vector2(565,380),new Vector2(260,54),game.ToggleDeveloperTools);
-            string[] sections={"Tuning","Waves","Analytics","Presets"};
+            string[] sections={"Tuning","Waves","Analytics"};
             for(int i=0;i<sections.Length;i++)
             {
                 int section=i;
-                Button(sections[i],page,new Vector2(-495+i*330,305),new Vector2(300,52),
+                Button(sections[i],page,new Vector2(-440+i*440,305),new Vector2(410,52),
                     ()=>{developerSection=section;Show();},i==developerSection);
             }
-            if(developerSection==3){BuildDeveloperPresets();return;}
             if(developerSection==2){BuildAnalytics();return;}
             if(developerSection==1){BuildDeveloperWaves();return;}
             BuildDeveloperTuning();

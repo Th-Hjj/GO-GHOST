@@ -56,12 +56,12 @@ namespace GoGhost.Duel
         static int ActionCategoryFor(ControlOperation operation) => operation == ControlOperation.Fire ? 2
             : operation == ControlOperation.Dodge ? 0 : (int)operation;
         public int SelectedOperation => actionCategory;
-        public bool ConfigurationReady => !presetHelpOpen && pendingRule == null && selectorRow < 0 && ConditionalCatalog.IsValid(game.DraftLoadout);
+        public bool ConfigurationReady => !helpOpen && pendingRule == null && selectorRow < 0 && ConditionalCatalog.IsValid(game.DraftLoadout);
 
         string ScrollKey(string name,int row,bool condition,bool additional,int category) => name=="EquippedRules"?name:name+"/"+row+"/"+condition+"/"+additional+"/"+category;
         void CaptureConfigurationView()
         {
-            if(page!=null&&page==presetHelpPage)return;
+            if(page!=null&&page==helpPage)return;
             focusName=focusLabel=null;
             if(page==null||game.Phase!=DuelPhase.Configure||displayedDraft!=game.DraftLoadout)
             {configurationScroll.Clear();return;}
@@ -136,9 +136,9 @@ namespace GoGhost.Duel
                 Show();
                 return true;
             }
-            if(presetHelpOpen)
+            if(helpOpen)
             {
-                if(!DeveloperShortcutConsumed&&Keyboard.current!=null&&Keyboard.current.escapeKey.wasPressedThisFrame)ClosePresetHelp();
+                if(!DeveloperShortcutConsumed&&Keyboard.current!=null&&Keyboard.current.escapeKey.wasPressedThisFrame)CloseHelp();
                 return true;
             }
             if (!DeveloperShortcutConsumed && selectorRow >= 0 && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
@@ -170,7 +170,7 @@ namespace GoGhost.Duel
         // its lifecycle owner updates the phase and draws the final page once it is ready.
         public void DiscardRulePicker()
         {
-            presetHelpOpen=false;presetHelpDraft=null;
+            helpOpen=false;helpDraft=null;
             pendingRule=completedPreview=candidatePreview=null;
             pendingRow=selectorRow=completedPreviewRow=-1;
             selectingCondition=selectingAdditional=false;
@@ -251,7 +251,7 @@ namespace GoGhost.Duel
                 selectedDescription="";SetOptionDescription(selectedDescription);
             }
             BuildRuleRows();
-            ConfigButton("PresetHelp","Help",page,new Vector2(left+48,bottom+24),new Vector2(96,48),OpenPresetHelp,style:DuelControlStyle.Navigation);
+            ConfigButton("ConfigurationHelp","Help",page,new Vector2(left+48,bottom+24),new Vector2(96,48),OpenHelp,style:DuelControlStyle.Navigation);
         }
 
         void BuildConfigurationBody()
@@ -568,7 +568,7 @@ namespace GoGhost.Duel
             pendingRule = null;
             pendingRow = selectorRow = -1;
             if (row == displayedRules.Count) Show();
-            else game.EditLoadout(d => { displayedRules.RemoveAt(row); WriteRuleOrder(d); });
+            else game.EditLoadout(d => { displayedRules.RemoveAt(row); WriteRuleOrder(d); }, "remove");
         }
 
         void MoveRule(int row, int direction)
@@ -586,7 +586,7 @@ namespace GoGhost.Duel
                 rules[row] = rules[other];
                 rules[other] = rule;
                 WriteRuleOrder(d);
-            });
+            }, "reorder");
         }
 
         ConditionalRule EditingRule => pendingRule;
@@ -690,6 +690,7 @@ namespace GoGhost.Duel
             int row=selectorRow;
             if(row==displayedRules.Count&&displayedRules.Count>=ConditionalCatalog.MaxRulesTotal)return;
             var complete=pendingRule.Copy();
+            string change=row==displayedRules.Count?"add":"edit";
             completedPreview=complete.Copy();completedPreviewRow=row;candidatePreview=null;
             installedSystem=RuleSystem(complete);installedRow=row;installedAt=Time.unscaledTime;
             pendingRule=null;pendingRow=selectorRow=-1;selectingAdditional=false;
@@ -697,7 +698,7 @@ namespace GoGhost.Duel
             {
                 if(row==displayedRules.Count)displayedRules.Add(complete);else displayedRules[row]=complete;
                 WriteRuleOrder(d);
-            });
+            }, change);
         }
 
         bool CategoryHasSelectableCondition(int category)

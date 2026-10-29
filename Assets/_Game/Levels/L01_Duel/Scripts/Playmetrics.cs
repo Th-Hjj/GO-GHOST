@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Text;
 using GoGhost.Duel;
@@ -19,7 +18,7 @@ public static class PlayMetrics
     {
         public string operation, unit;
         public int automaticCount, manualCount, automaticDrops, manualDrops;
-        public float automaticSeconds, manualSeconds, automaticHoldSeconds;
+        public float automaticSeconds, manualSeconds, assistedSeconds, automaticHoldSeconds;
         public bool hasData;
         public float automaticPercent;
         public List<ActionStats> actions = new List<ActionStats>();
@@ -27,8 +26,9 @@ public static class PlayMetrics
         {
             float a = unit == "seconds" ? automaticSeconds : automaticCount;
             float m = unit == "seconds" ? manualSeconds : manualCount;
-            hasData = a + m > 0;
-            automaticPercent = hasData ? 100f * a / (a + m) : 0;
+            float total = a + m + (unit == "seconds" ? assistedSeconds : 0);
+            hasData = total > 0;
+            automaticPercent = hasData ? 100f * a / total : 0;
         }
     }
     [Serializable] public sealed class Attempt
@@ -37,6 +37,10 @@ public static class PlayMetrics
         public int wave;
         public bool started, developerWaveJump, tuningChanged, testData;
         public float seconds;
+        public string endReason;
+        public int playerHealth = -1, playerMaxHealth = -1;
+        public int gunnerHealth = -1, gunnerMaxHealth = -1, swordHealth = -1, swordMaxHealth = -1;
+        public string[] ruleDescriptions;
         public OperationRules[] rules;
         public float[] initialTuning, finalTuning;
         public OperationStats[] operations = NewOperations();
@@ -52,12 +56,20 @@ public static class PlayMetrics
     }
     [Serializable] public sealed class RunData
     {
-        public int schemaVersion = 2;
+        public int schemaVersion = 3;
         public string sessionId, runId, startedUtc, updatedUtc;
+        public string playerName = "YOU", endedUtc, endReason;
+        public bool characterCreated, finished, waveOneSkipped;
+        public string playtestReminder = "not_shown";
+        public double playSeconds, creationSeconds, configurationSeconds, trainingSeconds, preparationSeconds, fightSeconds, pauseSeconds, resultSeconds;
+        public int helpOpened, rulesAdded, rulesEdited, rulesRemoved, rulesReordered, maxRulesEquipped, trainingDeaths;
+        public double firstRuleAtSeconds = -1, firstFightAtSeconds = -1;
+        public string[] latestRules = Array.Empty<string>();
+        public Attempt activeAttempt;
         public string applicationVersion, platform;
         public bool editor, levelCleared, testData;
         public float combatSeconds, levelClearSeconds;
-        public string percentageMethod = "Equal mean of nonempty operation ratios. Move/Aim: seconds. Jump/Fire/Dodge: accepted counts. Holds and drops excluded; reported separately.";
+        public string percentageMethod = "Equal mean of nonempty operation ratios. Move/Aim: seconds. Jump/Fire/Dodge: accepted counts. Assisted aim is in the denominator, not the automatic numerator. Holds and drops excluded. This is not a comprehension or autonomy score.";
         public string[] tuningNames = Enum.GetNames(typeof(DeveloperSetting));
         public int[] deathsByWave = new int[4];
         public OperationStats[] operations = NewOperations();
@@ -69,6 +81,9 @@ public static class PlayMetrics
     static string sessionId;
     static RunData run;
     static bool counting;
+    static double lastClock, lastSave;
+    static DuelPhase stage;
+    static bool stagePaused;
     public static readonly int[] DeathsByWave = new int[4];
     public static readonly List<Attempt> History = new List<Attempt>();
     static int Total(OperationStats op) => op.automaticCount + op.manualCount;
@@ -86,6 +101,8 @@ public static class PlayMetrics
     public static string DirectoryPath => Path.Combine(Application.persistentDataPath, "Analytics");
     public static string JsonPath => run == null ? "" : Path.Combine(DirectoryPath, run.runId + ".json");
     public static string CsvPath => run == null ? "" : Path.Combine(DirectoryPath, run.runId + ".csv");
+    public static bool RunActive => run != null && !run.finished;
+    public static bool CheckpointDue => RunActive && Time.realtimeSinceStartupAsDouble - lastSave >= 10;
     public static bool Counting => counting && Current != null;
     public static string BossName(int wave) => wave switch { 1 => "Gunner", 2 => "Swordsman", 3 => "Duo", _ => "-" };
 
@@ -94,6 +111,7 @@ public static class PlayMetrics
     {
         sessionId = Guid.NewGuid().ToString("N");
         run = null; Current = null; counting = false; LastSaveError = null;
+        lastClock = lastSave = 0; stage = DuelPhase.Menu; stagePaused = false;
         History.Clear(); Array.Clear(DeathsByWave, 0, DeathsByWave.Length);
     }
     static OperationStats[] NewOperations()
@@ -106,24 +124,106 @@ public static class PlayMetrics
     public static void ResetRun()
     {
         if (Current != null) Finish("abandoned", false);
+        EndRun("new_game");
         if (string.IsNullOrEmpty(sessionId)) sessionId = Guid.NewGuid().ToString("N");
         History.Clear(); Array.Clear(DeathsByWave, 0, DeathsByWave.Length);
         run = new RunData { sessionId = sessionId, runId = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N"),
             startedUtc = DateTime.UtcNow.ToString("o"), applicationVersion = Application.version,
             platform = Application.platform.ToString(), editor = Application.isEditor, attempts = History, deathsByWave = DeathsByWave };
         Current = null; counting = false; LastSaveError = null;
+        stage = DuelPhase.CharacterCreation; stagePaused = false;
+        lastClock = lastSave = Time.realtimeSinceStartupAsDouble;
+        Save();
+    }
+    public static void SetName(string name, bool confirmed = false)
+    {
+        if (!RunActive) return;
+        run.playerName = string.IsNullOrWhiteSpace(name) ? "YOU" : name.Trim();
+        run.characterCreated |= confirmed;
+    }
+    public static void TrackTime()
+    {
+        double now = Time.realtimeSinceStartupAsDouble;
+        double elapsed = Math.Max(0, now - lastClock);
+        lastClock = now;
+        if (!RunActive) return;
+        run.playSeconds += elapsed;
+        if (stagePaused) run.pauseSeconds += elapsed;
+        else switch (stage)
+        {
+            case DuelPhase.CharacterCreation: run.creationSeconds += elapsed; break;
+            case DuelPhase.Configure: run.configurationSeconds += elapsed; break;
+            case DuelPhase.Training: run.trainingSeconds += elapsed; break;
+            case DuelPhase.Prepare: run.preparationSeconds += elapsed; break;
+            case DuelPhase.Fight: run.fightSeconds += elapsed; break;
+            default: run.resultSeconds += elapsed; break;
+        }
+    }
+    public static void SetStage(DuelPhase phase, bool paused)
+    {
+        TrackTime(); stage = phase; stagePaused = paused;
+    }
+    public static void EndRun(string reason)
+    {
+        if (!RunActive) return;
+        TrackTime();
+        if (Current != null) Finish("abandoned", false, reason);
+        run.finished = true; run.endReason = reason; run.endedUtc = DateTime.UtcNow.ToString("o");
+        Save();
+    }
+    public static string[] Describe(ConditionalLoadout loadout)
+    {
+        var rows = loadout.OrderedRules(); var result = new string[rows.Count];
+        for (int i = 0; i < rows.Count; i++)
+        {
+            var expression = ConditionalCatalog.Expression(rows[i]);
+            result[i] = expression.Conditions + " -> " + expression.Action;
+        }
+        return result;
+    }
+    public static void RecordConfiguration(ConditionalLoadout loadout, string change = null)
+    {
+        if (!RunActive) return;
+        TrackTime();
+        run.latestRules = Describe(loadout);
+        run.maxRulesEquipped = Math.Max(run.maxRulesEquipped, loadout.TotalRules);
+        if (loadout.TotalRules > 0 && run.firstRuleAtSeconds < 0) run.firstRuleAtSeconds = run.playSeconds;
+        switch (change)
+        {
+            case "add": run.rulesAdded++; break;
+            case "edit": run.rulesEdited++; break;
+            case "remove": run.rulesRemoved++; break;
+            case "reorder": run.rulesReordered++; break;
+        }
+        Save();
+    }
+    public static void OpenHelp() { if (RunActive) { run.helpOpened++; Save(); } }
+    public static void RecordTrainingDeath() { if (RunActive) { run.trainingDeaths++; Save(); } }
+    public static void Reminder(string choice)
+    {
+        if (!RunActive) return;
+        run.playtestReminder = choice;
+        run.waveOneSkipped |= choice == "yes";
+        Save();
     }
     public static void BeginAttempt(int wave, ConditionalLoadout loadout, float[] tuning, bool waveJump, bool tuned)
     {
-        if (run == null) ResetRun();
+        if (!RunActive) ResetRun();
         if (Current != null) Finish("abandoned", false);
         Current = new Attempt { attemptId = Guid.NewGuid().ToString("N"), wave = wave,
             startedUtc = DateTime.UtcNow.ToString("o"), rules = loadout.Copy().Operations,
             initialTuning = (float[])tuning.Clone(), finalTuning = (float[])tuning.Clone(),
             developerWaveJump = waveJump, tuningChanged = tuned, testData = waveJump || tuned };
+        Current.ruleDescriptions = Describe(loadout);
+        run.latestRules = Current.ruleDescriptions;
         counting = false;
     }
-    public static void StartCounting() { if (Current != null) { Current.started = true; counting = true; } }
+    public static void StartCounting()
+    {
+        if (Current == null) return;
+        TrackTime(); Current.started = true; counting = true;
+        if (run.firstFightAtSeconds < 0) run.firstFightAtSeconds = run.playSeconds;
+    }
     public static void BeginAttempt(int wave) => BeginAttempt(wave, new ConditionalLoadout(), Array.Empty<float>(), false, false);
     public static void CountJump() => Record(ControlOperation.Jump, null, count: 1);
     public static void CountDodge() => Record(ControlOperation.Dodge, null, count: 1);
@@ -141,7 +241,11 @@ public static class PlayMetrics
         Current.tuningChanged = Current.testData = true;
         Current.finalTuning = (float[])tuning.Clone();
     }
-    public static void MarkTestData() { if (Current != null) Current.testData = true; }
+    public static void MarkTestData()
+    {
+        if (RunActive) run.testData = true;
+        if (Current != null) Current.testData = true;
+    }
     public static void Record(ControlOperation operation, string automaticAction, int count = 0, float seconds = 0, bool hold = false, bool drop = false)
     {
         if (!Counting) return;
@@ -149,6 +253,7 @@ public static class PlayMetrics
         bool automatic = !string.IsNullOrEmpty(automaticAction);
         if (hold) { if (automatic) op.automaticHoldSeconds += seconds; }
         else if (drop) { if (automatic) op.automaticDrops += count; else op.manualDrops += count; }
+        else if (operation == ControlOperation.Aim && automaticAction == "Q06") op.assistedSeconds += seconds;
         else if (automatic) { op.automaticCount += count; op.automaticSeconds += seconds; }
         else { op.manualCount += count; op.manualSeconds += seconds; }
         string key = automatic ? automaticAction : "Manual";
@@ -173,6 +278,7 @@ public static class PlayMetrics
             var t = target[i]; var s = source[i];
             t.automaticCount += s.automaticCount; t.manualCount += s.manualCount;
             t.automaticSeconds += s.automaticSeconds; t.manualSeconds += s.manualSeconds;
+            t.assistedSeconds += s.assistedSeconds;
             t.automaticHoldSeconds += s.automaticHoldSeconds;
             t.automaticDrops += s.automaticDrops; t.manualDrops += s.manualDrops;
             foreach (var a in s.actions)
@@ -190,11 +296,12 @@ public static class PlayMetrics
         if (includeCurrent && Current != null) Add(total, Current.operations);
         return total;
     }
-    public static void Finish(string result, bool levelCleared)
+    public static void Finish(string result, bool levelCleared, string reason = null)
     {
         if (Current == null) return;
         counting = false;
         Current.result = result; Current.endedUtc = DateTime.UtcNow.ToString("o");
+        Current.endReason = reason ?? result;
         Calculate(Current.operations, out Current.hasAutomationData, out Current.automaticPercent);
         run.attempts.Add(Current);
         run.combatSeconds += Current.seconds;
@@ -208,53 +315,25 @@ public static class PlayMetrics
     }
     public static bool Save()
     {
-        if (run == null || run.attempts.Count == 0) return true;
+        if (run == null) return true;
         try
         {
+            TrackTime();
             Directory.CreateDirectory(DirectoryPath);
             run.updatedUtc = DateTime.UtcNow.ToString("o");
+            run.activeAttempt = Current;
+            if (Current != null) Calculate(Current.operations, out Current.hasAutomationData, out Current.automaticPercent);
             WriteFile(JsonPath, JsonUtility.ToJson(run, true));
-            WriteFile(CsvPath, Csv());
+            lastSave = Time.realtimeSinceStartupAsDouble;
             LastSaveError = null;
             return true;
         }
-        catch (Exception e) { LastSaveError = e.Message; Debug.LogWarning("Analytics save failed: " + e.Message); return false; }
+        catch (Exception e) { lastSave = Time.realtimeSinceStartupAsDouble; LastSaveError = e.Message; Debug.LogWarning("Analytics save failed: " + e.Message); return false; }
     }
     static void WriteFile(string path, string content)
     {
         string temp = path + ".tmp";
         File.WriteAllText(temp, content, new UTF8Encoding(false));
         if (File.Exists(path)) File.Replace(temp, path, null); else File.Move(temp, path);
-    }
-    static string Number(float n) => n.ToString("0.######", CultureInfo.InvariantCulture);
-    static string Csv()
-    {
-        var sb = new StringBuilder("schema_version,session_id,run_id,attempt_id,kind,wave,boss,result,started_utc,ended_utc,seconds,editor,test_data,wave_jump,tuning_changed,automation_percent");
-        foreach (var op in run.operations)
-            sb.Append(',').Append(op.operation).Append("_auto_count,").Append(op.operation).Append("_manual_count,")
-                .Append(op.operation).Append("_auto_seconds,").Append(op.operation).Append("_manual_seconds,")
-                .Append(op.operation).Append("_hold_seconds,").Append(op.operation).Append("_auto_drops,")
-                .Append(op.operation).Append("_manual_drops,").Append(op.operation).Append("_auto_percent");
-        sb.AppendLine(",deaths_w1,deaths_w2,deaths_w3");
-        foreach (var a in run.attempts)
-            CsvRow(sb, a.attemptId, "fight", a.wave, a.result, a.startedUtc, a.endedUtc, a.seconds, a.testData,
-                a.developerWaveJump, a.tuningChanged, a.operations, a.hasAutomationData, a.automaticPercent, null);
-        CsvRow(sb, "", "run_summary", 0, run.levelCleared ? "clear" : "partial", run.startedUtc, run.updatedUtc,
-            run.combatSeconds, run.testData, false, false, run.operations, run.hasAutomationData, run.automaticPercent, run.deathsByWave);
-        return sb.ToString();
-    }
-    static void CsvRow(StringBuilder sb, string id, string kind, int wave, string result, string start, string end,
-        float seconds, bool test, bool waveJump, bool tuned, OperationStats[] operations, bool hasData, float percentage, int[] deaths)
-    {
-        sb.Append("2,").Append(run.sessionId).Append(',').Append(run.runId).Append(',').Append(id).Append(',').Append(kind)
-            .Append(',').Append(wave).Append(',').Append(BossName(wave)).Append(',').Append(result).Append(',').Append(start).Append(',').Append(end)
-            .Append(',').Append(Number(seconds)).Append(',').Append(run.editor).Append(',').Append(test).Append(',').Append(waveJump).Append(',').Append(tuned)
-            .Append(',').Append(hasData ? Number(percentage) : "");
-        foreach (var op in operations)
-            sb.Append(',').Append(op.automaticCount).Append(',').Append(op.manualCount).Append(',').Append(Number(op.automaticSeconds))
-                .Append(',').Append(Number(op.manualSeconds)).Append(',').Append(Number(op.automaticHoldSeconds))
-                .Append(',').Append(op.automaticDrops).Append(',').Append(op.manualDrops).Append(',').Append(op.hasData ? Number(op.automaticPercent) : "");
-        for (int i = 1; i <= 3; i++) sb.Append(',').Append(deaths == null ? "" : deaths[i].ToString(CultureInfo.InvariantCulture));
-        sb.AppendLine();
     }
 }

@@ -30,6 +30,7 @@ namespace GoGhost.Duel
             playtestWasPaused = Paused;
             playtestPauseMenuNeeded = false;
             PlaytestPromptOpen = true;
+            PlayMetrics.Reminder("shown");
             ApplyPause(true);
             ui.ShowPlaytestPrompt();
         }
@@ -49,11 +50,12 @@ namespace GoGhost.Duel
         {
             if (!PlaytestPromptOpen) return;
             ClosePlaytestPrompt(!jumpToWaveTwo);
+            PlayMetrics.Reminder(jumpToWaveTwo ? "yes" : "no");
             if (!jumpToWaveTwo) return;
 
             // Keep installed rules and appearance; an unfinished picker edit is not installed.
             ui.DiscardRulePicker();
-            FinishMetrics("skipped");
+            FinishMetrics("skipped", reason: "playtest_reminder");
             ClearEncounter();
             Wave = 2;
             FirstConfiguration = false;

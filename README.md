@@ -2,19 +2,19 @@
 
 A single-player 2D boss-fight prototype where you decide what to control and what to automate.
 
-Build up to **20 Condition → Action rules** across Move, Jump, Aim, Fire and Dodge, or start from **six editable presets** (the first is available immediately; each player death unlocks the next). Each operation falls back to manual control when no rule can execute.
+Build up to **20 Condition → Action rules** across Move, Jump, Aim, Fire and Dodge. Each operation falls back to manual control when no rule can execute.
 
 **[Download Cassie Preview Version — macOS](https://github.com/Th-Hjj/GO-GHOST/releases/tag/cassie-preview-2026-10-27)** · Apple Silicon (M-series Macs)
 
-[Earlier Windows playtest — Alpha 75%](https://github.com/Th-Hjj/GO-GHOST/releases/tag/alpha75-2026-10-22). The Windows release predates the current six-preset system and recent combat/UI updates.
+[Earlier Windows playtest — Alpha 75%](https://github.com/Th-Hjj/GO-GHOST/releases/tag/alpha75-2026-10-22). Published packages predate the current Help and metrics changes.
 
 ## Play
 
 1. Extract the complete ZIP and open `GO GHOST.app` on macOS, or `GO-GHOST.exe` in the earlier Windows package. The Mac preview requires macOS 12 or later and is not Developer ID signed or notarized; if blocked, review **System Settings → Privacy & Security → Open Anyway** for this app. Actual Mac runtime testing is pending.
-2. Choose **New Game** to begin with empty rules. Add rules, choose a preset through **Help**, or leave the rules empty for manual play.
+2. Choose **New Game**, draw a face and enter a nickname. Add your own rules, read **Help** for controls/configuration, or leave the rules empty for manual play.
 3. **Enter Test Room** to try your setup. Select **Continue**, then **Start Fight**.
 
-Retry and the next wave keep your rules. **Pause → Back to Configuration** retains rules and the current wave for a fresh attempt. New Game clears rules; preset unlock progress is retained.
+Retry and the next wave keep your rules. **Pause → Configuration** retains rules and the current wave for a fresh attempt. New Game clears rules and appearance and starts a fresh named metrics record.
 
 ## Controls
 
@@ -28,19 +28,19 @@ Retry and the next wave keep your rules. **Pause → Back to Configuration** ret
 | RMB | Short Burst — rapidly fire all remaining bullets with reduced accuracy |
 | Left Shift | Dodge |
 | Escape | Pause |
-| F8 (or Fn+F8 on Mac) | Tuning, Waves, Analytics and Presets |
+| F8 (or Fn+F8 on Mac) | Tuning, Waves and Analytics |
 
 The six-round Revolver reloads automatically. F8 tuning lasts only for the current application session.
 
 ## Playtest data
 
-Combat time, deaths and manual/automatic actions are saved as matching **JSON + CSV** files on the computer running the game. Use **F8 → Analytics → Open data folder**, or open:
+Each **New Game** saves one **JSON** record with the character nickname, play/configuration/Training time, rule edits, combat outcomes and manual/assisted/automatic actions. Use **F8 → Analytics → Open data folder**, or open:
 
 ```text
 %USERPROFILE%\AppData\LocalLow\DefaultCompany\GO GHOST\Analytics
 ```
 
-Files save after a fight ends, when you leave it, or on normal exit. Training is excluded. Collect both files after each tester; developer wave jumps and tuning changes mark test data. [Metrics details](Docs/Game/GameplayAnalytics.md).
+Records save from New Game, on key transitions and every ten real seconds. Training time/deaths are separate from numbered-wave combat. Names can repeat without overwriting records. Old JSON/CSV files remain untouched; collect the new JSON files. Developer wave jumps and tuning changes mark test data. [Metrics details](Docs/Game/GameplayAnalytics.md).
 
 ## Open the project
 
@@ -48,7 +48,7 @@ Files save after a fight ends, when you leave it, or on normal exit. Training is
 2. Open the repository with **Unity 6000.6.0f1**, using its existing packages.
 3. Select **GO GHOST > Combat > Open Arena**, then enter Play Mode.
 
-[Documentation](Docs/Game/README.md) · [Rules and presets](Docs/Game/OfficialPresets.md) · [Project map](Docs/ProjectMap.md)
+[Documentation](Docs/Game/README.md) · [Configuration Help](Docs/Game/Help.md) · [Project map](Docs/ProjectMap.md)
 
 ## Credits and licenses
 

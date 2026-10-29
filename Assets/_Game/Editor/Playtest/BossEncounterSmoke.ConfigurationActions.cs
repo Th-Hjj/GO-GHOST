@@ -76,13 +76,6 @@ public static partial class BossEncounterSmoke
             &&game.DraftLoadout.Operations[0].Rules[0].ConditionCount==2);
         game.DraftLoadout.Operations[0].Rules[0].SetCondition(1,new RuleCondition(12));
         Check("Explicit condition edit repairs complete row",ConditionalCatalog.IsValid(game.DraftLoadout));
-        // Template definitions preserve the original tactics, with explicit new fields.
-        var final=OfficialRulePresets.All[5].CreateLoadout().OrderedRules();
-        Check("Final preset exact merged parameters",final[0].Action=="D01"&&final[0].DodgeDirection==DodgeDirectionOption.TowardEnemy
-            &&final[1].DodgeDirection==DodgeDirectionOption.AwayFromThreat&&final[2].Jump==JumpOption.Once
-            &&final[3].Action=="M11"&&final[3].MoveDirection==MoveDirectionOption.AwayFromEnemy
-            &&final[4].KeepRange==KeepRangeOption.Mid&&final[5].KeepRange==KeepRangeOption.Mid
-            &&final.Skip(6).Take(3).All(r=>r.Action=="Q01"&&r.AutoAim==AutoAimOption.Nearest)&&final[9].Action=="F03");
         game.MainMenu();yield return Frames(3);
     }
 
@@ -157,13 +150,6 @@ public static partial class BossEncounterSmoke
             var rule=new ConditionalRule{Condition=17,Action=removed};
             Check("Removed action retained and rejected: "+removed,rule.Copy().Action==removed
                 &&!ConditionalCatalog.IsAllowed((int)ConditionalCatalog.Response(removed).Operation,rule));
-        }
-        foreach(var preset in OfficialRulePresets.All)
-        {
-            var rows=preset.CreateLoadout().OrderedRules();var other=preset.CreateLoadout();
-            Check("Preset valid / ordered / independent: "+preset.Id,ConditionalCatalog.IsValid(other)
-                &&rows.Select(r=>r.DisplayOrder).SequenceEqual(Enumerable.Range(0,rows.Count))
-                &&rows.All(r=>ConditionalCatalog.IsSelectableResponse(r.Action))&&!ReferenceEquals(rows[0],other.OrderedRules()[0]));
         }
         // Actual selector buttons, full preview, JSON and independent draft copies for every branch.
         game.ConfigurePlaytestWave(1);SetAlphaGameSize(1280,720);yield return Frames(5);

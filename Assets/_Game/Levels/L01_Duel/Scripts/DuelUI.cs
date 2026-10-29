@@ -105,10 +105,9 @@ namespace GoGhost.Duel
         public void Show()
         {
             if (canvas == null || game.PlaytestPromptOpen) return;
-            CaptureDeveloperPresetView();
             CaptureConfigurationView();
-            CapturePresetHelpView();
-            if(game.Phase!=DuelPhase.Configure||presetHelpDraft!=game.DraftLoadout)presetHelpOpen=false;
+            CaptureHelpView();
+            if(game.Phase!=DuelPhase.Configure||helpDraft!=game.DraftLoadout)helpOpen=false;
             ConfigurePageScale();
             if(page!=null){page.gameObject.SetActive(false);Destroy(page.gameObject);}
             page=Rect("Page",canvas,Vector2.zero,new Vector2(1600,900));
@@ -147,7 +146,7 @@ namespace GoGhost.Duel
             }
             if(game.Phase==DuelPhase.Configure)
             {
-                if(presetHelpOpen){BuildPresetHelp();return;}
+                if(helpOpen){BuildHelp();return;}
                 BuildConditionalLoadout();RestoreConfigurationView();return;
             }
             if(game.Phase==DuelPhase.Failed || game.Phase==DuelPhase.Complete)

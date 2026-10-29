@@ -57,7 +57,6 @@ namespace GoGhost.Duel
         SfxSet encounterSounds;
         bool lockedLegs, lockedArms, lockedSpine;
         float phaseTime;
-        bool presetDeathRecorded;
 
         void Awake()
         {
@@ -80,8 +79,8 @@ namespace GoGhost.Duel
         void Start() { if (sounds != null) sounds.BeginScope(); }
         void OnDestroy()
         {
-            UnbindPresetDeath();
-            FinishMetrics("abandoned");
+            FinishMetrics("abandoned", reason: "scene_closed");
+            PlayMetrics.EndRun("scene_closed");
             ClearPlatformLayout();
             playerRespawnAt = enemyRespawnAt = 0;
             Player?.GetComponent<OfficerVisual>()?.ClearConditionalGlow();
@@ -98,7 +97,7 @@ namespace GoGhost.Duel
         }
         public void NewGame()
         {
-            ClearEncounter();
+            ClearEncounter("new_game");
             StartPlaytestReminder();
             PlayMetrics.ResetRun();
             metricsWaveJumpPending = false;
@@ -120,6 +119,7 @@ namespace GoGhost.Duel
         {
             if (Phase != DuelPhase.CharacterCreation || DeveloperToolsOpen) return;
             Appearance.Name = Appearance.Name.Trim();
+            PlayMetrics.SetName(Appearance.DisplayName, true);
             UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
             SetPhase(DuelPhase.Configure);
         }
@@ -128,17 +128,12 @@ namespace GoGhost.Duel
             // Retained development API cannot re-enable the retired permanent-AI route.
             if(automatic) Debug.LogWarning("Permanent AI permissions are retired. Configure conditional rules instead.");
         }
-        public void EditLoadout(System.Action<ConditionalLoadout> edit)
-        {if(Phase==DuelPhase.Configure&&!Paused){edit(DraftLoadout);ui.Show();}}
-        public bool ApplyPresetToSetup(OfficialRulePreset preset)
+        public void EditLoadout(System.Action<ConditionalLoadout> edit, string change = null)
         {
-            if(Phase!=DuelPhase.Configure||Paused||DeveloperToolsOpen||!OfficialRulePresets.IsUnlocked(preset))return false;
-            var replacement=preset.CreateLoadout();
-            if(!ConditionalCatalog.IsValid(replacement))return false;
-            ui.DiscardRulePicker();
-            DraftLoadout=replacement;
+            if(Phase!=DuelPhase.Configure||Paused)return;
+            edit(DraftLoadout);
+            PlayMetrics.RecordConfiguration(DraftLoadout, change);
             ui.Show();
-            return true;
         }
         public void StartFight()
         {
@@ -155,8 +150,6 @@ namespace GoGhost.Duel
             encounter.name = "CombatAttempt";
             encounter.AddComponent<ArenaBoundary2D>().Initialize(ArenaBounds);
             Player = encounter.GetComponentInChildren<PlayerHealth>();
-            presetDeathRecorded = false;
-            Player.OnDeath += RecordPresetDeath;
             input = Player.GetComponent<PlayerInputReader>();
             input.SetGameplayInputEnabled(false);
             Rifle = Player.GetComponent<PlayerShooting>();
@@ -277,12 +270,13 @@ namespace GoGhost.Duel
         {
             bool pausedEncounter = Paused && (Phase == DuelPhase.Training || Phase == DuelPhase.Prepare || Phase == DuelPhase.Fight);
             if (Phase != DuelPhase.Failed && !pausedEncounter) return;
-            ClearEncounter();
+            ClearEncounter("configuration");
             SetPhase(DuelPhase.Configure);
         }
         public void MainMenu()
         {
-            ClearEncounter();
+            ClearEncounter("main_menu");
+            PlayMetrics.EndRun("main_menu");
             playtestReminderArmed = false;
             SetPhase(DuelPhase.Menu);
         }
@@ -306,6 +300,7 @@ namespace GoGhost.Duel
         void ApplyPause(bool value)
         {
             Paused = value;
+            MetricsStage();
             Rules?.SetFeedbackPaused(value);
             input?.SetNarrativePaused(value);
             foreach (var actor in actors) if (actor != null) actor.SetPaused(value);
@@ -317,6 +312,8 @@ namespace GoGhost.Duel
         void SetPhase(DuelPhase value)
         {
             Phase = value;
+            MetricsStage();
+            if (value == DuelPhase.Complete) PlayMetrics.EndRun("complete");
             if (Wave > 1 || value == DuelPhase.Between || value == DuelPhase.Complete)
                 playtestReminderArmed = false;
             phaseTime = 0;
@@ -336,21 +333,10 @@ namespace GoGhost.Duel
             effects?.EndAttempt();
             encounterSounds?.EndScope();
         }
-        void RecordPresetDeath()
-        {
-            if (presetDeathRecorded || Player == null || !Player.IsDead) return;
-            presetDeathRecorded = true;
-            OfficialRulePresets.RecordPlayerDeath();
-        }
-        void UnbindPresetDeath()
-        {
-            if (Player != null) Player.OnDeath -= RecordPresetDeath;
-        }
-        void ClearEncounter()
+        void ClearEncounter(string reason = "encounter_changed")
         {
             ClosePlaytestPrompt(false);
-            UnbindPresetDeath();
-            FinishMetrics("abandoned");
+            FinishMetrics("abandoned", reason: reason);
             DeveloperToolsOpen = developerResumeOnClose = false;
             StopCombat();
             music?.StopMusic(true);
@@ -367,6 +353,7 @@ namespace GoGhost.Duel
         }
         void Update()
         {
+            TickMetrics();
             if (PlaytestPromptOpen) return;
             if (!ui.DeveloperShortcutConsumed && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) SetPause(!Paused);
             if (Paused || DeveloperToolsOpen) return;

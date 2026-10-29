@@ -19,6 +19,8 @@ namespace GoGhost.Duel
         }
         void BeginMetrics()
         {
+            PlayMetrics.SetName(Appearance.DisplayName);
+            PlayMetrics.RecordConfiguration(DraftLoadout);
             PlayMetrics.BeginAttempt(Wave, DraftLoadout, developerValues, metricsWaveJumpPending, MetricsTuned());
             metricsWaveJumpPending = false;
             metricsMovement = Player.GetComponent<PlayerMovement>();
@@ -29,6 +31,8 @@ namespace GoGhost.Duel
             metricsGun.ShotFired += MetricsShot;
             metricsDodge.DodgeStarted += MetricsDodgeStarted;
             metricsInput.ConditionalInputsResolved += MetricsControls;
+            CaptureMetricsHealth();
+            PlayMetrics.Save();
         }
         void UnbindMetrics()
         {
@@ -63,17 +67,46 @@ namespace GoGhost.Duel
             // Called after the final aim is adopted, only with live, focused gameplay input.
             if (input.AimDirection.sqrMagnitude > .0001f)
                 PlayMetrics.Record(ControlOperation.Aim, MetricsSource(ControlOperation.Aim), seconds: Time.deltaTime);
-            if (MetricsSource(ControlOperation.Movement) == "M10")
-                PlayMetrics.Record(ControlOperation.Movement, "M10", seconds: Time.deltaTime, hold: true);
-            if (MetricsSource(ControlOperation.Fire) == "F06")
-                PlayMetrics.Record(ControlOperation.Fire, "F06", seconds: Time.deltaTime, hold: true);
         }
-        void FinishMetrics(string result, bool cleared = false)
+        void CaptureMetricsHealth()
         {
+            var attempt = PlayMetrics.Current;
+            if (attempt == null) return;
+            if (Player != null) { attempt.playerHealth = Player.CurrentHealth; attempt.playerMaxHealth = Player.MaxHealth; }
+            foreach (var boss in actors)
+            {
+                if (boss == null) continue;
+                if (boss.ActorId == 1) { attempt.gunnerHealth = boss.Health.CurrentHealth; attempt.gunnerMaxHealth = boss.Health.MaxHealth; }
+                if (boss.ActorId == 2) { attempt.swordHealth = boss.Health.CurrentHealth; attempt.swordMaxHealth = boss.Health.MaxHealth; }
+            }
+        }
+        void MetricsStage()
+        {
+            PlayMetrics.SetName(Appearance?.DisplayName);
+            PlayMetrics.SetStage(Phase, Paused || DeveloperToolsOpen);
+            CaptureMetricsHealth();
+            PlayMetrics.Save();
+        }
+        void TickMetrics()
+        {
+            PlayMetrics.TrackTime();
+            if (!PlayMetrics.CheckpointDue) return;
+            PlayMetrics.SetName(Appearance?.DisplayName);
+            CaptureMetricsHealth();
+            PlayMetrics.Save();
+        }
+        void FinishMetrics(string result, bool cleared = false, string reason = null)
+        {
+            PlayMetrics.SetName(Appearance?.DisplayName);
+            CaptureMetricsHealth();
             PlayMetrics.SetClock(FightClock);
-            PlayMetrics.Finish(result, cleared);
+            PlayMetrics.Finish(result, cleared, reason);
             UnbindMetrics();
         }
-        void OnApplicationQuit() => FinishMetrics("abandoned");
+        void OnApplicationQuit()
+        {
+            FinishMetrics("abandoned", reason: "quit");
+            PlayMetrics.EndRun("quit");
+        }
     }
 }

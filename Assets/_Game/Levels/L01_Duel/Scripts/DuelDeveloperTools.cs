@@ -33,54 +33,6 @@ namespace GoGhost.Duel
         // Explicit training selection survives Back; FirstConfiguration keeps its normal meaning.
         bool developerTrainingSelected;
 
-        public string DeveloperApplyLabel => Phase == DuelPhase.Training ? "Apply & Restart Training"
-            : Phase == DuelPhase.Prepare || Phase == DuelPhase.Fight ? "Apply & Restart Wave" : "Apply to Setup";
-
-        public bool ApplyDeveloperLoadout(ConditionalLoadout loadout, bool tryInTraining, out string error)
-        {
-            error = null;
-            if (!DeveloperToolsOpen) { error = "Open F8 to apply rules."; return false; }
-            if (!ConditionalCatalog.IsValid(loadout))
-            {
-                error = "Invalid rule configuration.";
-                if (loadout == null) error = "No rule configuration selected.";
-                else if (loadout.TotalRules > ConditionalCatalog.MaxRulesTotal) error = "Use at most 20 rules.";
-                else for (int op = 0; op < loadout.Operations.Length; op++)
-                {
-                    var rows = loadout.Operations[op]?.Rules;
-                    if (rows == null) { error = "Missing " + ConditionalCatalog.OperationLabels[op] + " rules."; break; }
-                    for (int row = 0; row < rows.Count; row++)
-                    {
-                        string reason = ConditionalCatalog.IncompatibilityReason(op, rows[row]);
-                        if (reason == null) continue;
-                        error = ConditionalCatalog.OperationLabels[op] + " rule " + (row + 1) + ": " + reason;
-                        return false;
-                    }
-                }
-                return false;
-            }
-            // Validate and copy before touching the old encounter or unfinished UI draft.
-            var replacement = loadout.Copy();
-            bool training = tryInTraining || Phase == DuelPhase.Training;
-            bool wave = !training && (Phase == DuelPhase.Prepare || Phase == DuelPhase.Fight);
-            bool wasConfigure = Phase == DuelPhase.Configure;
-            input?.SuppressUiFireUntilRelease();
-            EventSystem.current?.SetSelectedGameObject(null);
-            ui.DiscardRulePicker();
-            ClearEncounter();
-            DraftLoadout = replacement;
-            Wave = Wave >= 1 && Wave <= 3 ? Wave : 1;
-            if (!wasConfigure && !training) developerTrainingSelected = false;
-            if (training || wave)
-            {
-                metricsWaveJumpPending = !training;
-                CreateEncounter(training);
-            }
-            else SetPhase(DuelPhase.Configure);
-            input?.SuppressUiFireUntilRelease();
-            return true;
-        }
-
         void InitializeDeveloperTuning()
         {
             var player=combatPrefab.GetComponentInChildren<PlayerHealth>();
@@ -196,6 +148,7 @@ namespace GoGhost.Duel
             if(DeveloperToolsOpen)
             {
                 DeveloperToolsOpen=false;
+                MetricsStage();
                 input?.SuppressUiFireUntilRelease();
                 EventSystem.current?.SetSelectedGameObject(null);
                 bool resume=developerResumeOnClose;developerResumeOnClose=false;
@@ -203,6 +156,7 @@ namespace GoGhost.Duel
                 return;
             }
             DeveloperToolsOpen=true;
+            MetricsStage();
             developerResumeOnClose=!Paused&&(Phase==DuelPhase.Prepare||Phase==DuelPhase.Fight||Phase==DuelPhase.Training);
             if(developerResumeOnClose)SetPause(true);else ui.Show();
         }

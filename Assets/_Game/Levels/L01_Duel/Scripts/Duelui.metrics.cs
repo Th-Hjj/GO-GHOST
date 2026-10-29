@@ -9,7 +9,7 @@ namespace GoGhost.Duel
     public sealed partial class DuelUI
     {
         int analyticsTab, analyticsPage;
-        static string MetricNumber(float value) => value.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+        static string MetricNumber(double value) => value.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
         static string MetricPercent(bool valid, float value) => valid ? MetricNumber(value) + "%" : "N/A";
         void AnalyticsText(string value, float x, float y, float width, int size = 23, float height = 44)
             => Text(value,page,new Vector2(x,y),new Vector2(width,height),size,TextAlignmentOptions.Left);
@@ -25,8 +25,9 @@ namespace GoGhost.Duel
             var run = PlayMetrics.Run;
             var fight = PlayMetrics.Current;
             if (fight == null && run != null && run.attempts.Count > 0) fight = run.attempts[run.attempts.Count-1];
-            if (run == null) AnalyticsText("No combat data yet.",0,90,1300,28);
+            if (run == null) AnalyticsText("Start New Game to begin a named record.",0,90,1300,28);
             else if (analyticsTab == 3) BuildAnalyticsHistory(run);
+            else if (analyticsTab == 1) BuildRunSummary(run);
             else
             {
                 bool total = analyticsTab == 1;
@@ -40,7 +41,7 @@ namespace GoGhost.Duel
                 else
                 {
                     PlayMetrics.Calculate(operations,out bool valid,out float percent);
-                    AnalyticsText("Automation  "+MetricPercent(valid,percent),-390,95,520,30);
+                    AnalyticsText("Recorded operations",-390,95,520,27);
                     AnalyticsText("Deaths  W1: "+run.deathsByWave[1]+"   W2: "+run.deathsByWave[2]+"   W3: "+run.deathsByWave[3],270,95,700);
                     string[] headings={"Operation","Automatic","Manual","Auto %"};
                     float[] xs={-470,-100,225,510}; float[] widths={360,300,300,240};
@@ -53,8 +54,11 @@ namespace GoGhost.Duel
                         AnalyticsText(timed?MetricNumber(op.manualSeconds)+" s":op.manualCount.ToString(),xs[2],y,widths[2]);
                         AnalyticsText(MetricPercent(op.hasData,op.automaticPercent),xs[3],y,widths[3]);
                     }
-                    AnalyticsText("Auto holds  Position: "+MetricNumber(operations[0].automaticHoldSeconds)+"s   Fire: "+MetricNumber(operations[3].automaticHoldSeconds)
-                        +"s    |    Drops  Auto: "+operations[1].automaticDrops+"  Manual: "+operations[1].manualDrops,0,-265,1300,21);
+                    AnalyticsText("Aim Assist: "+MetricNumber(operations[2].assistedSeconds)+"s  (separate from Auto Aim)"
+                        +"    |    Drops  Auto: "+operations[1].automaticDrops+"  Manual: "+operations[1].manualDrops,0,-265,1300,21);
+                    if(fight!=null)AnalyticsText("Remaining HP  You: "+fight.playerHealth+" / "+fight.playerMaxHealth
+                        +(fight.gunnerMaxHealth>0?"    Refraction: "+fight.gunnerHealth+" / "+fight.gunnerMaxHealth:"")
+                        +(fight.swordMaxHealth>0?"    Severance: "+fight.swordHealth+" / "+fight.swordMaxHealth:""),0,-318,1300,21);
                     if(total&&run.levelCleared)AnalyticsText("Level clear: "+MetricNumber(run.levelClearSeconds)+" combat seconds",0,-370,1300,22);
                 }
             }
@@ -63,6 +67,22 @@ namespace GoGhost.Duel
             open.interactable=Directory.Exists(PlayMetrics.DirectoryPath);
             if(!string.IsNullOrEmpty(PlayMetrics.LastSaveError))
                 AnalyticsText("Save failed: "+PlayMetrics.LastSaveError,-200,-400,900,18,44);
+        }
+        void BuildRunSummary(PlayMetrics.RunData run)
+        {
+            var name=Text(run.playerName,page,new Vector2(0,155),new Vector2(1300,44),30,TextAlignmentOptions.Left,CharacterNameFont());
+            name.richText=false;
+            string[] rows={
+                "Total play: "+MetricNumber(run.playSeconds)+"s    Combat: "+MetricNumber(run.combatSeconds+(PlayMetrics.Current?.seconds??0))+"s",
+                "Character: "+MetricNumber(run.creationSeconds)+"s    Configuration: "+MetricNumber(run.configurationSeconds)+"s",
+                "Training: "+MetricNumber(run.trainingSeconds)+"s    Paused: "+MetricNumber(run.pauseSeconds)+"s",
+                "Rules  Added: "+run.rulesAdded+"    Edited: "+run.rulesEdited+"    Removed: "+run.rulesRemoved+"    Reordered: "+run.rulesReordered,
+                "Most rules equipped: "+run.maxRulesEquipped+"    Help opened: "+run.helpOpened,
+                "First rule: "+(run.firstRuleAtSeconds<0?"N/A":MetricNumber(run.firstRuleAtSeconds)+"s")+"    First fight: "+(run.firstFightAtSeconds<0?"N/A":MetricNumber(run.firstFightAtSeconds)+"s"),
+                "Deaths  Training: "+run.trainingDeaths+"    W1: "+run.deathsByWave[1]+"    W2: "+run.deathsByWave[2]+"    W3: "+run.deathsByWave[3],
+                "Wave 1 skipped: "+(run.waveOneSkipped?"Yes":"No")+"    "+(run.finished?"Ended: "+run.endReason:"In progress")+(run.editor?"    EDITOR":"")+(run.testData?"    TEST DATA":"")
+            };
+            for(int i=0;i<rows.Length;i++)AnalyticsText(rows[i],0,95-i*52,1300,23);
         }
         void BuildAnalyticsActions(PlayMetrics.OperationStats[] operations)
         {
@@ -73,7 +93,7 @@ namespace GoGhost.Duel
                 {
                     string label=a.action=="Manual"?"Manual":a.action+" "+ConditionalCatalog.Response(a.action).Label;
                     rows.Add((i==0?"Move":operations[i].operation)+" / "+label+"\n"
-                        +a.count+" events   "+MetricNumber(a.seconds)+"s   Hold "+MetricNumber(a.holdSeconds)+"s   Drops "+a.drops);
+                        +(operations[i].unit=="seconds"?MetricNumber(a.seconds)+"s":a.count+" actions")+(a.drops>0?"    Drops: "+a.drops:""));
                 }
             }
             AnalyticsText("Current / last fight: executed actions only",0,95,1300,22);

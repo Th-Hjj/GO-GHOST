@@ -88,7 +88,7 @@ namespace GoGhost.Duel
             input.textViewport = viewport;
             input.textComponent = (TextMeshProUGUI)text; input.placeholder = placeholder;
             input.text = game.Appearance.Name;
-            input.onValueChanged.AddListener(value => game.Appearance.Name = value);
+            input.onValueChanged.AddListener(value => { game.Appearance.Name = value; PlayMetrics.SetName(value); });
             ConfigButton("CreateCharacterContinue", "Continue", page, new Vector2(0, -340), new Vector2(240, 60), game.CompleteCharacterCreation, style:DuelControlStyle.Primary);
             ConfigButton("CreateCharacterBack", "Back", page, new Vector2(-680, 370), new Vector2(120, 48), game.MainMenu, style:DuelControlStyle.Navigation);
         }

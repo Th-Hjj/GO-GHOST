@@ -120,7 +120,7 @@ public static partial class BossEncounterSmoke
     }
     static void CheckMetricsFiles(string label)
     {
-        Check(label+" JSON + CSV saved",File.Exists(PlayMetrics.JsonPath)&&File.Exists(PlayMetrics.CsvPath)&&string.IsNullOrEmpty(PlayMetrics.LastSaveError),PlayMetrics.LastSaveError);
+        Check(label+" JSON saved without CSV",File.Exists(PlayMetrics.JsonPath)&&!File.Exists(PlayMetrics.CsvPath)&&string.IsNullOrEmpty(PlayMetrics.LastSaveError),PlayMetrics.LastSaveError);
         var read=JsonUtility.FromJson<PlayMetrics.RunData>(File.ReadAllText(PlayMetrics.JsonPath));
         Check(label+" JSON round trip",read.runId==PlayMetrics.Run.runId&&read.attempts.Count==PlayMetrics.Run.attempts.Count&&Mathf.Abs(read.combatSeconds-PlayMetrics.Run.combatSeconds)<.001f);
         Record("ANALYTICS_FILE "+PlayMetrics.JsonPath);

@@ -22,12 +22,6 @@ public static partial class BossEncounterSmoke
             &&ConditionalCatalog.ActionOptions("M03").SequenceEqual(new[]{"Short","Mid","Long"}));
         var invalid=legacy.Copy();invalid.KeepRange=(KeepRangeOption)99;
         Check("Invalid range rejected by normal validation",!ConditionalCatalog.IsAllowed(0,invalid));
-        foreach(var preset in OfficialRulePresets.All)
-        {
-            var loadout=preset.CreateLoadout();
-            Check("Preset remains valid with original Mid spacing: "+preset.Id,ConditionalCatalog.IsValid(loadout)
-                &&loadout.OrderedRules().Where(r=>r.Action=="M03").All(r=>r.KeepRange==KeepRangeOption.Mid));
-        }
         game.NewGame();SetAlphaGameSize(1280,720);yield return Frames(6);
         ClickConfig("AddRule");yield return Frames(2);yield return V2UISelect(17);yield return V2UIAction("M03");
         Check("UI shows Short Mid Long before commit",game.DraftLoadout.TotalRules==0

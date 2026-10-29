@@ -49,15 +49,6 @@ public static partial class BossEncounterSmoke
         Check("Removed Low in a later slot stays invalid",!ConditionalCatalog.IsAllowed(3,bad));
         var empty=ManyRule("M10",new RuleCondition(17));empty.RemoveCondition(0);
         Check("Removing the final draft condition cannot commit an empty rule",!ConditionalCatalog.IsAllowed(0,empty));
-        foreach(var preset in OfficialRulePresets.All)
-        {
-            var original=preset.CreateLoadout();string before=JsonUtility.ToJson(new PresetRulesEnvelope{rules=original.Operations});
-            var cloned=original.Copy();cloned.OrderedRules()[0].AddCondition(new RuleCondition(17));
-            var roundtrip=JsonUtility.FromJson<PresetRulesEnvelope>(before);
-            Check("Preset "+preset.Id+" retains valid independent legacy data",ConditionalCatalog.IsValid(original)
-                &&JsonUtility.ToJson(new PresetRulesEnvelope{rules=preset.CreateLoadout().Operations})==before
-                &&JsonUtility.ToJson(roundtrip)==before);
-        }
 
         RestoreFixture();game.NewGame();SetAlphaGameSize(1280,720);yield return Frames(5);
         ClickConfig("AddRule");yield return Frames(2);yield return V2UISelect(17);

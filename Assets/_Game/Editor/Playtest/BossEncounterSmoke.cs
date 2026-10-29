@@ -166,6 +166,7 @@ public static partial class BossEncounterSmoke
     static IEnumerator Run()
     {
         Record("Editor Play Mode; simulated focus and virtual keyboard/mouse. No physical-input or audibility claim.");
+        if(mode=="help-metrics") {yield return HelpMetrics();yield break;}
         if(mode=="playtest-reminder") {yield return PlaytestReminder();yield break;}
         if(mode=="configuration-actions") {yield return ConfigurationActions();yield break;}
         if(mode=="configuration-approach-edges") {yield return ConfigurationApproachEdges();yield break;}
@@ -178,9 +179,6 @@ public static partial class BossEncounterSmoke
         if(mode=="condition-event-lifecycle") {yield return ConditionEventLifecycle();yield break;}
         if(mode=="rule-conflicts") {yield return RuleConflicts();yield break;}
         if(mode=="jump-dodge-priority") {yield return JumpDodgePriority();yield break;}
-        if(mode=="official-presets") {yield return OfficialPresets();yield break;}
-        if(mode=="official-presets-edges") {yield return OfficialPresetsEdges();yield break;}
-        if(mode=="official-presets-gameplay") {yield return OfficialPresetsGameplay();yield break;}
         if(mode=="revolver") {yield return Revolver();yield break;}
         if(mode=="revolver-art") {yield return RevolverArt();yield break;}
         if(mode=="revolver-edges") {yield return RevolverEdges();yield break;}
@@ -1691,7 +1689,6 @@ public static partial class BossEncounterSmoke
     }
     static void SetupInput()
     {
-        ProtectPresetUnlockProgress();
         previousBackground = InputSystem.settings.backgroundBehavior;
         previousEditorInput = InputSystem.settings.editorInputBehaviorInPlayMode;
         previousRunInBackground = Application.runInBackground;
@@ -1713,7 +1710,6 @@ public static partial class BossEncounterSmoke
         while (work.Count > 0) (work.Pop() as IDisposable)?.Dispose();
         RestoreFixture();
         if (game != null && EditorApplication.isPlaying) game.MainMenu();
-        restorePresetUnlockProgress?.Invoke();restorePresetUnlockProgress=null;
         if (inputReady)
         {
             if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);

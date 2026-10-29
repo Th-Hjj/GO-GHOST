@@ -4,11 +4,11 @@ Start with the current assignment in [AGENTS.md](../../AGENTS.md) / [CLAUDE.md](
 
 | Document | Scope |
 |---|---|
-| [Official Presets](OfficialPresets.md) | Six presets, persistent death unlocks, Help and F8 application |
+| [Configuration Help](Help.md) | Controls and Condition/Action configuration instructions; no presets or unlocks |
 | [Conditional Rules](ConditionalRules.md) | Current player controls, condition/action catalog, configuration, arbitration and feedback |
 | [Boss Encounters](BossEncounters.md) | Current arena, Boss combat, public observations and third-wave coordination |
 | [Art Direction](ArtDirection.md) | Current visual language, typography, body diagram and combat readability |
-| [Gameplay Analytics](GameplayAnalytics.md) | Manual/automatic measurement, F8 views and local JSON/CSV exports |
+| [Gameplay Analytics](GameplayAnalytics.md) | Named New Game records, play/configuration time, combat outcomes and local JSON exports |
 | [Implementation Log](ImplementationLog.md) | Changes, actual verification, artifacts and explicit untested limits; the only progress log |
 | [Retained Combat Reference](RetainedCombatReference.md) | Compatibility reference for retained player executors and serialized contracts; superseded gameplay is historical |
 | [Severance Design Reference](SeveranceDesignReference.md) | Design rationale for the approved sword rework; later Boss requirements govern the implementation |
@@ -22,6 +22,8 @@ GO GHOST is a single-player, fixed-camera 2D arena: Refraction, Severance, then 
 The player has 21 conditions and 10 action entries grouped under Weapon, Movement and Jump, with one 20-rule budget. Move, Jump, Aim, Fire and Dodge remain independent runtime operations. Each rule is `Condition 1 + Condition 2 + ... -> One Action` (one or more conditions, all AND). Legal ordinary Jump takes priority over Dodge and can interrupt it; other competing Rules follow global DisplayOrder, including shared physical controls. Impossible actions fall through and unowned controls remain manual. Preserve other real action commitments, nonconflicting parallel operations, independent event consumption, same-enemy AND, public observations and physical collision. Body facing and Revolver aim are independent.
 
 New Game/Restart opens Who Are You for a name and a freely drawn face, then Continue opens the empty Body Configuration. The name input follows the existing dark UI style. Configuration and combat share the same face; the configuration particle brain is temporarily removed. Name and drawing last for this run, including retries, Training respawns and waves; New Game resets them. Start Fight copies the complete rule configuration into a fresh fight. Retry and next wave retain it; New Game/Restart clears it. Pause freezes combat. Current play uses the six-round Revolver and retains other player tuning, Boss behavior, Camo, Cold-Light presentation and F8 session tuning. Historical tower, permanent progression and autonomous-player systems are disconnected.
+
+Help provides **What's the controls?** and **What is configuration?**, preserving the current draft on return. Presets and death-based unlocks are removed. Each New Game saves one independent JSON record with the character nickname; see [Gameplay Analytics](GameplayAnalytics.md).
 
 For the external playtest, New Game also starts a seven-minute real-time reminder, including character creation, configuration, Training, retries and pause. If Wave 1 is still uncleared, a one-time paused modal asks "The playtest is ending soon. Do you want to jump to wave 2?" Yes keeps the character and installed rules and starts normal Wave 2 preparation; No restores the current page/draft and previous pause state. Clearing Wave 1 or returning to the menu cancels the reminder; each New Game starts a fresh timer.
 

@@ -60,7 +60,7 @@ namespace GoGhost.Duel
             if (Paused || DeveloperToolsOpen || Player == null) return;
             if (Player.IsDead)
             {
-                if (playerRespawnAt == 0) playerRespawnAt = Time.time + 1.2f;
+                if (playerRespawnAt == 0) { playerRespawnAt = Time.time + 1.2f; PlayMetrics.RecordTrainingDeath(); }
                 if (Time.time >= playerRespawnAt) CreateEncounter(true);
                 return;
             }

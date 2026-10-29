@@ -1,10 +1,10 @@
 # Configuration Help
 
-Confirmed by Thomas, 2026-10-29. Body Configuration's Help opens two read-only pages named exactly **What's the controls?** and **What is configuration?**. Back or Escape returns to the same configuration and unfinished draft. Tabs have independent scroll positions and use the existing fonts, palette and controls.
+Confirmed by Thomas, 2026-10-29. Body Configuration's Help opens two read-only pages named exactly **What're the controls?** and **What is configuration?**. Back or Escape returns to the same configuration and unfinished draft. Tabs have independent scroll positions and use the existing fonts, palette and controls.
 
-The first page covers A/D movement, mouse aim, Space jump, S drop-through, Left Shift Dodge, held LMB precise fire, RMB remaining-magazine burst, automatic reload, Escape pause and Training/Configuration navigation.
+The first page contains only A/D movement, mouse aim, Space jump, Left Shift Dodge, left mouse Fire, right mouse Rapidly fire and Escape pause/resume. Thomas's screenshot corrections remove the S entry, extra aim/fire/reload explanations, Training/Configuration navigation and the Pause and practice heading.
 
-The second explains Condition (when) and Action (what), Add Rule, required parameters, automatic installation on choosing the action/final parameter, AND conditions, preview removal, editing/Cancel, row removal, priority, the 20-rule capacity, compatible parallel operations and manual fallback. Aim Assist is distinguished from Auto Aim. The help does not install a loadout or alter gameplay.
+The second uses three short sections: Condition (when) and Action (what); Add Rule, parameters, editing/removal; multiple AND conditions and row priority. Long examples and extended system explanations are omitted at Thomas's request. The help does not install a loadout or alter gameplay.
 
 Presets, their preview/Apply workflow, the F8 Presets section and death-based unlocking have been removed. Old unlock PlayerPrefs are unused and left untouched. New Game starts with empty rules. F8 retains Tuning, Waves and Analytics.
 

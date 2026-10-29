@@ -30,7 +30,7 @@ public static partial class BossEncounterSmoke
         ClickConfig("AddRule"); yield return Frames(2);
         var pending=Private<ConditionalRule>(ui,"pendingRule");
         ClickConfig("ConfigurationHelp"); SetAlphaGameSize(1280,720); yield return Frames(8);
-        Check("Controls title and no preset UI",ui.GetComponentsInChildren<TMP_Text>().Any(t=>t.text=="What's the controls?")
+        Check("Controls title and no preset UI",ui.GetComponentsInChildren<TMP_Text>().Any(t=>t.text=="What're the controls?")
             &&!ui.GetComponentsInChildren<TMP_Text>().Any(t=>t.text=="Presets"||t.text=="Apply"));
         ScreenCapture.CaptureScreenshot(Output+"help-controls-1280.png"); yield return Frames(3);
         ClickConfig("HelpTab1"); yield return Frames(5);

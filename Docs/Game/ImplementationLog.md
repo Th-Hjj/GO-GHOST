@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-10-29 — Shorter Help copy
+
+- From clean `60ce606`, remove the nine screenshot-marked controls fragments, including the S entry and Pause and practice heading. Keep short key/action mappings. Reduce configuration to three brief sections: Condition/Action, adding/editing, AND/priority. Correct the controls title to `What're the controls?` at Thomas's request; retain `What is configuration?`. No gameplay or metrics changes.
+- Validation: Unity compiled without failure; actual Play Mode text readback confirmed both shortened pages and tab switching. The final title correction is a string-only edit checked in source and compilation. Returned to Edit Mode. Initial probes encountered a missing runtime UI and a reflection invocation failure; the fresh session checks above succeeded. Existing TMP shutdown errors remain. Full combat suite, physical input and Build/Release NOT RUN for this copy change.
+
 ## 2026-10-29 — Reference Help and named New Game metrics
 
 - **Request / baseline:** clean main `c3edd66`; Unity 6000.6.0f1. Replace preset Help and death unlocks with two reference pages, titled exactly `What's the controls?` and `What is configuration?`. Each New Game owns a separate record associated with its character nickname, without participant numbers or identity across runs. Keep collection useful for configuration learning and encounter difficulty.

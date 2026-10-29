@@ -2,7 +2,7 @@
 
 Two developers, one Unity project, one GitHub repository (`Th-Hjj/GO-GHOST`). GitHub `main` is the only shared source of truth. The rules below are deliberately light. Their purpose is to avoid losing work and to avoid two people, two machines, or two agents editing the same Unity file at the same time.
 
-Last updated: 2026-10-20. Current authority/read order: `Docs/Game/README.md`; current structure: `Docs/ProjectMap.md`. Superseded documents are in `Legacy/Docs`. Progress lives only in `Docs/Game/ImplementationLog.md`. Items marked **Proposed** need confirmation. Thomas explicitly authorized this naming-cleanup delivery's verified Windows x64 build/ZIP, direct main commit/push and new GitHub Release. Earlier task-specific Editor-only limits do not restrict this delivery.
+Last reviewed: 2026-10-29. Current authority/read order: `AGENTS.md` / `CLAUDE.md`, then `Docs/Game/README.md`; current structure: `Docs/ProjectMap.md`. Superseded documents are in `Legacy/Docs`. Progress lives only in `Docs/Game/ImplementationLog.md`. Items marked **Proposed** need confirmation. Dated build/release authorizations belong to their original delivery; follow the current request and Git safety rules for new work.
 
 ## 0. Current period: Thomas leads (from 2026-09-25)
 

@@ -1,5 +1,7 @@
 # Swordsman: Relentless Swordmaster
 
+Historical design rationale and implementation plan from 2026-10-18. For current tuning and mechanics use [Boss Encounters](BossEncounters.md): Unbound at 33% HP, solo ordinary/Redline terminal recovery .40/.80 s, and the former W3 duo as optional Bonus. Older alternatives, values and task-specific delivery limits below are not current acceptance criteria.
+
 Status: **Design and implementation plan approved by Thomas on 2026-10-18; local Editor implementation and focused checks completed. Human pressure/balance remains unvalidated.**
 
 Latest clarification, Thomas 2026-10-18: one successfully emitted delayed blade per whole phrase (not per individual swing), with earlier-phrase overlap allowed. Delayed blade length is now 1.35, matching the ordinary lane wave; ordinary waves reuse the same active white-core/coral-glow/trail effect. Other combat values and direction commitments remain.

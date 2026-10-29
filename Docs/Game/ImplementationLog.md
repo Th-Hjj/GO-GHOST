@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-10-29 — Current documentation and GitHub overview
+
+- **Request / baseline:** clean main `1594b4d`. Audit outdated project documentation and keep GitHub concise. Thomas briefly requested a playtest release, then explicitly limited this task to GitHub/documentation with no build; no Unity or packaging operation was started.
+- **Updated:** shorten README, distinguish current-source features from the older downloadable builds, and replace GitHub About's stale Alpha 75% Windows label with a concise description of manual control and Condition-Action rules. Synchronize Help titles/content, removed presets, 21 conditions / 10 actions / 20-rule budget, schema-4 JSON, Final Boss/Bonus progression, W2 metrics cutoff, platform heights, presentation and current audio. Refresh the mirrored AGENTS/CLAUDE constraints; label historical design/tuning and dated delivery scopes without rewriting prior evidence logs.
+- **Validation:** static comparison with ConditionalLoadout, DuelUI.Help, DuelGame progression/analytics, Playmetrics, DuelArenaLayouts, PlayerShooting/PlayerDodge, BossTactics.Platforms, WaveMusicPlayer and SfxSet. Catalog/schema assertions and AGENTS/CLAUDE equality passed; all 57 relative links in the edited reference documents resolve. Git diff whitespace check passed. GitHub About save confirmed in the live page.
+- **Limits:** Markdown and repository description only. No runtime/assets/packages changed. Unity compile, Play Mode, Standalone, Build and Release NOT RUN; historical runtime results remain historical evidence.
+
 ## 2026-10-29 — Simple procedural defeat cue
 
 - **Request / baseline:** clean main `1d26540`. Replace the strange death sound with a simple failure cue; no human/robot death voice or comic jingle. User explicitly accepts code-generated audio.

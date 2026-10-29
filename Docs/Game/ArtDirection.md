@@ -49,15 +49,15 @@ Unmatched cards stay neutral/readable except for the persistent body-colored act
 
 `MissionBodyRegion` renders cached contour samples with the default Overlay-compatible UI mesh/material, without Bloom, textures, particles or new dependencies. `PulseSpeed`, `PulseLength`, `PulseIntensity` and `PulseFrequency` (equally spaced pulses per closed loop) are visual parameters, separate from selection data. Absolute unscaled UI time retains phase through page rebuilds; combat feedback retains its existing scaled-time/pause rules. Legacy Upgrade uses the same renderer and existing selection callbacks; it remains disconnected from the formal Duel entry.
 
-## Minimalist particle brain — 2026-10-16
+## Historical particle brain — inactive in current configuration
 
-Confirmed by Thomas, with a follow-up explicitly rejecting the initial golden-outline pulse. The formal configuration head retains its static outline and original 72x88 local bounds. Inside it, a small organic elliptical cloud uses 18 cool-white (#E8F5FF) particles, slow 3D rotation, gentle individual drift, subtle brightness fluctuation and depth-dependent size/opacity. No anatomical mesh, central orb, connection lines, arcs, large halo, added text or gameplay.
+The 2026-10-27 drawn-face flow supersedes this 2026-10-16 presentation. The retained component used a static 72x88 head outline with 18 cool-white (#E8F5FF) particles, slow 3D rotation, gentle drift and depth-dependent size/opacity. It is not created in the current formal configuration. The implementation details below document the retained component only.
 
 `MissionParticleBrain` is one non-interactive child UI mesh using the default Overlay material. Stable volume samples rotate and project with mild perspective; back particles render first. The full soft edge of every particle stays inside an inset head ellipse. Unscaled double-precision time preserves phase across rule-page rebuilds. No Particle System, VFX Graph, texture, material asset or Bloom dependency. Only particle count (18–30, default 18), rotation speed (default 16 degrees/second), cluster size (default .90/.66 of head dimensions), glow intensity (default .12) and the inherited Graphic color are configurable. Following feedback that the initial tiny cluster looked noisy and static, the default uses fewer, clearer particles across more of the head interior, a stronger foreground/background distinction and more visible continuous motion. Thomas accepted this motion and requested a slight density reduction; the final default is 18 particles with the other visual parameters unchanged. The single tint recolors the entire cloud without changing the head outline. The legacy Upgrade screen remains disconnected and unchanged; no Ultimate or Boss brain acquisition is implemented.
 
 ## Combat feedback
 
-**Centered health labels / opening wave title — Thomas, 2026-10-27:** center each Boss name and HP above its full health track, and player name and HP below its track. Keep two independent Boss groups in W3 with sufficient vertical separation. WAVE 1/2/3 is opaque during countdown, fades over .60 combat seconds after the fight starts and stays hidden afterward; pause/F8 retains progress, fresh encounters reset it. TRAINING remains visible. Preserve health colors/depletion, ammo hiding, rule sidebar and gameplay.
+**Centered health labels / opening wave title — Thomas, 2026-10-27; progression updated 2026-10-29:** center each combat Boss name and HP above its full health track, and player name and HP below its track. Bonus has two independent Boss groups with sufficient vertical separation. WAVE 1, WAVE 2 and BONUS WAVE are opaque during countdown, fade over .60 combat seconds after combat starts and stay hidden afterward; pause/F8 retains progress and fresh encounters reset it. TRAINING remains visible. Wave 3 uses its separate Final Boss dialogue page, with a stationary rainbow stickman, 9999 HP and no platforms or combat countdown. Preserve health colors/depletion, ammo hiding and the rule sidebar.
 
 **Health-only resource HUD — Thomas, 2026-10-27:** remove bottom Ammo / Reloading text across Training, preparation and combat. Player and independent Boss health bars remain; wave/countdown labels and equipped rule sidebar are unchanged. Reload is communicated by the existing raised weapon pose and red flash; Dodge retains its foot bar. Ammunition, reload clocks, rule conditions, pause/F8 and encounter cleanup are unchanged. This supersedes earlier ammo-only bottom-status wording below.
 
@@ -88,7 +88,7 @@ Camo hides every body/weapon accent through the original alpha path; only existi
 
 ## Delivery
 
-Local Editor-ready formal Duel scene; no full Build, Release, commit or push for this pass. Focused real Play Mode checks and screenshots, no exhaustive combinations, long fights or victory gate. See Implementation_Log for actual evidence and limits.
+For presentation changes, use focused real Play Mode checks and actual screenshots; no exhaustive combinations, long fights or victory gate. Build, release and publishing scope comes from the current request, not dated art passes. See [ImplementationLog.md](ImplementationLog.md) for actual evidence and untested limits.
 
 ## Typography follow-up — 2026-10-16
 
@@ -98,7 +98,7 @@ Research: [Xbox XAG 101](https://learn.microsoft.com/en-us/xbox/accessibility/xb
 
 **Confirmed adoption — Thomas, 2026-10-16:** IBM Plex Sans Regular for condition text/descriptions, Medium for controls and fixed-weight action text, SemiBold for headings; IBM Plex Mono Medium for compact HP/resource counters, countdowns and numeric inputs. Avoid mono for whole rule sentences and avoid light weights for small HUD text. [IBM's typeface guide](https://www.ibm.com/design/language/typography/typeface/) and [official font repository](https://github.com/IBM/plex) provide styles, UI design intent and OFL distribution.
 
-The formal Duel scene binds the four actual weights from `Assets/_Game/Shared/Fonts/IBMPlex`, including the original TTFs and OFL license. Static SDF16 atlases use 80-point sampling, 8-pixel padding, scale 1 and 1024x1024 textures. The up/down triangles and rule arrow use a separate 256x256 static Liberation Sans symbol fallback, retaining its existing project license. No runtime auto-sizing, dynamic atlas growth, OS font dependency or package change. Rule glow materials share the action font atlas, are created only with visible rows, and are released when the page is replaced/destroyed. Validation evidence, including four-resolution checks, belongs in Implementation_Log.
+The formal Duel scene binds the four actual weights from `Assets/_Game/Shared/Fonts/IBMPlex`, including the original TTFs and OFL license. Static SDF16 atlases use 80-point sampling, 8-pixel padding, scale 1 and 1024x1024 textures. The up/down triangles and rule arrow use a separate 256x256 static Liberation Sans symbol fallback, retaining its existing project license. Rule text retains these fixed assets; character names additionally use the runtime system CJK fallback described above when available. Rule glow materials share the action font atlas, are created only with visible rows, and are released when the page is replaced/destroyed. Validation evidence, including four-resolution checks, belongs in ImplementationLog.
 
 ## Control clarity follow-up — 2026-10-16
 

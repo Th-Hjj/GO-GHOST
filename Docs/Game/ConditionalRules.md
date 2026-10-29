@@ -8,7 +8,7 @@ Confirmed assignment: Thomas, 2026-10-22, six-round Revolver (Prompt 01), with t
 
 ## Help
 
-Thomas, 2026-10-29: presets and sequential death unlocks are removed, including F8 Presets. Configuration Help contains **What's the controls?** and **What is configuration?**. It explains controls, conditions, actions, parameters, AND, editing and priority without changing the loadout. Back/Escape preserves the draft. See [Help.md](Help.md).
+Thomas, 2026-10-29: presets and sequential death unlocks are removed, including F8 Presets. Configuration Help contains **What're the controls?** and **What is configuration?**. The pages show brief controls and Condition/Action definitions only; the later copy reductions removed editing and priority instructions. Back/Escape preserves the draft without changing the loadout. See [Help.md](Help.md).
 
 ## Configuration and priority
 
@@ -142,11 +142,11 @@ Q06 chooses the visible enemy closest in angle within **+/-20 degrees of raw mou
 
 Normal weapon tuning is Revolver **28 damage / 6 rounds / .45 s primary / 1.80 s auto reload / .10 s burst / +/-14 degrees burst spread**; Move **7**, Jump **12**, gravity scale **3**; Dodge **distance 3 / movement .18 s / immunity .20 s / start cooldown 1.7 s**. No action writes transforms, damage, cooldowns or outcomes. Bullets cross interior terrain, stop at the Arena perimeter and respect allied Boss blocking; physical movement/melee collision and current Boss combat remain intact.
 
-Start Fight deep-copies all rule fields. Combat/pause cannot edit them. Retry/next wave retain rules and order with fresh actors, resources, observations, occurrences and feedback. New Game/Restart clears rules. Preparation remains stationary for three seconds. Simultaneous death is defeat; both Bosses must die to clear wave three. Pause/F8 freezes timers and feedback; resume does not replay old events.
+Start Fight deep-copies all rule fields. Combat/pause cannot edit them; Pause → Configuration returns to editing for a fresh attempt. Retry/next wave retain rules and order with fresh actors, resources, observations, occurrences and feedback. New Game/Restart clears rules. Combat preparation remains stationary for three seconds. Simultaneous death is defeat. Wave 2 victory ends metrics and opens Meet the Final Boss; Wave 3 is a dialogue visit with no combat/countdown. Yes opens retained-rule Bonus configuration; No returns to the menu. Both Bosses must die to clear the optional Bonus. Pause/F8 freezes combat timers and feedback; resume does not replay old events.
 
 ## Configuration compatibility
 
-The indexed condition sequence preserves the original `Condition` / `AdditionalCondition` fields and typed parameters as its first two serialized slots, with `ExtraConditions` storing the unbounded tail. Missing/null tails mean older one-/two-condition rules; they retain their original IDs, options and behavior. Copying, presets, fight snapshots and analytics JSON retain the full sequence. The six official templates produce independent editable copies.
+The indexed condition sequence preserves the original `Condition` / `AdditionalCondition` fields and typed parameters as its first two serialized slots, with `ExtraConditions` storing the unbounded tail. Missing/null tails mean older one-/two-condition rules; they retain their original IDs and options, subject to the migrations and validation below. Copying, fight snapshots and analytics JSON retain the full sequence. Preset templates are retired.
 
 
 Old actions migrate idempotently on copies, editing and fight snapshots: M01 → M11/Toward Enemy; M02 → M11/Away from Enemy; M09 → M11/Arena Center; M11 Left/Right stays unchanged; Q02 → Q01/Lowest Health; Q01 defaults Nearest; D02/D03/D04 → D01/Toward Enemy/Movement Direction/Aim Direction, with old D01 defaulting Away from Threat; J03 → J01/Repeat, with old J01 defaulting Once. M03 and J04 retain their existing parameter values. M04 Forward/Back has no fixed Left/Right equivalent: migration produces M11 with Unspecified direction, so normal validation requires reselection. M10/F06 and all removed conditions remain invalid; copies never drop conditions or unrelated rules, reorder rows or invent replacements. Old Incoming Bullet value 2 remains Ranged; removed Low value 4 remains invalid. Invalid rows stay editable and block Start Fight. All new parameters survive JSON, copy, cancel, retry and HUD display.
@@ -174,7 +174,7 @@ F8 groups controls under Tuning, Waves and Analytics. Tuning retains Player, Wea
 
 ## Validation and delivery
 
-Use normal compilation and the Configuration Actions Editor check. Cover every parameter in actual selector/preview/JSON, Move condition gain/loss/manual and lower-row fallback, unchanged distance bands, merged target/jump/dodge branches, legacy invalidation and equivalent migration, parameterized combat HUD, pause/cleanup and short W1/W2/W3 flow. Controlled fixtures prove mechanisms, not balance; full Build and physical-input feel require separate testing.
+For rule changes, use normal compilation and relevant Configuration Actions Editor checks: selector/preview/JSON parameters, condition loss/fallback, migration, arbitration, HUD and pause/cleanup. Use Final Boss and Bonus Progression for current stage transitions and metrics cutoff. Older checks may contain retired catalog/preset/W3 assumptions; inspect them before use. Controlled fixtures prove mechanisms, not balance; full Build and physical-input feel require separate testing.
 
 Compilation, static inspection, controlled fixtures, actual runtime behavior and screenshots are separate evidence levels. Fixtures prove mechanisms, not natural completion or balance. Record unexecuted checks as **NOT TESTED** with the missing capability/evidence. No full combination matrix, win-rate test, long automatic fights or forced outcome requirement.
 

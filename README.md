@@ -4,19 +4,17 @@ A single-player 2D boss-fight prototype where you decide what to control and wha
 
 Build up to **20 Condition → Action rules** across Move, Jump, Aim, Fire and Dodge. Each operation falls back to manual control when no rule can execute.
 
-**[Download Cassie Preview Version — macOS](https://github.com/Th-Hjj/GO-GHOST/releases/tag/cassie-preview-2026-10-27)** · Apple Silicon (M-series Macs)
+**[macOS preview — Apple Silicon](https://github.com/Th-Hjj/GO-GHOST/releases/tag/cassie-preview-2026-10-27)** · **[Windows playtest — Alpha 75%](https://github.com/Th-Hjj/GO-GHOST/releases/tag/alpha75-2026-10-22)**
 
-[Earlier Windows playtest — Alpha 75%](https://github.com/Th-Hjj/GO-GHOST/releases/tag/alpha75-2026-10-22). Published packages predate the current Help, metrics and Final Boss/Bonus progression changes.
+These are earlier builds. The current source features below are not all included; see each release for its setup instructions and testing limits. The Mac preview is not Developer ID signed or notarized, and Mac runtime testing is pending.
 
-## Play
+## Current game
 
-1. Extract the complete ZIP and open `GO GHOST.app` on macOS, or `GO-GHOST.exe` in the earlier Windows package. The Mac preview requires macOS 12 or later and is not Developer ID signed or notarized; if blocked, review **System Settings → Privacy & Security → Open Anyway** for this app. Actual Mac runtime testing is pending.
-2. Choose **New Game**, draw a face and enter a nickname. Add your own rules, read **Help** for controls/configuration, or leave the rules empty for manual play.
-3. **Enter Test Room** to try your setup. Select **Continue**, then **Start Fight**.
+1. **New Game**: draw a face, enter a nickname and configure your rules. Empty rules keep control manual; **Help** introduces controls and Condition → Action.
+2. **Enter Test Room** to practice, then **Continue → Start Fight**.
+3. Fight **Gunner**, then **Swordsman**. **Meet the Final Boss** opens a short dialogue, with an optional **Bonus Wave** against both bosses.
 
-Retry and the next wave keep your rules. **Pause → Configuration** retains rules and the current wave for a fresh attempt. New Game clears rules and appearance and starts a fresh named metrics record.
-
-After Wave 2, select **Meet the Final Boss** for a short placeholder visit. Choose Yes at the end to configure and enter the optional dual-Boss **Bonus Wave**, or No to return to the menu. Metrics end at Wave 2 victory; the Final Boss visit and Bonus flow are not recorded.
+Retry and **Pause → Configuration** retain your character and rules. New Game starts fresh. If Wave 1 remains uncleared after seven minutes, a one-time prompt offers a skip to Wave 2.
 
 ## Controls
 
@@ -27,7 +25,7 @@ After Wave 2, select **Meet the Final Boss** for a short placeholder visit. Choo
 | S | Drop through a platform |
 | Mouse | Aim |
 | LMB | Hold to fire precise shots continuously |
-| RMB | Short Burst — rapidly fire all remaining bullets with reduced accuracy |
+| RMB | Short Burst — rapidly fire the remaining magazine |
 | Left Shift | Dodge |
 | Escape | Pause |
 | F8 (or Fn+F8 on Mac) | Tuning, Waves and Analytics |
@@ -36,13 +34,7 @@ The six-round Revolver reloads automatically. F8 tuning lasts only for the curre
 
 ## Playtest data
 
-Each **New Game** saves one **JSON** record with the character nickname, play/configuration/Training time, rule edits, combat outcomes and manual/assisted/automatic actions. Use **F8 → Analytics → Open data folder**, or open:
-
-```text
-%USERPROFILE%\AppData\LocalLow\DefaultCompany\GO GHOST\Analytics
-```
-
-Records save from New Game, on key transitions and every ten real seconds. Training time/deaths are separate from numbered-wave combat. Names can repeat without overwriting records. Old JSON/CSV files remain untouched; collect the new JSON files. Developer wave jumps and tuning changes mark test data. [Metrics details](Docs/Game/GameplayAnalytics.md).
+Each New Game saves one local JSON record with the nickname, time, rule use and combat results. Recording ends at Wave 2 victory; Final Boss and Bonus activity are excluded. Find files through **F8 → Analytics → Open data folder**. [Metrics details](Docs/Game/GameplayAnalytics.md).
 
 ## Open the project
 

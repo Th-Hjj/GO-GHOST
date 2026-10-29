@@ -1,6 +1,6 @@
 # GO GHOST - Project Map
 
-Current organization: 2026-10-20. Gameplay authority: [game documentation](Game/README.md). Actual verification and limits: [implementation log](Game/ImplementationLog.md). Current naming rules: [NamingConventions.md](NamingConventions.md).
+Last reviewed: 2026-10-29; structure established 2026-10-20. Gameplay authority: [game documentation](Game/README.md). Actual verification and limits: [implementation log](Game/ImplementationLog.md). Current naming rules: [NamingConventions.md](NamingConventions.md).
 
 ## Entry and current ownership
 
@@ -9,9 +9,9 @@ Only enabled build scene and default Editor Play entry: `Assets/_Game/Levels/L01
 | Folder | Contents |
 |---|---|
 | `Assets/_Game/Levels/L01_Duel/Scenes` | Formal Duel scene |
-| `Assets/_Game/Levels/L01_Duel/Scripts` | DuelGame lifecycle/training, conditional catalog/controller, DuelUI, Boss executors/navigation/coordination |
+| `Assets/_Game/Levels/L01_Duel/Scripts` | DuelGame lifecycle/Training/Final Boss/Bonus, character creation, conditional rules, Help, metrics, Boss executors/navigation/coordination |
 | `Assets/_Game/Levels/L01_Duel/Prefabs`, `Data`, `Art`, `Audio` | Actual combat prefab, Bosses/profiles, materials and licensed wave music |
-| `Assets/_Game/Shared/Scripts/Player` | Existing input, movement, jump/drop-through, Dodge, Rifle, projectile, health, visual and WeaponProfile |
+| `Assets/_Game/Shared/Scripts/Player` | Existing input, movement, jump/drop-through, Dodge, Revolver (retained Rifle APIs), projectile, health, visual and WeaponProfile |
 | `Assets/_Game/Shared/Scripts/Presentation` | Shared visual/audio helpers, BodyDiagramGeometry, MissionBodyRegion and MissionParticleBrain |
 | `Assets/_Game/Shared/Scripts/Compatibility` | Retained serialized/API contracts and optional components used by original executors; [details](../Assets/_Game/Shared/Scripts/Compatibility/README.md) |
 | `Assets/_Game/Shared/Prefabs`, `Data`, `Audio`, `Fonts`, `Presentation` | Reused player/projectile, physics/data, sounds, fonts and presentation assets |
@@ -19,7 +19,7 @@ Only enabled build scene and default Editor Play entry: `Assets/_Game/Levels/L01
 | `Assets/_Game/Editor/Playtest` | Current wave entries and bounded behavior, training, platform, UI and combat checks |
 | `Assets/_Game/Editor/Authoring` | Current Boss/presentation authoring tools |
 
-`ConditionalThreatGeometry` contains the existing physical threat prediction required by current rules. The old autonomous `LegacyPlayerAI` remains archived. Current body UI shares the extracted contour/pulse/particle components without depending on historical MissionUI screens. Original class names and serialized schema remain intact; the current combat prefab is `DuelCombatAttempt.prefab`.
+`ConditionalThreatGeometry` contains the physical threat prediction required by current rules. The old autonomous `LegacyPlayerAI` remains archived. Current body UI shares the extracted contour/pulse components and drawn face; the retained particle brain is inactive in formal configuration. It does not depend on historical MissionUI screens. The current combat prefab is `DuelCombatAttempt.prefab`; Boss assets are `Gunner` and `Swordsman`, with their existing GUIDs and enum values preserved.
 
 ## Archive and dependency direction
 

@@ -1,3 +1,7 @@
+# Retained combat compatibility reference
+
+Historical restoration specification, reviewed 2026-10-29. Use this file for retained executor/API context, not current tuning, progression or delivery authorization. [Conditional Rules](ConditionalRules.md) governs the current six-round Revolver, 21 conditions / 10 actions, 20-rule budget and Jump priority. [Boss Encounters](BossEncounters.md) governs Wave 1/2, the Final Boss visit and optional Bonus. Presets, permanent Player/AI permissions and mandatory W3 combat below are retired. Dated build/push instructions are historical.
+
 > **Jump priority — Thomas, 2026-10-26:** legal manual/rule Jump interrupts active Dodge and wins same-frame requests. The interruption ends movement/immunity, retains cooldown and emits no Dodge Finished; overlapping Boss collision pairs restore after separation. Ground-only jump legality and existing pause/focus gates remain. This supersedes the historical Dodge-first lock below.
 
 > **Boss-body Dodge — Thomas, 2026-10-19:** formal manual/rule Dodge passes through registered Boss body colliders on ground or in air. Only those collision pairs are ignored during movement. Restore at movement end, or after separation if still overlapping; lifecycle cancellation/death/disable clears owned pairs immediately. No extra immunity, distance, cooldown refresh or terrain pass-through. Rule path prediction uses the same eligibility.

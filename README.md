@@ -4,9 +4,9 @@ A single-player 2D boss-fight prototype where you decide what to control and wha
 
 Build up to **20 Condition → Action rules** across Move, Jump, Aim, Fire and Dodge. Each operation falls back to manual control when no rule can execute.
 
-**[macOS preview — Apple Silicon](https://github.com/Th-Hjj/GO-GHOST/releases/tag/cassie-preview-2026-10-27)** · **[Windows playtest — Alpha 75%](https://github.com/Th-Hjj/GO-GHOST/releases/tag/alpha75-2026-10-22)**
+**[Download the Alpha Playtest — Windows and macOS](https://github.com/Th-Hjj/GO-GHOST/releases/tag/alpha-playtest-2026-10-29)** (version 0.80.0)
 
-These are earlier builds. The current source features below are not all included; see each release for its setup instructions and testing limits. The Mac preview is not Developer ID signed or notarized, and Mac runtime testing is pending.
+The Windows build was launched and its telemetry checked on the build PC. The macOS build is Universal (Apple Silicon and Intel), is not Developer ID signed or notarized, and has not yet been run on a Mac. Each ZIP includes setup, controls and data-collection instructions.
 
 ## Current game
 

@@ -1,5 +1,14 @@
 # GO GHOST slice implementation
 
+## 2026-10-29 — Alpha Playtest release (Windows x64 and macOS Universal)
+
+- **Request / scope:** Thomas asked to package the current game for the class Alpha Playtest (both platforms, telemetry export, ZIP integrity, `<names> - <title> - <platform>` folders) and publish a GitHub Release. Thomas chose version **0.80.0** and the title **Alpha Playtest**. Source: `b9581a4` plus the version bump in this commit.
+- **Pre-build cleanup:** an earlier cancelled build had left an untracked `Assets/Resources` folder (Performance Testing files). HEAD already lists `InputSystem_Actions` in `preloadedAssets`; it was briefly removed from memory as suspected residue, then restored, so the only ProjectSettings change is `bundleVersion`. The emptied `Assets/Resources` folder and meta were removed after the builds; URP global settings stayed clean.
+- **Builds:** Windows x64 **Succeeded**, 0 errors, 512 warnings, 154,752,616 bytes, 24 s. macOS (Mono, `x64ARM64`) **Succeeded**, 0 errors, 370 warnings, 155,758,396 bytes, 45 s; Info.plist 0.80.0 / macOS 12; all seven Mach-O binaries are fat x86_64 + arm64. Warnings are package shader, obsolete-API and offline symbol-upload notices. The Windows `_BackUpThisFolder_ButDontShipItWithYourGame` folder is excluded from the package.
+- **Standalone Windows check:** launched the packaged executable (existing 1280x720 windowed registry settings, backed up and restored), clicked New Game and Continue, closed the window normally. A new finished schema-4 JSON appeared in `%USERPROFILE%/AppData/LocalLow/DefaultCompany/GO GHOST/Analytics` with `applicationVersion=0.80.0`, `platform=WindowsPlayer`, `editor=false`, `endReason=quit`, `characterCreated=true`. Player.log showed only first-run D3D12 cache, offline Unity-services and unused URP post-processing shader notices.
+- **Packages:** `Thomas & Walker - GO GHOST - Windows.zip` (224 files, 64,241,290 bytes, SHA-256 `850de56d…106aa`) and `Thomas & Walker - GO GHOST - macOS.zip` (223 files, 63,655,595 bytes, SHA-256 `02a483bc…0f158`), each with PLAYTEST-README.txt (flow, controls, per-platform telemetry path, Gatekeeper note) and Licenses. Windows ZIP extracted with PowerShell Expand-Archive and macOS ZIP with Python: every file matches its source hash, no missing/extra entries; macOS entries carry Unix modes with 0755 on the seven native binaries.
+- **Limits:** macOS launch, input, audio, Metal rendering, Gatekeeper and telemetry **NOT TESTED** (Windows build host); Archive Utility extraction not run. Windows check covered launch, two menu clicks and quit only; full fights, physical play feel and balance were not run in the standalone.
+
 ## 2026-10-29 — Current Playtest harness expectations
 
 - **Request / baseline:** `213e49e`. Thomas asked to update the stale test cases before packaging.

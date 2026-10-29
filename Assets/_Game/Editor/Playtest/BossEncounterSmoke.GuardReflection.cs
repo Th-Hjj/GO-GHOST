@@ -42,7 +42,7 @@ public static partial class BossEncounterSmoke
             {
                 Check("reflection retains speed damage and lifetime", Vector2.Distance(shot.GetComponent<Rigidbody2D>().linearVelocity, Vector2.right * facing * 18) < .01f
                     && shot.Damage == 12 && Private<float>(shot, "remainingLife") <= life);
-                Check("reflected bullet carries sword color", shot.GetComponent<SpriteRenderer>().color == NeuralPalette.Severance);
+                Check("reflected bullet carries sword color", shot.GetComponent<SpriteRenderer>().color == NeuralPalette.Swordsman);
                 Vector2 frozenShot = shot.transform.position; float frozenTime = Time.time;
                 checkingPause = true; game.SetPause(true);
                 yield return RealSeconds(.12);
@@ -103,8 +103,8 @@ public static partial class BossEncounterSmoke
 
         // Reflected ownership damages the other Boss and still stops at its body.
         yield return Fresh(3); StopPolicies();
-        var sword3 = game.Bosses.First(b => b.Profile.Kind == BossKind.Severance);
-        var gun3 = game.Bosses.First(b => b.Profile.Kind == BossKind.Refraction);
+        var sword3 = game.Bosses.First(b => b.Profile.Kind == BossKind.Swordsman);
+        var gun3 = game.Bosses.First(b => b.Profile.Kind == BossKind.Gunner);
         OnFloor(sword3.gameObject, sword3.Navigation, 0); OnFloor(gun3.gameObject, sword3.Navigation, 2.5f);
         OnFloor(game.Player.gameObject, sword3.Navigation, 6);
         yield return Until(() => sword3.Motor.Grounded, 1); yield return Seconds(.2f);

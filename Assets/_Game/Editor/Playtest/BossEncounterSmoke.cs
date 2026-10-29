@@ -1592,8 +1592,8 @@ public static partial class BossEncounterSmoke
 
         Record("MIXED corner: Legs stays manual with no movement input; Arms and Spine use their normal AI permissions.");
         yield return Fresh(3,false,true);
-        var gunner=game.Bosses.First(a=>a.Profile.Kind==BossKind.Refraction);
-        sword=game.Bosses.First(a=>a.Profile.Kind==BossKind.Severance);player=game.Player;
+        var gunner=game.Bosses.First(a=>a.Profile.Kind==BossKind.Gunner);
+        sword=game.Bosses.First(a=>a.Profile.Kind==BossKind.Swordsman);player=game.Player;
         playerShape=player.GetComponent<Collider2D>();floor=sword.Navigation.ArenaBounds.min.y;
         Position(player.gameObject,new Vector2(-13.7f,floor+playerShape.bounds.extents.y+.03f));
         Position(sword.gameObject,new Vector2(-12.8f,floor+sword.Body.bounds.extents.y+.03f));

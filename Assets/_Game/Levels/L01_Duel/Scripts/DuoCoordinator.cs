@@ -55,7 +55,7 @@ namespace GoGhost.Duel
         public bool NeedsFireLane(BossAgent actor) => actor==sword && Phase==DuoPhase.Idle
             && gunner!=null && gunner.IsAlive && occludedSince>=0 && Time.time-occludedSince>.6f;
         public void Configure(BossAgent[] actors,ArenaNavigation2D nav)
-        {this.actors=actors;this.nav=nav;foreach(var a in actors)if(a.Profile.Kind==BossKind.Refraction)gunner=a;else sword=a;nextCombo=Time.time+2;}
+        {this.actors=actors;this.nav=nav;foreach(var a in actors)if(a.Profile.Kind==BossKind.Gunner)gunner=a;else sword=a;nextCombo=Time.time+2;}
         public void BeginCombat(){running=true;nextCombo=Time.time+2;}
         public void SetPaused(bool value){paused=value;}
         public void StopCombat(){running=false;majorOwner=null;Phase=DuoPhase.Idle;gunPlan=swordPlan=null;}

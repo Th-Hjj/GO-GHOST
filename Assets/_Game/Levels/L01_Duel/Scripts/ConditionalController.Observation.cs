@@ -315,7 +315,7 @@ namespace GoGhost.Duel
                     if(contacts[i].HealthFraction>contacts[best].HealthFraction)continue;
                     if(contacts[i].HealthFraction<contacts[best].HealthFraction){best=i;bestScore=score;continue;}
                 }
-                if(response=="Q04"&&actors[i].Profile.Kind==BossKind.Refraction||response=="Q05"&&actors[i].Profile.Kind==BossKind.Severance)score-=100000;
+                if(response=="Q04"&&actors[i].Profile.Kind==BossKind.Gunner||response=="Q05"&&actors[i].Profile.Kind==BossKind.Swordsman)score-=100000;
                 if(score<bestScore-.0001f||Mathf.Abs(score-bestScore)<.0001f&&(best<0||actors[i].ActorId<actors[best].ActorId)) {best=i;bestScore=score;}
             }
             return best;

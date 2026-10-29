@@ -10,17 +10,56 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 558561a58000f3b4db151ec13fd9af79, type: 3}
-  m_Name: Refraction
+  m_Name: Swordsman
   m_EditorClassIdentifier: Assembly-CSharp::GoGhost.Duel.BossProfile
-  Kind: 0
-  Health: 666
+  Kind: 1
+  Health: 999
   Motion:
-    Speed: 5.8
-    Acceleration: 45
-    Braking: 55
+    Speed: 7.5
+    Acceleration: 55
+    Braking: 65
     JumpSpeed: 12
     GravityScale: 3
-    AirControl: 0.45
+    AirControl: 0.55
+  Sword:
+    UnboundHealth: 0.33
+    AdvanceSpeed: 34
+    AdvanceDistance: 22
+    TravelSpeed: 15
+    DrawPrepare: 0.2
+    DrawLock: 0.14
+    WavePrepare: 0.3
+    WaveLock: 0.18
+    WaveSpeed: 15
+    WaveLength: 1.35
+    WaveLife: 2.4
+    CutReach: 3
+    CutRadius: 0.16
+    EchoDelay: 0.2
+    EchoWarning: 0
+    EchoActive: 0.12
+    EchoLength: 1.35
+    EchoSpeed: 13
+    EchoTravel: 18
+    EchoStagger: 0.16
+    CutPrepare: 0.3
+    FinisherPrepare: 0.38
+    CutLock: 0.16
+    CutAdvance: 1.1
+    CutStepSpeed: 12
+    JumpPrepare: 0.24
+    JumpLock: 0.12
+    JumpCutActive: 0.28
+    Recovery: 0.65
+    FinaleRecovery: 0.8
+    FinaleCooldown: 10
+    UnboundRecovery: 0.4
+    UnboundFinaleCooldown: 9
+    DrawDamage: 28
+    WaveDamage: 14
+    CutDamage: 18
+    FinisherDamage: 26
+    EchoDamage: 24
   Magazine: 12
   ReloadSeconds: 1.45
   BulletSpeed: 24
@@ -35,7 +74,7 @@ MonoBehaviour:
   SweepShots: 8
   CamoMinimumMove: 0.45
   DropSpeed: 16
-  CamoAlpha: 0
+  CamoAlpha: 0.02
   CamoFade: 0.14
   RevealFade: 0.12
   CamoDuration: 1.8
@@ -56,7 +95,7 @@ MonoBehaviour:
   InterruptRecovery: 0.3
   BladeRadius: 0.22
   BeamRadius: 0.07
-  DesiredDistance: 7
+  DesiredDistance: 1.6
   RepositionWeight: 1
   ExposureWeight: 0.7
   RepetitionWeight: 0.25
@@ -79,7 +118,7 @@ MonoBehaviour:
     Damage: 0
     Cost: 0
   Piercing:
-    Prepare: 0.9
+    Prepare: 0.72
     Lock: 0.24
     Active: 0.09
     Recovery: 0.55
@@ -174,7 +213,7 @@ MonoBehaviour:
     Lock: 0.12
     Active: 0.1
     Recovery: 0.55
-    Cooldown: 4.5
+    Cooldown: 3.2
     Range: 0
     Damage: 28
     Cost: 0

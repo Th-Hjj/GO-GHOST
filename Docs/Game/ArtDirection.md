@@ -1,6 +1,6 @@
 # Cold-Light Neural Circuit
 
-Confirmed by Thomas, 2026-10-16. This direction supersedes earlier monochrome configuration art, uniform green execution feedback, blue Refraction, green player HP and green/gold weapons. Verification belongs in Implementation_Log; this document records the approved direction.
+Confirmed by Thomas, 2026-10-16. This direction supersedes earlier monochrome configuration art, uniform green execution feedback, blue Gunner, green player HP and green/gold weapons. Verification belongs in Implementation_Log; this document records the approved direction.
 
 ## Palette and identity
 
@@ -22,8 +22,8 @@ The creation page, formal body diagram and player actors share one runtime drawi
 | Legs | #5CF7A2 | Movement / Jump |
 | Spine | #B28CFF | Dodge only |
 | HeadReserved | #F8C85C | Reserved gold; no current head rule |
-| Refraction | #FF9A62 | Gunner, HP and sourced attacks |
-| Severance / Danger | #FF6375 | Sword Boss, HP, sourced attacks and low player HP |
+| Gunner | #FF9A62 | Gunner, HP and sourced attacks |
+| Swordsman / Danger | #FF6375 | Sword Boss, HP, sourced attacks and low player HP |
 
 Action -> Operation -> Body System determines rule color. Conditions, generic selection and keyboard focus remain neutral. Both arms share blue; both legs share green. No historical SlotColor or left/right identity split. The head has no contour pulse effect at all; its gold identity is reserved for a separate future effect: no Ultimate, Brain, upgrade or Boss-ability gameplay is implemented.
 
@@ -78,13 +78,13 @@ Aim+Fire and Move+Jump aggregate with bounded maxima, never additive white-out. 
 
 Retain stickman poses, weapons, collision geometry, platforms, camera and combat. Boss weapon structures are neutral with small owner accents. Player HP is cold white, changing to Danger through the existing Low Health latch/hysteresis; retain left anchors and numbers. Player bullets have the same neutral identity for manual and automatic shots. Enemy bullets, beams and blade effects use their actual Boss identity with unchanged geometry, timing and alpha hierarchy.
 
-Sword guard follow-up, Thomas 2026-10-16: Severance stands still with the blade vertically downward during active reflection. Preparation lowers the blade into this stance; recovery returns it to the normal pose. The weapon stays neutral, and reflected bullets adopt Severance coral to show their changed ownership. Keep the existing narrow guard/contact cues and stickman proportions.
+Sword guard follow-up, Thomas 2026-10-16: Swordsman stands still with the blade vertically downward during active reflection. Preparation lowers the blade into this stance; recovery returns it to the normal pose. The weapon stays neutral, and reflected bullets adopt Swordsman coral to show their changed ownership. Keep the existing narrow guard/contact cues and stickman proportions.
 
 Directional Draw Dash follow-up, Thomas 2026-10-16: keep grounded initiation and the original stickman silhouette. The blade pose, narrow slash trail and locked route warning follow the actual two-dimensional dash direction. Steep sweeps use the leading body edge so visible blade contact and the physical hit agree; retain horizontal hit geometry, existing effect widths, colors and timing. No new screen-wide effects.
 
 Camo hides every body/weapon accent through the original alpha path; only existing event-local traces remain. Terrain stays neutral with clear landing edges. Keep existing restrained Bloom; core contours, text and state distinctions must work without it. Use local meshes/material property blocks, not per-frame textures/materials/page rebuilding. No decorative fake data, scans, glitches, full-screen flashes or new telegraphs.
 
-**Gunner VFX follow-up — confirmed by Thomas, 2026-10-18:** ordinary Refraction bullets use the original collision-sized sprite as a warm-white core, a narrow orange halo and a tapered trail capped at .55 world units. The view reuses at most 32 halo/trail pairs; it never changes the shared projectile prefab or physics. Existing preparation lines progressively brighten; commitment produces one .055 s accent followed by a stable locked line. Piercing uses aligned white-core/orange-halo layers that contract and fade inside the original .09 s flash. Sweep retains its existing boundaries and band with stronger contrast and one directional highlight; actual firing removes the area/future-ray preview and leaves the real bullets. Damage, ammunition, speed, collision, public threat facts and attack/tell clocks remain unchanged. All effects respect pause and attempt cleanup, and introduce no Camo body/weapon reveal. Local Editor evidence is recorded in Implementation_Log.
+**Gunner VFX follow-up — confirmed by Thomas, 2026-10-18:** ordinary Gunner bullets use the original collision-sized sprite as a warm-white core, a narrow orange halo and a tapered trail capped at .55 world units. The view reuses at most 32 halo/trail pairs; it never changes the shared projectile prefab or physics. Existing preparation lines progressively brighten; commitment produces one .055 s accent followed by a stable locked line. Piercing uses aligned white-core/orange-halo layers that contract and fade inside the original .09 s flash. Sweep retains its existing boundaries and band with stronger contrast and one directional highlight; actual firing removes the area/future-ray preview and leaves the real bullets. Damage, ammunition, speed, collision, public threat facts and attack/tell clocks remain unchanged. All effects respect pause and attempt cleanup, and introduce no Camo body/weapon reveal. Local Editor evidence is recorded in Implementation_Log.
 
 ## Delivery
 

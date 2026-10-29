@@ -54,8 +54,8 @@ namespace GoGhost.Duel
         }
         void SetColors()
         {
-            bool gunner = visualKind == BossKind.Refraction;
-            bodyColor = actor != null && actor.IsTrainingEnemy ? NeuralPalette.Secondary : gunner ? NeuralPalette.Refraction : NeuralPalette.Severance;
+            bool gunner = visualKind == BossKind.Gunner;
+            bodyColor = actor != null && actor.IsTrainingEnemy ? NeuralPalette.Secondary : gunner ? NeuralPalette.Gunner : NeuralPalette.Swordsman;
             weaponColor = NeuralPalette.Primary;
             // Reuse the existing empty sword grip slot; keep it under the same camo/pose alpha path.
             if(!gunner&&parts[(int)Part.Sheath]!=null&&parts[(int)Part.Weapon]!=null)
@@ -92,16 +92,16 @@ namespace GoGhost.Duel
             transform.position = actor.Position;
             transform.localScale = new Vector3(actor.Facing >= 0 ? 1 : -1, 1, 1);
             ApplyPose(BuildPose()); UpdateTells(); UpdateFlashes(); UpdateGunBullets();
-            // Severance's body silhouettes are exclusive to Unbound, including dash/flank trails.
-            bool unboundMoving = visualKind == BossKind.Severance && actor.Actions.SwordUnbound
+            // Swordsman's body silhouettes are exclusive to Unbound, including dash/flank trails.
+            bool unboundMoving = visualKind == BossKind.Swordsman && actor.Actions.SwordUnbound
                 && actor.Velocity.sqrMagnitude > .01f;
-            if (!defeated && actor.Running && (visualKind != BossKind.Severance || actor.Actions.SwordUnbound)
+            if (!defeated && actor.Running && (visualKind != BossKind.Swordsman || actor.Actions.SwordUnbound)
                 && (actor.Motor.DashActive||actor.Actions.FlankTravelling||unboundMoving) && clock >= nextEcho)
             { nextEcho = clock + .055f; CaptureEcho(); }
         }
         Pose BuildPose()
         {
-            bool gunner = visualKind == BossKind.Refraction;
+            bool gunner = visualKind == BossKind.Gunner;
             Vector2 velocity = actor == null ? Vector2.zero : actor.Motor.Velocity;
             bool grounded = actor == null || actor.Motor.Grounded;
             float motion = Mathf.Clamp01(Mathf.Abs(velocity.x) / 3f);
@@ -257,7 +257,7 @@ namespace GoGhost.Duel
             Leg(Part.FrontThigh,Part.FrontCalf,Part.FrontFoot,p.Hip+new Vector2(.075f,0),p.FrontFoot,.18f);
             Arm(Part.BackUpperArm,Part.BackForearm,p.Chest+new Vector2(-.10f,-.04f),p.BackHand,-.08f);
             Arm(Part.FrontUpperArm,Part.FrontForearm,p.Chest+new Vector2(.08f,-.04f),p.FrontHand,.06f);
-            bool gunner=visualKind==BossKind.Refraction;
+            bool gunner=visualKind==BossKind.Gunner;
             float bladeLength=SwordBladeLength;
             Place(Part.Weapon,p.Weapon,gunner?new Vector2(.54f,.14f):new Vector2(bladeLength,.075f),p.WeaponAngle);
             // Retain the serialized slot as the gun's simple grip; the blade needs no extra outline.
@@ -310,7 +310,7 @@ namespace GoGhost.Duel
             foreach(var line in tells)if(line!=null)line.enabled=false;
             if(defeated||!actor.Running)return;
             var action=actor.Actions;
-            if(visualKind==BossKind.Refraction){GunnerTells(action);return;}
+            if(visualKind==BossKind.Gunner){GunnerTells(action);return;}
             if(BossActionExecutor.IsSwordPhrase(action.Ability)){SwordTells(action);return;}
             if(action.PendingSwordThreats)SwordTells(action);
             if(action.Ability==BossAbility.FlankLeap&&action.Phase!=BossActionPhase.Recovery)
@@ -360,7 +360,7 @@ namespace GoGhost.Duel
                     if(threat.TerrainBlocked&&Projectile.TerrainHit(threat.Origin,end,threat.Radius,out var wall))end=threat.Origin+(end-threat.Origin).normalized*wall.distance;
                     bool locked=threat.Phase==BossThreatPhase.Locked;
                     Color color=Color.Lerp(bodyColor,NeuralPalette.Primary,.20f);color.a=locked?.75f:.27f;
-                    bool sword=visualKind==BossKind.Severance;
+                    bool sword=visualKind==BossKind.Swordsman;
                     SetLine(tells[slot++],threat.Origin,end,sword?SwordTellWidth(false,locked):locked?.028f:.015f,
                         sword?SwordTellColor(false,locked):color);
                 }

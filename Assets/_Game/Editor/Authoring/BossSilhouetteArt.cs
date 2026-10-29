@@ -40,7 +40,7 @@ namespace GoGhost.Duel
                     sprite = part.gameObject.AddComponent<SpriteRenderer>();
                 bool hidden = id == BossSilhouetteView.Part.Hair || id == BossSilhouetteView.Part.Coat
                     || id == BossSilhouetteView.Part.FrontFoot || id == BossSilhouetteView.Part.BackFoot
-                    || id == BossSilhouetteView.Part.Sheath && kind == BossKind.Severance;
+                    || id == BossSilhouetteView.Part.Sheath && kind == BossKind.Swordsman;
                 // Clear every old polygon reference, including unused serialized part slots.
                 sprite.sprite = hidden ? null : id == BossSilhouetteView.Part.Head ? head : segment;
                 sprite.sharedMaterial = body;
@@ -63,7 +63,7 @@ namespace GoGhost.Duel
         {
             if (EditorApplication.isPlaying)
                 throw new System.InvalidOperationException("Leave Play Mode before updating Boss visuals.");
-            foreach (BossKind kind in new[] { BossKind.Refraction, BossKind.Severance })
+            foreach (BossKind kind in new[] { BossKind.Gunner, BossKind.Swordsman })
             {
                 string path = PrefabFolder + "/" + kind + ".prefab";
                 if (AssetDatabase.LoadAssetAtPath<GameObject>(path) == null)

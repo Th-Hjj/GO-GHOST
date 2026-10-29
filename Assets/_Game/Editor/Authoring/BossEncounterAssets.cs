@@ -21,7 +21,7 @@ public static partial class BossEncounterAssets
         if(EditorApplication.isPlaying||UnityEngine.SceneManagement.SceneManager.GetActiveScene().isDirty)
             throw new InvalidOperationException("Preserve scene edits and leave Play Mode before authoring.");
         Folder(Root+"Art");Folder(Root+"Art/Bosses");Folder(Root+"Data");Folder(Root+"Data/Bosses");Folder(Root+"Prefabs/Bosses");
-        var gunner=Profile(BossKind.Refraction);var sword=Profile(BossKind.Severance);
+        var gunner=Profile(BossKind.Gunner);var sword=Profile(BossKind.Swordsman);
         var gunPrefab=Prefab(gunner);var swordPrefab=Prefab(sword);
         var attempt=PrefabUtility.LoadPrefabContents(DuelBuild.CombatPath);
         try
@@ -64,7 +64,7 @@ public static partial class BossEncounterAssets
         if(profile==null)
         {
             profile=ScriptableObject.CreateInstance<BossProfile>();profile.Kind=kind;
-            if(kind==BossKind.Severance)
+            if(kind==BossKind.Swordsman)
             {profile.Health=840;profile.Motion.Speed=7.5f;profile.Motion.Acceleration=55;profile.Motion.Braking=65;profile.Motion.AirControl=.55f;profile.DesiredDistance=1.6f;}
             AssetDatabase.CreateAsset(profile,path);
         }
@@ -87,7 +87,7 @@ public static partial class BossEncounterAssets
             var data=new SerializedObject(boss);data.FindProperty("profile").objectReferenceValue=profile;
             data.FindProperty("projectile").objectReferenceValue=AssetDatabase.LoadAssetAtPath<Projectile>("Assets/_Game/Shared/Prefabs/Bullet.prefab");
             data.ApplyModifiedPropertiesWithoutUndo();
-            if(profile.Kind==BossKind.Severance)
+            if(profile.Kind==BossKind.Swordsman)
             {
                 var guard=new GameObject("BladeGuardContact");guard.layer=actor.layer;guard.transform.SetParent(actor.transform,false);
                 var c=guard.AddComponent<CircleCollider2D>();c.radius=profile.Guard.Range;c.isTrigger=true;c.enabled=false;

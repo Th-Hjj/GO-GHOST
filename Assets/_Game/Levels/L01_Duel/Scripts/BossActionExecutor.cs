@@ -97,7 +97,7 @@ namespace GoGhost.Duel
         public bool TryStartMobility(BossPlan value)
         {
             if(value==null||Busy || value.TerrainVersion!=actor.Navigation.Version
-                || (p.Kind==BossKind.Severance?value.Ability!=BossAbility.LeapSlash&&value.Ability!=BossAbility.FlankLeap
+                || (p.Kind==BossKind.Swordsman?value.Ability!=BossAbility.LeapSlash&&value.Ability!=BossAbility.FlankLeap
                     :value.Ability!=BossAbility.TacticalJumpShot))return false;
             jumpPlan=value;
             if(TryStart(value.Ability,value.TargetHypothesis))return true;
@@ -114,7 +114,7 @@ namespace GoGhost.Duel
             if(IsSwordPhrase(ability))return !cooperative&&TryStartSword(ability);
             if(!actor.Running||!actor.IsAlive||Busy||!Ready(ability))return false;
             if(actor.Coordinator!=null&&!actor.Coordinator.CanStart(actor,ability,cooperative))return false;
-            if(ability!=BossAbility.Camo&&p.Kind==BossKind.Refraction&&(!actor.Motor.Grounded||Reloading))return false;
+            if(ability!=BossAbility.Camo&&p.Kind==BossKind.Gunner&&(!actor.Motor.Grounded||Reloading))return false;
             if(ability==BossAbility.ReturnCut||ability==BossAbility.DashFollowup||ability==BossAbility.DropFollowup||ability==BossAbility.FlankCut||ability==BossAbility.LeapFollowup)return false;
             if((ability==BossAbility.LeapSlash||ability==BossAbility.TacticalJumpShot||ability==BossAbility.FlankLeap)
                 && (jumpPlan==null||!actor.Motor.Grounded))return false;
@@ -218,7 +218,7 @@ namespace GoGhost.Duel
                 && Ability != BossAbility.DropCut && Ability != BossAbility.Sweep
                 && actor.Perception.Facts.Confidence > .1f)
             {
-                if (p.Kind == BossKind.Refraction && Ability != BossAbility.Camo)
+                if (p.Kind == BossKind.Gunner && Ability != BossAbility.Camo)
                 {
                     if (actor.Tactics.TryGunTarget(Ability, actor.Position, actor.Perception.Facts, out var shotPoint, AimDelay))
                         targetPoint = shotPoint;
@@ -229,7 +229,7 @@ namespace GoGhost.Duel
                     }
                 }
                 else
-                    targetPoint = p.Kind == BossKind.Severance
+                    targetPoint = p.Kind == BossKind.Swordsman
                         ? actor.Tactics.SwordTarget(Ability, actor.Position, actor.Perception.Facts, AimDelay, RhythmIndex)
                         : actor.Tactics.PredictBody(actor.Perception.Facts, .16f);
             }

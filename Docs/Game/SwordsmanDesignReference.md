@@ -1,4 +1,4 @@
-# Severance: Relentless Swordmaster
+# Swordsman: Relentless Swordmaster
 
 Status: **Design and implementation plan approved by Thomas on 2026-10-18; local Editor implementation and focused checks completed. Human pressure/balance remains unvalidated.**
 
@@ -17,7 +17,7 @@ The approved redesign supersedes earlier solo-sword no-new-skills and fixed swor
 
 Thomas's 2026-10-18 platform-pursuit follow-up makes cross-platform jumping an active combat choice, including a bounded intermediate support when it opens a real next attack. The current Boss specification defines the finite implementation; this adds no external research claim.
 
-Make Severance a swordmaster who **creates an escape problem, moves to exploit it, then overcommits**. His identity is a dangerous, increasingly reckless hunter. The signature mechanic is **a real slash leaving a visible cut that can strike again after a warning**. Sword movement and the space left behind become one combat language.
+Make Swordsman a swordmaster who **creates an escape problem, moves to exploit it, then overcommits**. His identity is a dangerous, increasingly reckless hunter. The signature mechanic is **a real slash leaving a visible cut that can strike again after a warning**. Sword movement and the space left behind become one combat language.
 
 Desired player experience:
 
@@ -53,7 +53,7 @@ The current arsenal mainly offers different ways to approach and make a local bl
 
 In particular, a successful movement action does not necessarily create an attack opportunity. Moving toward the player's old location, arriving on a low-value support, or recovering beyond blade reach can spend most of the encounter without making the player reconsider a decision. This is a design diagnosis, not a claim that every recorded fight exhibits it.
 
-The reported stuck state remains a separate unresolved runtime issue: Thomas confirmed only Severance stops, while the player remains active. Its cause was not reproduced or established in this research pass.
+The reported stuck state remains a separate unresolved runtime issue: Thomas confirmed only Swordsman stops, while the player remains active. Its cause was not reproduced or established in this research pass.
 
 ## 4. Adaptation to GO GHOST
 
@@ -108,13 +108,13 @@ Purpose: arrive at a place from which the next attack matters.
 
 **Player answers:** jump the low lane, move under/away from an inclined lane, or change support. Starting geometry must leave a physically reachable response from a reasonable position. The wave cannot silently retarget after release.
 
-**Links:** Shadow Step can move Severance toward a different approach while the wave travels, but the next damaging beat must preserve the escape path established for the phrase. A wave is real threat budget, not free decoration.
+**Links:** Shadow Step can move Swordsman toward a different approach while the wave travels, but the next damaging beat must preserve the escape path established for the phrase. A wave is real threat budget, not free decoration.
 
 **Interaction:** sword waves follow the project's projectile convention: terrain penetration and allied-body blocking. This makes level changes more useful than assuming a platform is projectile cover. Their finite lifetime and distinct public geometry are part of the attack definition.
 
 ### 3. Broken Rhythm — branching close-combat phrases
 
-**Situation:** Severance has earned useful blade range.
+**Situation:** Swordsman has earned useful blade range.
 
 **Sequence:** a small library of two/three-beat phrases, each with an identifiable finishing pose. Example: low advance cut, a held high-blade stance, then a committed downward finisher. Another phrase uses a short relocation followed by a side cut. Each beat presents a different movement problem.
 
@@ -136,13 +136,13 @@ Purpose: arrive at a place from which the next attack matters.
 
 Check the actual hit-reaction path as well as a clean dodge path: a first hit must not automatically push or hold the player inside an unavoidable replay. Do not introduce a new stun-lock chain as an incidental effect of the combo system.
 
-**Links:** Severance may use relocation or an explicitly validated next beat to threaten another angle. Combining a moving body threat with a trace must be authored and checked as one pattern, not independently stacked by two timers.
+**Links:** Swordsman may use relocation or an explicitly validated next beat to threaten another angle. Combining a moving body threat with a trace must be authored and checked as one pattern, not independently stacked by two timers.
 
 ### 5. Still Blade — reflection that turns defense into a challenge
 
-**Situation:** a visible frontal projectile threatens Severance and a short guard fits his current recovery/commitment rules.
+**Situation:** a visible frontal projectile threatens Swordsman and a short guard fits his current recovery/commitment rules.
 
-**Sequence:** stop, blade vertically down, reflect incoming frontal bullets along their incoming path. Preserve projectile damage, speed and remaining lifetime, with Severance ownership. Guard cannot cancel the mandatory end recovery of another phrase.
+**Sequence:** stop, blade vertically down, reflect incoming frontal bullets along their incoming path. Preserve projectile damage, speed and remaining lifetime, with Swordsman ownership. Guard cannot cancel the mandatory end recovery of another phrase.
 
 **Player answers:** release fire, change firing angle, or prepare movement for the next approach. Rear vulnerability stays visible and meaningful.
 
@@ -152,7 +152,7 @@ Check the actual hit-reaction path as well as a clean dodge path: a first hit mu
 
 **Situation:** the later encounter state permits a major signature pattern and there is a legal route through the current arena.
 
-**Sequence:** a distinct long draw pose introduces the finale. Severance chains a small number of prevalidated attacks between useful supports, creating a limited set of Echo Cut traces. Between beats he visibly assumes the next pose. The final sheathing gesture activates remaining eligible traces in a readable order, then ends in the encounter's largest recovery.
+**Sequence:** a distinct long draw pose introduces the finale. Swordsman chains a small number of prevalidated attacks between useful supports, creating a limited set of Echo Cut traces. Between beats he visibly assumes the next pose. The final sheathing gesture activates remaining eligible traces in a readable order, then ends in the encounter's largest recovery.
 
 **Player answers:** follow the exposed safe route, change level as shown by the cuts, then reposition to shoot the final landing. The arena is never declared dangerous everywhere at once. The safe route uses the existing single jump and ordinary movement; Dodge provides another option.
 
@@ -213,7 +213,7 @@ Navigation should return **where to fight next**, not merely which graph node is
 
 Each candidate includes a safe body footprint, a launch direction, the next attack's usable geometry, an exit/landing and ally clearance. Use continuous standable positions on the real support; do not rely only on platform centers.
 
-If already on a good platform, Severance can threaten its lane, set up a descending attack, or intercept another support. Leaving it is a deliberate combat decision. If a route is blocked, discard that route rather than continually driving into the same edge.
+If already on a good platform, Swordsman can threaten its lane, set up a descending attack, or intercept another support. Leaving it is a deliberate combat decision. If a route is blocked, discard that route rather than continually driving into the same edge.
 
 As an implementation prerequisite, every travel/attack state needs a finite completion condition and a no-progress exit. Recovery restores gravity and retires stale movement commands before choosing another legal plan. The reported platform-edge stall needs a focused reproduction and fix during implementation; this proposal does not claim that a watchdog alone establishes or repairs its cause.
 
@@ -238,7 +238,7 @@ Readability in the existing minimalist art:
 
 Two simultaneous solo pressure loops would overwhelm the player's available answers. Preserve shared high-threat ownership and the shared respite.
 
-While the gunner owns a major attack, Severance may relocate or take a legal defensive stance; his sword waves and delayed traces are counted as attacks, not exempt background effects. A pending trace remains a reservation until it fires or is explicitly retired.
+While the gunner owns a major attack, Swordsman may relocate or take a legal defensive stance; his sword waves and delayed traces are counted as attacks, not exempt background effects. A pending trace remains a reservation until it fires or is explicitly retired.
 
 Initially allow only validated pairings of the new ground pursuit with Piercing, and an authored descending beat with Sweep, preserving the escape intent of existing combinations. Echo replays and the solo finale are unavailable inside these paired patterns. Redline Execution is allowed in W2 and after the gunner has died in W3; it is unavailable while both bosses are alive. Expanding simultaneous choreography is a later design decision, not a free consequence of the new kit.
 
@@ -248,12 +248,12 @@ Shared escape checks must cover time as well as space: a route safe from the fir
 
 This is a proposed choreography example, not a simulated or validated result.
 
-1. The player holds the right high platform and shoots. Severance takes a launch position and shows Cut the Road at that height.
-2. The player jumps or changes level. During the wave's travel, Severance relocates toward a reachable intercept support; he does not instantly attack the landing.
+1. The player holds the right high platform and shoots. Swordsman takes a launch position and shows Cut the Road at that height.
+2. The player jumps or changes level. During the wave's travel, Swordsman relocates toward a reachable intercept support; he does not instantly attack the landing.
 3. Pursuit Draw visibly locks a new corridor. The player changes direction and the cut misses, leaving a short dormant trace.
-4. At the permitted link, Severance raises his sword for a downward finisher. The player moves laterally instead of spending another Dodge.
+4. At the permitted link, Swordsman raises his sword for a downward finisher. The player moves laterally instead of spending another Dodge.
 5. The trace warns before its replay. Moving back through the old line now is dangerous, but the phrase's other route remains available.
-6. The finisher and replay complete; Severance visibly finishes and exposes a reliable shooting window.
+6. The finisher and replay complete; Swordsman visibly finishes and exposes a reliable shooting window.
 
 The interaction asks for several distinct decisions while allowing the player's limited defensive resources to remain sufficient. Actual timings and geometry must prove this in the arena before it is accepted.
 

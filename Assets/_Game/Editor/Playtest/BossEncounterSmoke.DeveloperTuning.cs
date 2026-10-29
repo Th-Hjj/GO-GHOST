@@ -38,7 +38,7 @@ public static partial class BossEncounterSmoke
         ClickConfig("Waves");ClickConfig("Dev_Wave1");yield return Frames(3);
         Check("paused W3 to W1 clears old encounter",game.Wave==1&&game.Phase==DuelPhase.Prepare&&oldPlayer==null&&!ReferenceEquals(oldRules,game.Rules)&&game.Bosses.Count==1&&game.Bosses[0].ActorId==1&&!game.Paused);
         yield return DeveloperKey(Key.F8);ClickConfig("Waves");ClickConfig("Dev_Wave2");
-        Check("jump during preparation selects Severance",game.Wave==2&&game.Phase==DuelPhase.Prepare&&game.Bosses.Count==1&&game.Bosses[0].ActorId==2);
+        Check("jump during preparation selects Swordsman",game.Wave==2&&game.Phase==DuelPhase.Prepare&&game.Bosses.Count==1&&game.Bosses[0].ActorId==2);
         yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f);yield return Seconds(.5f);
         Check("W2 reaches live combat",game.Phase==DuelPhase.Fight&&game.FightClock>0);
         yield return DeveloperKey(Key.F8);oldPlayer=game.Player;ClickConfig("Waves");ClickConfig("Dev_Wave2");yield return Frames(3);

@@ -174,7 +174,7 @@ namespace GoGhost.Duel
                 float y=330-i*60;
                 policeHealth[i]=Text("",hud,new Vector2(0,y+27),new Vector2(430,40),24,TextAlignmentOptions.Center,numericFont);
                 Image(hud,new Vector2(0,y),new Vector2(430,12),NeuralPalette.Border);
-                var color=game.Bosses[i].IsTrainingEnemy?NeuralPalette.Secondary:game.Bosses[i].Profile.Kind==BossKind.Refraction?NeuralPalette.Refraction:NeuralPalette.Severance;
+                var color=game.Bosses[i].IsTrainingEnemy?NeuralPalette.Secondary:game.Bosses[i].Profile.Kind==BossKind.Gunner?NeuralPalette.Gunner:NeuralPalette.Swordsman;
                 policeFill[i]=Image(hud,new Vector2(-215,y),new Vector2(430,12),color);
                 policeFill[i].rectTransform.pivot=new Vector2(0,.5f);
             }

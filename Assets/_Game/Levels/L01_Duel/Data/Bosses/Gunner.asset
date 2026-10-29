@@ -10,17 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 558561a58000f3b4db151ec13fd9af79, type: 3}
-  m_Name: Severance
+  m_Name: Gunner
   m_EditorClassIdentifier: Assembly-CSharp::GoGhost.Duel.BossProfile
-  Kind: 1
-  Health: 999
+  Kind: 0
+  Health: 666
   Motion:
-    Speed: 7.5
-    Acceleration: 55
-    Braking: 65
+    Speed: 5.8
+    Acceleration: 45
+    Braking: 55
     JumpSpeed: 12
     GravityScale: 3
-    AirControl: 0.55
+    AirControl: 0.45
   Sword:
     UnboundHealth: 0.33
     AdvanceSpeed: 34
@@ -74,7 +74,7 @@ MonoBehaviour:
   SweepShots: 8
   CamoMinimumMove: 0.45
   DropSpeed: 16
-  CamoAlpha: 0.02
+  CamoAlpha: 0
   CamoFade: 0.14
   RevealFade: 0.12
   CamoDuration: 1.8
@@ -95,7 +95,7 @@ MonoBehaviour:
   InterruptRecovery: 0.3
   BladeRadius: 0.22
   BeamRadius: 0.07
-  DesiredDistance: 1.6
+  DesiredDistance: 7
   RepositionWeight: 1
   ExposureWeight: 0.7
   RepetitionWeight: 0.25
@@ -118,7 +118,7 @@ MonoBehaviour:
     Damage: 0
     Cost: 0
   Piercing:
-    Prepare: 0.72
+    Prepare: 0.9
     Lock: 0.24
     Active: 0.09
     Recovery: 0.55
@@ -213,7 +213,7 @@ MonoBehaviour:
     Lock: 0.12
     Active: 0.1
     Recovery: 0.55
-    Cooldown: 3.2
+    Cooldown: 4.5
     Range: 0
     Damage: 28
     Cost: 0

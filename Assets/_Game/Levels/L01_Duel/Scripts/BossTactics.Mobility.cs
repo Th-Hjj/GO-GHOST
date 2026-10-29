@@ -80,7 +80,7 @@ namespace GoGhost.Duel
         public bool TryPlanFlank(BossObservation facts,out BossPlan result)
         {
             result=null;
-            if(actor.Profile.Kind!=BossKind.Severance||!actor.Motor.Grounded||!facts.Visible||facts.Confidence<.45f
+            if(actor.Profile.Kind!=BossKind.Swordsman||!actor.Motor.Grounded||!facts.Visible||facts.Confidence<.45f
                 ||!actor.Actions.Ready(BossAbility.FlankLeap)||!actor.Actions.Ready(BossAbility.Rhythm)
                 ||actor.Coordinator!=null&&!actor.Coordinator.CanStart(actor,BossAbility.FlankLeap,false))return false;
             float distance=Vector2.Distance(actor.Position,facts.Position),width=actor.Navigation.PlatformWidth;

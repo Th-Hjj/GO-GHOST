@@ -59,14 +59,14 @@ namespace GoGhost.Duel
             ||camoPlan.TerrainVersion!=actor.Navigation.Version||actor.Motor.RouteFailed
             ||!actor.Motor.HasRoute&&!actor.Motor.RouteCompleted);
         public float EngagementDistance=>PlatformPressureEnabled?actor.Profile.DesiredDistance:
-            actor.Profile.Kind==BossKind.Refraction?actor.Navigation.SameLevelSpacing*.8f:actor.Navigation.PlatformWidth*.4f;
+            actor.Profile.Kind==BossKind.Gunner?actor.Navigation.SameLevelSpacing*.8f:actor.Navigation.PlatformWidth*.4f;
         public BossTactics(BossAgent actor){this.actor=actor;}
         public void Tick()
         {
             if (!Enabled)
                 return;
             // The current sword policy owns solo phrases before general exposure/recovery planning.
-            if (actor.Profile.Kind == BossKind.Severance && dropPlan == null
+            if (actor.Profile.Kind == BossKind.Swordsman && dropPlan == null
                 && (actor.Coordinator == null || !actor.Coordinator.HasAssignment(actor)))
             {
                 actor.Actions.TickSwordDecision();
@@ -142,7 +142,7 @@ namespace GoGhost.Duel
                 && (actor.Coordinator == null || !actor.Coordinator.HasAssignment(actor)))
             {
                 nextTick = Time.time + actor.Profile.TacticTick;
-                if (actor.Profile.Kind == BossKind.Severance)
+                if (actor.Profile.Kind == BossKind.Swordsman)
                     recoveryPlan = SelectSwordPressure(facts);
                 else
                 {
@@ -169,7 +169,7 @@ namespace GoGhost.Duel
         {
             // Re-evaluate a preview against fresh public facts and the actual recovered body.
             // It never cancels recovery or an air route.
-            if (actor.Profile.Kind == BossKind.Severance && (Time.time >= nextTick || recoveryPlan != null))
+            if (actor.Profile.Kind == BossKind.Swordsman && (Time.time >= nextTick || recoveryPlan != null))
             {
                 bool previewed = recoveryPlan != null;
                 recoveryPlan = null;
@@ -207,7 +207,7 @@ namespace GoGhost.Duel
         bool TryStartOpportunisticAction(BossActionExecutor action, BossObservation facts)
         {
             // Preserve acceptance order: reload punish, Camo, then jump shot.
-            if (actor.Profile.Kind == BossKind.Refraction && facts.Visible && facts.ReloadVisible
+            if (actor.Profile.Kind == BossKind.Gunner && facts.Visible && facts.ReloadVisible
                 && TryImmediate(BossAbility.Piercing, facts))
                 return true;
             if (TryStartCamo())
@@ -215,7 +215,7 @@ namespace GoGhost.Duel
                 nextTick = Time.time + actor.Profile.TacticTick;
                 return true;
             }
-            if (actor.Profile.Kind == BossKind.Refraction && action.Ready(BossAbility.TacticalJumpShot)
+            if (actor.Profile.Kind == BossKind.Gunner && action.Ready(BossAbility.TacticalJumpShot)
                 && TryPlanMobility(BossAbility.TacticalJumpShot, facts, out var jump) && action.TryStartMobility(jump))
             {
                 plan = null;
@@ -230,7 +230,7 @@ namespace GoGhost.Duel
         void InvalidateStalePursuit(BossObservation facts)
         {
             // A newly observed jump can invalidate pursuit before the previous hold expires.
-            if (plan != null && actor.Profile.Kind == BossKind.Severance && plan.Intent == "Approach/Intercept"
+            if (plan != null && actor.Profile.Kind == BossKind.Swordsman && plan.Intent == "Approach/Intercept"
                 && facts.Visible && Time.time >= nextTick && Time.time - plan.CreatedAt > .25f
                 && Vector2.Distance(PredictSwordBody(facts, plan.TravelSeconds), plan.TargetHypothesis)
                     > actor.Navigation.PlatformWidth * .45f)
@@ -249,8 +249,8 @@ namespace GoGhost.Duel
             // Recover only failed routes this way; successful flanks retain their destination.
             if (actor.Motor.RouteFailed && plan.TerrainVersion == actor.Navigation.Version
                 && plan.Ability != BossAbility.None && LegalAt(plan.Ability, actor.Position, facts, out _)
-                && (actor.Profile.Kind != BossKind.Severance || SwordImmediateScore(plan.Ability, actor.Position, facts) > 0)
-                && action.TryStart(plan.Ability, actor.Profile.Kind == BossKind.Severance
+                && (actor.Profile.Kind != BossKind.Swordsman || SwordImmediateScore(plan.Ability, actor.Position, facts) > 0)
+                && action.TryStart(plan.Ability, actor.Profile.Kind == BossKind.Swordsman
                     ? SwordTarget(plan.Ability, actor.Position, facts) : plan.TargetHypothesis))
             {
                 actor.Motor.Brake();
@@ -276,8 +276,8 @@ namespace GoGhost.Duel
             {
                 actor.Motor.Brake();
                 if (plan.Ability != BossAbility.None && LegalAt(plan.Ability, actor.Position, facts, out _)
-                    && (actor.Profile.Kind != BossKind.Severance || SwordImmediateScore(plan.Ability, actor.Position, facts) > 0)
-                    && action.TryStart(plan.Ability, actor.Profile.Kind == BossKind.Severance
+                    && (actor.Profile.Kind != BossKind.Swordsman || SwordImmediateScore(plan.Ability, actor.Position, facts) > 0)
+                    && action.TryStart(plan.Ability, actor.Profile.Kind == BossKind.Swordsman
                         ? SwordTarget(plan.Ability, actor.Position, facts) : plan.TargetHypothesis))
                 {
                     previousAbility = plan.Ability;
@@ -312,9 +312,9 @@ namespace GoGhost.Duel
                 return;
             }
             BossPlan selected = options[0];
-            bool chasing = actor.Profile.Kind == BossKind.Severance && plan?.Intent == "Approach/Intercept";
+            bool chasing = actor.Profile.Kind == BossKind.Swordsman && plan?.Intent == "Approach/Intercept";
             if (plan != null && (Time.time - plan.CreatedAt < (chasing ? Mathf.Min(.35f, actor.Profile.PlanHold) : actor.Profile.PlanHold)
-                || selected.Score < (actor.Profile.Kind == BossKind.Severance
+                || selected.Score < (actor.Profile.Kind == BossKind.Swordsman
                     ? plan.Score + Mathf.Max(.08f, Mathf.Abs(plan.Score) * (chasing ? .05f : .15f)) : plan.Score * 1.15f)))
                 return;
             plan = selected;
@@ -325,7 +325,7 @@ namespace GoGhost.Duel
             actor.Motor.SetRoute(plan.Route);
             if (plan.Route == null)
                 actor.Motor.Brake(); // Retire the previous route for an in-place attack.
-            if (actor.Profile.Kind == BossKind.Refraction && !action.CanAfford(plan.Ability))
+            if (actor.Profile.Kind == BossKind.Gunner && !action.CanAfford(plan.Ability))
                 action.RequestReload();
         }
         BossPlan SelectSwordPressure(BossObservation facts)
@@ -422,10 +422,10 @@ namespace GoGhost.Duel
         {
             if(ability==BossAbility.None||!actor.Actions.Ready(ability)||!actor.Actions.CanAfford(ability)
                 ||!LegalAt(ability,actor.Position,facts,out _))return false;
-            if(actor.Profile.Kind==BossKind.Severance&&(ability==BossAbility.Rhythm||ability==BossAbility.DrawDash||ability==BossAbility.Guard)
+            if(actor.Profile.Kind==BossKind.Swordsman&&(ability==BossAbility.Rhythm||ability==BossAbility.DrawDash||ability==BossAbility.Guard)
                 &&SwordImmediateScore(ability,actor.Position,facts)<=0)return false;
-            Vector2 target=actor.Profile.Kind==BossKind.Severance?SwordTarget(ability,actor.Position,facts):PredictBody(facts,.16f);
-            if(actor.Profile.Kind==BossKind.Refraction&&!TryGunTarget(ability,actor.Position,facts,out target))return false;
+            Vector2 target=actor.Profile.Kind==BossKind.Swordsman?SwordTarget(ability,actor.Position,facts):PredictBody(facts,.16f);
+            if(actor.Profile.Kind==BossKind.Gunner&&!TryGunTarget(ability,actor.Position,facts,out target))return false;
             if(!actor.Actions.TryStart(ability,target))return false;
             plan=null;previousAbility=ability;lastAttackAt=Time.time;nextTick=Time.time+actor.Profile.TacticTick;return true;
         }
@@ -433,7 +433,7 @@ namespace GoGhost.Duel
         public bool TrySwordRecoveryStep(out float displacement)
         {
             displacement=0;var facts=actor.Perception.Facts;
-            if(!Enabled||actor.Profile.Kind!=BossKind.Severance||!actor.Motor.Grounded
+            if(!Enabled||actor.Profile.Kind!=BossKind.Swordsman||!actor.Motor.Grounded
                 ||Time.time<nextRecoveryStep||!facts.Visible||facts.Confidence<.3f
                 ||actor.Coordinator!=null&&actor.Coordinator.Phase!=DuoPhase.Idle)return false;
             Vector2 target=PredictSwordBody(facts,actor.Actions.RecoveryRemaining+actor.Profile.Rhythm.Prepare+actor.Profile.Rhythm.Lock);
@@ -483,7 +483,7 @@ namespace GoGhost.Duel
         static readonly Unity.Profiling.ProfilerMarker GunRepositionSample=new Unity.Profiling.ProfilerMarker("Boss.GunReposition");
         bool FindGunReposition(BossObservation facts)
         {
-            if(actor.Profile.Kind!=BossKind.Refraction||!facts.Visible||Time.time<nextGunMove||plan!=null
+            if(actor.Profile.Kind!=BossKind.Gunner||!facts.Visible||Time.time<nextGunMove||plan!=null
                 ||actor.Coordinator!=null&&actor.Coordinator.HasAssignment(actor))return false;
             float width=actor.Navigation.PlatformWidth,distance=Mathf.Abs(facts.Position.x-actor.Position.x);
             bool pressure=exposedSince>=0&&Time.time-exposedSince>=.65f;
@@ -521,7 +521,7 @@ namespace GoGhost.Duel
         public bool TryStartCamo()
         {
             var action=actor.Actions;var facts=actor.Perception.Facts;
-            if(actor.Profile.Kind!=BossKind.Refraction||action.Busy||!actor.Motor.Grounded
+            if(actor.Profile.Kind!=BossKind.Gunner||action.Busy||!actor.Motor.Grounded
                 ||!action.Ready(BossAbility.Camo)
                 ||actor.Coordinator!=null&&actor.Coordinator.HasAssignment(actor))return false;
             if(PlatformPressureEnabled)return facts.Body.size.sqrMagnitude>.01f&&BeginPlatformBlink(facts);
@@ -627,7 +627,7 @@ namespace GoGhost.Duel
         }
         bool TryBreakStalemate(BossObservation facts)
         {
-            if(actor.Profile.Kind!=BossKind.Severance||facts.Confidence<.3f)return false;
+            if(actor.Profile.Kind!=BossKind.Swordsman||facts.Confidence<.3f)return false;
             float distance=Vector2.Distance(facts.Position,actor.Position);
             bool yield=actor.Coordinator!=null&&actor.Coordinator.NeedsFireLane(actor);
             if(Time.time>=nextAerial && (yield || actor.Actions.ConsecutiveMeleeMisses>0

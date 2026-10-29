@@ -1176,7 +1176,7 @@ GameObject:
   - component: {fileID: 1619909765276479262}
   - component: {fileID: 4120209970846006936}
   m_Layer: 7
-  m_Name: Severance
+  m_Name: Swordsman
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

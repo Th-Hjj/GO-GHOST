@@ -24,7 +24,7 @@ namespace GoGhost.Duel
 
         public void ConfigurePlatformPressure(Collider2D[] supports)
         {
-            if (actor.Profile.Kind != BossKind.Refraction || actor.IsTrainingEnemy) return;
+            if (actor.Profile.Kind != BossKind.Gunner || actor.IsTrainingEnemy) return;
             gunPlatforms.Clear(); platformVisits.Clear();
             float floor = float.PositiveInfinity;
             foreach (var support in supports)

@@ -67,7 +67,7 @@ namespace GoGhost.Duel
             {
                 var shot=Instantiate(actor.ProjectilePrefab,muzzle,Quaternion.identity);
                 shot.Launch(direction,p.BulletSpeed,BurstAction?p.Burst.Damage:settings.Damage,actor.gameObject,friendlyFire:true);
-                var sprite=shot.GetComponent<SpriteRenderer>();if(sprite!=null)sprite.color=actor.Profile.Kind==BossKind.Refraction?NeuralPalette.Refraction:NeuralPalette.Severance;
+                var sprite=shot.GetComponent<SpriteRenderer>();if(sprite!=null)sprite.color=actor.Profile.Kind==BossKind.Gunner?NeuralPalette.Gunner:NeuralPalette.Swordsman;
                 actor.View?.Bullet(shot,direction);
                 actor.Sounds?.Play(Sfx.BossBurst,actor.ActorId,AttackId,shotIndex);actor.View?.Muzzle(muzzle,direction);
             }
@@ -291,7 +291,7 @@ namespace GoGhost.Duel
             var velocity=shot.GetComponent<Rigidbody2D>().linearVelocity;
             if(Vector2.Dot(velocity,Aim)>=0 || Vector2.Distance(shot.transform.position,actor.Position)>p.Guard.Range+shot.Radius)return false;
             if(!shot.Deflect(gameObject,ProjectileActor.Environment,friendlyFire:true))return false;
-            if(shot.TryGetComponent<SpriteRenderer>(out var sprite))sprite.color=NeuralPalette.Severance;
+            if(shot.TryGetComponent<SpriteRenderer>(out var sprite))sprite.color=NeuralPalette.Swordsman;
             Guarded++;actor.Sounds?.Play(Sfx.GuardBlock,actor.ActorId,AttackId,Guarded);actor.View?.Impact(shot.transform.position);
             return true;
         }

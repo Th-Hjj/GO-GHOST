@@ -96,14 +96,14 @@ asset,Assets/_Game/Levels/L01_Mission/Audio/Music/Licenses/Ansimuz-public-licens
 asset,Assets/_Game/Levels/L01_Mission/Audio/Music/Licenses/CC0-source-evidence.txt,Assets/_Game/Levels/L01_Duel/Audio/Music/Licenses/CC0-source-evidence.txt,3db00c16631a11044b8399e76c31ca49,Current
 asset,Assets/_Game/Levels/L01_Mission/Audio/Music/Licenses/music-manifest.json,Assets/_Game/Levels/L01_Duel/Audio/Music/Licenses/music-manifest.json,48afc2a84309e1549b4221c1b41c46c9,Current
 folder,Assets/_Game/Levels/L01_Mission/Data/Bosses,Assets/_Game/Levels/L01_Duel/Data/Bosses,dd9b8876e1ecca64b9f3218234210c34,Current
-asset,Assets/_Game/Levels/L01_Mission/Data/Bosses/Refraction.asset,Assets/_Game/Levels/L01_Duel/Data/Bosses/Refraction.asset,21e612df9a6adf9489d1cea841d535d0,Current
-asset,Assets/_Game/Levels/L01_Mission/Data/Bosses/Severance.asset,Assets/_Game/Levels/L01_Duel/Data/Bosses/Severance.asset,10cf726b33d7afc4da3c456311b2703b,Current
+asset,Assets/_Game/Levels/L01_Mission/Data/Bosses/Refraction.asset,Assets/_Game/Levels/L01_Duel/Data/Bosses/Gunner.asset,21e612df9a6adf9489d1cea841d535d0,Current
+asset,Assets/_Game/Levels/L01_Mission/Data/Bosses/Severance.asset,Assets/_Game/Levels/L01_Duel/Data/Bosses/Swordsman.asset,10cf726b33d7afc4da3c456311b2703b,Current
 folder,Assets/_Game/Levels/L01_Mission/Prefabs/Bosses,Assets/_Game/Levels/L01_Duel/Prefabs/Bosses,de43fbea51366474e97d6f9d6b786130,Current
 asset,Assets/_Game/Levels/L01_Mission/Prefabs/CombatAttempt.prefab,Legacy/Assets/_Legacy/Tower/Prefabs/CombatAttempt.prefab,2b9f8cf13ff978547ab7cd69e5bacb6f,Legacy
 asset,Assets/_Game/Levels/L01_Mission/Prefabs/LegacyCombatAttempt.prefab,Assets/_Game/Levels/L01_Duel/Prefabs/DuelCombatAttempt.prefab,c5b22628e8011f349984e4fa6122e7a1,Current
 asset,Assets/_Game/Levels/L01_Mission/Prefabs/PlayerBody_NoFriction.physicsMaterial2D,Assets/_Game/Levels/L01_Duel/Prefabs/PlayerBody_NoFriction.physicsMaterial2D,64cef35f16c7ab040931472330433a3a,Current
-asset,Assets/_Game/Levels/L01_Mission/Prefabs/Bosses/Refraction.prefab,Assets/_Game/Levels/L01_Duel/Prefabs/Bosses/Refraction.prefab,d5d9f6943cdd273428e916cc188e4527,Current
-asset,Assets/_Game/Levels/L01_Mission/Prefabs/Bosses/Severance.prefab,Assets/_Game/Levels/L01_Duel/Prefabs/Bosses/Severance.prefab,31266c91939433d4da0619f679f1eb58,Current
+asset,Assets/_Game/Levels/L01_Mission/Prefabs/Bosses/Refraction.prefab,Assets/_Game/Levels/L01_Duel/Prefabs/Bosses/Gunner.prefab,d5d9f6943cdd273428e916cc188e4527,Current
+asset,Assets/_Game/Levels/L01_Mission/Prefabs/Bosses/Severance.prefab,Assets/_Game/Levels/L01_Duel/Prefabs/Bosses/Swordsman.prefab,31266c91939433d4da0619f679f1eb58,Current
 asset,Assets/_Game/Levels/L01_Mission/Scenes/Cyberpunk World.unity,Legacy/Assets/_Legacy/Tower/Scenes/Cyberpunk World.unity,8c9cfa26abfee488c85f1582747f6a02,Legacy
 asset,Assets/_Game/Levels/L01_Mission/Scenes/GO GHOST Duel.unity,Assets/_Game/Levels/L01_Duel/Scenes/GO GHOST Duel.unity,6f3e0d5cd67ba164aa64482c5757239b,Current
 asset,Assets/_Game/Levels/L01_Mission/Scenes/TitleScene.unity,Legacy/Assets/_Legacy/Prototypes/Walker/Scenes/TitleScene.unity,faa6d8fa1a24ef941a824b10df10dd4b,Legacy

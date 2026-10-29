@@ -16,8 +16,8 @@ public static partial class BossEncounterSmoke
         Record("CONTROLLED real contacts and attack windows. Repositioned actors prove damage/lifecycle, not balance.");
         yield return TeamBlocking();
         yield return Fresh(3); StopPolicies();
-        var gun = game.Bosses.First(b => b.Profile.Kind == BossKind.Refraction);
-        var sword = game.Bosses.First(b => b.Profile.Kind == BossKind.Severance);
+        var gun = game.Bosses.First(b => b.Profile.Kind == BossKind.Gunner);
+        var sword = game.Bosses.First(b => b.Profile.Kind == BossKind.Swordsman);
         OnFloor(gun.gameObject, gun.Navigation, -8); OnFloor(sword.gameObject, gun.Navigation, -2);
         OnFloor(game.Player.gameObject, gun.Navigation, 6); yield return Seconds(.3f);
         int gunHp = gun.Health.CurrentHealth, swordHp = sword.Health.CurrentHealth;
@@ -47,8 +47,8 @@ public static partial class BossEncounterSmoke
         Check("real Burst damages partner", sword.Health.CurrentHealth <= swordHp - gun.Profile.Burst.Damage);
 
         yield return Fresh(3); StopPolicies();
-        gun = game.Bosses.First(b => b.Profile.Kind == BossKind.Refraction);
-        sword = game.Bosses.First(b => b.Profile.Kind == BossKind.Severance);
+        gun = game.Bosses.First(b => b.Profile.Kind == BossKind.Gunner);
+        sword = game.Bosses.First(b => b.Profile.Kind == BossKind.Swordsman);
         OnFloor(sword.gameObject, sword.Navigation, 0); OnFloor(gun.gameObject, sword.Navigation, 3);
         OnFloor(game.Player.gameObject, sword.Navigation, 7); yield return Seconds(.3f);
         gunHp = gun.Health.CurrentHealth; swordHp = sword.Health.CurrentHealth;
@@ -62,8 +62,8 @@ public static partial class BossEncounterSmoke
 
         // Both player and partner occupy the real slash arc; each gets one hit per beat.
         yield return Fresh(3); StopPolicies();
-        gun = game.Bosses.First(b => b.Profile.Kind == BossKind.Refraction);
-        sword = game.Bosses.First(b => b.Profile.Kind == BossKind.Severance);
+        gun = game.Bosses.First(b => b.Profile.Kind == BossKind.Gunner);
+        sword = game.Bosses.First(b => b.Profile.Kind == BossKind.Swordsman);
         OnFloor(sword.gameObject, sword.Navigation, -8); OnFloor(game.Player.gameObject, sword.Navigation, -5.5f);
         OnFloor(gun.gameObject, sword.Navigation, 7); yield return Seconds(.3f);
         Check("real close phrase accepts", sword.Actions.TryStartSword(BossAbility.SwordDuel));
@@ -78,8 +78,8 @@ public static partial class BossEncounterSmoke
         Check("sword never damages itself", sword.Health.CurrentHealth == swordHp);
 
         yield return Fresh(3); StopPolicies();
-        gun = game.Bosses.First(b => b.Profile.Kind == BossKind.Refraction);
-        sword = game.Bosses.First(b => b.Profile.Kind == BossKind.Severance);
+        gun = game.Bosses.First(b => b.Profile.Kind == BossKind.Gunner);
+        sword = game.Bosses.First(b => b.Profile.Kind == BossKind.Swordsman);
         OnFloor(sword.gameObject, sword.Navigation, -10); OnFloor(game.Player.gameObject, sword.Navigation, 5);
         OnFloor(gun.gameObject, sword.Navigation, 10); yield return Seconds(.3f);
         Check("real Draw phrase accepts", sword.Actions.TryStartSword(BossAbility.SwordPursuit));
@@ -89,8 +89,8 @@ public static partial class BossEncounterSmoke
         Check("real Draw sweep damages blocking partner", gun.Health.CurrentHealth == gunHp - sword.Profile.Sword.DrawDamage);
 
         yield return Fresh(3); StopPolicies();
-        gun = game.Bosses.First(b => b.Profile.Kind == BossKind.Refraction);
-        sword = game.Bosses.First(b => b.Profile.Kind == BossKind.Severance);
+        gun = game.Bosses.First(b => b.Profile.Kind == BossKind.Gunner);
+        sword = game.Bosses.First(b => b.Profile.Kind == BossKind.Swordsman);
         OnFloor(sword.gameObject, sword.Navigation, -12); OnFloor(gun.gameObject, sword.Navigation, -5);
         OnFloor(game.Player.gameObject, sword.Navigation, 3); yield return Seconds(.3f);
         var hazards = Private<SwordHazards>(sword.Actions, "swordHazards");

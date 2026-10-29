@@ -50,8 +50,8 @@ public static partial class BossEncounterSmoke
     {
         Record("Map-independent gunner: short natural W3 observation, followed by controlled Camo/ally occupancy fixtures. No balance or outcome claim.");
         yield return GuestFresh(3, true);
-        var gun = game.Bosses.First(b => b.Profile.Kind == BossKind.Refraction);
-        var sword = game.Bosses.First(b => b.Profile.Kind == BossKind.Severance);
+        var gun = game.Bosses.First(b => b.Profile.Kind == BossKind.Gunner);
+        var sword = game.Bosses.First(b => b.Profile.Kind == BossKind.Swordsman);
         var geometry = LayoutSupports().Select(c => c.bounds).ToArray();
         Check("W3 enables shared gunner policy only, on original five platforms", gun.Tactics.PlatformPressureEnabled
             && !sword.Tactics.PlatformPressureEnabled && geometry.Length == 6);

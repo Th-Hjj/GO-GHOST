@@ -392,7 +392,7 @@ public static partial class BossEncounterSmoke
             "beat="+sword.Actions.CurrentSwordBeat+" phase="+sword.Actions.Phase);
 
         yield return Fresh(3);StopPolicies();yield return Frames(2);
-        sword=game.Bosses.First(a=>a.Profile.Kind==BossKind.Severance);var gun=game.Bosses.First(a=>a.Profile.Kind==BossKind.Refraction);
+        sword=game.Bosses.First(a=>a.Profile.Kind==BossKind.Swordsman);var gun=game.Bosses.First(a=>a.Profile.Kind==BossKind.Gunner);
         OnFloor(sword.gameObject,sword.Navigation,-13);OnFloor(gun.gameObject,sword.Navigation,-5);OnFloor(game.Player.gameObject,sword.Navigation,-1);
         yield return Seconds(.3f);hp=game.Player.CurrentHealth;int gunHp=gun.Health.CurrentHealth;
         hazards=Private<SwordHazards>(sword.Actions,"swordHazards");hazards.Cut(new Vector2(-10,game.Player.GetComponent<Collider2D>().bounds.center.y+.25f),Vector2.right,false);
@@ -541,8 +541,8 @@ public static partial class BossEncounterSmoke
         }
         if(linkOnly){game.MainMenu();yield return Frames(2);yield break;}
         yield return Fresh(3);StopPolicies();yield return Frames(2);
-        var hunter=game.Bosses.First(a=>a.Profile.Kind==BossKind.Severance);
-        var gun=game.Bosses.First(a=>a.Profile.Kind==BossKind.Refraction);
+        var hunter=game.Bosses.First(a=>a.Profile.Kind==BossKind.Swordsman);
+        var gun=game.Bosses.First(a=>a.Profile.Kind==BossKind.Gunner);
         var centre=hunter.Navigation.Nodes.Where(n=>n.Collider.GetComponent<PlatformEffector2D>()!=null)
             .OrderByDescending(n=>n.Position.y).ThenBy(n=>Mathf.Abs(n.Position.x)).First();
         var outer=hunter.Navigation.Nodes.Where(n=>n.Position.y>centre.Position.y-.1f&&n.Position.x<centre.Position.x-4)
@@ -704,8 +704,8 @@ public static partial class BossEncounterSmoke
         yield return Until(()=>!sword.Actions.Busy,4);heldKeys=Array.Empty<Key>();
         Check("ordinary movement can evade committed descending cut",game.Player.CurrentHealth==hp,"hp="+game.Player.CurrentHealth+" before="+hp);
 
-        yield return Fresh(3);StopPolicies();sword=game.Bosses.First(a=>a.Profile.Kind==BossKind.Severance);
-        var gun=game.Bosses.First(a=>a.Profile.Kind==BossKind.Refraction);var duo=game.GetComponentInChildren<DuoCoordinator>();
+        yield return Fresh(3);StopPolicies();sword=game.Bosses.First(a=>a.Profile.Kind==BossKind.Swordsman);
+        var gun=game.Bosses.First(a=>a.Profile.Kind==BossKind.Gunner);var duo=game.GetComponentInChildren<DuoCoordinator>();
         OnFloor(sword.gameObject,sword.Navigation,-13);OnFloor(game.Player.gameObject,sword.Navigation,-3);OnFloor(gun.gameObject,sword.Navigation,12);
         yield return Seconds(.3f);Check("W3 residual fixture starts",sword.Actions.TryStartSword(BossAbility.SwordPursuit));
         yield return Until(()=>sword.Actions.SwordResidualWaiting,3);
@@ -905,8 +905,8 @@ public static partial class BossEncounterSmoke
         Check("ordinary aerial activation remains forbidden",sword.Motor.TryJump());yield return Seconds(.10f);
         Check("airborne fresh pursuit rejected",!sword.Actions.TryStartSword(BossAbility.SwordPursuit));
 
-        yield return Fresh(3);StopPolicies();sword=game.Bosses.First(a=>a.Profile.Kind==BossKind.Severance);
-        var gun=game.Bosses.First(a=>a.Profile.Kind==BossKind.Refraction);var duo=game.GetComponentInChildren<DuoCoordinator>();
+        yield return Fresh(3);StopPolicies();sword=game.Bosses.First(a=>a.Profile.Kind==BossKind.Swordsman);
+        var gun=game.Bosses.First(a=>a.Profile.Kind==BossKind.Gunner);var duo=game.GetComponentInChildren<DuoCoordinator>();
         OnFloor(sword.gameObject,sword.Navigation,-13);OnFloor(gun.gameObject,sword.Navigation,-7);OnFloor(game.Player.gameObject,sword.Navigation,-3);
         yield return Seconds(.3f);
         sword.Health.TakeDamage(Mathf.CeilToInt(sword.Health.MaxHealth*(1-sword.Profile.Sword.UnboundHealth)),game.Player.gameObject);

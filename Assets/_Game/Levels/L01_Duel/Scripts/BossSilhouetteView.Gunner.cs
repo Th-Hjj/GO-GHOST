@@ -22,7 +22,7 @@ namespace GoGhost.Duel
         // View-owned, bounded renderer cache. Never changes the shared prefab, collider or projectile clock.
         public void Bullet(Projectile shot, Vector2 direction)
         {
-            if (visualKind != BossKind.Refraction || shot == null) return;
+            if (visualKind != BossKind.Gunner || shot == null) return;
             GunBulletVisual visual = null;
             foreach (var item in gunBullets)
                 if (item.Shot == null) { visual = item; break; }

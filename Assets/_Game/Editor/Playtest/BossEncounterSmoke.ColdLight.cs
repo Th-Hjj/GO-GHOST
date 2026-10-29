@@ -446,7 +446,7 @@ public static partial class BossEncounterSmoke
         Check("short normal Wave 3 remains live with two Bosses",game.Phase==DuelPhase.Fight&&game.Bosses.Count==2&&game.FightClock>clock+2);
         foreach(var actor in game.Bosses)
         {
-            var parts=Private<SpriteRenderer[]>(actor.View,"parts");var identity=actor.Profile.Kind==BossKind.Refraction?NeuralPalette.Refraction:NeuralPalette.Severance;
+            var parts=Private<SpriteRenderer[]>(actor.View,"parts");var identity=actor.Profile.Kind==BossKind.Gunner?NeuralPalette.Gunner:NeuralPalette.Swordsman;
             Check("Boss "+actor.ActorId+" body and weapon identities",(Vector3)(Vector4)parts[0].color==(Vector3)(Vector4)identity&&(Vector3)(Vector4)parts[14].color==(Vector3)(Vector4)NeuralPalette.Primary);
         }
         yield return ColdCapture("wave3-bosses");
@@ -471,7 +471,7 @@ public static partial class BossEncounterSmoke
         yield return ColdCapture("combat-matched-not-executing");
         yield return AlphaFresh(3,null);var gunner=game.Bosses.First(a=>a.ActorId==1);var sword=game.Bosses.First(a=>a.ActorId==2);
         var parts=Private<SpriteRenderer[]>(sword.View,"parts");
-        Check("existing sword grip slot has sprite and owner accent",parts[15].sprite!=null&&parts[15].enabled&&parts[15].color==NeuralPalette.Severance);
+        Check("existing sword grip slot has sprite and owner accent",parts[15].sprite!=null&&parts[15].enabled&&parts[15].color==NeuralPalette.Swordsman);
         yield return ColdCapture("wave3-bosses-final");
         bool ready=gunner.Actions.Ready(BossAbility.Camo);Record("Camo ready before fixture="+ready);
         yield return Until(()=>gunner.Actions.Ready(BossAbility.Camo),7.2f);
@@ -486,7 +486,7 @@ public static partial class BossEncounterSmoke
         OnFloor(game.Player.gameObject,gunner.Navigation,-5);OnFloor(gunner.gameObject,gunner.Navigation,3);OnFloor(sword.gameObject,sword.Navigation,10);yield return Seconds(.3f);
         bool fired=gunner.Actions.TryStart(BossAbility.Burst,game.Player.transform.position);yield return Until(()=>Projectile.Active.Any(p=>p.Owner==gunner.gameObject),1f);
         var bullet=Projectile.Active.FirstOrDefault(p=>p.Owner==gunner.gameObject);
-        Check("real enemy bullet uses source identity",fired&&bullet!=null&&bullet.GetComponent<SpriteRenderer>().color==NeuralPalette.Refraction);
+        Check("real enemy bullet uses source identity",fired&&bullet!=null&&bullet.GetComponent<SpriteRenderer>().color==NeuralPalette.Gunner);
         yield return ColdCapture("wave3-projectiles");
         game.MainMenu();yield return Frames(3);
     }

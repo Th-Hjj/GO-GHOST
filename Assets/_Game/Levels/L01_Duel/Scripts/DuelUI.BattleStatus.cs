@@ -66,7 +66,7 @@ namespace GoGhost.Duel
                 if (actor == null)
                     continue;
                 string label = actor.IsTrainingEnemy ? "TRAINING ENEMY  "
-                    : actor.ActorId == 1 ? "GUNNER  " : "SWORDSMAN  ";
+                    : actor.ActorId == 1 ? "Gunner  " : "Swordsman  ";
                 bossHealthText[i].Update(policeHealth[i], label, actor.Health.CurrentHealth);
                 policeFill[i].rectTransform.sizeDelta =
                     new Vector2(430f * actor.Health.CurrentHealth / actor.Health.MaxHealth, 12);

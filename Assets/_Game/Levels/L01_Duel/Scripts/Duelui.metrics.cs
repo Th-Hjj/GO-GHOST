@@ -57,8 +57,8 @@ namespace GoGhost.Duel
                     AnalyticsText("Aim Assist: "+MetricNumber(operations[2].assistedSeconds)+"s  (separate from Auto Aim)"
                         +"    |    Drops  Auto: "+operations[1].automaticDrops+"  Manual: "+operations[1].manualDrops,0,-265,1300,21);
                     if(fight!=null)AnalyticsText("Remaining HP  You: "+fight.playerHealth+" / "+fight.playerMaxHealth
-                        +(fight.gunnerMaxHealth>0?"    Refraction: "+fight.gunnerHealth+" / "+fight.gunnerMaxHealth:"")
-                        +(fight.swordMaxHealth>0?"    Severance: "+fight.swordHealth+" / "+fight.swordMaxHealth:""),0,-318,1300,21);
+                        +(fight.gunnerMaxHealth>0?"    Gunner: "+fight.gunnerHealth+" / "+fight.gunnerMaxHealth:"")
+                        +(fight.swordMaxHealth>0?"    Swordsman: "+fight.swordHealth+" / "+fight.swordMaxHealth:""),0,-318,1300,21);
                     if(total&&run.levelCleared)AnalyticsText("Level clear: "+MetricNumber(run.levelClearSeconds)+" combat seconds",0,-370,1300,22);
                 }
             }

@@ -145,7 +145,7 @@ namespace GoGhost.Duel
         }
         bool StartSwordDecision(BossAbility ability)
         {
-            if(!IsSwordPhrase(ability)||p.Kind!=BossKind.Severance||!actor.Running||!actor.IsAlive||Busy
+            if(!IsSwordPhrase(ability)||p.Kind!=BossKind.Swordsman||!actor.Running||!actor.IsAlive||Busy
                 ||!Ready(ability)||!actor.Motor.Grounded||actor.Perception.Facts.Confidence<.2f)return false;
             if(ability==BossAbility.SwordRedline&&(!SwordUnbound||HasLivingPartner))return false;
             if(!swordPlanner.StillUseful(ability))return false;

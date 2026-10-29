@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-10-29 — Gunner and Swordsman names
+
+- **Request / baseline:** clean main `d4b0dad`. Thomas corrected the AI-invented Boss names and explicitly requested file names be changed too. Gunner and Swordsman are the authoritative names; earlier log entries retain historical wording only.
+- **Change:** rename both Boss profiles and prefabs through AssetDatabase, retaining all four GUIDs; update prefab roots, BossKind identifiers (explicitly retaining values 0/1), palette identifiers, HUD capitalization, metrics labels, authoring and existing check references. Rename the sword design reference and synchronize current docs, migration destinations and mirrored instructions. Historical migration source paths, prior evidence logs and optional Legacy remain historical. Gameplay, scene references, settings and packages are unchanged. Saving the Gunner profile also serialized its previously implicit, unused SwordCombatSettings defaults; every existing tuning field is unchanged.
+- **Validation:** normal Unity compilation passed; live scene references resolve to the renamed prefabs/profiles with no missing scripts and the scene remains clean. W1/W2/W3 reached Fight with advancing frames and elapsed times of 10.70/19.21/32.83 seconds, displaying Gunner / Swordsman / both. Used temporary player invulnerability for inspection, not a balance test. Actual 2560x1440 Game capture inspected at `Logs/BossRename/wave3.png`; runtime readback is in `Logs/BossRename/verification.txt`. Returned to Edit Mode. Static current-source/name scan and diff whitespace check passed.
+- **Diagnostics / limits:** initial rename correctly refused a newly started Play session; Thomas authorized stopping it. Initial W1 inspection arrived after defeat; a subsequent probe incorrectly requested combat HUD updates while the pause page had removed those fields, producing a fixture-only null-reference error. A reflection-based probe was rejected by the command tool. Final normal-flow checks above succeeded; no runtime fix was needed. Standalone, physical input, extended balance and Build/Release NOT RUN.
+
 ## 2026-10-29 — Shorter Help copy
 
 - From clean `60ce606`, remove the nine screenshot-marked controls fragments, including the S entry and Pause and practice heading. Keep short key/action mappings. Reduce configuration to three brief sections: Condition/Action, adding/editing, AND/priority. Correct the controls title to `What're the controls?` at Thomas's request; retain `What is configuration?`. No gameplay or metrics changes.

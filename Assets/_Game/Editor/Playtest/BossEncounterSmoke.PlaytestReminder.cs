@@ -116,7 +116,7 @@ public static partial class BossEncounterSmoke
         yield return ClickReminderPointer("PlaytestYes");
         Check("Yes creates fresh W2 preparation with same name/face/rules", game.Wave == 2 && game.Phase == DuelPhase.Prepare
             && game.Player != oldPlayer && game.Appearance == appearance && game.Appearance.Name == "Playtest"
-            && game.DraftLoadout == draft && game.Bosses.Count == 1 && game.Bosses[0].Profile.Kind == BossKind.Severance
+            && game.DraftLoadout == draft && game.Bosses.Count == 1 && game.Bosses[0].Profile.Kind == BossKind.Swordsman
             && !game.PlaytestPromptOpen && !game.Paused && Time.timeScale == 1 && !AudioListener.pause);
         Check("Skip is recorded without a death, win or developer jump", PlayMetrics.History.Any(a => a.wave == 1 && a.result == "skipped")
             && PlayMetrics.DeathsByWave[1] == 0 && !PlayMetrics.Current.developerWaveJump);

@@ -14,9 +14,9 @@ public static class NeuralPalette
     public static readonly Color Spine = new Color32(178, 140, 255, 255);
     // Gold contour only. No current head/Ultimate gameplay system.
     public static readonly Color HeadReserved = new Color32(248, 200, 92, 255);
-    public static readonly Color Refraction = new Color32(255, 154, 98, 255);
-    public static readonly Color Severance = new Color32(255, 99, 117, 255);
-    public static Color Danger => Severance;
+    public static readonly Color Gunner = new Color32(255, 154, 98, 255);
+    public static readonly Color Swordsman = new Color32(255, 99, 117, 255);
+    public static Color Danger => Swordsman;
     public static Color Border => Color.Lerp(Panel, Secondary, .28f);
     public static Color ControlBorder => Color.Lerp(Panel, Secondary, .62f);
     public static Color DisabledText => Color.Lerp(Panel, Secondary, .72f);

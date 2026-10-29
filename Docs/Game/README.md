@@ -11,11 +11,11 @@ Start with the current assignment in [AGENTS.md](../../AGENTS.md) / [CLAUDE.md](
 | [Gameplay Analytics](GameplayAnalytics.md) | Named New Game records, play/configuration time, combat outcomes and local JSON exports |
 | [Implementation Log](ImplementationLog.md) | Changes, actual verification, artifacts and explicit untested limits; the only progress log |
 | [Retained Combat Reference](RetainedCombatReference.md) | Compatibility reference for retained player executors and serialized contracts; superseded gameplay is historical |
-| [Severance Design Reference](SeveranceDesignReference.md) | Design rationale for the approved sword rework; later Boss requirements govern the implementation |
+| [Swordsman Design Reference](SwordsmanDesignReference.md) | Design rationale for the approved sword rework; later Boss requirements govern the implementation |
 
 ## Current game
 
-GO GHOST is a single-player, fixed-camera 2D arena: Refraction, Severance, then both together. Use Unity **6000.6.0f1** and the existing packages. Open **GO GHOST > Combat > Open Arena** for the formal Editor Play and build scene:
+GO GHOST is a single-player, fixed-camera 2D arena: Gunner, Swordsman, then both together. Use Unity **6000.6.0f1** and the existing packages. Open **GO GHOST > Combat > Open Arena** for the formal Editor Play and build scene:
 
 `Assets/_Game/Levels/L01_Duel/Scenes/GO GHOST Duel.unity`
 

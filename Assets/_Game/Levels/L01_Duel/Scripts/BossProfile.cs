@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace GoGhost.Duel
 {
-    public enum BossKind { Refraction, Severance }
+    public enum BossKind { Gunner = 0, Swordsman = 1 }
     public enum BossAbility { None, Burst, Camo, Piercing, Sweep, Rhythm, DrawDash, ReturnCut, DropCut, Guard, Reload, LeapSlash, TacticalJumpShot, DashFollowup, DropFollowup, FlankLeap, FlankCut, LeapFollowup,
         SwordPursuit, SwordDislodge, SwordDuel, SwordCrossing, SwordRedline }
     public enum BossActionPhase { Idle, Prepare, Locked, Active, Recovery }

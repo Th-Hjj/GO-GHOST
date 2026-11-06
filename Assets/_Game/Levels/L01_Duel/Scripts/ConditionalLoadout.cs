@@ -134,6 +134,19 @@ namespace GoGhost.Duel
                 return count;
             }
         }
+        public static ConditionalLoadout ForNewCharacter()
+        {
+            var loadout = new ConditionalLoadout();
+            loadout.TryAddRule(ControlOperation.Jump, new ConditionalRule
+            {
+                Condition = ConditionalCatalog.IncomingAttackCondition,
+                IncomingAttack = IncomingAttackOption.Any,
+                Action = "J01",
+                Jump = JumpOption.Once
+            });
+            return loadout;
+        }
+
         public bool TryAddRule(int operation,ConditionalRule rule)
         {
             if(operation<0||operation>=Operations.Length||rule==null||Operations[operation]?.Rules==null

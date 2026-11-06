@@ -116,11 +116,18 @@ namespace GoGhost.Duel
             var head = combatPrefab != null ? combatPrefab.GetComponentInChildren<OfficerVisual>()?.Part(LoadoutSlot.Brain) : null;
             Appearance = new CharacterAppearance(head != null ? head.sprite : null);
         }
-        public void CompleteCharacterCreation()
+        public void CompleteCharacterCreation() => FinishCharacterCreation(installStarterRule: true);
+
+        void FinishCharacterCreation(bool installStarterRule)
         {
             if (Phase != DuelPhase.CharacterCreation || DeveloperToolsOpen || startup != null) return;
             Appearance.Name = Appearance.Name.Trim();
             PlayMetrics.SetName(Appearance.DisplayName, true);
+            if (installStarterRule)
+            {
+                DraftLoadout = ConditionalLoadout.ForNewCharacter();
+                PlayMetrics.RecordConfiguration(DraftLoadout);
+            }
             UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
             SetPhase(DuelPhase.Configure);
             handler.PlayGreeting();
@@ -412,7 +419,7 @@ namespace GoGhost.Duel
         // Entry selects only the normal configuration; no fight-state injection.
         public void ConfigurePlaytestWave(int wave)
         {
-            NewGame(); CompleteCharacterCreation(); Wave = Mathf.Clamp(wave, 1, BonusWave); metricsWaveJumpPending = true;
+            NewGame(); FinishCharacterCreation(installStarterRule: false); Wave = Mathf.Clamp(wave, 1, BonusWave); metricsWaveJumpPending = true;
             if (Wave > 2) { PlayMetrics.MarkTestData(); PlayMetrics.EndRun("developer_wave_jump"); }
             if (Wave == FinalBossWave) CreateFinalBossPage(); else ui.Show();
         }

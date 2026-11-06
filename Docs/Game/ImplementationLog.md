@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-11-05 — Happy’s starter rule
+
+- Character creation now opens Body Configuration with one editable Incoming Attack (Any) → Jump rule. The Jump uses Once. The starting metrics snapshot includes the rule without counting it as a player addition. Development wave shortcuts still start empty.
+- Compiled the gameplay assembly with the Unity Editor compiler settings and ran six isolated loadout checks under Mono, covering order, legality, edit/removal across copies, a fresh new character, and empty fixtures. Editor interactions, combat playback and standalone builds were not run for this change.
+
 ## 2026-11-05 — Beta 33%
 
 - Happy's tutorial keeps the approved text and 1.1× Heart voice. Added 160 ms after the greeting and between complete sentences in each tutorial clip. Imported durations are 21.02 s and 10.31 s.

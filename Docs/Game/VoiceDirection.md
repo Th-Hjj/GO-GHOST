@@ -1,5 +1,7 @@
 # Voice direction
 
+Use **Tools → GO GHOST → Voice Studio** to audition, adopt and restore line edits in Unity. The [Voice Studio guide](VoiceStudio.md) covers the approved opening, editable speaker settings, reference performances and nickname previews.
+
 Thomas's decision on 2026-11-05 establishes two production references for new or revised English dialogue. The WAVs below are the actual audition takes, stored outside Unity's Assets folder. Existing game recordings and the live nickname synthesizer have their own production history.
 
 | Speaker | Decision | Listening reference |
@@ -52,7 +54,7 @@ Apply any author-directed pitch and gain contour to the dry line before the effe
 
 ## Dialogue and progression
 
-The cue names below are authoring labels. Unity currently uses resource names and phase callbacks. Only automatic same-sequence joins use an authored pause. Player-driven Next, Yes and No take effect on input.
+The [voice catalog](../../Assets/_Game/Levels/L01_Duel/Resources/VoiceStudioCatalog.json) identifies fixed cues by their stable resource names and supplies the visit dialogue, nickname template, speaker settings and opening delay. Game phase callbacks own progression. Only automatic same-sequence joins use an authored pause. Player-driven Next, Yes and No take effect on input.
 
 | Cue | When it plays | Replay and interruption |
 |---|---|---|

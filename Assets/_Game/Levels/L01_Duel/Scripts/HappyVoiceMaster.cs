@@ -126,7 +126,8 @@ namespace GoGhost.Duel
             return output;
         }
 
-        internal static float[] Stereo(float[] samples, string root, CancellationToken token)
+        internal static float[] Stereo(float[] samples, string root, CancellationToken token,
+            double electronic = .15, double nearDb = 0, double spaceDb = 0)
         {
             var dry = Array.ConvertAll(samples, s => (double)s);
             double level = Rms(dry);
@@ -140,7 +141,7 @@ namespace GoGhost.Duel
             for (int i=0;i<dry.Length;i++)
             {
                 layer[i]=Math.Round(layer[i]*gain*32767)/32768;
-                direct[i]=.15*layer[i]+.85*dry[i];
+                direct[i]=electronic*layer[i]+(1-electronic)*dry[i];
             }
             int n=1;
             while (n<direct.Length+16383) n<<=1;
@@ -165,7 +166,7 @@ namespace GoGhost.Duel
                     Transform(kernel,true);
                     double sum=0;
                     for (int j=0;j<direct.Length;j++) sum+=kernel[j].Real*kernel[j].Real;
-                    gain=directLevel*Math.Pow(10,decibels[k]/20)/Math.Max(1e-15,Math.Sqrt(sum/direct.Length));
+                    gain=directLevel*Math.Pow(10,(decibels[k]+(k<2 ? spaceDb : nearDb))/20)/Math.Max(1e-15,Math.Sqrt(sum/direct.Length));
                     var channel=k%2==0 ? mid : side;
                     for (int j=0;j<direct.Length;j++) channel[j]+=gain*kernel[j].Real;
                 }

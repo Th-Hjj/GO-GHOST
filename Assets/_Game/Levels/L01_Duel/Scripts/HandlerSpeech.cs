@@ -13,35 +13,37 @@ namespace GoGhost.Duel
     {
         internal struct Recording { internal float[] Samples; internal int Rate; }
         static readonly string[] Digits = { "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine" };
-        static readonly string[] Intro = { "nice", "to", "meet", "you" };
         static readonly object EngineLock = new object();
 
-        internal static Recording Synthesize(string root, string nickname, CancellationToken token, Action<int> report)
+        internal static Recording Synthesize(string root, string nickname, CancellationToken token, Action<int> report, VoiceStudioCatalog settings)
         {
             lock (EngineLock)
             {
                 if (token.IsCancellationRequested) return default;
                 var lexicon = new List<string>();
-                string spokenName = MakeName(root, nickname, lexicon);
+                var words = Regex.Matches(settings.greetingTemplate.Replace("{name}", "").ToLowerInvariant(), @"[a-z]+(?:'[a-z]+)?");
+                string spokenName = MakeName(root, nickname, lexicon, words);
                 report(20);
                 if (spokenName.Length == 0 || token.IsCancellationRequested) return default;
                 string temporary = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".txt");
                 try
                 {
                     File.WriteAllLines(temporary, lexicon, new UTF8Encoding(false));
-                    return Render(root, temporary, "Nice to meet you, " + spokenName + ".", token, report);
+                    return Render(root, temporary, settings.greetingTemplate.Replace("{name}", spokenName), token, report, settings);
                 }
                 finally { File.Delete(temporary); }
             }
         }
 
-        static string MakeName(string root, string nickname, List<string> lexicon)
+        static string MakeName(string root, string nickname, List<string> lexicon, MatchCollection words)
         {
             // Keep Han characters intact and normalize accented Latin names for US English.
             string normalized = Regex.Replace(nickname.Normalize(NormalizationForm.FormD), @"\p{M}", "")
                 .ToLowerInvariant();
             var parts = new List<string>();
-            var english = new HashSet<string>(Intro);
+            var intro = new HashSet<string>();
+            foreach (Match word in words) intro.Add(word.Value);
+            var english = new HashSet<string>(intro);
             var chinese = new HashSet<string>();
             foreach (Match m in Regex.Matches(normalized, @"[a-z]+|[0-9]|[\u3400-\u9fff]"))
             {
@@ -59,7 +61,11 @@ namespace GoGhost.Duel
             var phones = new Dictionary<string, string>();
             ReadEntries(root, "lexicon-us-en.txt", english, phones);
             ReadEntries(root, "lexicon-zh.txt", chinese, phones);
-            foreach (string word in Intro) lexicon.Add(word + " " + phones[word]);
+            foreach (string word in intro)
+            {
+                if (!phones.TryGetValue(word, out var pronunciation)) return "";
+                lexicon.Add(word + " " + pronunciation);
+            }
             var aliases = new List<string>();
             foreach (string part in parts)
             {
@@ -95,7 +101,7 @@ namespace GoGhost.Duel
             lexicon.Add(alias + " " + pronunciation);
         }
 
-        static Recording Render(string root, string lexicon, string text, CancellationToken token, Action<int> report)
+        static Recording Render(string root, string lexicon, string text, CancellationToken token, Action<int> report, VoiceStudioCatalog settings)
         {
             var config = new HandlerKokoro.Config();
             config.model.num_threads = 2;
@@ -114,8 +120,7 @@ namespace GoGhost.Duel
                 report(65);
                 if (token.IsCancellationRequested) return default;
                 const int heart = 0; // The shipped bank contains Heart (0) and Michael (1).
-                const float handlerSpeed = 1.05f;
-                IntPtr result = HandlerKokoro.SherpaOnnxOfflineTtsGenerate(tts, text, heart, handlerSpeed);
+                IntPtr result = HandlerKokoro.SherpaOnnxOfflineTtsGenerate(tts, text, heart, settings.happySpeed);
                 if (result == IntPtr.Zero) return default;
                 try
                 {
@@ -125,11 +130,29 @@ namespace GoGhost.Duel
                     var samples = new float[audio.n];
                     Marshal.Copy(audio.samples, samples, 0, samples.Length);
                     if (audio.sample_rate != 24000) throw new InvalidOperationException("Unexpected Happy voice sample rate.");
-                    return new Recording { Samples = HappyVoiceMaster.Stereo(samples, root, token), Rate = audio.sample_rate };
+                    float[] stereo=HappyVoiceMaster.Stereo(samples, root, token, settings.electronic, settings.nearDb, settings.spaceDb);
+                    if (settings.matchTarget) MatchActiveLevel(stereo,settings.targetDb);
+                    return new Recording { Samples = stereo, Rate = audio.sample_rate };
                 }
                 finally { HandlerKokoro.SherpaOnnxDestroyOfflineTtsGeneratedAudio(result); }
             }
             finally { HandlerKokoro.SherpaOnnxDestroyOfflineTts(tts); }
+        }
+
+        // Same -36 dBFS sample gate and peak headroom as the fixed-line authoring pass.
+        static void MatchActiveLevel(float[] samples, float db)
+        {
+            double energy=0, peak=0;
+            int count=0;
+            foreach (float v in samples)
+            {
+                peak=Math.Max(peak, Math.Abs(v));
+                if (Math.Abs(v)<=.015f) continue;
+                energy+=v*v; count++;
+            }
+            if (count==0) return;
+            float gain=(float)Math.Min(.98/peak, Math.Pow(10,db/20)/Math.Sqrt(energy/count));
+            for (int i=0;i<samples.Length;i++) samples[i]*=gain;
         }
     }
 }

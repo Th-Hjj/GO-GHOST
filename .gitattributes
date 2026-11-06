@@ -156,6 +156,7 @@ Packages/packages-lock.json linguist-generated
 Assets/Plugins/HandlerVoice/macOS/*.dylib lfs
 Assets/StreamingAssets/HandlerVoice/model.int8.onnx lfs
 Assets/StreamingAssets/HandlerVoice/voices.bin lfs
+Tools/VoiceStudio/author-voices.bin lfs
 *.pdb                   lfs
 *.so                    lfs
 

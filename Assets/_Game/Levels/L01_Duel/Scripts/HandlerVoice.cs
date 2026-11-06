@@ -37,8 +37,9 @@ namespace GoGhost.Duel
                 pendingGreeting = new CancellationTokenSource();
                 var token = pendingGreeting.Token;
                 int milestone = 0;
+                var settings = VoiceStudioCatalog.Current;
                 var job = Task.Run(() => HandlerSpeech.Synthesize(root, nickname, token,
-                    value => Interlocked.Exchange(ref milestone, value)));
+                    value => Interlocked.Exchange(ref milestone, value), settings));
                 while (!job.IsCompleted)
                 {
                     progress(Volatile.Read(ref milestone) / 100f);
@@ -62,6 +63,7 @@ namespace GoGhost.Duel
 
         internal void PlayGreeting()
         {
+            speaker.volume = VoiceStudioCatalog.Current.Volume(false);
             tutorialActive = true;
             openedRule = false;
             if (generatedGreeting != null) Play(generatedGreeting);
@@ -97,10 +99,38 @@ namespace GoGhost.Duel
 
         internal void PlayLine(string name)
         {
-            if (!TryGetLine(name, out var clip)) clip = Resources.Load<AudioClip>(name);
+            AudioClip clip;
+#if UNITY_EDITOR
+            if (name==studioKey && studioClip!=null) clip=studioClip;
+            else
+#endif
+            if (!TryGetLine(name, out clip)) clip = Resources.Load<AudioClip>(name);
             speaker.Stop();
+            speaker.volume = VoiceStudioCatalog.Current.Volume(name.StartsWith("FinalBossVoice/", StringComparison.Ordinal));
             Play(clip);
         }
+
+#if UNITY_EDITOR
+        static string studioKey;
+        static AudioClip studioClip;
+        public static void SetStudioDraft(string key, AudioClip clip)
+        {
+            studioKey=key;
+            studioClip=clip;
+        }
+        public void RefreshStudioClips() => lines.Clear();
+        public AudioSource CreateStudioMonitor()
+        {
+            var monitor = new GameObject("Voice Studio monitor").AddComponent<AudioSource>();
+            monitor.gameObject.hideFlags = HideFlags.HideAndDontSave;
+            monitor.transform.SetParent(transform, false);
+            monitor.playOnAwake = false;
+            monitor.spatialBlend = speaker.spatialBlend;
+            monitor.outputAudioMixerGroup = speaker.outputAudioMixerGroup;
+            monitor.priority = speaker.priority;
+            return monitor;
+        }
+#endif
 
         void Play(AudioClip clip)
         {

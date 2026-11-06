@@ -6,19 +6,10 @@ namespace GoGhost.Duel
     {
         public const int FinalBossWave = 3, BonusWave = 4;
         public string WaveLabel => Wave == BonusWave ? "BONUS WAVE" : "WAVE " + Wave;
-        static readonly string[] FinalBossLines =
-        {
-            "Hi, I'm the final boss.",
-            "I'm glad that you made it here.",
-            "The thing is, you won! Congrats!",
-            "Turns out we didn't have time to present a final boss fight at the moment.",
-            "But... If you enjoyed the game.",
-            "There is a bonus challenge.",
-            "Do you want to enter the bonus wave?"
-        };
+        static VoiceStudioLine[] FinalBossLines => VoiceStudioCatalog.Current.Visit;
         public int FinalBossLine { get; private set; }
-        static string FinalBossClipPath(int index) => "FinalBossVoice/Line" + (index + 1);
-        public string FinalBossDialogue => FinalBossLines[FinalBossLine];
+        static string FinalBossClipPath(int index) => FinalBossLines[index].key;
+        public string FinalBossDialogue => FinalBossLines[FinalBossLine].text;
         public bool FinalBossChoiceReady => FinalBossLine == FinalBossLines.Length - 1;
         public Enemy FinalBossHealth { get; private set; }
         Material finalBossMaterial;

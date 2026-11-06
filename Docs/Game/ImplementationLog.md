@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-11-06 — Voice Studio
+
+- Added an Editor workbench for all 14 active fixed recordings and the desktop nickname template. The existing opening is a protected master. Waveform selections, reference performances, speaker profiles, scene auditions and recoverable adoption use the existing game resources. Five legacy Happy transcripts were recovered from the recordings and flagged for review.
+- Compiled runtime and editor assemblies offline. Exercised the 10 ms opening edit, exact adoption and restore, stale-preview rejection, interrupted-write recovery, batch exclusions, both synthesis voices, reference transfer and all 13 unlocked revoice candidates. Tested English and Chinese nickname generation and fallback through the desktop C# path. Production WAVs were preserved. Unity window interaction, audio-device playback, macOS and standalone builds remain for manual verification.
+
 ## 2026-11-06 — Character creation opening timing
 
 - New Game opens creation immediately and cues the approved question one second after the click. A phase transition cancels the pending cue. Removed the drawing instruction and its first-stroke fade. Checked the source paths and audio hash offline. Unity playback and UI review are left to Thomas.

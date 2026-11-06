@@ -63,7 +63,7 @@ def diffuse(signal, seed, near):
     return np.fft.irfft(np.fft.rfft(signal, size) * np.fft.rfft(impulse, size), size)[:len(signal)]
 
 
-def master(dry):
+def master(dry, electronic=.15, near_db=0, space_db=0):
     if not np.any(dry):
         return np.zeros((len(dry) + TAIL, 2), dtype='<i2')
     vocoded = match_level(electronic_layer(dry), dry)
@@ -72,7 +72,7 @@ def master(dry):
     full_b = np.rint(full_b * 32767) / 32768
     previous = .65*full_b + .35*dry
     target = rms(np.rint(previous * (rms(full_b)/rms(previous)) * 32768) / 32768)
-    direct = .15*full_b + .85*dry
+    direct = electronic*full_b + (1-electronic)*dry
     direct = np.pad(direct * (target/rms(direct)), (0, TAIL))
     direct_level = rms(direct)
 
@@ -80,10 +80,10 @@ def master(dry):
         signal = diffuse(direct, seed, near)
         return signal * direct_level / max(rms(signal), 1e-15) * 10**(db/20)
 
-    mid = direct + reflection(501, False, -12.5)
-    side = reflection(502, False, -13)
-    mid += reflection(801, True, -9)
-    side += reflection(802, True, -6.5)
+    mid = direct + reflection(501, False, -12.5+space_db)
+    side = reflection(502, False, -13+space_db)
+    mid += reflection(801, True, -9+near_db)
+    side += reflection(802, True, -6.5+near_db)
     stereo = np.column_stack((mid + side, mid - side))
     stereo *= min(target/rms(stereo[:len(dry)]), .98/np.max(np.abs(stereo)))
     return np.rint(stereo * 32767).astype('<i2')

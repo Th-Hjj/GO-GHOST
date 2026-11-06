@@ -101,7 +101,7 @@ namespace GoGhost.Duel
         }
         public void NewGame()
         {
-            double questionAt = AudioSettings.dspTime + 1.0;
+            double questionAt = AudioSettings.dspTime + VoiceStudioCatalog.Current.openingDelay;
             ClearEncounter("new_game");
             PlayMetrics.ResetRun();
             metricsWaveJumpPending = false;

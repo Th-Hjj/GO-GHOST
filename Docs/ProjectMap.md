@@ -1,6 +1,6 @@
 # GO GHOST - Project Map
 
-Last reviewed: 2026-10-29; structure established 2026-10-20. Gameplay authority: [game documentation](Game/README.md). Actual verification and limits: [implementation log](Game/ImplementationLog.md). Current naming rules: [NamingConventions.md](NamingConventions.md).
+Structure established 2026-10-20 and reviewed 2026-11-05. Gameplay authority: [game documentation](Game/README.md). Actual verification and limits: [implementation log](Game/ImplementationLog.md). Current naming rules: [NamingConventions.md](NamingConventions.md).
 
 ## Entry and current ownership
 
@@ -11,6 +11,8 @@ Only enabled build scene and default Editor Play entry: `Assets/_Game/Levels/L01
 | `Assets/_Game/Levels/L01_Duel/Scenes` | Formal Duel scene |
 | `Assets/_Game/Levels/L01_Duel/Scripts` | DuelGame lifecycle/Training/Final Boss/Bonus, character creation, conditional rules, Help, metrics, Boss executors/navigation/coordination |
 | `Assets/_Game/Levels/L01_Duel/Prefabs`, `Data`, `Art`, `Audio` | Actual combat prefab, Bosses/profiles, materials and licensed wave music |
+| `Assets/_Game/Levels/L01_Duel/Resources/Handler`, `FinalBossVoice` | Recorded Happy greeting, tutorial and wave-clear lines, plus the seven Final Boss dialogue clips |
+| `Assets/StreamingAssets/HandlerVoice` and `Assets/Plugins/HandlerVoice` | Offline nickname synthesis model, lexicon and notices in StreamingAssets, with native runtimes for Windows x64 and macOS in Plugins |
 | `Assets/_Game/Shared/Scripts/Player` | Existing input, movement, jump/drop-through, Dodge, Revolver (retained Rifle APIs), projectile, health, visual and WeaponProfile |
 | `Assets/_Game/Shared/Scripts/Presentation` | Shared visual/audio helpers, BodyDiagramGeometry, MissionBodyRegion and MissionParticleBrain |
 | `Assets/_Game/Shared/Scripts/Compatibility` | Retained serialized/API contracts and optional components used by original executors; [details](../Assets/_Game/Shared/Scripts/Compatibility/README.md) |

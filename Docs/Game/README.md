@@ -15,23 +15,25 @@ Start with the current assignment in [AGENTS.md](../../AGENTS.md) / [CLAUDE.md](
 
 ## Current game
 
-GO GHOST is a single-player, fixed-camera 2D arena: Gunner, Swordsman, a Final Boss placeholder visit, then an optional duo Bonus. Use Unity **6000.6.0f1** and the existing packages. Open **GO GHOST > Combat > Open Arena** for the formal Editor Play and build scene:
+GO GHOST is a single-player, fixed-camera 2D arena game. Use Unity **6000.6.0f1** and the existing packages. **GO GHOST > Combat > Open Arena** opens the Editor Play and build scene at the following path.
 
 `Assets/_Game/Levels/L01_Duel/Scenes/GO GHOST Duel.unity`
 
-The player has 11 conditions and seven action entries grouped under Weapon, Movement and Dodge, with one 20-rule budget. Move, Jump, Aim, Fire and Dodge remain independent runtime operations. Each new rule has one condition and one action. Older multi-condition rules retain AND semantics. Legal ordinary Jump takes priority over Dodge and can interrupt it; other competing Rules follow global DisplayOrder, including shared physical controls. Impossible actions fall through and unowned controls remain manual. Preserve other real action commitments, nonconflicting parallel operations, independent event consumption, same-enemy AND, public observations and physical collision. Body facing and Revolver aim are independent.
+New Game opens **Who Are You**. Draw a face, optionally enter a nickname and choose **Start Game**. The loading bar covers encounter audio, dialogue clips and offline greeting preparation. Happy greets the player by name when synthesis succeeds and uses a recorded greeting otherwise. In the first **Body Configuration**, Happy introduces the editor. Opening **+ Add Rule** cues the farewell.
 
-New Game/Restart opens Who Are You for a name and a freely drawn face, then Start Game opens Body Configuration with Happy’s editable Incoming Attack (Any) → Jump (Once) rule. The name input follows the existing dark UI style. Configuration and combat share the same face; the configuration particle brain is temporarily removed. Name and drawing last for this run, including retries, Training respawns and waves; New Game resets them. Start Testing opens practice before each combat wave. Enter Wave 1, Enter Wave 2 or Enter Bonus Wave starts a fresh fight with the equipped rules. Back returns to configuration. Retries and later waves retain the player’s edits. Each new character starts with a fresh copy of Happy’s rule. Pause freezes combat. Current play uses the six-round Revolver and retains other player tuning, Boss behavior, Camo, Cold-Light presentation and F8 session tuning. Historical tower, permanent progression and autonomous-player systems are disconnected.
+Each new character on `main` receives **Incoming Attack (Any) → Jump**. It uses Jump once and takes one of the 20 rule slots. Players can edit or remove it for the rest of that run. The editor offers 11 conditions and seven actions. New rules pair one condition with one action. Older rules can contain several conditions joined by AND. The catalog documents priority, manual fallback and choices that require reselection. [Conditional Rules](ConditionalRules.md)
+
+Before Wave 1 (Gunner), Wave 2 (Swordsman) and the optional Bonus (both), **Start Testing** opens practice with the Dummy Robot. **Back** reopens configuration. **Enter Wave 1**, **Enter Wave 2** or **Enter Bonus Wave** starts the corresponding countdown. Defeat offers a direct **Retry** or a return to **Configuration**. The drawn face, nickname and edited rules carry through those transitions.
 
 Help provides **What're the controls?** and **What is configuration?**, preserving the current draft on return. Its pages contain brief controls and the Condition/Action definitions only. Presets and death-based unlocks are removed. Each New Game saves one independent JSON record with the character nickname; see [Gameplay Analytics](GameplayAnalytics.md).
 
-## Validation and delivery
+Wave 1 victory waits for **Continue to Wave 2**. Wave 2 victory ends metrics and waits for **Meet the Final Boss**. Each of the seven dialogue lines has its own voice clip. **Yes** opens Bonus configuration and **No** returns to the menu. [Progression and dialogue](BossEncounters.md#final-boss-and-optional-bonus--approved-2026-10-29)
 
-Wave 1 victory waits on **Continue to Wave 2**. Wave 2 victory displays **WAVE 2 CLEARED** and waits on **Meet the Final Boss**. Wave 3 is a stationary 9999-HP rainbow stickman in the shared arena without platforms, with seven lines of dialogue. Yes enters retained-rule Bonus configuration; No returns to the menu. The original duo fight is **BONUS WAVE**. Metrics finish at Wave 2 victory and exclude both the visit and Bonus, including their configuration time. [Progression details](BossEncounters.md#final-boss-and-optional-bonus--approved-2026-10-29).
+## Builds and Editor checks
 
-**GO GHOST > Playtest > Wave 1 / Wave 2 / Bonus Wave** opens empty/manual configuration; **Wave 3** opens the Final Boss visit. **Final Boss and Bonus Progression** checks the new transitions and metrics cutoff. Select checks appropriate to the change; historical suites contain superseded assertions and are not current acceptance criteria.
+The published **Beta 33%** packages for Windows x64 and macOS include Happy’s greeting, tutorial and victory lines. Their initial rule list is empty. The starter rule first appears in source commit `89e9da4`. [Download Beta 33%](https://github.com/Th-Hjj/GO-GHOST/releases/tag/beta-33)
 
-Download [Beta 33%](https://github.com/Th-Hjj/GO-GHOST/releases/tag/beta-33) for Windows x64 or macOS. Historical release instructions apply only to their dated delivery. Record static, compilation, Editor, build and standalone evidence separately in the implementation log.
+**GO GHOST > Playtest > Wave 1 / Wave 2 / Bonus Wave** opens empty configuration for a developer test. **Wave 3** opens the Final Boss visit. When using the older **Final Boss and Bonus Progression** fixture, account for its automatic Wave 1 transition assumption before interpreting results. See the [implementation log](ImplementationLog.md) for checks actually run.
 
 ## Project organization
 

@@ -1,20 +1,20 @@
 # GO GHOST
 
-A single-player 2D boss-fight prototype where you decide what to control and what to automate.
+GO GHOST is a single-player 2D boss fight where you can teach your character how to react. A rule such as **Enemy Near Your Aim → Fire (Keep Firing)** lets you aim the revolver yourself and have your character pull the trigger.
 
-Build up to **20 Condition → Action rules** across Move, Jump, Aim, Fire and Dodge. Each operation falls back to manual control when no rule can execute.
+Choose from 11 conditions and seven actions. Equip up to **20 rules** across movement, jumping, aiming, firing and dodging. Whenever a rule leaves a control free, you can use it yourself.
 
 **[Download Beta 33% for Windows or macOS](https://github.com/Th-Hjj/GO-GHOST/releases/tag/beta-33)**
 
-Extract the ZIP for your platform. Each package includes the game, its offline voice model and a controls reference.
+Extract the ZIP for your platform and launch the game. The packages include Happy’s offline voice and a controls reference. **Beta 33% starts with an empty rule list.** On `main`, Happy gives each new character one editable **Incoming Attack (Any) → Jump** rule. It makes the character jump once when grounded and threatened. You can edit or remove it in Body Configuration.
 
 ## Current game
 
-1. **New Game**: draw a face, enter a nickname and configure your rules. Empty rules keep control manual; **Help** introduces controls and Condition → Action.
-2. Before Wave 1, Wave 2 and the optional Bonus Wave, choose **Start Testing** to practice with the Dummy Robot. Use **Back** to edit rules or **Enter Wave 1**, **Enter Wave 2** or **Enter Bonus Wave** to begin the encounter.
-3. Fight **Gunner**, then **Swordsman**. **Meet the Final Boss** opens a short dialogue, with an optional **Bonus Wave** against both bosses.
+1. Choose **New Game**, draw a face and optionally enter a nickname. Select **Start Game**. Happy greets you and introduces **Body Configuration**. Choose **+ Add Rule**, pick a condition and an action, then **Confirm**.
+2. Select **Start Testing** to try your rules against the Dummy Robot. **Back** lets you edit them. **Enter Wave 1** starts the countdown for **Gunner**.
+3. After victory, select **Continue to Wave 2**, configure and test again, then take on **Swordsman**. Clear Wave 2 and select **Meet the Final Boss** for a voiced conversation. Say **Yes** to configure and test for the optional fight against both bosses, or **No** to return to the menu.
 
-Retry and **Pause → Configuration** retain your character and rules. New Game starts fresh.
+After defeat, **Retry** takes you directly back to the encounter. **Configuration** lets you change your rules first. Both routes keep your character.
 
 ## Controls
 
@@ -34,7 +34,7 @@ The six-round Revolver reloads automatically. F8 tuning lasts only for the curre
 
 ## Playtest data
 
-Each New Game saves one local JSON record with the nickname, time, rule use and combat results. Recording ends at Wave 2 victory; Final Boss and Bonus activity are excluded. Find files through **F8 → Analytics → Open data folder**. [Metrics details](Docs/Game/GameplayAnalytics.md).
+Each New Game saves one local JSON record with the nickname, time, rule use and combat results. Clearing Wave 2 finishes the record before the Final Boss visit and optional Bonus. Find files through **F8 → Analytics → Open data folder**. [Metrics details](Docs/Game/GameplayAnalytics.md).
 
 ## Open the project
 
@@ -50,4 +50,4 @@ Each New Game saves one local JSON record with the nickname, time, rule use and 
 
 **Efe Inan** — Wave 2 / Swordsman music (`mx_bosstheme1_wip1`).
 
-Third-party attribution and license records: [sound effects](Assets/_Game/Shared/Audio/Licenses/boss-manifest.json), [Headphaze player gunshot (CC BY 4.0)](Assets/_Game/Shared/Audio/Licenses/Headphaze-player-shot-attribution.txt), [player reload](Assets/_Game/Shared/Audio/Licenses/player-reload-manifest.json), [music](Assets/_Game/Levels/L01_Duel/Audio/Music/Licenses/music-manifest.json), and [IBM Plex fonts](Assets/_Game/Shared/Fonts/IBMPlex/license.txt). Include the sound-effect attribution records with distributed builds.
+Third-party credits and notices cover [sound effects](Assets/_Game/Shared/Audio/Licenses/boss-manifest.json), [Headphaze’s player gunshot (CC BY 4.0)](Assets/_Game/Shared/Audio/Licenses/Headphaze-player-shot-attribution.txt), [player reload](Assets/_Game/Shared/Audio/Licenses/player-reload-manifest.json), [music](Assets/_Game/Levels/L01_Duel/Audio/Music/Licenses/music-manifest.json), [IBM Plex fonts](Assets/_Game/Shared/Fonts/IBMPlex/license.txt) and the [offline voice model and runtime](Assets/StreamingAssets/HandlerVoice/). Include the sound-effect attribution records with distributed builds.

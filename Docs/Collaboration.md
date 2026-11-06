@@ -135,8 +135,8 @@ Thomas works on a laptop and a Windows PC. **Proposed** rules for moving between
 1. Install Unity 6000.6.0f1 through Unity Hub.
 2. Install Git LFS and run `git lfs install` before cloning.
 3. Clone, then open the repository root as a Unity project with 6000.6.0f1. Do not upgrade the Unity version.
-4. Entry scene: `Assets/_Game/Levels/L01_Duel/Scenes/GO GHOST Duel.unity` (the retained scene filename). `GO GHOST > Combat > Open Arena` opens it; the editor Play entry and Windows build use it. New Game opens the current conditional-rule configuration, then the three-wave arena. The old Cyberpunk World/tower scene is historical. Current controls: `README.md`.
-5. Current authority: `Docs/Game/BossEncounters.md`; compatible player rules remain in `RetainedCombatReference.md`. Actual checks and limits: `Docs/Game/ImplementationLog.md`.
+4. Select **GO GHOST > Combat > Open Arena** and enter Play Mode. The formal scene is `Assets/_Game/Levels/L01_Duel/Scenes/GO GHOST Duel.unity`. **New Game** opens character creation, followed by Body Configuration and Testing. The [repository README](../README.md) covers controls and wave progression.
+5. Follow the [current game documentation](Game/README.md) for rules and encounters. The [implementation log](Game/ImplementationLog.md) records checks and limits.
 
 ## 9. Before you push or merge
 

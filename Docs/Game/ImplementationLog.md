@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-05 — Documentation review
+
+- Reviewed the player README and current references against `main` at `89e9da4`. The published Beta 33% tag points to `daa294a`: both platforms include Happy’s voice tutorial, while the starting Jump rule was added in the following source commit.
+- Updated the rule editor and catalog, Testing and retry routes, voiced Final Boss visit, and how to read the starter rule in metrics. Marked the two-phase Final Boss wiring notes and older Editor fixture assumptions as historical.
+- Documentation-only review. Checked the source, repository links, paired agent guides and GitHub release metadata. Unity Play Mode, standalone playback and new builds were not run.
+
 ## 2026-11-05 — Happy’s starter rule
 
 - Character creation now opens Body Configuration with one editable Incoming Attack (Any) → Jump rule. The Jump uses Once. The starting metrics snapshot includes the rule without counting it as a player addition. Development wave shortcuts still start empty.

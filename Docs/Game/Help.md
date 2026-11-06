@@ -6,6 +6,6 @@ The first page contains only A/D movement, mouse aim, Space jump, Left Shift Dod
 
 The second contains only Condition (when) and Action (what). Thomas's follow-up removes the Add and edit and Conditions and priority sections, including their headings and explanations. The help does not install a loadout or alter gameplay.
 
-Presets, their preview/Apply workflow, the F8 Presets section and death-based unlocking have been removed. Old unlock PlayerPrefs are unused and left untouched. New Game starts with empty rules. F8 retains Tuning, Waves and Analytics.
+In a normal New Game on `main`, Happy supplies one editable Incoming Attack (Any) → Jump rule after character creation. Opening Help preserves that rule and any player edits. F8 contains Tuning, Waves and Analytics.
 
-Run **GO GHOST > Playtest > Help and Named Metrics** for focused UI and record checks. Actual validation and captures are recorded in [ImplementationLog.md](ImplementationLog.md).
+The **GO GHOST > Playtest > Help and Named Metrics** fixture includes historical assertions about Aim Assist. See the [implementation log](ImplementationLog.md) for the scope of past runs.

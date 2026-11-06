@@ -31,7 +31,7 @@ Wave 1 victory waits for **Continue to Wave 2**. Wave 2 victory ends metrics and
 
 ## Builds and Editor checks
 
-The published **Beta 33%** packages for Windows x64 and macOS include Happy’s greeting, tutorial and victory lines. Their initial rule list is empty. The starter rule first appears in source commit `89e9da4`. [Download Beta 33%](https://github.com/Th-Hjj/GO-GHOST/releases/tag/beta-33)
+The refreshed **Beta 33%** packages for Windows x64 and macOS include Happy’s starter Jump rule, personalized offline greeting, tutorial and victory lines. The desktop Kokoro bank contains Heart (speaker 0, Happy) and Michael (speaker 1, reserved for the player). Fixed dialogue uses recorded clips. [Download Beta 33%](https://github.com/Th-Hjj/GO-GHOST/releases/tag/beta-33)
 
 **GO GHOST > Playtest > Wave 1 / Wave 2 / Bonus Wave** opens empty configuration for a developer test. **Wave 3** opens the Final Boss visit. When using the older **Final Boss and Bonus Progression** fixture, account for its automatic Wave 1 transition assumption before interpreting results. See the [implementation log](ImplementationLog.md) for checks actually run.
 

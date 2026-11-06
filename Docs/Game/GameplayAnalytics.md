@@ -12,7 +12,7 @@ Thomas, 2026-10-29: one independent record per New Game, identified by the chara
 | Encounters | W1/W2 attempt wave, result, reason, combat seconds, player and each present Boss's last/current and maximum HP, per-wave deaths, Training deaths separately, and W2 completion. Missing actors use HP -1. |
 | Controls | Actual manual/automatic shots, successful jumps and Dodge starts; effective Move duration; manual and automatic Aim duration, plus the retained assisted-time field. Per-Action ID details and separate drop-through counts remain. |
 
-On `main`, character creation records Happy’s starter rule in `latestRules`, sets `maxRulesEquipped` to one and sets `firstRuleAtSeconds`. Only the player’s own confirmed additions increment `rulesAdded`. In Beta 33%, the initial loadout is empty, so the first nonempty configuration normally follows the player’s first addition.
+Character creation records Happy’s starter rule in `latestRules`, sets `maxRulesEquipped` to one and sets `firstRuleAtSeconds`. Only the player’s own confirmed additions increment `rulesAdded`. Sessions from the original Beta 33% download started empty. The refreshed download includes the starter rule.
 
 Names are data, not identifiers. The run ID keeps same-name New Games separate; retries and wave transitions remain attempts within that run. The face drawing is not exported. Rule snapshots and action totals show usage, not comprehension or enjoyment. No per-frame input/position log or damage event stream is collected. Action totals still group by Action ID, not individual rule; snapshots retain each rule's parameters and order.
 

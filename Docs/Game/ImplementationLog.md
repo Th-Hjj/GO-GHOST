@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-05 — Beta 33% release refresh
+
+- Reduced the desktop Kokoro voice bank from 54 speakers (28,200,960 bytes) to two (1,044,480 bytes). Heart and Michael retain their original embeddings at local IDs 0 and 1. Verified both slices byte-for-byte and checked that only speaker metadata changed in the ONNX file. The fixed recordings and pronunciation dictionaries use the same assets.
+- Packaged with level-9 ZIP compression. Windows x64 went from 188.62 to 157.01 MiB and universal macOS from 200.96 to 168.22 MiB. Both Unity builds succeeded with zero errors (513 and 371 warnings respectively). Both ZIPs passed CRC and voice-data checks.
+- Editor smoke passed through character creation, a playing personalized greeting, one starting rule, Testing, countdown and active Wave 1. The extracted Windows player initialized graphics and closed normally. Its shipped assembly and native voice libraries generated English and Chinese greetings at 24 kHz. The Windows log reported a ComputeBuffer cleanup warning on exit. Verified Intel and Apple Silicon slices in the Mac executable, UnityPlayer and voice libraries. macOS launch and listening were not tested.
+
 ## 2026-11-05 — Documentation review
 
 - Reviewed the player README and current references against `main` at `89e9da4`. The published Beta 33% tag points to `daa294a`: both platforms include Happy’s voice tutorial, while the starting Jump rule was added in the following source commit.

@@ -104,6 +104,10 @@ The flags matter: `--force` is required because Git passes temporary files witho
 
 Status: Thomas's Windows PC configured and tested 2026-09-25. Thomas's laptop and Walker's machine: unknown.
 
+### Package a desktop release
+
+Stage the player, `PLAYTEST-README.txt` and `Licenses/` in one directory. From the repository root, run `python Tools/package_player.py <staging-directory> <output.zip>` with Python 3.9 or newer. Put the ZIP outside the staging directory. The tool uses level-9 DEFLATE, preserves macOS executable permissions and checks the archive before replacing the output file.
+
 ### Build and test residue: never commit
 
 A player build temporarily changes files and restores most of them when it finishes. A cancelled build skips that cleanup. If `git status` shows any of these after a build, discard them instead of committing:

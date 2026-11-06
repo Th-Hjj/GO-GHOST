@@ -6,7 +6,7 @@ Choose from 11 conditions and seven actions. Equip up to **20 rules** across mov
 
 **[Download Beta 33% for Windows or macOS](https://github.com/Th-Hjj/GO-GHOST/releases/tag/beta-33)**
 
-Extract the ZIP for your platform and launch the game. The packages include Happy’s offline voice and a controls reference. **Beta 33% starts with an empty rule list.** On `main`, Happy gives each new character one editable **Incoming Attack (Any) → Jump** rule. It makes the character jump once when grounded and threatened. You can edit or remove it in Body Configuration.
+Extract the ZIP for your platform and launch the game. Happy greets you offline and gives you one starting rule, **Incoming Attack (Any) → Jump**. You can edit or remove it in Body Configuration.
 
 ## Current game
 

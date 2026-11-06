@@ -9,6 +9,7 @@ Read this file first in every session, then the docs listed at the bottom for th
 ## Current design authority — 2026-11-05
 
 Dated decisions are ordered newest first. Later entries supersede conflicting older ones; past delivery permissions/limits belong to that delivery. The Confirmed constraints section summarizes the current source. Preserve the historical decisions as provenance.
+- **Character creation opening — Thomas, 2026-11-06:** Open creation immediately on New Game and play the approved “Who are you?” one second after the click. Remove the on-screen drawing instruction.
 - **Happy’s production voice — Thomas, 2026-11-05:** Use the approved v0.8 inner voice for future Happy dialogue, including fixed lines, fallback and personalized greetings. Follow `Docs/Game/VoiceDirection.md` and match its stereo reference when producing or reviewing a new take.
 - **Happy’s starter rule — Thomas, 2026-11-05:** After character creation, Happy starts the player with one editable Incoming Attack (Any) → Jump (Once) rule. Players can remove it for the rest of the run.
 - **Playtest timer removal - Thomas, 2026-11-05:** Remove the seven-minute reminder and its Wave 2 skip. Normal progression advances after Wave 1 victory.

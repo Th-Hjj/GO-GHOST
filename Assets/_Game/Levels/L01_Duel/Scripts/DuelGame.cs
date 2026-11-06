@@ -58,6 +58,7 @@ namespace GoGhost.Duel
         SfxSet encounterSounds;
         bool lockedLegs, lockedArms, lockedSpine;
         float phaseTime;
+        double? creationQuestionAt;
 
         void Awake()
         {
@@ -100,6 +101,7 @@ namespace GoGhost.Duel
         }
         public void NewGame()
         {
+            double questionAt = AudioSettings.dspTime + 1.0;
             ClearEncounter("new_game");
             PlayMetrics.ResetRun();
             metricsWaveJumpPending = false;
@@ -109,7 +111,7 @@ namespace GoGhost.Duel
             FirstConfiguration = true;
             ResetCharacterAppearance();
             SetPhase(DuelPhase.CharacterCreation);
-            handler.PlayLine("Handler/WhoAreYou");
+            creationQuestionAt = questionAt;
         }
         void ResetCharacterAppearance()
         {
@@ -318,6 +320,7 @@ namespace GoGhost.Duel
         }
         void SetPhase(DuelPhase value)
         {
+            creationQuestionAt = null;
             if (Phase == DuelPhase.Configure) handler.LeaveConfiguration();
             if (startup != null)
             {
@@ -373,6 +376,11 @@ namespace GoGhost.Duel
             TickMetrics();
             if (!ui.DeveloperShortcutConsumed && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) SetPause(!Paused);
             if (Paused || DeveloperToolsOpen) return;
+            if (creationQuestionAt.HasValue && AudioSettings.dspTime >= creationQuestionAt.Value)
+            {
+                creationQuestionAt = null;
+                handler.PlayLine("Handler/WhoAreYou");
+            }
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if(Phase==DuelPhase.Fight&&Wave==BonusWave&&Player!=null&&!Player.IsDead
                 &&Keyboard.current!=null&&Keyboard.current.pKey.wasPressedThisFrame)coordinator?.RequestNextDebugCombo();

@@ -56,7 +56,7 @@ The cue names below are authoring labels. Unity currently uses resource names an
 
 | Cue | When it plays | Replay and interruption |
 |---|---|---|
-| Happy · creation question | Entry to character creation in the current working source. | Once on entry. Redrawing the page does not replay the question. |
+| Happy · creation question | One second after the New Game click, while character creation is still open. | Once per New Game. Leaving the page cancels a pending question. |
 | Happy · greeting | Upload prepares an offline whole-sentence nickname greeting on desktop. First configuration plays it, with a fixed recording for empty/unsupported input or synthesis failure. | Once per new character. An early Add Rule click allows the greeting to finish. |
 | Happy · configuration intro / farewell | After the greeting, play the intro if the rule editor has yet to open. First Add Rule cues the farewell. | Opening early skips the pending intro or interrupts an intro already playing. Leaving the first configuration stops the sequence. |
 | Happy · Wave 1 / Wave 2 / Bonus clear | The combat result resolves a genuine victory for the corresponding encounter. | Once at settlement. Result-page input remains available. Testing, defeat and Retry have no new voice trigger. |

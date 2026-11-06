@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-06 — Character creation opening timing
+
+- New Game opens creation immediately and cues the approved question one second after the click. A phase transition cancels the pending cue. Removed the drawing instruction and its first-stroke fade. Checked the source paths and audio hash offline. Unity playback and UI review are left to Thomas.
+
 ## 2026-11-06 — Approved Happy opening question
 
 - Replaced audition A at the existing character-creation cue with Thomas’s approved recording. Verified the game WAV against the audition by SHA-256 and checked the entry and playback paths in source. In-game listening is left to Thomas.

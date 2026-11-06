@@ -10,17 +10,15 @@ namespace GoGhost.Duel
         IDragHandler, IInitializePotentialDragHandler, IPointerExitHandler
     {
         CharacterAppearance appearance;
-        Graphic drawingHint;
         RectTransform area, brush;
         bool drawing, hasPrevious, cursorHidden, previousCursorVisible;
         Vector2 previous;
         Texture2D brushTexture;
         Sprite brushSprite;
 
-        public void Initialize(CharacterAppearance value, Graphic hint = null)
+        public void Initialize(CharacterAppearance value)
         {
             appearance = value;
-            drawingHint = hint;
             area = (RectTransform)transform;
             var cursor = new GameObject("Brush", typeof(RectTransform), typeof(Image));
             brush = cursor.GetComponent<RectTransform>();
@@ -58,11 +56,6 @@ namespace GoGhost.Duel
             hasPrevious = drawing;
             if (!drawing) return;
             appearance.Draw(previous, previous);
-            if (drawingHint != null)
-            {
-                drawingHint.CrossFadeAlpha(0f, .35f, true);
-                drawingHint = null;
-            }
         }
         public void OnDrag(PointerEventData data)
         {

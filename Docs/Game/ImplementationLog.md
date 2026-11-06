@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-11-06 — Free-text speaker auditions and shared tone controls
+
+- The profile page reads the author's Chinese or English test sentence with either speaker and either saved or draft settings. Text auditions create local audio without a publish receipt. Both speakers have five timbre controls in the profile and line editors. The Happy nickname renderer also applies its new bass and saturation settings.
+- Exercised both voices on mixed text, per-speaker edits, catalog isolation and review/apply on copied WAVs. Compiled runtime and Editor assemblies offline. Unity UI and physical listening are left for manual review.
+
 ## 2026-11-06 — Voice Studio dialogue intake guide
 
 - Documented how to register a fixed line, attach its first WAV, route the cue and reopen a saved edit. Verified the example against the catalog and exercised registration, batch inclusion, single-line adoption and reload on copied assets. Unity was not run.

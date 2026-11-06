@@ -20,8 +20,9 @@ AUTHOR = ROOT / "VoiceAuthoring"
 JOBS = audio.CACHE / "jobs"
 HISTORY = AUTHOR / "last-adoption.json"
 JOURNAL = audio.CACHE / "pending.json"
-HAPPY_TONE = ("electronic", "nearDb", "spaceDb")
-BOSS_TONE = ("bossSub", "bossDrive")
+EXTRA_TONE = dict(happySub=.42, happyDrive=1.9, bossElectronic=0., bossNearDb=0., bossSpaceDb=0.)
+HAPPY_TONE = ("electronic", "nearDb", "spaceDb", "happySub", "happyDrive")
+BOSS_TONE = ("bossSub", "bossDrive", "bossElectronic", "bossNearDb", "bossSpaceDb")
 PROFILE_SETTINGS = {
     "masterDb": ("总音量", " dB"), "matchTarget": ("让各句音量接近", ""),
     "targetDb": ("统一音量", " dB"), "happyDb": ("Happy · 角色音量", " dB"),
@@ -30,6 +31,9 @@ PROFILE_SETTINGS = {
     "openingDelay": ("开场等待", " 秒"), "greetingTemplate": ("昵称问候台词", ""),
     "bossDb": ("Final Boss · 角色音量", " dB"), "bossSpeed": ("Final Boss · 常规语速", " 倍"),
     "bossSub": ("Final Boss · 低沉声叠加量", ""), "bossDrive": ("Final Boss · 粗粝感", ""),
+    "happySub": ("Happy · 低沉声叠加量", ""), "happyDrive": ("Happy · 粗粝感", ""),
+    "bossElectronic": ("Final Boss · 电子感", "%"), "bossNearDb": ("Final Boss · 贴耳回声", " dB"),
+    "bossSpaceDb": ("Final Boss · 空灵回声", " dB"),
 }
 
 
@@ -220,7 +224,7 @@ def paths(key):
 def load_line(line):
     wav, state = paths(line["key"])
     recipe = read_json(state) if state.exists() else default_recipe(line["key"], line["text"])
-    return recipe, wav
+    return EXTRA_TONE | recipe, wav
 
 
 def suggest(text, x):
@@ -249,21 +253,44 @@ def suggest(text, x):
     ]
 
 
-def synth_source(recipe, boss):
+def synth_source(recipe, boss, audition_folder=None):
     speed = 1.30 if boss else 1.05
     pronunciations = recipe.get("pronunciations") or ""
     ident = digest(encode([recipe["text"], pronunciations, speed, boss, "kokoro-v1-studio1"]))
+    if audition_folder is not None:
+        ident = "audition-" + ident
     path = audio.CACHE / "dry" / (ident + ".wav")
     if not path.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile(dir=path.parent, suffix=".wav", delete=False) as f:
             tmp = Path(f.name)
         try:
-            audio.write(tmp, audio.synth(recipe["text"], boss, speed, pronunciations))
+            audio.write(tmp, audio.synth(recipe["text"], boss, speed, pronunciations, audition_folder))
             os.replace(tmp, path)
         finally:
             tmp.unlink(missing_ok=True)
     return path
+
+
+def cross_tone(y, tone, boss):
+    if boss:
+        y = audio.adjust_finished_happy(y, .15 + .85 * tone["bossElectronic"])
+        return audio.adjust_finished_room(y, tone["bossNearDb"], tone["bossSpaceDb"], boss=True)
+    return audio.happy_body(y, tone["happySub"], tone["happyDrive"])
+
+
+def master_voice(dry, tone, boss):
+    if boss:
+        y = audio.boss_master(dry, tone["bossSub"], tone["bossDrive"])
+    else:
+        y = audio.render_happy_voice.master(dry, tone["electronic"], tone["nearDb"], tone["spaceDb"]) / 32768
+    return cross_tone(y, tone, boss)
+
+
+def match_level(y, profile):
+    active = y[np.abs(y) > 0.015]
+    if len(active):
+        y *= min(0.98 / np.abs(y).max(), 10 ** (profile["targetDb"] / 20) / np.sqrt(np.mean(active**2)))
 
 
 def render(line, recipe, profile, folder):
@@ -306,24 +333,19 @@ def render(line, recipe, profile, folder):
         else:
             performance = audio.adjust_finished_happy(x, recipe["electronic"])
             performance = audio.adjust_finished_room(performance, recipe["nearDb"], recipe["spaceDb"])
+        performance = cross_tone(performance, recipe, boss)
     # Whole-line volume follows mastering/level matching so normalization cannot cancel the slider.
     y, mapped = audio.edit(performance.copy(), dict(recipe, gain=0), speed, ref)
     if mode != "Master":
         tone = recipe if recipe.get("overrideTone") else profile
         dry = y.mean(axis=1)
-        y = (
-            audio.boss_master(dry, tone["bossSub"], tone["bossDrive"])
-            if boss
-            else audio.render_happy_voice.master(dry, tone["electronic"], tone["nearDb"], tone["spaceDb"]) / 32768
-        )
+        y = master_voice(dry, tone, boss)
         if boss:
             for mark in mapped:
                 mark["start"] /= 0.86
                 mark["end"] /= 0.86
     if profile.get("matchTarget") and not line["locked"] and not recipe["independent"]:
-        active = y[np.abs(y) > 0.015]
-        if len(active):
-            y *= min(0.98 / np.abs(y).max(), 10 ** (profile["targetDb"] / 20) / np.sqrt(np.mean(active**2)))
+        match_level(y, profile)
     if recipe["gain"]:
         if np.max(abs(y)) > 1:
             y *= 0.99 / np.max(abs(y))
@@ -351,8 +373,20 @@ def render(line, recipe, profile, folder):
 
 def worker(req, job):
     action = req["action"]
+    if action == "textPreview":
+        boss = req["previewBoss"]
+        profile = req["catalog"]
+        recipe = default_recipe("", req["auditionText"])
+        source = audio.read(synth_source(recipe, boss, job))
+        speed = profile["bossSpeed"] / 1.30 if boss else profile["happySpeed"] / 1.05
+        timed, _ = audio.edit(source, recipe, speed)
+        y = master_voice(timed[:, 0], profile, boss)
+        if profile["matchTarget"]:
+            match_level(y, profile)
+        audio.write(job / "audition.wav", y)
+        return {"message": "试听就绪"}
     with writer():
-        catalog = read_json(CAT)
+        catalog = EXTRA_TONE | read_json(CAT)
         version = file_hash(CAT)
         if action == "undo":
             if not HISTORY.exists():

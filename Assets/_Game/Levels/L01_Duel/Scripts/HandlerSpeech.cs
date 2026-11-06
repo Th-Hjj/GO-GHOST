@@ -131,6 +131,7 @@ namespace GoGhost.Duel
                     Marshal.Copy(audio.samples, samples, 0, samples.Length);
                     if (audio.sample_rate != 24000) throw new InvalidOperationException("Unexpected Happy voice sample rate.");
                     float[] stereo=HappyVoiceMaster.Stereo(samples, root, token, settings.electronic, settings.nearDb, settings.spaceDb);
+                    HappyVoiceMaster.ApplyBody(stereo, settings.happySub, settings.happyDrive);
                     if (settings.matchTarget) MatchActiveLevel(stereo,settings.targetDb);
                     return new Recording { Samples = stereo, Rate = audio.sample_rate };
                 }

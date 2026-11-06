@@ -128,6 +128,7 @@ class AdoptionTests(unittest.TestCase):
             "greetingTemplate": "Hello, {name}.", "happySpeed": 1.20, "bossSpeed": 1.5,
             "matchTarget": True, "targetDb": -32, "electronic": 0.75,
             "nearDb": -12, "spaceDb": 8, "bossDrive": 2.9, "bossSub": 0.05,
+            "happySub": .95, "happyDrive": 2.9, "bossElectronic": .85, "bossNearDb": 7, "bossSpaceDb": 7,
         }
         self.assertEqual(set(cases), set(studio.PROFILE_SETTINGS))
         for field, value in cases.items():
@@ -158,7 +159,7 @@ class AdoptionTests(unittest.TestCase):
                 else:
                     self.assertIn(key, [row["key"] for row in rows])
                     np.testing.assert_array_equal(heard, audio.read(review / key.replace("/", "-") / "draft.wav"))
-                    if heard.shape == baseline.shape:
+                    if len(heard) == len(baseline):
                         self.assertGreater(np.linalg.norm(heard - baseline) / np.linalg.norm(baseline), .01)
                     else:
                         self.assertIn(field, ("happySpeed", "bossSpeed"))
@@ -174,6 +175,24 @@ class AdoptionTests(unittest.TestCase):
         response = self.request("profiles", **self.current("Handler/Greeting"))
         self.assertFalse(response["canApply"])
         self.assertEqual(response["summary"], [])
+
+    def test_free_text_preview(self):
+        installed = studio.read_json(studio.CAT)
+        def preview(text, boss, **settings):
+            job = studio.JOBS / uuid4().hex
+            job.mkdir(parents=True)
+            studio.worker(dict(action="textPreview", auditionText=text, previewBoss=boss,
+                               catalog=dict(installed, **settings)), job)
+            self.assertFalse((job / "receipt.json").exists())
+            return audio.read(job / "audition.wav")
+        for boss in (False, True):
+            original = preview("阿西吧，hello!", boss)
+            change = {"bossElectronic": .8} if boss else {"happySub": .95}
+            tuned = preview("阿西吧，hello!", boss, **change)
+            self.assertGreater(np.linalg.norm(original - tuned) / np.linalg.norm(original), .03)
+            longer = preview("This is a different sentence. Can you hear the change?", boss)
+            self.assertGreater(len(longer), len(original))
+        self.assertEqual(studio.read_json(studio.CAT), installed)
 
     def test_single_line_audible_controls(self):
         request = self.current("Handler/Greeting")

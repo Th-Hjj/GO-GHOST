@@ -126,6 +126,33 @@ namespace GoGhost.Duel
             return output;
         }
 
+        internal static void ApplyBody(float[] stereo, double sub, double drive)
+        {
+            if (drive <= 0 || (Math.Abs(sub - .42) < 1e-6 && Math.Abs(drive - 1.9) < 1e-6)) return;
+            double pole = Math.Exp(-2 * Math.PI * 175 / Rate), shelf = Math.Pow(10, sub - .42) - 1;
+            var low = new double[2];
+            double originalEnergy = 0, shapedEnergy = 0, peak = 1e-12, shapedPeak = 1e-12;
+            for (int i = 0; i < stereo.Length; i++)
+            {
+                double sample = stereo[i];
+                originalEnergy += sample * sample;
+                int channel = i % 2;
+                low[channel] = pole * low[channel] + (1 - pole) * sample;
+                stereo[i] = (float)(sample + shelf * low[channel]);
+                peak = Math.Max(peak, Math.Abs(stereo[i]));
+            }
+            for (int i = 0; i < stereo.Length; i++)
+            {
+                double v = .95 * stereo[i] / peak;
+                double shaped = Math.Tanh(drive / 1.9 * .5 * Math.Log((1 + v) / (1 - v)));
+                stereo[i] = (float)shaped;
+                shapedEnergy += shaped * shaped;
+                shapedPeak = Math.Max(shapedPeak, Math.Abs(shaped));
+            }
+            float gain = (float)Math.Min(Math.Sqrt(originalEnergy / Math.Max(1e-24, shapedEnergy)), .999 / shapedPeak);
+            for (int i = 0; i < stereo.Length; i++) stereo[i] *= gain;
+        }
+
         internal static float[] Stereo(float[] samples, string root, CancellationToken token,
             double electronic = .15, double nearDb = 0, double spaceDb = 0)
         {

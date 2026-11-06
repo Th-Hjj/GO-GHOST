@@ -11,6 +11,11 @@
   "spaceDb": 0,
   "bossSub": 0.42,
   "bossDrive": 1.9,
+  "happySub": 0.42,
+  "happyDrive": 1.9,
+  "bossElectronic": 0,
+  "bossNearDb": 0,
+  "bossSpaceDb": 0,
   "greetingTemplate": "Nice to meet you, {name}.",
   "openingDelay": 1,
   "lines": [

@@ -93,9 +93,18 @@ def adjust_finished_happy(x, electronic):
     return result
 
 
-def adjust_finished_room(x, near_db, space_db):
+def adjust_finished_room(x, near_db, space_db, boss=False):
     if (near_db == 0 and space_db == 0) or not np.any(x):
         return x
+    if boss:
+        # Boss has two baked reflections. Estimate its dry signal from those taps
+        # so turning returns down actually removes echoes from the take.
+        size = 1 << (len(x) + 2400).bit_length()
+        phase = -2j * np.pi * np.fft.rfftfreq(size)
+        near = .19 * np.exp(phase * 1176)
+        far = .10 * np.exp(phase * 2232)
+        transfer = (1 + near * 10 ** (near_db / 20) + far * 10 ** (space_db / 20)) / (1 + near + far)
+        return np.fft.irfft(np.fft.rfft(x, size, axis=0) * transfer[:, None], size, axis=0)[:len(x)]
     # Estimate the direct voice from the two baked channels using the production
     # room filters. Add just the change in the two returns, retaining the take's residual.
     kernels = np.fromfile(BANK / "happy-v08-kernels.bytes", dtype="<f4")
@@ -130,7 +139,22 @@ def adjust_finished_boss(x, sub, drive):
     return shaped * (render_happy_voice.rms(x) / max(render_happy_voice.rms(shaped), 1e-12))
 
 
-def synth(text, boss, speed, pronunciations=""):
+def happy_body(x, sub, drive):
+    if abs(sub - .42) < 1e-6 and abs(drive - 1.9) < 1e-6:
+        return x
+    # A 175 Hz low shelf and level-matched soft clipping. The desktop greeting
+    # implements the same one-pole response in the time domain.
+    pole = np.exp(-2 * np.pi * 175 / RATE)
+    kernel = (1 - pole) * pole ** np.arange(512)
+    size = 1 << (len(x) + len(kernel) - 1).bit_length()
+    low = np.fft.irfft(np.fft.rfft(x, size, axis=0) * np.fft.rfft(kernel, size)[:, None], size, axis=0)[:len(x)]
+    y = x + (10 ** (sub - .42) - 1) * low
+    peak = max(np.max(abs(y)), 1e-12)
+    y = np.tanh(drive / 1.9 * np.arctanh(.95 * y / peak))
+    return y * min(render_happy_voice.rms(x) / max(render_happy_voice.rms(y), 1e-12), .999 / max(np.max(abs(y)), 1e-12))
+
+
+def synth(text, boss, speed, pronunciations="", audition_folder=None):
     import sherpa_onnx as so
 
     if not text.strip():
@@ -151,6 +175,24 @@ def synth(text, boss, speed, pronunciations=""):
         if not space or not phones.strip():
             raise ValueError("Use one word and its Kokoro phones per line.")
         extras[word.lower()] = phones.strip()
+    if audition_folder is not None:
+        import unicodedata
+        text = unicodedata.normalize("NFKC", text).replace("。", ".").replace("、", ",").replace("’", "'")
+        characters = set(re.findall(r"[\u3400-\u9fff]", text))
+        if characters:
+            aliases = {}
+            with (BANK / "lexicon-zh.txt").open(encoding="utf8") as f:
+                for row in f:
+                    char, _, phones = row.strip().partition(" ")
+                    if char in characters and char not in aliases:
+                        alias = "zhvoice" + "".join(chr(97 + int(d, 16)) for d in f"{ord(char):x}")
+                        aliases[char] = alias
+                        extras[alias] = phones
+            if characters - aliases.keys():
+                raise ValueError("缺少汉字读音：" + "".join(sorted(characters - aliases.keys())))
+            text = re.sub(r"[\u3400-\u9fff]", lambda m: " " + aliases[m[0]] + " ", text)
+        if not re.search(r"[a-z0-9]", text, re.I):
+            raise ValueError("请输入中文或英文试听句。")
     words = set(re.findall(r"[a-z]+(?:'[a-z]+)?", text.lower().replace("’", "'")))
     dictionary = {w: p for w, p in extras.items() if w in words}
     with lex.open(encoding="utf-8") as f:
@@ -159,13 +201,15 @@ def synth(text, boss, speed, pronunciations=""):
             if word in words and word not in dictionary:
                 dictionary[word] = phones
     missing = words - dictionary.keys()
-    if missing:
+    if missing and audition_folder is not None:
+        text = re.sub(r"[a-z]+(?:'[a-z]+)?", lambda m: " ".join(m[0]) if m[0].lower() in missing else m[0], text, flags=re.I)
+    elif missing:
         raise ValueError("Add pronunciations for: " + ", ".join(sorted(missing)))
     # Keep the full dictionary for number expansion / punctuation normalization.
     if extras:
         extra = "\n".join(w + " " + p for w, p in sorted(extras.items()))
         name = hashlib.sha256((lex.name + extra).encode()).hexdigest()
-        custom = CACHE / ("lex-" + name + ".txt")
+        custom = (audition_folder or CACHE) / ("lex-" + name + ".txt")
         if not custom.exists():
             base = lex.read_text(encoding="utf-8").splitlines()
             custom.write_text(

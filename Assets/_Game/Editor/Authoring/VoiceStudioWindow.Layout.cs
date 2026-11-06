@@ -42,14 +42,23 @@ namespace GoGhost.Duel.EditorTools
             {
                 listScroll = EditorGUILayout.BeginScrollView(listScroll, GUILayout.Width(170));
                 string previousSpeaker = null;
-                foreach (var line in catalog.lines)
+                if (scope == 1)
+                {
+                    GUILayout.Label("角色", EditorStyles.boldLabel);
+                    foreach (string speaker in new[]{"Happy", "Final Boss"})
+                    {
+                        bool boss = speaker == "Final Boss";
+                        if (GUILayout.Toggle(previewBoss == boss, speaker, EditorStyles.miniButton) && previewBoss != boss)
+                        { previewBoss = boss; showReview = false; AuditionInputChanged(); }
+                    }
+                }
+                else foreach (var line in catalog.lines)
                 {
                     string speaker = line.key.StartsWith("Handler/") ? "Happy" : "Final Boss";
                     if (speaker != previousSpeaker) GUILayout.Label(speaker, EditorStyles.boldLabel);
                     previousSpeaker = speaker;
                     if (GUILayout.Toggle(key == line.key, TitleFor(line), EditorStyles.miniButton) && key != line.key)
                     {
-                        if (scope == 1) { SelectProfileSample(line.key); continue; }
                         if (!CanLeave()) continue;
                         key = line.key;
                         revision++;
@@ -64,7 +73,7 @@ namespace GoGhost.Duel.EditorTools
             using (new EditorGUI.DisabledScope(busy))
             {
                 int tab = GUILayout.Toolbar(scope, new[]{"调这一句", "调角色和整体声音"});
-                if (tab != scope && CanLeave()) { scope = tab; revision++; scroll = Vector2.zero; Reload(); }
+                if (tab != scope && CanLeave()) { scope = tab; if (tab == 1) previewBoss = key.StartsWith("FinalBossVoice/"); revision++; scroll = Vector2.zero; Reload(); }
             }
             scroll = EditorGUILayout.BeginScrollView(scroll);
             using (new EditorGUI.DisabledScope(publishing))
@@ -157,9 +166,11 @@ namespace GoGhost.Duel.EditorTools
                     recipe.spaceDb = catalog.spaceDb;
                     recipe.bossSub = catalog.bossSub;
                     recipe.bossDrive = catalog.bossDrive;
+                    recipe.happySub = catalog.happySub; recipe.happyDrive = catalog.happyDrive;
+                    recipe.bossElectronic = catalog.bossElectronic; recipe.bossNearDb = catalog.bossNearDb; recipe.bossSpaceDb = catalog.bossSpaceDb;
                 }
-                if (key.StartsWith("Handler/")) HappyTone(ref recipe.electronic, ref recipe.nearDb, ref recipe.spaceDb);
-                else BossTone(ref recipe.bossSub, ref recipe.bossDrive);
+                if (key.StartsWith("Handler/")) Tone(ref recipe.electronic, ref recipe.nearDb, ref recipe.spaceDb, ref recipe.happySub, ref recipe.happyDrive);
+                else Tone(ref recipe.bossElectronic, ref recipe.bossNearDb, ref recipe.bossSpaceDb, ref recipe.bossSub, ref recipe.bossDrive);
             }
             if (EditorGUI.EndChangeCheck()) Changed();
         }
@@ -286,16 +297,12 @@ namespace GoGhost.Duel.EditorTools
             if (GUILayout.Button("移除这个片段的调整")) { recipe.edits.RemoveAt(region); region = -1; Changed(); }
         }
 
-        static void HappyTone(ref float electronic, ref float near, ref float space)
+        static void Tone(ref float electronic, ref float near, ref float space, ref float sub, ref float drive)
         {
             float percent = EditorGUILayout.Slider("电子感（%）", electronic * 100f, 0, 100);
             if (percent != electronic * 100f) electronic = percent / 100f;
             near = EditorGUILayout.Slider(new GUIContent("贴耳回声", "向右会让靠近耳边的反射声更明显。0 是原设置。"), near, -18, 8);
             space = EditorGUILayout.Slider(new GUIContent("空灵回声", "向右会让散开的回声更明显。0 是原设置。"), space, -18, 8);
-        }
-
-        static void BossTone(ref float sub, ref float drive)
-        {
             sub = EditorGUILayout.Slider("低沉声叠加量", sub, 0, 1);
             drive = EditorGUILayout.Slider("粗粝感（弱 → 强）", drive, .5f, 3);
         }
@@ -303,38 +310,34 @@ namespace GoGhost.Duel.EditorTools
         void Profiles()
         {
             if (showReview) { ProfileReview(); return; }
-            var line = catalog.Find(key);
-            bool happy = key.StartsWith("Handler/", StringComparison.Ordinal);
-            bool protectedLine = line.locked || recipe.independent;
-            GUILayout.Label("试听 · " + (happy ? "Happy" : "Final Boss") + " / " + TitleFor(line), EditorStyles.boldLabel);
+            bool happy = !previewBoss;
+            GUILayout.Label((happy ? "Happy" : "Final Boss") + " · 试听文本", EditorStyles.boldLabel);
+            EditorGUI.BeginChangeCheck();
+            auditionText = EditorGUILayout.TextArea(auditionText, GUILayout.MinHeight(46));
+            if (EditorGUI.EndChangeCheck()) AuditionInputChanged();
             EditorGUI.BeginChangeCheck();
             catalog.masterDb = EditorGUILayout.Slider("所有对白音量", catalog.masterDb, -36, 0);
-            using (new EditorGUI.DisabledScope(protectedLine))
+            catalog.matchTarget = EditorGUILayout.Toggle("让各句音量接近", catalog.matchTarget);
+            if (catalog.matchTarget) catalog.targetDb = EditorGUILayout.Slider("统一音量", catalog.targetDb, -34, -16);
+            if (happy)
             {
-                catalog.matchTarget = EditorGUILayout.Toggle("让各句音量接近", catalog.matchTarget);
-                if (catalog.matchTarget) catalog.targetDb = EditorGUILayout.Slider("统一音量", catalog.targetDb, -34, -16);
+                catalog.happyDb = EditorGUILayout.Slider("角色音量", catalog.happyDb, -24, 0);
+                catalog.happySpeed = EditorGUILayout.Slider("常规语速（倍）", catalog.happySpeed, .65f, 1.65f);
+                Tone(ref catalog.electronic, ref catalog.nearDb, ref catalog.spaceDb, ref catalog.happySub, ref catalog.happyDrive);
             }
-            GUILayout.Label(happy ? "Happy" : "Final Boss", EditorStyles.boldLabel);
-            if (happy) catalog.happyDb = EditorGUILayout.Slider("角色音量", catalog.happyDb, -24, 0);
-            else catalog.bossDb = EditorGUILayout.Slider("角色音量", catalog.bossDb, -24, 0);
-            if (protectedLine) Hint("这句受单独保护。选左侧另一句可调整角色语速和音色。");
-            using (new EditorGUI.DisabledScope(protectedLine))
+            else
             {
-                if (happy) catalog.happySpeed = EditorGUILayout.Slider("常规语速（倍）", catalog.happySpeed, .65f, 1.65f);
-                else catalog.bossSpeed = EditorGUILayout.Slider("常规语速（倍）", catalog.bossSpeed, .65f, 1.8f);
-                using (new EditorGUI.DisabledScope(recipe.overrideTone))
-                {
-                    if (happy) HappyTone(ref catalog.electronic, ref catalog.nearDb, ref catalog.spaceDb);
-                    else BossTone(ref catalog.bossSub, ref catalog.bossDrive);
-                }
-                if (!protectedLine && recipe.overrideTone) Hint("这句使用单独音色。请切换试听台词，或在「调这一句」编辑。");
+                catalog.bossDb = EditorGUILayout.Slider("角色音量", catalog.bossDb, -24, 0);
+                catalog.bossSpeed = EditorGUILayout.Slider("常规语速（倍）", catalog.bossSpeed, .65f, 1.8f);
+                Tone(ref catalog.bossElectronic, ref catalog.bossNearDb, ref catalog.bossSpaceDb, ref catalog.bossSub, ref catalog.bossDrive);
             }
             if (EditorGUI.EndChangeCheck()) Changed();
-            if (happy)
+            if (happy) showGreeting = EditorGUILayout.Foldout(showGreeting, "开场与昵称问候", true);
+            if (happy && showGreeting)
             {
                 EditorGUI.BeginChangeCheck();
                 catalog.openingDelay = EditorGUILayout.Slider("开场等待（秒）", catalog.openingDelay, 0, 5);
-                if (EditorGUI.EndChangeCheck()) Changed(preview: key == "Handler/WhoAreYou");
+                if (EditorGUI.EndChangeCheck()) Changed(preview: false);
                 if (GUILayout.Button("试听开场（含等待）"))
                     PlayReviewedCue("Handler/WhoAreYou", true, null);
                 EditorGUI.BeginChangeCheck();
@@ -351,13 +354,14 @@ namespace GoGhost.Duel.EditorTools
                 EditorGUI.BeginChangeCheck();
                 if (happy) revoiceHappy = EditorGUILayout.Toggle("重新念 Happy 的成品", revoiceHappy);
                 else revoiceBoss = EditorGUILayout.Toggle("重新念 Final Boss 的成品", revoiceBoss);
-                if (EditorGUI.EndChangeCheck()) Changed(preview: !protectedLine && recipe.mode == "Master");
+                if (EditorGUI.EndChangeCheck()) Changed(preview: false);
             }
         }
 
         void PlayReviewedCue(string cue, bool useDraft, string rendered)
         {
-            nameJob?.Cancel();
+            StopAudition();
+            renderAt = 0;
             var settings = useDraft ? catalog : installedCatalog;
             var take = StudioTake.Read(useDraft && rendered != null ? rendered : ResourceDir + cue + ".wav");
             if (cue == "Handler/WhoAreYou") take = take.WithDelay(settings.openingDelay);
@@ -394,6 +398,7 @@ namespace GoGhost.Duel.EditorTools
                     catalog.happySpeed != installedCatalog.happySpeed || catalog.happyDb != installedCatalog.happyDb ||
                     catalog.masterDb != installedCatalog.masterDb || catalog.electronic != installedCatalog.electronic ||
                     catalog.nearDb != installedCatalog.nearDb || catalog.spaceDb != installedCatalog.spaceDb ||
+                    catalog.happySub != installedCatalog.happySub || catalog.happyDrive != installedCatalog.happyDrive ||
                     catalog.matchTarget != installedCatalog.matchTarget ||
                     (catalog.matchTarget && catalog.targetDb != installedCatalog.targetDb))
                 {
@@ -453,17 +458,20 @@ namespace GoGhost.Duel.EditorTools
                 return;
             }
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("播放游戏版")) Listen(false);
-            using (new EditorGUI.DisabledScope(draft == null && (scope == 0 || busy)))
-                if (GUILayout.Button("播放草稿"))
+            if (scope == 1)
+            {
+                using (new EditorGUI.DisabledScope(busy || string.IsNullOrWhiteSpace(auditionText)))
                 {
-                    if (draft != null) Listen(true);
-                    else
-                    {
-                        suppressDraftReplay = false;
-                        Run("monitor", playWhenReady: true);
-                    }
+                    if (GUILayout.Button("用已保存声线朗读")) { suppressDraftReplay = false; Run("textPreview", savedVoice: true); }
+                    if (GUILayout.Button("用当前调整朗读")) { suppressDraftReplay = false; Run("textPreview"); }
                 }
+            }
+            else
+            {
+                if (GUILayout.Button("播放游戏版")) Listen(false);
+                using (new EditorGUI.DisabledScope(draft == null))
+                    if (GUILayout.Button("播放草稿")) Listen(true);
+            }
             if (GUILayout.Button("停止")) StopAudition();
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.BeginHorizontal();

@@ -18,6 +18,7 @@ namespace GoGhost.Duel
         public float masterDb, happyDb, bossDb, happySpeed, bossSpeed, electronic, nearDb, spaceDb, bossSub, bossDrive, openingDelay;
         public string greetingTemplate;
         public bool matchTarget;
+        public float happySub=.42f, happyDrive=1.9f, bossElectronic, bossNearDb, bossSpaceDb;
         public float targetDb=-22;
         public VoiceStudioLine[] lines;
         [NonSerialized] VoiceStudioLine[] visit;

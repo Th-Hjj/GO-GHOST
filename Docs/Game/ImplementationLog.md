@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-05 — Slower Happy delivery
+
+- Set Heart synthesis to 0.94× for the seven active fixed recordings and personalized greetings. Reused the authored dialogue, sentence-gap targets and v0.8 stereo master. Verified English and Chinese nickname synthesis outside Unity. Editor listening remains for Thomas.
+
 ## 2026-11-05 — In-game voice production pass
 
 - Mastered the seven active Happy clips in stereo v0.8. Added space at the measured sentence boundaries in the configuration tutorial and victory announcements (roughly 0.75–1.0 s before processing). The offline nickname worker now applies the same electronic and stereo treatment. Re-rendered all seven existing Final Boss pages with the faster v0.3 B recipe, retaining page text and manual advancement.

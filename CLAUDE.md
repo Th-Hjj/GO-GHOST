@@ -188,6 +188,8 @@ Dated decisions are ordered newest first. Later entries supersede conflicting ol
 - Record the Windows build result explicitly when a build is made.
 
 ## Docs
+
+- For new or revised fixed dialogue, follow `Docs/Game/VoiceStudio.md` (录入新台词) for catalog registration, the matching WAV, gameplay routing and editor review. Use `Docs/Game/VoiceDirection.md` for speaker direction.
 - `Docs/Game/BossEncounters.md` - current Boss combat, Final Boss visit and optional Bonus progression.
 - `Docs/Game/RetainedCombatReference.md` - compatible retained player rules and historical restoration specification.
 - `README.md` - concise GitHub overview, current-source guide and versioned downloads.

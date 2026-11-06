@@ -2,6 +2,28 @@
 
 从 Unity 的 **Tools → GO GHOST → Voice Studio** 打开。左边按 Happy 和 Final Boss 列出台词。选择一句，点 **播放游戏版** 就能听到游戏当前用的录音。
 
+## 录入新台词
+
+**改已有台词**：在工作台选中原条目，展开「改台词、换录音或单独调音色」，选择「按文字重新念」或导入对应的新录音。试听后点「保存这句到游戏」。沿用原来的资源名和游戏触发点。带玩家昵称的问候使用「调角色和整体声音」里的昵称问候台词，保留一个 `{name}`；固定的「默认问候」可以作为单句编辑。
+
+**新增固定台词**需要同时登记台词和放入第一版录音。工作台按目录表生成左侧列表，选中条目时从磁盘读取它的 WAV。
+
+1. 在 [VoiceStudioCatalog.json](../../Assets/_Game/Levels/L01_Duel/Resources/VoiceStudioCatalog.json) 的 `lines` 数组中添加一个对象。`key` 是唯一、长期使用的资源名，Happy 用 `Handler/`，Final Boss 会面用 `FinalBossVoice/`；斜杠后只用英文字母和数字。改词时保留这个 key。`label` 填方便查找的触发场合，`text` 填实际念出的台词。普通新句用 `locked: false`，跟随角色设置；开场特例继续使用已有条目。
+2. 在目录表所在的 `Resources` 目录下放入 **`<key>.wav`**，路径大小写与 key 一致。使用 24 kHz、16 位 PCM WAV，Happy 的成品保留双声道。可以先放入这句的占位录音，再进工作台用干声或文字制作新版本。新 WAV 随 Unity 生成的同名 `.meta` 一起提交；替换录音时保留原 GUID。
+3. 接入游戏触发点。Happy 的固定对白由对应的流程回调用同一 key 调用 `HandlerVoice.PlayLine`；需要随角色上传阶段预载的台词也加入 `HandlerVoice.Lines`。Final Boss 会面直接按 `lines` 数组中过滤出的会面条目顺序播放和显示文字，最后一页开放选择。新增会面页时按确认的剧情顺序插入；其他场合的 Boss 对白需要先区分触发路由，否则也会成为会面页。[Happy 播放入口](../../Assets/_Game/Levels/L01_Duel/Scripts/HandlerVoice.cs) · [会面翻页逻辑](../../Assets/_Game/Levels/L01_Duel/Scripts/DuelGame.Progression.cs)
+4. 重新打开工作台，在对应角色下找到新条目。点「播放游戏版」核对首版，再微调一个参数、生成并播放草稿。要验证角色联动，可以先在角色页试调并点「列出本次改动」，确认清单包含这句，然后放弃试调。只把要交付的版本保存到游戏；重开工具后应能听到已保存的版本，并由预定游戏事件播放同一句。保存产生的 `VoiceAuthoring/` 配方和归档素材随目录表、WAV 一起提交，供下一次编辑。
+
+可参照现有的「默认问候」条目。下面的 key 对应 `Resources/Handler/Greeting.wav`：
+
+```json
+{
+  "key": "Handler/Greeting",
+  "label": "Greeting fallback",
+  "text": "Nice to meet you.",
+  "locked": false
+}
+```
+
 ## 调一句，听满意再保存
 
 - **调整句**　在「调这一句」里，语速越大，说得越快。点「快 10%」会比当前速度再快一成。音调往右声音变高，音量往右声音变响。这些调整都从原素材计算。

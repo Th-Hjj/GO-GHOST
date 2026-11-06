@@ -13,6 +13,8 @@ Thomas owns character, dialogue, motivation and emotional direction. Most existi
 
 ## Making the next line
 
+Register every new fixed Happy or Final Boss visit line in Voice Studio as part of delivery. Give the catalog entry, initial PCM WAV and gameplay cue the same stable resource key. For revisions, edit the existing entry and retain its key and WAV GUID. The [line intake instructions](VoiceStudio.md#录入新台词) cover the required fields, file placement, visit-page order and audition/save check.
+
 1. Identify the existing gameplay cue or describe the new trigger. Record what the player has just done and what they can do while the line plays.
 2. Get the text and any delivery notes from Thomas. Keep the speaker's established treatment when wording changes. Synthesize a whole thought together so adjacent words, names and UI labels such as *Add Rule* keep their natural connections.
 3. Choose speed, emphasis and pauses separately. Record a word-level exception only when a particular word needs emphasis or a deliberate break. Listen to the revised take beside the speaker's reference at matched loudness.

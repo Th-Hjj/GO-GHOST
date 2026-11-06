@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-06 — Voice Studio dialogue intake guide
+
+- Documented how to register a fixed line, attach its first WAV, route the cue and reopen a saved edit. Verified the example against the catalog and exercised registration, batch inclusion, single-line adoption and reload on copied assets. Unity was not run.
+
 ## 2026-11-06 — Voice Studio parameter review and audition
 
 - Enabled both room controls and both Final Boss tone controls on finished takes. Moved whole-line gain after mastering. Batch and monitor use the same eligibility rules. Profile auditions follow the selected speaker, preserve pending edits when switching samples, and can play the opening delay or the nickname sentence directly.

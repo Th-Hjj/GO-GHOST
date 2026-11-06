@@ -1,6 +1,6 @@
 # GO GHOST
 
-GO GHOST is a single-player 2D action game where you choose how your fighter reacts under fire.
+GO GHOST is a single-player 2D action game where you control a fighter and set rules for when they act on their own.
 
 ## Play Beta 33%
 

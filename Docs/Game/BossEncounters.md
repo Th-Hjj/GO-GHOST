@@ -1,10 +1,12 @@
 # GO GHOST — Boss Encounters
 
+**2026-11-05 progression:** Wave 1, Wave 2 and the optional Bonus each open Body Configuration, followed by Start Testing and a testing room with a Dummy Robot. Enter Wave starts the indicated encounter immediately. Back returns to configuration. Defeat offers Retry for a fresh attempt with equipped rules, or Configuration to edit and test again. Meet the Final Boss still opens the dialogue directly.
+
 Current progression reviewed against source on 2026-10-29. The current summary and named overrides govern; dated foundation sections retain implementation context, not independent delivery authorization. Exact tuning lives in the Boss profiles and SwordCombatSettings. Actual runtime evidence is in [ImplementationLog.md](ImplementationLog.md).
 
 ## Final Boss and optional Bonus — approved 2026-10-29
 
-Normal progression is Training -> Wave 1 Gunner -> Wave 2 Swordsman -> result -> Wave 3 Final Boss visit -> optional Bonus duo. Wave 2 victory waits on a black result page with only **Meet the Final Boss**. The visit reuses the arena perimeter/floor with no floating platforms. Its unarmed stickman reuses the combat silhouette, has a continuous vertical rainbow gradient and 9999 HP, and stays stationary. It is a dialogue visit without combat or a countdown. Next advances these exact lines at the player's pace; only the final line offers Yes / No:
+Normal progression is Training -> Wave 1 Gunner -> Wave 2 Swordsman -> result -> Wave 3 Final Boss visit -> optional Bonus duo. Wave 1 victory shows **WAVE 1 CLEARED** until **Continue to Wave 2** opens configuration. Wave 2 victory shows **WAVE 2 CLEARED** above **Meet the Final Boss** and waits for the player. The visit reuses the arena perimeter/floor with no floating platforms. Its unarmed stickman reuses the combat silhouette, has a continuous vertical rainbow gradient and 9999 HP, and stays stationary. It is a dialogue visit without combat or a countdown. Next advances these exact lines at the player's pace; only the final line offers Yes / No:
 
 1. Hi, I'm the final boss.
 2. I'm glad that you made it here.

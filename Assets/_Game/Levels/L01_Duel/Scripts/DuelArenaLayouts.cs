@@ -64,6 +64,9 @@ namespace GoGhost.Duel
                 var placement = layout[i];
                 var copy = Instantiate(template.gameObject, stagePlatforms.transform);
                 copy.name = "Platform " + (i + 1);
+                // Keep the flat top solid without letting steep corner contacts pin an actor to the side.
+                var effector = copy.GetComponent<PlatformEffector2D>();
+                effector.surfaceArc = Mathf.Min(effector.surfaceArc, 110f);
                 float widthScale = placement.Width / templateBounds.size.x;
                 var scale = template.transform.localScale;
                 scale.x *= widthScale;

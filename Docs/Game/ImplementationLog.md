@@ -1,5 +1,33 @@
 # GO GHOST slice implementation
 
+## 2026-11-05 — Parameter descriptions, face drawing hint and Auto Aim
+
+- The footer previews the hovered or keyboard-focused parameter and restores the selection on exit. Updated player-facing condition, action and parameter descriptions. Auto Aim is a direct nearest-enemy action. Historical Aim Assist rules require reselection.
+- Character creation shows the drawing hint to the left of the face in 28-point Primary text and fades it on the first valid stroke. It stays dismissed after Clear for the current character. Validation and builds skipped at Thomas's request.
+
+## 2026-11-05 — Player support at platform edges
+
+- The player's center foot ray could miss terrain that still supported the edge of its box collider. The contact fallback now recognizes upward terrain contacts and retains the supporting collider for jump and drop-through. Spawned one-way platforms cap their surface arc at 110 degrees to exclude steep corner contacts.
+- Based on the reported Wave 1 location and source inspection. The incident was not reproduced and runtime checks were skipped at Thomas's request.
+
+## 2026-11-05 — Configuration editor layout
+
+- Grouped action cards use two columns. Both pickers reserve detail space, and the summary displays selected values while browsing. Editor checks and builds skipped at Thomas's request.
+
+## 2026-11-05 — Wave victory results
+
+- Wave 1 and Wave 2 display explicit clear titles and wait for the player. Continue to Wave 2 opens configuration. Meet the Final Boss opens the dialogue. Validation and builds skipped at Thomas's request.
+
+## 2026-11-05 — Testing before each combat wave
+
+- Start Testing opens practice with the retained loadout. Enter Wave now starts the current encounter instead of resetting progress to Wave 1. The defeat screen offers Retry and Configuration. Testing UI uses TESTING and DUMMY ROBOT.
+- Validation, tests and builds skipped at Thomas's request.
+
+## 2026-11-05 — Alpha playtest rule catalog
+
+- New rules use one condition. The picker offers 11 conditions and seven action entries. Aim and Fire modes use existing execution IDs. Retired choices require reselection.
+- Validation, tests and builds skipped at Thomas's request.
+
 ## 2026-11-05 - Remove the playtest reminder
 
 - Removed the seven-minute timer, pause dialog, Wave 2 skip, reminder-specific metrics and Editor checks. Verification skipped at Thomas's request.

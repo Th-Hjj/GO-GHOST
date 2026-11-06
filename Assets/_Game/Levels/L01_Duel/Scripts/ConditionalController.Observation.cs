@@ -306,10 +306,9 @@ namespace GoGhost.Duel
             for(int i=0;i<actors.Count;i++)
             {
                 if(!visible[i]||(mask&(1<<i))==0)continue;
-                if(response=="Q06"&&MouseAngle(i)>ConditionalDefaults.AimAssistCone)continue;
                 if(response=="Q09"&&MouseAngle(i)>ConditionalDefaults.MouseEnter)continue;
                 float score=((Vector2)contacts[i].Bounds.center-(Vector2)shape.bounds.center).sqrMagnitude;
-                if(response=="Q06"||response=="Q09")score=MouseAngle(i);
+                if(response=="Q09")score=MouseAngle(i);
                 if(response=="Q02"&&best>=0)
                 {
                     if(contacts[i].HealthFraction>contacts[best].HealthFraction)continue;

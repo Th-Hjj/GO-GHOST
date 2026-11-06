@@ -10,8 +10,8 @@ namespace GoGhost.Duel
 
         public void StartConfiguredEncounter()
         {
-            if (Phase != DuelPhase.Configure || Paused || !ui.ConfigurationReady) return;
-            CreateEncounter(TrainingPending);
+            if (!TrainingPending || Paused || DeveloperToolsOpen || !ui.ConfigurationReady) return;
+            CreateEncounter(true);
         }
 
         public void BackFromTraining()
@@ -24,11 +24,7 @@ namespace GoGhost.Duel
         public void ContinueFromTraining()
         {
             if (Phase != DuelPhase.Training) return;
-            ClearEncounter();
-            FirstConfiguration = false;
-            developerTrainingSelected = false;
-            Wave = 1;
-            SetPhase(DuelPhase.Configure);
+            CreateEncounter(false);
         }
 
         void BindEncounterRules()

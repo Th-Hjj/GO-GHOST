@@ -65,7 +65,7 @@ namespace GoGhost.Duel
                 var actor = game.Bosses[i];
                 if (actor == null)
                     continue;
-                string label = actor.IsTrainingEnemy ? "TRAINING ENEMY  "
+                string label = actor.IsTrainingEnemy ? "DUMMY ROBOT  "
                     : actor.ActorId == 1 ? "Gunner  " : "Swordsman  ";
                 bossHealthText[i].Update(policeHealth[i], label, actor.Health.CurrentHealth);
                 policeFill[i].rectTransform.sizeDelta =

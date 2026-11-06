@@ -22,6 +22,14 @@ namespace GoGhost.Duel
         public Enemy FinalBossHealth { get; private set; }
         Material finalBossMaterial;
 
+        public void ContinueToWaveTwo()
+        {
+            if (Phase != DuelPhase.Between || Wave != 1 || DeveloperToolsOpen) return;
+            ClearEncounter();
+            Wave = 2;
+            SetPhase(DuelPhase.Configure);
+        }
+
         public void MeetFinalBoss()
         {
             if (Phase != DuelPhase.FinalBossReady || DeveloperToolsOpen) return;
@@ -33,7 +41,7 @@ namespace GoGhost.Duel
             ClearEncounter();
             PlayMetrics.EndRun("final_boss_visit");
             Wave = FinalBossWave;
-            FirstConfiguration = developerTrainingSelected = false;
+            FirstConfiguration = false;
             FinalBossLine = 0;
             FightClock = 0;
             ApplyPlatformLayout(false);
@@ -90,7 +98,7 @@ namespace GoGhost.Duel
             }
             ClearEncounter();
             Wave = BonusWave;
-            FirstConfiguration = developerTrainingSelected = false;
+            FirstConfiguration = false;
             SetPhase(DuelPhase.Configure);
         }
 

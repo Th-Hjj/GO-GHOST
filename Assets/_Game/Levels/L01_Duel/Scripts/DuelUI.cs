@@ -25,7 +25,8 @@ namespace GoGhost.Duel
             trainingBack = Button("← Back", parent, Vector2.zero, new Vector2(150, 48), game.BackFromTraining).GetComponent<RectTransform>();
             trainingBack.anchorMin = trainingBack.anchorMax = trainingBack.pivot = new Vector2(0, 1);
             trainingBack.anchoredPosition = new Vector2(24, -24);
-            trainingContinue = Button("Continue →", parent, Vector2.zero, new Vector2(180, 48), game.ContinueFromTraining).GetComponent<RectTransform>();
+            string enterLabel = game.Wave == DuelGame.BonusWave ? "Enter Bonus Wave" : "Enter Wave " + game.Wave;
+            trainingContinue = Button(enterLabel, parent, Vector2.zero, new Vector2(230, 48), game.ContinueFromTraining).GetComponent<RectTransform>();
             trainingContinue.anchorMin = trainingContinue.anchorMax = trainingContinue.pivot = new Vector2(1, 0);
             trainingContinue.anchoredPosition = new Vector2(-24, 24);
             // Pause's backdrop belongs to Page. Keep the same navigation available above it.
@@ -149,10 +150,14 @@ namespace GoGhost.Duel
                 if(helpOpen){BuildHelp();return;}
                 BuildConditionalLoadout();RestoreConfigurationView();return;
             }
-            if(game.Phase==DuelPhase.FinalBossReady)
+            if(game.Phase==DuelPhase.Between || game.Phase==DuelPhase.FinalBossReady)
             {
                 Image(page,Vector2.zero,new Vector2(4000,4000),NeuralPalette.Background);
-                Button("Meet the Final Boss",page,Vector2.zero,new Vector2(420,68),game.MeetFinalBoss).name="MeetFinalBoss";
+                Text(game.WaveLabel+" CLEARED",page,new Vector2(0,160),new Vector2(800,90),64,face:headingFont);
+                if(game.Phase==DuelPhase.Between)
+                    Button("Continue to Wave 2",page,Vector2.zero,new Vector2(420,68),game.ContinueToWaveTwo).name="ContinueToWaveTwo";
+                else
+                    Button("Meet the Final Boss",page,Vector2.zero,new Vector2(420,68),game.MeetFinalBoss).name="MeetFinalBoss";
                 return;
             }
             if(game.Phase==DuelPhase.FinalBoss)
@@ -163,7 +168,11 @@ namespace GoGhost.Duel
             {
                 Image(page,Vector2.zero,new Vector2(4000,4000),new Color(0,0,0,.86f));
                 Text(game.Phase==DuelPhase.Failed?"DEFEAT":"COMPLETE",page,new Vector2(0,160),new Vector2(800,90),64,face:headingFont);
-                if(game.Phase==DuelPhase.Failed)Button("Configuration",page,Vector2.zero,new Vector2(360,65),game.Reconfigure).name="Reconfigure";
+                if(game.Phase==DuelPhase.Failed)
+                {
+                    Button("Retry",page,Vector2.zero,new Vector2(360,65),game.RetryFight);
+                    Button("Configuration",page,new Vector2(0,-90),new Vector2(360,65),game.Reconfigure).name="Reconfigure";
+                }
                 else
                 {
                     Button("Restart",page,Vector2.zero,new Vector2(360,65),game.NewGame);
@@ -173,7 +182,7 @@ namespace GoGhost.Duel
             }
             var hud=battleUi!=null?battleUi:page;
             if(game.Phase==DuelPhase.Training)
-                Text("TRAINING",hud,new Vector2(0,400),new Vector2(280,36),30,face:headingFont);
+                Text("TESTING",hud,new Vector2(0,400),new Vector2(280,36),30,face:headingFont);
             else if(game.Phase==DuelPhase.Prepare || game.Phase==DuelPhase.Fight && game.FightClock<WaveTitleFadeSeconds)
                 waveTitle=Text(game.WaveLabel,hud,new Vector2(0,400),new Vector2(320,36),30,face:headingFont);
             policeHealth = new TMP_Text[game.Bosses.Count];

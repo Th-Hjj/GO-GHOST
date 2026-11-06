@@ -145,7 +145,7 @@ namespace GoGhost.Duel
             if(r.Completed||op==1&&r.Accepted)return false;
             if(op!=1&&Time.time>=r.Deadline)return false;
             if(r.Target>=0&&(!visible[r.Target]||!actors[r.Target].IsAlive)
-                &&action!="Q06"&&action!="Q09")return false;
+                &&action!="Q09")return false;
             switch((ControlOperation)op)
             {
                 case ControlOperation.Movement:return WriteMovement(action,r);
@@ -218,43 +218,18 @@ namespace GoGhost.Duel
             // A current public candidate set, never a hidden target lock.
             if(action=="Q01"||action=="Q02")
             {r.Target=Choose(allVisible,action);if(r.Target<0)return false;}
-            if(action=="Q06"||action=="Q09")
+            if(action=="Q09")
             {
                 int best=Choose(allVisible,action);
-                float cone=action=="Q06"?ConditionalDefaults.AimAssistCone:ConditionalDefaults.MouseExit;
-                bool valid=r.Target>=0&&visible[r.Target]&&MouseAngle(r.Target)<=cone;
+                bool valid=r.Target>=0&&visible[r.Target]&&MouseAngle(r.Target)<=ConditionalDefaults.MouseExit;
                 if(!valid||best>=0&&MouseAngle(best)+2f<MouseAngle(r.Target))r.Target=best;
                 if(r.Target<0)return false;
             }
             output.AimOwned=true;output.Aim=action=="Q08"?r.Aim:AimAt(r.Target);
-            if(action=="Q06")
-            {
-                // Smooth only the additive assistance: the raw mouse direction responds immediately.
-                // Inside the lock cone aim at the body centre; elsewhere pull just far enough to land
-                // inside the inset body. Aim already on the body stays where the player put it.
-                float desired=MouseAngle(r.Target)<=ConditionalDefaults.AimAssistLockCone
-                    ?Vector2.SignedAngle(raw.Aim,output.Aim)
-                    :Vector2.SignedAngle(raw.Aim,AssistBodyPoint(r.Target)-gun.AimOrigin);
-                float blend=1-Mathf.Exp(-Time.deltaTime/ConditionalDefaults.AimAssistTimeConstant);
-                r.AssistOffset=Mathf.Lerp(r.AssistOffset,desired,blend);
-                // Never pull past the body or oppose a mouse movement across the target.
-                r.AssistOffset=Mathf.Clamp(r.AssistOffset,Mathf.Min(0,desired),Mathf.Max(0,desired));
-                output.Aim=((Vector2)(Quaternion.Euler(0,0,r.AssistOffset)*raw.Aim.normalized)).normalized;
-            }
-            else if(action=="Q09")
+            if(action=="Q09")
                 output.Aim=((Vector2)Vector3.RotateTowards(raw.Aim.normalized,output.Aim,
                     ConditionalDefaults.MouseEnter*Mathf.Deg2Rad,0)).normalized;
             currentTarget=action=="Q08"?AlignedTarget(r.Aim,allVisible):r.Target;return true;
-        }
-        Vector2 AssistBodyPoint(int target)
-        {
-            // Point on the raw aim ray nearest the body, clamped into the central part of its current bounds.
-            var bounds=contacts[target].Bounds;
-            Vector2 origin=gun.AimOrigin,direction=raw.Aim.normalized;
-            Vector2 closest=origin+direction*Mathf.Max(0,Vector2.Dot((Vector2)bounds.center-origin,direction));
-            Vector2 inset=(Vector2)bounds.extents*ConditionalDefaults.AimAssistBodyInset;
-            return new Vector2(Mathf.Clamp(closest.x,bounds.center.x-inset.x,bounds.center.x+inset.x),
-                Mathf.Clamp(closest.y,bounds.center.y-inset.y,bounds.center.y+inset.y));
         }
         float Travel(float direction,float distance)
         {

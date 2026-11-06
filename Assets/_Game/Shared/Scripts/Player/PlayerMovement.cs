@@ -174,16 +174,20 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
             }
             if (!IsGrounded)
             {
-                // Enemy bodies can physically support the officer without belonging to Ground.
-                // Require a real upward contact: nearby bodies, side/ceiling contacts, triggers and
-                // temporarily ignored Boss collision pairs must not grant a jump or refill air resources.
-                int count = rb.GetContacts(supportContacts);
+                // At a ledge the box can still be supported after its center probe has cleared the edge.
+                int count = movementShape.GetContacts(supportContacts);
                 for (int i = 0; i < count; i++)
                 {
                     var contact = supportContacts[i];
-                    if (contact.normal.y <= 0.5f || contact.collider == null
-                        || contact.collider.GetComponentInParent<Enemy>() == null) continue;
+                    bool playerIsOther = contact.otherCollider == movementShape;
+                    var support = playerIsOther ? contact.collider : contact.otherCollider;
+                    float upward = playerIsOther ? contact.normal.y : -contact.normal.y;
+                    if (!contact.enabled || upward <= .5f || support == null || support.isTrigger
+                        || support == droppingThrough || Physics2D.GetIgnoreCollision(movementShape, support)) continue;
+                    bool terrain = (groundLayer.value & (1 << support.gameObject.layer)) != 0;
+                    if (!terrain && support.GetComponentInParent<Enemy>() == null) continue;
                     IsGrounded = true;
+                    if (terrain) groundSupport = support;
                     break;
                 }
             }

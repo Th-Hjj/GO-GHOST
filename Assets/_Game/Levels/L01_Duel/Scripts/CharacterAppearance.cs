@@ -13,6 +13,7 @@ namespace GoGhost.Duel
         // over black. Bake the opacity into RGB so the face interior stays opaque black.
         public static Color Tint => Color.Lerp(Color.black, NeuralPalette.Secondary, .78f);
         public string Name { get; set; } = "";
+        public bool HasDrawn { get; private set; }
         public string DisplayName => string.IsNullOrWhiteSpace(Name) ? "YOU" : Name.Trim();
         public Texture2D Texture { get; private set; }
         public Sprite Sprite { get; private set; }
@@ -75,6 +76,7 @@ namespace GoGhost.Duel
         {
             // Each event paints a continuous antialiased capsule, even on a fast pointer move.
             if (!Contains(from) || !Contains(to)) return;
+            HasDrawn = true;
             Vector2 a = from * Resolution - Vector2.one * .5f, b = to * Resolution - Vector2.one * .5f;
             Vector2 delta = b - a;
             float lengthSquared = delta.sqrMagnitude;

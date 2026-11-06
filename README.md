@@ -11,7 +11,7 @@ The Windows build was launched and its telemetry checked on the build PC. The ma
 ## Current game
 
 1. **New Game**: draw a face, enter a nickname and configure your rules. Empty rules keep control manual; **Help** introduces controls and Condition → Action.
-2. **Enter Test Room** to practice, then **Continue → Start Fight**.
+2. Before Wave 1, Wave 2 and the optional Bonus Wave, choose **Start Testing** to practice with the Dummy Robot. Use **Back** to edit rules or **Enter Wave 1**, **Enter Wave 2** or **Enter Bonus Wave** to begin the encounter.
 3. Fight **Gunner**, then **Swordsman**. **Meet the Final Boss** opens a short dialogue, with an optional **Bonus Wave** against both bosses.
 
 Retry and **Pause → Configuration** retain your character and rules. New Game starts fresh.

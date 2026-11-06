@@ -68,7 +68,12 @@ namespace GoGhost.Duel
             image.sprite = game.Appearance.Sprite;
             image.color = CharacterAppearance.Tint;
             image.raycastTarget = true;
-            face.gameObject.AddComponent<CharacterFaceCanvas>().Initialize(game.Appearance);
+            TMP_Text hint = null;
+            if (!game.Appearance.HasDrawn)
+            {
+                hint = Text("Hold left mouse to draw.", page, new Vector2(-520, 65), new Vector2(440, 52), 28, TextAlignmentOptions.Left);
+            }
+            face.gameObject.AddComponent<CharacterFaceCanvas>().Initialize(game.Appearance, hint);
             ConfigButton("ClearFace", "Clear", page, new Vector2(300, 65), new Vector2(140, 52), game.Appearance.Clear, style:DuelControlStyle.Tool);
 
             var box = Rect("CharacterName", page, new Vector2(0, -230), new Vector2(440, 60));

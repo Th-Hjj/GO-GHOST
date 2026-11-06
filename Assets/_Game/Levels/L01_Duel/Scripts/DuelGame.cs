@@ -40,7 +40,7 @@ namespace GoGhost.Duel
         public ConditionalController Rules {get;private set;}
         public CharacterAppearance Appearance { get; private set; }
         public Bounds ArenaBounds => arenaBounds;
-        public bool TrainingPending => developerTrainingSelected || FirstConfiguration && Wave == 1;
+        public bool TrainingPending => Phase == DuelPhase.Configure && Wave != FinalBossWave;
         public bool LegsAI => lockedLegs;
         public bool ArmsAI => lockedArms;
         public bool SpineAI => lockedSpine;
@@ -105,7 +105,6 @@ namespace GoGhost.Duel
             DraftLegs = DraftArms = DraftSpine = false;
             DraftLoadout=new ConditionalLoadout();
             FirstConfiguration = true;
-            developerTrainingSelected = false;
             ResetCharacterAppearance();
             SetPhase(DuelPhase.CharacterCreation);
         }
@@ -140,10 +139,14 @@ namespace GoGhost.Duel
             if (Phase != DuelPhase.Configure || Paused || !ui.ConfigurationReady) return;
             CreateEncounter(false);
         }
+        public void RetryFight()
+        {
+            if (Phase != DuelPhase.Failed || DeveloperToolsOpen) return;
+            CreateEncounter(false);
+        }
         void CreateEncounter(bool training)
         {
             ClearEncounter();
-            developerTrainingSelected = training;
             finalBossVisit = false;
             ApplyPlatformLayout(training);
             lockedLegs = lockedArms = lockedSpine = false;
@@ -350,16 +353,10 @@ namespace GoGhost.Duel
             if(Phase==DuelPhase.Fight&&Wave==BonusWave&&Player!=null&&!Player.IsDead
                 &&Keyboard.current!=null&&Keyboard.current.pKey.wasPressedThisFrame)coordinator?.RequestNextDebugCombo();
 #endif
-            if (Phase == DuelPhase.Prepare || Phase == DuelPhase.Between)
+            if (Phase == DuelPhase.Prepare)
             {
                 phaseTime += Time.deltaTime;
-                if (Phase == DuelPhase.Prepare && phaseTime >= PreparationSeconds) BeginCombat();
-                else if (Phase == DuelPhase.Between && phaseTime >= .8f)
-                {
-                    Wave++;
-                    ClearEncounter();
-                    SetPhase(DuelPhase.Configure);
-                }
+                if (phaseTime >= PreparationSeconds) BeginCombat();
             }
         }
         void FixedUpdate()

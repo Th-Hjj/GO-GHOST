@@ -92,7 +92,7 @@ namespace GoGhost.Duel
             {
                 foreach(var a in operations[i].actions)
                 {
-                    string label=a.action=="Manual"?"Manual":a.action+" "+ConditionalCatalog.Response(a.action).Label;
+                    string label=a.action=="Manual"?"Manual":a.action+" "+ConditionalCatalog.ExecutionLabel(a.action);
                     rows.Add((i==0?"Move":operations[i].operation)+" / "+label+"\n"
                         +(operations[i].unit=="seconds"?MetricNumber(a.seconds)+"s":a.count+" actions")+(a.drops>0?"    Drops: "+a.drops:""));
                 }

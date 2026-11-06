@@ -30,8 +30,6 @@ namespace GoGhost.Duel
         DeveloperParameter[] developerParameters;
         float[] developerValues;
         bool developerResumeOnClose;
-        // Explicit training selection survives Back; FirstConfiguration keeps its normal meaning.
-        bool developerTrainingSelected;
 
         void InitializeDeveloperTuning()
         {
@@ -138,7 +136,6 @@ namespace GoGhost.Duel
             DraftLoadout=DraftLoadout.Copy();
             Wave=wave;
             FirstConfiguration=false;
-            developerTrainingSelected=false;
             if(wave==FinalBossWave){CreateFinalBossPage();return;}
             SetPhase(DuelPhase.Configure);
             StartFight();

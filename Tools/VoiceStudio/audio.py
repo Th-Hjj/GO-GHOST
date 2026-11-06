@@ -62,6 +62,37 @@ def write(path, x):
         w.writeframes(np.clip(np.rint(x * 32768), -32768, 32767).astype("<i2").tobytes())
 
 
+def adjust_finished_happy(x, electronic):
+    """Retune a finished Happy take relative to its baked 15% treatment."""
+    baseline = 0.15
+    if abs(electronic - baseline) < 1e-6 or not np.any(x):
+        return x
+
+    if electronic > baseline:
+        # The existing stereo returns already contain the room. Replace part of the
+        # centre with the same B-layer used by the dry-source renderer, without a second reverb.
+        center = x.mean(axis=1)
+        vocoded = render_happy_voice.match_level(render_happy_voice.electronic_layer(center), center)
+        layer = render_happy_voice.match_level(0.4 * center + 0.65 * vocoded, center)
+        mix = (electronic - baseline) / (1 - baseline)
+        result = x + mix * (layer - center)[:, None]
+    else:
+        # A mixed recording has no isolated dry stem. Attenuate the narrow
+        # harmonics of Happy's steady 182 Hz carrier, leaving the broadband speech.
+        size = 1 << (len(x) + RATE // 2 - 1).bit_length()
+        hz = np.fft.rfftfreq(size, 1 / RATE)
+        harmonic = np.rint(hz / 182)
+        width = 1 - np.exp(-0.5 * ((hz - 182 * harmonic) / 10) ** 2)
+        keep = np.where((harmonic >= 1) & (hz < 5000), width, 1)
+        gain = 1 - (1 - electronic / baseline) * (1 - keep)
+        result = np.fft.irfft(np.fft.rfft(x, size, axis=0) * gain[:, None], size, axis=0)[:len(x)]
+
+    peak = np.max(np.abs(result))
+    if peak > 0:
+        result *= min(render_happy_voice.rms(x) / render_happy_voice.rms(result), (32767 / 32768) / peak)
+    return result
+
+
 def synth(text, boss, speed, pronunciations=""):
     import sherpa_onnx as so
 

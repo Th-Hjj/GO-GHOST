@@ -322,7 +322,14 @@ namespace GoGhost.Duel.EditorTools
             catalog.bossSpeed = EditorGUILayout.Slider("常规语速（倍）", catalog.bossSpeed, .65f, 1.8f);
             BossTone(ref catalog.bossSub, ref catalog.bossDrive);
             if (EditorGUI.EndChangeCheck()) Changed();
-            Hint("新合成的人声和未加效果的录音会使用角色音色。现有成品已带音色，默认只跟随语速和音量设置。");
+            if (catalog.Find(key).locked || recipe.independent)
+                Hint("当前选中的是受保护的台词。试听 Happy 的电子感，可以在左侧选「进入配置页」。");
+            else if (!key.StartsWith("Handler/"))
+                Hint("当前试听 Final Boss。要听 Happy 的电子感，请在左侧选一句 Happy 的台词。");
+            else if (recipe.overrideTone && recipe.mode != "Master")
+                Hint("这一句单独设置了音色。要跟随角色滑杆，请先在单句页关闭「这句单独设音色」并保存。");
+            else if (recipe.mode == "Master")
+                Hint("这句已有录音。电子感 15% 保留素材原声，向右增强，向左减弱。回声设置用于未加效果的人声和按文字重新念的声音。");
             showBatch = EditorGUILayout.Foldout(showBatch, "让角色按文字重新念现有成品", true);
             if (showBatch)
             {
@@ -396,8 +403,16 @@ namespace GoGhost.Duel.EditorTools
             EditorGUILayout.Space();
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("播放游戏版")) Listen(false);
-            using (new EditorGUI.DisabledScope(draft == null))
-                if (GUILayout.Button("播放草稿")) Listen(true);
+            using (new EditorGUI.DisabledScope(draft == null && (scope == 0 || busy)))
+                if (GUILayout.Button("播放草稿"))
+                {
+                    if (draft != null) Listen(true);
+                    else
+                    {
+                        suppressDraftReplay = false;
+                        Run("monitor", playWhenReady: true);
+                    }
+                }
             if (GUILayout.Button("停止"))
             {
                 nameJob?.Cancel();
@@ -406,12 +421,13 @@ namespace GoGhost.Duel.EditorTools
                 status = "已停止播放。";
             }
             EditorGUILayout.EndHorizontal();
+            EditorGUILayout.BeginHorizontal();
+            autoListen = GUILayout.Toggle(autoListen, "改完自动试听");
+            if (scope == 0)
+                loop = GUILayout.Toggle(loop, new GUIContent("循环试听", "有选区时重复听选区，没有选区时重复听整句。"));
+            EditorGUILayout.EndHorizontal();
             if (scope == 0)
             {
-                EditorGUILayout.BeginHorizontal();
-                autoListen = GUILayout.Toggle(autoListen, "改完自动试听");
-                loop = GUILayout.Toggle(loop, new GUIContent("循环试听", "有选区时重复听选区，没有选区时重复听整句。"));
-                EditorGUILayout.EndHorizontal();
                 var e = Event.current;
                 if (draft != null && e.keyCode == KeyCode.F2)
                 {

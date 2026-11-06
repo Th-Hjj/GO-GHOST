@@ -8,6 +8,7 @@ from unittest.mock import patch
 from uuid import uuid4
 
 import audio
+import numpy as np
 import studio
 
 
@@ -66,6 +67,38 @@ class AdoptionTests(unittest.TestCase):
         self.request("undo")
         self.assertEqual(approved, target.read_bytes())
         self.assertFalse(state.exists())
+
+    def test_finished_happy_electronic_monitor_matches_adoption(self):
+        key = "Handler/TutorialIntro"
+        target, _ = studio.paths(key)
+        original = audio.read(target)
+        opening, _ = studio.paths("Handler/WhoAreYou")
+        protected = opening.read_bytes()
+        request = self.current(key)
+        for amount in (0.15, 0, 0.8):
+            request["catalog"]["electronic"] = amount
+            monitor = studio.JOBS / uuid4().hex
+            monitor.mkdir()
+            studio.worker(dict(request, action="monitor"), monitor)
+            heard = audio.read(monitor / "draft.wav")
+            self.assertEqual(heard.shape, original.shape)
+            if amount == 0.15:
+                np.testing.assert_array_equal(heard, original)
+            else:
+                self.assertGreater(np.linalg.norm(heard - original) / np.linalg.norm(original), 0.05)
+        review = Path(self.request("profiles", **request)["review"])
+        rows = studio.read_json(review / "receipt.json")["rows"]
+        self.assertEqual({row["key"] for row in rows}, {
+            line["key"] for line in request["catalog"]["lines"] if line["key"].startswith("Handler/") and not line["locked"]
+        })
+        self.request("apply", review=str(review))
+        np.testing.assert_array_equal(audio.read(target), heard)
+        self.assertEqual(opening.read_bytes(), protected)
+        request = self.current(key)
+        request["catalog"]["electronic"] = 0.15
+        review = self.request("profiles", **request)["review"]
+        self.request("apply", review=review)
+        np.testing.assert_array_equal(audio.read(target), original)
 
     def test_batch_and_recovery(self):
         request = self.current("Handler/WhoAreYou")

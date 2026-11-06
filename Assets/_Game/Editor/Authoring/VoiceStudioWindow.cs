@@ -131,6 +131,7 @@ namespace GoGhost.Duel.EditorTools
         }
         void Changed()
         {
+            player.Dispose();
             suppressDraftReplay=false;
             ClearGameDraft();
             dirty = true;
@@ -180,7 +181,7 @@ namespace GoGhost.Duel.EditorTools
             }
             catch (Exception e) { busy = false; status = e.Message; }
         }
-        async void Run(string action)
+        async void Run(string action, bool playWhenReady = false)
         {
             if (busy) return;
             if (!File.Exists(Python)) { status = "请先安装本机配音工具。"; return; }
@@ -247,7 +248,12 @@ namespace GoGhost.Duel.EditorTools
                         source=StudioTake.Read(Path.Combine(job,"source.wav"));
                         draft=StudioTake.Read(Path.Combine(job,"draft.wav"));
                         mapped=result.mapped;
-                        if (autoListen && !suppressDraftReplay) Listen(true);
+                        if ((autoListen || playWhenReady) && !suppressDraftReplay) Listen(true);
+                    }
+                    else if (action == "profiles")
+                    {
+                        string reviewedTake = Path.Combine(review, key.Replace('/', '-'), "draft.wav");
+                        draft = File.Exists(reviewedTake) ? StudioTake.Read(reviewedTake) : installed;
                     }
                 }
             }

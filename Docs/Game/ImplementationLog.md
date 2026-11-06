@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-11-06 — Happy electronic control on finished recordings
+
+- The profile monitor previously bypassed timbre processing for finished takes, and an electronic-only batch omitted them. The monitor and reviewed batch now retune Happy's existing performance against its 15% baseline using the archived source on subsequent edits. Protected takes skip batch processing.
+- Tested the configuration introduction at 0%, 15% and 80%, exact monitor-to-adoption samples, restoration of the original at 15%, and opening exclusion on asset copies. Compiled runtime and Editor assemblies offline. Unity interaction and speaker listening are left to Thomas.
+
 ## 2026-11-06 — Chinese Voice Studio controls
 
 - Grouped editor controls by task. Whole-line adjustments and playback are immediately available. Word timing, reference performances, recording sources and recovery open on demand. Game and draft previews are labeled separately from saving, and loudness matching is opt-in for comparisons.

@@ -255,7 +255,13 @@ def render(line, recipe, profile, folder):
         if line["locked"] or recipe["independent"]
         else profile["bossSpeed" if boss else "happySpeed"] / (1.30 if boss else 1.05)
     )
-    y, mapped = audio.edit(x.copy(), recipe, speed, ref)
+    performance = x
+    if mode == "Master" and not boss and not line["locked"]:
+        # Store the actual setting so excluding this take later freezes its sound.
+        if not recipe["independent"]:
+            recipe = dict(recipe, electronic=profile["electronic"])
+        performance = audio.adjust_finished_happy(x, recipe["electronic"])
+    y, mapped = audio.edit(performance.copy(), recipe, speed, ref)
     if mode != "Master":
         tone = recipe if recipe.get("overrideTone") else profile
         dry = y.mean(axis=1)
@@ -358,6 +364,11 @@ def worker(req, job):
             "message": "Estimated word regions. Drag or edit their boundaries before fine adjustments.",
         }
     if action == "monitor":
+        if line["locked"] or recipe["independent"]:
+            x = audio.read(wav)
+            audio.write(job / "source.wav", x)
+            audio.write(job / "draft.wav", x)
+            return {"mapped": [], "message": "Protected recording."}
         if should_revoice(req, line, recipe):
             recipe = dict(recipe, mode="Synthesize", source="", edits=[])
         row = render(line, recipe, req["catalog"], job)
@@ -413,6 +424,8 @@ def worker(req, job):
                 affected.append("targetDb")
             if rec["mode"] != "Master" and not rec.get("overrideTone"):
                 affected += ["bossDrive", "bossSub"] if boss else ["electronic", "nearDb", "spaceDb"]
+            elif rec["mode"] == "Master" and not boss:
+                affected.append("electronic")
             if revoice or any(profile[f] != catalog[f] for f in affected):
                 rows.append(render(entry, rec, profile, job / entry["key"].replace("/", "-")))
         catalog.update({f: profile[f] for f in fields})

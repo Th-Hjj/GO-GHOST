@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-05 — Voice production references
+
+- Consolidated voice direction and archived the selected listening references. Thomas approved Happy B-light and retained Final Boss v0.3 as the provisional baseline. This stage covers production documentation and reference audio.
+
 ## 2026-11-05 — Beta 33% release refresh
 
 - Reduced the desktop Kokoro voice bank from 54 speakers (28,200,960 bytes) to two (1,044,480 bytes). Heart and Michael retain their original embeddings at local IDs 0 and 1. Verified both slices byte-for-byte and checked that only speaker metadata changed in the ONNX file. The fixed recordings and pronunciation dictionaries use the same assets.

@@ -49,6 +49,11 @@ public sealed class SfxSet : MonoBehaviour
     }
 
     public void SetPaused(bool value) => output?.SetPaused(value);
+    public void CollectAudioClips(HashSet<AudioClip> destination)
+    {
+        if (clips == null) return;
+        foreach (var clip in clips) if (clip != null) destination.Add(clip);
+    }
     public void StopActor(int actorId) => output?.StopActor(actorId);
     public void StopAttack(int actorId, int attackId) => output?.StopAttack(actorId, attackId);
 

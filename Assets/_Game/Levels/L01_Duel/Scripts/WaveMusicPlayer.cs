@@ -19,6 +19,11 @@ namespace GoGhost.Duel
 
         public int CurrentWave { get; private set; }
         public float Volume => musicVolume;
+        internal void CollectAudioClips(System.Collections.Generic.HashSet<AudioClip> destination)
+        {
+            if (waveTracks == null) return;
+            foreach (var track in waveTracks) if (track != null) destination.Add(track);
+        }
         static int TrackIndex(int wave) => wave == DuelGame.BonusWave ? 2 : wave <= 2 ? wave - 1 : -1;
         public float CurrentTrackGain => waveGains != null && TrackIndex(CurrentWave) >= 0 && TrackIndex(CurrentWave) < waveGains.Length
             ? Mathf.Max(0, waveGains[TrackIndex(CurrentWave)]) : 1f;

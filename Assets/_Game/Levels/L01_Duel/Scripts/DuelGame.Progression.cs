@@ -17,6 +17,7 @@ namespace GoGhost.Duel
             "Do you want to enter the bonus wave?"
         };
         public int FinalBossLine { get; private set; }
+        static string FinalBossClipPath(int index) => "FinalBossVoice/Line" + (index + 1);
         public string FinalBossDialogue => FinalBossLines[FinalBossLine];
         public bool FinalBossChoiceReady => FinalBossLine == FinalBossLines.Length - 1;
         public Enemy FinalBossHealth { get; private set; }
@@ -70,7 +71,7 @@ namespace GoGhost.Duel
             // Stand the unchanged combat silhouette on the shared floor.
             float floorY = platforms[0].bounds.max.y;
             boss.transform.position = new Vector3(arenaBounds.center.x, floorY - bounds.min.y, 0);
-            finalBossMaterial = new Material(Resources.Load<Shader>("FinalBossRainbow"));
+            finalBossMaterial = new Material(finalBossShader != null ? finalBossShader : Resources.Load<Shader>("FinalBossRainbow"));
             finalBossMaterial.SetFloat("_RainbowBottom", floorY);
             finalBossMaterial.SetFloat("_RainbowHeight", bounds.size.y);
             foreach (var part in renderers)
@@ -79,6 +80,7 @@ namespace GoGhost.Duel
                 part.color = Color.white;
             }
             SetPhase(DuelPhase.FinalBoss);
+            handler.PlayLine(FinalBossClipPath(FinalBossLine));
         }
 
         public void AdvanceFinalBossDialogue()
@@ -86,6 +88,7 @@ namespace GoGhost.Duel
             if (Phase != DuelPhase.FinalBoss || DeveloperToolsOpen || FinalBossChoiceReady) return;
             FinalBossLine++;
             ui.Show();
+            handler.PlayLine(FinalBossClipPath(FinalBossLine));
         }
 
         public void ChooseBonus(bool enter)

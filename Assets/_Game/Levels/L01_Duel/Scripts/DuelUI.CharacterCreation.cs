@@ -8,6 +8,10 @@ namespace GoGhost.Duel
     {
         TMP_FontAsset characterControlFont, characterNumericFont, characterFallback;
         bool characterFontsInitialized;
+        Button characterStart;
+        RectTransform startupFill;
+        TMP_Text startupLabel, startupError;
+        int displayedPercent;
 
         TMP_FontAsset CharacterNameFont(bool numeric = false)
         {
@@ -62,6 +66,8 @@ namespace GoGhost.Duel
 
         void BuildCharacterCreation()
         {
+            startupFill = null;
+            startupError = null;
             Text("Who Are You", page, new Vector2(0, 350), new Vector2(640, 60), 30, face:headingFont);
             var face = Rect("CharacterFace", page, new Vector2(0, 65), new Vector2(390, 390));
             var image = face.gameObject.AddComponent<Image>();
@@ -71,7 +77,7 @@ namespace GoGhost.Duel
             TMP_Text hint = null;
             if (!game.Appearance.HasDrawn)
             {
-                hint = Text("Hold left mouse to draw.", page, new Vector2(-520, 65), new Vector2(440, 52), 28, TextAlignmentOptions.Left);
+                hint = Text("Hold left mouse to draw.", page, new Vector2(-460, 65), new Vector2(440, 52), 28, TextAlignmentOptions.Right);
             }
             face.gameObject.AddComponent<CharacterFaceCanvas>().Initialize(game.Appearance, hint);
             ConfigButton("ClearFace", "Clear", page, new Vector2(300, 65), new Vector2(140, 52), game.Appearance.Clear, style:DuelControlStyle.Tool);
@@ -103,8 +109,38 @@ namespace GoGhost.Duel
             input.textComponent = (TextMeshProUGUI)text; input.placeholder = placeholder;
             input.text = game.Appearance.Name;
             input.onValueChanged.AddListener(value => { game.Appearance.Name = value; PlayMetrics.SetName(value); });
-            ConfigButton("CreateCharacterContinue", "Continue", page, new Vector2(0, -340), new Vector2(240, 60), game.CompleteCharacterCreation, style:DuelControlStyle.Primary);
+            characterStart = ConfigButton("CreateCharacterContinue", "Start Game", page, new Vector2(0, -340), new Vector2(240, 60), game.StartGame, style:DuelControlStyle.Primary);
             ConfigButton("CreateCharacterBack", "Back", page, new Vector2(-680, 370), new Vector2(120, 48), game.MainMenu, style:DuelControlStyle.Navigation);
+            if (game.StartupFailed)
+                startupError = Text("Couldn't load the game. Please try again.", page, new Vector2(0, -398), new Vector2(680, 40), 22);
+            if (game.StartupProgress >= 0) ShowStartupProgress(game.StartupProgress);
+        }
+
+        internal void ShowStartupProgress(float progress)
+        {
+            if (startupFill == null)
+            {
+                UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
+                var group = page.gameObject.AddComponent<CanvasGroup>();
+                group.interactable = false;
+                group.blocksRaycasts = false;
+                page.GetComponentInChildren<CharacterFaceCanvas>().enabled = false;
+                var buttonRect = (RectTransform)characterStart.transform;
+                var bar = Rect("StartGameProgress", page, buttonRect.anchoredPosition, buttonRect.sizeDelta);
+                characterStart.gameObject.SetActive(false);
+                if (startupError != null) startupError.gameObject.SetActive(false);
+                Image(bar, Vector2.zero, bar.sizeDelta, NeuralPalette.Panel);
+                var track = Image(bar, new Vector2(0, -23), new Vector2(bar.sizeDelta.x, 8), NeuralPalette.ControlBorder);
+                startupFill = Image(track.transform, Vector2.zero, Vector2.zero, NeuralPalette.Primary).rectTransform;
+                startupFill.anchorMin = Vector2.zero;
+                startupLabel = Text("", bar, new Vector2(0, 4), bar.sizeDelta, 24, face:controlFont);
+                displayedPercent = -1;
+            }
+            int percent = Mathf.FloorToInt(Mathf.Clamp01(progress) * 100f);
+            if (percent == displayedPercent) return;
+            displayedPercent = percent;
+            startupFill.anchorMax = new Vector2(percent / 100f, 1);
+            startupLabel.text = "Loading " + percent + "%";
         }
     }
 }

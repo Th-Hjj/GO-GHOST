@@ -1,0 +1,95 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace GoGhost.Duel
+{
+    public sealed partial class DuelGame
+    {
+        Coroutine startup;
+        internal float StartupProgress { get; private set; } = -1f;
+        internal bool StartupFailed { get; private set; }
+        Shader finalBossShader;
+
+        internal void StartGame()
+        {
+            if (Phase != DuelPhase.CharacterCreation || DeveloperToolsOpen || startup != null) return;
+            StartupFailed = false;
+            SetStartupProgress(0f);
+            startup = StartCoroutine(PrepareGame(Appearance.Name.Trim()));
+        }
+
+        void SetStartupProgress(float value)
+        {
+            StartupProgress = value;
+            ui.ShowStartupProgress(value);
+        }
+
+        IEnumerator PrepareGame(string nickname)
+        {
+            // Give the replaced button a rendered frame before any main-thread asset work.
+            yield return null;
+            var clips = new HashSet<AudioClip>();
+            sounds?.CollectAudioClips(clips);
+            music?.CollectAudioClips(clips);
+            // The prefabs and their visual dependencies are direct references in the loaded
+            // duel scene. Only their audio sample data can still be pending.
+            foreach (var prefab in new[] { combatPrefab, gunnerPrefab, swordsmanPrefab })
+            {
+                if (prefab == null) { FailStartup("Missing encounter prefab."); yield break; }
+                foreach (var set in prefab.GetComponentsInChildren<SfxSet>(true)) set.CollectAudioClips(clips);
+            }
+            if (finalBossShader == null)
+            {
+                var request = Resources.LoadAsync<Shader>("FinalBossRainbow");
+                yield return request;
+                finalBossShader = request.asset as Shader;
+                if (finalBossShader == null) { FailStartup("Missing encounter shader."); yield break; }
+            }
+            SetStartupProgress(.05f);
+            int voiceCount = HandlerVoice.Lines.Length + FinalBossLines.Length;
+            for (int i = 0; i < voiceCount; i++)
+            {
+                string line = i < HandlerVoice.Lines.Length ? HandlerVoice.Lines[i]
+                    : FinalBossClipPath(i - HandlerVoice.Lines.Length);
+                if (!handler.TryGetLine(line, out var clip))
+                {
+                    var request = Resources.LoadAsync<AudioClip>(line);
+                    yield return request;
+                    clip = request.asset as AudioClip;
+                    if (clip == null) { FailStartup("Missing voice line " + line); yield break; }
+                    handler.CacheLine(line, clip);
+                }
+                clips.Add(clip);
+                SetStartupProgress(.05f + .2f * (i + 1) / voiceCount);
+            }
+            int ready = 0;
+            foreach (var clip in clips)
+            {
+                if (clip.loadState != AudioDataLoadState.Loaded)
+                {
+                    yield return null;
+                    if (clip.loadState != AudioDataLoadState.Loading && !clip.LoadAudioData())
+                    { FailStartup("Could not load " + clip.name); yield break; }
+                    while (clip.loadState == AudioDataLoadState.Loading) yield return null;
+                    if (clip.loadState != AudioDataLoadState.Loaded)
+                    { FailStartup("Could not prepare " + clip.name); yield break; }
+                }
+                SetStartupProgress(.25f + .2f * ++ready / clips.Count);
+            }
+            yield return handler.PrepareGreeting(nickname, fraction => SetStartupProgress(.45f + .55f * fraction));
+            yield return null;
+            startup = null;
+            CompleteCharacterCreation();
+        }
+
+        void FailStartup(string reason)
+        {
+            Debug.LogWarning("Start Game: " + reason, this);
+            startup = null;
+            StartupProgress = -1f;
+            StartupFailed = true;
+            ui.Show();
+        }
+    }
+}

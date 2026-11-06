@@ -49,6 +49,7 @@ namespace GoGhost.Duel
         public bool DraftSpine { get; private set; }
         GameObject encounter;
         DuelUI ui;
+        HandlerVoice handler;
         BossAgent[] actors = System.Array.Empty<BossAgent>();
         ArenaNavigation2D navigation;
         DuoCoordinator coordinator;
@@ -70,6 +71,7 @@ namespace GoGhost.Duel
                 foreach(var surface in platforms[0].transform.parent.GetComponentsInChildren<SpriteRenderer>())
                     surface.color=Color.Lerp(NeuralPalette.Panel,NeuralPalette.Secondary,.70f);
             InitializeDeveloperTuning();
+            handler = gameObject.AddComponent<HandlerVoice>();
             ResetCharacterAppearance();
             ui = gameObject.AddComponent<DuelUI>();
             ui.Initialize(this, font, controlFont, headingFont, numericFont);
@@ -116,11 +118,12 @@ namespace GoGhost.Duel
         }
         public void CompleteCharacterCreation()
         {
-            if (Phase != DuelPhase.CharacterCreation || DeveloperToolsOpen) return;
+            if (Phase != DuelPhase.CharacterCreation || DeveloperToolsOpen || startup != null) return;
             Appearance.Name = Appearance.Name.Trim();
             PlayMetrics.SetName(Appearance.DisplayName, true);
             UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
             SetPhase(DuelPhase.Configure);
+            handler.PlayGreeting();
         }
         public void SetDraft(int module, bool automatic)
         {
@@ -306,6 +309,17 @@ namespace GoGhost.Duel
         }
         void SetPhase(DuelPhase value)
         {
+            if (startup != null)
+            {
+                StopCoroutine(startup);
+                startup = null;
+                handler.Stop();
+            }
+            StartupProgress = -1f;
+            StartupFailed = false;
+            if (value == DuelPhase.Menu || value == DuelPhase.CharacterCreation || value == DuelPhase.FinalBoss
+                || Phase == DuelPhase.FinalBoss || value == DuelPhase.Failed || (Phase == DuelPhase.Training && value == DuelPhase.Configure))
+                handler.Stop();
             Phase = value;
             MetricsStage();
             if (value == DuelPhase.FinalBossReady || value == DuelPhase.Complete) PlayMetrics.EndRun("complete");
@@ -383,6 +397,8 @@ namespace GoGhost.Duel
             sounds?.Play(defeat ? Sfx.Defeat : Sfx.Victory);
             SetPhase(defeat ? DuelPhase.Failed : Wave == BonusWave ? DuelPhase.Complete
                 : Wave == 2 ? DuelPhase.FinalBossReady : DuelPhase.Between);
+            if (!defeat)
+                handler.WaveCleared(Wave);
         }
         public void Trace(string message)
         {

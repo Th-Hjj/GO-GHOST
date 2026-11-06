@@ -143,6 +143,7 @@ namespace GoGhost.Duel
 
         public void ToggleDeveloperTools()
         {
+            if (startup != null) return;
             if(DeveloperToolsOpen)
             {
                 DeveloperToolsOpen=false;

@@ -1,5 +1,33 @@
 # GO GHOST slice implementation
 
+## 2026-11-05 — Assistant cadence
+
+- Heart's personalized greeting, recorded fallback and three victory lines use 1.1× synthesis speed. Player and Final Boss voice rates are independent. Unity playback and builds skipped at Thomas's request.
+
+## 2026-11-05 — Final Boss voice B
+
+- The seven existing dialogue lines use the selected deep layered Lewis treatment from audition B. Start Game preloads each recorded line. Entering the visit or advancing the text starts the corresponding line, and leaving the visit stops playback. Unity playback and builds skipped at Thomas's request.
+
+## 2026-11-05 — Testing narration
+
+- Removed the Testing briefing trigger, its queue and the three briefing clips from startup preloading. Heart voices the character greeting and victories. Processed Final Boss auditions remain outside the game. Runtime tests and builds skipped at Thomas's request.
+
+## 2026-11-05 — Voice casting
+
+- Thomas selected Heart (`af_heart`, speaker 3) for the AI handler and Michael (`am_michael`, speaker 16) for the player. The handler's recorded lines and offline nickname synthesis now use Heart. Player dialogue awaits authored lines and triggers. Final Boss casting is open, with auditions kept outside the game. No Unity playback or build run.
+
+## 2026-11-05 — Character creation loading
+
+- Start Game replaces Continue. Its progress bar follows the acquisition of encounter resources, audio readiness and offline nickname synthesis. Configuration opens after the personalized greeting (or recorded fallback) is ready. Missing required assets leave character creation available for retry with the name and face retained.
+- Runtime timing, playback and builds were not tested at Thomas's request.
+
+## 2026-11-05 — In-game AI handler voice
+
+- Character creation now welcomes the player by the entered name. Windows x64 and macOS use offline Kokoro v1.0 INT8, US English voice `am_michael` (speaker 16), through sherpa-onnx v2.0.1. Unknown Latin names are spelled out. A recorded greeting handles blank or unsupported names and synthesis failures.
+- First Testing entry per wave per New Game plays the target briefing for Gunner, Swordsman or the Bonus duo. Genuine victories play the corresponding clear line. Defeats, practice respawns and repeat Testing visits have no extra announcement. The placeholder Final Boss dialogue and tutorial have no voice lines.
+- The seven fixed clips were synthesized offline. Editor playback, builds, native-library loading and pronunciation on player devices were not tested at Thomas's request.
+- Asset provenance: [Kokoro model bundle](https://github.com/k2-fsa/sherpa-onnx/releases/tag/tts-models), [sherpa-onnx v2.0.1 native libraries](https://github.com/k2-fsa/sherpa-onnx/releases/tag/v2.0.1). Model and runtime notices ship in StreamingAssets/HandlerVoice.
+
 ## 2026-11-05 — Parameter descriptions, face drawing hint and Auto Aim
 
 - The footer previews the hovered or keyboard-focused parameter and restores the selection on exit. Updated player-facing condition, action and parameter descriptions. Auto Aim is a direct nearest-enemy action. Historical Aim Assist rules require reselection.

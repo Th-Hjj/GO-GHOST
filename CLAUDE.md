@@ -9,6 +9,7 @@ Read this file first in every session, then the docs listed at the bottom for th
 ## Current design authority — 2026-11-05
 
 Dated decisions are ordered newest first. Later entries supersede conflicting older ones; past delivery permissions/limits belong to that delivery. The Confirmed constraints section summarizes the current source. Preserve the historical decisions as provenance.
+- **Happy’s production voice — Thomas, 2026-11-05:** Use the approved v0.8 inner voice for future Happy dialogue, including fixed lines, fallback and personalized greetings. Follow `Docs/Game/VoiceDirection.md` and match its stereo reference when producing or reviewing a new take.
 - **Happy’s starter rule — Thomas, 2026-11-05:** After character creation, Happy starts the player with one editable Incoming Attack (Any) → Jump (Once) rule. Players can remove it for the rest of the run.
 - **Playtest timer removal - Thomas, 2026-11-05:** Remove the seven-minute reminder and its Wave 2 skip. Normal progression advances after Wave 1 victory.
 - **Playtest wording and aiming — Thomas, 2026-11-05:** Weapon offers Auto Aim at the nearest enemy and Fire. Retire Aim Assist and require explicit reselection on old rules. Hovering a parameter previews its own plain-English description in the footer. Character creation shows Hold left mouse to draw. until the first stroke, then fades it out.

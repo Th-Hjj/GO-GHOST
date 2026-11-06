@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-05 — Happy inner voice approved
+
+- Thomas selected the v0.8 stereo inner voice for future Happy lines. Archived the dry take and approved WAV, added an offline mastering command and updated the production rules. The command reproduced the reference WAV byte for byte. Runtime migration is separate.
+
 ## 2026-11-05 — Voice production references
 
 - Consolidated voice direction and archived the selected listening references. Thomas approved Happy B-light and retained Final Boss v0.3 as the provisional baseline. This stage covers production documentation and reference audio.

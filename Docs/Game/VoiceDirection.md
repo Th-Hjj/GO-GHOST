@@ -4,7 +4,7 @@ Thomas's decision on 2026-11-05 establishes two production references for new or
 
 | Speaker | Decision | Listening reference |
 |---|---|---|
-| Happy | **Approved.** Use Heart with the v0.4 B-light electronic treatment. | [Happy B-light · 5.76 s](VoiceReferences/Happy-B-light.wav) |
+| Happy | **Approved.** Use the v0.8 stereo inner voice for every new or revised Happy line. It supersedes the v0.4 B-light master. | [Happy inner voice · 6.41 s](VoiceReferences/Happy-Inner-v08.wav) |
 | Final Boss | **Provisional.** Use the faster, more inflected v0.3 take with the game's deep B treatment until Thomas revises it. | [Final Boss B · 7.19 s](VoiceReferences/FinalBoss-B.wav) |
 
 Thomas owns character, dialogue, motivation and emotional direction. Most existing lines are placeholders or first passes. Leave unspecified direction blank. The audition text demonstrates sound and timing only. Michael remains reserved for the player; give additional speakers their own approved reference before authoring lines for them.
@@ -23,9 +23,18 @@ Use Kokoro multilingual v1.0 INT8 Heart with the US English lexicon and **1.10×
 
 1. Make the full B version from the dry Heart take. Use a 24-band spectral-envelope vocoder (85 Hz–10.5 kHz, 1024-sample FFT, 128-sample hop, square-root Hann window). A steady 182 Hz harmonic carrier supplies voiced energy. Blend back the original high-frequency speech from 3.3 to 5 kHz to keep consonants intelligible.
 2. Match the vocoder layer's RMS to the dry take. Mix 0.40 dry plus 0.65 vocoded, then match the result to the dry RMS. The reference level-matching steps cap peak amplitude at 0.91 full scale.
-3. For the approved **B-light** master, mix **65% of that finished B take and 35% synchronized dry Heart** with linear gains. Match the final RMS to B. The 65% refers to the already mixed B take. Keep the dry and processed tracks sample-aligned.
+3. Mix **15% of the finished B take and 85% synchronized dry Heart** with linear gains. Use the v0.4 listening level for level matching. Keep the direct voice centered.
+4. Apply the v0.8 short stereo returns at word onset (mid −9 dB, side −6.5 dB) and the longer diffuse returns (mid −12.5 dB, side −13 dB). Allow 650 ms of tail. Export stereo at 24 kHz and preserve both channels through import and playback.
 
-The same timbre is the target for authored lines and personalized greetings. Fixed lines can be rendered offline. A future rollout to the dynamic nickname needs a separate runtime processing change and a comparison of the named greeting with the fixed fallback.
+**Production command** (Python 3 with NumPy, from the repository root):
+
+```text
+python Tools/render_happy_voice.py dry-heart.wav happy-v08.wav
+```
+
+Keep the dry take separately. The [offline renderer](../../Tools/render_happy_voice.py) accepts a mono 24 kHz PCM16 WAV. For a regression check, render the [reference dry take](VoiceReferences/Happy-Inner-Dry.wav) and compare it with the approved stereo WAV. The archived master has SHA-256 `8ee63ce5e50de4a8950217e9eaab4875c0130ad44497bd01135d92e5973d3156`. Review new lines at matched loudness on headphones and in mono.
+
+Use this master for authored dialogue and the fallback greeting. The same treatment is required when the dynamic nickname path is next revised. It currently creates a mono clip directly from Kokoro samples. Its rollout requires processing the generated PCM and creating a stereo clip with the correct frame count. Compare a named greeting with the fixed fallback before accepting that rollout. Current game assets predate this production approval.
 
 ### Final Boss production recipe
 

@@ -4,9 +4,9 @@ A single-player 2D boss-fight prototype where you decide what to control and wha
 
 Build up to **20 Condition → Action rules** across Move, Jump, Aim, Fire and Dodge. Each operation falls back to manual control when no rule can execute.
 
-**[Download the Alpha Playtest — Windows and macOS](https://github.com/Th-Hjj/GO-GHOST/releases/tag/alpha-playtest-2026-10-29)** (version 0.80.0)
+**[Download Beta 33% for Windows or macOS](https://github.com/Th-Hjj/GO-GHOST/releases/tag/beta-33)**
 
-The Windows build was launched and its telemetry checked on the build PC. The macOS build is Universal (Apple Silicon and Intel), is not Developer ID signed or notarized, and has not yet been run on a Mac. Each ZIP includes setup, controls and data-collection instructions.
+Extract the ZIP for your platform. Each package includes the game, its offline voice model and a controls reference.
 
 ## Current game
 

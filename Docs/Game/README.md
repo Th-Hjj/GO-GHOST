@@ -31,7 +31,7 @@ Wave 1 victory waits on **Continue to Wave 2**. Wave 2 victory displays **WAVE 2
 
 **GO GHOST > Playtest > Wave 1 / Wave 2 / Bonus Wave** opens empty/manual configuration; **Wave 3** opens the Final Boss visit. **Final Boss and Bonus Progression** checks the new transitions and metrics cutoff. Select checks appropriate to the change; historical suites contain superseded assertions and are not current acceptance criteria.
 
-The current published download is **Alpha Playtest** (version 0.80.0, 2026-10-29, tag `alpha-playtest-2026-10-29`): Windows x64 and macOS Universal builds of the tagged commit. Later source changes are not in it; describe current source and published builds separately. Historical release instructions apply only to their dated delivery; build or release work needs current scope. Record static, compilation, Editor, build and standalone evidence separately in the implementation log. A successful build does not establish gameplay or balance coverage.
+Download [Beta 33%](https://github.com/Th-Hjj/GO-GHOST/releases/tag/beta-33) for Windows x64 or macOS. Historical release instructions apply only to their dated delivery. Record static, compilation, Editor, build and standalone evidence separately in the implementation log.
 
 ## Project organization
 

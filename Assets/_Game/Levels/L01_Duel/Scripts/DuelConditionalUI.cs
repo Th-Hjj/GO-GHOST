@@ -711,6 +711,8 @@ namespace GoGhost.Duel
             return false;
         }
 
+        const float ActionHeadingHeight = 28, ActionGroupSpacing = 8;
+
         void BuildRuleSelector(RectTransform panel,bool conditionSide)
         {
             float w=panel.sizeDelta.x,h=panel.sizeDelta.y,top=h/2;
@@ -721,7 +723,8 @@ namespace GoGhost.Duel
                 :ConditionalCatalog.ActionOptions(rule.Action);
             const float parameterHeight=104;
             float dividerY=-h/2+parameterHeight;
-            float optionsTop=top,optionsBottom=dividerY+16;
+            float optionsTop=conditionSide ? top-ActionHeadingHeight-ActionGroupSpacing : top;
+            float optionsBottom=dividerY+16;
             float listY=(optionsTop+optionsBottom)/2,listHeight=optionsTop-optionsBottom;
             if(conditionSide)
             {
@@ -758,13 +761,13 @@ namespace GoGhost.Duel
         void BuildGroupedActions(RectTransform choices,float width,ConditionalRule rule)
         {
             const float gap=12,rowHeight=56;
-            choices.GetComponent<UnityEngine.UI.VerticalLayoutGroup>().spacing=8;
+            choices.GetComponent<UnityEngine.UI.VerticalLayoutGroup>().spacing=ActionGroupSpacing;
             foreach(var group in ActionGroups)
             {
                 var heading=Text(group.Label,choices,Vector2.zero,Vector2.zero,19,TextAlignmentOptions.Left,headingFont);
                 heading.color=NeuralPalette.Secondary;
                 var headingLayout=heading.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();
-                headingLayout.minHeight=headingLayout.preferredHeight=28;
+                headingLayout.minHeight=headingLayout.preferredHeight=ActionHeadingHeight;
                 var cards=Rect(group.Label+"Cards",choices,Vector2.zero,Vector2.zero);
                 var grid=cards.gameObject.AddComponent<UnityEngine.UI.GridLayoutGroup>();
                 grid.constraint=UnityEngine.UI.GridLayoutGroup.Constraint.FixedColumnCount;

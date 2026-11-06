@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-05 — Beta 33%
+
+- Happy's tutorial keeps the approved text and 1.1× Heart voice. Added 160 ms after the greeting and between complete sentences in each tutorial clip. Imported durations are 21.02 s and 10.31 s.
+- The first Condition row starts below the same 28-unit heading and 8-unit gap used above the first Action row. Both Condition columns move together.
+- Built Windows x64 (Succeeded, 0 errors, 513 warnings) and macOS (successful player build, Universal executable). Verified both ZIPs by CRC and checked for the game executable, managed assembly, voice library and offline model. Standalone gameplay and listening were not tested.
+
 ## 2026-11-05 — Happy’s configuration tutorial
 
 - The existing nickname greeting leads into Happy’s introduction in the first Body Configuration. Its closing prompt is “Please take a moment to inspect your new body's configuration page, and click on Add Rule.”

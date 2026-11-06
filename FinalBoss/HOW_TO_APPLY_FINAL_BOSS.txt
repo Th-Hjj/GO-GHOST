@@ -1,0 +1,67 @@
+FINAL BOSS: HOW TO APPLY
+No prefab or Inspector work is needed. The boss is built at runtime from the Swordsman prefab.
+
+NEW FILES (put them in the same folder as DuelGame.cs):
+    BossFinal.cs
+    FinalBossSpecials.cs
+    DuelFinalBossFight.cs
+
+=====================================================================
+EDIT 1: Enemy.cs   (add one method, next to ConfigureFixedSingleLife)
+=====================================================================
+    /// <summary>Final boss: after ConfigureFixedSingleLife, add a second health pool. The first pool ending
+    /// parks the enemy in AwaitingSecondPhase; the owner then calls BeginSecondPhase().</summary>
+    public void EnableSecondPhase(int secondPool)
+    {
+        if (IsDead || PhaseIndex != 1 || AwaitingSecondPhase) return;
+        secondPhaseMaxHealth = Mathf.Max(1, secondPool);
+    }
+
+=====================================================================
+EDIT 2: DuelGame.cs  (CreateEncounter, two additions)
+=====================================================================
+A) Right BEFORE the line  "ApplyPlatformLayout(training);"  add:
+        finalBossVisit = false;
+
+B) Inside CreateEncounter, in the  "else { ... }"  block that adds the Gunner and Swordsman
+   (the one that starts with  if (Wave == 1 || Wave == BonusWave) ...), add one more line at its end:
+        if (Wave == FinalBossWave) activeActors.Add(CreateFinalBoss(soloX));
+
+=====================================================================
+EDIT 3: the platform layout file (the one containing PlatformTierRise / ApplyPlatformLayout)
+=====================================================================
+Find:
+    var layout = training ? TrainingLayout : Wave == FinalBossWave ? System.Array.Empty<PlatformPlacement>()
+Replace with:
+    var layout = training ? TrainingLayout : Wave == FinalBossWave && finalBossVisit ? System.Array.Empty<PlatformPlacement>()
+
+=====================================================================
+EDIT 4: the final boss dialogue file (the one containing FinalBossLines / MeetFinalBoss / ChooseBonus)
+=====================================================================
+A) Replace the FinalBossLines array with:
+        static readonly string[] FinalBossLines =
+        {
+            "So. You're the one who got this far.",
+            "I'm the final boss.",
+            "Everything you've learned, I've already seen.",
+            "Let's see if it's enough.",
+            "Are you ready?"
+        };
+
+B) In CreateFinalBossPage(), right AFTER the line  "ClearEncounter();"  add:
+        finalBossVisit = true;
+
+C) Replace the body of ChooseBonus with (the "No" button still goes to the main menu):
+        public void ChooseBonus(bool enter)
+        {
+            if (Phase != DuelPhase.FinalBoss || DeveloperToolsOpen || !FinalBossChoiceReady) return;
+            if (!enter) { MainMenu(); return; }
+            ClearEncounter();
+            Wave = FinalBossWave;
+            FirstConfiguration = developerTrainingSelected = false;
+            CreateEncounter(false);   // the real fight; a win moves on to the bonus wave through the Between phase
+        }
+
+FLOW: win wave 2 -> dialogue -> "Yes" -> final boss fight (wave 3) -> win -> bonus wave (wave 4).
+A death sends you to Reconfigure; Start Fight then restarts the final boss fight.
+TEST QUICKLY: F8 developer tools -> "Wave 3" shows the dialogue, then the fight.

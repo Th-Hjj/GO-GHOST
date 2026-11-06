@@ -154,6 +154,14 @@ public class Enemy : MonoBehaviour, IDamageable
         CurrentHealth = maxHealth; automaticCombat = false; destroyOnDeath = false; combatStopped = false;
     }
 
+    /// <summary>Final boss: after ConfigureFixedSingleLife, add a second health pool. The first pool ending
+    /// parks the enemy in AwaitingSecondPhase; the owner then calls BeginSecondPhase().</summary>
+    public void EnableSecondPhase(int secondPool)
+    {
+        if (IsDead || PhaseIndex != 1 || AwaitingSecondPhase) return;
+        secondPhaseMaxHealth = Mathf.Max(1, secondPool);
+    }
+
     // Runtime developer tuning preserves the current life, AI state and damage-event history.
     public void SetRuntimeHealth(int maximum, int current)
     {

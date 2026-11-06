@@ -145,6 +145,7 @@ namespace GoGhost.Duel
         {
             ClearEncounter();
             developerTrainingSelected = training;
+            finalBossVisit = false;
             ApplyPlatformLayout(training);
             lockedLegs = lockedArms = lockedSpine = false;
             encounter = Instantiate(combatPrefab, transform);
@@ -183,6 +184,7 @@ namespace GoGhost.Duel
                     Wave == 1 ? new Vector2(soloX, gunnerSpawn.y) : gunnerSpawn, 1));
                 if (Wave == 2 || Wave == BonusWave) activeActors.Add(CreateBoss(swordsmanPrefab,
                     Wave == 2 ? new Vector2(soloX, swordsmanSpawn.y) : swordsmanSpawn, 2));
+                if (Wave == FinalBossWave) activeActors.Add(CreateFinalBoss(soloX));
             }
             actors = activeActors.ToArray();
             if (!training)

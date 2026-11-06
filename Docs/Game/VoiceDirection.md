@@ -19,7 +19,9 @@ Thomas owns character, dialogue, motivation and emotional direction. Most existi
 
 ### Happy production recipe
 
-Use Kokoro multilingual v1.0 INT8 Heart with the US English lexicon. Thomas selected **1.05× synthesis speed** for fixed lines and named greetings. The archived v0.8 take at 1.10× remains the timbre and mastering reference. Heart is speaker 3 in the 54-voice production bank and 0 in the game's two-voice desktop bank. Work with synchronized 24 kHz mono audio.
+Use Kokoro multilingual v1.0 INT8 Heart with the US English lexicon. Thomas selected **1.05× synthesis speed** for routine fixed lines and named greetings. The character-creation question has its own delivery. The archived v0.8 take at 1.10× remains the timbre and mastering reference. Heart is speaker 3 in the 54-voice production bank and 0 in the game's two-voice desktop bank. Work with synchronized 24 kHz mono audio.
+
+**Character creation · “Who are you?”** Thomas requested audible uncertainty with slight pressure for this opening alone, citing the character-creation question in Baldur’s Gate 3. Take A is installed for audition, pending his choice. Synthesize the whole question at 0.76×. Let *who* open up, ease the level through *are*, then bring *you* forward and let it settle lower. The [directed dry take](VoiceReferences/Happy-WhoAreYou-Dry.wav) captures the word-level pitch and gain adjustments. Render it with the standard v0.8 command below to reproduce the game WAV.
 
 1. Make the full B version from the dry Heart take. Use a 24-band spectral-envelope vocoder (85 Hz–10.5 kHz, 1024-sample FFT, 128-sample hop, square-root Hann window). A steady 182 Hz harmonic carrier supplies voiced energy. Blend back the original high-frequency speech from 3.3 to 5 kHz to keep consonants intelligible.
 2. Match the vocoder layer's RMS to the dry take. Mix 0.40 dry plus 0.65 vocoded, then match the result to the dry RMS. The reference level-matching steps cap peak amplitude at 0.91 full scale.

@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-05 — Character creation voice audition
+
+- Prepared two deliveries of “Who are you?” and installed take A (0.76× Heart with a word-level contour) for Thomas to audition. Archived its directed dry source. Matched active speech levels to the prior take and checked the stereo WAVs offline. Unity listening is left to Thomas.
+
 ## 2026-11-05 — Happy delivery at 1.05×
 
 - Set the seven active Happy recordings and personalized greetings to Thomas's chosen 1.05×. Retained the existing scripts, sentence-gap targets and v0.8 treatment. Editor listening is left to Thomas.

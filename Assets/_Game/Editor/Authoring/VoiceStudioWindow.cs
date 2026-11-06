@@ -53,6 +53,7 @@ namespace GoGhost.Duel.EditorTools
         int scope, region = -1, revision;
         bool busy, closed, publishing, fork, loop, match = true, autoListen = true, dirty, holdingA;
         bool sceneAudition;
+        bool suppressDraftReplay;
         bool revoiceHappy, revoiceBoss;
         AudioClip gameDraft;
         float selectFrom, selectTo, dragStart;
@@ -98,6 +99,14 @@ namespace GoGhost.Duel.EditorTools
         }
         void Tick()
         {
+#if UNITY_EDITOR_WIN
+            if (player.ReleaseFinished())
+            {
+                if (status != null && (status.StartsWith("Playing ") || status.StartsWith("Looping ")))
+                    status = "Playback finished.";
+                Repaint();
+            }
+#endif
             if (!busy && renderAt > 0 && EditorApplication.timeSinceStartup >= renderAt)
             {
                 renderAt = 0;
@@ -121,6 +130,7 @@ namespace GoGhost.Duel.EditorTools
         }
         void Changed()
         {
+            suppressDraftReplay=false;
             ClearGameDraft();
             dirty = true;
             revision++;
@@ -219,7 +229,7 @@ namespace GoGhost.Duel.EditorTools
                         source=StudioTake.Read(Path.Combine(job,"source.wav"));
                         draft=StudioTake.Read(Path.Combine(job,"draft.wav"));
                         mapped=result.mapped;
-                        if (autoListen) Listen(true);
+                        if (autoListen && !suppressDraftReplay) Listen(true);
                     }
                 }
             }
@@ -254,9 +264,19 @@ namespace GoGhost.Duel.EditorTools
                 var game=sceneAudition ? FindAnyObjectByType<HandlerVoice>() : null;
                 if (sceneAudition && game==null) throw new InvalidOperationException("Open the duel in Play Mode for scene audition.");
                 float delay=sceneAudition && key=="Handler/WhoAreYou" ? catalog.openingDelay : 0;
-                player.Play(take,start,end,loop,gain,game,delay);
+                PlayTake(take,start,end,loop,gain,game,delay,(useDraft ? "draft" : "current take")+" · "+catalog.Find(key).label);
             }
             catch (Exception e) { status=e.Message; }
+        }
+        void PlayTake(StudioTake take, float start, float end, bool repeat, float gain, HandlerVoice game, float delay, string label)
+        {
+            try
+            {
+                player.Play(take,start,end,repeat,gain,game,delay);
+                status = $"{(repeat ? "Looping" : "Playing")} {label} · {Mathf.Min(end,take.Seconds)-start:0.00} s";
+            }
+            catch (Exception e) { status=e.GetBaseException().Message; }
+            Repaint();
         }
         async void ListenName()
         {
@@ -272,8 +292,8 @@ namespace GoGhost.Duel.EditorTools
                 if (cancel.IsCancellationRequested || closed) return;
                 var take=samples==null ? StudioTake.Read(ResourceDir+"Handler/Greeting.wav") :
                     new StudioTake {samples=samples,channels=2,rate=24000};
-                player.Play(take,0,take.Seconds,false,catalog.Volume(false),null,0);
-                status=samples==null ? "Playing fixed fallback." : "Named greeting ready.";
+                PlayTake(take,0,take.Seconds,false,catalog.Volume(false),null,0,
+                    samples==null ? "fallback greeting" : "named greeting");
             }
             catch (Exception e) { if (!cancel.IsCancellationRequested) status=e.Message; }
             finally { if (nameJob==cancel) nameJob=null; cancel.Dispose(); Repaint(); }

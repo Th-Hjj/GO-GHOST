@@ -45,14 +45,20 @@ namespace GoGhost.Duel.EditorTools
             throw new IOException("Missing WAV samples.");
         }
 
-        public AudioClip Clip(float from, float to, float gain)
+        public float[] Selection(float from, float to, float gain)
         {
             int frames = samples.Length / channels;
             int start = Mathf.Clamp(Mathf.RoundToInt(from * rate), 0, frames - 1);
             int count = Mathf.Clamp(Mathf.RoundToInt(to * rate) - start, 1, frames - start);
             var values = new float[count * channels];
             for (int i = 0; i < values.Length; i++) values[i] = Mathf.Clamp(samples[start * channels + i] * gain, -1, 1);
-            var clip = AudioClip.Create("Voice Studio audition", count, channels, rate, false);
+            return values;
+        }
+
+        public AudioClip Clip(float from, float to, float gain)
+        {
+            var values = Selection(from, to, gain);
+            var clip = AudioClip.Create("Voice Studio audition", values.Length / channels, channels, rate, false);
             clip.hideFlags = HideFlags.HideAndDontSave;
             clip.SetData(values, 0);
             return clip;
@@ -73,9 +79,25 @@ namespace GoGhost.Duel.EditorTools
         static readonly Type AudioUtil = typeof(AudioImporter).Assembly.GetType("UnityEditor.AudioUtil");
         AudioClip clip;
         AudioSource monitor;
+#if UNITY_EDITOR_WIN
+        StudioWaveOut output;
+        public bool ReleaseFinished()
+        {
+            if (output == null || !output.Finished) return false;
+            Dispose();
+            return true;
+        }
+#endif
         public void Play(StudioTake take, float from, float to, bool loop, float gain, HandlerVoice game, float delay)
         {
             Dispose();
+#if UNITY_EDITOR_WIN
+            if (game == null)
+            {
+                output = new StudioWaveOut(take.Selection(from, to, gain), take.channels, take.rate, loop);
+                return;
+            }
+#endif
             clip = take.Clip(from, to, gain);
             if (game != null)
             {
@@ -95,6 +117,10 @@ namespace GoGhost.Duel.EditorTools
 
         public void Dispose()
         {
+#if UNITY_EDITOR_WIN
+            output?.Dispose();
+            output = null;
+#endif
             if (monitor != null)
             {
                 monitor.Stop();

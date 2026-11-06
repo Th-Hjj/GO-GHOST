@@ -255,15 +255,15 @@ namespace GoGhost.Duel.EditorTools
                     if (!File.Exists(path)) continue;
                     EditorGUILayout.BeginHorizontal();
                     EditorGUILayout.LabelField(entry.label);
-                    if (GUILayout.Button("A · Game",GUILayout.Width(80)))
+                    if (GUILayout.Button("Play current (A)",GUILayout.Width(105)))
                     {
                         var take=StudioTake.Read(ResourceDir+entry.key+".wav");
-                        player.Play(take,0,take.Seconds,false,installedCatalog.Volume(entry.key.StartsWith("FinalBossVoice/",StringComparison.Ordinal)),null,0);
+                        PlayTake(take,0,take.Seconds,false,installedCatalog.Volume(entry.key.StartsWith("FinalBossVoice/",StringComparison.Ordinal)),null,0,"current take · "+entry.label);
                     }
-                    if (GUILayout.Button("B · Draft",GUILayout.Width(80)))
+                    if (GUILayout.Button("Play draft (B)",GUILayout.Width(100)))
                     {
                         var take=StudioTake.Read(path);
-                        player.Play(take,0,take.Seconds,false,catalog.Volume(entry.key.StartsWith("FinalBossVoice/",StringComparison.Ordinal)),null,0);
+                        PlayTake(take,0,take.Seconds,false,catalog.Volume(entry.key.StartsWith("FinalBossVoice/",StringComparison.Ordinal)),null,0,"draft · "+entry.label);
                     }
                     EditorGUILayout.EndHorizontal();
                 }
@@ -272,10 +272,16 @@ namespace GoGhost.Duel.EditorTools
         void Transport()
         {
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("A · Game")) Listen(false);
+            if (GUILayout.Button("Play current (A)")) Listen(false);
             using (new EditorGUI.DisabledScope(draft==null))
-                if (GUILayout.Button("B · Draft")) Listen(true);
-            if (GUILayout.Button("Stop")) player.Dispose();
+                if (GUILayout.Button("Play draft (B)")) Listen(true);
+            if (GUILayout.Button("Stop"))
+            {
+                nameJob?.Cancel();
+                suppressDraftReplay=true;
+                player.Dispose();
+                status="Playback stopped.";
+            }
             loop=GUILayout.Toggle(loop,"Loop selection");
             match=GUILayout.Toggle(match,"Match level");
             EditorGUILayout.EndHorizontal();
@@ -306,7 +312,11 @@ namespace GoGhost.Duel.EditorTools
             EditorGUILayout.BeginHorizontal();
             using (new EditorGUI.DisabledScope(busy || (scope==0 && catalog.Find(key).locked && !fork)))
             {
-                if (GUILayout.Button(scope==0 ? "Render draft" : "Review affected lines")) Run(scope==0 ? "line" : "profiles");
+                if (GUILayout.Button(scope==0 ? "Render draft" : "Review affected lines"))
+                {
+                    suppressDraftReplay=false;
+                    Run(scope==0 ? "line" : "profiles");
+                }
                 using (new EditorGUI.DisabledScope(review==null))
                     if (GUILayout.Button("Adopt to game")) Run("apply");
             }

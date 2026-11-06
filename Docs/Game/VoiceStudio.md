@@ -4,9 +4,9 @@
 
 ## 用开场问句试一次
 
-1. 选择 **Character creation**。点 **A · Game** 听正式版本，再点 **Create a line-specific draft**。正式版始终受批量重制保护。
+1. 选择 **Character creation**。点 **Play current (A)** 听正式版本，再点 **Create a line-specific draft**。正式版始终受批量重制保护。
 2. 在波形下方点 **are**，点 **−10 ms**。这个数表示从该词结束标记处缩短的间隔。选区的起点与终点可按秒校正。要延长 *you*，单独框选它的元音，点 **Add region** 并提高 **Length ×**。
-3. **Preview edits automatically** 会在松开滑杆后生成并播放当前草稿。**Loop selection** 循环听选区。点 **A · Game** 和 **B · Draft** 比较，或在窗口获得焦点时按住 **F2** 听 A、松开听 B。**Match level** 方便比较音色；判断游戏里的实际响度时关闭它。
+3. **Preview edits automatically** 会在松开滑杆后生成并播放当前草稿。**Loop selection** 循环听选区。点 **Play current (A)** 和 **Play draft (B)** 比较，或在窗口获得焦点时按住 **F2** 听 A、松开听 B。**Match level** 方便比较音色；判断游戏里的实际响度时关闭它。
 4. 在 Play Mode 勾 **Listen in scene** 可在当前场景手动独听，并听到开场的一秒等待。勾 **Use draft at its game trigger** 后，下一次正常进入该对白时会临时播放草稿。修改或切换草稿、退出 Play Mode 或关闭窗口都会清除临时替换。
 5. 点 **Adopt to game** 写入试听所用的成品及制作参数。**Restore last adoption** 可还原上一次采用操作，包括一次性采用的一批台词。退出 Play Mode 后采用的结果仍有效。
 

@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-11-06 — Windows Voice Studio audition
+
+- Routed window auditions directly to the Windows default audio output, including PCM selections, looping, A/B and nickname previews. Labeled the play controls and added playback feedback. Scene auditions continue through the game's audio source.
+- The Windows driver returned the complete Greeting fallback buffer after 1.76 s. A separate loop stayed active until stopped. Compiled the runtime and Editor assemblies offline. Unity interaction and physical speaker output are left to Thomas.
+
 ## 2026-11-06 — Voice Studio
 
 - Added an Editor workbench for all 14 active fixed recordings and the desktop nickname template. The existing opening is a protected master. Waveform selections, reference performances, speaker profiles, scene auditions and recoverable adoption use the existing game resources. Five legacy Happy transcripts were recovered from the recordings and flagged for review.

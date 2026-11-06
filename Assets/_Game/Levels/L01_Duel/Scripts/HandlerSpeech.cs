@@ -124,7 +124,8 @@ namespace GoGhost.Duel
                     if (audio.samples == IntPtr.Zero || audio.n <= 0 || audio.sample_rate <= 0) return default;
                     var samples = new float[audio.n];
                     Marshal.Copy(audio.samples, samples, 0, samples.Length);
-                    return new Recording { Samples = samples, Rate = audio.sample_rate };
+                    if (audio.sample_rate != 24000) throw new InvalidOperationException("Unexpected Happy voice sample rate.");
+                    return new Recording { Samples = HappyVoiceMaster.Stereo(samples, root, token), Rate = audio.sample_rate };
                 }
                 finally { HandlerKokoro.SherpaOnnxDestroyOfflineTtsGeneratedAudio(result); }
             }

@@ -109,6 +109,7 @@ namespace GoGhost.Duel
             FirstConfiguration = true;
             ResetCharacterAppearance();
             SetPhase(DuelPhase.CharacterCreation);
+            handler.PlayLine("Handler/WhoAreYou");
         }
         void ResetCharacterAppearance()
         {

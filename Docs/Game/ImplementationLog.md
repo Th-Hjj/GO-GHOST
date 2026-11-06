@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-11-05 — In-game voice production pass
+
+- Mastered the seven active Happy clips in stereo v0.8. Added space at the measured sentence boundaries in the configuration tutorial and victory announcements (roughly 0.75–1.0 s before processing). The offline nickname worker now applies the same electronic and stereo treatment. Re-rendered all seven existing Final Boss pages with the faster v0.3 B recipe, retaining page text and manual advancement.
+- Outside Unity, compiled the nickname/DSP code, checked its stereo output against the approved dry/reference pair (maximum PCM16 difference of one), and synthesized English and Chinese nickname greetings with the project's Windows native libraries. Editor listening and builds were skipped for Thomas's manual check.
+
 ## 2026-11-05 — Happy inner voice approved
 
 - Thomas selected the v0.8 stereo inner voice for future Happy lines. Archived the dry take and approved WAV, added an offline mastering command and updated the production rules. The command reproduced the reference WAV byte for byte. Runtime migration is separate.

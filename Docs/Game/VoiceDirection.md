@@ -34,7 +34,7 @@ python Tools/render_happy_voice.py dry-heart.wav happy-v08.wav
 
 Keep the dry take separately. The [offline renderer](../../Tools/render_happy_voice.py) accepts a mono 24 kHz PCM16 WAV. For a regression check, render the [reference dry take](VoiceReferences/Happy-Inner-Dry.wav) and compare it with the approved stereo WAV. The archived master has SHA-256 `8ee63ce5e50de4a8950217e9eaab4875c0130ad44497bd01135d92e5973d3156`. Review new lines at matched loudness on headphones and in mono.
 
-Use this master for authored dialogue and the fallback greeting. The same treatment is required when the dynamic nickname path is next revised. It currently creates a mono clip directly from Kokoro samples. Its rollout requires processing the generated PCM and creating a stereo clip with the correct frame count. Compare a named greeting with the fixed fallback before accepting that rollout. Current game assets predate this production approval.
+The seven active Happy WAVs use this master, including the opening question and fallback greeting. Named greetings apply [the corresponding stereo master](../../Assets/_Game/Levels/L01_Duel/Scripts/HappyVoiceMaster.cs) on the synthesis worker before creating the Unity clip. Its four little-endian float32 impulse responses in StreamingAssets are the offline diffuse kernels in order: long mid, long side, near mid, near side. Compare a named greeting with the fixed fallback when checking playback.
 
 ### Final Boss production recipe
 

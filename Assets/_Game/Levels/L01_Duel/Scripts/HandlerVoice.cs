@@ -49,7 +49,7 @@ namespace GoGhost.Duel
                 else if (!job.IsCanceled && job.Result.Samples != null)
                 {
                     var speech = job.Result;
-                    generatedGreeting = AudioClip.Create("Handler greeting", speech.Samples.Length, 1, speech.Rate, false);
+                    generatedGreeting = AudioClip.Create("Handler greeting", speech.Samples.Length / 2, 2, speech.Rate, false);
                     if (!generatedGreeting.SetData(speech.Samples, 0)) ReleaseGreeting();
                 }
                 pendingGreeting.Dispose();

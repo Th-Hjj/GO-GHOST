@@ -81,7 +81,7 @@ namespace GoGhost.Duel
                 "Most rules equipped: "+run.maxRulesEquipped+"    Help opened: "+run.helpOpened,
                 "First rule: "+(run.firstRuleAtSeconds<0?"N/A":MetricNumber(run.firstRuleAtSeconds)+"s")+"    First fight: "+(run.firstFightAtSeconds<0?"N/A":MetricNumber(run.firstFightAtSeconds)+"s"),
                 "Deaths  Training: "+run.trainingDeaths+"    W1: "+run.deathsByWave[1]+"    W2: "+run.deathsByWave[2],
-                "Wave 1 skipped: "+(run.waveOneSkipped?"Yes":"No")+"    "+(run.finished?"Ended: "+run.endReason:"In progress")+(run.editor?"    EDITOR":"")+(run.testData?"    TEST DATA":"")
+                (run.finished?"Ended: "+run.endReason:"In progress")+(run.editor?"    EDITOR":"")+(run.testData?"    TEST DATA":"")
             };
             for(int i=0;i<rows.Length;i++)AnalyticsText(rows[i],0,95-i*52,1300,23);
         }

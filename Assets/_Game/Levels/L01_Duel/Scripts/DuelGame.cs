@@ -99,7 +99,6 @@ namespace GoGhost.Duel
         public void NewGame()
         {
             ClearEncounter("new_game");
-            StartPlaytestReminder();
             PlayMetrics.ResetRun();
             metricsWaveJumpPending = false;
             Wave = 1;
@@ -280,21 +279,11 @@ namespace GoGhost.Duel
         {
             ClearEncounter("main_menu");
             PlayMetrics.EndRun("main_menu");
-            playtestReminderArmed = false;
             SetPhase(DuelPhase.Menu);
         }
         public void SetPause(bool value)
         {
             if (Phase != DuelPhase.Fight && Phase != DuelPhase.Prepare && Phase != DuelPhase.Training) return;
-            if (PlaytestPromptOpen)
-            {
-                if (value && !playtestWasPaused)
-                {
-                    playtestWasPaused = true;
-                    playtestPauseMenuNeeded = true;
-                }
-                return;
-            }
             if (DeveloperToolsOpen && !value) return;
             if (Paused == value) return;
             ApplyPause(value);
@@ -317,8 +306,6 @@ namespace GoGhost.Duel
             Phase = value;
             MetricsStage();
             if (value == DuelPhase.FinalBossReady || value == DuelPhase.Complete) PlayMetrics.EndRun("complete");
-            if (Wave > 1 || value == DuelPhase.Between || value == DuelPhase.Complete)
-                playtestReminderArmed = false;
             phaseTime = 0;
             ui.Show();
         }
@@ -338,7 +325,6 @@ namespace GoGhost.Duel
         }
         void ClearEncounter(string reason = "encounter_changed")
         {
-            ClosePlaytestPrompt(false);
             FinishMetrics("abandoned", reason: reason);
             DeveloperToolsOpen = developerResumeOnClose = false;
             StopCombat();
@@ -358,7 +344,6 @@ namespace GoGhost.Duel
         void Update()
         {
             TickMetrics();
-            if (PlaytestPromptOpen) return;
             if (!ui.DeveloperShortcutConsumed && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) SetPause(!Paused);
             if (Paused || DeveloperToolsOpen) return;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -386,7 +371,6 @@ namespace GoGhost.Duel
         {
             ui.UpdateBattleLayout();
             ResolveEncounterResult();
-            TickPlaytestReminder();
         }
         void ResolveEncounterResult()
         {

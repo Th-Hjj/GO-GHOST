@@ -93,11 +93,6 @@ public static partial class BossEncounterSmoke
         // Keep the virtual cursor a few degrees off the live body centre, inside the assist cone.
         MouseAt((Vector2)game.Bosses[0].Body.bounds.center+Vector2.up*.6f,false); yield return Seconds(.3f);
         Check("Aim Assist is distinct from full automatic aim",Metric(ControlOperation.Aim).assistedSeconds>0&&Metric(ControlOperation.Aim).automaticSeconds==0);
-        game.MainMenu(); game.NewGame(); PlayMetrics.MarkTestData(); game.Appearance.Name="Skip check"; ReminderDue(); yield return Frames(3);
-        ClickConfig("PlaytestYes"); yield return Frames(3);
-        Check("Skip before first fight has an explicit record",PlayMetrics.Run.waveOneSkipped&&PlayMetrics.Run.playtestReminder=="yes"&&PlayMetrics.History.Count==0&&game.Wave==2&&!PlayMetrics.Current.developerWaveJump);
-        game.SetPause(false); yield return Until(()=>game.Phase==DuelPhase.Fight,4.2f); yield return Seconds(.25f);
-        Check("W2 after skip advances",game.Phase==DuelPhase.Fight&&game.FightClock>.2f);
         game.MainMenu();
         yield return AlphaFresh(2,null,false); PlayMetrics.MarkTestData(); yield return Seconds(.25f);
         Check("W2 advances with Swordsman health snapshot",game.Phase==DuelPhase.Fight&&game.FightClock>.2f&&PlayMetrics.Current.swordMaxHealth>0&&PlayMetrics.Current.gunnerMaxHealth<0);

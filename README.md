@@ -14,7 +14,7 @@ The Windows build was launched and its telemetry checked on the build PC. The ma
 2. **Enter Test Room** to practice, then **Continue → Start Fight**.
 3. Fight **Gunner**, then **Swordsman**. **Meet the Final Boss** opens a short dialogue, with an optional **Bonus Wave** against both bosses.
 
-Retry and **Pause → Configuration** retain your character and rules. New Game starts fresh. If Wave 1 remains uncleared after seven minutes, a one-time prompt offers a skip to Wave 2.
+Retry and **Pause → Configuration** retain your character and rules. New Game starts fresh.
 
 ## Controls
 

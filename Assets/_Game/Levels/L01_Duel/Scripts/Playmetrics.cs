@@ -59,8 +59,7 @@ public static class PlayMetrics
         public int schemaVersion = 4;
         public string sessionId, runId, startedUtc, updatedUtc;
         public string playerName = "YOU", endedUtc, endReason;
-        public bool characterCreated, finished, waveOneSkipped;
-        public string playtestReminder = "not_shown";
+        public bool characterCreated, finished;
         public double playSeconds, creationSeconds, configurationSeconds, trainingSeconds, preparationSeconds, fightSeconds, pauseSeconds, resultSeconds;
         public int helpOpened, rulesAdded, rulesEdited, rulesRemoved, rulesReordered, maxRulesEquipped, trainingDeaths;
         public double firstRuleAtSeconds = -1, firstFightAtSeconds = -1;
@@ -199,13 +198,6 @@ public static class PlayMetrics
     }
     public static void OpenHelp() { if (RunActive) { run.helpOpened++; Save(); } }
     public static void RecordTrainingDeath() { if (RunActive) { run.trainingDeaths++; Save(); } }
-    public static void Reminder(string choice)
-    {
-        if (!RunActive) return;
-        run.playtestReminder = choice;
-        run.waveOneSkipped |= choice == "yes";
-        Save();
-    }
     public static void BeginAttempt(int wave, ConditionalLoadout loadout, float[] tuning, bool waveJump, bool tuned)
     {
         if (wave < 1 || wave > 2) return;

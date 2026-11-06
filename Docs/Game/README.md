@@ -25,8 +25,6 @@ New Game/Restart opens Who Are You for a name and a freely drawn face, then Cont
 
 Help provides **What're the controls?** and **What is configuration?**, preserving the current draft on return. Its pages contain brief controls and the Condition/Action definitions only. Presets and death-based unlocks are removed. Each New Game saves one independent JSON record with the character nickname; see [Gameplay Analytics](GameplayAnalytics.md).
 
-For the external playtest, New Game also starts a seven-minute real-time reminder, including character creation, configuration, Training, retries and pause. If Wave 1 is still uncleared, a one-time paused modal asks "The playtest is ending soon. Do you want to jump to wave 2?" Yes keeps the character and installed rules and starts normal Wave 2 preparation; No restores the current page/draft and previous pause state. Clearing Wave 1 or returning to the menu cancels the reminder; each New Game starts a fresh timer.
-
 ## Validation and delivery
 
 Wave 2 victory waits on **Meet the Final Boss**. Wave 3 is a stationary 9999-HP rainbow stickman in the shared arena without platforms, with seven lines of dialogue. Yes enters retained-rule Bonus configuration; No returns to the menu. The original duo fight is **BONUS WAVE**. Metrics finish at Wave 2 victory and exclude both the visit and Bonus, including their configuration time. [Progression details](BossEncounters.md#final-boss-and-optional-bonus--approved-2026-10-29).

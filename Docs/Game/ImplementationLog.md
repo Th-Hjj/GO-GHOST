@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-05 - Remove the playtest reminder
+
+- Removed the seven-minute timer, pause dialog, Wave 2 skip, reminder-specific metrics and Editor checks. Verification skipped at Thomas's request.
+
 ## 2026-10-29 — Shorter Alpha Playtest README
 
 - Thomas replaced each package's PLAYTEST-README.txt with only the title and three control lines (`GO GHOST - Alpha Playtest - Windows x64` / `macOS`). Both ZIPs were rebuilt from the unchanged players: Windows 224 files, 64,240,326 bytes, SHA-256 `df2fc597…992cd`; macOS 223 files, 63,654,456 bytes, SHA-256 `8a84cf85…6b259`. Expand-Archive/Python extraction matched every source file and the seven macOS binaries keep 0755. The three Release assets were replaced and their uploaded digests match; the release notes now describe the README as controls only. Game builds, version and telemetry are unchanged.

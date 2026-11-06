@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-05 — Happy’s configuration tutorial
+
+- The existing nickname greeting leads into Happy’s introduction in the first Body Configuration. Its closing prompt is “Please take a moment to inspect your new body's configuration page, and click on Add Rule.”
+- The first successful Add Rule opens the normal editor and cues Happy’s Alpha Feasibility Pitch farewell once. An early click preserves the greeting and skips the remaining introduction. Leaving configuration stops the tutorial.
+- Both clips use offline Heart at 1.1×. The GO GHOST Editor imported the introduction (19.97 s) and farewell (10.00 s) and reported successful script compilation. In-game listening and standalone builds were not run.
+
 ## 2026-11-05 — Assistant cadence
 
 - Heart's personalized greeting, recorded fallback and three victory lines use 1.1× synthesis speed. Player and Final Boss voice rates are independent. Unity playback and builds skipped at Thomas's request.

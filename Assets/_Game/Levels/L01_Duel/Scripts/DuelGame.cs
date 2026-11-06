@@ -125,6 +125,7 @@ namespace GoGhost.Duel
             SetPhase(DuelPhase.Configure);
             handler.PlayGreeting();
         }
+        internal void RuleEditorOpened() => handler.RuleEditorOpened();
         public void SetDraft(int module, bool automatic)
         {
             // Retained development API cannot re-enable the retired permanent-AI route.
@@ -309,6 +310,7 @@ namespace GoGhost.Duel
         }
         void SetPhase(DuelPhase value)
         {
+            if (Phase == DuelPhase.Configure) handler.LeaveConfiguration();
             if (startup != null)
             {
                 StopCoroutine(startup);

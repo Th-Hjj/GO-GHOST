@@ -551,6 +551,7 @@ namespace GoGhost.Duel
             if (pendingRule != null || game.DraftLoadout.TotalRules >= ConditionalCatalog.MaxRulesTotal) return;
             // Incomplete choices stay UI-local; the combat loadout only receives a complete pair.
             pendingRule = new ConditionalRule();
+            game.RuleEditorOpened();
             selectingAdditional=false;
             pendingRow = displayedRules.Count;
             conditionCategory = 0;

@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-11-06 — Chinese Voice Studio controls
+
+- Grouped editor controls by task. Whole-line adjustments and playback are immediately available. Word timing, reference performances, recording sources and recovery open on demand. Game and draft previews are labeled separately from saving, and loudness matching is opt-in for comparisons.
+- Compiled the runtime and Editor assemblies offline. Window layout, interaction and listening in Unity are left for manual review.
+
 ## 2026-11-06 — Windows Voice Studio audition
 
 - Routed window auditions directly to the Windows default audio output, including PCM selections, looping, A/B and nickname previews. Labeled the play controls and added playback feedback. Scene auditions continue through the game's audio source.

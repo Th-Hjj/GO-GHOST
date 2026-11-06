@@ -50,8 +50,9 @@ namespace GoGhost.Duel.EditorTools
         Region[] mapped;
         string key = "Handler/WhoAreYou", version, hash, review, status;
         string nickname = "Alex";
+        string savedNotice;
         int scope, region = -1, revision;
-        bool busy, closed, publishing, fork, loop, match = true, autoListen = true, dirty, holdingA;
+        bool busy, closed, publishing, fork, loop, match, autoListen = true, dirty, holdingA;
         bool sceneAudition;
         bool suppressDraftReplay;
         bool revoiceHappy, revoiceBoss;
@@ -102,8 +103,8 @@ namespace GoGhost.Duel.EditorTools
 #if UNITY_EDITOR_WIN
             if (player.ReleaseFinished())
             {
-                if (status != null && (status.StartsWith("Playing ") || status.StartsWith("Looping ")))
-                    status = "Playback finished.";
+                if (status != null && (status.StartsWith("正在播放") || status.StartsWith("正在循环")))
+                    status = "播放结束。";
                 Repaint();
             }
 #endif
@@ -140,7 +141,7 @@ namespace GoGhost.Duel.EditorTools
             nameJob?.Cancel();
             if (autoListen) renderAt = EditorApplication.timeSinceStartup + .35;
         }
-        bool CanLeave() => !dirty || EditorUtility.DisplayDialog("Discard draft?", "The current draft has not been adopted.", "Discard", "Keep editing");
+        bool CanLeave() => !dirty || EditorUtility.DisplayDialog("放弃这份草稿？", "这份修改还没有保存到游戏。", "放弃草稿", "继续编辑");
 
         void ClearGameDraft()
         {
@@ -168,12 +169,12 @@ namespace GoGhost.Duel.EditorTools
         async void Setup()
         {
             if (busy) return;
-            string exe = EditorUtility.OpenFilePanel("Choose Python 3.12 executable", "", "");
+            string exe = EditorUtility.OpenFilePanel("选择 Python 3.12 程序", "", "");
             if (string.IsNullOrEmpty(exe)) return;
             busy = true;
             try
             {
-                status = "Installing the local audio environment…";
+                status = "正在安装本机配音工具…";
                 await Execute(exe, "Tools/VoiceStudio/setup.py", Project, Project);
                 if (!closed) { busy = false; Reload(); }
             }
@@ -182,7 +183,7 @@ namespace GoGhost.Duel.EditorTools
         async void Run(string action)
         {
             if (busy) return;
-            if (!File.Exists(Python)) { status = "Install the local audio environment to edit voices."; return; }
+            if (!File.Exists(Python)) { status = "请先安装本机配音工具。"; return; }
             int ticket = revision;
             bool reloadAfter = false;
             busy = true; publishing=action=="apply" || action=="undo"; renderAt = 0; string job = Path.Combine(Project, "Library/VoiceStudio/jobs", Guid.NewGuid().ToString("N"));
@@ -193,18 +194,35 @@ namespace GoGhost.Duel.EditorTools
                 var req = new Request {action=action,key=key,version=version,hash=hash,review=review,recipe=recipe,catalog=catalog,
                     revoiceHappy=revoiceHappy,revoiceBoss=revoiceBoss};
                 File.WriteAllText(Path.Combine(job,"request.json"),JsonUtility.ToJson(req));
-                status = action + "…"; Repaint();
+                status = action switch
+                {
+                    "apply" => "正在保存到游戏…",
+                    "undo" => "正在恢复上一次保存前的版本…",
+                    "load" => "正在读取游戏版…",
+                    "suggest" => "正在按台词分词…",
+                    "profiles" => "正在准备受影响的配音…",
+                    _ => "正在生成试听草稿…"
+                };
+                Repaint();
                 await Execute(Python,"Tools/VoiceStudio/studio.py",job,Project);
                 var result = JsonUtility.FromJson<Result>(File.ReadAllText(Path.Combine(job,"result.json")));
                 if (closed || ticket != revision) return;
-                if (!result.ok) throw new InvalidOperationException(result.message);
-                status = result.message;
+                if (!result.ok) throw new InvalidOperationException(ExplainWorkerError(result.message));
+                status = action switch
+                {
+                    "load" => savedNotice ?? "可以试听。",
+                    "suggest" => "已分词。点波形下方的词就能微调。",
+                    "profiles" => "改动已列出，可以试听后保存。",
+                    _ => "草稿已生成，可以试听。"
+                };
+                savedNotice = null;
                 if (action == "apply" || action == "undo")
                 {
                     AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
                     VoiceStudioCatalog.Reload();
                     var game = FindAnyObjectByType<HandlerVoice>();
                     if (game != null) game.RefreshStudioClips();
+                    savedNotice = action == "undo" ? "已撤回最近一次保存。" : "已保存到游戏。";
                     reloadAfter = true;
                     return;
                 }
@@ -245,6 +263,24 @@ namespace GoGhost.Duel.EditorTools
                 Repaint();
             }
         }
+        static string ExplainWorkerError(string message) => message switch
+        {
+            "Choose a dry recording." => "请先选择一份还没加角色效果的人声录音。",
+            "Synthesize the new wording or import its recording before adopting different text." => "台词已修改。请选择「按文字重新念」，或导入念新词的录音。",
+            "Enter the spoken text before synthesizing." => "先输入希望角色念出的台词。",
+            "No saved adoption to restore." => "目前还没有可以撤回的保存记录。",
+            "Include {name} once in the nickname template." => "请在昵称问候台词里写一次 {name}。",
+            "Reference and source both need audible speech." => "请检查示范录音和台词录音，两段都需要能听清的人声。",
+            "Place each selection inside the source waveform." => "请把片段的起止时间放在录音范围内，并让结束点晚于开始点。",
+            "A single gap edit must be within ±3000 ms." => "每个停顿最多可缩短或延长 3000 毫秒（3 秒）。",
+            "Gap reduction extends beyond the take." or "Shorten the gap less, or adjust the next word boundary." =>
+                "这里没有足够的空间再缩短。请少减一点，或展开片段起止位置，检查词尾和下一个词的位置。",
+            "Game version changed. Reload before editing." or "Catalog changed. Reload and preview again." or
+            "The reviewed take changed. Reload and preview again." or "Voice changed during render. Reload and retry." =>
+                "游戏配音已在别处更新。请展开「放弃修改或撤回保存」，重读游戏版后再试听。",
+            _ => "操作未完成。工具返回的信息：" + message
+        };
+
         void Listen(bool useDraft)
         {
             var take=useDraft ? draft : installed;
@@ -262,9 +298,9 @@ namespace GoGhost.Duel.EditorTools
                     { start=mapped[region].start; end=mapped[region].end; }
                 }
                 var game=sceneAudition ? FindAnyObjectByType<HandlerVoice>() : null;
-                if (sceneAudition && game==null) throw new InvalidOperationException("Open the duel in Play Mode for scene audition.");
+                if (sceneAudition && game==null) throw new InvalidOperationException("请先运行对决场景，或关闭「通过游戏场景试听」在窗口里听。");
                 float delay=sceneAudition && key=="Handler/WhoAreYou" ? catalog.openingDelay : 0;
-                PlayTake(take,start,end,loop,gain,game,delay,(useDraft ? "draft" : "current take")+" · "+catalog.Find(key).label);
+                PlayTake(take,start,end,loop,gain,game,delay,(useDraft ? "草稿" : "游戏版")+" · "+TitleFor(catalog.Find(key)));
             }
             catch (Exception e) { status=e.Message; }
         }
@@ -273,7 +309,7 @@ namespace GoGhost.Duel.EditorTools
             try
             {
                 player.Play(take,start,end,repeat,gain,game,delay);
-                status = $"{(repeat ? "Looping" : "Playing")} {label} · {Mathf.Min(end,take.Seconds)-start:0.00} s";
+                status = $"{(repeat ? "正在循环" : "正在播放")} {label} · {Mathf.Min(end,take.Seconds)-start:0.00} 秒";
             }
             catch (Exception e) { status=e.GetBaseException().Message; }
             Repaint();
@@ -286,14 +322,14 @@ namespace GoGhost.Duel.EditorTools
             string root=Path.Combine(Application.streamingAssetsPath,"HandlerVoice");
             try
             {
-                status="Generating nickname greeting…";
+                status="正在生成昵称问候…";
                 var snapshot=JsonUtility.FromJson<VoiceStudioCatalog>(JsonUtility.ToJson(catalog));
                 var samples=await snapshot.PreviewName(root,nickname,cancel.Token);
                 if (cancel.IsCancellationRequested || closed) return;
                 var take=samples==null ? StudioTake.Read(ResourceDir+"Handler/Greeting.wav") :
                     new StudioTake {samples=samples,channels=2,rate=24000};
                 PlayTake(take,0,take.Seconds,false,catalog.Volume(false),null,0,
-                    samples==null ? "fallback greeting" : "named greeting");
+                    samples==null ? "默认问候" : "带昵称的问候");
             }
             catch (Exception e) { if (!cancel.IsCancellationRequested) status=e.Message; }
             finally { if (nameJob==cancel) nameJob=null; cancel.Dispose(); Repaint(); }

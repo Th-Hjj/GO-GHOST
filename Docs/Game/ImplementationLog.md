@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-05 — Happy delivery at 1.05×
+
+- Set the seven active Happy recordings and personalized greetings to Thomas's chosen 1.05×. Retained the existing scripts, sentence-gap targets and v0.8 treatment. Editor listening is left to Thomas.
+
 ## 2026-11-05 — Slower Happy delivery
 
 - Set Heart synthesis to 0.94× for the seven active fixed recordings and personalized greetings. Reused the authored dialogue, sentence-gap targets and v0.8 stereo master. Verified English and Chinese nickname synthesis outside Unity. Editor listening remains for Thomas.

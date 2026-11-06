@@ -114,7 +114,7 @@ namespace GoGhost.Duel
                 report(65);
                 if (token.IsCancellationRequested) return default;
                 const int heart = 0; // The shipped bank contains Heart (0) and Michael (1).
-                const float handlerSpeed = .94f;
+                const float handlerSpeed = 1.05f;
                 IntPtr result = HandlerKokoro.SherpaOnnxOfflineTtsGenerate(tts, text, heart, handlerSpeed);
                 if (result == IntPtr.Zero) return default;
                 try

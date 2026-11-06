@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-06 — Approved Happy opening question
+
+- Replaced audition A at the existing character-creation cue with Thomas’s approved recording. Verified the game WAV against the audition by SHA-256 and checked the entry and playback paths in source. In-game listening is left to Thomas.
+
 ## 2026-11-05 — Character creation voice audition
 
 - Prepared two deliveries of “Who are you?” and installed take A (0.76× Heart with a word-level contour) for Thomas to audition. Archived its directed dry source. Matched active speech levels to the prior take and checked the stereo WAVs offline. Unity listening is left to Thomas.

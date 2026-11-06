@@ -93,6 +93,43 @@ def adjust_finished_happy(x, electronic):
     return result
 
 
+def adjust_finished_room(x, near_db, space_db):
+    if (near_db == 0 and space_db == 0) or not np.any(x):
+        return x
+    # Estimate the direct voice from the two baked channels using the production
+    # room filters. Add just the change in the two returns, retaining the take's residual.
+    kernels = np.fromfile(BANK / "happy-v08-kernels.bytes", dtype="<f4")
+    size = 1 << (len(x) + 16383).bit_length()
+    spectrum = np.fft.rfft(x, size, axis=0)
+    mid = spectrum.mean(axis=1)
+    side = (spectrum[:, 0] - spectrum[:, -1]) / 2
+    returns = []
+    for impulse, db in zip(np.split(kernels, [16384, 32768, 34304]), [-12.5, -13, -9, -6.5]):
+        kernel = np.fft.rfft(impulse, size)
+        gain = np.linalg.norm(mid) / max(np.linalg.norm(kernel * mid), 1e-12)
+        returns.append(kernel * gain * 10 ** (db / 20))
+    far_mid, far_side, near_mid, near_side = returns
+    m, s = 1 + far_mid + near_mid, far_side + near_side
+    direct = (m.conj() * mid + s.conj() * side) / (abs(m)**2 + abs(s)**2 + 0.03)
+    far, near = 10 ** (space_db / 20) - 1, 10 ** (near_db / 20) - 1
+    mid = mid + direct * (far * far_mid + near * near_mid)
+    side = side + direct * (far * far_side + near * near_side)
+    return np.fft.irfft(np.column_stack((mid + side, mid - side)), size, axis=0)[:len(x)]
+
+
+def adjust_finished_boss(x, sub, drive):
+    if abs(sub - 0.42) < 1e-6 and abs(drive - 1.9) < 1e-6:
+        return x
+    # Retune the bass already present in the recording and vary its soft clipping.
+    size = 1 << (len(x) + 1024).bit_length()
+    hz = np.fft.rfftfreq(size, 1 / RATE)
+    shelf = 10 ** ((sub - 0.42) * 20 / (1 + (hz / 175)**4) / 20)
+    y = np.fft.irfft(np.fft.rfft(x, size, axis=0) * shelf[:, None], size, axis=0)[:len(x)]
+    peak = max(np.max(abs(y)), 1e-12)
+    shaped = np.tanh((drive / 1.9) * np.arctanh(0.95 * y / peak))
+    return shaped * (render_happy_voice.rms(x) / max(render_happy_voice.rms(shaped), 1e-12))
+
+
 def synth(text, boss, speed, pronunciations=""):
     import sherpa_onnx as so
 

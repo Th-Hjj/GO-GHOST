@@ -40,6 +40,8 @@ namespace GoGhost.Duel.EditorTools
             public Recipe recipe;
             public VoiceStudioCatalog catalog;
             public Region[] mapped;
+            public string[] summary;
+            public bool canApply;
         }
         const string ResourceDir = "Assets/_Game/Levels/L01_Duel/Resources/";
         static readonly string[] Modes = {"Master","Dry","Synthesize"};
@@ -51,6 +53,8 @@ namespace GoGhost.Duel.EditorTools
         string key = "Handler/WhoAreYou", version, hash, review, status;
         string nickname = "Alex";
         string savedNotice;
+        string[] reviewSummary;
+        bool canApply, showReview;
         int scope, region = -1, revision;
         bool busy, closed, publishing, fork, loop, match, autoListen = true, dirty, holdingA;
         bool sceneAudition;
@@ -127,9 +131,19 @@ namespace GoGhost.Duel.EditorTools
             source = installed;
             draft = null; mapped = null; region = -1; selectFrom = selectTo = 0;
             dirty = fork = revoiceHappy = revoiceBoss = false; renderAt = 0; review = null;
+            canApply = showReview = false;
+            reviewSummary = null;
             Run("load");
         }
-        void Changed()
+        void SelectProfileSample(string next)
+        {
+            nameJob?.Cancel();
+            player.Dispose();
+            revision++;
+            renderAt = 0;
+            Run("sample", sampleKey: next);
+        }
+        void Changed(bool preview = true)
         {
             player.Dispose();
             suppressDraftReplay=false;
@@ -137,10 +151,11 @@ namespace GoGhost.Duel.EditorTools
             dirty = true;
             revision++;
             review = null;
+            canApply = showReview = false;
             draft = null;
             mapped = null;
             nameJob?.Cancel();
-            if (autoListen) renderAt = EditorApplication.timeSinceStartup + .35;
+            renderAt = autoListen && preview ? EditorApplication.timeSinceStartup + .35 : 0;
         }
         bool CanLeave() => !dirty || EditorUtility.DisplayDialog("放弃这份草稿？", "这份修改还没有保存到游戏。", "放弃草稿", "继续编辑");
 
@@ -181,25 +196,25 @@ namespace GoGhost.Duel.EditorTools
             }
             catch (Exception e) { busy = false; status = e.Message; }
         }
-        async void Run(string action, bool playWhenReady = false)
+        async void Run(string action, bool playWhenReady = false, string sampleKey = null)
         {
             if (busy) return;
             if (!File.Exists(Python)) { status = "请先安装本机配音工具。"; return; }
             int ticket = revision;
             bool reloadAfter = false;
-            busy = true; publishing=action=="apply" || action=="undo"; renderAt = 0; string job = Path.Combine(Project, "Library/VoiceStudio/jobs", Guid.NewGuid().ToString("N"));
+            busy = true; publishing=action=="apply" || action=="undo" || action=="sample"; renderAt = 0; string job = Path.Combine(Project, "Library/VoiceStudio/jobs", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(job);
             jobFolders.Add(job);
             try
             {
-                var req = new Request {action=action,key=key,version=version,hash=hash,review=review,recipe=recipe,catalog=catalog,
+                var req = new Request {action=action=="sample" ? "load" : action,key=sampleKey ?? key,version=version,hash=hash,review=review,recipe=recipe,catalog=catalog,
                     revoiceHappy=revoiceHappy,revoiceBoss=revoiceBoss};
                 File.WriteAllText(Path.Combine(job,"request.json"),JsonUtility.ToJson(req));
                 status = action switch
                 {
                     "apply" => "正在保存到游戏…",
                     "undo" => "正在恢复上一次保存前的版本…",
-                    "load" => "正在读取游戏版…",
+                    "load" or "sample" => "正在读取游戏版…",
                     "suggest" => "正在按台词分词…",
                     "profiles" => "正在准备受影响的配音…",
                     _ => "正在生成试听草稿…"
@@ -227,11 +242,26 @@ namespace GoGhost.Duel.EditorTools
                     reloadAfter = true;
                     return;
                 }
-                if (action == "load")
+                if (action == "load" || action == "sample")
                 {
-                    catalog=result.catalog; recipe=result.recipe; hash=result.hash; version=result.version;
+                    if (action == "sample" && version != result.version)
+                        throw new InvalidOperationException(ExplainWorkerError("Game version changed. Reload before editing."));
+                    if (action == "load") catalog=result.catalog;
+                    recipe=result.recipe; hash=result.hash; version=result.version;
                     if (recipe.edits == null) recipe.edits=new List<Region>();
                     source=StudioTake.Read(Path.Combine(job,"source.wav"));
+                    if (action == "sample")
+                    {
+                        installed = StudioTake.Read(ResourceDir + sampleKey + ".wav");
+                        key = sampleKey;
+                        draft = null;
+                        region = -1;
+                        selectFrom = selectTo = 0;
+                        string path = review == null ? null : Path.Combine(review, key.Replace('/', '-'), "draft.wav");
+                        if (review != null) draft = File.Exists(path) ? StudioTake.Read(path) : installed;
+                        else if (autoListen && dirty) renderAt = EditorApplication.timeSinceStartup + .35;
+                        status = "试听：" + TitleFor(catalog.Find(key));
+                    }
                 }
                 else if (action=="suggest")
                 {
@@ -243,6 +273,7 @@ namespace GoGhost.Duel.EditorTools
                 else
                 {
                     review=result.review;
+                    canApply=result.canApply;
                     if (action=="line" || action=="monitor")
                     {
                         source=StudioTake.Read(Path.Combine(job,"source.wav"));
@@ -252,6 +283,9 @@ namespace GoGhost.Duel.EditorTools
                     }
                     else if (action == "profiles")
                     {
+                        reviewSummary = result.summary;
+                        showReview = true;
+                        scroll = Vector2.zero;
                         string reviewedTake = Path.Combine(review, key.Replace('/', '-'), "draft.wav");
                         draft = File.Exists(reviewedTake) ? StudioTake.Read(reviewedTake) : installed;
                     }
@@ -287,26 +321,39 @@ namespace GoGhost.Duel.EditorTools
             _ => "操作未完成。工具返回的信息：" + message
         };
 
+        void StopAudition()
+        {
+            nameJob?.Cancel();
+            suppressDraftReplay = true;
+            player.Dispose();
+            status = "已停止播放。";
+        }
+
         void Listen(bool useDraft)
         {
+            nameJob?.Cancel();
             var take=useDraft ? draft : installed;
             if (take==null) return;
             try
             {
+                if (scope == 1 && key == "Handler/WhoAreYou")
+                    take = take.WithDelay((useDraft ? catalog : installedCatalog).openingDelay);
                 float gain=(useDraft ? catalog : installedCatalog).Volume(key.StartsWith("FinalBossVoice/",StringComparison.Ordinal));
-                if (match && useDraft && !sceneAudition)
+                if (scope == 0 && match && useDraft && !sceneAudition)
                     gain *= Mathf.Clamp(installed.ActiveRms()/Mathf.Max(.00001f,take.ActiveRms()),.1f,10);
                 float start=0, end=take.Seconds;
-                if (loop && selectTo>selectFrom)
+                bool repeat = scope == 0 && loop;
+                if (repeat && selectTo>selectFrom)
                 {
                     start=selectFrom; end=selectTo;
                     if (useDraft && region>=0 && mapped!=null && region<mapped.Length)
                     { start=mapped[region].start; end=mapped[region].end; }
                 }
-                var game=sceneAudition ? FindAnyObjectByType<HandlerVoice>() : null;
-                if (sceneAudition && game==null) throw new InvalidOperationException("请先运行对决场景，或关闭「通过游戏场景试听」在窗口里听。");
-                float delay=sceneAudition && key=="Handler/WhoAreYou" ? catalog.openingDelay : 0;
-                PlayTake(take,start,end,loop,gain,game,delay,(useDraft ? "草稿" : "游戏版")+" · "+TitleFor(catalog.Find(key)));
+                bool inScene = scope == 0 && sceneAudition;
+                var game=inScene ? FindAnyObjectByType<HandlerVoice>() : null;
+                if (inScene && game==null) throw new InvalidOperationException("请先运行对决场景，或关闭「通过游戏场景试听」在窗口里听。");
+                float delay=inScene && key=="Handler/WhoAreYou" ? (useDraft ? catalog : installedCatalog).openingDelay : 0;
+                PlayTake(take,start,end,repeat,gain,game,delay,(useDraft ? "草稿" : "游戏版")+" · "+TitleFor(catalog.Find(key)));
             }
             catch (Exception e) { status=e.Message; }
         }
@@ -320,7 +367,7 @@ namespace GoGhost.Duel.EditorTools
             catch (Exception e) { status=e.GetBaseException().Message; }
             Repaint();
         }
-        async void ListenName()
+        async void ListenName(bool useDraft = true)
         {
             nameJob?.Cancel();
             var cancel=new CancellationTokenSource();
@@ -329,12 +376,13 @@ namespace GoGhost.Duel.EditorTools
             try
             {
                 status="正在生成昵称问候…";
-                var snapshot=JsonUtility.FromJson<VoiceStudioCatalog>(JsonUtility.ToJson(catalog));
+                var snapshot=JsonUtility.FromJson<VoiceStudioCatalog>(JsonUtility.ToJson(useDraft ? catalog : installedCatalog));
                 var samples=await snapshot.PreviewName(root,nickname,cancel.Token);
                 if (cancel.IsCancellationRequested || closed) return;
-                var take=samples==null ? StudioTake.Read(ResourceDir+"Handler/Greeting.wav") :
+                string fallback = useDraft && review != null ? Path.Combine(review, "Handler-Greeting", "draft.wav") : null;
+                var take=samples==null ? StudioTake.Read(File.Exists(fallback) ? fallback : ResourceDir+"Handler/Greeting.wav") :
                     new StudioTake {samples=samples,channels=2,rate=24000};
-                PlayTake(take,0,take.Seconds,false,catalog.Volume(false),null,0,
+                PlayTake(take,0,take.Seconds,false,snapshot.Volume(false),null,0,
                     samples==null ? "默认问候" : "带昵称的问候");
             }
             catch (Exception e) { if (!cancel.IsCancellationRequested) status=e.Message; }

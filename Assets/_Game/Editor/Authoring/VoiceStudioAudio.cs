@@ -12,6 +12,14 @@ namespace GoGhost.Duel.EditorTools
         public float[] samples;
         public int channels, rate;
         public float Seconds => (float)samples.Length / (rate * channels);
+        public StudioTake WithDelay(float seconds)
+        {
+            int offset = Mathf.RoundToInt(seconds * rate) * channels;
+            if (offset <= 0) return this;
+            var delayed = new float[samples.Length + offset];
+            Array.Copy(samples, 0, delayed, offset, samples.Length);
+            return new StudioTake { rate = rate, channels = channels, samples = delayed };
+        }
         public static StudioTake Read(string path)
         {
             using var f = new BinaryReader(File.OpenRead(path));

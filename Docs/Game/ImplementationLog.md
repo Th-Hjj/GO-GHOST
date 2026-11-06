@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-06 — Voice Studio parameter review and audition
+
+- Enabled both room controls and both Final Boss tone controls on finished takes. Moved whole-line gain after mastering. Batch and monitor use the same eligibility rules. Profile auditions follow the selected speaker, preserve pending edits when switching samples, and can play the opening delay or the nickname sentence directly.
+- The review page shows saved and proposed settings, affected recordings and playback-only changes with A/B controls. Empty reviews disable saving. Removed production commentary from the window.
+- Eight offline regression tests cover the 14 profile settings, finished and dry recordings, line and word controls, reference timing/pitch/emphasis, review/apply equivalence, exclusions and recovery. Additional offline checks exercised both synthesis voices, measured combined playback gains, compared nickname templates and verified the exact opening-delay samples. Runtime and Editor assemblies compiled. Unity interaction and listening on speakers were not tested.
+
 ## 2026-11-06 — Happy electronic control on finished recordings
 
 - The profile monitor previously bypassed timbre processing for finished takes, and an electronic-only batch omitted them. The monitor and reviewed batch now retune Happy's existing performance against its 15% baseline using the archived source on subsequent edits. Protected takes skip batch processing.

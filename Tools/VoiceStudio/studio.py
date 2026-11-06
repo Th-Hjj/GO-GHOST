@@ -20,6 +20,48 @@ AUTHOR = ROOT / "VoiceAuthoring"
 JOBS = audio.CACHE / "jobs"
 HISTORY = AUTHOR / "last-adoption.json"
 JOURNAL = audio.CACHE / "pending.json"
+HAPPY_TONE = ("electronic", "nearDb", "spaceDb")
+BOSS_TONE = ("bossSub", "bossDrive")
+PROFILE_SETTINGS = {
+    "masterDb": ("总音量", " dB"), "matchTarget": ("让各句音量接近", ""),
+    "targetDb": ("统一音量", " dB"), "happyDb": ("Happy · 角色音量", " dB"),
+    "happySpeed": ("Happy · 常规语速", " 倍"), "electronic": ("Happy · 电子感", "%"),
+    "nearDb": ("Happy · 贴耳回声", " dB"), "spaceDb": ("Happy · 空灵回声", " dB"),
+    "openingDelay": ("开场等待", " 秒"), "greetingTemplate": ("昵称问候台词", ""),
+    "bossDb": ("Final Boss · 角色音量", " dB"), "bossSpeed": ("Final Boss · 常规语速", " 倍"),
+    "bossSub": ("Final Boss · 低沉声叠加量", ""), "bossDrive": ("Final Boss · 粗粝感", ""),
+}
+
+
+def display_value(value, unit):
+    if isinstance(value, bool):
+        return "开启" if value else "关闭"
+    if isinstance(value, str):
+        return value
+    return f"{value * (100 if unit == '%' else 1):.7g}{unit}"
+
+
+def changed_settings(profile, installed):
+    changed = []
+    for field in PROFILE_SETTINGS:
+        old, new = installed[field], profile[field]
+        if isinstance(old, (int, float)) and abs(old - new) <= 1e-6:
+            continue
+        if old != new:
+            changed.append(field)
+    return changed
+
+
+def needs_render(req, entry, recipe, changed):
+    if entry["locked"] or recipe["independent"]:
+        return False
+    boss = entry["key"].startswith("FinalBossVoice/")
+    fields = {"bossSpeed" if boss else "happySpeed", "matchTarget"}
+    if req["catalog"]["matchTarget"]:
+        fields.add("targetDb")
+    if not recipe.get("overrideTone"):
+        fields.update(BOSS_TONE if boss else HAPPY_TONE)
+    return should_revoice(req, entry, recipe) or not fields.isdisjoint(changed)
 
 
 def read_json(p):
@@ -256,12 +298,16 @@ def render(line, recipe, profile, folder):
         else profile["bossSpeed" if boss else "happySpeed"] / (1.30 if boss else 1.05)
     )
     performance = x
-    if mode == "Master" and not boss and not line["locked"]:
-        # Store the actual setting so excluding this take later freezes its sound.
-        if not recipe["independent"]:
-            recipe = dict(recipe, electronic=profile["electronic"])
-        performance = audio.adjust_finished_happy(x, recipe["electronic"])
-    y, mapped = audio.edit(performance.copy(), recipe, speed, ref)
+    if mode == "Master" and (not line["locked"] or recipe.get("overrideTone")):
+        if not recipe["independent"] and not recipe.get("overrideTone"):
+            recipe = dict(recipe, **{f: profile[f] for f in (BOSS_TONE if boss else HAPPY_TONE)})
+        if boss:
+            performance = audio.adjust_finished_boss(x, recipe["bossSub"], recipe["bossDrive"])
+        else:
+            performance = audio.adjust_finished_happy(x, recipe["electronic"])
+            performance = audio.adjust_finished_room(performance, recipe["nearDb"], recipe["spaceDb"])
+    # Whole-line volume follows mastering/level matching so normalization cannot cancel the slider.
+    y, mapped = audio.edit(performance.copy(), dict(recipe, gain=0), speed, ref)
     if mode != "Master":
         tone = recipe if recipe.get("overrideTone") else profile
         dry = y.mean(axis=1)
@@ -278,6 +324,12 @@ def render(line, recipe, profile, folder):
         active = y[np.abs(y) > 0.015]
         if len(active):
             y *= min(0.98 / np.abs(y).max(), 10 ** (profile["targetDb"] / 20) / np.sqrt(np.mean(active**2)))
+    if recipe["gain"]:
+        if np.max(abs(y)) > 1:
+            y *= 0.99 / np.max(abs(y))
+        y *= 10 ** (recipe["gain"] / 20)
+        peaks = abs(y) > 0.96
+        y[peaks] = np.sign(y[peaks]) * (0.96 + 0.039 * np.tanh((abs(y[peaks]) - 0.96) / 0.039))
     folder.mkdir(parents=True, exist_ok=True)
     audio.write(folder / "draft.wav", y)
     audio.write(folder / "source.wav", x)
@@ -364,7 +416,7 @@ def worker(req, job):
             "message": "Estimated word regions. Drag or edit their boundaries before fine adjustments.",
         }
     if action == "monitor":
-        if line["locked"] or recipe["independent"]:
+        if not needs_render(req, line, recipe, changed_settings(req["catalog"], catalog)):
             x = audio.read(wav)
             audio.write(job / "source.wav", x)
             audio.write(job / "draft.wav", x)
@@ -383,22 +435,11 @@ def worker(req, job):
         message = "Draft ready."
     elif action == "profiles":
         profile = req["catalog"]
-        fields = [
-            "masterDb",
-            "happyDb",
-            "bossDb",
-            "happySpeed",
-            "bossSpeed",
-            "electronic",
-            "nearDb",
-            "spaceDb",
-            "bossSub",
-            "bossDrive",
-            "greetingTemplate",
-            "openingDelay",
-            "matchTarget",
-            "targetDb",
-        ]
+        changed = changed_settings(profile, catalog)
+        summary = []
+        for field in changed:
+            label, unit = PROFILE_SETTINGS[field]
+            summary.append(f"{label}　{display_value(catalog[field], unit)} → {display_value(profile[field], unit)}")
         if profile["greetingTemplate"].count("{name}") != 1:
             raise ValueError("Include {name} once in the nickname template.")
         words = set(
@@ -411,31 +452,28 @@ def worker(req, job):
                     break
         if words:
             raise ValueError("Unknown greeting pronunciation: " + ", ".join(sorted(words)))
+        revoiced = set()
         for entry in catalog["lines"]:
             rec, _ = load_line(entry)
-            if entry["locked"] or rec["independent"]:
+            if not needs_render(req, entry, rec, changed):
                 continue
-            boss = entry["key"].startswith("FinalBossVoice/")
             revoice = should_revoice(req, entry, rec)
             if revoice:
+                revoiced.add("Final Boss" if entry["key"].startswith("FinalBossVoice/") else "Happy")
                 rec = dict(rec, mode="Synthesize", source="", edits=[])
-            affected = [("bossSpeed" if boss else "happySpeed"), "matchTarget"]
-            if profile["matchTarget"]:
-                affected.append("targetDb")
-            if rec["mode"] != "Master" and not rec.get("overrideTone"):
-                affected += ["bossDrive", "bossSub"] if boss else ["electronic", "nearDb", "spaceDb"]
-            elif rec["mode"] == "Master" and not boss:
-                affected.append("electronic")
-            if revoice or any(profile[f] != catalog[f] for f in affected):
-                rows.append(render(entry, rec, profile, job / entry["key"].replace("/", "-")))
-        catalog.update({f: profile[f] for f in fields})
+            rows.append(render(entry, rec, profile, job / entry["key"].replace("/", "-")))
+        for speaker in sorted(revoiced):
+            summary.append(f"{speaker} · 按台词重新配音")
+        catalog.update({f: profile[f] for f in changed})
         message = (
             "Affected WAVs: " + (", ".join(r["key"] for r in rows) or "none") + ". Opening master excluded."
         )
     else:
         raise ValueError("Unknown operation.")
     atomic(job / "receipt.json", encode({"version": version, "rows": rows, "catalog": catalog}))
-    return {"message": message, "review": str(job), "mapped": rows[0]["mapped"] if action == "line" else []}
+    return {"message": message, "review": str(job), "mapped": rows[0]["mapped"] if action == "line" else [],
+            "summary": summary if action == "profiles" else [],
+            "canApply": action == "line" or bool(changed or rows)}
 
 
 def should_revoice(req, line, recipe):

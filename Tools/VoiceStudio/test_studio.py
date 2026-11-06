@@ -122,6 +122,111 @@ class AdoptionTests(unittest.TestCase):
         self.current(request["key"])
         self.assertEqual(studio.CAT.read_bytes(), original)
 
+    def test_each_profile_control_review_and_save(self):
+        cases = {
+            "masterDb": -9, "happyDb": -7, "bossDb": -10, "openingDelay": 2.5,
+            "greetingTemplate": "Hello, {name}.", "happySpeed": 1.20, "bossSpeed": 1.5,
+            "matchTarget": True, "targetDb": -32, "electronic": 0.75,
+            "nearDb": -12, "spaceDb": 8, "bossDrive": 2.9, "bossSub": 0.05,
+        }
+        self.assertEqual(set(cases), set(studio.PROFILE_SETTINGS))
+        for field, value in cases.items():
+            with self.subTest(field=field):
+                boss = field.startswith("boss")
+                key = "FinalBossVoice/Line1" if boss else "Handler/TutorialIntro"
+                request = self.current(key)
+                if field == "targetDb":
+                    request["catalog"]["matchTarget"] = True
+                    self.request("apply", review=self.request("profiles", **request)["review"])
+                    request = self.current(key)
+                request["catalog"][field] = value
+                target, _ = studio.paths(key)
+                baseline = audio.read(target)
+                monitor = studio.JOBS / uuid4().hex
+                monitor.mkdir()
+                studio.worker(dict(request, action="monitor"), monitor)
+                heard = audio.read(monitor / "draft.wav")
+                response = self.request("profiles", **request)
+                self.assertTrue(response["canApply"])
+                self.assertTrue(any(studio.PROFILE_SETTINGS[field][0] in change and " → " in change
+                                    for change in response["summary"]))
+                review = Path(response["review"])
+                rows = studio.read_json(review / "receipt.json")["rows"]
+                if field in ("masterDb", "happyDb", "bossDb", "openingDelay", "greetingTemplate"):
+                    self.assertFalse(rows)
+                    np.testing.assert_array_equal(heard, baseline)
+                else:
+                    self.assertIn(key, [row["key"] for row in rows])
+                    np.testing.assert_array_equal(heard, audio.read(review / key.replace("/", "-") / "draft.wav"))
+                    if heard.shape == baseline.shape:
+                        self.assertGreater(np.linalg.norm(heard - baseline) / np.linalg.norm(baseline), .01)
+                    else:
+                        self.assertIn(field, ("happySpeed", "bossSpeed"))
+                self.request("apply", review=str(review))
+                self.assertEqual(studio.read_json(studio.CAT)[field], value)
+                np.testing.assert_array_equal(audio.read(target), heard)
+                self.request("undo")
+                np.testing.assert_array_equal(audio.read(target), baseline)
+                if field == "targetDb":
+                    reset = self.current(key)
+                    reset["catalog"]["matchTarget"] = False
+                    self.request("apply", review=self.request("profiles", **reset)["review"])
+        response = self.request("profiles", **self.current("Handler/Greeting"))
+        self.assertFalse(response["canApply"])
+        self.assertEqual(response["summary"], [])
+
+    def test_single_line_audible_controls(self):
+        request = self.current("Handler/Greeting")
+        before = audio.read(studio.paths(request["key"])[0])
+        for field, value in (("speed", 1.3), ("pitch", 3), ("gain", -6), ("nearDb", 7),
+                             ("spaceDb", -12), ("electronic", .9), ("stretch", 1.5),
+                             ("wordPitch", -4), ("wordGain", -8), ("gapMs", 90)):
+            with self.subTest(field=field):
+                recipe = dict(request["recipe"], edits=[dict(e) for e in request["recipe"]["edits"]])
+                if field in ("stretch", "wordPitch", "wordGain", "gapMs"):
+                    recipe["edits"][0][{"wordPitch": "pitch", "wordGain": "gain"}.get(field, field)] = value
+                else:
+                    recipe[field] = value
+                    recipe["overrideTone"] = True
+                response = self.request("line", **dict(request, recipe=recipe))
+                after = audio.read(Path(response["review"]) / "draft.wav")
+                if before.shape == after.shape:
+                    self.assertGreater(np.linalg.norm(after - before) / np.linalg.norm(before), .005)
+
+    def test_reference_and_dry_recording_controls(self):
+        request = self.current("Handler/Greeting")
+        recipe = request["recipe"]
+        recipe.update(mode="Dry", source=str(audio.ROOT / "Docs/Game/VoiceReferences/Happy-Inner-Dry.wav"),
+                      reference=str(studio.paths("Handler/TutorialGoodbye")[0]), edits=[])
+        def samples(**changes):
+            result = self.request("line", **dict(request, recipe=dict(recipe, **changes)))
+            return audio.read(Path(result["review"]) / "draft.wav")
+        original = samples()
+        for field in ("melody", "timing", "stress"):
+            with self.subTest(field=field):
+                take = samples(**{field: .75})
+                if len(take) == len(original):
+                    self.assertGreater(np.linalg.norm(take - original) / np.linalg.norm(original), .01)
+        # A line-level gain must survive the Boss mastering stage, which peak-normalizes internally.
+        request = self.current("FinalBossVoice/Line1")
+        recipe.update(text=request["recipe"]["text"])
+        original = samples()
+        quiet = samples(gain=-6)
+        ratio = np.linalg.norm(quiet) / np.linalg.norm(original)
+        self.assertAlmostEqual(ratio, 10 ** (-6 / 20), places=3)
+
+    def test_review_multiple_settings_with_per_line_override(self):
+        request = self.current("Handler/Greeting")
+        request["recipe"].update(overrideTone=True, spaceDb=3)
+        self.request("apply", review=self.request("line", **request)["review"])
+        request = self.current("Handler/Greeting")
+        request["catalog"].update(nearDb=5, spaceDb=-7, bossDrive=2.5, masterDb=-3)
+        result = self.request("profiles", **request)
+        self.assertEqual(len(result["summary"]), 4)
+        rows = studio.read_json(Path(result["review"]) / "receipt.json")["rows"]
+        self.assertEqual(len(rows), 12)
+        self.assertFalse(any(row["key"] in ("Handler/Greeting", "Handler/WhoAreYou") for row in rows))
+
     def test_revised_subtitle_requires_revised_performance(self):
         request = self.current("FinalBossVoice/Line1")
         request["recipe"]["text"] = "Who are you?"

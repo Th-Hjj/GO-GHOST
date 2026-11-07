@@ -144,7 +144,7 @@ namespace GoGhost.Duel
             if(action=="J04")return ContinuePlatform(rule,r);
             if(r.Completed||op==1&&r.Accepted)return false;
             if(op!=1&&Time.time>=r.Deadline)return false;
-            if(r.Target>=0&&(!visible[r.Target]||!actors[r.Target].IsAlive)
+            if(r.Target>=0&&(!visible[r.Target]||(bossOwner == null ? !actors[r.Target].IsAlive : bossOwner.Player.IsDead))
                 &&action!="Q09")return false;
             switch((ControlOperation)op)
             {
@@ -169,17 +169,18 @@ namespace GoGhost.Duel
             output.FireRequest=rule.Action=="F02"?WeaponFireRequest.Burst
                 :rule.Action=="F03"?WeaponFireRequest.Continuous:WeaponFireRequest.Single;
         }
-        bool CanJump()=>movement.IsGrounded&&input.GameplayInputEnabled&&movement.isActiveAndEnabled;
+        bool CanJump()=>bossOwner != null ? bossOwner.Motor.Grounded && bossOwner.Running : movement.IsGrounded&&input.GameplayInputEnabled&&movement.isActiveAndEnabled;
         bool SourcePoint(Running r,out Vector2 point)
         {
             if(r.Context.HasPosition){point=r.Context.Position;return true;}
             if(r.Target>=0&&visible[r.Target]){point=contacts[r.Target].Bounds.center;return true;}
             point=default;return false;
         }
-        float Away(float x)=>Mathf.Abs(x-body.position.x)>.01f?(x>body.position.x?-1:1):movement.MovementFacingDirection;
+        float Away(float x)=>Mathf.Abs(x-body.position.x)>.01f?(x>body.position.x?-1:1):(bossOwner != null ? bossOwner.Facing : movement.MovementFacingDirection);
         bool WriteMovement(string action,Running r)
         {
-            if(dodge.IsDodging||movement.HitPushActive||!movement.isActiveAndEnabled||!body.simulated||movement.MoveSpeed<=.01f)return false;
+            if (!body.simulated) return false;
+            if (bossOwner == null && (dodge.IsDodging || movement.HitPushActive || !movement.isActiveAndEnabled || movement.MoveSpeed <= .01f)) return false;
             float move=0,x=body.position.x;
             float distance=r.Target>=0?Mathf.Abs(contacts[r.Target].Bounds.center.x-shape.bounds.center.x):0;
             float toward=r.Target>=0?-Away(contacts[r.Target].Bounds.center.x):0;

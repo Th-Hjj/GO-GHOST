@@ -22,6 +22,14 @@ namespace GoGhost.Duel
         {Id=id;Label=label;Group=group;Default=value;Min=min;Max=max;Step=step;}
     }
 
+    public struct BossMoveTuning
+    {
+        public float Windup, Recovery, Cooldown;
+        public int Damage;
+        public BossMoveTuning(float windup, float recovery, float cooldown, int damage)
+        { Windup = windup; Recovery = recovery; Cooldown = cooldown; Damage = damage; }
+    }
+
     // Session-only values. Tuning edits never write assets or replace the active controller.
     public sealed partial class DuelGame
     {
@@ -31,8 +39,30 @@ namespace GoGhost.Duel
         float[] developerValues;
         bool developerResumeOnClose;
 
+        readonly BossMoveTuning[] axeTuning = new BossMoveTuning[System.Enum.GetValues(typeof(FinalBossAxe.Move)).Length];
+        readonly BossMoveTuning[] punchTuning = new BossMoveTuning[System.Enum.GetValues(typeof(FinalBossBoxer.Punch)).Length];
+
+        void ResetBossMoveTuning()
+        {
+            for (int i = 1; i < axeTuning.Length; i++) axeTuning[i] = FinalBossAxe.DefaultTuning((FinalBossAxe.Move)i);
+            for (int i = 1; i < punchTuning.Length; i++) punchTuning[i] = FinalBossBoxer.DefaultTuning((FinalBossBoxer.Punch)i);
+        }
+        public BossMoveTuning GetBossMoveTuning(bool boxing, int move) => (boxing ? punchTuning : axeTuning)[move];
+        public void SetBossMoveTuning(bool boxing, int move, BossMoveTuning value)
+        {
+            if (!DeveloperToolsOpen) return;
+            var list = boxing ? punchTuning : axeTuning;
+            if (move < 1 || move >= list.Length) return;
+            value.Windup = Mathf.Clamp(value.Windup, .05f, 4f);
+            value.Recovery = Mathf.Clamp(value.Recovery, .05f, 4f);
+            value.Cooldown = Mathf.Clamp(value.Cooldown, .1f, 15f);
+            value.Damage = Mathf.Clamp(value.Damage, 1, 500);
+            list[move] = value;
+        }
+
         void InitializeDeveloperTuning()
         {
+            ResetBossMoveTuning();
             var player=combatPrefab.GetComponentInChildren<PlayerHealth>();
             var movement=player.GetComponent<PlayerMovement>();
             var dodge=player.GetComponent<PlayerDodge>();
@@ -78,6 +108,7 @@ namespace GoGhost.Duel
         public void ResetDeveloperTuning()
         {
             if(!DeveloperToolsOpen)return;
+            ResetBossMoveTuning();
             foreach(var p in developerParameters)developerValues[(int)p.Id]=p.Default;
             PlayMetrics.MarkTuning(developerValues);
             ApplyDeveloperTuning();
@@ -96,7 +127,7 @@ namespace GoGhost.Duel
             Player.SetRuntimeHealth(max,fresh?max:Player.CurrentHealth);
             foreach(var boss in actors)
             {
-                if(boss==null||!boss.IsAlive||boss.IsTrainingEnemy)continue;
+                if(boss==null||!boss.IsAlive||boss.IsTrainingEnemy||boss.IsFinalBoss)continue;
                 max=(int)GetDeveloperValue(boss.ActorId==1?DeveloperSetting.GunnerMaxHealth:DeveloperSetting.SwordMaxHealth);
                 boss.Health.SetRuntimeHealth(max,fresh?max:boss.Health.CurrentHealth);
             }
@@ -111,7 +142,7 @@ namespace GoGhost.Duel
                 if(Player==null||Player.IsDead)return false;
                 current=Player.CurrentHealth;maximum=Player.MaxHealth;return true;
             }
-            foreach(var boss in actors)if(boss!=null&&boss.ActorId==actor&&boss.IsAlive)
+            foreach(var boss in actors)if(boss!=null&&boss.ActorId==actor&&boss.IsAlive&&!boss.Health.AwaitingSecondPhase&&!FinalBossCutscene)
             {current=boss.Health.CurrentHealth;maximum=boss.Health.MaxHealth;return true;}
             return false;
         }
@@ -121,10 +152,32 @@ namespace GoGhost.Duel
             if(!DeveloperToolsOpen||!GetDeveloperHealth(actor,out _,out int maximum))return;
             PlayMetrics.MarkTuning(developerValues);
             if(actor==0)Player.SetRuntimeHealth(maximum,value);
-            else foreach(var boss in actors)if(boss!=null&&boss.ActorId==actor)boss.Health.SetRuntimeHealth(maximum,value);
+            else foreach(var boss in actors) if(boss!=null&&boss.ActorId==actor)
+            {
+                if (boss.IsFinalBoss) boss.Health.SetRuntimeCurrentHealth(value);
+                else boss.Health.SetRuntimeHealth(maximum,value);
+            }
         }
 
-        public void JumpToDeveloperWave(int wave)
+        public bool CanPreviewBossMove(bool boxing)
+        {
+            if (!DeveloperToolsOpen || Phase != DuelPhase.Fight || Wave != FinalBossWave || FinalBossCutscene) return false;
+            return actors.Length == 1 && actors[0].IsAlive && actors[0].Axe != null && actors[0].Axe.PhaseTwo == boxing;
+        }
+
+        public void PreviewBossMove(bool boxing, int move)
+        {
+            if (!CanPreviewBossMove(boxing) || move < 1 || move >= (boxing ? punchTuning.Length : axeTuning.Length)) return;
+            var axe = actors[0].Axe;
+            if (boxing) axe.Boxer.PreviewPunch = (FinalBossBoxer.Punch)move;
+            else axe.PreviewMove = (FinalBossAxe.Move)move;
+            developerResumeOnClose = true;
+            ToggleDeveloperTools();
+        }
+
+        public void JumpToDeveloperWave(int wave) => JumpToDeveloperWave(wave, 0);
+
+        public void JumpToDeveloperWave(int wave, int bossPhase)
         {
             if(!DeveloperToolsOpen||wave<1||wave>BonusWave||!ConditionalCatalog.IsValid(DraftLoadout))return;
             EventSystem.current?.SetSelectedGameObject(null);
@@ -137,7 +190,14 @@ namespace GoGhost.Duel
             Wave=wave;
             FirstConfiguration=false;
             SetPhase(DuelPhase.Configure);
-            if (wave == FinalBossWave) return;
+            if (wave == FinalBossWave)
+            {
+                if (bossPhase == 0) return;
+                if (bossPhase == 2) resumeFinalBossPhaseTwo = true;
+                finalBossPhaseTwoHealth = -1;
+                CreateEncounter(false, skipBossIntro: true);
+                return;
+            }
             StartFight();
         }
 

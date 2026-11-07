@@ -36,7 +36,7 @@ Selection checks active collider support geometry, actual player width, speed, j
 
 An accepted transition freezes its destination and retains Move/Jump until landing even after conditions or events expire. Ordinary higher-priority rows cannot interrupt it. Manual Dodge, knockback, invalid geometry/tuning, unreachable destination or a bounded failed attempt can release it. A stuck/timed-out route is not retried at the same position and geometry until the state clears or the player moves; there is no added cooldown. After a successful landing, a still-true state may choose a new transition. Events are consumed once per row. Pause and lifecycle cleanup preserve ownership consistency. Moving/rotated platforms and arbitrary shapes are not certified by this pass.
 
-Five operations share rule arbitration: Move and Jump (Legs), Aim and Fire (Arms), Dodge (Spine). **PlayerRuleLimit = 5** is one shared budget, freely distributed; `MaxRulesTotal = 20` remains the storage and validation capacity. Happy installs **Incoming Attack (Any) → Jump** when character creation finishes. Jump executes once. It occupies the first rule slot and can be edited or removed like any other rule. There is no Always condition, Manual/Auto mode, enable switch or autonomous fallback.
+Five operations share rule arbitration: Move and Jump (Legs), Aim and Fire (Arms), Dodge (Spine). **PlayerRuleLimit = 5** is one shared budget, freely distributed; `MaxRulesTotal = 20` remains the storage and validation capacity. Happy installs **Incoming Attack (Any) → Jump** when character creation finishes. Jump requests a physical grounded jump on each landing while the condition holds. It occupies the first rule slot and can be edited or removed like any other rule. There is no Always condition, Manual/Auto mode, enable switch or autonomous fallback.
 
 Existing serialized rules can contain multiple conditions. All must match (AND). A new rule has one condition. Manual and automatic actions use the same event sources.
 
@@ -83,7 +83,7 @@ Took Damage, Landed and Hit Enemy are events. The other eight selectable conditi
 | Runtime operation | Selectable action and options |
 |---|---|
 | Move | M11 Move (Toward Enemy / Away from Enemy); M03 Keep Distance (Close / Mid / Far) |
-| Jump | J01 Jump (once); J04 Change Platform (Higher / Lower) |
+| Jump | J01 Jump; J04 Change Platform (Higher / Lower) |
 | Aim | Auto Aim at nearest (Q01, no parameters) |
 | Fire | Fire: Keep Firing (F03, default) / Short Burst (F02) |
 | Dodge | D01 Dodge (Away from Threat / Toward Enemy) |
@@ -112,7 +112,7 @@ The internal weapon firing process (no longer a selectable condition) starts onl
 
 Hold Position / Stop Moving and Hold Fire are removed without substitute actions. Their old rules remain invalid until edited.
 
-**Jump** uses the ground-only executor once per eligible occurrence. **Dodge** can move **Away from Threat**, using a public threat or source direction, or **Toward Enemy**, using a visible enemy. Both use the existing Dodge movement and cooldown.
+**Jump** repeats on legal landings for a sustained condition. A discrete event such as Took Damage triggers one jump per eligible occurrence. **Dodge** can move **Away from Threat**, using a public threat or source direction, or **Toward Enemy**, using a visible enemy. Both use the existing Dodge movement and cooldown.
 
 Manual and automatic Dodge share the executor's registered-Boss pass-through rules in both preflight and physical execution; terrain still blocks them and ordinary Move cannot pass through Bosses.
 
@@ -129,7 +129,7 @@ Each combat attempt starts with a copy of the equipped rules, fresh actors and a
 The indexed condition sequence preserves the original `Condition` / `AdditionalCondition` fields and typed parameters as its first two serialized slots, with `ExtraConditions` storing the unbounded tail. Missing/null tails mean older one-/two-condition rules; they retain their original IDs and options, subject to the migrations and validation below. Copying, fight snapshots and analytics JSON retain the full sequence. Preset templates are retired.
 
 
-Copies convert old action IDs into their parameterized forms before validation. M01/M02 map to Move Toward/Away from Enemy, and D02 maps to Dodge Toward Enemy. Other historical values can be preserved in data while requiring manual reselection. These include fixed-direction/Arena Center Move, Lowest Health or Aim Assist, Movement/Aim Direction Dodge, Repeat Jump, Fire 1 Shot and retired conditions. M04 Forward/Back requires a new direction. Incoming Bullet value 2 remains Ranged and the former Low value 4 is invalid. A removed condition invalidates the entire row until repaired. Row order and other fields survive migration.
+Copies convert old action IDs into their parameterized forms before validation. M01/M02 map to Move Toward/Away from Enemy, and D02 maps to Dodge Toward Enemy. Other historical values can be preserved in data while requiring manual reselection. These include fixed-direction/Arena Center Move, Lowest Health or Aim Assist, Movement/Aim Direction Dodge, Fire 1 Shot and retired conditions. Old Jump Once and Repeat rules both use Jump. M04 Forward/Back requires a new direction. Incoming Bullet value 2 remains Ranged and the former Low value 4 is invalid. A removed condition invalidates the entire row until repaired. Row order and other fields survive migration.
 
 ## Combat Rules HUD
 

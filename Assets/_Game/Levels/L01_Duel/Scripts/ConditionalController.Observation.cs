@@ -20,8 +20,7 @@ namespace GoGhost.Duel
                     seen[i]=true;hidden[i]=false;
                     lowEnemy[i]=HysteresisLow(c.HealthFraction,lowEnemy[i]);
                     float distance=Mathf.Abs(c.Bounds.center.x-shape.bounds.center.x);
-                    close[i]=distance<=(close[i]?ConditionalDefaults.Close+ConditionalDefaults.Hysteresis:ConditionalDefaults.Close);
-                    far[i]=distance>=(far[i]?ConditionalDefaults.Far-ConditionalDefaults.Hysteresis:ConditionalDefaults.Far);
+                    UpdateDistance(i,distance);
                     cursorNear[i]=MouseAngle(i)<=(cursorNear[i]?ConditionalDefaults.MouseExit:ConditionalDefaults.MouseEnter);
                 }
                 else if(seen[i])hidden[i]=true;
@@ -40,6 +39,11 @@ namespace GoGhost.Duel
             foreach(var notice in events)liveEvents.Add(notice.Context.Occurrence);
             for(int op=0;op<5;op++)for(int row=0;row<loadout.Operations[op].Rules.Count;row++)
                 states[op,row].ConsumedEvents.RemoveWhere(expiredEvent);
+        }
+        void UpdateDistance(int i, float distance)
+        {
+            close[i] = distance <= ConditionalDefaults.Close + (close[i] ? ConditionalDefaults.Hysteresis : 0);
+            far[i] = distance >= ConditionalDefaults.Far - (far[i] ? ConditionalDefaults.Hysteresis : 0);
         }
         bool IsExpiredEvent(long occurrence)=>!liveEvents.Contains(occurrence);
         static bool HysteresisLow(float ratio,bool wasLow)=>wasLow?ratio<ConditionalDefaults.LowExit:ratio<=ConditionalDefaults.LowEnter;
@@ -246,6 +250,7 @@ namespace GoGhost.Duel
                     if(left&&right){ctx.Source=Choose(ctx.Candidates,"Q01");ctx.HasPosition=true;ctx.Position=contacts[ctx.Source].Bounds.center;}
                     return left&&right;
                 case 53:
+                    if (bossOwner != null) return BossIncomingAttack((IncomingAttackOption)option);
                     ctx.EnemyBound=true;ctx.IsThreat=true;
                     if(option==(int)IncomingAttackOption.Low)return false;
                     ctx.ThreatKind=option==(int)IncomingAttackOption.Ranged?41:option==(int)IncomingAttackOption.Melee?42:0;
@@ -264,7 +269,7 @@ namespace GoGhost.Duel
                     return shape.bounds.min.x-arena.min.x<margin||arena.max.x-shape.bounds.max.x<margin;
                 case 18:case 25:case 35:case 40:case 52:
                     ctx.EnemyBound=true;ctx.Candidates=0;
-                    for(int i=0;i<actors.Count;i++)if(visible[i]&&EnemyMatches(id,option,i,op))ctx.Candidates|=1<<i;
+                    for(int i=0;i<contacts.Length;i++)if(visible[i]&&EnemyMatches(id,option,i,op))ctx.Candidates|=1<<i;
                     if(ctx.Candidates==0)return false;
                     if(id==25)ctx.PreparationSource=0;
                     SelectSource(ref ctx);return true;
@@ -303,7 +308,7 @@ namespace GoGhost.Duel
         {
             if(response=="Q07")return currentTarget>=0&&visible[currentTarget]&&(mask&(1<<currentTarget))!=0?currentTarget:-1;
             int best=-1;float bestScore=float.PositiveInfinity;
-            for(int i=0;i<actors.Count;i++)
+            for(int i=0;i<contacts.Length;i++)
             {
                 if(!visible[i]||(mask&(1<<i))==0)continue;
                 if(response=="Q09"&&MouseAngle(i)>ConditionalDefaults.MouseEnter)continue;
@@ -315,7 +320,7 @@ namespace GoGhost.Duel
                     if(contacts[i].HealthFraction<contacts[best].HealthFraction){best=i;bestScore=score;continue;}
                 }
                 if(response=="Q04"&&actors[i].Profile.Kind==BossKind.Gunner||response=="Q05"&&actors[i].Profile.Kind==BossKind.Swordsman)score-=100000;
-                if(score<bestScore-.0001f||Mathf.Abs(score-bestScore)<.0001f&&(best<0||actors[i].ActorId<actors[best].ActorId)) {best=i;bestScore=score;}
+                if(score<bestScore-.0001f||Mathf.Abs(score-bestScore)<.0001f&&(best<0||bossOwner == null && actors[i].ActorId<actors[best].ActorId)) {best=i;bestScore=score;}
             }
             return best;
         }

@@ -13,16 +13,15 @@ namespace GoGhost.Duel
         float bossRulePanelWidth = RulePanelWidth;
         Vector2 bossHudSize;
         readonly List<RuleRowView> bossRuleRows = new List<RuleRowView>(5);
-        readonly List<FinalBossRules.Row> bossRuleSources = new List<FinalBossRules.Row>(5);
         readonly Dictionary<int, RuleGlowState> bossGlowStates = new Dictionary<int, RuleGlowState>();
-        FinalBossRules bossGlowOwner;
+        ConditionalController bossGlowOwner;
 
-        FinalBossRules ActiveBossRules()
+        ConditionalController ActiveBossRules()
         {
             if (game.Wave != DuelGame.FinalBossWave || (game.Phase != DuelPhase.Prepare && game.Phase != DuelPhase.Fight)) return null;
             foreach (var actor in game.Bosses)
                 if (actor != null && actor.Axe != null && actor.IsAlive
-                    && (sidebarsSealed || actor.Axe.Transitioning || (!actor.Axe.PhaseTwo && !actor.Axe.Rules.Sealed))) return actor.Axe.Rules;
+                    && (sidebarsSealed || actor.Axe.Transitioning || (!actor.Axe.PhaseTwo && !actor.Axe.RulesSealed))) return actor.Axe.Rules;
             return null;
         }
 
@@ -38,19 +37,20 @@ namespace GoGhost.Duel
             var divider = Image(bossRuleSidebar, Vector2.zero, Vector2.zero, NeuralPalette.Border);
             divider.rectTransform.anchorMin = new Vector2(0, 0); divider.rectTransform.anchorMax = new Vector2(0, 1);
             divider.rectTransform.sizeDelta = new Vector2(1, 0);
-            bossRuleHeading = Text("Final Boss Rules " + rules.Rows.Count, bossRuleSidebar, Vector2.zero, Vector2.zero, 30, TextAlignmentOptions.Left, headingFont);
+            bossRuleHeading = Text("Boss Rules " + rules.OrderedRows.Count, bossRuleSidebar, Vector2.zero, Vector2.zero, 30, TextAlignmentOptions.Left, headingFont);
             bossRuleHeading.rectTransform.anchorMin = bossRuleHeading.rectTransform.anchorMax = new Vector2(.5f, 1);
             bossRuleContent = Rect("BossRuleList", bossRuleSidebar, Vector2.zero, Vector2.zero);
             bossRuleContent.anchorMin = bossRuleContent.anchorMax = bossRuleContent.pivot = new Vector2(.5f, 1);
-            for (int i = 0; i < rules.Rows.Count; i++)
+            for (int i = 0; i < rules.OrderedRows.Count; i++)
             {
-                var source = rules.Rows[i];
-                var operation = FinalBossRules.DisplayOperation(source.Action);
+                var entry = rules.OrderedRows[i];
+                var operation = (ControlOperation)entry.Op;
+                var rule = rules.RuleAt(operation, entry.Row);
                 if (!bossGlowStates.TryGetValue(i, out var glow)) bossGlowStates.Add(i, glow = new RuleGlowState());
-                var row = new RuleRowView { Rule = source.Condition, Operation = operation, Row = i, Glow = glow };
-                BuildRuleCard(row, bossRuleContent, i, ConditionalCatalog.RuleConditionLabel(source.Condition), source.ActionLabel,
-                    NeuralPalette.Operation(operation));
-                bossRuleRows.Add(row); bossRuleSources.Add(source);
+                var row = new RuleRowView { Rule = rule, Operation = operation, Row = entry.Row, Glow = glow };
+                BuildRuleCard(row, bossRuleContent, i, ConditionalCatalog.RuleConditionLabel(rule),
+                    ConditionalCatalog.RuleActionLabel(rule), NeuralPalette.Operation(operation));
+                bossRuleRows.Add(row);
             }
         }
 
@@ -58,7 +58,7 @@ namespace GoGhost.Duel
         {
             foreach (var row in bossRuleRows) if (row.Signals != null)
                 foreach (var signal in row.Signals) if (signal != null) Destroy(signal);
-            bossRuleRows.Clear(); bossRuleSources.Clear();
+            bossRuleRows.Clear();
             bossRuleSidebar = bossRuleContent = null; bossRuleHeading = null; bossHudSize = Vector2.zero;
         }
 
@@ -76,7 +76,7 @@ namespace GoGhost.Duel
                 bossRuleContent.anchoredPosition = new Vector2(-7, -74);
                 foreach (var row in bossRuleRows)
                 {
-                    float cardHeight = LayoutRuleCard(row.Root, row.Number, row.Condition, row.Arrow, row.Action, cardWidth - 4);
+                    float cardHeight = LayoutRuleCard(row.Root, row.Number, row.Condition, row.Arrow, row.Action, cardWidth - 4, compact:true);
                     row.Root.anchoredPosition = new Vector2(0, -y - cardHeight / 2);
                     y += cardHeight + 8;
                 }
@@ -88,12 +88,12 @@ namespace GoGhost.Duel
 
         void UpdateBossRuleHud(float scale)
         {
-            bool live = game.Phase == DuelPhase.Fight && bossGlowOwner != null && !bossGlowOwner.Sealed;
+            bool live = game.Phase == DuelPhase.Fight && bossGlowOwner != null && !sidebarsSealed && !game.FinalBossCutscene;
             for (int i = 0; i < bossRuleRows.Count; i++)
             {
                 var row = bossRuleRows[i];
                 AlignRuleGlow(row, scale);
-                if (live && !game.Paused) row.Glow.Update(bossRuleSources[i].Matched, Time.time);
+                if (live && !game.Paused) row.Glow.Update(bossGlowOwner.RowMatches((int)row.Operation, row.Row), Time.time);
                 ApplyRuleGlow(row, NeuralPalette.Operation(row.Operation), live ? row.Glow.Strength : 0);
             }
         }

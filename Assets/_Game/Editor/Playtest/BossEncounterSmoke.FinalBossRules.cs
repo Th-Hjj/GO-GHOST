@@ -13,8 +13,25 @@ public static partial class BossEncounterSmoke
     // Final Boss stage 4: fixed Boss rules ahead of his AI, shown in the right sidebar.
     static IEnumerator FinalBossRuleList()
     {
-        Record("Final Boss rules: developer Wave 3, one player rule, normal dialogue/countdown. The Boss AI's own decisions are suspended so each rule is observed alone; placement, cooldown resets and raised player HP are controlled. No balance claim.");
+        Record("Real player/Boss rule controllers, ordinary axe AI and session-only F8 tuning. Controlled placement and health.");
         game.ConfigurePlaytestWave(3); yield return Frames(4);
+        // A historical Jump variant must have today's single action and keep jumping on a sustained condition.
+        var legacyJump = new ConditionalRule { Condition=4, Action="J03", Jump=JumpOption.Repeat };
+        Check("Old Jump data displays one parameterless Jump", ConditionalCatalog.IsAllowed((int)ControlOperation.Jump,legacyJump)
+            && ConditionalCatalog.RuleActionLabel(legacyJump)=="Jump" && ConditionalCatalog.ActionOptions("J01").Length==0);
+        game.EditLoadout(d=>d.TryAddRule(ControlOperation.Jump,new ConditionalRule { Condition=4, Action="J01" }));
+        game.StartConfiguredEncounter(); yield return Frames(3);
+        game.Player.IsInvulnerable = true;
+        game.Player.SetRuntimeHealth(200,40);
+        yield return Until(()=>game.Rules.AcceptedJumps>=3,5f);
+        Check("One continuous low-health condition starts three physical jumps", game.Rules.AcceptedJumps>=3);
+        game.Player.SetRuntimeHealth(200,200);
+        int jumps=game.Rules.AcceptedJumps;
+        yield return Seconds(1.4f);
+        Check("Losing the condition allows landing and stops further jumps", game.Rules.AcceptedJumps==jumps
+            && game.Player.GetComponent<PlayerMovement>().IsGrounded);
+        game.BackFromTraining();
+        game.EditLoadout(d=>d.Operations[(int)ControlOperation.Jump].Rules.Clear());
         game.EditLoadout(d => d.TryAddRule((int)ControlOperation.Aim, new ConditionalRule { Condition = 13, Action = "Q01" }));
         SetAlphaGameSize(1920, 1080); yield return Until(() => Screen.width == 1920, 2f);
         game.StartFight(); yield return Until(() => game.Phase == DuelPhase.FinalBoss, 2f);
@@ -25,6 +42,7 @@ public static partial class BossEncounterSmoke
         var aiClock = typeof(FinalBossAxe).GetField("nextDecisionAt", PrivateInstance);
         void Suspend() { axe.Cancel(); aiClock.SetValue(axe, float.MaxValue); System.Array.Clear(Private<float[]>(axe, "readyAt"), 0, 5); }
         Suspend();
+        game.Player.IsInvulnerable = true;
         foreach (var size in new[] { new Vector2Int(1280, 720), new Vector2Int(1920, 1080) })
         {
             SetAlphaGameSize(size.x, size.y); yield return Until(() => Screen.width == size.x, 2f); yield return Frames(6);
@@ -34,66 +52,58 @@ public static partial class BossEncounterSmoke
                 $"left={left.xMin:F0}..{left.xMax:F0} camera={view.xMin:F0}..{view.xMax:F0} boss={right.xMin:F0}..{right.xMax:F0}");
             ScreenCapture.CaptureScreenshot(Output + "final-boss-rules-" + size.x + ".png"); yield return Frames(3);
         }
-        int[] executed = rules.Rows.Select(r => r.Executed).ToArray();
-        bool Ran(int row) => rules.Rows[row].Executed > executed[row];
-        // Boss perception is delayed by design: hold him idle until his public facts reach the new placement.
-        IEnumerator Settle(float playerX, float bossX)
-        {
-            AlphaPlace(playerX, bossX);
-            // Placement lands on the next physics step; then wait for the delayed facts to reach it.
-            for (int i = 0; i < 4; i++) { Suspend(); yield return null; }
-            float until = Time.time + 1.5f;
-            while (Time.time < until && Mathf.Abs(actor.Perception.Facts.Position.x - playerX) > .3f) { Suspend(); yield return null; }
-            for (int i = 0; i < 3; i++) { Suspend(); yield return null; }
-            // Snapshot in the same frame as the last reset, before the Boss's next tick can act.
-            Suspend();
-            executed = rules.Rows.Select(r => r.Executed).ToArray();
-            Record($"SETTLE facts={actor.Perception.Facts.Position} conf={actor.Perception.Facts.Confidence:F2} player={game.Player.transform.position} boss={actor.Position} grounded={actor.Motor.Grounded} matched={string.Join(",", rules.Rows.Select(r => r.Matched ? 1 : 0))} current={axe.Current} sealed={rules.Sealed}");
-        }
-        string State() => $"current={axe.Current} matched={string.Join(",", rules.Rows.Select(r => r.Matched ? 1 : 0))} executed={string.Join(",", rules.Rows.Select(r => r.Executed))} grounded={actor.Motor.Grounded} conf={actor.Perception.Facts.Confidence:F2}";
-
-        // Far -> Boomerang (rule 5).
-        yield return Settle(-8, 3);
-        yield return Until(() => Ran(4), 1.5f);
-        Check("Far matches and rule 5 throws the Boomerang", Ran(4) && axe.Current == FinalBossAxe.Move.Boomerang, State());
-        yield return Seconds(.1f); ScreenCapture.CaptureScreenshot(Output + "final-boss-rules-far.png");
-        yield return Until(() => axe.Current == FinalBossAxe.Move.None, 4f);
-
-        // Close -> Spin (rule 3).
-        yield return Settle(0, 3);
-        yield return Until(() => Ran(2), 1.5f);
-        Check("Close matches and rule 3 spins", Ran(2) && axe.Current == FinalBossAxe.Move.Spin, State());
-        yield return Until(() => axe.Current == FinalBossAxe.Move.None, 4f);
-
-        // Incoming Attack (Ranged) -> Jump, then Landed -> Chop, Took Damage -> Throw & Recall.
-        // 8 units is still Mid (Close 5.3 / Far 8.5) and leaves the bullet time to arrive before he walks into Close.
-        yield return Settle(-4, 4);
-        Check("Mid distance leaves both distance rules unmatched", !rules.Rows[2].Matched && !rules.Rows[4].Matched, State());
+        Check("Boss rows are valid player actions", rules.OrderedRows.Count == 2 && rules.OrderedRows.All(entry =>
+            ConditionalCatalog.IsAllowed(entry.Op, rules.RuleAt((ControlOperation)entry.Op,entry.Row))));
+        Check("Both panels leave at least 65% width for combat", Camera.main.rect.width >= .65f);
+        AlphaPlace(-8, 5);
+        yield return Until(() => rules.Ownership.MovementOwned, 2f);
+        Check("Far matches the shared Move toward Enemy response", rules.Ownership.MovementOwned && rules.Ownership.Move < 0);
+        Suspend();
+        AlphaPlace(-4, 4);
         mousePosition = Camera.main.WorldToScreenPoint(actor.Position); mouseHeld = true;
-        yield return Until(() => Ran(0), 2f);
-        yield return Until(() => !actor.Motor.Grounded, .5f);
-        Check("Incoming player bullet matches and rule 1 jumps", Ran(0) && !actor.Motor.Grounded, State());
+        yield return Until(() => rules.AcceptedJumps > 0, 3f);
         mouseHeld = false;
-        yield return Until(() => Ran(1), 2.5f);
-        Check("Landing triggers rule 2 Chop", Ran(1), State());
-        yield return Until(() => axe.Current == FinalBossAxe.Move.None, 4f);
+        Check("A real player bullet triggers the shared Jump rule", rules.AcceptedJumps > 0);
+        aiClock.SetValue(axe, 0f);
+        yield return Until(() => axe.Current != FinalBossAxe.Move.None, 3f);
+        Check("The combat AI initiates its own axe attack", axe.Current != FinalBossAxe.Move.None);
 
-        // Took Damage -> Throw & Recall (rule 4), from a direct hit while idle and grounded.
-        yield return Settle(-3, 3);
-        actor.Health.TakeDamage(10, game.Player.gameObject);
-        yield return Until(() => Ran(3), 1f);
-        Check("Taking damage while free triggers rule 4 Throw & Recall", Ran(3) && axe.Current == FinalBossAxe.Move.Throw, State());
-        yield return Until(() => axe.Current == FinalBossAxe.Move.None, 4f);
-
+        checkingPause = true;
+        game.ToggleDeveloperTools();
+        ClickConfig("Final Boss");
+        ClickConfig("Dev_BossWindup_Plus");
+        Check("F8 edits Chop wind-up", Mathf.Approximately(game.GetBossMoveTuning(false,1).Windup,.47f));
+        ClickConfig("75% HP");
+        Check("F8 edits the actual phase-one pool", actor.Health.CurrentHealth == 750);
+        game.ToggleDeveloperTools(); checkingPause = false;
+        yield return Until(() => axe.Invading, 4f);
+        Check("75% uses the real invasion trigger", axe.Invading);
+        checkingPause = true; game.ToggleDeveloperTools();
+        ClickConfig("Waves"); ClickConfig("Dev_FinalPhase2");
+        checkingPause = false;
+        Check("F8 enters the phase-two countdown without dialogue", game.Phase == DuelPhase.Prepare
+            && game.Bosses.Single().Axe.PhaseTwo && game.Bosses.Single().Health.CurrentHealth == 1000);
+        yield return Until(() => game.Phase == DuelPhase.Fight,4f);
         game.Player.IsInvulnerable = true;
-        actor.Health.TakeDamage(100000, game.Player.gameObject);
-        yield return CompleteFinalBossTransition(); yield return Frames(4);
-        var bossPanel = CardsUI().GetComponentsInChildren<RectTransform>().FirstOrDefault(r => r.name == "BossRules");
-        Check("Phase two seals the Boss rules, removes both sidebars and widens the camera", rules.Sealed && bossPanel == null
-            && rules.Rows.All(r => !r.Matched) && Mathf.Abs(Camera.main.pixelRect.width - Screen.width) <= 1f && Camera.main.pixelRect.xMin <= 1f);
-        ScreenCapture.CaptureScreenshot(Output + "final-boss-rules-phase-two.png"); yield return Frames(3);
+        checkingPause = true; game.ToggleDeveloperTools(); ClickConfig("Tuning");
+        ClickConfig("Boxer"); ClickConfig("Dev_BossDamage_Plus");
+        game.SetDeveloperHealth(2,460);
+        Check("F8 adjusts Jab damage and phase-two current HP", game.GetBossMoveTuning(true,1).Damage == 13
+            && game.Bosses.Single().Health.CurrentHealth == 460);
+        var boxer = game.Bosses.Single().Axe.Boxer;
+        int jabs = boxer.Started[(int)FinalBossBoxer.Punch.Jab];
+        ClickConfig("Try selected move"); checkingPause = false;
+        yield return Until(() => boxer.Started[(int)FinalBossBoxer.Punch.Jab] > jabs, 4f);
+        Check("F8 resumes into the selected real punch", !game.DeveloperToolsOpen && !game.Paused
+            && boxer.Started[(int)FinalBossBoxer.Punch.Jab] > jabs);
+        checkingPause = true; game.ToggleDeveloperTools();
+        ClickConfig("Restore defaults");
+        Check("Restore resets both movesets", game.GetBossMoveTuning(true,1).Damage == 12
+            && Mathf.Approximately(game.GetBossMoveTuning(false,1).Windup,.42f));
+        ClickConfig("Waves"); ClickConfig("Dev_FinalPhase1"); checkingPause = false;
+        Check("F8 enters a fresh phase-one countdown",game.Phase==DuelPhase.Prepare && !game.Bosses.Single().Axe.PhaseTwo);
         game.MainMenu();
-        Record("NOT TESTED: rule priority against unsuspended AI timing, invasions (stage 5), scripted transition (stage 7), balance.");
+        Record("Controlled flow and parameter checks; hand-play balance not tested.");
     }
 }
 #endif

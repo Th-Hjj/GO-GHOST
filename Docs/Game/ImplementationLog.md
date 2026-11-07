@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-06 — Shared Jump, Final Boss locomotion and F8 tuning
+
+- Jump repeats on each legal landing while a state holds; a discrete event is consumed per occurrence. Older Jump variants use the same action. The Final Boss runs the player's conditional controller for ranged attack → Jump and far enemy → Move toward enemy. Axe selection belongs to his combat AI.
+- At 1280 pixels the sidebars are 198 pixels each. F8 offers phase starts, current HP and invasion thresholds, per-move wind-up, recovery, cooldown, damage and one-shot previews with the real executors. Tuning belongs to the session.
+- Unity 6000.6.0f1 compiled. Play Mode verified three jumps on one continuous low-health condition, stopping after recovery, legacy rule migration, the Boss reacting to a real projectile, the two sidebar widths, F8 edits/preview and phase starts. The Wave 2-to-Bonus progression and White Boxer checks passed. Human balance and standalone builds were not tested.
+
 ## 2026-11-06 — Phase-two retry and redesign wrap-up (Final Boss stage 9)
 
 - **Retry Phase 2:** the player's health is recorded when the first pool empties. A phase-two defeat shows **Retry Phase 2** and **Configuration**; a phase-one defeat keeps **Retry**.

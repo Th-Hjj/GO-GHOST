@@ -157,7 +157,7 @@ namespace GoGhost.Duel
             if (Phase != DuelPhase.Failed || DeveloperToolsOpen) return;
             CreateEncounter(false);
         }
-        void CreateEncounter(bool training)
+        void CreateEncounter(bool training, bool skipBossIntro = false)
         {
             ClearEncounter();
             ApplyPlatformLayout(training);
@@ -233,7 +233,7 @@ namespace GoGhost.Duel
                 return;
             }
             FirstConfiguration = false;
-            if (Wave == FinalBossWave && !finalBossPhaseTwo) StartBossDialogue(DuelPhase.FinalBoss);
+            if (Wave == FinalBossWave && !finalBossPhaseTwo && !skipBossIntro) StartBossDialogue(DuelPhase.FinalBoss);
             else StartCountdown();
             Trace($"start wave={Wave} player={Player.CurrentHealth} bosses={HealthSummary()} observation=empty");
         }

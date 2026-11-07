@@ -18,6 +18,8 @@ namespace GoGhost.Duel
         }
         readonly List<DeveloperFieldView> developerFields=new List<DeveloperFieldView>();
         int developerTab,developerSection,developerShortcutFrame=-1;
+        bool tuningBoxer;
+        int tuningMove = 1;
         TMP_Text developerStatus;
         public bool DeveloperShortcutConsumed=>developerShortcutFrame==Time.frameCount;
 
@@ -58,16 +60,25 @@ namespace GoGhost.Duel
                 jump.name="Dev_Wave"+wave;
                 jump.interactable=ConditionalCatalog.IsValid(game.DraftLoadout);
             }
+            for (int phase = 1; phase <= 2; phase++)
+            {
+                int targetPhase = phase;
+                var jump = Button("Start Phase " + phase, page, new Vector2(phase == 1 ? -175 : 175, -50),
+                    new Vector2(310, 58), () => game.JumpToDeveloperWave(DuelGame.FinalBossWave, targetPhase));
+                jump.name = "Dev_FinalPhase" + phase;
+                jump.interactable = ConditionalCatalog.IsValid(game.DraftLoadout);
+            }
         }
 
         void BuildDeveloperTuning()
         {
-            string[] tabs={"Player","Weapon","Health"};
+            string[] tabs={"Player","Weapon","Health","Final Boss"};
             for(int i=0;i<tabs.Length;i++)
             {
                 int tab=i;
-                Button(tabs[i],page,new Vector2(-430+i*430,225),new Vector2(390,52),()=>{developerTab=tab;Show();},i==developerTab);
+                Button(tabs[i],page,new Vector2(-495+i*330,225),new Vector2(305,52),()=>{developerTab=tab;Show();},i==developerTab);
             }
+            if (developerTab == 3) BuildFinalBossTuning();
             float y=145;
             foreach(var parameter in game.DeveloperParameters)
             {
@@ -79,7 +90,7 @@ namespace GoGhost.Duel
             }
             if(developerTab==2)
             {
-                string[] labels={"Player current HP","Gunner current HP","Swordsman current HP"};
+                string[] labels={"Player current HP","Gunner current HP",game.Wave == DuelGame.FinalBossWave ? "Final Boss current HP" : "Swordsman current HP"};
                 for(int i=0;i<labels.Length;i++)
                 {
                     int actor=i;
@@ -91,9 +102,54 @@ namespace GoGhost.Duel
                 }
             }
             developerStatus=Text("",page,new Vector2(0,-335),new Vector2(1400,45),20);
-            Button("Restore defaults",page,new Vector2(0,-400),new Vector2(300,54),()=>
+            Button("Restore defaults",page,new Vector2(developerTab==3?210:0,-400),new Vector2(300,54),()=>
             {game.ResetDeveloperTuning();RefreshDeveloperFields();developerStatus.text="Defaults restored.";});
             RefreshDeveloperFields();
+        }
+
+        void BuildFinalBossTuning()
+        {
+            for (int phase = 1; phase <= 2; phase++)
+            {
+                bool boxing = phase == 2;
+                Button(boxing ? "Boxer" : "Axe", page, new Vector2(boxing ? 160 : -160, 150), new Vector2(290,48),
+                    () => { tuningBoxer = boxing; tuningMove = 1; Show(); }, tuningBoxer == boxing);
+            }
+            var preview = Button("Try selected move", page, new Vector2(-210,-400), new Vector2(360,54),
+                () => game.PreviewBossMove(tuningBoxer,tuningMove));
+            preview.interactable = game.CanPreviewBossMove(tuningBoxer);
+            string[] names = tuningBoxer ? new[] { "Jab", "Uppercut", "Slip / Hook", "Haymaker" }
+                : new[] { "Chop", "Spin", "Throw / Recall", "Boomerang" };
+            for (int i = 0; i < names.Length; i++)
+            {
+                int move = i + 1;
+                Button(names[i], page, new Vector2(-465 + 310*i,85), new Vector2(290,48),
+                    () => { tuningMove = move; Show(); }, tuningMove == move);
+            }
+            BossMoveTuning Read() => game.GetBossMoveTuning(tuningBoxer,tuningMove);
+            void Write(BossMoveTuning t) => game.SetBossMoveTuning(tuningBoxer,tuningMove,t);
+            AddDeveloperField("BossWindup","Wind-up (s)",19,.05f,4,.05f,()=>Read().Windup,
+                v=>{var t=Read(); t.Windup=v; Write(t);},()=>true);
+            AddDeveloperField("BossRecovery","Recovery (s)",-39,.05f,4,.05f,()=>Read().Recovery,
+                v=>{var t=Read(); t.Recovery=v; Write(t);},()=>true);
+            AddDeveloperField("BossCooldown","Cooldown (s)",-97,.1f,15,.1f,()=>Read().Cooldown,
+                v=>{var t=Read(); t.Cooldown=v; Write(t);},()=>true);
+            AddDeveloperField("BossDamage","Damage",-155,1,500,1,()=>Read().Damage,
+                v=>{var t=Read(); t.Damage=Mathf.RoundToInt(v); Write(t);},()=>true);
+            AddDeveloperField("FinalBossHP","Final Boss current HP",-217,1,10000,10,
+                ()=>game.GetDeveloperHealth(2,out int hp,out _)?hp:0, v=>game.SetDeveloperHealth(2,Mathf.RoundToInt(v)),
+                ()=>game.Wave==DuelGame.FinalBossWave && game.GetDeveloperHealth(2,out _,out _),true);
+            for (int i=0;i<3;i++)
+            {
+                int percent = 75-25*i;
+                var jump = Button(percent+"% HP", page, new Vector2(-300+300*i,-282), new Vector2(260,48), () =>
+                {
+                    if (game.GetDeveloperHealth(2,out _,out int max)) game.SetDeveloperHealth(2,max*percent/100);
+                    RefreshDeveloperFields();
+                });
+                jump.interactable = game.Wave==DuelGame.FinalBossWave && !game.FinalBossPhaseTwoReached
+                    && game.GetDeveloperHealth(2,out _,out _);
+            }
         }
 
         void AddDeveloperField(string id,string label,float y,float min,float max,float step,Func<float> read,Action<float> write,Func<bool> available,bool currentHealth=false)

@@ -26,6 +26,14 @@ namespace GoGhost.Duel
             new Timing(.40f, .15f, 0, .35f, 4.5f, 18),     // Throw & Recall (active from the path)
             new Timing(.45f, .15f, 1.6f, .40f, 5.5f, 20),  // Boomerang
         };
+        internal static BossMoveTuning DefaultTuning(Move move)
+        {
+            var t = Timings[(int)move];
+            return new BossMoveTuning(t.Prepare, t.Recovery, t.Cooldown, t.Damage);
+        }
+        readonly DuelGame game;
+        Timing acceptedTiming;
+
         public const float ChopReach = 2.3f, ChopHeight = 2.1f, SpinRadius = 1.65f, AxeRadius = .38f;
         const float ThrowSpeed = 15, RecallSpeed = 17, ThrowHold = .25f, ThrowRange = 12, SpinMove = .45f;
         const int BoomerangSamples = 25;
@@ -37,6 +45,7 @@ namespace GoGhost.Duel
         readonly BossAgent actor;
         readonly System.Action onPhaseTwo;
         readonly System.Func<ConditionalRule> onInvasion;
+        internal Move PreviewMove { get; set; }
         float invasionAt;
         bool invasionInjected;
         readonly Collider2D playerBody;
@@ -69,14 +78,16 @@ namespace GoGhost.Duel
         public float LockedFacing => lockedFacing;
         public IReadOnlyList<Vector2> Path => path;
         public readonly int[] Started = new int[5], Hits = new int[5];
-        public FinalBossRules Rules { get; }
+        public ConditionalController Rules { get; }
+        public bool RulesSealed => PhaseTwo || Transitioning || actor.Health.AwaitingSecondPhase;
 
         public FinalBossAxe(BossAgent owner, PlayerHealth player, System.Action phaseTwo, System.Func<ConditionalRule> invasion)
         {
+            game = owner.GetComponentInParent<DuelGame>();
             actor = owner; onPhaseTwo = phaseTwo; onInvasion = invasion;
             playerBody = player != null ? player.GetComponent<Collider2D>() : null;
             for (int i = 0; i < readyAt.Length; i++) readyAt[i] = 0;
-            Rules = new FinalBossRules(owner);
+            Rules = new ConditionalController(owner);
             nextDecisionAt = Time.time + 1.0f;
         }
 
@@ -87,22 +98,29 @@ namespace GoGhost.Duel
         public void Tick()
         {
             // Phase two seals the Boss's rules together with the player's.
-            Rules.Sealed = PhaseTwo || Transitioning || actor.Health.AwaitingSecondPhase;
-            Rules.Observe();
+            if (!RulesSealed) Rules.ObserveBossRules();
             if (TickTransition()) return;
             if (Unarmed) { TickUnarmed(); return; }
             if (TickInvasion()) return;
             if (Current != Move.None) { TickMove(); return; }
             var player = actor.Player;
             if (player == null || player.IsDead) { actor.Motor.Brake(); return; }
-            if (Rules.TryExecute(this)) return;
+
+            if (PreviewMove != Move.None && TryStart(PreviewMove))
+            {
+                PreviewMove = Move.None;
+                return;
+            }
+            var controls = Rules.ResolveBossLocomotion();
+            if (controls.Jump && controls.JumpOwned) return;
             var facts = actor.Perception.Facts;
             if (facts.Confidence <= .1f) { actor.Motor.Brake(); return; }
             Vector2 target = facts.Position, position = actor.Position;
             float dx = target.x - position.x, distance = Mathf.Abs(dx);
             bool level = Mathf.Abs(target.y - position.y) < 1.4f;
-            if (Time.time >= nextDecisionAt && Decide(distance, level)) return;
+            if (PreviewMove == Move.None && Time.time >= nextDecisionAt && Decide(distance, level)) return;
             // Close in on a level target; keep a throwing lane on a raised one.
+            if (controls.MovementOwned) return;
             if (level) actor.Motor.SetMove(distance > 2.0f ? Mathf.Sign(dx) : 0);
             else actor.Motor.SetMove(distance < 3f ? -Mathf.Sign(dx) : distance > 6f ? Mathf.Sign(dx) : 0, .7f);
         }
@@ -121,6 +139,12 @@ namespace GoGhost.Duel
         {
             if (!CanStart(move)) return false;
             var timing = Timings[(int)move];
+            var tuning = game.GetBossMoveTuning(false, (int)move);
+            timing.Prepare = tuning.Windup;
+            timing.Cooldown = tuning.Cooldown;
+            timing.Recovery = tuning.Recovery;
+            timing.Damage = tuning.Damage;
+            acceptedTiming = timing;
             Current = move; attackId++; Started[(int)move]++;
             hitDone = outHit = backHit = false; AxeFlying = false;
             readyAt[(int)move] = Time.time + timing.Cooldown;
@@ -138,7 +162,7 @@ namespace GoGhost.Duel
 
         void TickMove()
         {
-            var timing = Timings[(int)Current];
+            var timing = acceptedTiming;
             if (Phase == Stage.Prepare)
             {
                 TrackTarget(); PlanActiveWindow();
@@ -168,7 +192,7 @@ namespace GoGhost.Duel
 
         void TickActive()
         {
-            int damage = Timings[(int)Current].Damage;
+            int damage = acceptedTiming.Damage;
             switch (Current)
             {
                 case Move.Chop:
@@ -197,7 +221,7 @@ namespace GoGhost.Duel
             {
                 AxeFlying = false; AxeSpin = 0;
                 if (Current == Move.Spin) actor.Motor.HoldHorizontal();
-                SetPhase(Stage.Recovery, Timings[(int)Current].Recovery);
+                SetPhase(Stage.Recovery, acceptedTiming.Recovery);
             }
         }
 
@@ -336,9 +360,9 @@ namespace GoGhost.Duel
         void PlanActiveWindow()
         {
             // Activate sets activeAt itself; earlier phases predict it from the remaining tell.
-            if (Phase == Stage.Prepare) activeAt = phaseUntil + Timings[(int)Current].Lock;
+            if (Phase == Stage.Prepare) activeAt = phaseUntil + acceptedTiming.Lock;
             else if (Phase == Stage.Locked) activeAt = phaseUntil;
-            float active = Timings[(int)Current].Active;
+            float active = acceptedTiming.Active;
             if (Current == Move.Throw && path.Count == 2)
             {
                 float length = Vector2.Distance(path[0], path[1]);

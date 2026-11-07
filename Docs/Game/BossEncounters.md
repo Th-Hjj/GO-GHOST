@@ -25,7 +25,9 @@ Walker's provisional intro, editable in Voice Studio:
 
 Preparation tracks the target and Lock freezes the attack. The boss stands still while the axe is thrown. The AI closes in on a level target and keeps a throwing lane against a raised one. It does not yet jump onto platforms.
 
-**Boss Rules (stage 4, implemented):** `FinalBossRules` evaluates the five trial rules in the table below from the Boss's side every frame. Incoming Attack (Ranged) means a public player bullet reaching his body within 0.20 s. Landed and Took Damage are his own events with the 0.5 s window and per-row consumption. Close and Far reuse the player thresholds of 5.3 and 8.5 units with 0.35 hysteresis, measured against his delayed public facts. Jump fires once per entry into its condition. When he is free to act, the first matching executable rule runs before his AI; a cooldown, airborne state or busy axe falls through. His sidebar (**Final Boss Rules 5**) on the right uses the player's card layout and match glow. Phase two seals the list and removes both sidebars, so the camera returns to full width. **Invasions (stage 5, implemented):** at 75%, 50% and 25% of the first pool, the Boss finishes his current move and lands. He then stands invulnerable for 1.8 s (`Enemy.Invulnerable`), holds the axe overhead and sends a flickering signal into the player. At 1.4 s, `FinalBossInvasion` draws one rule at random from the 203 legal one-condition/one-action rules in the editor catalog. The rule is appended after the player's last rule in a fight-only copy of the loadout, beyond the five-rule cap, and the rules are rebound. The new card pulses for 1.6 s. Thresholds crossed by one hit queue their invasions one after another. Rebinding resets the event state of the player's existing rules once per invasion. The equipped loadout is never modified, so Retry and Configuration start without invaded rules. Trial observation: while the player keeps shooting, rule 1 (Jump) and then rule 2 (Chop on landing) usually keep him busy past the Took Damage window, so rule 4 seldom fires from bullets.
+**Boss Rules:** The axe wielder runs the player's `ConditionalController` with a player-valid loadout, delayed public target observations and his own motor. The current two rows are Incoming Attack (Ranged) → Jump and Horizontal Enemy Distance (Far) → Move (Toward Enemy). Jump requests another grounded jump whenever the condition still holds. His combat AI chooses Chop, Spin, Throw & Recall and Boomerang. The Boss sidebar shows the ordinary action names and parameters from the shared catalog. Both panels seal and withdraw during the phase change.
+
+**Invasions (stage 5, implemented):** at 75%, 50% and 25% of the first pool, the Boss finishes his current move and lands. He then stands invulnerable for 1.8 s (`Enemy.Invulnerable`), holds the axe overhead and sends a flickering signal into the player. At 1.4 s, `FinalBossInvasion` draws one rule at random from the 203 legal one-condition/one-action rules in the editor catalog. The rule is appended after the player's last rule in a fight-only copy of the loadout, beyond the five-rule cap, and the rules are rebound. The new card pulses for 1.6 s. Thresholds crossed by one hit queue their invasions one after another. Rebinding resets the event state of the player's existing rules once per invasion. The equipped loadout is never modified, so Retry and Configuration start without invaded rules.
 
 After Wave 3 victory, the Boss voices the two Bonus offer lines. Yes leads to Bonus configuration and Testing, No to the menu. The duo retains its geometry, music, AI and both-dead victory. Wave 3 and Bonus are outside the closed Wave 2 metrics record.
 
@@ -40,19 +42,11 @@ Thomas accepted this design for trial on 2026-11-06. All nine stages were implem
 ### Phase 1 — Rainbow Axeman
 
 - **Body:** a player-sized stickman with the same proportions and silhouette as Waves 1 and 2, using the retired Alpha rainbow look. 1000 HP.
-- **AI and Rules:** like the player, he has an operating AI and a fixed rule list. A matching, executable rule takes priority. Rules on cooldown, or that need the axe in hand, fall through to lower rules and then to the AI. His rules appear in a right sidebar; the player's are on the left.
+- **AI and Rules:** like the player, he has an operating AI and a fixed rule list. Shared Jump and Move requests drive locomotion when the Boss is free to act. The combat AI selects and commits axe attacks. His rules appear in a right sidebar; the player's are on the left.
 - **Axe:** chop, spin, straight throw and recall, and an arcing boomerang. All attacks keep the established tell style. More moves will be added later.
 - **Retired:** Walker's 2x Swordsman body, sword specials and platform destruction.
 
-Trial Boss rules, evaluated top to bottom. Conditions use the player catalog's wording from the Boss's point of view.
-
-| # | Condition | Action | Intent |
-|---|---|---|---|
-| 1 | Incoming Attack (Ranged) | Jump | Mirrors Happy's starter rule; the player can bait it |
-| 2 | Landed | Chop | Forms a readable chain with rule 1, with a punishable landing |
-| 3 | Horizontal Enemy Distance (Close) | Spin | Punishes staying close |
-| 4 | Took Damage | Throw & Recall | Retaliates; the recall crosses the arena again |
-| 5 | Horizontal Enemy Distance (Far) | Boomerang | Threatens distant and platform positions |
+**F8 tuning.** Under Waves, Start Phase 1 and Start Phase 2 start fresh encounters at the countdown. The Final Boss tuning tab selects an axe move or punch and adjusts its wind-up, recovery, cooldown and damage. An attack snapshots these values when accepted. Try selected move closes F8 and requests the move at its next legal opportunity. Current HP targets the active pool. The 75%, 50% and 25% controls set phase-one HP so the normal invasion checks can run. Tuning lives for this game session and Restore defaults resets it.
 
 **Invasions.** At 75%, 50% and 25% phase-one health, the Boss stops, becomes invulnerable and plays an invasion animation. Each invasion appends one random legal Condition → Action rule to the end of the player's fight rules, even beyond the 5-rule cap. The equipped loadout is never modified, so Retry and Configuration discard invaded rules. Invasions are Boss abilities, not Boss rules.
 

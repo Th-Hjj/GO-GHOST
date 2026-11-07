@@ -80,7 +80,7 @@ namespace GoGhost.Duel
         public KeepRangeOption KeepRange;
         public AutoAimOption AutoAim;
         public DodgeDirectionOption DodgeDirection;
-        public JumpOption Jump;
+        [UnityEngine.HideInInspector] public JumpOption Jump; // Retained for older serialized rule data.
         [UnityEngine.HideInInspector] public AmmoUseOption AmmoUse;
         public PlatformDirectionOption PlatformDirection;
         // Each operation keeps its own list; J04 also uses this order for its shared Legs claim.
@@ -114,7 +114,7 @@ namespace GoGhost.Duel
                 case "D02":Action="D01";DodgeDirection=DodgeDirectionOption.TowardEnemy;break;
                 case "D03":Action="D01";DodgeDirection=DodgeDirectionOption.MovementDirection;break;
                 case "D04":Action="D01";DodgeDirection=DodgeDirectionOption.AimDirection;break;
-                case "J03":Action="J01";Jump=JumpOption.Repeat;break;
+                case "J03":Action="J01";break;
             }
         }
     }
@@ -141,8 +141,7 @@ namespace GoGhost.Duel
             {
                 Condition = ConditionalCatalog.IncomingAttackCondition,
                 IncomingAttack = IncomingAttackOption.Any,
-                Action = "J01",
-                Jump = JumpOption.Once
+                Action = "J01"
             });
             return loadout;
         }
@@ -270,7 +269,7 @@ namespace GoGhost.Duel
         };
         public static readonly ResponseEntry[] Responses={
             new ResponseEntry("M11","Move",ControlOperation.Movement),new ResponseEntry("M03","Keep Distance",ControlOperation.Movement),
-            new ResponseEntry("J01","Jump",ControlOperation.Jump,true),new ResponseEntry("J04","Change Platform",ControlOperation.Jump),
+            new ResponseEntry("J01","Jump",ControlOperation.Jump),new ResponseEntry("J04","Change Platform",ControlOperation.Jump),
             new ResponseEntry("Q01","Auto Aim",ControlOperation.Aim),new ResponseEntry("F03","Fire",ControlOperation.Fire),
             new ResponseEntry("D01","Dodge",ControlOperation.Dodge,true)
         };
@@ -407,11 +406,10 @@ namespace GoGhost.Duel
                 case "M11":return rule.MoveDirection==MoveDirectionOption.TowardEnemy?"M01":rule.MoveDirection==MoveDirectionOption.AwayFromEnemy?"M02":rule.MoveDirection==MoveDirectionOption.ArenaCenter?"M09":"M11";
                 case "Q01":return rule.AutoAim==AutoAimOption.LowestHealth?"Q02":"Q01";
                 case "D01":return rule.DodgeDirection==DodgeDirectionOption.TowardEnemy?"D02":rule.DodgeDirection==DodgeDirectionOption.MovementDirection?"D03":rule.DodgeDirection==DodgeDirectionOption.AimDirection?"D04":"D01";
-                case "J01":return rule.Jump==JumpOption.Repeat?"J03":"J01";
                 default:return rule.Action;
             }
         }
-        public static bool IsFinite(ConditionalRule rule)=>rule.Action=="J01"?rule.Jump==JumpOption.Once:Response(rule.Action).Finite;
+        public static bool IsFinite(ConditionalRule rule)=>Response(rule.Action).Finite;
         public static bool ConditionsAreComplete(ConditionalRule rule)=>ConditionRuleReason(rule,true)==null;
         public static bool HasAnyCompatibleAction(ConditionalRule rule)
         {
@@ -456,7 +454,6 @@ namespace GoGhost.Duel
                 if(rule.Action=="M11"&&ActionOption(rule)<0)return "Choose Toward Enemy or Away from Enemy.";
                 if(rule.Action=="Q01"&&rule.AutoAim!=AutoAimOption.Nearest)return "Select Auto Aim to aim at the nearest enemy.";
                 if(rule.Action=="D01"&&rule.DodgeDirection!=DodgeDirectionOption.AwayFromThreat&&rule.DodgeDirection!=DodgeDirectionOption.TowardEnemy)return "Choose a dodge direction.";
-                if(rule.Action=="J01"&&rule.Jump!=JumpOption.Once)return "Reselect Jump to jump once.";
             }
             if(rule.Action=="J04"&&(rule.PlatformDirection<PlatformDirectionOption.Unspecified||rule.PlatformDirection>PlatformDirectionOption.Lower
                 ||requireComplete&&rule.PlatformDirection==PlatformDirectionOption.Unspecified))return "Choose Higher or Lower.";
@@ -547,7 +544,6 @@ namespace GoGhost.Duel
         {
             if(rule==null||string.IsNullOrEmpty(rule.Action))return "Select Action";
             rule=rule.Copy();
-            if(rule.Action=="J01"&&rule.Jump!=JumpOption.Once)return "Jump (Reselect)";
             if(rule.Action=="Q06")return "Aim Assist (Reselect)";
             if(rule.Action=="Q01"&&rule.AutoAim!=AutoAimOption.Nearest)return "Auto Aim (Reselect)";
             string label=Response(PickerAction(rule.Action)).Label;
@@ -646,7 +642,6 @@ namespace GoGhost.Duel
                 }
             }
             if(action=="D01")return "Dodge away from the incoming threat.";
-            if(action=="J01")return "Jump once.";
             return ResponseDescription(action);
         }
         public static string ResponseDescription(string id)
@@ -673,7 +668,7 @@ namespace GoGhost.Duel
                 case "M09":return "Move toward the center of the arena.";
                 case "M11":return "Move toward an enemy or away from them.";
                 case "M10":return "Stop moving horizontally.";
-                case "J01":return "Jump once.";
+                case "J01":return "Jump whenever grounded while the condition holds.";
                 case "J03":return "Keep jumping.";
                 default:return "";
             }

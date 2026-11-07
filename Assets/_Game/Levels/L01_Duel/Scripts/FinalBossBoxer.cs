@@ -26,6 +26,13 @@ namespace GoGhost.Duel
             new Timing(.30f, .14f, .40f, 4.0f, 22, 1.6f, 1.1f, .20f),  // Hook after the slip
             new Timing(.75f, .14f, .80f, 5.0f, 34, 1.8f, 1.2f, .20f),  // Rage haymaker
         };
+        internal static BossMoveTuning DefaultTuning(Punch punch)
+        {
+            var t = Timings[(int)punch];
+            return new BossMoveTuning(t.Windup, t.Recovery, t.Cooldown, t.Damage);
+        }
+        readonly DuelGame game;
+        Timing acceptedTiming;
         const float SlipSpeed = 16, SlipBeyond = 1.3f, SlipSeconds = .25f, LungeDistance = 1.8f, LungeSpeed = 12, JabStep = .9f;
         const int AttackIdBase = 200000;
 
@@ -36,6 +43,7 @@ namespace GoGhost.Duel
         bool hitDone, slipIgnoring;
         int attackId = AttackIdBase;
 
+        internal Punch PreviewPunch { get; set; }
         public Punch Current { get; private set; }
         public Stage Phase { get; private set; }
         public float PhaseProgress => Mathf.Clamp01((Time.time - phaseAt) / Mathf.Max(.001f, phaseUntil - phaseAt));
@@ -45,6 +53,7 @@ namespace GoGhost.Duel
 
         public FinalBossBoxer(BossAgent owner, PlayerHealth player)
         {
+            game = owner.GetComponentInParent<DuelGame>();
             actor = owner;
             playerBody = player != null ? player.GetComponent<Collider2D>() : null;
             nextDecisionAt = Time.time + .4f;
@@ -62,9 +71,14 @@ namespace GoGhost.Duel
             Vector2 target = facts.Position;
             float dx = target.x - actor.Position.x, dy = target.y - actor.Position.y, distance = Mathf.Abs(dx);
             actor.Face(new Vector2(dx, 0));
+            if (PreviewPunch != Punch.None && TryStart(PreviewPunch))
+            {
+                PreviewPunch = Punch.None;
+                return;
+            }
             // Keep pressing: a raised target is chased with a jump once roughly underneath it.
             if (dy > 1.4f && distance < 2.6f && actor.Motor.Grounded) { actor.Motor.SetMove(Mathf.Sign(dx)); actor.Motor.TryJump(); return; }
-            if (Time.time >= nextDecisionAt && Decide(distance, dy)) return;
+            if (PreviewPunch == Punch.None && Time.time >= nextDecisionAt && Decide(distance, dy)) return;
             actor.Motor.SetMove(distance > 1.1f ? Mathf.Sign(dx) : 0);
         }
 
@@ -89,6 +103,12 @@ namespace GoGhost.Duel
         {
             if (!CanStart(punch)) return false;
             var timing = Timings[(int)punch];
+            var tuning = game.GetBossMoveTuning(true, (int)punch);
+            timing.Windup = tuning.Windup;
+            timing.Cooldown = tuning.Cooldown;
+            timing.Recovery = tuning.Recovery;
+            timing.Damage = tuning.Damage;
+            acceptedTiming = timing;
             Current = punch; attackId++; Started[(int)punch]++; hitDone = false;
             readyAt[(int)punch] = Time.time + timing.Cooldown;
             if (actor.Player != null) actor.Face((Vector2)actor.Player.transform.position - actor.Position);
@@ -126,7 +146,7 @@ namespace GoGhost.Duel
 
         void TickPunch()
         {
-            var timing = Timings[(int)Current];
+            var timing = acceptedTiming;
             switch (Phase)
             {
                 case Stage.Slip:
@@ -169,10 +189,10 @@ namespace GoGhost.Duel
             Current = Punch.None; Phase = Stage.Idle;
         }
 
-        public Vector2 Fist() => actor.Position + new Vector2(LockedFacing * Timings[(int)Current].Reach * .7f, .4f);
+        public Vector2 Fist() => actor.Position + new Vector2(LockedFacing * acceptedTiming.Reach * .7f, .4f);
         public Bounds PunchArea()
         {
-            var timing = Timings[(int)Current];
+            var timing = acceptedTiming;
             // The box starts at the chest and reaches forward; the uppercut also rises above the head.
             return new Bounds(actor.Position + new Vector2(LockedFacing * timing.Reach * .5f, timing.Lift),
                 new Vector3(timing.Reach + .4f, timing.Height, 1));
@@ -193,7 +213,7 @@ namespace GoGhost.Duel
         {
             if (Current == Punch.None || Phase == Stage.Recovery || Phase == Stage.Slip) return;
             var phase = Phase == Stage.Windup ? BossThreatPhase.Preparation : BossThreatPhase.Active;
-            float starts = Phase == Stage.Windup ? phaseUntil : activeAt, ends = starts + Timings[(int)Current].Active;
+            float starts = Phase == Stage.Windup ? phaseUntil : activeAt, ends = starts + acceptedTiming.Active;
             output.Add(new BossThreat { ActorId = actor.ActorId, AttackId = attackId, Phase = phase, Shape = BossThreatShape.Box,
                 Origin = actor.Position, Area = PunchArea(), Facing = LockedFacing, Valid = true, StartsAt = starts, EndsAt = ends });
         }

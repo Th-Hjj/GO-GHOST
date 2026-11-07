@@ -193,9 +193,9 @@ namespace GoGhost.Duel
         // Shared by setup and combat. Text comes from the structured catalog expression;
         // measurement uses the final fixed fonts, never temporary emphasis or auto-sizing.
         float LayoutRuleCard(RectTransform root,TMP_Text number,TMP_Text condition,TMP_Text arrow,TMP_Text action,
-            float width,float rightInset=14,float minHeight=0)
+            float width,float rightInset=14,float minHeight=0,bool compact=false)
         {
-            const float left=48,pad=16,gap=8,arrowWidth=24;
+            float left=compact?32:48, pad=compact?10:16, gap=compact?5:8, arrowWidth=compact?19:24;
             float available=Mathf.Max(60,width-left-rightInset);
             condition.lineSpacing=action.lineSpacing=2;
             // Every rule keeps the same reading order, regardless of label length or view width.
@@ -211,7 +211,7 @@ namespace GoGhost.Duel
             float arrowLeft=left;
             SetCardTextRect(arrow,arrowLeft,actionTop,arrowWidth,arrowHeight,width,height);
             SetCardTextRect(action,arrowLeft+arrowWidth,actionTop,actionWidth,actionHeight,width,height);
-            if(number!=null)SetCardTextRect(number,16,pad,24,28,width,height);
+            if(number!=null)SetCardTextRect(number,compact?7:16,pad,compact?20:24,28,width,height);
             return height;
         }
         static void SetCardTextRect(TMP_Text text,float left,float top,float width,float height,float cardWidth,float cardHeight)
@@ -220,7 +220,7 @@ namespace GoGhost.Duel
             rect.sizeDelta=new Vector2(width,height);
             rect.anchoredPosition=new Vector2(-cardWidth/2+left+width/2,cardHeight/2-top-height/2);
         }
-        float MeasureRulePanelWidth(float availableWidth)=>Mathf.Clamp(availableWidth*.24f,320,410);
+        float MeasureRulePanelWidth(float availableWidth)=>Mathf.Min(availableWidth * .19f, Mathf.Clamp(availableWidth * .155f, 214, 280));
         // Width of the Final Boss rule sidebar on the right edge; zero until his rules are shown.
         float BossRulePanelWidth=>bossRuleSidebar!=null?bossRulePanelWidth:0;
         void LayoutRuleHud(float width,float height)
@@ -238,7 +238,7 @@ namespace GoGhost.Duel
             foreach(var row in ruleRows)
             {
                 float cardWidth=viewportWidth-4;
-                float cardHeight=LayoutRuleCard(row.Root,row.Number,row.Condition,row.Arrow,row.Action,cardWidth);
+                float cardHeight=LayoutRuleCard(row.Root,row.Number,row.Condition,row.Arrow,row.Action,cardWidth,compact:true);
                 row.Root.anchoredPosition=new Vector2(0,-y-cardHeight/2);
                 y+=cardHeight+8;
             }

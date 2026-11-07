@@ -108,15 +108,10 @@ namespace GoGhost.Duel
         public bool IsLowHealth => lowHealth;
         public int RuleCount(ControlOperation operation)=>loadout.Operations[(int)operation].Rules.Count;
         public ConditionalRule RuleAt(ControlOperation operation,int row)=>loadout.Operations[(int)operation].Rules[row].Copy();
-        public ConditionalController(PlayerHealth player, IReadOnlyList<BossAgent> actors,
-            Collider2D[] platforms, Bounds arena, ConditionalLoadout snapshot)
+        ConditionalController(ConditionalLoadout snapshot, int contactCount)
         {
             if (!ConditionalCatalog.IsValid(snapshot))
                 throw new ArgumentException("Invalid conditional loadout", nameof(snapshot));
-            this.player = player;
-            this.actors = actors;
-            this.platforms = platforms;
-            this.arena = arena;
             loadout = snapshot.Copy();
             // Keep operation-local row identities for events/feedback; only traversal is global.
             foreach (var rule in loadout.OrderedRules())
@@ -126,22 +121,14 @@ namespace GoGhost.Duel
             }
             expiredEvent = IsExpiredEvent;
 
-            movement = player.GetComponent<PlayerMovement>();
-            gun = player.GetComponent<PlayerShooting>();
-            dodge = player.GetComponent<PlayerDodge>();
-            input = player.GetComponent<PlayerInputReader>();
-            shape = player.GetComponent<Collider2D>();
-            body = player.GetComponent<Rigidbody2D>();
-            geometry = new ConditionalThreatGeometry(player, actors, platforms);
-
-            contacts = new BossContact[actors.Count];
-            visible = new bool[actors.Count];
-            seen = new bool[actors.Count];
-            hidden = new bool[actors.Count];
-            lowEnemy = new bool[actors.Count];
-            close = new bool[actors.Count];
-            far = new bool[actors.Count];
-            cursorNear = new bool[actors.Count];
+            contacts = new BossContact[contactCount];
+            visible = new bool[contactCount];
+            seen = new bool[contactCount];
+            hidden = new bool[contactCount];
+            lowEnemy = new bool[contactCount];
+            close = new bool[contactCount];
+            far = new bool[contactCount];
+            cursorNear = new bool[contactCount];
             for (int op = 0; op < 5; op++)
             {
                 for (int row = 0; row < ConditionalCatalog.MaxRulesTotal; row++)
@@ -152,6 +139,22 @@ namespace GoGhost.Duel
                     displayedFeedback[op, row] = new ExecutionFeedback(false, float.NegativeInfinity, default);
                 }
             }
+        }
+        public ConditionalController(PlayerHealth player, IReadOnlyList<BossAgent> actors,
+            Collider2D[] platforms, Bounds arena, ConditionalLoadout snapshot) : this(snapshot, actors.Count)
+        {
+            this.player = player;
+            this.actors = actors;
+            this.platforms = platforms;
+            this.arena = arena;
+            movement = player.GetComponent<PlayerMovement>();
+            gun = player.GetComponent<PlayerShooting>();
+            dodge = player.GetComponent<PlayerDodge>();
+            input = player.GetComponent<PlayerInputReader>();
+            shape = player.GetComponent<Collider2D>();
+            body = player.GetComponent<Rigidbody2D>();
+            geometry = new ConditionalThreatGeometry(player, actors, platforms);
+
             gun.ReloadStarted += ReloadStarted;
             gun.ReloadFinished += ReloadFinished;
             gun.EnemyHit += EnemyHit;
@@ -169,6 +172,7 @@ namespace GoGhost.Duel
             if (disposed)
                 return;
             disposed = true;
+            if (bossOwner != null) return; // Boss inputs are polled and have no event subscriptions.
             gun.ReloadStarted -= ReloadStarted;
             gun.ReloadFinished -= ReloadFinished;
             gun.EnemyHit -= EnemyHit;

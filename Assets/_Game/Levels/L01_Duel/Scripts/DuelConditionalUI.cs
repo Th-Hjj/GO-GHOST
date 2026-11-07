@@ -665,7 +665,6 @@ namespace GoGhost.Duel
 
         static void SelectPickerAction(ConditionalRule rule,string action)
         {
-            if(action=="J01")rule.Jump=JumpOption.Once;
             if(action=="Q01")rule.AutoAim=AutoAimOption.Nearest;
             if(ConditionalCatalog.PickerAction(rule.Action)==action)return;
             rule.Action=action;

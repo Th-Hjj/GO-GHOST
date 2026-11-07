@@ -174,6 +174,11 @@ public class Enemy : MonoBehaviour, IDamageable
     }
 
     // Runtime developer tuning preserves the current life, AI state and damage-event history.
+    public void SetRuntimeCurrentHealth(int current)
+    {
+        if (!IsDead && !AwaitingSecondPhase) CurrentHealth = Mathf.Clamp(current, 1, MaxHealth);
+    }
+
     public void SetRuntimeHealth(int maximum, int current)
     {
         if(IsDead || PhaseIndex!=1 || secondPhaseMaxHealth>0)return;

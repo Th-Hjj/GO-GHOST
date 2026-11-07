@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-06 — Final Boss redesign recorded
+
+- Recorded Thomas's trial design: the Rainbow Axeman with Boss Rules and three invasions; the shockwave transition and antique revolver; moving platforms; the White Boxer; the phase-two retry; and a 5-rule player cap. Implementation is staged; no source changed. Checked links, anchors and the CLAUDE/AGENTS parity. No Unity check applies.
+
 ## 2026-11-06 — Walker's Final Boss in Wave 3
 
 - Wave 2 victory closes metrics and opens Wave 3 configuration. Testing leads to Walker's five provisional lines with synthesized Boss voice, followed by the three-second countdown and his existing two-phase fight. Winning offers the duo Bonus.

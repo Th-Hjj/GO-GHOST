@@ -18,6 +18,69 @@ Walker Grupp's prototype (commit `719c843`) uses a 1400-HP first pool and a 1000
 
 After Wave 3 victory, the Boss voices the two Bonus offer lines. Yes leads to Bonus configuration and Testing, No to the menu. The duo retains its geometry, music, AI and both-dead victory. Wave 3 and Bonus are outside the closed Wave 2 metrics record.
 
+## Final Boss redesign — approved for trial 2026-11-06, implementation pending
+
+Thomas accepted this design for trial on 2026-11-06. It will replace Walker's prototype in stages. The section above describes the current source until each stage lands. Values marked *trial* are expected to change after playtesting.
+
+**Premise.** The Final Boss trusts AI more than the player does. He fights with Rules and can write rules into the player's system. After losing the first phase, he blames the AI, kills every circuit in the arena and fights bare-handed.
+
+**Entry.** This stage is unchanged: Wave 3 configuration, Start Testing, Enter Wave 3, the five provisional intro lines, then the three-second countdown into phase one. The lines will be revised.
+
+### Phase 1 — Rainbow Axeman
+
+- **Body:** a player-sized stickman with the same proportions and silhouette as Waves 1 and 2, using the retired Alpha rainbow look. 1000 HP.
+- **AI and Rules:** like the player, he has an operating AI and a fixed rule list. A matching, executable rule takes priority. Rules on cooldown, or that need the axe in hand, fall through to lower rules and then to the AI. His rules appear in a right sidebar; the player's are on the left.
+- **Axe:** chop, spin, straight throw and recall, and an arcing boomerang. All attacks keep the established tell style. More moves will be added later.
+- **Retired:** Walker's 2x Swordsman body, sword specials and platform destruction.
+
+Trial Boss rules, evaluated top to bottom. Conditions use the player catalog's wording from the Boss's point of view.
+
+| # | Condition | Action | Intent |
+|---|---|---|---|
+| 1 | Incoming Attack (Ranged) | Jump | Mirrors Happy's starter rule; the player can bait it |
+| 2 | Landed | Chop | Forms a readable chain with rule 1, with a punishable landing |
+| 3 | Horizontal Enemy Distance (Close) | Spin | Punishes staying close |
+| 4 | Took Damage | Throw & Recall | Retaliates; the recall crosses the arena again |
+| 5 | Horizontal Enemy Distance (Far) | Boomerang | Threatens distant and platform positions |
+
+**Invasions.** At 75%, 50% and 25% phase-one health, the Boss stops, becomes invulnerable and plays an invasion animation. Each invasion appends one random legal Condition → Action rule to the end of the player's fight rules, even beyond the 5-rule cap. The equipped loadout is never modified, so Retry and Configuration discard invaded rules. Invasions are Boss abilities, not Boss rules.
+
+### Transition — shockwave and the antique revolver
+
+The English lines are drafts.
+
+1. Boss: "Stupid AI. I don't need you anymore. I'm better than you, and I'll prove it. Ha ha ha!"
+2. Boss releases an electromagnetic shockwave. Happy shouts "Look out!", then can only say "…" after it passes.
+3. Both rule sidebars dim and every rule is crossed out. **All five platforms start oscillating.** The rainbow drains away, leaving a white stickman like the player.
+4. Boss: "Every last circuit in this arena is dead. Now I'll show you what real strength looks like."
+5. Boss drops the axe and raises his fists. The player aims the energy gun and pulls the trigger; it clicks without firing.
+6. Boss: "Too bad about that little energy gun of yours. Ha ha ha!"
+7. The player puts the energy gun away and draws an antique revolver. The player chooses one of the game's only player lines: "I'm a little nostalgic." or "I have big pockets." Thomas records both. Neither changes the story.
+8. Boss: "…What?" then "AAARGH! Now you've really pissed me off!" His eyes turn red.
+9. During the three-second countdown, the sealed sidebars fade and the camera widens to the full screen. Phase two begins.
+
+**Moving platforms.** From the shockwave onward, each platform oscillates 2.1 units (one tier) above and below its home height. The two inner low platforms reach floor level at the bottom of their travel. *Trial:* a cycle of about 4 s, with adjacent platforms in opposite phase so that a reachable route always exists. Platforms remain one-way and carry the actors standing on them.
+
+### Phase 2 — White Boxer
+
+- **Fight:** 1000 HP. The player fights fully manually with the antique revolver, which uses the current weapon's stats with a new look. There is no AI assistance and there are no attack tell lines.
+- **Style:** an enraged, fast, light-footed boxer who keeps closing the distance. The player reads his wind-up, weight shift and footwork.
+- **Punches:**
+  - a jab that steps forward;
+  - a low rising uppercut;
+  - a slip to the other side followed by a hook;
+  - a rage haymaker with a clear backward torso twist.
+
+  Each wind-up must be recognizable at combat distance using stickman limb and torso poses.
+- **Look:** a white body with a clear outline, gold punch effects and red eyes. While he moves, each eye leaves a red tail-light trail. The trails never hide his pre-punch body motion.
+
+**Defeat and victory.**
+- Phase-two defeat offers two choices:
+  - **Configuration**, a full restart;
+  - a direct phase-two retry, with the player's health at the end of phase one, a full 1000-HP Boss, platforms already moving and no transition replay. The button wording is *trial*.
+- Phase-one defeat keeps Retry and Configuration.
+- Victory keeps the existing Bonus offer, which still passes through configuration and Testing.
+
 ## Boss friendly fire — approved 2026-10-26
 
 Boss attacks now damage the other Boss using the same attack damage as against the player. Ordinary and reflected bullets, Piercing, melee/Draw sweeps, sword waves and delayed afterblades all use normal health, hit feedback and death handling. The shooter/current reflection owner stays immune. Melee hit limits apply independently per target per active window; hitting the player does not consume the other Boss's hit. Bullets, beams and emitted blades still stop at the partner's body. Guard can reflect eligible frontal friendly bullets, transferring ownership and retaining friendly damage. AI still targets the player and retains its existing firing-lane/cooperation checks. Terrain penetration, player invulnerability/tuning, attack timing, pause and encounter cleanup are unchanged. One friendly kill leaves Bonus running until both Bosses die. This supersedes all older zero-friendly-damage statements below.

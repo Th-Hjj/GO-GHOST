@@ -12,6 +12,8 @@ Thomas, 2026-10-29: presets and sequential death unlocks are removed, including 
 
 ## Configuration and priority
 
+**Final Boss redesign — Thomas, 2026-11-06, implementation pending:** the player may equip at most **5** rules in every wave, including Happy's starter rule. Internal storage stays at 20 so that the Final Boss's invasions can append rules beyond the cap to the current fight only. The equipped loadout is unchanged, and Retry and Configuration discard invaded rules. The player's combat sidebar moves to the left in every wave. The Final Boss shows his own fixed rules on the right. Phase two seals both lists and runs fully manual. Until this stage lands, the 20-rule budget below describes the current source. [Boss Encounters](BossEncounters.md#final-boss-redesign--approved-for-trial-2026-11-06-implementation-pending)
+
 The overview shows the equipped Rules list directly below the header. The Condition → Action preview appears only in the editor. For current selectable entries, disable Jump and Change Platform (Higher or Lower) when Airborne is selected, and Fire (either mode) when Reloading is selected. All other pairs remain selectable. An unfinished draft can select either side first and needs a valid complete pair to Confirm.
 
 **Rule editor layout — 2026-11-05:** While a rule is open, Condition and Action have side-by-side pickers. Each uses the same width and outer edges as its preview above, with the arrow centered between previews. Either side can be selected first. Options and parameters edit the local draft. Confirm saves a valid combination and Cancel discards the draft. The equipped Rules list appears in the overview.

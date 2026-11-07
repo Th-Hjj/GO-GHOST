@@ -55,6 +55,15 @@ The 2026-10-27 drawn-face flow supersedes this 2026-10-16 presentation. The reta
 
 ## Combat feedback
 
+**Final Boss redesign — Thomas, 2026-11-06, implementation pending:**
+- **Rule sidebars:** the player's sidebar sits on the left in every wave; the Final Boss's rules use a matching sidebar on the right. The camera fills the space between them, and returns to full width when neither sidebar is shown.
+- **Phase one:** a player-sized rainbow stickman (the retired Alpha look) with an axe, using the existing tell style.
+- **Transition:** the shockwave crosses out both sidebars, drains the rainbow and turns him into a white stickman. The sidebars fade during the countdown.
+- **Phase two:** the white body keeps a clear outline. Punch effects are gold and only the eyes are red. Each eye leaves a red tail-light trail while he moves, without hiding his wind-up. There are no tell lines.
+- **Antique revolver:** the player switches from the current energy revolver to an antique revolver. Only its look changes.
+
+Until each stage lands, the rules below describe the current source. [Boss Encounters](BossEncounters.md#final-boss-redesign--approved-for-trial-2026-11-06-implementation-pending)
+
 **Centered health labels / opening wave title — Thomas, 2026-10-27; progression updated 2026-10-29:** center each combat Boss name and HP above its full health track, and player name and HP below its track. Bonus has two independent Boss groups with sufficient vertical separation. WAVE 1, WAVE 2 and BONUS WAVE are opaque during countdown, fade over .60 combat seconds after combat starts and stay hidden afterward; pause/F8 retains progress and fresh encounters reset it. Testing keeps its **TESTING** title and **DUMMY ROBOT** health label. Wave 3 stages Walker's combat actor in the five-platform arena for the voiced intro, then shows the standard countdown and Final Boss health bar. Preserve health colors/depletion, ammo hiding and the rule sidebar.
 
 **Health-only resource HUD — Thomas, 2026-10-27:** remove bottom Ammo / Reloading text across Training, preparation and combat. Player and independent Boss health bars remain; wave/countdown labels and equipped rule sidebar are unchanged. Reload is communicated by the existing raised weapon pose and red flash; Dodge retains its foot bar. Ammunition, reload clocks, rule conditions, pause/F8 and encounter cleanup are unchanged. This supersedes earlier ammo-only bottom-status wording below.

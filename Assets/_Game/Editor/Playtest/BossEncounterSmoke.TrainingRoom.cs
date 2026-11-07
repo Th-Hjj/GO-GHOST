@@ -208,7 +208,7 @@ public static partial class BossEncounterSmoke
     static IEnumerator TrainingRoom()
     {
         Record("Test Room: normal UI callbacks, virtual keyboard/mouse, real projectiles and rule evaluation. Controlled lethal damage only for player recovery and short wave progression; no balance/hardware-input claim.");
-        Check("Current catalog unchanged", ConditionalCatalog.Conditions.Length == 21 && ConditionalCatalog.Responses.Length == 10 && ConditionalCatalog.MaxRulesTotal == 20);
+        Check("Current catalog unchanged", ConditionalCatalog.Conditions.Length == 21 && ConditionalCatalog.Responses.Length == 10 && ConditionalCatalog.MaxRulesTotal == 20 && ConditionalCatalog.PlayerRuleLimit == 5);
         game.NewGame(); SetAlphaGameSize(1280,720); yield return Frames(6);
         Check("New Game remains empty/manual, first button enters training", game.DraftLoadout.TotalRules == 0
             && ConfigButtonNamed("StartFight").GetComponentInChildren<TMPro.TMP_Text>().text == "Enter Test Room");

@@ -494,7 +494,7 @@ namespace GoGhost.Duel
             UnityEngine.Events.UnityAction submit=AddRule;
             if(editingRule)submit=CommitRuleChoice;
             var add=ConfigButton(editingRule?"ConfirmRule":"AddRule",editingRule?"Confirm":"+ Add Rule",ruleList,new Vector2(addX,-h/2-56),new Vector2(buttonWidth,48),submit);
-            add.interactable=editingRule?CanConfirmRule():game.DraftLoadout.TotalRules<ConditionalCatalog.MaxRulesTotal;
+            add.interactable=editingRule?CanConfirmRule():game.DraftLoadout.TotalRules<ConditionalCatalog.PlayerRuleLimit;
             UnityEngine.UI.Button start=null;
             if(!editingRule)
             {
@@ -548,7 +548,7 @@ namespace GoGhost.Duel
 #if UNITY_EDITOR
             if(ruleSetupViewSample!=null)return;
 #endif
-            if (pendingRule != null || game.DraftLoadout.TotalRules >= ConditionalCatalog.MaxRulesTotal) return;
+            if (pendingRule != null || game.DraftLoadout.TotalRules >= ConditionalCatalog.PlayerRuleLimit) return;
             // Incomplete choices stay UI-local; the combat loadout only receives a complete pair.
             pendingRule = new ConditionalRule();
             game.RuleEditorOpened();
@@ -681,7 +681,7 @@ namespace GoGhost.Duel
         bool CanConfirmRule()
         {
             return pendingRule!=null&&!string.IsNullOrEmpty(pendingRule.Action)
-                &&(selectorRow<displayedRules.Count||displayedRules.Count<ConditionalCatalog.MaxRulesTotal)
+                &&(selectorRow<displayedRules.Count||displayedRules.Count<ConditionalCatalog.PlayerRuleLimit)
                 &&ConditionalCatalog.IsAllowed((int)ConditionalCatalog.Response(pendingRule.Action).Operation,pendingRule);
         }
 

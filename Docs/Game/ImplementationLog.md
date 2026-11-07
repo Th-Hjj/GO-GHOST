@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-11-06 — Five-rule player cap (Final Boss stage 1)
+
+- Configuration now accepts at most five rules in every wave, including Happy's starter rule (`ConditionalCatalog.PlayerRuleLimit`). Storage and validation keep `MaxRulesTotal = 20` so that later Final Boss invasions can append fight-only rules.
+- Unity 6000.6.0f1 recompiled without errors.
+  - Logic check: the starter rule plus four additions reached five, and the sixth was refused. An eight-rule fight copy remained valid while the source stayed at five.
+  - Play Mode, Wave 1 playtest configuration: Add Rule was enabled at zero rules and disabled at five. Start Fight bound the five rules and reached combat without console errors.
+  - Editing an existing rule at the cap and the older ColdLight/Catalog suites were not run.
+
 ## 2026-11-06 — Final Boss redesign recorded
 
 - Recorded Thomas's trial design: the Rainbow Axeman with Boss Rules and three invasions; the shockwave transition and antique revolver; moving platforms; the White Boxer; the phase-two retry; and a 5-rule player cap. Implementation is staged; no source changed. Checked links, anchors and the CLAUDE/AGENTS parity. No Unity check applies.

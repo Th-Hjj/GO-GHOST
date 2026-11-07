@@ -150,7 +150,7 @@ namespace GoGhost.Duel
         public bool TryAddRule(int operation,ConditionalRule rule)
         {
             if(operation<0||operation>=Operations.Length||rule==null||Operations[operation]?.Rules==null
-                ||TotalRules>=ConditionalCatalog.MaxRulesTotal||!ConditionalCatalog.IsAllowed(operation,rule))return false;
+                ||TotalRules>=ConditionalCatalog.PlayerRuleLimit||!ConditionalCatalog.IsAllowed(operation,rule))return false;
             var added=rule.Copy();
             var rows=OrderedRules();
             for(int i=0;i<rows.Count;i++)if(rows[i]!=null)rows[i].DisplayOrder=i;
@@ -218,7 +218,10 @@ namespace GoGhost.Duel
     // One catalog feeds the UI, runtime validation and documentation export.
     public static class ConditionalCatalog
     {
+        // Storage and validation capacity. Final Boss invasions may append fight-only rules up to this size.
         public const int MaxRulesTotal = 20;
+        // Rules the player can equip in configuration (Thomas, 2026-11-06).
+        public const int PlayerRuleLimit = 5;
         public const int GroundStateCondition=51, EnemyDistanceCondition=52, IncomingAttackCondition=53;
         public const int MovingCondition=54, DodgingCondition=55, FiringCondition=56;
         public const int JumpStartedCondition=57, JumpApexReachedCondition=58, ShotFiredCondition=59;

@@ -4,15 +4,7 @@ Wave 1, Wave 2, Wave 3 and Bonus each use **Body Configuration → Start Testing
 
 ## Final Boss and optional Bonus
 
-Wave 1 victory waits for **Continue to Wave 2**. Defeating Swordsman closes the Wave 2 metrics record and opens Wave 3 configuration with the same character and rules. **Enter Wave 3** stages the real Final Boss in the five-platform arena. Player controls, physics and AI wait during the voiced intro. **Next** advances the line. **Fight** starts the usual three-second countdown.
-
-Walker's provisional intro, editable in Voice Studio:
-
-1. So. You're the one who got this far.
-2. I'm the final boss.
-3. Everything you've learned, I've already seen.
-4. Let's see if it's enough.
-5. Are you ready?
+Wave 1 victory waits for **Continue to Wave 2**. Defeating Swordsman closes the Wave 2 metrics record and opens Wave 3 configuration with the same character and rules. **Enter Wave 3** stages the real Final Boss in the five-platform arena. Player controls, physics and AI wait during the voiced intro. The Boss says “So you think you stand a chance against me.” Happy replies “Look out!” When her recording ends, the usual three-second countdown starts automatically.
 
 **Current source (stage 3 of the redesign below):** the Final Boss is a player-sized stickman built from the Swordsman prefab, with the Alpha rainbow shader on its body and an axe. `FinalBossAxe` replaces the sword tactics with its own AI and four telegraphed moves: Chop, Spin, Throw & Recall and Boomerang. Each move publishes threats: Chop and Spin as melee, the flying axe as ranged. Both health pools are 1000. When the first pool empties, the scripted transition below runs (stage 7). Afterwards `FinalBossBoxer` fights bare-handed as the White Boxer (stage 8, below). Retry and subsequent configuration use the equipped loadout. Walker Grupp's original prototype (commit `719c843`, 2x Swordsman with sword specials) is retired. Trial axe tuning (prepare/lock/active/recovery/cooldown, damage):
 
@@ -37,7 +29,7 @@ Thomas accepted this design for trial on 2026-11-06. All nine stages were implem
 
 **Premise.** The Final Boss trusts AI more than the player does. He fights with Rules and can write rules into the player's system. After losing the first phase, he blames the AI, kills every circuit in the arena and fights bare-handed.
 
-**Entry.** This stage is unchanged: Wave 3 configuration, Start Testing, Enter Wave 3, the five provisional intro lines, then the three-second countdown into phase one. The lines will be revised.
+**Entry.** Wave 3 configuration leads to Testing. Enter Wave 3 plays the Boss challenge and Happy’s warning, then starts the three-second countdown into phase one.
 
 ### Phase 1 — Rainbow Axeman
 

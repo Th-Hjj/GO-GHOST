@@ -29,7 +29,7 @@ Before Wave 1 (Gunner), Wave 2 (Swordsman), Wave 3 (Final Boss) and the optional
 
 Help provides **What're the controls?** and **What is configuration?**, preserving the current draft on return. Its pages contain brief controls and the Condition/Action definitions only. Presets and death-based unlocks are removed. Each New Game saves one independent JSON record with the character nickname; see [Gameplay Analytics](GameplayAnalytics.md).
 
-Wave 2 victory closes the playtest record and opens Wave 3 Body Configuration. Start Testing enters the Test Room. Enter Wave 3 stages the two-phase Final Boss with five platforms: the rainbow Axeman with his own Rules and three rule invasions, then a voiced phase change into the White Boxer on moving platforms. A phase-two defeat offers **Retry Phase 2**. His five provisional voiced lines precede the three-second countdown. Victory offers the optional duo Bonus through configuration and Testing. [Progression and dialogue](BossEncounters.md#final-boss-and-optional-bonus)
+Wave 2 victory closes the playtest record and opens Wave 3 Body Configuration. Start Testing enters the Test Room. Enter Wave 3 stages the two-phase Final Boss with five platforms: the rainbow Axeman with his own Rules and three rule invasions, then a voiced phase change into the White Boxer on moving platforms. A phase-two defeat offers **Retry Phase 2**. His opening challenge and Happy’s “Look out!” play automatically before the three-second countdown. Victory offers the optional duo Bonus through configuration and Testing. [Progression and dialogue](BossEncounters.md#final-boss-and-optional-bonus)
 
 ## Builds and Editor checks
 

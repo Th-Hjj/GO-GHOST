@@ -389,7 +389,8 @@ namespace GoGhost.Duel
             if(Phase==DuelPhase.Fight&&Wave==BonusWave&&Player!=null&&!Player.IsDead
                 &&Keyboard.current!=null&&Keyboard.current.pKey.wasPressedThisFrame)coordinator?.RequestNextDebugCombo();
 #endif
-            if (Phase == DuelPhase.Prepare)
+            if (Phase == DuelPhase.FinalBoss) TickFinalBossIntro();
+            else if (Phase == DuelPhase.Prepare)
             {
                 phaseTime += Time.deltaTime;
                 if (phaseTime >= PreparationSeconds) BeginCombat();

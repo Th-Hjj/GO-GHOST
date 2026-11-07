@@ -10,7 +10,7 @@
 
 1. 在 [VoiceStudioCatalog.json](../../Assets/_Game/Levels/L01_Duel/Resources/VoiceStudioCatalog.json) 的 `lines` 数组中添加一个对象。`key` 是唯一、长期使用的资源名，Happy 用 `Handler/`，Final Boss 会面用 `FinalBossVoice/`；斜杠后只用英文字母和数字。改词时保留这个 key。`label` 填方便查找的触发场合，`text` 填实际念出的台词。普通新句用 `locked: false`，跟随角色设置；开场特例继续使用已有条目。
 2. 在目录表所在的 `Resources` 目录下放入 **`<key>.wav`**，路径大小写与 key 一致。使用 24 kHz、16 位 PCM WAV，Happy 的成品保留双声道。可以先放入这句的占位录音，再进工作台用干声或文字制作新版本。新 WAV 随 Unity 生成的同名 `.meta` 一起提交；替换录音时保留原 GUID。
-3. 接入游戏触发点。Happy 的固定对白由对应的流程回调用同一 key 调用 `HandlerVoice.PlayLine`；需要随角色上传阶段预载的台词也加入 `HandlerVoice.Lines`。Final Boss 按目录中的顺序播放。常规条目用于 Wave 3 战前对白；标记 `bonusOffer: true` 的条目在战胜 Boss 后播放，最后一页开放 Bonus 选择。标记 `transition: true` 的条目（`FinalBossVoice/Turn1`–`Turn5`）不进入会面页，由第一阶段结束后的转阶段过场按固定顺序播放。新增会面页时按确认的剧情顺序插入；其他场合的 Boss 对白需要先区分触发路由，否则也会成为会面页。[Happy 播放入口](../../Assets/_Game/Levels/L01_Duel/Scripts/HandlerVoice.cs) · [会面翻页逻辑](../../Assets/_Game/Levels/L01_Duel/Scripts/DuelGame.Progression.cs)
+3. 接入游戏触发点。Happy 的固定对白由对应的流程回调用同一 key 调用 `HandlerVoice.PlayLine`；需要随角色上传阶段预载的台词也加入 `HandlerVoice.Lines`。Wave 3 开场按目录顺序自动播放标记 `bossIntro: true` 的台词。Boss 的挑战和 Happy 的警告分别使用各自的录音，警告结束后开始倒计时。标记 `bonusOffer: true` 的条目在战胜 Boss 后播放，最后一页开放 Bonus 选择。标记 `transition: true` 的条目（`FinalBossVoice/Turn1`–`Turn5`）不进入会面页，由第一阶段结束后的转阶段过场按固定顺序播放。新增开场或 Bonus 台词时，标记对应的触发地点，并按确认的剧情顺序插入。[Happy 播放入口](../../Assets/_Game/Levels/L01_Duel/Scripts/HandlerVoice.cs) · [会面翻页逻辑](../../Assets/_Game/Levels/L01_Duel/Scripts/DuelGame.Progression.cs)
 4. 重新打开工作台，在对应角色下找到新条目。点「播放游戏版」核对首版，再微调一个参数、生成并播放草稿。要验证角色联动，可以先在角色页试调并点「列出本次改动」，确认清单包含这句，然后放弃试调。只把要交付的版本保存到游戏；重开工具后应能听到已保存的版本，并由预定游戏事件播放同一句。保存产生的 `VoiceAuthoring/` 配方和归档素材随目录表、WAV 一起提交，供下一次编辑。
 
 可参照现有的「默认问候」条目。下面的 key 对应 `Resources/Handler/Greeting.wav`：

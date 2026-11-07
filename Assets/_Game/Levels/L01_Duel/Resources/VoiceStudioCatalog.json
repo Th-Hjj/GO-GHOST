@@ -68,36 +68,9 @@
     },
     {
       "key": "FinalBossVoice/Line1",
-      "label": "Wave 3 intro 1",
-      "text": "So. You're the one who got this far.",
-      "locked": false,
-      "transcribed": false
-    },
-    {
-      "key": "FinalBossVoice/Line2",
-      "label": "Wave 3 intro 2",
-      "text": "I'm the final boss.",
-      "locked": false,
-      "transcribed": false
-    },
-    {
-      "key": "FinalBossVoice/Line3",
-      "label": "Wave 3 intro 3",
-      "text": "Everything you've learned, I've already seen.",
-      "locked": false,
-      "transcribed": false
-    },
-    {
-      "key": "FinalBossVoice/Line4",
-      "label": "Wave 3 intro 4",
-      "text": "Let's see if it's enough.",
-      "locked": false,
-      "transcribed": false
-    },
-    {
-      "key": "FinalBossVoice/Line5",
-      "label": "Wave 3 intro 5",
-      "text": "Are you ready?",
+      "label": "Wave 3 opening challenge",
+      "bossIntro": true,
+      "text": "So you think you stand a chance against me.",
       "locked": false,
       "transcribed": false
     },
@@ -117,7 +90,8 @@
     },
     {
       "key": "Handler/LookOut",
-      "label": "Final Boss shockwave",
+      "label": "Wave 3 opening and Final Boss shockwave",
+      "bossIntro": true,
       "text": "Look out!",
       "locked": false
     },

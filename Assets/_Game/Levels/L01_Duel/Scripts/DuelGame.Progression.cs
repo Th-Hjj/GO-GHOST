@@ -10,6 +10,7 @@ namespace GoGhost.Duel
             ? VoiceStudioCatalog.Current.BonusOffer : VoiceStudioCatalog.Current.BossIntro;
         public int FinalBossLine { get; private set; }
         public string FinalBossDialogue => DialogueLines[FinalBossLine].text;
+        public string FinalBossDialogueSpeaker => DialogueLines[FinalBossLine].key.StartsWith("Handler/") ? "Happy" : "Final Boss";
         public bool FinalBossChoiceReady => FinalBossLine == DialogueLines.Length - 1;
 
         public void ContinueToWaveTwo()
@@ -29,16 +30,24 @@ namespace GoGhost.Duel
 
         public void AdvanceFinalBossDialogue()
         {
-            if (Paused || DeveloperToolsOpen || (Phase != DuelPhase.FinalBoss && Phase != DuelPhase.BonusOffer)) return;
+            if (Paused || DeveloperToolsOpen || Phase != DuelPhase.BonusOffer || FinalBossChoiceReady) return;
+            PlayNextBossLine();
+        }
+
+        void TickFinalBossIntro()
+        {
+            if (handler.Speaking) return;
             if (FinalBossChoiceReady)
             {
-                if (Phase == DuelPhase.FinalBoss)
-                {
-                    input.SuppressUiFireUntilRelease();
-                    StartCountdown();
-                }
+                input.SuppressUiFireUntilRelease();
+                StartCountdown();
                 return;
             }
+            PlayNextBossLine();
+        }
+
+        void PlayNextBossLine()
+        {
             FinalBossLine++;
             ui.Show();
             handler.PlayLine(DialogueLines[FinalBossLine].key);

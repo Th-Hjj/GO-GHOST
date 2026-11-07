@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-11-06 — Wave 3 opening dialogue
+
+- Enter Wave 3 plays the Final Boss’s “So you think you stand a chance against me.” and Happy’s “Look out!” with speaker-labelled subtitles. The three-second countdown starts when Happy finishes. Voice Studio rendered the revised Boss line using his saved voice settings.
+- Unity 6000.6.0f1 compiled with zero errors or warnings. Check Game Flow passed through the normal Testing entrance, both opening speakers, the automatic countdown, combat, the phase change and the Bonus offer. Verification covered Editor playback flow. Standalone builds and a listening review were not run.
+
 ## 2026-11-06 — Lean Editor playtests
 
 - Reduced the Editor combat smoke harness from 41 scripts (9,669 lines) to two (162 lines). Removed the per-move, superseded catalog, screenshot matrix and stage-specific fixtures together with their menu entries and metadata. PitchPlaytest still opens each wave and Wave 3 Phase 2 for manual play.

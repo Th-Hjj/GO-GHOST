@@ -1,17 +1,17 @@
 [
   {
-    "path": "Assets/_Game/Levels/L01_Duel/Resources/FinalBossVoice/Line5.wav",
-    "old": "VoiceAuthoring/media/fadb512ad1d633a6cc9370f47383c92755cd67554382157658927f0ae5adedf9.wav",
-    "after": "47780aaa3e5bffa1df94e94f77ce4c75cef4ba06881d3e9f2a546eaa4489e84e"
+    "path": "Assets/_Game/Levels/L01_Duel/Resources/FinalBossVoice/Line1.wav",
+    "old": "VoiceAuthoring/media/776c09e5dcdaa28417340aeb7fa583466bdcf6f4e965cbcbf700367b40378ced.wav",
+    "after": "33bfd921039d6d570cfe18a1579157ae7ef2dfc95b13d4884c8f4904715e7ea2"
   },
   {
-    "path": "VoiceAuthoring/recipes/FinalBossVoice-Line5.json",
-    "old": "",
-    "after": "db8beedb69edd9b0c37e1c715c37efa1a74a34244b3007f15f2a2a3cc22250de"
+    "path": "VoiceAuthoring/recipes/FinalBossVoice-Line1.json",
+    "old": "VoiceAuthoring/media/2482c5552640078660d3eeffe8659e964b17dc7c78cf199da468e9d9dc46311a.json",
+    "after": "4923b0641218297ef3bea4de19ceefe1d9b49b04e39a24c86cf127296423301f"
   },
   {
     "path": "Assets/_Game/Levels/L01_Duel/Resources/VoiceStudioCatalog.json",
-    "old": "VoiceAuthoring/media/d47133d62d541483fc6d72da0633900f70d431cf7f530864050e09674edc5591.json",
-    "after": "6dc5cecf3970de9efe358f0e60e6bb0e470e506574a4b8b299ccb6fbd758ba46"
+    "old": "VoiceAuthoring/media/73548e0125062da3eb52ca534ed098cd6558c565b07054f4c751b8a925021195.json",
+    "after": "46825b4d87ff31ec340a988d1b5d3871eb7486ba9931a19eacdfd603e26dcec0"
   }
 ]

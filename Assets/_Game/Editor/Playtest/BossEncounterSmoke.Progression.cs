@@ -26,7 +26,9 @@ public static partial class BossEncounterSmoke
             if (wave == DuelGame.FinalBossWave)
             {
                 Require(game.Phase == DuelPhase.FinalBoss, "Missing voiced intro");
-                while (game.Phase == DuelPhase.FinalBoss) { game.AdvanceFinalBossDialogue(); yield return null; }
+                Require(game.FinalBossDialogueSpeaker == "Final Boss", "Missing opening challenge");
+                yield return WaitFor(() => game.Phase == DuelPhase.FinalBoss && game.FinalBossDialogueSpeaker == "Happy", "Missing Happy warning");
+                yield return WaitFor(() => game.Phase == DuelPhase.Prepare, "Wave 3 intro did not start the countdown");
             }
             Require(game.Phase == DuelPhase.Prepare, "Missing pre-fight countdown");
             yield return WaitFor(() => game.Phase == DuelPhase.Fight, "Combat did not start");

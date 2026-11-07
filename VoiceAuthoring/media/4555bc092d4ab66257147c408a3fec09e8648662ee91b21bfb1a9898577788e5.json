@@ -1,0 +1,17 @@
+[
+  {
+    "path": "Assets/_Game/Levels/L01_Duel/Resources/Handler/TutorialIntro3.wav",
+    "old": "VoiceAuthoring/media/c87dc60d81e1e33314f3d6ac2a5edcdb0f2bf732bd43fc2fc29f287d65ce4b54.wav",
+    "after": "8e1d7c8bcb9aaf67860b4ad68b892e0ea7ff6effb52035ab8db294fe1712ec71"
+  },
+  {
+    "path": "VoiceAuthoring/recipes/Handler-TutorialIntro3.json",
+    "old": "VoiceAuthoring/media/60c1c34be588354996c01a6e7ede81cd8f73f74c556ff250ca7d25836604e036.json",
+    "after": "5c833d4e1b09e99bfe31b55ca19de18bc06aadd526cf9869e053994a85403ca0"
+  },
+  {
+    "path": "Assets/_Game/Levels/L01_Duel/Resources/VoiceStudioCatalog.json",
+    "old": "VoiceAuthoring/media/e5510b9296cb6fd77bd9ed109f98eb7901998039fb933a914b2f1029cdf34940.json",
+    "after": "3ebac6a01e571a532899dc26eb7263970dffe0ae8228b8fad8176b169b4e053d"
+  }
+]

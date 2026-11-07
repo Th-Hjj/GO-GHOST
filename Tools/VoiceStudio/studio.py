@@ -256,7 +256,8 @@ def suggest(text, x):
 def synth_source(recipe, boss, audition_folder=None):
     speed = 1.30 if boss else 1.05
     pronunciations = recipe.get("pronunciations") or ""
-    ident = digest(encode([recipe["text"], pronunciations, speed, boss, "kokoro-v1-studio1"]))
+    spoken = recipe["text"].replace("“", "").replace("”", "")
+    ident = digest(encode([spoken, pronunciations, speed, boss, "kokoro-v1-studio1"]))
     if audition_folder is not None:
         ident = "audition-" + ident
     path = audio.CACHE / "dry" / (ident + ".wav")
@@ -265,7 +266,7 @@ def synth_source(recipe, boss, audition_folder=None):
         with tempfile.NamedTemporaryFile(dir=path.parent, suffix=".wav", delete=False) as f:
             tmp = Path(f.name)
         try:
-            audio.write(tmp, audio.synth(recipe["text"], boss, speed, pronunciations, audition_folder))
+            audio.write(tmp, audio.synth(spoken, boss, speed, pronunciations, audition_folder))
             os.replace(tmp, path)
         finally:
             tmp.unlink(missing_ok=True)

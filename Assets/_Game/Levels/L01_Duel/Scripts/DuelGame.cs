@@ -100,6 +100,7 @@ namespace GoGhost.Duel
         }
         public void NewGame()
         {
+            handler.ResetSpeakerName();
             double questionAt = AudioSettings.dspTime + VoiceStudioCatalog.Current.openingDelay;
             ClearEncounter("new_game");
             PlayMetrics.ResetRun();

@@ -16,6 +16,8 @@ namespace GoGhost.Duel
         const string TutorialIntro = "Handler/TutorialIntro", TutorialGoodbye = "Handler/TutorialGoodbye";
         bool tutorialActive, openedRule;
         public string PendingDialogue { get; private set; }
+        internal string SpeakerName { get; private set; } = "???";
+        internal void ResetSpeakerName() => SpeakerName = "???";
         Action afterDialogue;
         int dialogueFrame;
         float revealStart, revealDuration;
@@ -36,6 +38,7 @@ namespace GoGhost.Duel
 
         internal void SpeakDialogue(string key, Action advance = null)
         {
+            if (key == "Handler/TutorialIntro3") SpeakerName = "Happy";
             PlayLine(key);
             WaitForClick(VoiceStudioCatalog.Current.Find(key).text, advance);
         }

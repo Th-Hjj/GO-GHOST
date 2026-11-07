@@ -13,6 +13,7 @@ namespace GoGhost.Duel
         public string FinalBossDialogueSpeaker => DialogueLines[FinalBossLine].key.StartsWith("Handler/") ? "Happy" : "Final Boss";
         public bool FinalBossChoiceReady { get; private set; }
         public string PendingDialogue => handler.PendingDialogue;
+        internal string HappySpeakerName => handler.SpeakerName;
         public bool DialogueReady => handler.DialogueReady;
         internal int DialogueVisibleCharacters => handler.VisibleCharacters;
         public void AcknowledgeDialogue()

@@ -6,7 +6,7 @@ namespace GoGhost.Duel
     public sealed partial class DuelUI
     {
         RectTransform dialogueOverlay;
-        TMPro.TMP_Text ambientDialogue, sceneDialogue;
+        TMPro.TMP_Text ambientSpeaker, ambientDialogue, sceneDialogue;
         UnityEngine.UI.Image ambientPanel;
         const float FooterButtonHeight = 48;
         float dialogueFooterRightInset, dialogueFooterBottomInset;
@@ -31,9 +31,9 @@ namespace GoGhost.Duel
                 panel.name = "Happy dialogue";
                 panel.anchorMin = Vector2.zero;
                 panel.anchorMax = Vector2.right;
-                var speaker = Text("Happy", panel, Vector2.zero, Vector2.zero, 18, TMPro.TextAlignmentOptions.MidlineLeft, headingFont);
-                speaker.color = NeuralPalette.Secondary;
-                var label = speaker.rectTransform;
+                ambientSpeaker = Text("", panel, Vector2.zero, Vector2.zero, 18, TMPro.TextAlignmentOptions.MidlineLeft, headingFont);
+                ambientSpeaker.color = NeuralPalette.Secondary;
+                var label = ambientSpeaker.rectTransform;
                 label.anchorMin = Vector2.up;
                 label.anchorMax = Vector2.one;
                 label.offsetMin = new Vector2(20, -32);
@@ -59,6 +59,7 @@ namespace GoGhost.Duel
                 ambientPanel.rectTransform.offsetMin = new Vector2(32, bottom);
                 ambientPanel.rectTransform.offsetMax = new Vector2(-right, bottom + FooterButtonHeight + 36);
                 ambientDialogue.text = game.PendingDialogue;
+                ambientSpeaker.text = game.HappySpeakerName;
                 ambientDialogue.maxVisibleCharacters = game.DialogueVisibleCharacters;
             }
         }

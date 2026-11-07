@@ -1,17 +1,17 @@
 [
   {
-    "path": "Assets/_Game/Levels/L01_Duel/Resources/Handler/TutorialIntro2.wav",
-    "old": "VoiceAuthoring/media/f5bdadf8e33113c48d99fb2520513970631d3dd93af8c73497936b1ae673e4b5.wav",
-    "after": "531cdeb2394b156f8c4f5c9dda58963f0b00853a9f08ae4cccf0f13e23372bdf"
+    "path": "Assets/_Game/Levels/L01_Duel/Resources/Handler/TutorialIntro3.wav",
+    "old": "VoiceAuthoring/media/c87dc60d81e1e33314f3d6ac2a5edcdb0f2bf732bd43fc2fc29f287d65ce4b54.wav",
+    "after": "8e1d7c8bcb9aaf67860b4ad68b892e0ea7ff6effb52035ab8db294fe1712ec71"
   },
   {
-    "path": "VoiceAuthoring/recipes/Handler-TutorialIntro2.json",
-    "old": "VoiceAuthoring/media/3776db813cb0c39f6f392389fb1fee41a04c5b60033d6dac2a98d367cd6e0d35.json",
-    "after": "d627811f4573f249627a14c0294074b29287c1d656e3f0b8a607d0bd8edaf079"
+    "path": "VoiceAuthoring/recipes/Handler-TutorialIntro3.json",
+    "old": "VoiceAuthoring/media/60c1c34be588354996c01a6e7ede81cd8f73f74c556ff250ca7d25836604e036.json",
+    "after": "5c833d4e1b09e99bfe31b55ca19de18bc06aadd526cf9869e053994a85403ca0"
   },
   {
     "path": "Assets/_Game/Levels/L01_Duel/Resources/VoiceStudioCatalog.json",
-    "old": "VoiceAuthoring/media/f6da79dba8d62498df9099e027187c5bc8b968ade2e3b98156137b3e8a7dc323.json",
-    "after": "e5510b9296cb6fd77bd9ed109f98eb7901998039fb933a914b2f1029cdf34940"
+    "old": "VoiceAuthoring/media/e5510b9296cb6fd77bd9ed109f98eb7901998039fb933a914b2f1029cdf34940.json",
+    "after": "3ebac6a01e571a532899dc26eb7263970dffe0ae8228b8fad8176b169b4e053d"
   }
 ]

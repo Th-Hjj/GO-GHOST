@@ -30,9 +30,15 @@ namespace GoGhost.Duel
         const float ThrowSpeed = 15, RecallSpeed = 17, ThrowHold = .25f, ThrowRange = 12, SpinMove = .45f;
         const int BoomerangSamples = 25;
         const int AttackIdBase = 100000;
+        // Three invasions at these phase-one health fractions; the rule lands near the end of the animation.
+        static readonly float[] InvasionThresholds = { .75f, .50f, .25f };
+        public const float InvasionDuration = 1.8f, InvasionInject = 1.4f;
 
         readonly BossAgent actor;
         readonly System.Action onPhaseTwo;
+        readonly System.Func<ConditionalRule> onInvasion;
+        float invasionAt;
+        bool invasionInjected;
         readonly Collider2D playerBody;
         readonly float[] readyAt = new float[5];
         readonly List<Vector2> path = new List<Vector2>(BoomerangSamples);
@@ -46,7 +52,11 @@ namespace GoGhost.Duel
         public Stage Phase { get; private set; }
         public float PhaseProgress => Mathf.Clamp01((Time.time - phaseAt) / Mathf.Max(.001f, phaseUntil - phaseAt));
         public float ActiveProgress => Mathf.Clamp01((Time.time - activeAt) / Mathf.Max(.001f, activeEnds - activeAt));
-        public bool Committed => Current != Move.None || Transitioning;
+        public bool Committed => Current != Move.None || Transitioning || Invading;
+        public bool Invading { get; private set; }
+        public int Invasions { get; private set; }
+        public float InvasionProgress => Mathf.Clamp01((Time.time - invasionAt) / InvasionDuration);
+        public ConditionalRule LastInvasion { get; private set; }
         public bool Transitioning { get; private set; }
         public bool PhaseTwo { get; private set; }
         public bool AxeFlying { get; private set; }
@@ -57,9 +67,9 @@ namespace GoGhost.Duel
         public readonly int[] Started = new int[5], Hits = new int[5];
         public FinalBossRules Rules { get; }
 
-        public FinalBossAxe(BossAgent owner, PlayerHealth player, System.Action phaseTwo)
+        public FinalBossAxe(BossAgent owner, PlayerHealth player, System.Action phaseTwo, System.Func<ConditionalRule> invasion)
         {
-            actor = owner; onPhaseTwo = phaseTwo;
+            actor = owner; onPhaseTwo = phaseTwo; onInvasion = invasion;
             playerBody = player != null ? player.GetComponent<Collider2D>() : null;
             for (int i = 0; i < readyAt.Length; i++) readyAt[i] = 0;
             Rules = new FinalBossRules(owner);
@@ -76,6 +86,7 @@ namespace GoGhost.Duel
             Rules.Sealed = PhaseTwo || Transitioning || actor.Health.AwaitingSecondPhase;
             Rules.Observe();
             if (TickTransition()) return;
+            if (TickInvasion()) return;
             if (Current != Move.None) { TickMove(); return; }
             var player = actor.Player;
             if (player == null || player.IsDead) { actor.Motor.Brake(); return; }
@@ -194,8 +205,41 @@ namespace GoGhost.Duel
 
         public void Cancel()
         {
+            if (Invading) { Invading = false; actor.Health.Invulnerable = false; }
             Current = Move.None; Phase = Stage.Idle; AxeFlying = false; AxeSpin = 0; path.Clear();
             nextDecisionAt = Time.time + .5f;
+        }
+
+        // At each threshold the Boss finishes his current move, lands, then stands invulnerable and
+        // writes one random legal rule into the player's fight rules. Thresholds crossed together queue.
+        bool TickInvasion()
+        {
+            if (!Invading)
+            {
+                var health = actor.Health;
+                if (Invasions >= InvasionThresholds.Length || Current != Move.None || PhaseTwo || health.PhaseIndex != 1
+                    || health.AwaitingSecondPhase || !actor.Motor.Grounded) return false;
+                if ((float)health.CurrentHealth / health.MaxHealth > InvasionThresholds[Invasions]) return false;
+                Invading = true; invasionInjected = false; invasionAt = Time.time;
+                health.Invulnerable = true;
+                actor.Motor.HoldHorizontal();
+                if (actor.Player != null) actor.Face((Vector2)actor.Player.transform.position - actor.Position);
+                lockedFacing = actor.Facing;
+                actor.Sounds?.Play(Sfx.Glitch, actor.ActorId);
+                actor.Trace($"invasion {Invasions + 1} begins");
+            }
+            actor.Motor.HoldHorizontal();
+            if (!invasionInjected && Time.time - invasionAt >= InvasionInject)
+            {
+                invasionInjected = true;
+                LastInvasion = onInvasion?.Invoke();
+                actor.Sounds?.Play(Sfx.Glitch, actor.ActorId);
+            }
+            if (Time.time - invasionAt < InvasionDuration) return true;
+            Invading = false; Invasions++;
+            actor.Health.Invulnerable = false;
+            nextDecisionAt = Time.time + .3f;
+            return true;
         }
 
         // Placeholder until the scripted transition (stage 7): hold, strip the player's rules,

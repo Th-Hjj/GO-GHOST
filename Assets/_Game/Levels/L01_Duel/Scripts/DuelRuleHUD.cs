@@ -299,9 +299,18 @@ namespace GoGhost.Duel
                     ?row.Controller.Feedback(row.Operation,row.Row).Visual:default;
                 var color=NeuralPalette.Operation(row.Operation);
                 if(live&&!game.Paused)row.Glow.Update(f.Matched,Time.time);
-                ApplyRuleGlow(row,color,live?row.Glow.Strength:0);
+                ApplyRuleGlow(row,color,Mathf.Max(live?row.Glow.Strength:0,InvasionFlash(row)));
             }
             UpdateBossRuleHud(scale);
+        }
+        // A rule written by the Final Boss pulses briefly when it appears (presentation only).
+        int invadedOrder=-1;float invadedUntil;
+        public void FlashInvadedRule(int displayOrder){invadedOrder=displayOrder;invadedUntil=Time.time+InvadedFlashSeconds;}
+        const float InvadedFlashSeconds=1.6f;
+        float InvasionFlash(RuleRowView row)
+        {
+            if(row.Rule==null||row.Rule.DisplayOrder!=invadedOrder||Time.time>=invadedUntil)return 0;
+            return .55f+.45f*Mathf.Cos((InvadedFlashSeconds-(invadedUntil-Time.time))*Mathf.PI*4);
         }
         void ApplyRuleGlow(RuleRowView row,Color color,float strength)
         {

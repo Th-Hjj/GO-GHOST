@@ -1,5 +1,28 @@
 # GO GHOST slice implementation
 
+## 2026-11-06 — Final Boss invasions (Final Boss stage 5)
+
+- At 75%, 50% and 25% of the first pool, the Boss:
+  - finishes his current move and lands;
+  - stays invulnerable for 1.8 s through the new owner-set `Enemy.Invulnerable` flag;
+  - plays a reaching pose and a flickering signal into the player.
+
+  At 1.4 s, `DuelGame.InvadePlayerRules` appends one rule from `FinalBossInvasion` to a fight-only loadout copy, beyond the five-rule cap, and rebinds. The pool is 203 legal catalog rules. The new card pulses for 1.6 s. Thresholds crossed together queue. The equipped loadout is never modified.
+- **Unity 6000.6.0f1:** compiled with no console errors.
+  - **New check: GO GHOST > Playtest > Final Boss Invasion** passed 8/8 on the first run. It used a full five-rule loadout and controlled Boss damage:
+    - At 74%, the invasion started and blocked damage. Rule 6 was appended after the player's last rule ("Hit Enemy → Move (Away from Enemy)" in this run), and the sidebar read **Rules 6**.
+    - The equipped loadout was unchanged, and immunity ended with the invasion.
+    - One hit from 69% to 20% queued two more invasions, for eight rules in total. No fourth invasion followed.
+    - Retry restored five rules.
+  - **Regression checks:** Final Boss Axe 17/17, Final Boss Rules 9/9 and Final Boss and Bonus Progression 16/16 were rerun.
+  - **Captures:** `Logs/BossEncounter/final-boss-invasion-*.png`.
+- **NOT TESTED:**
+  - invasions under natural combat damage, and hand play;
+  - how readable the effect of a random rule is during a fight;
+  - the Glitch cue in audio.
+
+  Rebinding resets the existing rules' event state once per invasion.
+
 ## 2026-11-06 — Final Boss Rules sidebar (Final Boss stage 4)
 
 - **Boss rules:** `FinalBossRules` evaluates the five trial rules from the Boss's side every frame:

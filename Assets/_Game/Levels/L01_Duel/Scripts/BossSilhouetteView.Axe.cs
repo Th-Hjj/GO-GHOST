@@ -73,6 +73,16 @@ namespace GoGhost.Duel
             p.WeaponAngle = 72;
             p.FrontHand = new Vector2(.22f + wave * motion * .06f, .02f);
             p.BackHand = new Vector2(-.04f - wave * motion * .10f, -.05f);
+            if (axe.Invading)
+            {
+                // Invasion: axe held overhead, free hand reaching toward the player.
+                float reach = Ease(Mathf.Clamp01(axe.InvasionProgress / .2f));
+                p.WeaponAngle = Mathf.Lerp(72, 95, reach);
+                p.FrontHand = Vector2.Lerp(p.FrontHand, new Vector2(-.06f, .58f), reach);
+                p.BackHand = Vector2.Lerp(p.BackHand, new Vector2(.48f, .36f), reach);
+                p.Chest.x -= .04f * reach; p.Head.y += .02f * reach;
+                return;
+            }
             switch (axe.Current)
             {
                 case FinalBossAxe.Move.Chop:
@@ -182,6 +192,26 @@ namespace GoGhost.Duel
             sprite.transform.localScale = new Vector3(size.x / Mathf.Max(.001f, source.x), size.y / Mathf.Max(.001f, source.y), 1);
         }
 
+        // A jagged, flickering signal from the Boss's reaching hand into the player's body.
+        void InvasionSignal(FinalBossAxe axe)
+        {
+            if (actor.Player == null || axe.InvasionProgress < .2f) return;
+            const int points = 14;
+            if (tells[1] == null) tells[1] = NewLine("InvasionSignal", true, points);
+            var line = tells[1]; line.enabled = true; line.positionCount = points;
+            Vector2 from = actor.Position + new Vector2(actor.Facing * .48f, .36f), to = actor.Player.transform.position;
+            Vector2 normal = new Vector2(-(to - from).y, (to - from).x).normalized;
+            float pulse = .55f + .45f * Mathf.Sin(clock * 38f);
+            Color color = NeuralPalette.Alpha(NeuralPalette.Primary, .45f + .5f * pulse);
+            line.startWidth = line.endWidth = .035f + .025f * pulse; line.startColor = line.endColor = color;
+            for (int i = 0; i < points; i++)
+            {
+                float t = i / (float)(points - 1);
+                float jitter = (i == 0 || i == points - 1) ? 0 : Mathf.Sin(clock * 47f + i * 2.3f) * .22f;
+                line.SetPosition(i, ClipTellPoint(Vector2.Lerp(from, to, t) + normal * jitter, line.startWidth));
+            }
+        }
+
         Color AxeTellColor(bool active, bool locked)
         {
             Color color = NeuralPalette.Primary;
@@ -192,6 +222,7 @@ namespace GoGhost.Duel
         void AxeTells()
         {
             var axe = actor.Axe;
+            if (axe.Invading) { InvasionSignal(axe); return; }
             if (axe.Current == FinalBossAxe.Move.None || axe.Phase == FinalBossAxe.Stage.Recovery) return;
             bool active = axe.Phase == FinalBossAxe.Stage.Active, locked = axe.Phase == FinalBossAxe.Stage.Locked || active;
             float width = SwordTellWidth(active, locked);

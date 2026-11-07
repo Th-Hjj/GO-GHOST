@@ -14,7 +14,7 @@ namespace GoGhost.Duel
         public FinalBossAxe Axe { get; private set; }
 
         public void ConfigureFinal(PlayerHealth player, ArenaNavigation2D navigation, DuoCoordinator coordinator, int actorId,
-            int firstHealth, int secondHealth, System.Action onPhaseTwo)
+            int firstHealth, int secondHealth, System.Action onPhaseTwo, System.Func<ConditionalRule> onInvasion)
         {
             IsFinalBoss = true;
             profile = Instantiate(profile);
@@ -24,7 +24,7 @@ namespace GoGhost.Duel
             if (profile.Sword != null) profile.Sword.UnboundHealth = -1f;   // the sword kit never runs
             gameObject.AddComponent<FinalBossProfileOwner>().Profile = profile;
             // Created before Configure so the view can apply the Final Boss look on its first frame.
-            Axe = new FinalBossAxe(this, player, onPhaseTwo);
+            Axe = new FinalBossAxe(this, player, onPhaseTwo, onInvasion);
             Configure(player, navigation, coordinator, actorId, false);
             Health.EnableSecondPhase(secondHealth);
         }

@@ -12,14 +12,41 @@ namespace GoGhost.Duel
     {
         // Thomas, 2026-11-06: both phases use 1000 HP for the trial.
         const int FinalBossFirstHealth = 1000, FinalBossSecondHealth = 1000;
+        // Fight-only copy of the equipped rules that carries the Boss's invasions; null until the first one.
+        // DraftLoadout is never modified, so Retry and Configuration discard invaded rules.
+        ConditionalLoadout invadedLoadout;
+        public int InvadedRuleCount { get; private set; }
         BossAgent CreateFinalBoss(float spawnX)
         {
             var instance = Instantiate(swordsmanPrefab, new Vector3(spawnX, swordsmanSpawn.y, 0), Quaternion.identity, encounter.transform);
             instance.name = "FinalBoss";
+            invadedLoadout = null; InvadedRuleCount = 0;
             var actor = instance.GetComponent<BossAgent>();
             // Actor id 2 on purpose: the player's rules already understand a solo second opponent.
-            actor.ConfigureFinal(Player, navigation, coordinator, 2, FinalBossFirstHealth, FinalBossSecondHealth, StripPlayerAssistance);
+            actor.ConfigureFinal(Player, navigation, coordinator, 2, FinalBossFirstHealth, FinalBossSecondHealth, StripPlayerAssistance, InvadePlayerRules);
             return actor;
+        }
+
+        // Appends one random legal rule after the player's last rule, beyond the five-rule cap, and rebinds.
+        ConditionalRule InvadePlayerRules()
+        {
+            if (Player == null || Phase != DuelPhase.Fight) return null;
+            var rule = FinalBossInvasion.Pick();
+            if (rule == null) return null;
+            invadedLoadout ??= DraftLoadout.Copy();
+            int order = 0;
+            foreach (var existing in invadedLoadout.OrderedRules()) order = Mathf.Max(order, existing.DisplayOrder + 1);
+            rule.DisplayOrder = order;
+            invadedLoadout.Operations[(int)ConditionalCatalog.Response(rule.Action).Operation].Rules.Add(rule);
+            var installed = DraftLoadout;
+            DraftLoadout = invadedLoadout;
+            try { BindEncounterRules(); }
+            finally { DraftLoadout = installed; }
+            InvadedRuleCount++;
+            ui.FlashInvadedRule(order);
+            ui.Show();
+            Trace($"final boss invasion: {ConditionalCatalog.Expression(rule).Conditions} -> {ConditionalCatalog.Expression(rule).Action}");
+            return rule;
         }
 
         void StripPlayerAssistance()

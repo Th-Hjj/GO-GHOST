@@ -50,6 +50,8 @@ public class Enemy : MonoBehaviour, IDamageable
     public int PhaseIndex { get; private set; } = 1;
     /// <summary>First pool spent: alive, still targetable, every damage source is rejected until BeginSecondPhase.</summary>
     public bool AwaitingSecondPhase { get; private set; }
+    /// <summary>Owner-controlled temporary immunity (Final Boss invasions). Damage is rejected while set.</summary>
+    public bool Invulnerable { get; set; }
 
     /// <summary>Fired once on death; optional destruction happens afterwards.</summary>
     public event Action<Enemy> OnDied;
@@ -125,7 +127,7 @@ public class Enemy : MonoBehaviour, IDamageable
 
     public void TakeDamage(int amount, GameObject source)
     {
-        if (IsDead || AwaitingSecondPhase || amount <= 0) return;
+        if (IsDead || AwaitingSecondPhase || Invulnerable || amount <= 0) return;
 
         int lost = Mathf.Min(CurrentHealth, amount);
         CurrentHealth = Mathf.Max(CurrentHealth - amount, 0);

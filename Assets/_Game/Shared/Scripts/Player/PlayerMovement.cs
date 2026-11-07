@@ -40,6 +40,23 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
 
     /// <summary>True on an upward-facing Ground surface or a solid enemy supporting the player. Gates jump and ground dodge.</summary>
     public bool IsGrounded { get; private set; }
+
+    // A kinematic platform carrying the player upward still counts as support (Final Boss moving platforms).
+    bool RidingRisingCarrier()
+    {
+        int count = movementShape.GetContacts(supportContacts);
+        for (int i = 0; i < count; i++)
+        {
+            var contact = supportContacts[i];
+            bool playerIsOther = contact.otherCollider == movementShape;
+            var support = playerIsOther ? contact.collider : contact.otherCollider;
+            float upward = playerIsOther ? contact.normal.y : -contact.normal.y;
+            var carrier = support != null ? support.attachedRigidbody : null;
+            if (contact.enabled && upward > .5f && carrier != null && carrier.bodyType == RigidbodyType2D.Kinematic
+                && rb.linearVelocity.y <= carrier.linearVelocity.y + 0.1f) return true;
+        }
+        return false;
+    }
     public bool IsOrdinaryMoving { get; private set; }
     public event System.Action JumpStarted;
     public event System.Action DropStarted;
@@ -156,7 +173,7 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
 
         IsGrounded = false;
         groundSupport = null;
-        if (groundCheck != null && rb.linearVelocity.y <= 0.1f)
+        if (groundCheck != null && (rb.linearVelocity.y <= 0.1f || RidingRisingCarrier()))
         {
             // A downward foot probe avoids treating a wall as a landing surface.
             var groundFilter = new ContactFilter2D { useLayerMask = true, layerMask = groundLayer, useTriggers = false };

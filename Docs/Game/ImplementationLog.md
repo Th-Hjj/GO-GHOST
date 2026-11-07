@@ -1,5 +1,23 @@
 # GO GHOST slice implementation
 
+## 2026-11-06 — Moving platforms in phase two (Final Boss stage 6)
+
+- **Platform motion:** the phase-two hand-off now also starts `PlatformOscillator` on the five Wave 3 platforms.
+  - They are kinematic bodies driven by velocity, moving ±2.1 on a 4 s cycle.
+  - Adjacent platforms, ordered left to right, move in opposite phase. The floor stays fixed.
+  - The stage layout owns cleanup.
+- **Grounding:** `PlayerMovement` and `BossMotor2D` accept a kinematic carrier rising at their own vertical speed as support. Behavior is unchanged when no kinematic carrier is present.
+- **Checks:** Unity 6000.6.0f1 compiled with no console errors.
+  - **New check: GO GHOST > Playtest > Final Boss Platforms** passed 8/8 on the first run.
+    - Phase one stays static. Phase two starts all five platforms and leaves the floor.
+    - After a quarter cycle the offsets are +2.10, -2.10, +2.10, -2.10, +2.10.
+    - A rising platform carried the player 0.99 with the platform, and the player stayed grounded on 293 of 293 frames at 3.15 u/s.
+    - Pause froze the platforms and unpause resumed them. Retry rebuilt static platforms at their home heights.
+    - Editor frame time while moving: mean 1.2 ms, worst 13.7 ms.
+  - **Regression:** Final Boss and Bonus Progression passed 16/16.
+  - **Capture:** `Logs/BossEncounter/final-boss-platforms-quarter.png`.
+- **NOT TESTED:** Boss riding, drop-through while moving, and hand play. The older platform/jump suites were not rerun, relying on the unchanged no-carrier path.
+
 ## 2026-11-06 — Final Boss invasions (Final Boss stage 5)
 
 - At 75%, 50% and 25% of the first pool, the Boss:

@@ -178,8 +178,12 @@ namespace GoGhost.Duel
             if (body == null || Profile == null || !enabledCombat) return;
             float dt = Time.fixedDeltaTime;
             var here = Position;
-            Grounded = body.linearVelocity.y <= .1f && navigation != null
-                && navigation.TrySupport(here, Size, out _);
+            // A kinematic carrier (Final Boss moving platforms) supports at its own vertical speed.
+            Collider2D support = null;
+            bool supported = navigation != null && navigation.TrySupport(here, Size, out support);
+            var carrier = support != null ? support.attachedRigidbody : null;
+            float carrierSpeed = carrier != null && carrier.bodyType == RigidbodyType2D.Kinematic ? carrier.linearVelocity.y : 0;
+            Grounded = supported && body.linearVelocity.y <= carrierSpeed + .1f;
             if (dropping && !dropRequested && body.linearVelocity.y > -.2f)
             {
                 DropBlocked=false;

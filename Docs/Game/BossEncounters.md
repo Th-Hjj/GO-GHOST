@@ -70,7 +70,7 @@ The English lines are drafts.
 8. Boss: "…What?" then "AAARGH! Now you've really pissed me off!" His eyes turn red.
 9. During the three-second countdown, the sealed sidebars fade and the camera widens to the full screen. Phase two begins.
 
-**Moving platforms.** From the shockwave onward, each platform oscillates 2.1 units (one tier) above and below its home height. The two inner low platforms reach floor level at the bottom of their travel. *Trial:* a cycle of about 4 s, with adjacent platforms in opposite phase so that a reachable route always exists. Platforms remain one-way and carry the actors standing on them.
+**Moving platforms.** From the shockwave onward, each platform oscillates 2.1 units (one tier) above and below its home height. The two inner low platforms reach floor level at the bottom of their travel. *Trial:* a cycle of about 4 s, with adjacent platforms in opposite phase so that a reachable route always exists. Platforms remain one-way and carry the actors standing on them. **Implemented (stage 6):** `PlatformOscillator` drives each stage platform as a kinematic body. Its velocity tracks a sine of 2.1 amplitude and 4 s period. Platforms are ordered left to right and alternate between phase 0 and π, so each one starts from its home height. The floor never moves. Motion starts when the placeholder phase-two hold begins and stops with the stage layout, so Retry rebuilds static platforms. Pause freezes it. `PlayerMovement` and `BossMotor2D` treat contact with a kinematic carrier that is rising at their own speed as ground. Without such a carrier their grounding is unchanged. The inner platforms reach floor level and lift anyone standing there as they rise.
 
 ### Phase 2 — White Boxer
 

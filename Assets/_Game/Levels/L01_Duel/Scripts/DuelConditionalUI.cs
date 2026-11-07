@@ -250,7 +250,6 @@ namespace GoGhost.Duel
                 BuildRuleRows();
             }
             BuildRuleFooter();
-            ConfigButton("ConfigurationHelp","Help",page,new Vector2(left+48,bottom+24),new Vector2(96,48),OpenHelp,style:DuelControlStyle.Navigation);
         }
 
         void BuildConfigurationBody()

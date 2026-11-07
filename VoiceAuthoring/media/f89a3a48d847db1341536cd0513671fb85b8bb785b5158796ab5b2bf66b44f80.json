@@ -1,0 +1,21 @@
+{
+  "mode": "Synthesize",
+  "source": "VoiceAuthoring/media/31ff5503a197a26bb5af04b65903869b89ed0852451377f9ad32555f93e29d6c.wav",
+  "reference": "",
+  "text": "Then click on Add Rule.",
+  "pronunciations": "",
+  "speed": 1.0,
+  "pitch": 0.0,
+  "gain": 0.0,
+  "melody": 0.0,
+  "stress": 0.0,
+  "timing": 0.0,
+  "edits": [],
+  "independent": false,
+  "overrideTone": false,
+  "electronic": 0.15,
+  "nearDb": 0.0,
+  "spaceDb": 0.0,
+  "bossSub": 0.42,
+  "bossDrive": 1.9
+}

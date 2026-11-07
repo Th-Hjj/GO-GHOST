@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — F9 Boss shortcut
+
+- During combat, F9 empties the nearest living Boss's current health pool. Wave 3 follows the normal phase change and Bonus targets one Boss per press. The shortcut marks active playtest data as test data. Compilation and Play Mode were skipped for fast iteration.
+
 ## 2026-11-07 — Click-paced dialogue and Final Boss transition
 
 - Dialogue cues wait for a fresh click after playback. The Final Boss kneels, holds “......”, then says “I don't need this anymore...”. The next click starts the pulse. Happy’s interrupted “E.M...” plays inside the pulse, followed by platform motion, rule sealing, rainbow loss and red eyes, with a separate hold for each stage.

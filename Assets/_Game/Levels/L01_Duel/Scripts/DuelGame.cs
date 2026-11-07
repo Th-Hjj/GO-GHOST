@@ -380,6 +380,8 @@ namespace GoGhost.Duel
             TickMetrics();
             if (!ui.DeveloperShortcutConsumed && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) SetPause(!Paused);
             if (Paused || DeveloperToolsOpen) return;
+            if (Keyboard.current != null && Keyboard.current.f9Key.wasPressedThisFrame)
+                DefeatCurrentBoss();
             if (creationQuestionAt.HasValue && AudioSettings.dspTime >= creationQuestionAt.Value)
             {
                 creationQuestionAt = null;

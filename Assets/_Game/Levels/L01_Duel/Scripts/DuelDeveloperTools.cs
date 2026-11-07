@@ -159,6 +159,27 @@ namespace GoGhost.Duel
             }
         }
 
+        void DefeatCurrentBoss()
+        {
+            if (Phase != DuelPhase.Fight || FinalBossCutscene || Player == null || Player.IsDead) return;
+
+            BossAgent target = null;
+            float nearest = float.PositiveInfinity;
+            Vector2 position = Player.transform.position;
+            foreach (var actor in actors)
+            {
+                if (actor == null || !actor.IsAlive || actor.Health.AwaitingSecondPhase) continue;
+                float distance = (actor.Position - position).sqrMagnitude;
+                if (distance >= nearest) continue;
+                nearest = distance;
+                target = actor;
+            }
+            if (target == null) return;
+            PlayMetrics.MarkTestData();
+            target.Health.Invulnerable = false;
+            target.Health.TakeDamage(target.Health.CurrentHealth, Player.gameObject);
+        }
+
         public bool CanPreviewBossMove(bool phaseTwo)
         {
             if (!DeveloperToolsOpen || Phase != DuelPhase.Fight || Wave != FinalBossWave || FinalBossCutscene) return false;

@@ -55,12 +55,14 @@ namespace GoGhost.Duel
         public float LockedFacing => lockedFacing;
         public IReadOnlyList<Vector2> Path => path;
         public readonly int[] Started = new int[5], Hits = new int[5];
+        public FinalBossRules Rules { get; }
 
         public FinalBossAxe(BossAgent owner, PlayerHealth player, System.Action phaseTwo)
         {
             actor = owner; onPhaseTwo = phaseTwo;
             playerBody = player != null ? player.GetComponent<Collider2D>() : null;
             for (int i = 0; i < readyAt.Length; i++) readyAt[i] = 0;
+            Rules = new FinalBossRules(owner);
             nextDecisionAt = Time.time + 1.0f;
         }
 
@@ -70,10 +72,14 @@ namespace GoGhost.Duel
 
         public void Tick()
         {
+            // Phase two seals the Boss's rules together with the player's.
+            Rules.Sealed = PhaseTwo || Transitioning || actor.Health.AwaitingSecondPhase;
+            Rules.Observe();
             if (TickTransition()) return;
             if (Current != Move.None) { TickMove(); return; }
             var player = actor.Player;
             if (player == null || player.IsDead) { actor.Motor.Brake(); return; }
+            if (Rules.TryExecute(this)) return;
             var facts = actor.Perception.Facts;
             if (facts.Confidence <= .1f) { actor.Motor.Brake(); return; }
             Vector2 target = facts.Position, position = actor.Position;

@@ -1,5 +1,26 @@
 # GO GHOST slice implementation
 
+## 2026-11-06 — Final Boss Rules sidebar (Final Boss stage 4)
+
+- **Boss rules:** `FinalBossRules` evaluates the five trial rules from the Boss's side every frame:
+  - Incoming Attack (Ranged) → Jump
+  - Landed → Chop
+  - Close → Spin
+  - Took Damage → Throw & Recall
+  - Far → Boomerang
+
+  When the Boss is free to act, the first executable match runs before his AI. Phase two seals the list.
+- **Sidebar:** `DuelUI.BossRuleHUD` shows the list on the right with the shared card and glow helpers, which were extracted from the player HUD without changing their behavior. The camera now fills the space between the two sidebars.
+- **Unity 6000.6.0f1:** compiled with no console errors.
+  - **New check: GO GHOST > Playtest > Final Boss Rules** passed 9/9 on run 5.
+    - Sidebars: at 1280 and 1920, the player's sidebar is flush left, the Boss sidebar is flush right, and the camera fills the gap exactly.
+    - Rules with the AI's own choices suspended: Far → Boomerang, Close → Spin, and Mid matched neither distance rule. A real player bullet triggered Jump, the landing triggered Chop, and a direct hit while idle triggered Throw.
+    - Phase two: the list was sealed, both sidebars were removed and the camera returned to full width.
+  - **Earlier runs:** runs 1–4 failed on fixture timing. The teleport lands one physics step later, Boss perception is delayed by design, and the counters were snapshotted after the rule had already fired. The check now waits for both. Run 4 also exposed a design interaction, not a bug: while the player keeps shooting, rule 1 and then rule 2 usually keep the Boss busy past the 0.5 s Took Damage window, so rule 4 seldom fires from bullets.
+  - **Regression checks:** Rule Sidebar Left 12/12, Final Boss Axe 17/17 and Final Boss and Bonus Progression 16/16 were rerun.
+  - **Captures:** `Logs/BossEncounter/final-boss-rules-*.png`.
+- **NOT TESTED:** rule priority under natural timing with an unsuspended AI, hand play and balance. With both sidebars the arena is drawn noticeably smaller.
+
 ## 2026-11-06 — Rainbow axe Final Boss (Final Boss stage 3)
 
 - Wave 3 now spawns a player-sized Final Boss from the Swordsman prefab. The Alpha `FinalBossRainbow` shader colors its body and it carries a neutral axe.

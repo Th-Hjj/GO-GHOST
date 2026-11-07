@@ -25,6 +25,8 @@ Walker's provisional intro, editable in Voice Studio:
 
 Preparation tracks the target and Lock freezes the attack. The boss stands still while the axe is thrown. The AI closes in on a level target and keeps a throwing lane against a raised one. It does not yet jump onto platforms.
 
+**Boss Rules (stage 4, implemented):** `FinalBossRules` evaluates the five trial rules in the table below from the Boss's side every frame. Incoming Attack (Ranged) means a public player bullet reaching his body within 0.20 s. Landed and Took Damage are his own events with the 0.5 s window and per-row consumption. Close and Far reuse the player thresholds of 5.3 and 8.5 units with 0.35 hysteresis, measured against his delayed public facts. Jump fires once per entry into its condition. When he is free to act, the first matching executable rule runs before his AI; a cooldown, airborne state or busy axe falls through. His sidebar (**Final Boss Rules 5**) on the right uses the player's card layout and match glow. Phase two seals the list and removes both sidebars, so the camera returns to full width. Trial observation: while the player keeps shooting, rule 1 (Jump) and then rule 2 (Chop on landing) usually keep him busy past the Took Damage window, so rule 4 seldom fires from bullets.
+
 After Wave 3 victory, the Boss voices the two Bonus offer lines. Yes leads to Bonus configuration and Testing, No to the menu. The duo retains its geometry, music, AI and both-dead victory. Wave 3 and Bonus are outside the closed Wave 2 metrics record.
 
 ## Final Boss redesign — approved for trial 2026-11-06, implementation pending

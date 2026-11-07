@@ -63,7 +63,7 @@ namespace GoGhost.Duel
             if(ruleScroll!=null)hudScrollPosition=ruleScroll.verticalNormalizedPosition;
             foreach(var row in ruleRows)if(row.Signals!=null)
                 foreach(var signal in row.Signals)if(signal!=null)Destroy(signal);
-            ruleRows.Clear();hudRules=null;
+            ruleRows.Clear();hudRules=null;ClearBossRuleHud();
             ruleSidebar=battleUi=ruleScrollRoot=ruleViewport=ruleContent=ruleScrollbarRoot=null;
             ruleScroll=null;ruleHeading=null;ruleHudSize=Vector2.zero;
         }
@@ -78,6 +78,7 @@ namespace GoGhost.Duel
             battleUi=Rect("BattleHUD",page,Vector2.zero,new Vector2(1600,900));
             hudRules=game.Rules;
             if(hudScrollController!=hudRules){hudScrollPosition=1;hudScrollController=hudRules;}
+            BuildBossRuleHud();
 #if UNITY_EDITOR
             if(ruleHudViewSample!=null)
             {
@@ -142,19 +143,25 @@ namespace GoGhost.Duel
                         ruleGlowStates.Add(key,glow=new RuleGlowState());
                     row.Glow=glow;
                 }
-                row.Root=Rect("RuleFeedback_"+row.Operation+"_"+row.Row+"_"+i,ruleContent,Vector2.zero,Vector2.zero);
+                BuildRuleCard(row,ruleContent,i,expression.Conditions,expression.Action,NeuralPalette.Operation(row.Operation));
+            }
+        }
+        // One combat rule card: number, condition, arrow and coloured action, with the shared match glow.
+        void BuildRuleCard(RuleRowView row,RectTransform parent,int i,string conditions,string action,Color actionColor)
+        {
+                row.Root=Rect("RuleFeedback_"+row.Operation+"_"+row.Row+"_"+i,parent,Vector2.zero,Vector2.zero);
                 row.Root.anchorMin=row.Root.anchorMax=new Vector2(.5f,1);
                 row.Background=row.Root.gameObject.AddComponent<UnityEngine.UI.Image>();
                 row.Background.raycastTarget=false;row.Background.color=NeuralPalette.Panel;
                 row.Number=Text((i+1).ToString(),row.Root,Vector2.zero,Vector2.zero,20,TextAlignmentOptions.TopLeft,numericFont);
                 row.Number.name="RuleNumber";row.Number.color=NeuralPalette.Secondary;
-                row.Condition=Text(expression.Conditions,row.Root,Vector2.zero,Vector2.zero,22,TextAlignmentOptions.TopLeft);
+                row.Condition=Text(conditions,row.Root,Vector2.zero,Vector2.zero,22,TextAlignmentOptions.TopLeft);
                 row.Condition.name="ConditionText";
                 row.Arrow=Text("→",row.Root,Vector2.zero,Vector2.zero,22,TextAlignmentOptions.TopLeft,controlFont);
                 row.Arrow.name="ActionArrow";
-                row.Action=Text(expression.Action,row.Root,Vector2.zero,Vector2.zero,22,TextAlignmentOptions.TopLeft,controlFont);
+                row.Action=Text(action,row.Root,Vector2.zero,Vector2.zero,22,TextAlignmentOptions.TopLeft,controlFont);
                 row.Action.name="ActionText";
-                row.Action.color=NeuralPalette.Operation(row.Operation);
+                row.Action.color=actionColor;
                 // Preserve each font atlas and fixed geometry; the entire card shares one match signal.
                 var texts=new[]{row.Number,row.Condition,row.Arrow,row.Action};
                 row.Signals=new Material[texts.Length];
@@ -172,7 +179,6 @@ namespace GoGhost.Duel
                 row.Border=new UnityEngine.UI.Image[12];
                 for(int edge=0;edge<row.Border.Length;edge++)
                     row.Border[edge]=Image(row.Root,Vector2.zero,Vector2.zero,Color.clear);
-            }
         }
 
         // Shared by setup and combat. Text comes from the structured catalog expression;
@@ -207,7 +213,7 @@ namespace GoGhost.Duel
         }
         float MeasureRulePanelWidth(float availableWidth)=>Mathf.Clamp(availableWidth*.24f,320,410);
         // Width of the Final Boss rule sidebar on the right edge; zero until his rules are shown.
-        float BossRulePanelWidth=>0;
+        float BossRulePanelWidth=>bossRuleSidebar!=null?bossRulePanelWidth:0;
         void LayoutRuleHud(float width,float height)
         {
             float position=ruleScroll!=null&&ruleHudSize!=Vector2.zero?ruleScroll.verticalNormalizedPosition:hudScrollPosition;
@@ -242,6 +248,7 @@ namespace GoGhost.Duel
                 (game.Phase==DuelPhase.Prepare||game.Phase==DuelPhase.Fight||game.Phase==DuelPhase.Training);
             if(hasRules&&(Mathf.Abs(ruleHudSize.x-width)>.5f||Mathf.Abs(ruleHudSize.y-height)>.5f))LayoutRuleHud(width,height);
             // Player rules occupy the left edge; the right edge is reserved for the Final Boss's rules.
+            LayoutBossRuleHud(width,height);
             float panel=hasRules?rulePanelWidth:0,right=BossRulePanelWidth;
             if(battleUi!=null)
             {
@@ -292,7 +299,13 @@ namespace GoGhost.Duel
                     ?row.Controller.Feedback(row.Operation,row.Row).Visual:default;
                 var color=NeuralPalette.Operation(row.Operation);
                 if(live&&!game.Paused)row.Glow.Update(f.Matched,Time.time);
-                float strength=live?row.Glow.Strength:0;
+                ApplyRuleGlow(row,color,live?row.Glow.Strength:0);
+            }
+            UpdateBossRuleHud(scale);
+        }
+        void ApplyRuleGlow(RuleRowView row,Color color,float strength)
+        {
+            {
                 row.Action.color=color;
                 row.Condition.color=row.Arrow.color=Color.Lerp(NeuralPalette.Primary,color,strength);
                 row.Number.color=Color.Lerp(NeuralPalette.Secondary,color,strength);

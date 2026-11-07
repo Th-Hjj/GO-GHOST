@@ -1,5 +1,23 @@
 # GO GHOST slice implementation
 
+## 2026-11-06 — Rainbow axe Final Boss (Final Boss stage 3)
+
+- Wave 3 now spawns a player-sized Final Boss from the Swordsman prefab. The Alpha `FinalBossRainbow` shader colors its body and it carries a neutral axe.
+  - **AI and moves:** `FinalBossAxe` provides its own AI and four telegraphed moves (Chop, Spin, Throw & Recall, Boomerang). Each move uses the shared preparation/lock/active tell hierarchy.
+  - **Threats:** moves publish threats through the executor so player rules see them. Chop and Spin count as melee; the flying axe counts as ranged.
+  - **Health and phase two:** both pools are 1000. Phase two is a placeholder: a 2.2 s hold, removal of the player's active rules, then a white body that keeps the axe kit.
+  - **Retired:** Walker's `FinalBossSpecials` and the 2x scaling.
+  - **Integration:** hooks were added to `BossAgent`, the executor's `Publish` and `BossSilhouetteView`.
+- Unity 6000.6.0f1 compiled with no console errors.
+  - **New check: GO GHOST > Playtest > Final Boss Axe** passed 17/17. It covers player-size bounds, the rainbow shader, and each move started once with controlled placement. Each move published a locked threat that reaches the standing player and hit that player. Throw and Boomerang were correctly ranged. Unforced AI picked Chop 2, Spin 1 and Throw 1 within 8 s. Phase two refilled 1000 HP and turned white, and its defeat opened the Bonus offer.
+  - The first run had two false FAILs because the ranged-threat window was capped at 0.2 s; it now covers the full flight.
+  - **Existing check: Final Boss and Bonus Progression** passed 16/16 after updating its health expectation to 1000. It covers configuration, Testing, the five voiced lines, countdown, retry, phase-two rule removal and the Bonus.
+  - Captures are in `Logs/BossEncounter/final-boss-axe-*.png`.
+- Known issues and NOT TESTED:
+  - The Boss health bar still uses Swordsman coral.
+  - The axe head is a simple block, and the boss does not jump onto platforms.
+  - Balance, hand play and audio cue choice were not tested.
+
 ## 2026-11-06 — Player rules on the left (Final Boss stage 2)
 
 - The combat Rules sidebar now sits on the left edge in every wave, with its divider facing the arena. The camera viewport and battle HUD fill the remaining width. A right-edge width (`BossRulePanelWidth`, currently 0) is reserved for the Final Boss sidebar in stage 4. Fights with no rules still use the full width.

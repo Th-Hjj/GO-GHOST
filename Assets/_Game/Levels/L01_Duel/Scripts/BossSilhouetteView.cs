@@ -43,7 +43,7 @@ namespace GoGhost.Duel
         }
         public void Configure(BossAgent owner)
         {
-            actor = owner; visualKind = owner.Profile.Kind; SetColors();
+            actor = owner; visualKind = owner.Profile.Kind; SetColors(); ConfigureFinalBossLook();
             clock = gait = 0; alpha = 1; defeated = paused = lastReload = false;
             swordPoseReady=false;
             landAt = hitAt = shotAt = -10; nextEcho = 0;
@@ -86,6 +86,7 @@ namespace GoGhost.Duel
             foreach (var line in tells) if (line != null) line.enabled = false;
             for (int i = flashes.Count - 1; i >= 0; i--) RemoveFlash(i);
             ClearGunBullets();
+            if (flyingShaft != null) flyingShaft.enabled = flyingHead.enabled = false;
         }
         void LateUpdate()
         {
@@ -100,7 +101,7 @@ namespace GoGhost.Duel
                 targetAlpha < alpha ? actor.Profile.CamoFade : actor.Profile.RevealFade));
             transform.position = actor.Position;
             transform.localScale = new Vector3(actor.Facing >= 0 ? 1 : -1, 1, 1);
-            ApplyPose(BuildPose()); UpdateTells(); UpdateFlashes(); UpdateGunBullets();
+            ApplyPose(BuildPose()); UpdateTells(); UpdateFlashes(); UpdateGunBullets(); UpdateFinalBossLook();
             // Swordsman's body silhouettes are exclusive to Unbound, including dash/flank trails.
             bool unboundMoving = visualKind == BossKind.Swordsman && actor.Actions.SwordUnbound
                 && actor.Velocity.sqrMagnitude > .01f;
@@ -195,6 +196,7 @@ namespace GoGhost.Duel
                 else if(a!=null&&a.SwordUnbound&&!a.Busy)
                 {p.Chest.x+=.10f;p.Head.x+=.08f;p.Hip.y-=.06f;p.WeaponAngle=-12;p.Weapon=p.FrontHand+Angle(p.WeaponAngle)*SwordBladeLength*.5f;}
             }
+            if (FinalAxe) AxePose(ref p, wave, motion);
             float hit = Mathf.Max(0,1-(clock-hitAt)/.10f);
             p.Chest.x -= hit*.035f; p.Head.x -= hit*.045f;
             if (defeated)
@@ -272,6 +274,7 @@ namespace GoGhost.Duel
             // Retain the serialized slot as the gun's simple grip; the blade needs no extra outline.
             if(gunner)Place(Part.Sheath,p.Weapon+Rotate(new Vector2(-.15f,-.09f),p.WeaponAngle),new Vector2(.075f,.18f),p.WeaponAngle);
             else Place(Part.Sheath,p.Weapon-Angle(p.WeaponAngle)*(bladeLength*.5f-.12f),new Vector2(.14f,.12f),p.WeaponAngle);
+            if(FinalAxe)ApplyAxe(p);
         }
         void Leg(Part thigh,Part calf,Part foot,Vector2 hip,Vector2 toe,float offset)
         {
@@ -319,6 +322,7 @@ namespace GoGhost.Duel
             foreach(var line in tells)if(line!=null)line.enabled=false;
             if(defeated||!actor.Running)return;
             var action=actor.Actions;
+            if(FinalAxe){AxeTells();return;}
             if(visualKind==BossKind.Gunner){GunnerTells(action);return;}
             if(BossActionExecutor.IsSwordPhrase(action.Ability)){SwordTells(action);return;}
             if(action.PendingSwordThreats)SwordTells(action);

@@ -186,6 +186,7 @@ public static partial class BossEncounterSmoke
         if(mode=="fire-actions") {yield return FireActions();yield break;}
         if(mode=="analytics") {yield return Analytics();yield break;}
         if(mode=="rule-sidebar-left") {yield return RuleSidebarLeft();yield break;}
+        if(mode=="final-boss-axe") {yield return FinalBossAxeMoves();yield break;}
         if(mode=="analytics-edges") {yield return AnalyticsEdges();yield break;}
         IEnumerator legacyScenario = null;
         SelectLegacyScenario(mode, ref legacyScenario);

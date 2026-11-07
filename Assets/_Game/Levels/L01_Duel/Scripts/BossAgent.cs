@@ -54,7 +54,7 @@ namespace GoGhost.Duel
         public void StartCombat() {Running=true;Motor.SetCombatEnabled(true);}
         public void SetPaused(bool paused) {View?.SetPaused(paused);}
         public void StopCombat()
-        { Running=false;Actions?.StopCombat();Motor?.SetCombatEnabled(false);Health?.StopCombat();Sounds?.StopActor(ActorId);View?.ClearTells(); }
+        { Running=false;Axe?.Cancel();Actions?.StopCombat();Motor?.SetCombatEnabled(false);Health?.StopCombat();Sounds?.StopActor(ActorId);View?.ClearTells(); }
         void OnDestroy()
         {
             if (IsTrainingEnemy && profile != null) Destroy(profile);
@@ -85,13 +85,13 @@ namespace GoGhost.Duel
         {
             if(!Running||!IsAlive||Time.deltaTime<=0)return;
             Perception.Tick(Position+Vector2.up*.35f);
-            if(!IsTrainingEnemy&&!Actions.Committed)
+            if(!IsTrainingEnemy&&!Actions.Committed&&!(Axe!=null&&Axe.Committed))
             {
                 var facts=Perception.Facts;
                 if(facts.Confidence>.1f)Face(facts.Position-Position);
                 else if(Mathf.Abs(Velocity.x)>.1f)Face(Velocity);
             }
-            if (IsTrainingEnemy) TickTraining(); else Tactics.Tick();
+            if (IsTrainingEnemy) TickTraining(); else if (Axe != null) Axe.Tick(); else Tactics.Tick();
             bool grounded=Motor.Grounded;
             if(grounded&&!wasGrounded)
             {View?.Landing();Sounds?.Play(Sfx.Land,ActorId);PublishCue(.12f);}

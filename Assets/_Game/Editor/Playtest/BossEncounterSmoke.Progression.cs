@@ -33,8 +33,8 @@ public static partial class BossEncounterSmoke
         ClickConfig("StartFight", "Start Testing");
         ClickConfig("Enter Wave 3");
         var actor = game.Bosses.Single();
-        Check("Enter Wave 3 stages Walker's actor on five platforms",
-            game.Phase == DuelPhase.FinalBoss && actor.IsFinalBoss && actor.Health.MaxHealth == 1400
+        Check("Enter Wave 3 stages the axe Final Boss on five platforms",
+            game.Phase == DuelPhase.FinalBoss && actor.IsFinalBoss && actor.Axe != null && actor.Health.MaxHealth == 1000
             && LayoutSupports().Length == 6 && !actor.Running && game.FightClock == 0);
         var speaker = Private<AudioSource>(game.GetComponent<HandlerVoice>(), "speaker");
         var intro = VoiceStudioCatalog.Current.BossIntro;

@@ -14,7 +14,16 @@ Walker's provisional intro, editable in Voice Studio:
 4. Let's see if it's enough.
 5. Are you ready?
 
-Walker Grupp's prototype (commit `719c843`) uses a 1400-HP first pool and a 1000-HP second pool. The second phase temporarily removes active rule assistance for that attempt. Retry and subsequent configuration use the equipped loadout. The moves, timings and dialogue are available for design review.
+**Current source (stage 3 of the redesign below):** the Final Boss is a player-sized stickman built from the Swordsman prefab, with the Alpha rainbow shader on its body and an axe. `FinalBossAxe` replaces the sword tactics with its own AI and four telegraphed moves: Chop, Spin, Throw & Recall and Boomerang. Each move publishes threats: Chop and Spin as melee, the flying axe as ranged. Both health pools are 1000. When the first pool empties, a 2.2 s placeholder hold removes active rule assistance for that attempt. The body then turns white and keeps the axe kit until the scripted transition and the White Boxer replace it. Retry and subsequent configuration use the equipped loadout. Walker Grupp's original prototype (commit `719c843`, 2x Swordsman with sword specials) is retired. Trial axe tuning (prepare/lock/active/recovery/cooldown, damage):
+
+| Move | Timing (s) | Damage | Shape |
+|---|---|---|---|
+| Chop | .42 / .14 / .12 / .50, cooldown 1.8 | 26 | 2.3 x 2.1 box in front |
+| Spin | .45 / .15 / 1.0 / .65, cooldown 5 | 20 | 1.65 radius, slow advance |
+| Throw & Recall | .40 / .15 / flight / .35, cooldown 4.5 | 18 per pass | straight out up to 12, .25 s hold, back along the same line |
+| Boomerang | .45 / .15 / 1.6 / .40, cooldown 5.5 | 20 per pass | high arc out to the target, low arc back |
+
+Preparation tracks the target and Lock freezes the attack. The boss stands still while the axe is thrown. The AI closes in on a level target and keeps a throwing lane against a raised one. It does not yet jump onto platforms.
 
 After Wave 3 victory, the Boss voices the two Bonus offer lines. Yes leads to Bonus configuration and Testing, No to the menu. The duo retains its geometry, music, AI and both-dead victory. Wave 3 and Bonus are outside the closed Wave 2 metrics record.
 

@@ -74,6 +74,7 @@ namespace GoGhost.Duel
         {
             PublicThreats.Clear();
             swordHazards?.Publish(PublicThreats);
+            actor.Axe?.Publish(PublicThreats);
             if(!Busy||Phase==BossActionPhase.Recovery||Ability==BossAbility.Camo||Ability==BossAbility.Guard||Ability==BossAbility.FlankLeap)return;
             if(Ability==BossAbility.LeapSlash){PublishLeap();return;}
             var phase=Phase==BossActionPhase.Prepare?BossThreatPhase.Preparation:Phase==BossActionPhase.Locked?BossThreatPhase.Locked:BossThreatPhase.Active;

@@ -40,18 +40,18 @@ namespace GoGhost.Duel
         bool developerResumeOnClose;
 
         readonly BossMoveTuning[] axeTuning = new BossMoveTuning[System.Enum.GetValues(typeof(FinalBossAxe.Move)).Length];
-        readonly BossMoveTuning[] punchTuning = new BossMoveTuning[System.Enum.GetValues(typeof(FinalBossBoxer.Punch)).Length];
+        readonly BossMoveTuning[] phaseTwoTuning = new BossMoveTuning[(int)FinalBossAxe.Move.Spin + 1];
 
         void ResetBossMoveTuning()
         {
             for (int i = 1; i < axeTuning.Length; i++) axeTuning[i] = FinalBossAxe.DefaultTuning((FinalBossAxe.Move)i);
-            for (int i = 1; i < punchTuning.Length; i++) punchTuning[i] = FinalBossBoxer.DefaultTuning((FinalBossBoxer.Punch)i);
+            for (int i = 1; i < phaseTwoTuning.Length; i++) phaseTwoTuning[i] = FinalBossAxe.DefaultTuning((FinalBossAxe.Move)i);
         }
-        public BossMoveTuning GetBossMoveTuning(bool boxing, int move) => (boxing ? punchTuning : axeTuning)[move];
-        public void SetBossMoveTuning(bool boxing, int move, BossMoveTuning value)
+        public BossMoveTuning GetBossMoveTuning(bool phaseTwo, int move) => (phaseTwo ? phaseTwoTuning : axeTuning)[move];
+        public void SetBossMoveTuning(bool phaseTwo, int move, BossMoveTuning value)
         {
             if (!DeveloperToolsOpen) return;
-            var list = boxing ? punchTuning : axeTuning;
+            var list = phaseTwo ? phaseTwoTuning : axeTuning;
             if (move < 1 || move >= list.Length) return;
             value.Windup = Mathf.Clamp(value.Windup, .05f, 4f);
             value.Recovery = Mathf.Clamp(value.Recovery, .05f, 4f);
@@ -159,18 +159,17 @@ namespace GoGhost.Duel
             }
         }
 
-        public bool CanPreviewBossMove(bool boxing)
+        public bool CanPreviewBossMove(bool phaseTwo)
         {
             if (!DeveloperToolsOpen || Phase != DuelPhase.Fight || Wave != FinalBossWave || FinalBossCutscene) return false;
-            return actors.Length == 1 && actors[0].IsAlive && actors[0].Axe != null && actors[0].Axe.PhaseTwo == boxing;
+            return actors.Length == 1 && actors[0].IsAlive && actors[0].Axe != null && actors[0].Axe.PhaseTwo == phaseTwo;
         }
 
-        public void PreviewBossMove(bool boxing, int move)
+        public void PreviewBossMove(bool phaseTwo, int move)
         {
-            if (!CanPreviewBossMove(boxing) || move < 1 || move >= (boxing ? punchTuning.Length : axeTuning.Length)) return;
+            if (!CanPreviewBossMove(phaseTwo) || move < 1 || move >= (phaseTwo ? phaseTwoTuning.Length : axeTuning.Length)) return;
             var axe = actors[0].Axe;
-            if (boxing) axe.Boxer.PreviewPunch = (FinalBossBoxer.Punch)move;
-            else axe.PreviewMove = (FinalBossAxe.Move)move;
+            axe.PreviewMove = (FinalBossAxe.Move)move;
             developerResumeOnClose = true;
             ToggleDeveloperTools();
         }

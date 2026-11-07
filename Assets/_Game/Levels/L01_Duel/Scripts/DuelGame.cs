@@ -132,7 +132,7 @@ namespace GoGhost.Duel
             }
             UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
             SetPhase(DuelPhase.Configure);
-            handler.PlayGreeting();
+            handler.PlayGreeting(Appearance.Name);
         }
         internal void RuleEditorOpened() => handler.RuleEditorOpened();
         public void SetDraft(int module, bool automatic)
@@ -383,14 +383,13 @@ namespace GoGhost.Duel
             if (creationQuestionAt.HasValue && AudioSettings.dspTime >= creationQuestionAt.Value)
             {
                 creationQuestionAt = null;
-                handler.PlayLine("Handler/WhoAreYou");
+                handler.SpeakDialogue("Handler/WhoAreYou");
             }
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if(Phase==DuelPhase.Fight&&Wave==BonusWave&&Player!=null&&!Player.IsDead
                 &&Keyboard.current!=null&&Keyboard.current.pKey.wasPressedThisFrame)coordinator?.RequestNextDebugCombo();
 #endif
-            if (Phase == DuelPhase.FinalBoss) TickFinalBossIntro();
-            else if (Phase == DuelPhase.Prepare)
+            if (Phase == DuelPhase.Prepare)
             {
                 phaseTime += Time.deltaTime;
                 if (phaseTime >= PreparationSeconds) BeginCombat();
@@ -414,16 +413,20 @@ namespace GoGhost.Duel
             foreach (var actor in actors) if (actor != null && actor.IsAlive) { allDead = false; break; }
             if (!Player.IsDead && !allDead) return;
             bool defeat = Player.IsDead;
+            if (defeat && FinalBossCutscene) ResetFinalBossTransition();
             Trace($"result wave={Wave} player={Player.CurrentHealth} bosses={HealthSummary()} elapsed={FightClock:0.00}");
             FinishMetrics(defeat ? "died" : "won", !defeat && Wave == 2);
             if (!defeat && Wave == 2)
             {
                 PlayMetrics.EndRun("complete");
                 ClearEncounter();
-                Wave = FinalBossWave;
-                SetPhase(DuelPhase.Configure);
+                SetPhase(DuelPhase.Between);
                 sounds?.Play(Sfx.Victory);
-                handler.WaveCleared(2);
+                handler.WaveCleared(2, () =>
+                {
+                    Wave = FinalBossWave;
+                    SetPhase(DuelPhase.Configure);
+                });
                 return;
             }
             StopCombat();

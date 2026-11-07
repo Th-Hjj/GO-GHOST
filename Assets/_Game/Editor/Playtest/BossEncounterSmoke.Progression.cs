@@ -47,12 +47,10 @@ public static partial class BossEncounterSmoke
             }
         }
 
-        yield return WaitFor(() => game.CutsceneChoiceOpen, "Final Boss dialogue choice", 40);
-        game.ChooseFinalBossLine(0);
-        yield return WaitFor(() => game.Bosses[0].Axe.PhaseTwo, "White Boxer did not start", 25);
+        yield return WaitFor(() => game.Bosses[0].Axe.PhaseTwo, "Phase two did not start", 30);
         game.Bosses[0].Health.TakeDamage(100000, game.Player.gameObject);
         yield return WaitFor(() => game.Phase == DuelPhase.BonusOffer, "Missing Bonus offer");
-        while (!game.FinalBossChoiceReady) { game.AdvanceFinalBossDialogue(); yield return null; }
+        yield return WaitFor(() => game.FinalBossChoiceReady, "Missing Bonus choice", 15);
         game.ChooseBonus(true);
         Require(game.TrainingPending && game.Wave == DuelGame.BonusWave && game.Appearance == character
             && JsonUtility.ToJson(game.DraftLoadout) == rules, "Bonus lost identity or rules");

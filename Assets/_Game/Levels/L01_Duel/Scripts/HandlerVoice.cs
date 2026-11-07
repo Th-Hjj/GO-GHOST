@@ -14,8 +14,33 @@ namespace GoGhost.Duel
         AudioClip generatedGreeting;
         CancellationTokenSource pendingGreeting;
         const string TutorialIntro = "Handler/TutorialIntro", TutorialGoodbye = "Handler/TutorialGoodbye";
-        internal static readonly string[] Lines = { "Handler/Greeting", "Handler/WaveOneClear", "Handler/WaveTwoClear", "Handler/BonusClear", "Handler/LookOut", TutorialIntro, TutorialGoodbye };
+        internal static readonly string[] Lines = { "Handler/Greeting", "Handler/WaveOneClear", "Handler/WaveTwoClear", "Handler/BonusClear", "Handler/LookOut", "Handler/EMP", TutorialIntro, TutorialGoodbye };
         bool tutorialActive, openedRule;
+        public string PendingDialogue { get; private set; }
+        Action afterDialogue;
+        int dialogueFrame;
+
+        internal void WaitForClick(string text, Action advance = null)
+        {
+            PendingDialogue = text;
+            dialogueFrame = Time.frameCount;
+            afterDialogue = advance;
+        }
+
+        internal void SpeakDialogue(string key, Action advance = null)
+        {
+            PlayLine(key);
+            WaitForClick(VoiceStudioCatalog.Current.Find(key).text, advance);
+        }
+
+        internal void Acknowledge()
+        {
+            if (PendingDialogue == null || Speaking || Time.frameCount == dialogueFrame) return;
+            var advance = afterDialogue;
+            PendingDialogue = null;
+            afterDialogue = null;
+            advance?.Invoke();
+        }
         readonly Dictionary<string, AudioClip> lines = new Dictionary<string, AudioClip>();
         internal void CacheLine(string name, AudioClip clip) => lines[name] = clip;
         internal bool TryGetLine(string name, out AudioClip clip) => lines.TryGetValue(name, out clip) && clip != null;
@@ -61,13 +86,17 @@ namespace GoGhost.Duel
             yield break;
         }
 
-        internal void PlayGreeting()
+        internal void PlayGreeting(string nickname)
         {
             speaker.volume = VoiceStudioCatalog.Current.Volume(false);
             tutorialActive = true;
             openedRule = false;
-            if (generatedGreeting != null) Play(generatedGreeting);
-            else PlayLine("Handler/Greeting");
+            if (generatedGreeting != null)
+            {
+                Play(generatedGreeting);
+                WaitForClick(VoiceStudioCatalog.Current.greetingTemplate.Replace("{name}", nickname));
+            }
+            else SpeakDialogue("Handler/Greeting");
             StartCoroutine(ConfigurationTutorial());
         }
 
@@ -80,21 +109,21 @@ namespace GoGhost.Duel
 
         IEnumerator ConfigurationTutorial()
         {
-            while (AudioListener.pause || speaker.isPlaying) yield return null;
+            while (PendingDialogue != null) yield return null;
             ReleaseGreeting();
-            if (!openedRule) PlayLine(TutorialIntro);
-            while (!openedRule || AudioListener.pause) yield return null;
-            PlayLine(TutorialGoodbye);
-            while (AudioListener.pause || speaker.isPlaying) yield return null;
+            SpeakDialogue(TutorialIntro);
+            while (PendingDialogue != null || !openedRule || AudioListener.pause) yield return null;
+            SpeakDialogue(TutorialGoodbye);
+            while (PendingDialogue != null) yield return null;
             tutorialActive = false;
         }
 
-        public void WaveCleared(int wave)
+        public void WaveCleared(int wave, Action advance = null)
         {
             Stop();
-            if (wave == 1) PlayLine("Handler/WaveOneClear");
-            else if (wave == 2) PlayLine("Handler/WaveTwoClear");
-            else if (wave == DuelGame.BonusWave) PlayLine("Handler/BonusClear");
+            if (wave == 1) SpeakDialogue("Handler/WaveOneClear", advance);
+            else if (wave == 2) SpeakDialogue("Handler/WaveTwoClear", advance);
+            else if (wave == DuelGame.BonusWave) SpeakDialogue("Handler/BonusClear", advance);
         }
 
         internal void PlayLine(string name)
@@ -143,6 +172,8 @@ namespace GoGhost.Duel
         public void Stop()
         {
             tutorialActive = false;
+            PendingDialogue = null;
+            afterDialogue = null;
             StopAllCoroutines();
             pendingGreeting?.Cancel();
             pendingGreeting?.Dispose();

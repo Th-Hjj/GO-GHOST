@@ -18,7 +18,7 @@ namespace GoGhost.Duel
         }
         readonly List<DeveloperFieldView> developerFields=new List<DeveloperFieldView>();
         int developerTab,developerSection,developerShortcutFrame=-1;
-        bool tuningBoxer;
+        bool tuningPhaseTwo;
         int tuningMove = 1;
         TMP_Text developerStatus;
         public bool DeveloperShortcutConsumed=>developerShortcutFrame==Time.frameCount;
@@ -111,14 +111,14 @@ namespace GoGhost.Duel
         {
             for (int phase = 1; phase <= 2; phase++)
             {
-                bool boxing = phase == 2;
-                Button(boxing ? "Boxer" : "Axe", page, new Vector2(boxing ? 160 : -160, 150), new Vector2(290,48),
-                    () => { tuningBoxer = boxing; tuningMove = 1; Show(); }, tuningBoxer == boxing);
+                bool phaseTwo = phase == 2;
+                Button(phaseTwo ? "Phase 2 Axe" : "Phase 1 Axe", page, new Vector2(phaseTwo ? 160 : -160, 150), new Vector2(290,48),
+                    () => { tuningPhaseTwo = phaseTwo; tuningMove = 1; Show(); }, tuningPhaseTwo == phaseTwo);
             }
             var preview = Button("Try selected move", page, new Vector2(-210,-400), new Vector2(360,54),
-                () => game.PreviewBossMove(tuningBoxer,tuningMove));
-            preview.interactable = game.CanPreviewBossMove(tuningBoxer);
-            string[] names = tuningBoxer ? new[] { "Jab", "Uppercut", "Slip / Hook", "Haymaker" }
+                () => game.PreviewBossMove(tuningPhaseTwo,tuningMove));
+            preview.interactable = game.CanPreviewBossMove(tuningPhaseTwo);
+            string[] names = tuningPhaseTwo ? new[] { "Chop", "Spin" }
                 : new[] { "Chop", "Spin", "Throw / Recall", "Boomerang" };
             for (int i = 0; i < names.Length; i++)
             {
@@ -126,8 +126,8 @@ namespace GoGhost.Duel
                 Button(names[i], page, new Vector2(-465 + 310*i,85), new Vector2(290,48),
                     () => { tuningMove = move; Show(); }, tuningMove == move);
             }
-            BossMoveTuning Read() => game.GetBossMoveTuning(tuningBoxer,tuningMove);
-            void Write(BossMoveTuning t) => game.SetBossMoveTuning(tuningBoxer,tuningMove,t);
+            BossMoveTuning Read() => game.GetBossMoveTuning(tuningPhaseTwo,tuningMove);
+            void Write(BossMoveTuning t) => game.SetBossMoveTuning(tuningPhaseTwo,tuningMove,t);
             AddDeveloperField("BossWindup","Wind-up (s)",19,.05f,4,.05f,()=>Read().Windup,
                 v=>{var t=Read(); t.Windup=v; Write(t);},()=>true);
             AddDeveloperField("BossRecovery","Recovery (s)",-39,.05f,4,.05f,()=>Read().Recovery,

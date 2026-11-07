@@ -6,7 +6,7 @@ namespace GoGhost.Duel
 {
     // Final Boss phase change (Thomas, 2026-11-06): both rule sidebars freeze as dimmed, crossed-out
     // snapshots at the shockwave, fade and slide away during the countdown while the camera widens,
-    // and the scripted lines appear in a subtitle box with the player's two choices.
+    // and the scripted lines appear in a subtitle box.
     public sealed partial class DuelUI
     {
         List<ConditionalRule> sealedPlayerRules;
@@ -95,13 +95,6 @@ namespace GoGhost.Duel
                 var line = Text(game.CutsceneText, hud, new Vector2(0, 212), new Vector2(720, 80), 28);
                 line.name = "CutsceneText";
             }
-            if (game.CutsceneChoiceOpen)
-                for (int i = 0; i < DuelGame.PlayerTransitionLines.Length; i++)
-                {
-                    int choice = i;
-                    Button(DuelGame.PlayerTransitionLines[i], hud, new Vector2(i == 0 ? -190 : 190, 120), new Vector2(360, 62),
-                        () => game.ChooseFinalBossLine(choice)).name = "FinalBossChoice" + i;
-                }
         }
     }
 }

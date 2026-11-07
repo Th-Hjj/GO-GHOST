@@ -279,6 +279,8 @@ namespace GoGhost.Duel
         void Leg(Part thigh,Part calf,Part foot,Vector2 hip,Vector2 toe,float offset)
         {
             Vector2 knee=(hip+toe)*.5f+new Vector2(offset,0);
+            if (FinalAxe && kneel > 0)
+                knee = Vector2.Lerp(knee, thigh == Part.BackThigh ? new Vector2(-.06f, toe.y + .02f) : new Vector2(.44f, hip.y), kneel);
             Segment(thigh,hip,knee,.17f);Segment(calf,knee,toe,.17f);
         }
         void Arm(Part upper,Part lower,Vector2 shoulder,Vector2 hand,float bend)

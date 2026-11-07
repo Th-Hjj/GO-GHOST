@@ -13,39 +13,15 @@ namespace GoGhost.Duel
             Part.FrontCalf, Part.BackUpperArm, Part.BackForearm, Part.FrontUpperArm, Part.FrontForearm };
         Material rainbowMaterial;
         Material[] axeBodyMaterials;
-        SpriteRenderer flyingShaft, flyingHead, droppedShaft, droppedHead, frontEye, backEye;
-        float drainFrom = -1, drainSeconds = 1, shockwaveAt = -1, dropAt = -1;
-        Vector2 dropFrom, dropTo;
-        const float ShockwaveSeconds = .7f, ShockwaveRadius = 24, DropSeconds = .4f;
+        SpriteRenderer flyingShaft, flyingHead, frontEye, backEye;
+        float drainFrom = -1, drainSeconds = 1, shockwaveAt = -1;
+        public const float ShockwaveSeconds = 1.25f;
+        const float ShockwaveRadius = 24;
         static readonly Color EyeRed = new Color(1f, .16f, .18f, 1f);
+        bool rising;
+        float kneel;
+        public void RiseFromKneel() => rising = true;
         public bool EyesRed { get; private set; }
-        // Phase two: gold belongs to the punches, red to the eyes; the body stays plain white.
-        static readonly Color PunchGold = new Color32(255, 204, 92, 255);
-        SpriteRenderer frontFist, backFist;
-        FinalBossBoxer boxer;
-
-        public void BindBoxer(FinalBossBoxer value)
-        {
-            if (boxer != null) boxer.Thrown -= GoldBurst;
-            boxer = value;
-            if (boxer != null) boxer.Thrown += GoldBurst;
-        }
-
-        void GoldBurst(FinalBossBoxer.Punch punch, Vector2 fist)
-        {
-            bool heavy = punch == FinalBossBoxer.Punch.Haymaker || punch == FinalBossBoxer.Punch.Uppercut;
-            Vector2 forward = punch == FinalBossBoxer.Punch.Uppercut ? new Vector2(actor.Facing * .35f, 1).normalized : new Vector2(actor.Facing, 0);
-            float angle = Mathf.Atan2(forward.y, forward.x) * Mathf.Rad2Deg;
-            int count = heavy ? 9 : 6;
-            float reach = heavy ? .7f : .42f;
-            for (int i = 0; i < count; i++)
-            {
-                var line = NewLine("PunchSpark", true, 2);
-                Vector2 d = Angle(angle + Mathf.Lerp(-55, 55, i / (float)(count - 1)));
-                SetLine(line, fist + d * .05f, fist + d * reach * Random.Range(.7f, 1f), heavy ? .035f : .026f, PunchGold);
-                AddFlash(line, heavy ? .14f : .10f);
-            }
-        }
         bool FinalAxe => actor != null && actor.Axe != null;
 
         void ConfigureFinalBossLook()
@@ -66,7 +42,11 @@ namespace GoGhost.Duel
             ApplyFinalBossBody(false);
         }
 
-        public void SetFinalBossPhaseTwo() => ApplyFinalBossBody(true);
+        public void SetFinalBossPhaseTwo()
+        {
+            drainFrom = -1;
+            ApplyFinalBossBody(true);
+        }
 
         void ApplyFinalBossBody(bool white)
         {
@@ -94,7 +74,6 @@ namespace GoGhost.Duel
                 if (drained >= 1) { drainFrom = -1; ApplyFinalBossBody(true); }
             }
             UpdateFlyingAxe();
-            UpdateDroppedAxe();
             UpdateShockwave();
         }
 
@@ -102,29 +81,6 @@ namespace GoGhost.Duel
         public void DrainRainbow(float seconds) { drainFrom = clock; drainSeconds = Mathf.Max(.05f, seconds); }
         public void Shockwave() { shockwaveAt = clock; Impact(actor.Position); }
         public void SetEyesRed(bool value) => EyesRed = value;
-
-        public void DropAxe()
-        {
-            dropAt = clock;
-            dropFrom = actor.Position + new Vector2(actor.Facing * .25f, .35f);
-            dropTo = new Vector2(actor.Position.x + actor.Facing * .55f, actor.Position.y - actor.Motor.Size.y * .5f + .05f);
-            if (droppedShaft == null) { droppedShaft = FlyingPart("DroppedAxeShaft"); droppedHead = FlyingPart("DroppedAxeHead"); }
-        }
-
-        void UpdateDroppedAxe()
-        {
-            if (droppedShaft == null || dropAt < 0) return;
-            float t = Mathf.Clamp01((clock - dropAt) / DropSeconds);
-            // Falls with gravity-like easing and settles almost flat on the floor.
-            Vector2 at = Vector2.Lerp(dropFrom, dropTo, t * t);
-            float angle = Mathf.Lerp(72, actor.Facing >= 0 ? -8 : 188, t);
-            Vector2 direction = Angle(angle), blade = new Vector2(direction.y, -direction.x);
-            droppedShaft.enabled = droppedHead.enabled = true;
-            SetFlying(droppedShaft, at, new Vector2(AxeShaft, AxeShaftWidth), angle);
-            SetFlying(droppedHead, at + direction * (AxeShaft * .5f - .08f) + blade * .10f, AxeHeadSize, angle);
-            var color = weaponColor; color.a = .85f;
-            droppedShaft.color = droppedHead.color = color;
-        }
 
         void UpdateShockwave()
         {
@@ -194,7 +150,20 @@ namespace GoGhost.Duel
             p.WeaponAngle = 72;
             p.FrontHand = new Vector2(.22f + wave * motion * .06f, .02f);
             p.BackHand = new Vector2(-.04f - wave * motion * .10f, -.05f);
-            if (axe.Unarmed) { BoxerPose(ref p, wave, motion); return; }
+            kneel = Mathf.MoveTowards(kneel, axe.Transitioning && !rising && actor.Motor.Grounded ? 1 : 0, Time.deltaTime * 2.4f);
+            if (kneel > 0)
+            {
+                p.Hip = Vector2.Lerp(p.Hip, new Vector2(-.05f, -.43f), kneel);
+                p.Chest = Vector2.Lerp(p.Chest, new Vector2(.08f, -.04f), kneel);
+                p.Head = Vector2.Lerp(p.Head, new Vector2(.16f, .14f), kneel);
+                float floor = -actor.Motor.Size.y * .5f + .06f;
+                p.FrontFoot = Vector2.Lerp(p.FrontFoot, new Vector2(.44f, floor), kneel);
+                p.BackFoot = Vector2.Lerp(p.BackFoot, new Vector2(-.48f, floor), kneel);
+                p.FrontHand = Vector2.Lerp(p.FrontHand, new Vector2(.31f, -.18f), kneel);
+                p.BackHand = Vector2.Lerp(p.BackHand, new Vector2(.10f, -.19f), kneel);
+                p.WeaponAngle = 80;
+                return;
+            }
             if (axe.Invading)
             {
                 // Invasion: axe held overhead, free hand reaching toward the player.
@@ -265,87 +234,11 @@ namespace GoGhost.Duel
             }
         }
 
-        // Bare-handed guard with a light bounce, and four wind-ups the player must learn to read.
-        void BoxerPose(ref Pose p, float wave, float motion)
-        {
-            float bounce = Mathf.Abs(Mathf.Sin(clock * 7f)) * .03f;
-            p.Hip.y += bounce; p.Chest.y += bounce; p.Head.y += bounce;
-            Vector2 front = new Vector2(.30f + wave * motion * .03f, .42f + bounce), back = new Vector2(.17f, .47f + bounce);
-            p.FrontHand = front; p.BackHand = back;
-            p.Chest.x += .03f; p.FrontFoot.x = .30f; p.BackFoot.x = -.32f;
-            var b = actor.Axe.Boxer;
-            if (b == null || b.Current == FinalBossBoxer.Punch.None) return;
-            float t = Ease(b.PhaseProgress);
-            bool wind = b.Phase == FinalBossBoxer.Stage.Windup, act = b.Phase == FinalBossBoxer.Stage.Active, rec = b.Phase == FinalBossBoxer.Stage.Recovery;
-            switch (b.Current)
-            {
-                case FinalBossBoxer.Punch.Jab:
-                    // A small pull of the lead fist, then a fast straight with a step.
-                    if (wind) { p.FrontHand = Vector2.Lerp(front, new Vector2(.18f, .40f), t); p.Chest.x += .02f * t; }
-                    else if (act) { p.FrontHand = new Vector2(.66f, .42f); p.Chest.x += .08f; p.FrontFoot.x = .45f; }
-                    else if (rec) p.FrontHand = Vector2.Lerp(new Vector2(.66f, .42f), front, t);
-                    break;
-                case FinalBossBoxer.Punch.Uppercut:
-                    // A deep crouch with the rear fist dropped low, then rising through the head height.
-                    if (wind) { p.Hip.y -= .22f * t; p.Chest.y -= .18f * t; p.Head.y -= .16f * t; p.Chest.x += .05f * t; p.BackHand = Vector2.Lerp(back, new Vector2(.10f, -.02f), t); }
-                    else if (act) { p.BackHand = new Vector2(.40f, .78f); p.Chest.y += .05f; p.Head.y += .04f; }
-                    else if (rec) p.BackHand = Vector2.Lerp(new Vector2(.40f, .78f), back, t);
-                    break;
-                case FinalBossBoxer.Punch.SlipHook:
-                    // Ducking through on the slip, then the rear fist coils wide before the hook.
-                    if (b.Phase == FinalBossBoxer.Stage.Slip) { p.Hip.y -= .12f; p.Chest.y -= .10f; p.Head.y -= .12f; p.Chest.x += .10f; }
-                    else if (wind) { p.BackHand = Vector2.Lerp(back, new Vector2(-.28f, .38f), t); p.Chest.x -= .06f * t; p.Head.x -= .04f * t; }
-                    else if (act) { p.BackHand = new Vector2(.58f, .40f); p.Chest.x += .10f; }
-                    else if (rec) p.BackHand = Vector2.Lerp(new Vector2(.58f, .40f), back, t);
-                    break;
-                case FinalBossBoxer.Punch.Haymaker:
-                    // The rage tell: a long backward twist that shakes, then a lunging overhand.
-                    if (wind)
-                    {
-                        float shake = Mathf.Sin(clock * 60f) * .012f * t;
-                        p.Chest.x -= .16f * t + shake; p.Head.x -= .14f * t + shake; p.Hip.y -= .06f * t;
-                        p.BackHand = Vector2.Lerp(back, new Vector2(-.46f, .48f), t);
-                        p.FrontHand = Vector2.Lerp(front, new Vector2(.36f, .30f), t);
-                        p.FrontFoot.x = .42f; p.BackFoot.x = -.46f;
-                    }
-                    else if (act) { p.BackHand = new Vector2(.74f, .46f); p.Chest.x += .16f; p.Head.x += .12f; p.FrontFoot.x = .48f; }
-                    else if (rec) p.BackHand = Vector2.Lerp(new Vector2(.74f, .46f), back, t);
-                    break;
-            }
-        }
-
-        void PlaceFists(Pose p)
-        {
-            bool show = actor.Axe.Unarmed && !defeated;
-            if (!show) { if (frontFist != null) frontFist.enabled = backFist.enabled = false; return; }
-            if (frontFist == null) { frontFist = BodyPart("FrontFist", Part.FrontForearm); backFist = BodyPart("BackFist", Part.BackForearm); }
-            foreach (var (fist, hand) in new[] { (frontFist, p.FrontHand), (backFist, p.BackHand) })
-            {
-                fist.enabled = true;
-                fist.transform.localPosition = hand; fist.transform.localRotation = Quaternion.identity;
-                Vector2 source = fist.sprite.bounds.size;
-                fist.transform.localScale = new Vector3(.15f / Mathf.Max(.001f, source.x), .15f / Mathf.Max(.001f, source.y), 1);
-                var color = bodyColor; color.a = alpha; fist.color = color;
-            }
-        }
-
-        SpriteRenderer BodyPart(string label, Part above)
-        {
-            var head = parts[(int)Part.Head];
-            var go = new GameObject(label);
-            go.transform.SetParent(transform, false);
-            var sprite = go.AddComponent<SpriteRenderer>();
-            sprite.sprite = head.sprite; sprite.sharedMaterial = parts[(int)above].sharedMaterial;
-            sprite.sortingLayerID = parts[(int)above].sortingLayerID; sprite.sortingOrder = parts[(int)above].sortingOrder + 1;
-            return sprite;
-        }
-
         // Called after the shared pose placement: the axe replaces the sword geometry.
         void ApplyAxe(Pose p)
         {
             PlaceEyes(p);
-            PlaceFists(p);
-            if (actor.Axe.AxeFlying || actor.Axe.Unarmed) { Hide(Part.Weapon); Hide(Part.Sheath); return; }
+            if (actor.Axe.AxeFlying) { Hide(Part.Weapon); Hide(Part.Sheath); return; }
             Vector2 direction = Angle(p.WeaponAngle);
             Place(Part.Weapon, p.FrontHand + direction * (AxeShaft * .5f - AxeGrip), new Vector2(AxeShaft, AxeShaftWidth), p.WeaponAngle);
             Vector2 blade = new Vector2(direction.y, -direction.x);
@@ -421,6 +314,7 @@ namespace GoGhost.Duel
         void AxeTells()
         {
             var axe = actor.Axe;
+            if (axe.PhaseTwo) return;
             if (axe.Invading) { InvasionSignal(axe); return; }
             if (axe.Current == FinalBossAxe.Move.None || axe.Phase == FinalBossAxe.Stage.Recovery) return;
             bool active = axe.Phase == FinalBossAxe.Stage.Active, locked = axe.Phase == FinalBossAxe.Stage.Locked || active;

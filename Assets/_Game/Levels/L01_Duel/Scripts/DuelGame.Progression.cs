@@ -11,7 +11,13 @@ namespace GoGhost.Duel
         public int FinalBossLine { get; private set; }
         public string FinalBossDialogue => DialogueLines[FinalBossLine].text;
         public string FinalBossDialogueSpeaker => DialogueLines[FinalBossLine].key.StartsWith("Handler/") ? "Happy" : "Final Boss";
-        public bool FinalBossChoiceReady => FinalBossLine == DialogueLines.Length - 1;
+        public bool FinalBossChoiceReady { get; private set; }
+        public string PendingDialogue => handler.PendingDialogue;
+        public bool DialogueReady => PendingDialogue != null && !handler.Speaking;
+        public void AcknowledgeDialogue()
+        {
+            if (!Paused && !DeveloperToolsOpen) handler.Acknowledge();
+        }
 
         public void ContinueToWaveTwo()
         {
@@ -24,33 +30,31 @@ namespace GoGhost.Duel
         void StartBossDialogue(DuelPhase dialoguePhase)
         {
             FinalBossLine = 0;
+            FinalBossChoiceReady = false;
             SetPhase(dialoguePhase);
-            handler.PlayLine(DialogueLines[0].key);
+            SpeakBossPage();
         }
 
-        public void AdvanceFinalBossDialogue()
-        {
-            if (Paused || DeveloperToolsOpen || Phase != DuelPhase.BonusOffer || FinalBossChoiceReady) return;
-            PlayNextBossLine();
-        }
+        void SpeakBossPage() => handler.SpeakDialogue(DialogueLines[FinalBossLine].key, FinishBossPage);
 
-        void TickFinalBossIntro()
+        void FinishBossPage()
         {
-            if (handler.Speaking) return;
-            if (FinalBossChoiceReady)
+            if (FinalBossLine + 1 < DialogueLines.Length)
+            {
+                FinalBossLine++;
+                ui.Show();
+                SpeakBossPage();
+            }
+            else if (Phase == DuelPhase.FinalBoss)
             {
                 input.SuppressUiFireUntilRelease();
                 StartCountdown();
-                return;
             }
-            PlayNextBossLine();
-        }
-
-        void PlayNextBossLine()
-        {
-            FinalBossLine++;
-            ui.Show();
-            handler.PlayLine(DialogueLines[FinalBossLine].key);
+            else if (Phase == DuelPhase.BonusOffer)
+            {
+                FinalBossChoiceReady = true;
+                ui.Show();
+            }
         }
 
         public void ChooseBonus(bool enter)

@@ -56,16 +56,18 @@ Apply any author-directed pitch and gain contour to the dry line before the effe
 
 ## Dialogue and progression
 
-The [voice catalog](../../Assets/_Game/Levels/L01_Duel/Resources/VoiceStudioCatalog.json) identifies fixed cues by their stable resource names and supplies the visit dialogue, nickname template, speaker settings and opening delay. Game phase callbacks own progression. Only automatic same-sequence joins use an authored pause. Player-driven Next, Yes and No take effect on input.
+The [voice catalog](../../Assets/_Game/Levels/L01_Duel/Resources/VoiceStudioCatalog.json) identifies fixed cues by their stable resource names and supplies the visit dialogue, nickname template, speaker settings and opening delay. Game phase callbacks own progression. Each dialogue cue holds after playback until the player clicks anywhere. Pulse choreography plays continuously after the player acknowledges the Boss’s final line.
 
 | Cue | When it plays | Replay and interruption |
 |---|---|---|
 | Happy · creation question | One second after the New Game click, while character creation is still open. | Once per New Game. Leaving the page cancels a pending question. |
-| Happy · greeting | Upload prepares an offline whole-sentence nickname greeting on desktop. First configuration plays it, with a fixed recording for empty/unsupported input or synthesis failure. | Once per new character. An early Add Rule click allows the greeting to finish. |
-| Happy · configuration intro / farewell | After the greeting, play the intro if the rule editor has yet to open. First Add Rule cues the farewell. | Opening early skips the pending intro or interrupts an intro already playing. Leaving the first configuration stops the sequence. |
-| Happy · Wave 1 / Wave 2 / Bonus clear | The combat result resolves a genuine victory for the corresponding encounter. | Once at settlement. Result-page input remains available. Testing, defeat and Retry have no new voice trigger. |
-| Final Boss and Happy · Wave 3 intro | Enter Wave 3 plays the Boss challenge followed by Happy’s “Look out!” | Each line finishes before the next cue. Happy’s warning leads straight into the countdown. |
-| Final Boss · Bonus offer | Wave 3 victory starts the two Bonus lines. | Next replaces the current recording. The Bonus question offers Yes / No. |
+| Happy · greeting | Upload prepares an offline whole-sentence nickname greeting on desktop. First configuration plays it, with a fixed recording for empty/unsupported input or synthesis failure. | Once per new character. A click after the greeting advances to the configuration intro. |
+| Happy · configuration intro / farewell | After the greeting is acknowledged, play the intro. First Add Rule cues the farewell. | Each line waits for its own click. Leaving the first configuration stops the sequence. |
+| Happy · Wave 1 / Wave 2 / Bonus clear | The combat result resolves a genuine victory for the corresponding encounter. | Once at settlement. A click acknowledges each result before progression. Testing, defeat and Retry have no new voice trigger. |
+| Final Boss and Happy · Wave 3 intro | Enter Wave 3 plays the Boss challenge followed by Happy’s “Look out!” | A click after each line advances. The second click starts the countdown. |
+| Final Boss · Bonus offer | Wave 3 victory starts the two Bonus lines. | A click after each line advances. The last click reveals Yes / No. |
+
+The phase change opens with two click-held Boss lines. The next click starts the pulse. Happy’s interrupted “E.M...” uses `Handler/EMP` inside that animation.
 
 Pause/F8 follows the game's audio pause. Preserve the active phase, input permissions and metrics boundary when changing a recording. Check [the progression and script](BossEncounters.md), [voice playback](../../Assets/_Game/Levels/L01_Duel/Scripts/HandlerVoice.cs), [nickname generation](../../Assets/_Game/Levels/L01_Duel/Scripts/HandlerSpeech.cs) and [Final Boss page routing](../../Assets/_Game/Levels/L01_Duel/Scripts/DuelGame.Progression.cs) for implementation details.
 

@@ -1,0 +1,21 @@
+{
+  "mode": "Synthesize",
+  "source": "VoiceAuthoring/media/ce49b78b3b08ca59359c16f37a5932e0c196c7e489cdbd350d3573830cca2e41.wav",
+  "reference": "",
+  "text": "I don't need this anymore...",
+  "pronunciations": "",
+  "speed": 1.0,
+  "pitch": 0.0,
+  "gain": 0.0,
+  "melody": 0.0,
+  "stress": 0.0,
+  "timing": 0.0,
+  "edits": [],
+  "independent": false,
+  "overrideTone": false,
+  "electronic": 0.15,
+  "nearDb": 0.0,
+  "spaceDb": 0.0,
+  "bossSub": 0.42,
+  "bossDrive": 1.9
+}

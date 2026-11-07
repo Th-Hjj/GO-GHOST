@@ -154,7 +154,7 @@ namespace GoGhost.Duel
             {
                 Image(page,Vector2.zero,new Vector2(4000,4000),NeuralPalette.Background);
                 Text(game.WaveLabel+" CLEARED",page,new Vector2(0,160),new Vector2(800,90),64,face:headingFont);
-                Button("Continue to Wave 2",page,Vector2.zero,new Vector2(420,68),game.ContinueToWaveTwo).name="ContinueToWaveTwo";
+                if (game.Wave == 1) Button("Continue to Wave 2",page,Vector2.zero,new Vector2(420,68),game.ContinueToWaveTwo).name="ContinueToWaveTwo";
                 return;
             }
             if(game.Phase==DuelPhase.FinalBoss || game.Phase==DuelPhase.BonusOffer)
@@ -215,7 +215,9 @@ namespace GoGhost.Duel
         }
         void LateUpdate()
         {
-            if(game==null||game.DeveloperToolsOpen)return;
+            if (game == null) return;
+            UpdateDialogueOverlay();
+            if (game.DeveloperToolsOpen) return;
             if (RefreshConfigurationLayout()) return;
             UpdateRuleHud();
             UpdateBattleStatus();

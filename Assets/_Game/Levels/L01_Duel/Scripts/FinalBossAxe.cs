@@ -51,7 +51,7 @@ namespace GoGhost.Duel
         readonly Collider2D playerBody;
         readonly float[] readyAt = new float[5];
         readonly List<Vector2> path = new List<Vector2>(BoomerangSamples);
-        float phaseAt, phaseUntil, activeAt, activeEnds, nextDecisionAt, transitionUntil, nextImpact;
+        float phaseAt, phaseUntil, activeAt, activeEnds, nextDecisionAt, transitionUntil;
         float throwOut, throwBack, lockedFacing = 1;
         Vector2 previousAxe, spinCentre;
         bool hitDone, outHit, backHit;
@@ -68,9 +68,6 @@ namespace GoGhost.Duel
         public ConditionalRule LastInvasion { get; private set; }
         public bool Transitioning { get; private set; }
         public bool PhaseTwo { get; private set; }
-        // The scripted phase change drops the axe; the Boss fights bare-handed afterwards.
-        public bool Unarmed { get; private set; }
-        public FinalBossBoxer Boxer { get; private set; }
         bool transitionHeld;
         public bool AxeFlying { get; private set; }
         public Vector2 AxePosition { get; private set; }
@@ -79,7 +76,8 @@ namespace GoGhost.Duel
         public IReadOnlyList<Vector2> Path => path;
         public readonly int[] Started = new int[5], Hits = new int[5];
         public ConditionalController Rules { get; }
-        public bool RulesSealed => PhaseTwo || Transitioning || actor.Health.AwaitingSecondPhase;
+        public bool RulesSealed { get; private set; }
+        public void SealRules() => RulesSealed = true;
 
         public FinalBossAxe(BossAgent owner, PlayerHealth player, System.Action phaseTwo, System.Func<ConditionalRule> invasion)
         {
@@ -93,14 +91,14 @@ namespace GoGhost.Duel
 
         public bool Ready(Move move) => move != Move.None && Time.time >= readyAt[(int)move];
         public bool CanStart(Move move) => move != Move.None && Current == Move.None && !Transitioning
+            && (!PhaseTwo || move == Move.Chop || move == Move.Spin)
             && actor.Running && actor.IsAlive && !actor.Health.AwaitingSecondPhase && actor.Motor.Grounded && Ready(move);
 
         public void Tick()
         {
             // Phase two seals the Boss's rules together with the player's.
-            if (!RulesSealed) Rules.ObserveBossRules();
             if (TickTransition()) return;
-            if (Unarmed) { TickUnarmed(); return; }
+            if (!RulesSealed) Rules.ObserveBossRules();
             if (TickInvasion()) return;
             if (Current != Move.None) { TickMove(); return; }
             var player = actor.Player;
@@ -109,6 +107,17 @@ namespace GoGhost.Duel
             if (PreviewMove != Move.None && TryStart(PreviewMove))
             {
                 PreviewMove = Move.None;
+                return;
+            }
+            if (PhaseTwo)
+            {
+                var seen = actor.Perception.Facts;
+                if (seen.Confidence <= .1f) { actor.Motor.Brake(); return; }
+                Vector2 delta = seen.Position - actor.Position;
+                float gap = Mathf.Abs(delta.x);
+                if (Mathf.Abs(delta.y) < 1.4f && Time.time >= nextDecisionAt && Decide(gap, true)) return;
+                actor.Motor.SetMove(gap > 1.1f ? Mathf.Sign(delta.x) : 0);
+                if (delta.y > 1.4f && gap < 2.6f && actor.Motor.Grounded) actor.Motor.TryJump();
                 return;
             }
             var controls = Rules.ResolveBossLocomotion();
@@ -129,6 +138,7 @@ namespace GoGhost.Duel
         {
             if (level && distance < 2.5f && TryStart(Move.Chop)) return true;
             if (level && distance < 2.2f && TryStart(Move.Spin)) return true;
+            if (PhaseTwo) return false;
             if (distance >= 6.5f && TryStart(Move.Boomerang)) return true;
             if ((distance >= 3.5f || !level) && TryStart(Move.Throw)) return true;
             if (!level && TryStart(Move.Boomerang)) return true;
@@ -139,7 +149,7 @@ namespace GoGhost.Duel
         {
             if (!CanStart(move)) return false;
             var timing = Timings[(int)move];
-            var tuning = game.GetBossMoveTuning(false, (int)move);
+            var tuning = game.GetBossMoveTuning(PhaseTwo, (int)move);
             timing.Prepare = tuning.Windup;
             timing.Cooldown = tuning.Cooldown;
             timing.Recovery = tuning.Recovery;
@@ -234,7 +244,7 @@ namespace GoGhost.Duel
 
         public void Cancel()
         {
-            Boxer?.Cancel();
+            PreviewMove = Move.None;
             if (Invading) { Invading = false; actor.Health.Invulnerable = false; }
             Current = Move.None; Phase = Stage.Idle; AxeFlying = false; AxeSpin = 0; path.Clear();
             nextDecisionAt = Time.time + .5f;
@@ -272,13 +282,12 @@ namespace GoGhost.Duel
             return true;
         }
 
-        // Placeholder until the scripted transition (stage 7): hold, strip the player's rules,
-        // refill the second pool and continue as a white stickman with the same kit.
+        // Hold the spent first pool until the scripted transition releases combat.
         bool TickTransition()
         {
             if (!Transitioning && !PhaseTwo && actor.Health.AwaitingSecondPhase)
             {
-                Cancel(); Transitioning = true; transitionUntil = Time.time + 2.2f; nextImpact = 0;
+                Cancel(); Transitioning = true; transitionUntil = Time.time + 2.2f;
                 // The game's scripted transition holds the Boss until its countdown ends.
                 transitionHeld = onPhaseTwo != null;
                 actor.Motor.HoldHorizontal();
@@ -287,7 +296,6 @@ namespace GoGhost.Duel
             }
             if (!Transitioning) return false;
             actor.Motor.HoldHorizontal();
-            if (!transitionHeld && Time.time >= nextImpact) { nextImpact = Time.time + .45f; actor.View?.Impact(actor.Position); }
             if (transitionHeld || Time.time < transitionUntil) return true;
             actor.Health.BeginSecondPhase();
             Transitioning = false; PhaseTwo = true;
@@ -296,36 +304,17 @@ namespace GoGhost.Duel
             return true;
         }
 
-        public void DropAxe()
-        {
-            if (Unarmed) return;
-            Unarmed = true;
-            Boxer = new FinalBossBoxer(actor, actor.Player);
-            actor.View?.DropAxe();
-            actor.View?.BindBoxer(Boxer);
-        }
-
         public void ReleaseTransition() => transitionHeld = false;
 
-        // Phase-two retry: no transition replay; the White Boxer starts on his full second pool.
+        // Direct retry begins with the white body, red eyes and the axe in hand.
         public void StartInPhaseTwo()
         {
             Cancel();
             actor.Health.SkipToSecondPhase();
             PhaseTwo = true; Transitioning = false; transitionHeld = false;
-            Unarmed = true;
-            Boxer = new FinalBossBoxer(actor, actor.Player);
+            SealRules();
             actor.View?.SetFinalBossPhaseTwo();
             actor.View?.SetEyesRed(true);
-            actor.View?.BindBoxer(Boxer);
-            actor.View?.DropAxe();
-        }
-
-        // Phase two: the White Boxer kit fights bare-handed.
-        void TickUnarmed()
-        {
-            if (PhaseTwo) Boxer?.Tick();
-            else actor.Motor.HoldHorizontal();
         }
 
         void TrackTarget()
@@ -421,7 +410,6 @@ namespace GoGhost.Duel
         // the flying axe is a ranged projectile split into its actual path segments.
         public void Publish(List<BossThreat> output)
         {
-            if (Unarmed) { Boxer?.Publish(output); return; }
             if (Current == Move.None || Phase == Stage.Recovery || Phase == Stage.Idle) return;
             var phase = Phase == Stage.Prepare ? BossThreatPhase.Preparation : Phase == Stage.Locked ? BossThreatPhase.Locked : BossThreatPhase.Active;
             var threat = new BossThreat { ActorId = actor.ActorId, AttackId = attackId, Phase = phase, Origin = actor.Position,

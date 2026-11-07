@@ -4,9 +4,9 @@ Wave 1, Wave 2, Wave 3 and Bonus each use **Body Configuration → Start Testing
 
 ## Final Boss and optional Bonus
 
-Wave 1 victory waits for **Continue to Wave 2**. Defeating Swordsman closes the Wave 2 metrics record and opens Wave 3 configuration with the same character and rules. **Enter Wave 3** stages the real Final Boss in the five-platform arena. Player controls, physics and AI wait during the voiced intro. The Boss says “So you think you stand a chance against me.” Happy replies “Look out!” When her recording ends, the usual three-second countdown starts automatically.
+Wave 1 victory waits for **Continue to Wave 2**. Defeating Swordsman closes the Wave 2 metrics record and opens Wave 3 configuration with the same character and rules. **Enter Wave 3** stages the real Final Boss in the five-platform arena. Player controls, physics and AI wait during the voiced intro. The Boss says “So you think you stand a chance against me.” Happy replies “Look out!” Each recording waits for a screen click. The click after Happy starts the three-second countdown.
 
-**Current source (stage 3 of the redesign below):** the Final Boss is a player-sized stickman built from the Swordsman prefab, with the Alpha rainbow shader on its body and an axe. `FinalBossAxe` replaces the sword tactics with its own AI and four telegraphed moves: Chop, Spin, Throw & Recall and Boomerang. Each move publishes threats: Chop and Spin as melee, the flying axe as ranged. Both health pools are 1000. When the first pool empties, the scripted transition below runs (stage 7). Afterwards `FinalBossBoxer` fights bare-handed as the White Boxer (stage 8, below). Retry and subsequent configuration use the equipped loadout. Walker Grupp's original prototype (commit `719c843`, 2x Swordsman with sword specials) is retired. Trial axe tuning (prepare/lock/active/recovery/cooldown, damage):
+**Current source (stage 3 of the redesign below):** the Final Boss is a player-sized stickman built from the Swordsman prefab, with the Alpha rainbow shader on its body and an axe. `FinalBossAxe` replaces the sword tactics with its own AI and four telegraphed moves: Chop, Spin, Throw & Recall and Boomerang. Each move publishes threats: Chop and Spin as melee, the flying axe as ranged. Both health pools are 1000. When the first pool empties, the scripted transition below runs (stage 7). In the second phase he keeps the axe in hand for Chop and Spin. Retry and subsequent configuration use the equipped loadout. Walker Grupp's original prototype (commit `719c843`, 2x Swordsman with sword specials) is retired. Trial axe tuning (prepare/lock/active/recovery/cooldown, damage):
 
 | Move | Timing (s) | Damage | Shape |
 |---|---|---|---|
@@ -27,7 +27,7 @@ After Wave 3 victory, the Boss voices the two Bonus offer lines. Yes leads to Bo
 
 Thomas accepted this design for trial on 2026-11-06. All nine stages were implemented on 2026-11-06 and replace Walker's prototype. Values marked *trial* are expected to change after playtesting.
 
-**Premise.** The Final Boss trusts AI more than the player does. He fights with Rules and can write rules into the player's system. After losing the first phase, he blames the AI, kills every circuit in the arena and fights bare-handed.
+**Premise.** The Final Boss trusts AI more than the player does. He fights with Rules and can write rules into the player's system. After losing the first phase, he disables the arena’s circuitry and fights with the axe in hand.
 
 **Entry.** Wave 3 configuration leads to Testing. Enter Wave 3 plays the Boss challenge and Happy’s warning, then starts the three-second countdown into phase one.
 
@@ -38,56 +38,23 @@ Thomas accepted this design for trial on 2026-11-06. All nine stages were implem
 - **Axe:** chop, spin, straight throw and recall, and an arcing boomerang. All attacks keep the established tell style. More moves will be added later.
 - **Retired:** Walker's 2x Swordsman body, sword specials and platform destruction.
 
-**F8 tuning.** Under Waves, Start Phase 1 and Start Phase 2 start fresh encounters at the countdown. The Final Boss tuning tab selects an axe move or punch and adjusts its wind-up, recovery, cooldown and damage. An attack snapshots these values when accepted. Try selected move closes F8 and requests the move at its next legal opportunity. Current HP targets the active pool. The 75%, 50% and 25% controls set phase-one HP so the normal invasion checks can run. Tuning lives for this game session and Restore defaults resets it.
+**F8 tuning.** Under Waves, Start Phase 1 and Start Phase 2 start fresh encounters at the countdown. The Final Boss tuning tab selects an axe move available in the chosen phase and adjusts its wind-up, recovery, cooldown and damage. An attack snapshots these values when accepted. Try selected move closes F8 and requests the move at its next legal opportunity. Current HP targets the active pool. The 75%, 50% and 25% controls set phase-one HP so the normal invasion checks can run. Tuning lives for this game session and Restore defaults resets it.
 
 **Invasions.** At 75%, 50% and 25% phase-one health, the Boss stops, becomes invulnerable and plays an invasion animation. Each invasion appends one random legal Condition → Action rule to the end of the player's fight rules, even beyond the 5-rule cap. The equipped loadout is never modified, so Retry and Configuration discard invaded rules. Invasions are Boss abilities, not Boss rules.
 
-### Transition — shockwave and the antique revolver
+### Transition — electromagnetic pulse
 
-**Implemented (stage 7):** `DuelGame.FinalBossTransition` runs the scene inside the fight. Player input is off while the Boss holds his spent first pool.
+After the first health pool is spent, the Boss lands and kneels on one knee. “......” waits for a click. He says “I don't need this anymore...” and waits for another click.
 
-- **Subtitles and voices:** lines appear in a subtitle box between the sidebars. The Boss lines are `FinalBossVoice/Turn1` to `Turn5`, and Happy's warning is `Handler/LookOut`. Their first takes were rendered with the saved Voice Studio settings. The player's line is chosen with two buttons; Thomas's recordings go to `Resources/PlayerVoice/Nostalgic.wav` and `BigPockets.wav`, and the line stays silent until they exist.
-- **Shockwave:** an expanding ring. Both sidebars freeze as dimmed, crossed-out snapshots, the player's rule assistance is removed, the platforms start, and the rainbow drains to Primary white over 1.2 s.
-- **Weapons and eyes:** the dropped axe stays on the floor and the Boss raises his fists. The energy gun clicks (*click*), then the brass antique revolver is drawn. The eyes turn red before "AAARGH!".
-- **Countdown:** the usual three-second countdown slides and fades both sidebars away while the camera widens to the full screen. Pause holds every step.
+1. The pulse expands. Happy starts to say “E.M...” during the animation and is cut off before P.
+2. After the pulse, all five platforms start moving. They have a moment on screen before either sidebar changes.
+3. Both rule lists are sealed. The player loses rule assistance.
+4. The Boss fades from rainbow to white. The white body holds briefly before his eyes light up red.
+5. The Boss rises holding his axe. The three-second countdown brings the player into phase two with the antique revolver. This sequence runs without clicks.
 
-The English lines are drafts.
+### Phase 2 — white axeman
 
-1. Boss: "Stupid AI. I don't need you anymore. I'm better than you, and I'll prove it. Ha ha ha!"
-2. Boss releases an electromagnetic shockwave. Happy shouts "Look out!", then can only say "…" after it passes.
-3. Both rule sidebars dim and every rule is crossed out. **All five platforms start oscillating.** The rainbow drains away, leaving a white stickman like the player.
-4. Boss: "Every last circuit in this arena is dead. Now I'll show you what real strength looks like."
-5. Boss drops the axe and raises his fists. The player aims the energy gun and pulls the trigger; it clicks without firing.
-6. Boss: "Too bad about that little energy gun of yours. Ha ha ha!"
-7. The player puts the energy gun away and draws an antique revolver. The player chooses one of the game's only player lines: "I'm a little nostalgic." or "I have big pockets." Thomas records both. Neither changes the story.
-8. Boss: "…What?" then "AAARGH! Now you've really pissed me off!" His eyes turn red.
-9. During the three-second countdown, the sealed sidebars fade and the camera widens to the full screen. Phase two begins.
-
-**Moving platforms.** From the shockwave onward, each platform oscillates 2.1 units (one tier) above and below its home height. The two inner low platforms reach floor level at the bottom of their travel. *Trial:* a cycle of about 4 s, with adjacent platforms in opposite phase so that a reachable route always exists. Platforms remain one-way and carry the actors standing on them. **Implemented (stage 6):** `PlatformOscillator` drives each stage platform as a kinematic body. Its velocity tracks a sine of 2.1 amplitude and 4 s period. Platforms are ordered left to right and alternate between phase 0 and π, so each one starts from its home height. The floor never moves. Motion starts at the shockwave and stops with the stage layout, so Retry rebuilds static platforms. Pause freezes it. `PlayerMovement` and `BossMotor2D` treat contact with a kinematic carrier that is rising at their own speed as ground. Without such a carrier their grounding is unchanged. The inner platforms reach floor level and lift anyone standing there as they rise.
-
-### Phase 2 — White Boxer
-
-**Implemented (stage 8):** `FinalBossBoxer` presses in at the Swordsman motion speed (7.5) and bobs on his feet. When the player is up on a platform roughly overhead, he jumps after them. Each punch has a pose-only wind-up and lands at most once. No tell lines are drawn; melee threat boxes are still published.
-
-| Punch (trial) | Wind-up / active / recovery (s), cooldown | Damage | Read |
-|---|---|---|---|
-| Jab | .22 / .10 / .25, 0.8 | 12 | small pull of the lead fist, then a straight with a .9 step |
-| Low uppercut | .38 / .12 / .45, 2.2 | 20 | deep crouch with the rear fist low; the hit rises above head height |
-| Slip + hook | slip dash through to the far side, then .30 / .14 / .40, 4.0 | 22 | ducking slip, rear fist coils wide |
-| Rage haymaker | .75 / .14 / .80, 5.0 | 34 | long, shaking backward twist, then a 1.8 lunge |
-
-Gold sparks burst from the fist on each punch (larger for the uppercut and haymaker). Round white fists sit at both hands. Each red eye carries a 0.18 s `TrailRenderer` tail light. Choice in range is weighted: jab 3, slip-hook 2, uppercut 1.5, haymaker 1. The uppercut is preferred when the player is just above him.
-
-- **Fight:** 1000 HP. The player fights fully manually with the antique revolver, which uses the current weapon's stats with a new look. There is no AI assistance and there are no attack tell lines.
-- **Style:** an enraged, fast, light-footed boxer who keeps closing the distance. The player reads his wind-up, weight shift and footwork.
-- **Punches:**
-  - a jab that steps forward;
-  - a low rising uppercut;
-  - a slip to the other side followed by a hook;
-  - a rage haymaker with a clear backward torso twist.
-
-  Each wind-up must be recognizable at combat distance using stickman limb and torso poses.
-- **Look:** a white body with a clear outline, gold punch effects and red eyes. While he moves, each eye leaves a red tail-light trail. The trails never hide his pre-punch body motion.
+The Boss starts with 1000 HP. He uses Chop and Spin in melee range, pursues a raised player and can jump. His axe stays in his hand throughout the phase. Players read his attack poses directly, and his moving eyes leave red trails. The player has full manual control and the antique revolver uses the usual weapon stats.
 
 **Defeat and victory.**
 - Phase-two defeat offers two choices:
@@ -98,7 +65,7 @@ Gold sparks burst from the fist on each punch (larger for the uppercut and hayma
 
 **Implemented (stage 9):**
 - **Defeat page:** the player's health is recorded when the first pool empties. A phase-two defeat then shows **Retry Phase 2** and **Configuration**; a phase-one defeat keeps **Retry** and **Configuration**.
-- **Retry Phase 2:** builds a fresh Wave 3 encounter that skips the intro and the transition. The White Boxer starts on a full second pool (`Enemy.SkipToSecondPhase`) with red eyes and the dropped axe, and the platforms move from the start. The player has the recorded health, the antique revolver, no rule assistance and a full-width camera, followed by the normal countdown. Repeated retries keep the same health.
+- **Retry Phase 2:** builds a fresh Wave 3 encounter that skips the intro and the transition. The Boss starts on a full second pool (`Enemy.SkipToSecondPhase`) with red eyes and the axe in hand, and the platforms move from the start. The player has the recorded health, the antique revolver, no rule assistance and a full-width camera, followed by the normal countdown. Repeated retries keep the same health.
 - **Configuration:** restores the equipped rules and replays Wave 3 from the intro.
 - **Developer shortcut:** **GO GHOST > Playtest > Wave 3 Phase 2** queues a phase-two start at full health.
 

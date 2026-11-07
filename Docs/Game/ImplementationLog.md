@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — Click-paced dialogue and Final Boss transition
+
+- Dialogue cues wait for a fresh click after playback. The Final Boss kneels, holds “......”, then says “I don't need this anymore...”. The next click starts the pulse. Happy’s interrupted “E.M...” plays inside the pulse, followed by platform motion, rule sealing, rainbow loss and red eyes, with a separate hold for each stage.
+- Phase two and its direct retry use the held axe’s Chop and Spin, with the existing manual revolver. The dry fire, weapon swap scene, player choices, Boss replies and boxing attacks were removed from play. The opening remains the Boss challenge and Happy’s “Look out!”.
+- Fast iteration requested. Compilation, Play Mode and listening review were skipped.
+
 ## 2026-11-06 — Wave 3 opening dialogue
 
 - Enter Wave 3 plays the Final Boss’s “So you think you stand a chance against me.” and Happy’s “Look out!” with speaker-labelled subtitles. The three-second countdown starts when Happy finishes. Voice Studio rendered the revised Boss line using his saved voice settings.

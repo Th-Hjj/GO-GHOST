@@ -90,45 +90,23 @@
     },
     {
       "key": "Handler/LookOut",
-      "label": "Wave 3 opening and Final Boss shockwave",
+      "label": "Wave 3 opening warning",
       "bossIntro": true,
       "text": "Look out!",
       "locked": false
     },
     {
       "key": "FinalBossVoice/Turn1",
-      "label": "Phase change 1",
-      "text": "Stupid AI. I don't need you anymore. I'm better than you, and I'll prove it. Ha ha ha!",
+      "label": "Final Boss kneeling",
+      "text": "I don't need this anymore...",
       "locked": false,
       "transition": true
     },
     {
-      "key": "FinalBossVoice/Turn2",
-      "label": "Phase change 2",
-      "text": "Every last circuit in this arena is dead. Now I'll show you what real strength looks like.",
-      "locked": false,
-      "transition": true
-    },
-    {
-      "key": "FinalBossVoice/Turn3",
-      "label": "Phase change 3",
-      "text": "Too bad about that little energy gun of yours. Ha ha ha!",
-      "locked": false,
-      "transition": true
-    },
-    {
-      "key": "FinalBossVoice/Turn4",
-      "label": "Phase change 4",
-      "text": "…What?",
-      "locked": false,
-      "transition": true
-    },
-    {
-      "key": "FinalBossVoice/Turn5",
-      "label": "Phase change 5",
-      "text": "AAARGH! Now you've really pissed me off!",
-      "locked": false,
-      "transition": true
+      "key": "Handler/EMP",
+      "label": "Final Boss electromagnetic pulse",
+      "text": "E.M...",
+      "locked": false
     }
   ]
 }

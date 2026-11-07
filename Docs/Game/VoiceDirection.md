@@ -60,7 +60,7 @@ The [voice catalog](../../Assets/_Game/Levels/L01_Duel/Resources/VoiceStudioCata
 
 | Cue | When it plays | Replay and interruption |
 |---|---|---|
-| Happy · creation question | Half a second after the New Game click, as a voice-only cue while the player draws or types. | Once per New Game. Leaving the page cancels a pending question. |
+| Happy · creation question | 0.3 seconds after the New Game click, as a voice-only cue while the player draws or types. | Once per New Game. Leaving the page cancels a pending question. |
 | Happy · greeting | Upload prepares an offline whole-sentence nickname greeting on desktop. First configuration plays it, with a fixed recording for empty/unsupported input or synthesis failure. | Once per new character. A click after the greeting advances to the configuration intro. |
 | Happy · configuration intro / farewell | After the greeting is acknowledged, play the nine-sentence intro one page at a time. First Add Rule cues the farewell. | Each line waits for its own click. Leaving the first configuration stops the sequence. |
 | Happy · Wave 1 / Wave 2 / Bonus clear | The combat result resolves a genuine victory for the corresponding encounter. | Once at settlement. A click acknowledges each result before progression. Testing, defeat and Retry have no new voice trigger. |

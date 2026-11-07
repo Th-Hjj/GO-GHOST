@@ -1,10 +1,10 @@
 # GO GHOST — Boss Encounters
 
-Wave 1, Wave 2, Wave 3 and Bonus each use **Body Configuration → Start Testing → Test Room**. Back reopens configuration. Defeat offers direct Retry or Configuration and Testing.
+The preparation page offers rule editing and optional **Test Loadout** practice. Each numbered mission also has a **Target Profile**. Back returns from either visit. **Start Mission** fades the preparation page out and reveals the live arena. Defeat offers direct Retry or Configuration.
 
 ## Final Boss and optional Bonus
 
-Wave 1 victory waits for **Continue to Wave 2**. Defeating Swordsman closes the Wave 2 metrics record and opens Wave 3 configuration with the same character and rules. **Enter Wave 3** stages the real Final Boss in the five-platform arena. Player controls, physics and AI wait during the voiced intro. The Boss says “So you think you stand a chance against me.” Happy replies “Look out!” Each line reveals its text alongside the voice. Clicking a partial line reveals it in full. Clicking Happy’s complete line starts the three-second countdown.
+Mission 1 victory waits for **Continue to Mission 2**. Defeating Swordsman closes the Mission 2 metrics record and opens Mission 3 preparation with the same character and rules. **Start Mission** stages the real Final Boss in the five-platform arena. Player controls, physics and AI wait during the voiced intro. The Boss says “So you think you stand a chance against me.” Happy replies “Look out!” Each line reveals its text alongside the voice. Clicking a partial line reveals it in full. Clicking Happy’s complete line starts the three-second countdown.
 
 **Current source (stage 3 of the redesign below):** the Final Boss is a player-sized stickman built from the Swordsman prefab, with the Alpha rainbow shader on its body and an axe. `FinalBossAxe` replaces the sword tactics with its own AI and four telegraphed moves: Chop, Spin, Throw & Recall and Boomerang. Each move publishes threats: Chop and Spin as melee, the flying axe as ranged. Both health pools are 1000. When the first pool empties, the scripted transition below runs (stage 7). In the second phase he keeps the axe in hand for Chop and Spin. Retry and subsequent configuration use the equipped loadout. Walker Grupp's original prototype (commit `719c843`, 2x Swordsman with sword specials) is retired. Trial axe tuning (prepare/lock/active/recovery/cooldown, damage):
 
@@ -21,7 +21,7 @@ Preparation tracks the target and Lock freezes the attack. The boss stands still
 
 **Invasions (stage 5, implemented):** at 75%, 50% and 25% of the first pool, the Boss finishes his current move and lands. He then stands invulnerable for 1.8 s (`Enemy.Invulnerable`), holds the axe overhead and sends a flickering signal into the player. At 1.4 s, `FinalBossInvasion` draws one rule at random from the 203 legal one-condition/one-action rules in the editor catalog. The rule is appended after the player's last rule in a fight-only copy of the loadout, beyond the five-rule cap, and the rules are rebound. The new card pulses for 1.6 s. Thresholds crossed by one hit queue their invasions one after another. Rebinding resets the event state of the player's existing rules once per invasion. The equipped loadout is never modified, so Retry and Configuration start without invaded rules.
 
-After Wave 3 victory, the Boss voices the two Bonus offer lines. Yes leads to Bonus configuration and Testing, No to the menu. The duo retains its geometry, music, AI and both-dead victory. Wave 3 and Bonus are outside the closed Wave 2 metrics record.
+After Wave 3 victory, the Boss voices the two Bonus offer lines. Yes leads to Bonus preparation, No to the menu. The duo retains its geometry, music, AI and both-dead victory. Wave 3 and Bonus are outside the closed Wave 2 metrics record.
 
 ## Final Boss redesign — approved for trial 2026-11-06
 
@@ -29,7 +29,7 @@ Thomas accepted this design for trial on 2026-11-06. All nine stages were implem
 
 **Premise.** The Final Boss trusts AI more than the player does. He fights with Rules and can write rules into the player's system. After losing the first phase, he disables the arena’s circuitry and fights with the axe in hand.
 
-**Entry.** Wave 3 configuration leads to Testing. Enter Wave 3 plays the Boss challenge and Happy’s warning, then starts the three-second countdown into phase one.
+**Entry.** Mission 3 preparation offers Test Loadout. Start Mission plays the Boss challenge and Happy’s warning, then starts the three-second countdown into phase one.
 
 ### Phase 1 — Rainbow Axeman
 
@@ -48,7 +48,7 @@ After the first health pool is spent, the Boss lands and kneels on one knee. “
 
 1. The pulse expands. Happy starts to say “E.M...” during the animation and is cut off before P.
 2. After the pulse, all five platforms start moving. They have a moment on screen before either sidebar changes.
-3. Both rule lists are sealed. The player loses rule assistance.
+3. Both rule lists lose their action colors. The condition-to-action arrows disconnect and **SEALED** appears once under each sidebar heading. The player loses rule assistance.
 4. The Boss fades from rainbow to white. The white body holds briefly before his eyes light up red.
 5. The Boss rises holding his axe. The three-second countdown brings the player into phase two with the antique revolver. This sequence runs without clicks.
 
@@ -91,7 +91,7 @@ Swordsman enters Unbound once at **33% remaining health**, at the existing idle 
 
 ## Training robot override — 2026-10-24
 
-The training robot starts with 200 HP. On death it returns with full health after three combat seconds at the initial spawn captured for that attempt, even if the player is near that position. Pause freezes the timer. Leaving Testing via Back or Enter Wave cancels pending respawns. Patrol, attacks, player recovery and numbered-wave Boss profiles are unchanged.
+The training robot starts with 200 HP. On death it returns with full health after three combat seconds at the initial spawn captured for that attempt, even if the player is near that position. Pause freezes the timer. Leaving Test Loadout via Back cancels pending respawns. Patrol, attacks, player recovery and numbered-wave Boss profiles are unchanged.
 
 Player-control authority: [ConditionalRules.md](ConditionalRules.md), Thomas 2026-10-15. Five conditional operations replace permanent module AI and the old autonomous Legs policy. Build/release scope follows the current request. This file retains Boss combat. Boss foundation: Thomas's **2026-10-05 solo Boss pressure / gunner mobility upgrade**, including his correction that Drop Cut pushes the player while the sword keeps its locked landing. It extends Optical Camo, Player Legs Platform Use + Light Duo and the focused Boss pressure pass. This specification records confirmed scope and implemented source. Runtime checks and limits belong in [ImplementationLog.md](ImplementationLog.md); controlled fixtures do not prove balance or a normal all-AI result.
 

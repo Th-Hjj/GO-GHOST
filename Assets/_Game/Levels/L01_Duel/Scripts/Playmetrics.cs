@@ -151,8 +151,10 @@ public static class PlayMetrics
         else switch (stage)
         {
             case DuelPhase.CharacterCreation: run.creationSeconds += elapsed; break;
+            case DuelPhase.TargetProfile:
             case DuelPhase.Configure: run.configurationSeconds += elapsed; break;
             case DuelPhase.Training: run.trainingSeconds += elapsed; break;
+            case DuelPhase.MissionEntry:
             case DuelPhase.Prepare: run.preparationSeconds += elapsed; break;
             case DuelPhase.Fight: run.fightSeconds += elapsed; break;
             default: run.resultSeconds += elapsed; break;

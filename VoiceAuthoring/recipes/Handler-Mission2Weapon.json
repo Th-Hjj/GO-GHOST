@@ -1,0 +1,21 @@
+{
+  "mode": "Synthesize",
+  "source": "VoiceAuthoring/media/1b488eba4a701577db363a29f1783f9f30bfbe6ff1ca9576714a58bbbdc9d985.wav",
+  "reference": "",
+  "text": "Weapon, Sword.",
+  "pronunciations": "",
+  "speed": 1.0,
+  "pitch": 0.0,
+  "gain": 0.0,
+  "melody": 0.0,
+  "stress": 0.0,
+  "timing": 0.0,
+  "edits": [],
+  "independent": false,
+  "overrideTone": false,
+  "electronic": 0.15,
+  "nearDb": 0.0,
+  "spaceDb": 0.0,
+  "bossSub": 0.42,
+  "bossDrive": 1.9
+}

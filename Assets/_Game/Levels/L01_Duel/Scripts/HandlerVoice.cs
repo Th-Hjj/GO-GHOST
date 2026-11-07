@@ -15,6 +15,10 @@ namespace GoGhost.Duel
         CancellationTokenSource pendingGreeting;
         const string TutorialIntro = "Handler/TutorialIntro", TutorialGoodbye = "Handler/TutorialGoodbye";
         bool tutorialActive, openedRule;
+        bool suspended;
+        AudioClip interruptedClip;
+        int interruptedSample;
+        float suspendedAt;
         public string PendingDialogue { get; private set; }
         internal string SpeakerName { get; private set; } = "???";
         internal void ResetSpeakerName() => SpeakerName = "???";
@@ -43,11 +47,11 @@ namespace GoGhost.Duel
             WaitForClick(VoiceStudioCatalog.Current.Find(key).text, advance);
         }
 
-        internal void Acknowledge()
+        internal void Acknowledge(bool waitForVoice)
         {
             if (PendingDialogue == null || Time.frameCount == dialogueFrame) return;
             dialogueFrame = Time.frameCount;
-            if (!DialogueReady)
+            if (!DialogueReady || waitForVoice && Speaking)
             {
                 revealed = true;
                 return;
@@ -121,15 +125,43 @@ namespace GoGhost.Duel
 
         internal void LeaveConfiguration()
         {
-            if (tutorialActive) Stop();
+            if (tutorialActive || suspended || PendingDialogue != null) Stop();
+        }
+
+        internal void SuspendConfiguration(bool value)
+        {
+            if (suspended == value) return;
+            suspended = value;
+            if (value)
+            {
+                suspendedAt = Time.time;
+                if (speaker.isPlaying)
+                {
+                    interruptedClip = speaker.clip;
+                    interruptedSample = speaker.timeSamples;
+                }
+                speaker.Stop();
+                speaker.clip = null;
+            }
+            else
+            {
+                revealStart += Time.time - suspendedAt;
+                if (interruptedClip != null)
+                {
+                    speaker.clip = interruptedClip;
+                    speaker.timeSamples = Mathf.Clamp(interruptedSample, 0, interruptedClip.samples-1);
+                    speaker.Play();
+                    interruptedClip = null;
+                }
+            }
         }
 
         IEnumerator ConfigurationTutorial(Action installExample)
         {
-            while (PendingDialogue != null) yield return null;
+            while (suspended || PendingDialogue != null) yield return null;
             ReleaseGreeting();
             SpeakSequence(TutorialIntro, installExample: installExample);
-            while (PendingDialogue != null || !openedRule || AudioListener.pause) yield return null;
+            while (suspended || PendingDialogue != null || !openedRule || AudioListener.pause) yield return null;
             SpeakSequence(TutorialGoodbye, () => tutorialActive = false);
         }
 
@@ -205,6 +237,8 @@ namespace GoGhost.Duel
 
         public void Stop()
         {
+            suspended = false;
+            interruptedClip = null;
             tutorialActive = false;
             PendingDialogue = null;
             afterDialogue = null;

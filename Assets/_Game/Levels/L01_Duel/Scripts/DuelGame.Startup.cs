@@ -52,6 +52,7 @@ namespace GoGhost.Duel
                     if (clip == null) { FailStartup("Missing voice line " + line); yield break; }
                     handler.CacheLine(line, clip);
                 }
+                if (voiceLines[i].profileMission > 0) preparationVoice.CacheLine(line, clip);
                 clips.Add(clip);
                 SetStartupProgress(.05f + .2f * (i + 1) / voiceCount);
             }

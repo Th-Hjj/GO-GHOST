@@ -241,8 +241,9 @@ namespace GoGhost.Duel.EditorTools
                 {
                     AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
                     VoiceStudioCatalog.Reload();
-                    var game = FindAnyObjectByType<HandlerVoice>();
-                    if (game != null) game.RefreshStudioClips();
+                    var game = FindAnyObjectByType<DuelGame>();
+                    if (game != null)
+                        foreach (var voice in game.GetComponents<HandlerVoice>()) voice.RefreshStudioClips();
                     savedNotice = action == "undo" ? "已撤回最近一次保存。" : "已保存到游戏。";
                     reloadAfter = true;
                     return;

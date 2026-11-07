@@ -17,29 +17,26 @@ namespace GoGhost.Duel
         TMP_Text[] policeHealth = System.Array.Empty<TMP_Text>();
         UnityEngine.UI.Image[] policeFill = System.Array.Empty<UnityEngine.UI.Image>();
         UnityEngine.UI.Image playerFill;
-        RectTransform trainingBack, trainingContinue;
+        RectTransform trainingBack;
 
         void BuildTrainingButtons()
         {
             var parent = battleUi != null ? battleUi : page;
-            trainingBack = Button("← Back", parent, Vector2.zero, new Vector2(150, 48), game.BackFromTraining).GetComponent<RectTransform>();
+            trainingBack = ConfigButton("← Back", "← Back", parent, Vector2.zero, new Vector2(128, 48), game.BackFromTraining, style:DuelControlStyle.Navigation).GetComponent<RectTransform>();
             trainingBack.anchorMin = trainingBack.anchorMax = trainingBack.pivot = new Vector2(0, 1);
-            trainingBack.anchoredPosition = new Vector2(24, -24);
-            string enterLabel = game.Wave == DuelGame.BonusWave ? "Enter Bonus Wave" : "Enter Wave " + game.Wave;
-            trainingContinue = Button(enterLabel, parent, Vector2.zero, new Vector2(230, 48), game.ContinueFromTraining).GetComponent<RectTransform>();
-            trainingContinue.anchorMin = trainingContinue.anchorMax = trainingContinue.pivot = new Vector2(1, 0);
-            trainingContinue.anchoredPosition = new Vector2(-24, 24);
+            trainingBack.anchoredPosition = new Vector2(32, -32);
+            dialogueExits.Add(trainingBack);
             // Pause's backdrop belongs to Page. Keep the same navigation available above it.
-            if (game.Paused) parent.SetAsLastSibling();
+            if (game.Paused) trainingBack.SetParent(page, true);
         }
 
         public bool TrainingOwnsPointer()
         {
+            if (game.PendingDialogue != null) return true;
             var mouse = UnityEngine.InputSystem.Mouse.current;
             if (mouse == null) return false;
             var point = mouse.position.ReadValue();
-            return trainingBack != null && RectTransformUtility.RectangleContainsScreenPoint(trainingBack, point)
-                || trainingContinue != null && RectTransformUtility.RectangleContainsScreenPoint(trainingContinue, point);
+            return trainingBack != null && RectTransformUtility.RectangleContainsScreenPoint(trainingBack, point);
         }
         public void Initialize(DuelGame game, TMP_FontAsset font, TMP_FontAsset controlFont=null,
             TMP_FontAsset headingFont=null, TMP_FontAsset numericFont=null)
@@ -81,14 +78,14 @@ namespace GoGhost.Duel
         {
             var r=Rect("Fill",parent,pos,size); var img=r.gameObject.AddComponent<UnityEngine.UI.Image>(); img.color=color; img.raycastTarget=false; return img;
         }
-        UnityEngine.UI.Button Button(string title,Transform parent,Vector2 pos,Vector2 size,UnityEngine.Events.UnityAction click,bool selected=false)
+        UnityEngine.UI.Button Button(string title,Transform parent,Vector2 pos,Vector2 size,UnityEngine.Events.UnityAction click,bool selected=false,DuelControlStyle style=DuelControlStyle.Standard)
         {
             var r=Rect(title,parent,pos,size); var image=r.gameObject.AddComponent<UnityEngine.UI.Image>();
             image.color=NeuralPalette.Panel; image.raycastTarget=true;
             var b=r.gameObject.AddComponent<UnityEngine.UI.Button>(); b.targetGraphic=image; b.onClick.AddListener(click);
             var c=b.colors; c.normalColor=Color.white; c.highlightedColor=Color.white; c.selectedColor=Color.white; c.disabledColor=Color.white; c.pressedColor=NeuralPalette.Secondary; b.colors=c;
             var t=Text(title,r,Vector2.zero,size,24,face:controlFont);
-            var outline=r.gameObject.AddComponent<DuelButtonOutline>();outline.Persistent=selected;outline.Button=b;outline.Label=t;
+            var outline=r.gameObject.AddComponent<DuelButtonOutline>();outline.Persistent=selected;outline.Style=style;outline.Button=b;outline.Label=t;
             outline.Edges=new UnityEngine.UI.Image[4];
             for(int i=0;i<4;i++)
             {
@@ -114,8 +111,10 @@ namespace GoGhost.Duel
             openingCaption = null;
             if(page!=null){page.gameObject.SetActive(false);Destroy(page.gameObject);}
             page=Rect("Page",canvas,Vector2.zero,new Vector2(1600,900));
+            pageControls=page.gameObject.AddComponent<CanvasGroup>();
             developerFields.Clear();
-            trainingBack=trainingContinue=null;
+            dialogueExits.Clear();
+            trainingBack=null;
             ClearRuleHud();BuildRuleHud();UpdateBattleLayout();
             playerHealth=null; playerFill=null;
             preparationCount=null; waveTitle=null; lastPreparationCount=-1;
@@ -126,22 +125,25 @@ namespace GoGhost.Duel
                 if(ruleSidebar!=null)ruleSidebar.gameObject.SetActive(false);
                 BuildDeveloperTools();return;
             }
-            if(game.Phase==DuelPhase.Menu||game.Phase==DuelPhase.Configure||game.Phase==DuelPhase.CharacterCreation)
+            if(game.Phase==DuelPhase.Menu||game.Phase==DuelPhase.Configure||game.Phase==DuelPhase.CharacterCreation||game.Phase==DuelPhase.TargetProfile)
                 Image(page,Vector2.zero,new Vector2(4000,4000),NeuralPalette.Background);
+            if(game.Phase==DuelPhase.TargetProfile){BuildTargetProfile();return;}
+            if(game.Phase==DuelPhase.MissionEntry)return;
             if(game.Paused)
             {
                 Image(page,Vector2.zero,new Vector2(4000,4000),new Color(0,0,0,.88f));
-                Button("Resume",page,new Vector2(0,90),new Vector2(360,65),()=>game.SetPause(false));
+                Image(page,new Vector2(0,-90),new Vector2(360,65),NeuralPalette.Background);
+                Button("Resume",page,new Vector2(0,90),new Vector2(360,65),()=>game.SetPause(false),style:DuelControlStyle.Primary);
                 Button("Configuration",page,Vector2.zero,new Vector2(360,65),game.Reconfigure);
-                Button("Main Menu",page,new Vector2(0,-90),new Vector2(360,65),game.MainMenu);
+                Button("Main Menu",page,new Vector2(0,-90),new Vector2(360,65),game.MainMenu,style:DuelControlStyle.Navigation);
                 if(game.Phase==DuelPhase.Training)BuildTrainingButtons();
-                if(ruleSidebar!=null)ruleSidebar.SetAsLastSibling();return;
+                return;
             }
             if(game.Phase==DuelPhase.Menu)
             {
-                Text("GO GHOST",page,new Vector2(0,150),new Vector2(1000,120),78,face:headingFont);
-                Button("New Game",page,Vector2.zero,new Vector2(350,68),game.NewGame);
-                Button("Quit",page,new Vector2(0,-95),new Vector2(350,68),Application.Quit); return;
+                Text("GO GHOST",page,new Vector2(0,116),new Vector2(1000,120),78,face:headingFont);
+                Button("New Game",page,Vector2.zero,new Vector2(350,68),game.NewGame,style:DuelControlStyle.Primary);
+                Button("Quit",page,new Vector2(0,-80),new Vector2(350,56),Application.Quit,style:DuelControlStyle.Navigation); return;
             }
             if(game.Phase==DuelPhase.CharacterCreation)
             {
@@ -155,8 +157,8 @@ namespace GoGhost.Duel
             if(game.Phase==DuelPhase.Between)
             {
                 Image(page,Vector2.zero,new Vector2(4000,4000),NeuralPalette.Background);
-                Text(game.WaveLabel+" CLEARED",page,new Vector2(0,160),new Vector2(800,90),64,face:headingFont);
-                if (game.Wave == 1) Button("Continue to Wave 2",page,Vector2.zero,new Vector2(420,68),game.ContinueToWaveTwo).name="ContinueToWaveTwo";
+                Text(game.WaveLabel+" CLEARED",page,new Vector2(0,112),new Vector2(800,90),64,face:headingFont);
+                if (game.Wave == 1) Button("Continue to Mission 2",page,Vector2.zero,new Vector2(420,68),game.ContinueToWaveTwo,style:DuelControlStyle.Primary).name="ContinueToWaveTwo";
                 return;
             }
             if(game.Phase==DuelPhase.FinalBoss || game.Phase==DuelPhase.BonusOffer)
@@ -166,30 +168,31 @@ namespace GoGhost.Duel
             if(game.Phase==DuelPhase.Failed || game.Phase==DuelPhase.Complete)
             {
                 Image(page,Vector2.zero,new Vector2(4000,4000),new Color(0,0,0,.86f));
-                Text(game.Phase==DuelPhase.Failed?"DEFEAT":"COMPLETE",page,new Vector2(0,160),new Vector2(800,90),64,face:headingFont);
+                Text(game.Phase==DuelPhase.Failed?"DEFEAT":"COMPLETE",page,new Vector2(0,112),new Vector2(800,90),64,face:headingFont);
                 if(game.CanRetryFinalBossPhaseTwo)
                 {
                     // Phase-two defeat: retry phase two directly, or restart from configuration.
-                    Button("Retry Phase 2",page,Vector2.zero,new Vector2(360,65),game.RetryFinalBossPhaseTwo).name="RetryPhaseTwo";
+                    Button("Retry Phase 2",page,Vector2.zero,new Vector2(360,65),game.RetryFinalBossPhaseTwo,style:DuelControlStyle.Primary).name="RetryPhaseTwo";
                     Button("Configuration",page,new Vector2(0,-90),new Vector2(360,65),game.Reconfigure).name="Reconfigure";
                 }
                 else if(game.Phase==DuelPhase.Failed)
                 {
-                    Button("Retry",page,Vector2.zero,new Vector2(360,65),game.RetryFight);
+                    Button("Retry",page,Vector2.zero,new Vector2(360,65),game.RetryFight,style:DuelControlStyle.Primary);
                     Button("Configuration",page,new Vector2(0,-90),new Vector2(360,65),game.Reconfigure).name="Reconfigure";
                 }
                 else
                 {
-                    Button("Restart",page,Vector2.zero,new Vector2(360,65),game.NewGame);
-                    Button("Main Menu",page,new Vector2(0,-90),new Vector2(360,65),game.MainMenu);
+                    Button("Restart",page,Vector2.zero,new Vector2(360,65),game.NewGame,style:DuelControlStyle.Primary);
+                    Button("Main Menu",page,new Vector2(0,-90),new Vector2(360,65),game.MainMenu,style:DuelControlStyle.Navigation);
                 }
                 return;
             }
             var hud=battleUi!=null?battleUi:page;
             if(game.Phase==DuelPhase.Training)
-                Text("TESTING",hud,new Vector2(0,400),new Vector2(280,36),30,face:headingFont);
+                Text("TEST LOADOUT",hud,new Vector2(0,400),new Vector2(320,36),24,face:controlFont).color=NeuralPalette.Secondary;
             else if(game.Phase==DuelPhase.Prepare || game.Phase==DuelPhase.Fight && game.FightClock<WaveTitleFadeSeconds)
-                waveTitle=Text(game.WaveLabel,hud,new Vector2(0,400),new Vector2(320,36),30,face:headingFont);
+                waveTitle=Text(game.WaveLabel,hud,new Vector2(0,400),new Vector2(320,36),27,face:headingFont);
+            if(waveTitle!=null)waveTitle.color=NeuralPalette.Secondary;
             policeHealth = new TMP_Text[game.Bosses.Count];
             policeFill = new UnityEngine.UI.Image[game.Bosses.Count];
             bossHealthText = new HealthTextState[game.Bosses.Count];
@@ -228,6 +231,7 @@ namespace GoGhost.Duel
             if (game == null) return;
             UpdateDialogueOverlay();
             if (game.DeveloperToolsOpen) return;
+            if (game.Phase==DuelPhase.TargetProfile && profileResolution != new Vector2Int(Screen.width,Screen.height)) {Show();return;}
             if (RefreshConfigurationLayout()) return;
             UpdateRuleHud();
             UpdateBattleStatus();
@@ -283,10 +287,12 @@ namespace GoGhost.Duel
                 Subtle&&!TextRegion&&!hovered&&!focused?NeuralPalette.Secondary:NeuralPalette.Primary;
             if(Selection!=null)
             {
-                Selection.enabled=available&&Persistent;
+                bool primaryFocus=Style==DuelControlStyle.Primary&&focused;
+                Selection.enabled=available&&(Persistent||primaryFocus);
+                Selection.color=primaryFocus?NeuralPalette.Panel:NeuralPalette.Primary;
                 if(Style!=DuelControlStyle.Standard)
                 {
-                    Selection.rectTransform.anchoredPosition=new Vector2(2,0);
+                    Selection.rectTransform.anchoredPosition=new Vector2(primaryFocus?8:2,0);
                     Selection.rectTransform.sizeDelta=new Vector2(2,Mathf.Max(18,((RectTransform)transform).rect.height-24));
                 }
             }

@@ -75,6 +75,7 @@ namespace GoGhost.Duel
 
         void BuildCharacterCreation()
         {
+            page.sizeDelta=canvas.rect.size;
             startupFill = null;
             startupError = null;
             Text("Who Are You", page, new Vector2(0, 350), new Vector2(640, 60), 30, face:headingFont);
@@ -84,7 +85,7 @@ namespace GoGhost.Duel
             image.color = CharacterAppearance.Tint;
             image.raycastTarget = true;
             face.gameObject.AddComponent<CharacterFaceCanvas>().Initialize(game.Appearance);
-            ConfigButton("ClearFace", "Clear", page, new Vector2(300, 65), new Vector2(140, 52), game.Appearance.Clear, style:DuelControlStyle.Tool);
+            ConfigButton("ClearFace", "Clear", page, new Vector2(250, 65), new Vector2(96, 52), game.Appearance.Clear, style:DuelControlStyle.Tool);
 
             var box = Rect("CharacterName", page, new Vector2(0, -230), new Vector2(440, 60));
             var background = box.gameObject.AddComponent<Image>(); background.color = NeuralPalette.Panel;
@@ -113,8 +114,8 @@ namespace GoGhost.Duel
             input.textComponent = (TextMeshProUGUI)text; input.placeholder = placeholder;
             input.text = game.Appearance.Name;
             input.onValueChanged.AddListener(value => { game.Appearance.Name = value; PlayMetrics.SetName(value); });
-            characterStart = ConfigButton("CreateCharacterContinue", "Upload", page, new Vector2(0, -340), new Vector2(240, 60), game.StartGame, style:DuelControlStyle.Primary);
-            ConfigButton("CreateCharacterBack", "Back", page, new Vector2(-680, 370), new Vector2(120, 48), game.MainMenu, style:DuelControlStyle.Navigation);
+            characterStart = ConfigButton("CreateCharacterContinue", "Upload", page, new Vector2(0, -310), new Vector2(240, 60), game.StartGame, style:DuelControlStyle.Primary);
+            ConfigButton("CreateCharacterBack", "← Back", page, new Vector2(-page.rect.width/2+96,page.rect.height/2-56), new Vector2(128, 48), game.MainMenu, style:DuelControlStyle.Navigation);
             if (game.StartupFailed)
                 startupError = Text("Couldn't load the game. Please try again.", page, new Vector2(0, -398), new Vector2(680, 40), 22);
             if (game.StartupProgress >= 0) ShowStartupProgress(game.StartupProgress);
@@ -125,7 +126,7 @@ namespace GoGhost.Duel
             if (startupFill == null)
             {
                 UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
-                var group = page.gameObject.AddComponent<CanvasGroup>();
+                var group = pageControls;
                 group.interactable = false;
                 group.blocksRaycasts = false;
                 page.GetComponentInChildren<CharacterFaceCanvas>().enabled = false;
@@ -137,7 +138,7 @@ namespace GoGhost.Duel
                 var track = Image(bar, new Vector2(0, -23), new Vector2(bar.sizeDelta.x, 8), NeuralPalette.ControlBorder);
                 startupFill = Image(track.transform, Vector2.zero, Vector2.zero, NeuralPalette.Primary).rectTransform;
                 startupFill.anchorMin = Vector2.zero;
-                startupLabel = Text("", bar, new Vector2(0, 4), bar.sizeDelta, 24, face:controlFont);
+                startupLabel = Text("", bar, new Vector2(0, 4), bar.sizeDelta, 22, face:numericFont);
                 displayedPercent = -1;
             }
             int percent = Mathf.FloorToInt(Mathf.Clamp01(progress) * 100f);

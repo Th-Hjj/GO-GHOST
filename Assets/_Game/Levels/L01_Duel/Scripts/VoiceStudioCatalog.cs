@@ -9,6 +9,8 @@ namespace GoGhost.Duel
     public sealed class VoiceStudioLine
     {
         public string key, label, text;
+        public int profileMission;
+        public string profileField, profileValue;
         // transition: Final Boss phase-change lines, played by the scripted transition rather than the intro pages.
         public bool locked, transcribed, bossIntro, bonusOffer, transition;
     }

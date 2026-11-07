@@ -1,0 +1,21 @@
+{
+  "mode": "Synthesize",
+  "source": "VoiceAuthoring/media/e8cac78f5edca44693789a7ff2b3cdac700f4770f73a314ed120ea4349a37fd6.wav",
+  "reference": "",
+  "text": "Codename, Gunner.",
+  "pronunciations": "codename k ˈ O d n ˌ A m",
+  "speed": 1.0,
+  "pitch": 0.0,
+  "gain": 0.0,
+  "melody": 0.0,
+  "stress": 0.0,
+  "timing": 0.0,
+  "edits": [],
+  "independent": false,
+  "overrideTone": false,
+  "electronic": 0.15,
+  "nearDb": 0.0,
+  "spaceDb": 0.0,
+  "bossSub": 0.42,
+  "bossDrive": 1.9
+}

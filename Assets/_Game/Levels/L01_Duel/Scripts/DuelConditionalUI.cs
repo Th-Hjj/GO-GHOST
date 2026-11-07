@@ -54,6 +54,7 @@ namespace GoGhost.Duel
         public int SelectedOperation => (int)(string.IsNullOrEmpty(pendingRule?.Action)
             ?ControlOperation.Aim:ConditionalCatalog.Response(pendingRule.Action).Operation);
         public bool ConfigurationReady => !helpOpen && pendingRule == null && selectorRow < 0 && ConditionalCatalog.IsValid(game.DraftLoadout);
+        internal bool OnPreparationOverview => !helpOpen && selectorRow < 0;
 
         string ScrollKey(string name) => name=="EquippedRules"?name:name+"/"+builtSelector;
         void CaptureConfigurationView()
@@ -227,8 +228,13 @@ namespace GoGhost.Duel
             float top = height / 2 - 32, bottom = -height / 2 + 32;
             bool editing=selectorRow>=0;
             float editorTop = top - (editing?176:64);
-            float editorBottom = bottom+80;
-            Text("Body Configuration",page,new Vector2(0,top-22),new Vector2(360,44),30,TextAlignmentOptions.Center,headingFont);
+            float editorBottom = bottom+(editing?120:108);
+            if (editing) Text("Body Configuration",page,new Vector2(0,top-22),new Vector2(400,44),30,TextAlignmentOptions.Center,headingFont);
+            else
+            {
+                Text(game.Wave == DuelGame.BonusWave ? "Bonus" : "Mission " + game.Wave,page,new Vector2(left+200,top-22),new Vector2(400,44),40,TextAlignmentOptions.Left,headingFont);
+                Image(page,new Vector2(0,top-58),new Vector2(right-left,1),NeuralPalette.Border);
+            }
             float available=right-left-48;
             float bodyWidth=Mathf.Clamp(available*.16f,200,256);
             float selectorLeft=left+bodyWidth+24;
@@ -236,6 +242,7 @@ namespace GoGhost.Duel
             float selectorWidth=(right-selectorLeft-columnGap)/2;
             float actionLeft=selectorLeft+selectorWidth+columnGap;
             float listLeft=editing?actionLeft:selectorLeft;
+            float listRight=editing?right:right-Mathf.Clamp(width*.23f,248,370)-32;
             if(editing)
                 BuildRulePreview(selectorLeft,selectorLeft+selectorWidth,actionLeft,right,top-112);
             else
@@ -245,8 +252,8 @@ namespace GoGhost.Duel
             bodyPreview=Rect("BodyPreview",page,new Vector2(left+bodyWidth/2,(top-64+editorBottom)/2),new Vector2(bodyWidth,top-64-editorBottom));
             ruleEditor = Rect("RuleEditor", page, new Vector2(selectorLeft + selectorWidth / 2, (editorTop + editorBottom) / 2),
                 new Vector2(selectorWidth, editorTop - editorBottom));
-            ruleList = Rect("RuleList", page, new Vector2((listLeft + right) / 2, (editorTop + editorBottom) / 2),
-                new Vector2(right - listLeft, editorTop - editorBottom));
+            ruleList = Rect("RuleList", page, new Vector2((listLeft + listRight) / 2, (editorTop + editorBottom) / 2),
+                new Vector2(listRight - listLeft, editorTop - editorBottom));
             ruleEditor.gameObject.SetActive(editing);
             BuildConfigurationBody();
             if (editing)
@@ -532,21 +539,34 @@ namespace GoGhost.Duel
             float w=ruleList.sizeDelta.x,h=ruleList.sizeDelta.y;
             const float gap = 16;
             float buttonWidth=Mathf.Min(256,(w-gap)/2);
-            dialogueFooterRightInset = page.sizeDelta.x / 2 - (ruleList.anchoredPosition.x + w / 2) + 2 * (buttonWidth + gap);
-            dialogueFooterBottomInset = page.sizeDelta.y / 2 + ruleList.anchoredPosition.y - h / 2 - 56 - FooterButtonHeight / 2;
+            dialogueFooterBottomInset = 32;
+            dialogueFooterRightInset = Mathf.Max(page.sizeDelta.x*.39f,32+2*buttonWidth+gap*2);
             bool editingRule=pendingRule!=null;
-            float addX=w/2-buttonWidth/2-(editingRule?0:buttonWidth+gap);
+            float addX=w/2-buttonWidth/2;
+            float footerY=-page.sizeDelta.y/2+32+FooterButtonHeight/2-ruleList.anchoredPosition.y;
+            ConfigButton("ConfigurationHelp","Help",page,new Vector2(page.sizeDelta.x/2-96,page.sizeDelta.y/2-54),new Vector2(128,44),OpenHelp,style:DuelControlStyle.Navigation);
             if(editingRule)
-                ConfigButton("CancelRuleEdit","Cancel",ruleList,new Vector2(addX-buttonWidth-gap,-h/2-56),new Vector2(buttonWidth,FooterButtonHeight),CancelRuleEdit,style:DuelControlStyle.Navigation);
+                ConfigButton("CancelRuleEdit","Cancel",ruleList,new Vector2(addX-buttonWidth-gap,footerY),new Vector2(buttonWidth,FooterButtonHeight),CancelRuleEdit,style:DuelControlStyle.Navigation);
             UnityEngine.Events.UnityAction submit=AddRule;
             if(editingRule)submit=CommitRuleChoice;
-            var add=ConfigButton(editingRule?"ConfirmRule":"AddRule",editingRule?"Confirm":"+ Add Rule",ruleList,new Vector2(addX,-h/2-56),new Vector2(buttonWidth,FooterButtonHeight),submit);
+            var add=ConfigButton(editingRule?"ConfirmRule":"AddRule",editingRule?"Confirm":"+ Add Rule",ruleList,new Vector2(editingRule?addX:-w/2+208,editingRule?footerY:h/2-20),new Vector2(editingRule?buttonWidth:180,FooterButtonHeight),submit,style:editingRule?DuelControlStyle.Primary:DuelControlStyle.Option);
             add.interactable=editingRule?CanConfirmRule():game.DraftLoadout.TotalRules<ConditionalCatalog.PlayerRuleLimit;
             UnityEngine.UI.Button start=null;
             if(!editingRule)
             {
-                start=ConfigButton("StartFight","Start Testing",ruleList,new Vector2(w/2-buttonWidth/2,-h/2-56),new Vector2(buttonWidth,FooterButtonHeight),game.StartConfiguredEncounter,style:DuelControlStyle.Primary);
+                float rail=Mathf.Clamp(page.sizeDelta.x*.23f,248,370);
+                float x=page.sizeDelta.x/2-32-rail/2, y=page.sizeDelta.y/2-124;
+                if(game.Wave<=DuelGame.FinalBossWave)
+                {
+                    var profile=ConfigButton("TargetProfile","Target Profile",page,new Vector2(x,y),new Vector2(rail,56),game.OpenTargetProfile,left:true,style:DuelControlStyle.Option);
+                    dialogueExits.Add((RectTransform)profile.transform);
+                }
+                var test=ConfigButton("TestLoadout","Test Loadout",page,new Vector2(x,game.Wave<=DuelGame.FinalBossWave?y-68:y),new Vector2(rail,56),game.StartConfiguredEncounter,left:true,style:DuelControlStyle.Option);
+                test.interactable=ConfigurationReady;
+                if (test.interactable) dialogueExits.Add((RectTransform)test.transform);
+                start=ConfigButton("StartMission","Start Mission",page,new Vector2(x,-page.sizeDelta.y/2+32+FooterButtonHeight/2),new Vector2(rail,FooterButtonHeight),game.StartMission,style:DuelControlStyle.Primary);
                 start.GetComponent<DuelButtonOutline>().Primary=true;start.interactable=ConfigurationReady;
+                if (start.interactable) dialogueExits.Add((RectTransform)start.transform);
             }
 #if UNITY_EDITOR
             if(ruleSetupViewSample!=null)
@@ -746,12 +766,12 @@ namespace GoGhost.Duel
         internal void InstallTutorialJumpRule()
         {
             if (game.Phase != DuelPhase.Configure || game.DraftLoadout.TotalRules >= ConditionalCatalog.PlayerRuleLimit) return;
-            InstallConfiguredRule(ConditionalLoadout.CreateTutorialJumpRule(), displayedRules.Count, null);
+            InstallConfiguredRule(ConditionalLoadout.CreateTutorialJumpRule(), displayedRules.Count, null, keepDraft: pendingRule!=null);
         }
 
-        void InstallConfiguredRule(ConditionalRule complete, int row, string change)
+        void InstallConfiguredRule(ConditionalRule complete, int row, string change, bool keepDraft=false)
         {
-            completedPreview=complete.Copy();completedPreviewRow=row;
+            if(!keepDraft){completedPreview=complete.Copy();completedPreviewRow=row;}
             revealInstalledCard = row == displayedRules.Count;
             if (revealInstalledCard)
             {
@@ -767,7 +787,8 @@ namespace GoGhost.Duel
                 }
             }
             installedSystem=RuleSystem(complete);installedRow=row;installedAt=Time.unscaledTime;
-            pendingRule=null;pendingRow=selectorRow=-1;selectingAdditional=false;
+            if(!keepDraft){pendingRule=null;pendingRow=selectorRow=-1;selectingAdditional=false;}
+            else if(pendingRow==row){pendingRow++;selectorRow++;}
             game.EditLoadout(d=>
             {
                 if(row==displayedRules.Count)displayedRules.Add(complete);else displayedRules[row]=complete;
@@ -929,7 +950,7 @@ namespace GoGhost.Duel
             content.anchoredPosition = Vector2.zero;
             content.sizeDelta = Vector2.zero;
             var layout = content.gameObject.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
-            layout.spacing = alignCards?20:name=="EquippedRules"?16:8;
+            layout.spacing = alignCards?10:name=="EquippedRules"?16:8;
             layout.padding = new RectOffset(alignCards?0:2,alignCards?0:2,2,2);
             layout.childControlWidth = layout.childControlHeight = true;
             layout.childForceExpandWidth = true;
@@ -938,8 +959,8 @@ namespace GoGhost.Duel
             fit.verticalFit = UnityEngine.UI.ContentSizeFitter.FitMode.PreferredSize;
             var barRoot = Rect("Scrollbar", root, new Vector2(w/2+(alignCards?6:-4),0), new Vector2(8,h));
             var track = barRoot.gameObject.AddComponent<UnityEngine.UI.Image>();
-            track.color = NeuralPalette.Border;
-            var handle = Image(barRoot, Vector2.zero, new Vector2(8, h), NeuralPalette.Secondary);
+            track.color = NeuralPalette.Alpha(NeuralPalette.Border,.45f);
+            var handle = Image(barRoot, Vector2.zero, new Vector2(8, h), NeuralPalette.ControlBorder);
             // Scrollbar drives handle anchors; a fixed size would extend it beyond the track.
             handle.rectTransform.sizeDelta = Vector2.zero;
             handle.raycastTarget = true;
@@ -962,11 +983,6 @@ namespace GoGhost.Duel
             outline.LabelSystem=action!=null?NeuralPalette.System(ConditionalCatalog.Response(action).Operation):NeuralBodySystem.None;
             outline.Refresh();
             BindOptionDescription(option,reason??description);
-            if(action!=null&&reason==null)
-            {
-                var accent=Image(option.transform,new Vector2(-5,0),new Vector2(2,24),NeuralPalette.Operation(ConditionalCatalog.Response(action).Operation)).rectTransform;
-                accent.anchorMin=accent.anchorMax=new Vector2(1,.5f);
-            }
             var layout = option.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();
             layout.minHeight = layout.preferredHeight = SelectorRowHeight;
         }

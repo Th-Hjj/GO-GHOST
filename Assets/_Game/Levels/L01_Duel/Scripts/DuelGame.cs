@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 
 namespace GoGhost.Duel
 {
-    public enum DuelPhase { Menu, Configure, Prepare, Fight, Between, Failed, Complete, Training, CharacterCreation, BonusOffer, FinalBoss }
+    public enum DuelPhase { Menu, Configure, Prepare, Fight, Between, Failed, Complete, Training, CharacterCreation, BonusOffer, FinalBoss, TargetProfile, MissionEntry }
 
     // Encounter progression; the legacy components own every physical action and hit.
     public sealed partial class DuelGame : MonoBehaviour
@@ -73,6 +73,7 @@ namespace GoGhost.Duel
                     surface.color=Color.Lerp(NeuralPalette.Panel,NeuralPalette.Secondary,.70f);
             InitializeDeveloperTuning();
             handler = gameObject.AddComponent<HandlerVoice>();
+            preparationVoice = gameObject.AddComponent<HandlerVoice>();
             ResetCharacterAppearance();
             ui = gameObject.AddComponent<DuelUI>();
             ui.Initialize(this, font, controlFont, headingFont, numericFont);
@@ -106,6 +107,7 @@ namespace GoGhost.Duel
             PlayMetrics.ResetRun();
             metricsWaveJumpPending = false;
             Wave = 1;
+            System.Array.Clear(profileOpened, 0, profileOpened.Length);
             DraftLegs = DraftArms = DraftSpine = false;
             DraftLoadout=new ConditionalLoadout();
             FirstConfiguration = true;
@@ -146,7 +148,7 @@ namespace GoGhost.Duel
         }
         public void StartFight()
         {
-            if (Phase != DuelPhase.Configure || Paused || !ui.ConfigurationReady) return;
+            if (Phase != DuelPhase.Configure || Paused || DialogueSpeaking || !ui.ConfigurationReady) return;
             CreateEncounter(false);
         }
         public void RetryFight()
@@ -154,7 +156,7 @@ namespace GoGhost.Duel
             if (Phase != DuelPhase.Failed || DeveloperToolsOpen) return;
             CreateEncounter(false);
         }
-        void CreateEncounter(bool training, bool skipBossIntro = false)
+        void CreateEncounter(bool training, bool skipBossIntro = false, bool fadePreparation = false)
         {
             ClearEncounter();
             ApplyPlatformLayout(training);
@@ -230,7 +232,8 @@ namespace GoGhost.Duel
                 return;
             }
             FirstConfiguration = false;
-            if (Wave == FinalBossWave && !finalBossPhaseTwo && !skipBossIntro) StartBossDialogue(DuelPhase.FinalBoss);
+            if (fadePreparation) SetPhase(DuelPhase.MissionEntry);
+            else if (Wave == FinalBossWave && !finalBossPhaseTwo && !skipBossIntro) StartBossDialogue(DuelPhase.FinalBoss);
             else StartCountdown();
             Trace($"start wave={Wave} player={Player.CurrentHealth} bosses={HealthSummary()} observation=empty");
         }
@@ -322,7 +325,13 @@ namespace GoGhost.Duel
         void SetPhase(DuelPhase value)
         {
             creationQuestionAt = null;
-            if (Phase == DuelPhase.Configure) handler.LeaveConfiguration();
+            bool wasVisiting = Phase == DuelPhase.TargetProfile || Phase == DuelPhase.Training;
+            bool visiting = value == DuelPhase.TargetProfile || value == DuelPhase.Training;
+            if (Phase == DuelPhase.Configure && visiting) handler.SuspendConfiguration(true);
+            else if (wasVisiting && value == DuelPhase.Configure) handler.SuspendConfiguration(false);
+            else if (Phase == DuelPhase.Configure || wasVisiting) handler.LeaveConfiguration();
+            if (wasVisiting) preparationVoice.Stop();
+            if (Phase == DuelPhase.MissionEntry) ui.EndPreparationFade();
             if (startup != null)
             {
                 StopCoroutine(startup);
@@ -332,7 +341,7 @@ namespace GoGhost.Duel
             StartupProgress = -1f;
             StartupFailed = false;
             if (value == DuelPhase.Menu || value == DuelPhase.CharacterCreation || value == DuelPhase.FinalBoss
-                || Phase == DuelPhase.FinalBoss || Phase == DuelPhase.BonusOffer || value == DuelPhase.Failed || (Phase == DuelPhase.Training && value == DuelPhase.Configure))
+                || Phase == DuelPhase.FinalBoss || Phase == DuelPhase.BonusOffer || Phase == DuelPhase.Between || value == DuelPhase.Failed)
                 handler.Stop();
             Phase = value;
             MetricsStage();
@@ -393,6 +402,16 @@ namespace GoGhost.Duel
             {
                 phaseTime += Time.deltaTime;
                 if (phaseTime >= PreparationSeconds) BeginCombat();
+            }
+            else if (Phase == DuelPhase.MissionEntry)
+            {
+                phaseTime += Time.deltaTime;
+                ui.FadePreparation(phaseTime);
+                if (phaseTime >= PreparationFadeSeconds + .15f)
+                {
+                    if (Wave == FinalBossWave && !FinalBossPhaseTwoReached) StartBossDialogue(DuelPhase.FinalBoss);
+                    else StartCountdown();
+                }
             }
         }
         void FixedUpdate()

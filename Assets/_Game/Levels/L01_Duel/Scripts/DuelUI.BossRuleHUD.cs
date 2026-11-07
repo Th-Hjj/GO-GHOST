@@ -71,9 +71,9 @@ namespace GoGhost.Duel
                 bossRuleHeading.rectTransform.sizeDelta = new Vector2(bossRulePanelWidth - 32, 44);
                 bossRuleHeading.rectTransform.anchoredPosition = new Vector2(0, -34);
                 // Match the player's list: same card width and the same top edge as its scroll viewport.
-                float cardWidth = bossRulePanelWidth - 42, y = 2;
+                float cardWidth = bossRulePanelWidth - 22, y = 2;
                 bossRuleContent.sizeDelta = new Vector2(cardWidth, height - 92);
-                bossRuleContent.anchoredPosition = new Vector2(-7, -74);
+                bossRuleContent.anchoredPosition = new Vector2(-5, -74);
                 foreach (var row in bossRuleRows)
                 {
                     float cardHeight = LayoutRuleCard(row.Root, row.Number, row.Condition, row.Arrow, row.Action, cardWidth - 4, compact:true);

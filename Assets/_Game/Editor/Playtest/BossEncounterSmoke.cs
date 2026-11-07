@@ -53,7 +53,8 @@ public static partial class BossEncounterSmoke
             if (game == null) game = UnityEngine.Object.FindAnyObjectByType<DuelGame>();
             if (game == null) return;
             if (game.Paused) game.SetPause(false);
-            if (game.DialogueReady) game.AcknowledgeDialogue();
+            if (game.DialogueReady && game.Phase != DuelPhase.Configure && game.Phase != DuelPhase.TargetProfile)
+                game.AcknowledgeDialogue();
             while (steps.Count > 0)
             {
                 var current = steps.Peek();

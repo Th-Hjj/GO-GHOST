@@ -1,5 +1,24 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — Interface consistency and visual comparison
+
+- Updated the menu, creation/upload, mission preparation, configuration, Help, target profile, dialogue, combat and practice HUD, results and F8 presentation. The EMP mutes both rule lists, disconnects each arrow and labels each sidebar once. Invasion highlights the newly appended card once.
+- Baseline Game View captures reproduced two unwanted editor scrollbars and an Upload exception caused by adding a second CanvasGroup to Page. Upload now reuses the existing group. Preparation and editor Help open from the same header position.
+- Unity 6000.6.0f1 Play Mode followed New Game → Upload → mission preparation through all three missions, both defeat/retry routes, the Bonus offer, the duo and final completion. Controlled damage produced the combat results. An additional 75% threshold run exercised invasion into an empty loadout. Opening Help from a completed rule draft retained the selection and the enabled Confirm button on return. Keyboard focus was visible on that primary button.
+- In both 1280×720 and 2560×1440 Game Views the five condition categories fit (364 units in a 384-unit viewport) and all seven actions fit (360 in 420). The check also exercised parameter selection. The 30 paired captures and PDF are under `Logs/UIReview-20261107`. The baseline used the existing Help renderer directly and resumed via the character completion entry after recording the broken Upload. No standalone build or balance test.
+
+## 2026-11-07 — Full-screen story clicks
+
+The active sentence captures left clicks across the Game view. On preparation pages, clicking during playback reveals the text and keeps the recording playing. After it finishes, a fresh click advances the story or activates an available navigation button. Test Loadout suppresses weapon input for dialogue clicks. The voice-only character creation question remains interactive.
+
+Unity compiled. One Play Mode check during the greeting hit the Test Loadout button and the opposite corner of the screen. Both reached the dialogue layer. The early input kept preparation open and a fresh click after playback entered Test Loadout. The full progression smoke and standalone builds were not run for this change.
+
+## 2026-11-07 — Mission preparation and first-visit target profiles
+
+- Preparation shows the numbered mission, the body and its rules, optional Target Profile and Test Loadout visits, and Start Mission. The rule editor retains Confirm and Cancel. Both visits return through Back. Start Mission fades the overview for .35 s and holds the visible arena for .15 s before the existing countdown or Mission 3 opening. Direct retries retain their original entry.
+- Happy reads each mission dossier on its first opening per New Game. Back stops that reading immediately. Every later visit shows all four fields in silence, including after leaving on the first line. Mission 3 has the separate GOAT of War line and the literal Skills value `[placeholder]`. Voice Studio contains 13 new stereo clips and both revised mission-clear recordings.
+- Unity 6000.6.0f1 compiled. The existing Check Game Flow passed with controlled victories through all three missions and the optional Bonus. For each mission it opened the dossier, left during the first cue, reopened it and checked the final field, absence of dialogue and stopped voices. It exercised Test Loadout → Back → Start Mission and the Mission 3 intro. The 15 recordings have 24 kHz stereo PCM16 data and matching dry sources. Standalone builds and subjective listening review were not run.
+
 ## 2026-11-07 — Rule installation and Wave 3 presentation
 
 - Advancing Happy’s “Look out!” starts the existing three-second countdown. Her dialogue fades over .15 s while the camera pulls back over .65 s. The Boss sidebar enters from the right, and the player sidebar enters from the left only when equipped. The title, countdown and health displays track the usable arena centre. Health labels, tracks and fills fade in together at their actual values.

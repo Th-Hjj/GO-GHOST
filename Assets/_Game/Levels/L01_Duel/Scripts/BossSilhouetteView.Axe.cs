@@ -244,6 +244,11 @@ namespace GoGhost.Duel
         {
             PlaceEyes(p);
             if (actor.Axe.AxeFlying) { Hide(Part.Weapon); Hide(Part.Sheath); return; }
+            PlaceHeldAxe(p);
+        }
+
+        void PlaceHeldAxe(Pose p)
+        {
             Vector2 direction = Angle(p.WeaponAngle);
             Place(Part.Weapon, p.FrontHand + direction * (AxeShaft * .5f - AxeGrip), new Vector2(AxeShaft, AxeShaftWidth), p.WeaponAngle);
             Vector2 blade = new Vector2(direction.y, -direction.x);

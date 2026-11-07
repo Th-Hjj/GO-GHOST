@@ -33,15 +33,15 @@ namespace GoGhost.Duel
 
         void BuildDeveloperTools()
         {
-            Image(page,Vector2.zero,new Vector2(4000,4000),new Color(.025f,.025f,.025f,.98f)).raycastTarget=true;
+            Image(page,Vector2.zero,new Vector2(4000,4000),NeuralPalette.Background).raycastTarget=true;
             Text("Developer",page,new Vector2(-390,380),new Vector2(650,60),36,TextAlignmentOptions.Left,headingFont);
-            Button("Close  [F8]",page,new Vector2(565,380),new Vector2(260,54),game.ToggleDeveloperTools);
-            string[] sections={"Tuning","Waves","Analytics"};
+            Button("Close  [F8]",page,new Vector2(565,380),new Vector2(260,54),game.ToggleDeveloperTools,style:DuelControlStyle.Navigation);
+            string[] sections={"Tuning","Missions","Analytics"};
             for(int i=0;i<sections.Length;i++)
             {
                 int section=i;
                 Button(sections[i],page,new Vector2(-440+i*440,305),new Vector2(410,52),
-                    ()=>{developerSection=section;Show();},i==developerSection);
+                    ()=>{developerSection=section;Show();},i==developerSection,style:DuelControlStyle.Option);
             }
             if(developerSection==2){BuildAnalytics();return;}
             if(developerSection==1){BuildDeveloperWaves();return;}
@@ -50,11 +50,11 @@ namespace GoGhost.Duel
 
         void BuildDeveloperWaves()
         {
-            Text("Jump to wave",page,new Vector2(0,175),new Vector2(1000,48),30);
+            Text("Jump to mission",page,new Vector2(0,175),new Vector2(1000,48),30);
             for(int wave=1;wave<=DuelGame.BonusWave;wave++)
             {
                 int target=wave;
-                string label=wave==DuelGame.BonusWave?"Bonus":wave==DuelGame.FinalBossWave?"Final Boss":"Wave "+wave;
+                string label=wave==DuelGame.BonusWave?"Bonus":wave==DuelGame.FinalBossWave?"Final Boss":"Mission "+wave;
                 var jump=Button(label,page,new Vector2(-495+(wave-1)*330,70),new Vector2(300,60),
                     ()=>game.JumpToDeveloperWave(target),game.Wave==wave);
                 jump.name="Dev_Wave"+wave;
@@ -76,7 +76,7 @@ namespace GoGhost.Duel
             for(int i=0;i<tabs.Length;i++)
             {
                 int tab=i;
-                Button(tabs[i],page,new Vector2(-495+i*330,225),new Vector2(305,52),()=>{developerTab=tab;Show();},i==developerTab);
+                Button(tabs[i],page,new Vector2(-495+i*330,225),new Vector2(305,52),()=>{developerTab=tab;Show();},i==developerTab,style:DuelControlStyle.Option);
             }
             if (developerTab == 3) BuildFinalBossTuning();
             float y=145;
@@ -102,8 +102,8 @@ namespace GoGhost.Duel
                 }
             }
             developerStatus=Text("",page,new Vector2(0,-335),new Vector2(1400,45),20);
-            Button("Restore defaults",page,new Vector2(developerTab==3?210:0,-400),new Vector2(300,54),()=>
-            {game.ResetDeveloperTuning();RefreshDeveloperFields();developerStatus.text="Defaults restored.";});
+            Button("Restore defaults",page,new Vector2(550,-400),new Vector2(250,48),()=>
+            {game.ResetDeveloperTuning();RefreshDeveloperFields();developerStatus.text="Defaults restored.";},style:DuelControlStyle.Tool);
             RefreshDeveloperFields();
         }
 
@@ -154,17 +154,17 @@ namespace GoGhost.Duel
 
         void AddDeveloperField(string id,string label,float y,float min,float max,float step,Func<float> read,Action<float> write,Func<bool> available,bool currentHealth=false)
         {
-            Text(label,page,new Vector2(-405,y),new Vector2(570,48),25,TextAlignmentOptions.Left);
-            Text(currentHealth?"1 - max HP":$"{FormatDeveloper(min)} - {FormatDeveloper(max)}",page,new Vector2(540,y),new Vector2(220,44),20,TextAlignmentOptions.Left);
+            Text(label,page,new Vector2(-410,y),new Vector2(580,48),23,TextAlignmentOptions.Left);
+            Text(currentHealth?"1 - max HP":$"{FormatDeveloper(min)} - {FormatDeveloper(max)}",page,new Vector2(520,y),new Vector2(240,44),18,TextAlignmentOptions.Left,numericFont).color=NeuralPalette.Secondary;
             var root=Rect("Dev_"+id,page,new Vector2(175,y),new Vector2(180,48));
-            var background=root.gameObject.AddComponent<UnityEngine.UI.Image>();background.color=new Color(.13f,.13f,.13f);background.raycastTarget=true;
+            var background=root.gameObject.AddComponent<UnityEngine.UI.Image>();background.color=NeuralPalette.Panel;background.raycastTarget=true;
             var viewport=Rect("Text Area",root,Vector2.zero,new Vector2(154,42));viewport.gameObject.AddComponent<UnityEngine.UI.RectMask2D>();
-            var text=(TextMeshProUGUI)Text("",viewport,Vector2.zero,new Vector2(154,42),25,face:numericFont);
+            var text=(TextMeshProUGUI)Text("",viewport,Vector2.zero,new Vector2(154,42),24,face:numericFont);
             var field=root.gameObject.AddComponent<TMP_InputField>();
             field.targetGraphic=background;field.textViewport=viewport;field.textComponent=text;
             field.contentType=TMP_InputField.ContentType.DecimalNumber;field.lineType=TMP_InputField.LineType.SingleLine;
-            field.characterLimit=12;field.customCaretColor=true;field.caretColor=Color.white;
-            field.selectionColor=new Color(.3f,.6f,.4f,.5f);
+            field.characterLimit=12;field.customCaretColor=true;field.caretColor=NeuralPalette.Primary;
+            field.selectionColor=NeuralPalette.Alpha(NeuralPalette.Secondary,.35f);
             var view=new DeveloperFieldView{Input=field,Read=read,Available=available};
             view.Minus=Button("-",page,new Vector2(30,y),new Vector2(76,48),()=>Apply(Mathf.Clamp(read()-step,min,max)));
             view.Plus=Button("+",page,new Vector2(320,y),new Vector2(76,48),()=>Apply(Mathf.Clamp(read()+step,min,max)));

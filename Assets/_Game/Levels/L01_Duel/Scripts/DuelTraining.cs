@@ -10,20 +10,21 @@ namespace GoGhost.Duel
 
         public void StartConfiguredEncounter()
         {
-            if (!TrainingPending || Paused || DeveloperToolsOpen || !ui.ConfigurationReady) return;
+            if (!TrainingPending || Paused || DeveloperToolsOpen || DialogueSpeaking || !ui.ConfigurationReady) return;
             CreateEncounter(true);
         }
 
         public void BackFromTraining()
         {
-            if (Phase != DuelPhase.Training) return;
+            if (Phase != DuelPhase.Training || DialogueSpeaking) return;
             ClearEncounter();
             SetPhase(DuelPhase.Configure);
         }
 
+        // Kept for existing scripted callers. Test Loadout itself offers only Back.
         public void ContinueFromTraining()
         {
-            if (Phase != DuelPhase.Training) return;
+            if (Phase != DuelPhase.Training || DialogueSpeaking) return;
             CreateEncounter(false);
         }
 

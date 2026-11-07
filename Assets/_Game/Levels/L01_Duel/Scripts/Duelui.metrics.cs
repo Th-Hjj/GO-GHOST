@@ -21,7 +21,7 @@ namespace GoGhost.Duel
             {
                 int tab = i;
                 Button(tabs[i],page,new Vector2(-495+i*330,225),new Vector2(300,48),
-                    ()=>{analyticsTab=tab;analyticsPage=0;Show();},analyticsTab==i);
+                    ()=>{analyticsTab=tab;analyticsPage=0;Show();},analyticsTab==i,style:DuelControlStyle.Option);
             }
             var run = PlayMetrics.Run;
             var fight = PlayMetrics.Current;

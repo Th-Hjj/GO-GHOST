@@ -1,11 +1,14 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using System.Collections.Generic;
 
 namespace GoGhost.Duel
 {
     public sealed partial class DuelUI
     {
         RectTransform dialogueOverlay;
+        readonly List<RectTransform> dialogueExits = new List<RectTransform>(3);
+        CanvasGroup pageControls;
         TMPro.TMP_Text ambientSpeaker, ambientDialogue, sceneDialogue;
         UnityEngine.UI.Image ambientPanel;
         const float FooterButtonHeight = 48;
@@ -15,6 +18,7 @@ namespace GoGhost.Duel
         {
             if (sceneDialogue != null) sceneDialogue.maxVisibleCharacters = game.DialogueVisibleCharacters;
             bool show = game.PendingDialogue != null && !game.Paused && !game.DeveloperToolsOpen;
+            if (pageControls != null) pageControls.interactable = game.StartupProgress < 0 && (!show || game.OnPreparationPage && !game.DialogueSpeaking);
             if (!show && dialogueOverlay == null) return;
             if (dialogueOverlay == null)
             {
@@ -24,9 +28,10 @@ namespace GoGhost.Duel
                 dialogueOverlay.name = "Dialogue input";
                 dialogueOverlay.anchorMin = Vector2.zero;
                 dialogueOverlay.anchorMax = Vector2.one;
-                blocker.gameObject.AddComponent<DialogueClickTarget>().Game = game;
+                blocker.gameObject.AddComponent<DialogueClickTarget>().Owner = this;
                 dialogueOverlay.gameObject.SetActive(false);
                 ambientPanel = Image(dialogueOverlay, Vector2.zero, Vector2.zero, NeuralPalette.Panel);
+                ambientPanel.raycastTarget = true;
                 var panel = ambientPanel.rectTransform;
                 panel.name = "Happy dialogue";
                 panel.anchorMin = Vector2.zero;
@@ -38,12 +43,12 @@ namespace GoGhost.Duel
                 label.anchorMax = Vector2.one;
                 label.offsetMin = new Vector2(20, -32);
                 label.offsetMax = new Vector2(-20, -8);
-                ambientDialogue = Text("", panel, Vector2.zero, Vector2.zero, 22, TMPro.TextAlignmentOptions.MidlineLeft, DialogueFont());
+                ambientDialogue = Text("", panel, Vector2.zero, Vector2.zero, 22, TMPro.TextAlignmentOptions.TopLeft, DialogueFont());
                 var body = ambientDialogue.rectTransform;
                 body.anchorMin = Vector2.zero;
                 body.anchorMax = Vector2.right;
-                body.offsetMin = new Vector2(20, 0);
-                body.offsetMax = new Vector2(-20, FooterButtonHeight);
+                body.offsetMin = new Vector2(20, 8);
+                body.offsetMax = new Vector2(-20, 68);
             }
             if (show && !dialogueOverlay.gameObject.activeSelf)
                 UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
@@ -54,25 +59,47 @@ namespace GoGhost.Duel
             ambientPanel.gameObject.SetActive(ambient);
             if (ambient)
             {
-                float right = game.Phase == DuelPhase.Configure ? dialogueFooterRightInset : 32;
+                float width = canvas.rect.width;
+                float right = game.Phase == DuelPhase.Configure ? dialogueFooterRightInset :
+                    game.Phase == DuelPhase.TargetProfile ? width*.5f+32 : game.Phase == DuelPhase.Training ? width*.42f : 32;
                 float bottom = game.Phase == DuelPhase.Configure ? dialogueFooterBottomInset : 32;
                 ambientPanel.rectTransform.offsetMin = new Vector2(32, bottom);
-                ambientPanel.rectTransform.offsetMax = new Vector2(-right, bottom + FooterButtonHeight + 36);
+                ambientPanel.rectTransform.offsetMax = new Vector2(-right, bottom + 104);
                 ambientDialogue.text = game.PendingDialogue;
                 ambientSpeaker.text = game.HappySpeakerName;
                 ambientDialogue.maxVisibleCharacters = game.DialogueVisibleCharacters;
             }
         }
 
+        internal bool CaptureDialogueClick(Vector2 point, Camera eventCamera)
+        {
+            if (!game.OnPreparationPage || game.DialogueSpeaking) return true;
+            // Between spoken lines, a fresh press on an explicit exit can leave preparation.
+            foreach (var exit in dialogueExits)
+                if (RectTransformUtility.RectangleContainsScreenPoint(exit, point, eventCamera)) return false;
+            return true;
+        }
+
+        internal void ClickDialogue() => game.AcknowledgeDialogue();
+
         const float OpeningCaptionSeconds = .15f;
         CanvasGroup openingCaption;
 
         void BuildBossCaption(RectTransform parent, bool offer)
         {
-            Image(parent,new Vector2(0,110),new Vector2(1040,190),NeuralPalette.Panel);
-            sceneDialogue = Text(game.FinalBossDialogue,parent,new Vector2(0,110),new Vector2(920,150),32,face:DialogueFont());
-            sceneDialogue.maxVisibleCharacters = game.FinalBossChoiceReady ? int.MaxValue : game.DialogueVisibleCharacters;
-            if (!offer) Text(game.FinalBossDialogueSpeaker,parent,new Vector2(0,177),new Vector2(600,42),24);
+            BuildSceneCaption(parent,new Vector2(0,110),offer?null:game.FinalBossDialogueSpeaker,game.FinalBossDialogue);
+        }
+
+        void BuildSceneCaption(RectTransform parent,Vector2 position,string speaker,string line)
+        {
+            const float width=760, height=134, padding=24;
+            var box=Image(parent,position,new Vector2(width,height),NeuralPalette.Alpha(NeuralPalette.Panel,.96f)).rectTransform;
+            box.name="Scene dialogue";
+            if(!string.IsNullOrEmpty(speaker))
+                Text(speaker,box,new Vector2(0,42),new Vector2(width-2*padding,26),18,TMPro.TextAlignmentOptions.MidlineLeft,headingFont).color=NeuralPalette.Secondary;
+            sceneDialogue=Text(line,box,new Vector2(0,string.IsNullOrEmpty(speaker)?14:-12),new Vector2(width-2*padding,76),26,TMPro.TextAlignmentOptions.TopLeft,DialogueFont());
+            sceneDialogue.name="CutsceneText";
+            sceneDialogue.maxVisibleCharacters=game.FinalBossChoiceReady?int.MaxValue:game.DialogueVisibleCharacters;
         }
 
         void BuildFadingOpeningCaption(RectTransform hud)
@@ -87,7 +114,7 @@ namespace GoGhost.Duel
         void BuildFinalBoss()
         {
             bool offer = game.Phase == DuelPhase.BonusOffer;
-            Text(offer ? "WAVE 3 CLEARED" : "WAVE 3",page,new Vector2(0,400),new Vector2(600,60),offer ? 36 : 30,face:headingFont);
+            Text(offer ? "MISSION 3 CLEARED" : "MISSION 3",page,new Vector2(0,400),new Vector2(600,60),offer ? 36 : 30,face:headingFont);
             BuildBossCaption(page, offer);
             if (!offer) return;
             if (game.FinalBossChoiceReady)
@@ -98,13 +125,16 @@ namespace GoGhost.Duel
         }
     }
 
-    public sealed class DialogueClickTarget : MonoBehaviour, IPointerDownHandler
+    public sealed class DialogueClickTarget : MonoBehaviour, IPointerDownHandler, ICanvasRaycastFilter
     {
-        internal DuelGame Game;
+        internal DuelUI Owner;
+        public bool IsRaycastLocationValid(Vector2 point, Camera eventCamera) => Owner.CaptureDialogueClick(point, eventCamera);
 
         public void OnPointerDown(PointerEventData pointer)
         {
-            if (pointer.button == PointerEventData.InputButton.Left) Game.AcknowledgeDialogue();
+            if (pointer.button != PointerEventData.InputButton.Left) return;
+            pointer.Use();
+            Owner.ClickDialogue();
         }
     }
 }

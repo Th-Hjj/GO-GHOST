@@ -65,6 +65,21 @@ namespace GoGhost.Duel
             }
         }
         public void SetPaused(bool value) => paused = value;
+        internal SpriteRenderer[] PoseForProfile(bool final, bool guarding)
+        {
+            SetColors();
+            Pose pose = BuildPose();
+            if (final || guarding)
+            {
+                pose.WeaponAngle = final ? 72 : -90;
+                pose.FrontHand = final ? new Vector2(.22f,.02f) : new Vector2(.42f,.38f);
+                pose.BackHand = final ? new Vector2(-.04f,-.05f) : new Vector2(.42f,.49f);
+                pose.Weapon = pose.FrontHand + Angle(pose.WeaponAngle) * (SwordBladeLength*.5f);
+            }
+            ApplyPose(pose);
+            if (final) PlaceHeldAxe(pose);
+            return parts;
+        }
         // Reuse the exact combat stickman geometry without an AI, weapon or animation loop.
         public void ConfigurePlaceholder()
         {

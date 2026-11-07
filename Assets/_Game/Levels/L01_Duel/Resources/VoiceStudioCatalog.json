@@ -124,28 +124,28 @@
     },
     {
       "key": "Handler/WaveOneClear",
-      "label": "Wave 1 clear 1",
-      "text": "Wave one cleared.",
+      "label": "Mission 1 clear 1",
+      "text": "Mission one cleared.",
       "locked": false,
       "transcribed": false
     },
     {
       "key": "Handler/WaveOneClear2",
-      "label": "Wave 1 clear 2",
+      "label": "Mission 1 clear 2",
       "text": "Good job.",
       "locked": false,
       "transcribed": false
     },
     {
       "key": "Handler/WaveTwoClear",
-      "label": "Wave 2 clear 1",
-      "text": "Wave two cleared.",
+      "label": "Mission 2 clear 1",
+      "text": "Mission two cleared.",
       "locked": false,
       "transcribed": false
     },
     {
       "key": "Handler/WaveTwoClear2",
-      "label": "Wave 2 clear 2",
+      "label": "Mission 2 clear 2",
       "text": "Clean work.",
       "locked": false,
       "transcribed": false
@@ -205,6 +205,110 @@
       "label": "Final Boss electromagnetic pulse",
       "text": "E.M...",
       "locked": false
+    },
+    {
+      "key": "Handler/Mission1Codename",
+      "label": "Mission 1 · Codename",
+      "text": "Codename, Gunner.",
+      "profileMission": 1,
+      "profileField": "Codename",
+      "profileValue": "Gunner"
+    },
+    {
+      "key": "Handler/Mission1Threat",
+      "label": "Mission 1 · Threat",
+      "text": "Threat, Medium.",
+      "profileMission": 1,
+      "profileField": "Threat",
+      "profileValue": "Medium"
+    },
+    {
+      "key": "Handler/Mission1Weapon",
+      "label": "Mission 1 · Weapon",
+      "text": "Weapon, Gun.",
+      "profileMission": 1,
+      "profileField": "Weapon",
+      "profileValue": "Gun"
+    },
+    {
+      "key": "Handler/Mission1Skills",
+      "label": "Mission 1 · Skills",
+      "text": "Skills, Piercing Shot, Optical Camo.",
+      "profileMission": 1,
+      "profileField": "Skills",
+      "profileValue": "Piercing Shot · Optical Camo"
+    },
+    {
+      "key": "Handler/Mission2Codename",
+      "label": "Mission 2 · Codename",
+      "text": "Codename, Swordsman.",
+      "profileMission": 2,
+      "profileField": "Codename",
+      "profileValue": "Swordsman"
+    },
+    {
+      "key": "Handler/Mission2Threat",
+      "label": "Mission 2 · Threat",
+      "text": "Threat, High.",
+      "profileMission": 2,
+      "profileField": "Threat",
+      "profileValue": "High"
+    },
+    {
+      "key": "Handler/Mission2Weapon",
+      "label": "Mission 2 · Weapon",
+      "text": "Weapon, Sword.",
+      "profileMission": 2,
+      "profileField": "Weapon",
+      "profileValue": "Sword"
+    },
+    {
+      "key": "Handler/Mission2Skills",
+      "label": "Mission 2 · Skills",
+      "text": "Skills, Pursuit Draw, Still Blade.",
+      "profileMission": 2,
+      "profileField": "Skills",
+      "profileValue": "Pursuit Draw · Still Blade"
+    },
+    {
+      "key": "Handler/Mission3Codename",
+      "label": "Mission 3 · Codename",
+      "text": "Codename, Unknown...",
+      "profileMission": 3,
+      "profileField": "Codename",
+      "profileValue": "Unknown"
+    },
+    {
+      "key": "Handler/Mission3Alias",
+      "label": "Mission 3 · Alias",
+      "text": "But some people call him the GOAT of War",
+      "profileMission": 3,
+      "profileField": "Codename",
+      "profileValue": "Unknown"
+    },
+    {
+      "key": "Handler/Mission3Threat",
+      "label": "Mission 3 · Threat",
+      "text": "Threat, Unknown.",
+      "profileMission": 3,
+      "profileField": "Threat",
+      "profileValue": "Unknown"
+    },
+    {
+      "key": "Handler/Mission3Weapon",
+      "label": "Mission 3 · Weapon",
+      "text": "Weapon, Axe.",
+      "profileMission": 3,
+      "profileField": "Weapon",
+      "profileValue": "Axe"
+    },
+    {
+      "key": "Handler/Mission3Skills",
+      "label": "Mission 3 · Skills",
+      "text": "Skills, [placeholder].",
+      "profileMission": 3,
+      "profileField": "Skills",
+      "profileValue": "[placeholder]"
     }
   ]
 }

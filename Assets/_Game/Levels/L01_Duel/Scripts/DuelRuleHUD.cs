@@ -79,7 +79,7 @@ namespace GoGhost.Duel
             ruleScroll=null;ruleHeading=null;ruleHudSize=Vector2.zero;
         }
         void OnDestroy()
-        {ClearRuleHud();ruleGlowStates.Clear();ruleGlowController=null;DisposeCharacterFonts();}
+        {ClearRuleHud();ruleGlowStates.Clear();ruleGlowController=null;DisposeCharacterFonts();if(portraitMaterial!=null)Destroy(portraitMaterial);}
         void BuildRuleHud()
         {
             bool battle=game.Phase==DuelPhase.Prepare||game.Phase==DuelPhase.Fight||game.Phase==DuelPhase.Training;
@@ -215,7 +215,8 @@ namespace GoGhost.Duel
         float LayoutRuleCard(RectTransform root,TMP_Text number,TMP_Text condition,TMP_Text arrow,TMP_Text action,
             float width,float rightInset=14,float minHeight=0,bool compact=false)
         {
-            float left=compact?32:48, pad=compact?10:16, gap=compact?5:8, arrowWidth=compact?19:24;
+            float left=compact?23:48, pad=compact?9:16, gap=compact?5:8, arrowWidth=compact?18:24;
+            if(compact)rightInset=7;
             float available=Mathf.Max(60,width-left-rightInset);
             condition.lineSpacing=action.lineSpacing=2;
             // Every rule keeps the same reading order, regardless of label length or view width.
@@ -231,7 +232,7 @@ namespace GoGhost.Duel
             float arrowLeft=left;
             SetCardTextRect(arrow,arrowLeft,actionTop,arrowWidth,arrowHeight,width,height);
             SetCardTextRect(action,arrowLeft+arrowWidth,actionTop,actionWidth,actionHeight,width,height);
-            if(number!=null)SetCardTextRect(number,compact?7:16,pad,compact?20:24,28,width,height);
+            if(number!=null)SetCardTextRect(number,compact?4:16,pad,compact?17:24,28,width,height);
             return height;
         }
         static void SetCardTextRect(TMP_Text text,float left,float top,float width,float height,float cardWidth,float cardHeight)
@@ -247,13 +248,13 @@ namespace GoGhost.Duel
         {
             float position=ruleScroll!=null&&ruleHudSize!=Vector2.zero?ruleScroll.verticalNormalizedPosition:hudScrollPosition;
             rulePanelWidth=MeasureRulePanelWidth(width);
-            float scrollWidth=rulePanelWidth-24,viewportWidth=scrollWidth-14,viewportHeight=Mathf.Max(80,height-92);
+            float scrollWidth=rulePanelWidth-12,viewportWidth=scrollWidth-10,viewportHeight=Mathf.Max(80,height-92);
             ruleHeading.rectTransform.sizeDelta=new Vector2(rulePanelWidth-32,44);
             ruleHeading.rectTransform.anchoredPosition=new Vector2(0,-34);
             ruleScrollRoot.sizeDelta=new Vector2(scrollWidth,viewportHeight);
             ruleScrollRoot.anchoredPosition=new Vector2(0,-28);
-            ruleViewport.sizeDelta=new Vector2(viewportWidth,viewportHeight);ruleViewport.anchoredPosition=new Vector2(-7,0);
-            ruleScrollbarRoot.sizeDelta=new Vector2(8,viewportHeight);ruleScrollbarRoot.anchoredPosition=new Vector2(scrollWidth/2-4,0);
+            ruleViewport.sizeDelta=new Vector2(viewportWidth,viewportHeight);ruleViewport.anchoredPosition=new Vector2(-5,0);
+            ruleScrollbarRoot.sizeDelta=new Vector2(6,viewportHeight);ruleScrollbarRoot.anchoredPosition=new Vector2(scrollWidth/2-3,0);
             float y=2;
             foreach(var row in ruleRows)
             {
@@ -336,7 +337,7 @@ namespace GoGhost.Duel
                     ?row.Controller.Feedback(row.Operation,row.Row).Visual:default;
                 var color=NeuralPalette.Operation(row.Operation);
                 if(live&&!game.Paused)row.Glow.Update(f.Matched,Time.time);
-                ApplyRuleGlow(row,color,Mathf.Max(live?row.Glow.Strength:0,InvasionFlash(row)));
+                ApplyRuleGlow(row,color,sidebarsSealed?0:Mathf.Max(live?row.Glow.Strength:0,InvasionFlash(row)));
             }
             UpdateBossRuleHud(scale);
             UpdateSealMarks();
@@ -349,12 +350,12 @@ namespace GoGhost.Duel
             invadedAt=Time.time;
             if (displayOrder == 0) firstInvadedSidebarAt = invadedAt;
         }
-        const float InvadedFlashSeconds=1.6f;
+        const float InvadedFlashSeconds=.85f;
         float InvasionFlash(RuleRowView row)
         {
             float age = Time.time - invadedAt - CardRevealSeconds;
             if(row.Rule==null||row.Rule.DisplayOrder!=invadedOrder||age<0||age>=InvadedFlashSeconds)return 0;
-            return .55f+.45f*Mathf.Cos(age*Mathf.PI*4);
+            return 1-Mathf.SmoothStep(0,1,age/InvadedFlashSeconds);
         }
         void ApplyRuleGlow(RuleRowView row,Color color,float strength)
         {

@@ -1,4 +1,9 @@
 {
+  "happySub": 0.42,
+  "happyDrive": 1.9,
+  "bossElectronic": 0,
+  "bossNearDb": 0,
+  "bossSpaceDb": 0,
   "masterDb": 0,
   "matchTarget": false,
   "targetDb": -22,
@@ -11,11 +16,6 @@
   "spaceDb": 0,
   "bossSub": 0.42,
   "bossDrive": 1.9,
-  "happySub": 0.42,
-  "happyDrive": 1.9,
-  "bossElectronic": 0,
-  "bossNearDb": 0,
-  "bossSpaceDb": 0,
   "greetingTemplate": "Nice to meet you, {name}.",
   "openingDelay": 1,
   "lines": [
@@ -68,45 +68,52 @@
     },
     {
       "key": "FinalBossVoice/Line1",
-      "label": "Visit page 1",
-      "text": "Hi, I'm the final boss.",
-      "locked": false
+      "label": "Wave 3 intro 1",
+      "text": "So. You're the one who got this far.",
+      "locked": false,
+      "transcribed": false
     },
     {
       "key": "FinalBossVoice/Line2",
-      "label": "Visit page 2",
-      "text": "I'm glad that you made it here.",
-      "locked": false
+      "label": "Wave 3 intro 2",
+      "text": "I'm the final boss.",
+      "locked": false,
+      "transcribed": false
     },
     {
       "key": "FinalBossVoice/Line3",
-      "label": "Visit page 3",
-      "text": "The thing is, you won! Congrats!",
-      "locked": false
+      "label": "Wave 3 intro 3",
+      "text": "Everything you've learned, I've already seen.",
+      "locked": false,
+      "transcribed": false
     },
     {
       "key": "FinalBossVoice/Line4",
-      "label": "Visit page 4",
-      "text": "Turns out we didn't have time to present a final boss fight at the moment.",
-      "locked": false
+      "label": "Wave 3 intro 4",
+      "text": "Let's see if it's enough.",
+      "locked": false,
+      "transcribed": false
     },
     {
       "key": "FinalBossVoice/Line5",
-      "label": "Visit page 5",
-      "text": "But... If you enjoyed the game.",
-      "locked": false
+      "label": "Wave 3 intro 5",
+      "text": "Are you ready?",
+      "locked": false,
+      "transcribed": false
     },
     {
       "key": "FinalBossVoice/Line6",
-      "label": "Visit page 6",
+      "label": "Bonus offer 1",
       "text": "There is a bonus challenge.",
-      "locked": false
+      "locked": false,
+      "bonusOffer": true
     },
     {
       "key": "FinalBossVoice/Line7",
-      "label": "Visit page 7",
+      "label": "Bonus offer 2",
       "text": "Do you want to enter the bonus wave?",
-      "locked": false
+      "locked": false,
+      "bonusOffer": true
     }
   ]
 }

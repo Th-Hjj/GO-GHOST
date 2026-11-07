@@ -150,17 +150,14 @@ namespace GoGhost.Duel
                 if(helpOpen){BuildHelp();return;}
                 BuildConditionalLoadout();RestoreConfigurationView();return;
             }
-            if(game.Phase==DuelPhase.Between || game.Phase==DuelPhase.FinalBossReady)
+            if(game.Phase==DuelPhase.Between)
             {
                 Image(page,Vector2.zero,new Vector2(4000,4000),NeuralPalette.Background);
                 Text(game.WaveLabel+" CLEARED",page,new Vector2(0,160),new Vector2(800,90),64,face:headingFont);
-                if(game.Phase==DuelPhase.Between)
-                    Button("Continue to Wave 2",page,Vector2.zero,new Vector2(420,68),game.ContinueToWaveTwo).name="ContinueToWaveTwo";
-                else
-                    Button("Meet the Final Boss",page,Vector2.zero,new Vector2(420,68),game.MeetFinalBoss).name="MeetFinalBoss";
+                Button("Continue to Wave 2",page,Vector2.zero,new Vector2(420,68),game.ContinueToWaveTwo).name="ContinueToWaveTwo";
                 return;
             }
-            if(game.Phase==DuelPhase.FinalBoss)
+            if(game.Phase==DuelPhase.FinalBoss || game.Phase==DuelPhase.BonusOffer)
             {
                 BuildFinalBoss();return;
             }

@@ -1,0 +1,118 @@
+{
+  "happySub": 0.42,
+  "happyDrive": 1.9,
+  "bossElectronic": 0,
+  "bossNearDb": 0,
+  "bossSpaceDb": 0,
+  "masterDb": 0,
+  "matchTarget": false,
+  "targetDb": -22,
+  "happyDb": 0,
+  "bossDb": 0,
+  "happySpeed": 1.05,
+  "bossSpeed": 1.3,
+  "electronic": 0.15,
+  "nearDb": 0,
+  "spaceDb": 0,
+  "bossSub": 0.42,
+  "bossDrive": 1.9,
+  "greetingTemplate": "Nice to meet you, {name}.",
+  "openingDelay": 1,
+  "lines": [
+    {
+      "key": "Handler/WhoAreYou",
+      "label": "Character creation",
+      "text": "Who are you?",
+      "locked": true
+    },
+    {
+      "key": "Handler/Greeting",
+      "label": "Greeting fallback",
+      "text": "Nice to meet you.",
+      "locked": false
+    },
+    {
+      "key": "Handler/TutorialIntro",
+      "label": "Configuration introduction",
+      "text": "I know you must be confused, but don't worry. I will help you. My name is Happy, and I'm an experimental AI installed in your brain. Your body was nearly destroyed from the last mission, but I helped you to regain the control over your body. You'll be able to do things that used to be impossible for humans. Please take a moment to inspect your new body's configuration page, and click on Add Rule.",
+      "locked": false,
+      "transcribed": true
+    },
+    {
+      "key": "Handler/TutorialGoodbye",
+      "label": "Configuration farewell",
+      "text": "Unfortunately, I don't have time to explain the system to you because I need to finish the Alpha Feasibility Pitch right now. Good luck figuring out the body configuration system. Bye.",
+      "locked": false,
+      "transcribed": true
+    },
+    {
+      "key": "Handler/WaveOneClear",
+      "label": "Wave 1 clear",
+      "text": "Wave one cleared. Good job.",
+      "locked": false,
+      "transcribed": true
+    },
+    {
+      "key": "Handler/WaveTwoClear",
+      "label": "Wave 2 clear",
+      "text": "Wave two cleared. Clean work.",
+      "locked": false,
+      "transcribed": true
+    },
+    {
+      "key": "Handler/BonusClear",
+      "label": "Bonus clear",
+      "text": "Contract complete. Good work.",
+      "locked": false,
+      "transcribed": true
+    },
+    {
+      "key": "FinalBossVoice/Line1",
+      "label": "Wave 3 intro 1",
+      "text": "So. You're the one who got this far.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "FinalBossVoice/Line2",
+      "label": "Wave 3 intro 2",
+      "text": "I'm the final boss.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "FinalBossVoice/Line3",
+      "label": "Wave 3 intro 3",
+      "text": "Everything you've learned, I've already seen.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "FinalBossVoice/Line4",
+      "label": "Wave 3 intro 4",
+      "text": "Let's see if it's enough.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "FinalBossVoice/Line5",
+      "label": "Wave 3 intro 5",
+      "text": "But... If you enjoyed the game.",
+      "locked": false
+    },
+    {
+      "key": "FinalBossVoice/Line6",
+      "label": "Bonus offer 1",
+      "text": "There is a bonus challenge.",
+      "locked": false,
+      "bonusOffer": true
+    },
+    {
+      "key": "FinalBossVoice/Line7",
+      "label": "Bonus offer 2",
+      "text": "Do you want to enter the bonus wave?",
+      "locked": false,
+      "bonusOffer": true
+    }
+  ]
+}

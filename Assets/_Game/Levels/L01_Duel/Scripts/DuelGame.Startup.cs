@@ -9,7 +9,6 @@ namespace GoGhost.Duel
         Coroutine startup;
         internal float StartupProgress { get; private set; } = -1f;
         internal bool StartupFailed { get; private set; }
-        Shader finalBossShader;
 
         internal void StartGame()
         {
@@ -39,19 +38,12 @@ namespace GoGhost.Duel
                 if (prefab == null) { FailStartup("Missing encounter prefab."); yield break; }
                 foreach (var set in prefab.GetComponentsInChildren<SfxSet>(true)) set.CollectAudioClips(clips);
             }
-            if (finalBossShader == null)
-            {
-                var request = Resources.LoadAsync<Shader>("FinalBossRainbow");
-                yield return request;
-                finalBossShader = request.asset as Shader;
-                if (finalBossShader == null) { FailStartup("Missing encounter shader."); yield break; }
-            }
             SetStartupProgress(.05f);
-            int voiceCount = HandlerVoice.Lines.Length + FinalBossLines.Length;
+            int voiceCount = HandlerVoice.Lines.Length + VoiceStudioCatalog.Current.Visit.Length;
             for (int i = 0; i < voiceCount; i++)
             {
                 string line = i < HandlerVoice.Lines.Length ? HandlerVoice.Lines[i]
-                    : FinalBossClipPath(i - HandlerVoice.Lines.Length);
+                    : VoiceStudioCatalog.Current.Visit[i - HandlerVoice.Lines.Length].key;
                 if (!handler.TryGetLine(line, out var clip))
                 {
                     var request = Resources.LoadAsync<AudioClip>(line);

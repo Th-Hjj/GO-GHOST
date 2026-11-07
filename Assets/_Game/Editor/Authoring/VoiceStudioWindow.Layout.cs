@@ -21,9 +21,7 @@ namespace GoGhost.Duel.EditorTools
                 case "Handler/WaveTwoClear": return "第二波通关";
                 case "Handler/BonusClear": return "奖励战通关";
             }
-            const string prefix = "FinalBossVoice/Line";
-            return line.key.StartsWith(prefix, StringComparison.Ordinal)
-                ? "会面 · 第 " + line.key.Substring(prefix.Length) + " 页" : line.label;
+            return line.label;
         }
 
         static void Hint(string text) => EditorGUILayout.LabelField(text, EditorStyles.wordWrappedMiniLabel);

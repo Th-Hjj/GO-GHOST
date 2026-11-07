@@ -335,14 +335,15 @@ public static partial class BossEncounterSmoke
             yield return Until(()=>game.Phase==DuelPhase.Fight,4);yield return Seconds(1.5f);
             Check("normal W"+wave+" enters with expected Bosses",game.Phase==DuelPhase.Fight&&game.Wave==wave&&game.Bosses.Count==1);
             foreach(var boss in game.Bosses)boss.Health.TakeDamage(boss.Health.MaxHealth,game.Player.gameObject);
-            yield return Until(()=>game.Phase==(wave==2?DuelPhase.FinalBossReady:DuelPhase.Configure),2);
+            yield return Until(()=>game.Phase==(wave==2?DuelPhase.Configure:DuelPhase.Between),2);
             if(wave<2)
             {
-                Check("subsequent setup remains Start Fight",ConfigButtonNamed("StartFight").GetComponentInChildren<TMPro.TMP_Text>().text=="Start Fight");
-                yield return PointerConfig("StartFight");
+                ClickConfig("ContinueToWaveTwo");
+                ClickConfig("StartFight", "Start Testing");
+                ClickConfig("Enter Wave 2");
             }
         }
-        Check("two-wave progress reaches Meet the Final Boss",game.Phase==DuelPhase.FinalBossReady);
+        Check("two-wave progress reaches final boss configuration",game.Phase==DuelPhase.Configure && game.Wave==DuelGame.FinalBossWave);
         yield return TrainingThreat();
         yield return TrainingFresh(d=>V2Rule(d,new ConditionalRule{Condition=25,Action="D01"}));
         yield return Until(()=>game.Rules.AcceptedDodges>0,5);

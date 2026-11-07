@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 
 namespace GoGhost.Duel
 {
-    public enum DuelPhase { Menu, Configure, Prepare, Fight, Between, Failed, Complete, Training, CharacterCreation, FinalBossReady, FinalBoss }
+    public enum DuelPhase { Menu, Configure, Prepare, Fight, Between, Failed, Complete, Training, CharacterCreation, BonusOffer, FinalBoss }
 
     // Encounter progression; the legacy components own every physical action and hit.
     public sealed partial class DuelGame : MonoBehaviour
@@ -40,7 +40,7 @@ namespace GoGhost.Duel
         public ConditionalController Rules {get;private set;}
         public CharacterAppearance Appearance { get; private set; }
         public Bounds ArenaBounds => arenaBounds;
-        public bool TrainingPending => Phase == DuelPhase.Configure && Wave != FinalBossWave;
+        public bool TrainingPending => Phase == DuelPhase.Configure;
         public bool LegsAI => lockedLegs;
         public bool ArmsAI => lockedArms;
         public bool SpineAI => lockedSpine;
@@ -84,7 +84,6 @@ namespace GoGhost.Duel
         {
             FinishMetrics("abandoned", reason: "scene_closed");
             PlayMetrics.EndRun("scene_closed");
-            ClearFinalBoss();
             ClearPlatformLayout();
             playerRespawnAt = enemyRespawnAt = 0;
             Player?.GetComponent<OfficerVisual>()?.ClearConditionalGlow();
@@ -97,7 +96,7 @@ namespace GoGhost.Duel
         void OnApplicationFocus(bool focus)
         {
             if (!focus) developerResumeOnClose = false;
-            if (!focus && (Phase == DuelPhase.Fight || Phase == DuelPhase.Prepare || Phase == DuelPhase.Training)) SetPause(true);
+            if (!focus && (Phase == DuelPhase.Fight || Phase == DuelPhase.Prepare || Phase == DuelPhase.Training || Phase == DuelPhase.FinalBoss)) SetPause(true);
         }
         public void NewGame()
         {
@@ -161,7 +160,6 @@ namespace GoGhost.Duel
         void CreateEncounter(bool training)
         {
             ClearEncounter();
-            finalBossVisit = false;
             ApplyPlatformLayout(training);
             lockedLegs = lockedArms = lockedSpine = false;
             encounter = Instantiate(combatPrefab, transform);
@@ -234,8 +232,8 @@ namespace GoGhost.Duel
                 return;
             }
             FirstConfiguration = false;
-            SetPhase(DuelPhase.Prepare);
-            music?.PlayWave(Wave);
+            if (Wave == FinalBossWave) StartBossDialogue(DuelPhase.FinalBoss);
+            else StartCountdown();
             Trace($"start wave={Wave} player={Player.CurrentHealth} bosses={HealthSummary()} observation=empty");
         }
         void ConfigureDodgeBodies()
@@ -275,6 +273,11 @@ namespace GoGhost.Duel
                 if (actor != null) summary += (summary.Length == 0 ? "" : ",") + actor.ActorId + ":" + actor.Health.CurrentHealth;
             return summary;
         }
+        void StartCountdown()
+        {
+            SetPhase(DuelPhase.Prepare);
+            music?.PlayWave(Wave);
+        }
         void BeginCombat()
         {
             foreach (var body in encounter.GetComponentsInChildren<Rigidbody2D>()) body.simulated = true;
@@ -287,7 +290,7 @@ namespace GoGhost.Duel
         }
         public void Reconfigure()
         {
-            bool pausedEncounter = Paused && (Phase == DuelPhase.Training || Phase == DuelPhase.Prepare || Phase == DuelPhase.Fight);
+            bool pausedEncounter = Paused && (Phase == DuelPhase.Training || Phase == DuelPhase.Prepare || Phase == DuelPhase.Fight || Phase == DuelPhase.FinalBoss);
             if (Phase != DuelPhase.Failed && !pausedEncounter) return;
             ClearEncounter("configuration");
             SetPhase(DuelPhase.Configure);
@@ -300,7 +303,7 @@ namespace GoGhost.Duel
         }
         public void SetPause(bool value)
         {
-            if (Phase != DuelPhase.Fight && Phase != DuelPhase.Prepare && Phase != DuelPhase.Training) return;
+            if (Phase != DuelPhase.Fight && Phase != DuelPhase.Prepare && Phase != DuelPhase.Training && Phase != DuelPhase.FinalBoss) return;
             if (DeveloperToolsOpen && !value) return;
             if (Paused == value) return;
             ApplyPause(value);
@@ -331,11 +334,11 @@ namespace GoGhost.Duel
             StartupProgress = -1f;
             StartupFailed = false;
             if (value == DuelPhase.Menu || value == DuelPhase.CharacterCreation || value == DuelPhase.FinalBoss
-                || Phase == DuelPhase.FinalBoss || value == DuelPhase.Failed || (Phase == DuelPhase.Training && value == DuelPhase.Configure))
+                || Phase == DuelPhase.FinalBoss || Phase == DuelPhase.BonusOffer || value == DuelPhase.Failed || (Phase == DuelPhase.Training && value == DuelPhase.Configure))
                 handler.Stop();
             Phase = value;
             MetricsStage();
-            if (value == DuelPhase.FinalBossReady || value == DuelPhase.Complete) PlayMetrics.EndRun("complete");
+            if (value == DuelPhase.Complete) PlayMetrics.EndRun("complete");
             phaseTime = 0;
             ui.Show();
         }
@@ -363,7 +366,6 @@ namespace GoGhost.Duel
             Time.timeScale = 1;
             AudioListener.pause = false;
             if (encounter != null) { encounter.SetActive(false); Destroy(encounter); }
-            ClearFinalBoss();
             ClearPlatformLayout();
             encounter = null;
             Player = null; Police = null; input = null;
@@ -411,10 +413,24 @@ namespace GoGhost.Duel
             bool defeat = Player.IsDead;
             Trace($"result wave={Wave} player={Player.CurrentHealth} bosses={HealthSummary()} elapsed={FightClock:0.00}");
             FinishMetrics(defeat ? "died" : "won", !defeat && Wave == 2);
+            if (!defeat && Wave == 2)
+            {
+                PlayMetrics.EndRun("complete");
+                ClearEncounter();
+                Wave = FinalBossWave;
+                SetPhase(DuelPhase.Configure);
+                sounds?.Play(Sfx.Victory);
+                handler.WaveCleared(2);
+                return;
+            }
             StopCombat();
             sounds?.Play(defeat ? Sfx.Defeat : Sfx.Victory);
-            SetPhase(defeat ? DuelPhase.Failed : Wave == BonusWave ? DuelPhase.Complete
-                : Wave == 2 ? DuelPhase.FinalBossReady : DuelPhase.Between);
+            if (!defeat && Wave == FinalBossWave)
+            {
+                StartBossDialogue(DuelPhase.BonusOffer);
+                return;
+            }
+            SetPhase(defeat ? DuelPhase.Failed : Wave == BonusWave ? DuelPhase.Complete : DuelPhase.Between);
             if (!defeat)
                 handler.WaveCleared(Wave);
         }
@@ -430,7 +446,7 @@ namespace GoGhost.Duel
         {
             NewGame(); FinishCharacterCreation(installStarterRule: false); Wave = Mathf.Clamp(wave, 1, BonusWave); metricsWaveJumpPending = true;
             if (Wave > 2) { PlayMetrics.MarkTestData(); PlayMetrics.EndRun("developer_wave_jump"); }
-            if (Wave == FinalBossWave) CreateFinalBossPage(); else ui.Show();
+            ui.Show();
         }
         public void ObserveThirdWave()
         {

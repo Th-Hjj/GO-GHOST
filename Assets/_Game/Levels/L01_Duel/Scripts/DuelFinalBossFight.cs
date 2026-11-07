@@ -11,9 +11,6 @@ namespace GoGhost.Duel
     public sealed partial class DuelGame
     {
         const int FinalBossFirstHealth = 1400, FinalBossSecondHealth = 1000;
-        // True only while the dialogue page is showing (it has no platforms); the fight itself uses the 5-platform layout.
-        bool finalBossVisit;
-
         BossAgent CreateFinalBoss(float spawnX)
         {
             // Instantiated under an INACTIVE holder so Awake runs only after the 2x scale is set:
@@ -32,8 +29,9 @@ namespace GoGhost.Duel
             // Stand the 2x body on the floor.
             var shape = instance.GetComponent<Collider2D>();
             float lift = platforms[0].bounds.max.y + .02f - shape.bounds.min.y;
-            instance.transform.position += Vector3.up * lift;
-            instance.GetComponent<Rigidbody2D>().position += Vector2.up * lift;
+            var spawn = instance.transform.position + Vector3.up * lift;
+            instance.GetComponent<Rigidbody2D>().position = spawn;
+            instance.transform.position = spawn;
             Physics2D.SyncTransforms();
 
             var actor = instance.GetComponent<BossAgent>();
@@ -51,6 +49,7 @@ namespace GoGhost.Duel
             DraftLoadout = new ConditionalLoadout();   // no rules installed
             try { BindEncounterRules(); }
             finally { DraftLoadout = installed; }
+            ui.Show();
             Trace("final boss phase 2: player assistance removed");
         }
     }

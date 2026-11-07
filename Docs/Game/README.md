@@ -25,17 +25,17 @@ New Game opens **Who Are You**. Draw a face, optionally enter a nickname and cho
 
 Each new character on `main` receives **Incoming Attack (Any) → Jump**. It uses Jump once and takes one of the 20 rule slots. Players can edit or remove it for the rest of that run. The editor offers 11 conditions and seven actions. New rules pair one condition with one action. Older rules can contain several conditions joined by AND. The catalog documents priority, manual fallback and choices that require reselection. [Conditional Rules](ConditionalRules.md)
 
-Before Wave 1 (Gunner), Wave 2 (Swordsman) and the optional Bonus (both), **Start Testing** opens practice with the Dummy Robot. **Back** reopens configuration. **Enter Wave 1**, **Enter Wave 2** or **Enter Bonus Wave** starts the corresponding countdown. Defeat offers a direct **Retry** or a return to **Configuration**. The drawn face, nickname and edited rules carry through those transitions.
+Before Wave 1 (Gunner), Wave 2 (Swordsman), Wave 3 (Final Boss) and the optional Bonus (both), **Start Testing** opens practice with the Dummy Robot. **Back** reopens configuration. **Enter Wave 1**, **Enter Wave 2** or **Enter Bonus Wave** starts the corresponding countdown. Defeat offers a direct **Retry** or a return to **Configuration**. The drawn face, nickname and edited rules carry through those transitions.
 
 Help provides **What're the controls?** and **What is configuration?**, preserving the current draft on return. Its pages contain brief controls and the Condition/Action definitions only. Presets and death-based unlocks are removed. Each New Game saves one independent JSON record with the character nickname; see [Gameplay Analytics](GameplayAnalytics.md).
 
-Wave 1 victory waits for **Continue to Wave 2**. Wave 2 victory ends metrics and waits for **Meet the Final Boss**. Each of the seven dialogue lines has its own voice clip. **Yes** opens Bonus configuration and **No** returns to the menu. [Progression and dialogue](BossEncounters.md#final-boss-and-optional-bonus--approved-2026-10-29)
+Wave 2 victory closes the playtest record and opens Wave 3 Body Configuration. Start Testing enters the Test Room. Enter Wave 3 stages Walker's two-phase Final Boss with five platforms. His five provisional voiced lines precede the three-second countdown. Victory offers the optional duo Bonus through configuration and Testing. [Progression and dialogue](BossEncounters.md#final-boss-and-optional-bonus)
 
 ## Builds and Editor checks
 
 The refreshed **Beta 33%** packages for Windows x64 and macOS include Happy’s starter Jump rule, personalized offline greeting, tutorial and victory lines. The desktop Kokoro bank contains Heart (speaker 0, Happy) and Michael (speaker 1, reserved for the player). Fixed dialogue uses recorded clips. [Download Beta 33%](https://github.com/Th-Hjj/GO-GHOST/releases/tag/beta-33)
 
-**GO GHOST > Playtest > Wave 1 / Wave 2 / Bonus Wave** opens empty configuration for a developer test. **Wave 3** opens the Final Boss visit. When using the older **Final Boss and Bonus Progression** fixture, account for its automatic Wave 1 transition assumption before interpreting results. See the [implementation log](ImplementationLog.md) for checks actually run.
+**GO GHOST > Playtest > Wave 1 / Wave 2 / Bonus Wave** opens empty configuration for a developer test. **Wave 3** opens Wave 3 configuration for a quick preview through Testing. See the [implementation log](ImplementationLog.md) for checks actually run.
 
 ## Project organization
 

@@ -1,6 +1,6 @@
 # Gameplay Analytics
 
-Thomas, 2026-10-29: one independent record per New Game, identified by the character nickname. No participant numbering or cross-run player account. Schema 4 ends measurement at successful Wave 2 completion and excludes the Final Boss visit and all Bonus activity. F8 has Tuning / Waves / Analytics, with Fight / Run / Actions / History views.
+Thomas, 2026-10-29: one independent record per New Game, identified by the character nickname. No participant numbering or cross-run player account. Schema 4 ends measurement at successful Wave 2 completion and excludes all Wave 3 and Bonus activity. F8 has Tuning / Waves / Analytics, with Fight / Run / Actions / History views.
 
 ## What is recorded
 
@@ -26,7 +26,7 @@ The player-facing **Testing** room uses the internal Training phase. Practice be
 
 Remaining Boss HP measures encounter progress. W2 victory sets `levelCleared` and finishes the record with `endReason=complete`.
 
-The Final Boss room and the entire Bonus flow are outside measurement: no visit/dialogue/choice events, time, configuration/Help counters, attempts, operations, health, deaths or results. The completed W2 JSON remains unchanged through Yes/No, Bonus pause, retry and victory. Neither stage starts another record. A developer jump to either unmeasured stage ends an existing test record before entry. The old four-slot `deathsByWave` shape remains compatible; slot 3 is unused in schema 4. Old schema 3 files retain their original W3 duo interpretation and are never rewritten.
+Wave 3 configuration, Testing, dialogue, combat and the entire Bonus flow are outside measurement: no visit/dialogue/choice events, time, configuration/Help counters, attempts, operations, health, deaths or results. The completed W2 JSON remains unchanged through Yes/No, Bonus pause, retry and victory. Neither stage starts another record. A developer jump to either unmeasured stage ends an existing test record before entry. The old four-slot `deathsByWave` shape remains compatible; slot 3 is unused in schema 4. Old schema 3 files retain their original W3 duo interpretation and are never rewritten.
 
 ## Saving and collection
 
@@ -38,4 +38,4 @@ Only JSON is generated for current schema 4. Existing JSON, CSV and older metric
 
 ## Verification
 
-The **Final Boss and Bonus Progression** Editor fixture contains a byte comparison of the completed W2 JSON, but its Wave 1 step assumes an automatic transition. **Help and Named Metrics** still expects positive Aim Assist time. These assumptions predate the current victory button and catalog. The [implementation log](ImplementationLog.md) records which versions and checks actually ran.
+The **Final Boss and Bonus Progression** Editor fixture checks the completed W2 JSON again after entering Bonus. **Help and Named Metrics** still expects positive Aim Assist time. That assumption predates the current catalog. The [implementation log](ImplementationLog.md) records which versions and checks actually ran.

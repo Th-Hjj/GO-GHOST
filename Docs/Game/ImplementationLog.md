@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-11-06 — Walker's Final Boss in Wave 3
+
+- Wave 2 victory closes metrics and opens Wave 3 configuration. Testing leads to Walker's five provisional lines with synthesized Boss voice, followed by the three-second countdown and his existing two-phase fight. Winning offers the duo Bonus.
+- Unity 6000.6.0f1 Play Mode progression fixture passed: configuration, Test Room/Back, five staged platforms, five matching voice clips, countdown, combat, retry, both health pools, restored loadout, Bonus entry and byte-identical W2 JSON. Controlled damage tested flow. Balance, listening on speakers and standalone builds were not tested.
+
 ## 2026-11-06 — Free-text speaker auditions and shared tone controls
 
 - The profile page reads the author's Chinese or English test sentence with either speaker and either saved or draft settings. Text auditions create local audio without a publish receipt. Both speakers have five timbre controls in the profile and line editors. The Happy nickname renderer also applies its new bass and saturation settings.

@@ -1,8 +1,7 @@
 Historical integration notes for the two-phase Final Boss prototype
-The current game reaches a voiced dialogue after Wave 2.
-Yes opens configuration for the optional Gunner and Swordsman Bonus.
-Docs/Game/BossEncounters.md describes the active route. The proposed wiring
-below is preserved for reference.
+Walker's original prototype notes follow. The current integration uses Wave 3
+configuration and Testing, then voiced dialogue, countdown and combat.
+See Docs/Game/BossEncounters.md for the active route.
 
 FINAL BOSS: HOW TO APPLY
 No prefab or Inspector work is needed. The boss is built at runtime from the Swordsman prefab.

@@ -97,9 +97,9 @@ public static partial class BossEncounterSmoke
         yield return AlphaFresh(2,null,false); PlayMetrics.MarkTestData(); yield return Seconds(.25f);
         Check("W2 advances with Swordsman health snapshot",game.Phase==DuelPhase.Fight&&game.FightClock>.2f&&PlayMetrics.Current.swordMaxHealth>0&&PlayMetrics.Current.gunnerMaxHealth<0);
         foreach(var boss in game.Bosses)boss.Health.TakeDamage(100000,game.Player.gameObject);
-        yield return Until(()=>game.Phase==DuelPhase.FinalBossReady,.6f);
+        yield return Until(()=>game.Phase==DuelPhase.Configure&&game.Wave==DuelGame.FinalBossWave,.6f);
         var complete=ReadNamedRun(PlayMetrics.JsonPath);
-        Check("Controlled W2 completion closes run with Swordsman endpoint",game.Phase==DuelPhase.FinalBossReady&&complete.finished&&complete.endReason=="complete"
+        Check("Controlled W2 completion closes run with Swordsman endpoint",game.Phase==DuelPhase.Configure&&game.Wave==DuelGame.FinalBossWave&&complete.finished&&complete.endReason=="complete"
             &&complete.levelCleared&&complete.attempts.Last().wave==2&&complete.attempts.Last().swordHealth==0&&complete.activeAttempt.result=="none");
         Check("Single JSON export and schema 4",complete.schemaVersion==4&&!File.Exists(PlayMetrics.CsvPath)&&string.IsNullOrEmpty(PlayMetrics.LastSaveError));
         Record("Named evidence files: "+firstPath+" ; "+secondPath);

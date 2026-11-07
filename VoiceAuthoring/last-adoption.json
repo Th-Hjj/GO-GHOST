@@ -1,0 +1,17 @@
+[
+  {
+    "path": "Assets/_Game/Levels/L01_Duel/Resources/FinalBossVoice/Line5.wav",
+    "old": "VoiceAuthoring/media/fadb512ad1d633a6cc9370f47383c92755cd67554382157658927f0ae5adedf9.wav",
+    "after": "47780aaa3e5bffa1df94e94f77ce4c75cef4ba06881d3e9f2a546eaa4489e84e"
+  },
+  {
+    "path": "VoiceAuthoring/recipes/FinalBossVoice-Line5.json",
+    "old": "",
+    "after": "db8beedb69edd9b0c37e1c715c37efa1a74a34244b3007f15f2a2a3cc22250de"
+  },
+  {
+    "path": "Assets/_Game/Levels/L01_Duel/Resources/VoiceStudioCatalog.json",
+    "old": "VoiceAuthoring/media/d47133d62d541483fc6d72da0633900f70d431cf7f530864050e09674edc5591.json",
+    "after": "6dc5cecf3970de9efe358f0e60e6bb0e470e506574a4b8b299ccb6fbd758ba46"
+  }
+]

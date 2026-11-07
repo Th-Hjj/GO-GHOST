@@ -1,24 +1,22 @@
 # GO GHOST — Boss Encounters
 
-Wave 1, Wave 2 and the optional Bonus each open **Body Configuration**. **Start Testing** opens the practice room with the Dummy Robot. **Back** returns to configuration. **Enter Wave 1**, **Enter Wave 2** or **Enter Bonus Wave** starts the indicated encounter’s three-second preparation. After defeat, **Retry** starts a fresh attempt directly. **Configuration** lets the player edit and test again.
+Wave 1, Wave 2, Wave 3 and Bonus each use **Body Configuration → Start Testing → Test Room**. Back reopens configuration. Defeat offers direct Retry or Configuration and Testing.
 
-Current progression reviewed against source on 2026-11-05. The current summary and named overrides govern; dated foundation sections retain implementation context, not independent delivery authorization. Exact tuning lives in the Boss profiles and SwordCombatSettings. Actual runtime evidence is in [ImplementationLog.md](ImplementationLog.md).
+## Final Boss and optional Bonus
 
-## Final Boss and optional Bonus — approved 2026-10-29
+Wave 1 victory waits for **Continue to Wave 2**. Defeating Swordsman closes the Wave 2 metrics record and opens Wave 3 configuration with the same character and rules. **Enter Wave 3** stages the real Final Boss in the five-platform arena. Player controls, physics and AI wait during the voiced intro. **Next** advances the line. **Fight** starts the usual three-second countdown.
 
-Wave 1 victory shows **WAVE 1 CLEARED** until **Continue to Wave 2** opens configuration. Wave 2 victory shows **WAVE 2 CLEARED** above **Meet the Final Boss** and waits for the player. The visit reuses the arena perimeter/floor with no floating platforms. Its unarmed stickman reuses the combat silhouette, has a continuous vertical rainbow gradient and 9999 HP, and stays stationary. It is a dialogue visit without combat or a countdown. The first line plays on entry. **Next** advances the text and plays the corresponding recording. The seventh line offers **Yes** and **No**.
+Walker's provisional intro, editable in Voice Studio:
 
-1. Hi, I'm the final boss.
-2. I'm glad that you made it here.
-3. The thing is, you won! Congrats!
-4. Turns out we didn't have time to present a final boss fight at the moment.
-5. But... If you enjoyed the game.
-6. There is a bonus challenge.
-7. Do you want to enter the bonus wave?
+1. So. You're the one who got this far.
+2. I'm the final boss.
+3. Everything you've learned, I've already seen.
+4. Let's see if it's enough.
+5. Are you ready?
 
-No returns to Main Menu. Yes opens Body Configuration with the same appearance and equipped rules, then **Start Testing** and **Enter Bonus Wave** lead to the duo encounter. Bonus retains the former duo's five-platform layout, authored spawns, independent health bars, cooperation, combat tuning, Achilles music and both-dead victory. Pause/Configuration and defeat retry remain within Bonus. Runtime wave IDs are 1/2/3/4 (4 is Bonus). Duo references below use Bonus; historical logs and source names such as WaveTwoThreeLayout may still say W3. F8 and Editor playtest entries distinguish Final Boss from Bonus.
+Walker Grupp's prototype (commit `719c843`) uses a 1400-HP first pool and a 1000-HP second pool. The second phase temporarily removes active rule assistance for that attempt. Retry and subsequent configuration use the equipped loadout. The moves, timings and dialogue are available for design review.
 
-The named metrics record ends at successful Wave 2 completion. Final Boss and the entire Bonus flow do not record time, choices, configuration changes, actions, deaths or results; they do not create another record. See [Gameplay Analytics](GameplayAnalytics.md).
+After Wave 3 victory, the Boss voices the two Bonus offer lines. Yes leads to Bonus configuration and Testing, No to the menu. The duo retains its geometry, music, AI and both-dead victory. Wave 3 and Bonus are outside the closed Wave 2 metrics record.
 
 ## Boss friendly fire — approved 2026-10-26
 
@@ -161,7 +159,7 @@ Runtime evidence and NOT TESTED limits belong in Implementation_Log.
 
 - **Optical Camo upgrade (Thomas, 2026-10-05):** conceal body and weapon, replace periodic tracking cues with short departure/takeoff/landing/contact traces and local hit feedback, choose a meaningful physical firing-angle relocation, then use the existing gun attacks with their full tells and resource/shared-threat checks. Damage, health, player tuning and the two explicit duo pairings stay unchanged.
 
-- Wave 1: **Gunner**, a warm-orange (#FF9A62) gunner with a neutral firearm and owner accent. Wave 2: **Swordsman**, a coral-red (#FF6375) swordsman with a neutral blade and owner accent. Wave 3: the Final Boss dialogue visit. Bonus: both combat actors, each with independent health/resources; both must die to win Bonus. Simultaneous player/enemy death is defeat.
+- Wave 1: **Gunner**, a warm-orange (#FF9A62) gunner with a neutral firearm and owner accent. Wave 2: **Swordsman**, a coral-red (#FF6375) swordsman with a neutral blade and owner accent. Wave 3: the two-phase Final Boss. Bonus: both combat actors, each with independent health/resources; both must die to win Bonus. Simultaneous player/enemy death is defeat.
 - Preserve the retained player executors, current Revolver tuning, free aim and stage-specific arena layouts. Player control/configuration follows ConditionalRules; the former autonomous Legs preference and module permissions are retired. Preserve configuration, stationary preparation, retry, pause, next-wave and completion flow. Compatible player rules remain in [RetainedCombatReference.md](RetainedCombatReference.md).
 - Bosses use real movement, collision, resources, attack commitments and public observations. No teleport fallback, input/permission spying, hidden target tracking, forced damage or controlled loss may substitute for success.
 - Bonus cooperation uses the same abilities and damage as the solo waves. **Cross Execution** combines Draw Dash pressure with a previously planned Piercing Shot; its aim must retain the full lock window and may miss.
@@ -227,7 +225,7 @@ Each subsequent preparation starts at the previous active end, with no old extra
 
 Stage-specific layout override, Thomas 2026-10-19: the Arena, boundaries and camera remain shared. Training has one 4.0 x 0.30 one-way platform at x=-5.5, surface 2.1 above the floor. Wave 1 has three mirrored pairs at x=+/-7.5, +/-8.5, +/-9.5, with surfaces 2.1, 4.2, 6.3 above the floor under the later shared-tier correction; each is 4.0 x 0.30. The later W1 override above adds the same-width central platform at the middle tier (seven total). Layout coordinates/widths are centralized in `DuelArenaLayouts.cs`. Ordinary ground jumps and continuous same-side landings must remain possible without Dodge or automatic Jump. The existing navigation continues to measure the active geometry.
 
-Wave 2 and Bonus use five floating platforms, each 4.0 x 0.30 world units. Left-to-right centre x offsets are -8.75, -4.375, 0, 4.375 and 8.75 relative to arena centre; surface heights above the floor are 4.2, 2.1, 4.2, 2.1 and 4.2. The projected adjacent gap is 0.375. Wave 3 has no floating platforms. Visible and collider sizes match; one-way traversal, floor/walls/ceiling, player and camera sizes are preserved.
+Wave 2, Wave 3 and Bonus use five floating platforms, each 4.0 x 0.30 world units. Left-to-right centre x offsets are -8.75, -4.375, 0, 4.375 and 8.75 relative to arena centre; surface heights above the floor are 4.2, 2.1, 4.2, 2.1 and 4.2. The projected adjacent gap is 0.375. Wave 3 starts with the same five platforms. Visible and collider sizes match; one-way traversal, floor/walls/ceiling, player and camera sizes are preserved.
 
 **King metrics:** navigation measures floating support width and nearest same-height centre spacing from real collider surfaces, currently 4 and 8.75. The standard jump's executable rise is 2.328 at jump speed 12, gravity 29.43 and fixed step 0.02; the analytic parabola is not sufficient. Jump candidates must pass the existing full-body trajectory simulation, including acceleration, air control and one-way terrain. Leap range is the feasible trajectory, never a new fixed distance. Current sword melee reach is 3.0 with a fixed 1.5-unit visible blade; the earlier platform-relative blade lengths are historical. Existing DrawDash.Range stays serialized for compatibility but no longer defines travel.
 
@@ -288,4 +286,4 @@ Audio uses Kenney's [Sci-fi Sounds](https://kenney.nl/assets/sci-fi-sounds), [RP
 
 ## Evidence boundary
 
-The **Final Boss and Bonus Progression** Editor fixture contains checks for the W2 JSON cutoff and both dialogue choices. Its Wave 1 step still waits for automatic entry into Wave 2 configuration, while the current game waits for **Continue to Wave 2**. Account for that difference before running it as an end-to-end check. Dated Editor results, build evidence and standalone limits are recorded in the [implementation log](ImplementationLog.md).
+The **Final Boss and Bonus Progression** Editor fixture exercises Wave 2 settlement, Wave 3 Testing, voiced intro, countdown, two health pools, retry and the optional Bonus. See the [implementation log](ImplementationLog.md).

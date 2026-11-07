@@ -6,13 +6,11 @@ namespace GoGhost.Duel
     {
         public const int FinalBossWave = 3, BonusWave = 4;
         public string WaveLabel => Wave == BonusWave ? "BONUS WAVE" : "WAVE " + Wave;
-        static VoiceStudioLine[] FinalBossLines => VoiceStudioCatalog.Current.Visit;
+        VoiceStudioLine[] DialogueLines => Phase == DuelPhase.BonusOffer
+            ? VoiceStudioCatalog.Current.BonusOffer : VoiceStudioCatalog.Current.BossIntro;
         public int FinalBossLine { get; private set; }
-        static string FinalBossClipPath(int index) => FinalBossLines[index].key;
-        public string FinalBossDialogue => FinalBossLines[FinalBossLine].text;
-        public bool FinalBossChoiceReady => FinalBossLine == FinalBossLines.Length - 1;
-        public Enemy FinalBossHealth { get; private set; }
-        Material finalBossMaterial;
+        public string FinalBossDialogue => DialogueLines[FinalBossLine].text;
+        public bool FinalBossChoiceReady => FinalBossLine == DialogueLines.Length - 1;
 
         public void ContinueToWaveTwo()
         {
@@ -22,69 +20,33 @@ namespace GoGhost.Duel
             SetPhase(DuelPhase.Configure);
         }
 
-        public void MeetFinalBoss()
+        void StartBossDialogue(DuelPhase dialoguePhase)
         {
-            if (Phase != DuelPhase.FinalBossReady || DeveloperToolsOpen) return;
-            CreateFinalBossPage();
-        }
-
-        void CreateFinalBossPage()
-        {
-            ClearEncounter();
-            PlayMetrics.EndRun("final_boss_visit");
-            Wave = FinalBossWave;
-            FirstConfiguration = false;
             FinalBossLine = 0;
-            FightClock = 0;
-            ApplyPlatformLayout(false);
-            encounter = new GameObject("Final Boss Visit");
-            encounter.transform.SetParent(transform, false);
-            var boss = new GameObject("Final Boss");
-            boss.transform.SetParent(encounter.transform, false);
-            FinalBossHealth = boss.AddComponent<Enemy>();
-            FinalBossHealth.ConfigureFixedSingleLife(9999);
-            FinalBossHealth.StopCombat();
-            boss.GetComponent<Rigidbody2D>().simulated = false;
-            var view = Instantiate(swordsmanPrefab.GetComponentInChildren<BossSilhouetteView>(), boss.transform);
-            view.transform.localPosition = Vector3.zero;
-            view.transform.localScale = Vector3.one;
-            view.ConfigurePlaceholder();
-
-            var renderers = view.GetComponentsInChildren<SpriteRenderer>();
-            var bounds = new Bounds();
-            bool hasBounds = false;
-            foreach (var part in renderers)
-            {
-                if (!part.enabled || part.sprite == null) continue;
-                if (!hasBounds) { bounds = part.bounds; hasBounds = true; }
-                else bounds.Encapsulate(part.bounds);
-            }
-            // Stand the unchanged combat silhouette on the shared floor.
-            float floorY = platforms[0].bounds.max.y;
-            boss.transform.position = new Vector3(arenaBounds.center.x, floorY - bounds.min.y, 0);
-            finalBossMaterial = new Material(finalBossShader != null ? finalBossShader : Resources.Load<Shader>("FinalBossRainbow"));
-            finalBossMaterial.SetFloat("_RainbowBottom", floorY);
-            finalBossMaterial.SetFloat("_RainbowHeight", bounds.size.y);
-            foreach (var part in renderers)
-            {
-                part.sharedMaterial = finalBossMaterial;
-                part.color = Color.white;
-            }
-            SetPhase(DuelPhase.FinalBoss);
-            handler.PlayLine(FinalBossClipPath(FinalBossLine));
+            SetPhase(dialoguePhase);
+            handler.PlayLine(DialogueLines[0].key);
         }
 
         public void AdvanceFinalBossDialogue()
         {
-            if (Phase != DuelPhase.FinalBoss || DeveloperToolsOpen || FinalBossChoiceReady) return;
+            if (Paused || DeveloperToolsOpen || (Phase != DuelPhase.FinalBoss && Phase != DuelPhase.BonusOffer)) return;
+            if (FinalBossChoiceReady)
+            {
+                if (Phase == DuelPhase.FinalBoss)
+                {
+                    input.SuppressUiFireUntilRelease();
+                    StartCountdown();
+                }
+                return;
+            }
             FinalBossLine++;
             ui.Show();
-            handler.PlayLine(FinalBossClipPath(FinalBossLine));
+            handler.PlayLine(DialogueLines[FinalBossLine].key);
         }
 
         public void ChooseBonus(bool enter)
         {
-            if (Phase != DuelPhase.FinalBoss || DeveloperToolsOpen || !FinalBossChoiceReady) return;
+            if (Phase != DuelPhase.BonusOffer || DeveloperToolsOpen || !FinalBossChoiceReady) return;
             if (!enter)
             {
                 MainMenu();
@@ -96,12 +58,5 @@ namespace GoGhost.Duel
             SetPhase(DuelPhase.Configure);
         }
 
-        void ClearFinalBoss()
-        {
-            FinalBossHealth = null;
-            FinalBossLine = 0;
-            if (finalBossMaterial != null) Destroy(finalBossMaterial);
-            finalBossMaterial = null;
-        }
     }
 }

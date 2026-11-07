@@ -136,8 +136,8 @@ namespace GoGhost.Duel
             DraftLoadout=DraftLoadout.Copy();
             Wave=wave;
             FirstConfiguration=false;
-            if(wave==FinalBossWave){CreateFinalBossPage();return;}
             SetPhase(DuelPhase.Configure);
+            if (wave == FinalBossWave) return;
             StartFight();
         }
 
@@ -156,7 +156,7 @@ namespace GoGhost.Duel
             }
             DeveloperToolsOpen=true;
             MetricsStage();
-            developerResumeOnClose=!Paused&&(Phase==DuelPhase.Prepare||Phase==DuelPhase.Fight||Phase==DuelPhase.Training);
+            developerResumeOnClose=!Paused&&(Phase==DuelPhase.Prepare||Phase==DuelPhase.Fight||Phase==DuelPhase.Training||Phase==DuelPhase.FinalBoss);
             if(developerResumeOnClose)SetPause(true);else ui.Show();
         }
     }

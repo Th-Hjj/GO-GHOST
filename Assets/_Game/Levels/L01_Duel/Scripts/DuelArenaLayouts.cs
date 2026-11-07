@@ -46,7 +46,7 @@ namespace GoGhost.Duel
 
         void ApplyPlatformLayout(bool training)
         {
-            var layout = training ? TrainingLayout : Wave == FinalBossWave ? System.Array.Empty<PlatformPlacement>()
+            var layout = training ? TrainingLayout
                 : Wave == 1 ? WaveOneLayout : WaveTwoThreeLayout;
 
             // The existing list contains the floor first, followed by the five one-way platforms.

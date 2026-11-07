@@ -77,6 +77,11 @@
 
 - Consolidated voice direction and archived the selected listening references. Thomas approved Happy B-light and retained Final Boss v0.3 as the provisional baseline. This stage covers production documentation and reference audio.
 
+## 2026-11-05 — Character upload and Happy’s opening question
+
+- Happy asks “Who are you?” on entering character creation, using a recorded Heart line at 1.1×. The character button reads **Upload** and the progress bar reads **Uploading** with the preparation percentage.
+- The formal scene compiled and ran in the Editor. New Game played the 0.80 s clip, Back stopped it, and a second visit showed **Uploading 0%** after clicking Upload. Preparation completed and the normal buttons led through Body Configuration, Testing and the Wave 1 countdown into combat. Listening and standalone builds were not tested.
+
 ## 2026-11-05 — Beta 33% release refresh
 
 - Reduced the desktop Kokoro voice bank from 54 speakers (28,200,960 bytes) to two (1,044,480 bytes). Heart and Michael retain their original embeddings at local IDs 0 and 1. Verified both slices byte-for-byte and checked that only speaker metadata changed in the ONNX file. The fixed recordings and pronunciation dictionaries use the same assets.

@@ -21,7 +21,7 @@ GO GHOST is a single-player, fixed-camera 2D arena game. Use Unity **6000.6.0f1*
 
 `Assets/_Game/Levels/L01_Duel/Scenes/GO GHOST Duel.unity`
 
-New Game opens **Who Are You**. Draw a face, optionally enter a nickname and choose **Start Game**. The loading bar covers encounter audio, dialogue clips and offline greeting preparation. Happy greets the player by name when synthesis succeeds and uses a recorded greeting otherwise. In the first **Body Configuration**, Happy introduces the editor. Opening **+ Add Rule** cues the farewell.
+New Game opens **Who Are You**, where Happy asks “Who are you?” aloud. Draw a face, optionally enter a nickname and choose **Upload**. The **Uploading** progress bar covers encounter audio, dialogue clips and offline greeting preparation. Happy greets the player by name when synthesis succeeds and uses a recorded greeting otherwise. In the first **Body Configuration**, Happy introduces the editor. Opening **+ Add Rule** cues the farewell.
 
 Each new character on `main` receives **Incoming Attack (Any) → Jump**. It uses Jump once and takes one of the 20 rule slots. Players can edit or remove it for the rest of that run. The editor offers 11 conditions and seven actions. New rules pair one condition with one action. Older rules can contain several conditions joined by AND. The catalog documents priority, manual fallback and choices that require reselection. [Conditional Rules](ConditionalRules.md)
 

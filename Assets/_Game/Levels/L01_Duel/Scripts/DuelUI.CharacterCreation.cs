@@ -104,7 +104,7 @@ namespace GoGhost.Duel
             input.textComponent = (TextMeshProUGUI)text; input.placeholder = placeholder;
             input.text = game.Appearance.Name;
             input.onValueChanged.AddListener(value => { game.Appearance.Name = value; PlayMetrics.SetName(value); });
-            characterStart = ConfigButton("CreateCharacterContinue", "Start Game", page, new Vector2(0, -340), new Vector2(240, 60), game.StartGame, style:DuelControlStyle.Primary);
+            characterStart = ConfigButton("CreateCharacterContinue", "Upload", page, new Vector2(0, -340), new Vector2(240, 60), game.StartGame, style:DuelControlStyle.Primary);
             ConfigButton("CreateCharacterBack", "Back", page, new Vector2(-680, 370), new Vector2(120, 48), game.MainMenu, style:DuelControlStyle.Navigation);
             if (game.StartupFailed)
                 startupError = Text("Couldn't load the game. Please try again.", page, new Vector2(0, -398), new Vector2(680, 40), 22);
@@ -135,7 +135,7 @@ namespace GoGhost.Duel
             if (percent == displayedPercent) return;
             displayedPercent = percent;
             startupFill.anchorMax = new Vector2(percent / 100f, 1);
-            startupLabel.text = "Loading " + percent + "%";
+            startupLabel.text = "Uploading " + percent + "%";
         }
     }
 }

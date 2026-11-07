@@ -100,7 +100,7 @@ namespace GoGhost.Duel
             yield break;
         }
 
-        internal void PlayGreeting(string nickname)
+        internal void PlayGreeting(string nickname, Action installExample)
         {
             speaker.volume = VoiceStudioCatalog.Current.Volume(false);
             tutorialActive = true;
@@ -111,7 +111,7 @@ namespace GoGhost.Duel
                 WaitForClick(VoiceStudioCatalog.Current.greetingTemplate.Replace("{name}", nickname));
             }
             else SpeakDialogue("Handler/Greeting");
-            StartCoroutine(ConfigurationTutorial());
+            StartCoroutine(ConfigurationTutorial(installExample));
         }
 
         internal void RuleEditorOpened() => openedRule = true;
@@ -121,16 +121,16 @@ namespace GoGhost.Duel
             if (tutorialActive) Stop();
         }
 
-        IEnumerator ConfigurationTutorial()
+        IEnumerator ConfigurationTutorial(Action installExample)
         {
             while (PendingDialogue != null) yield return null;
             ReleaseGreeting();
-            SpeakSequence(TutorialIntro);
+            SpeakSequence(TutorialIntro, installExample: installExample);
             while (PendingDialogue != null || !openedRule || AudioListener.pause) yield return null;
             SpeakSequence(TutorialGoodbye, () => tutorialActive = false);
         }
 
-        void SpeakSequence(string prefix, Action finished = null)
+        void SpeakSequence(string prefix, Action finished = null, Action installExample = null)
         {
             var lines = VoiceStudioCatalog.Current.lines;
             int index = 0;
@@ -141,6 +141,7 @@ namespace GoGhost.Duel
                     var line = lines[index++];
                     if (!line.key.StartsWith(prefix, StringComparison.Ordinal)) continue;
                     SpeakDialogue(line.key, Next);
+                    if (line.key == "Handler/TutorialIntroJump") installExample?.Invoke();
                     return;
                 }
                 finished?.Invoke();

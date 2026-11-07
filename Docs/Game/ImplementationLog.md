@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — Happy demonstrates the first rule
+
+First configuration starts empty. Happy introduces a rule, installs Incoming Attack (Any) → Jump as she speaks the example, and explains when she will jump. The example shares the manual editor’s row and body installation feedback. Fast iteration: compilation and Play Mode skipped.
+
 ## 2026-11-07 — Happy’s dialogue box and click behaviour
 
 - Configuration dialogue fills the bottom-left footer up to the action buttons. Happy’s introduction, farewell and result messages have individual sentence recordings. A click reveals a partial line, then a click on a full line advances and stops its remaining audio. There is no click instruction.

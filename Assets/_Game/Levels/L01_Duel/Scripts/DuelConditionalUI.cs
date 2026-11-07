@@ -696,6 +696,17 @@ namespace GoGhost.Duel
             int row=selectorRow;
             var complete=pendingRule.Copy();
             string change=row==displayedRules.Count?"add":"edit";
+            InstallConfiguredRule(complete, row, change);
+        }
+
+        internal void InstallTutorialJumpRule()
+        {
+            if (game.Phase != DuelPhase.Configure || game.DraftLoadout.TotalRules >= ConditionalCatalog.PlayerRuleLimit) return;
+            InstallConfiguredRule(ConditionalLoadout.CreateTutorialJumpRule(), displayedRules.Count, null);
+        }
+
+        void InstallConfiguredRule(ConditionalRule complete, int row, string change)
+        {
             completedPreview=complete.Copy();completedPreviewRow=row;
             installedSystem=RuleSystem(complete);installedRow=row;installedAt=Time.unscaledTime;
             pendingRule=null;pendingRow=selectorRow=-1;selectingAdditional=false;

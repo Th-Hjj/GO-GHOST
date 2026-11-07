@@ -69,13 +69,27 @@
     {
       "key": "Handler/TutorialIntro8",
       "label": "Configuration introduction 6",
-      "text": "Take a moment to inspect your new body's configuration page.",
+      "text": "For example, you can add a rule that says...",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialIntroJump",
+      "label": "Configuration introduction 7",
+      "text": "When there's an incoming attack, jump.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialIntroAssist",
+      "label": "Configuration introduction 8",
+      "text": "So I will identify incoming attacks, and make you jump at the right time.",
       "locked": false,
       "transcribed": false
     },
     {
       "key": "Handler/TutorialIntro9",
-      "label": "Configuration introduction 7",
+      "label": "Configuration introduction 9",
       "text": "Then click on Add Rule.",
       "locked": false,
       "transcribed": false

@@ -125,14 +125,10 @@ namespace GoGhost.Duel
             if (Phase != DuelPhase.CharacterCreation || DeveloperToolsOpen || startup != null) return;
             Appearance.Name = Appearance.Name.Trim();
             PlayMetrics.SetName(Appearance.DisplayName, true);
-            if (installStarterRule)
-            {
-                DraftLoadout = ConditionalLoadout.ForNewCharacter();
-                PlayMetrics.RecordConfiguration(DraftLoadout);
-            }
+            PlayMetrics.RecordConfiguration(DraftLoadout);
             UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
             SetPhase(DuelPhase.Configure);
-            handler.PlayGreeting(Appearance.Name);
+            handler.PlayGreeting(Appearance.Name, installStarterRule ? ui.InstallTutorialJumpRule : (System.Action)null);
         }
         internal void RuleEditorOpened() => handler.RuleEditorOpened();
         public void SetDraft(int module, bool automatic)

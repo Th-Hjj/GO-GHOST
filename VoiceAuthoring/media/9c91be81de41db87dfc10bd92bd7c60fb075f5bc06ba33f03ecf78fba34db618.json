@@ -1,0 +1,210 @@
+{
+  "happySub": 0.42,
+  "happyDrive": 1.9,
+  "bossElectronic": 0,
+  "bossNearDb": 0,
+  "bossSpaceDb": 0,
+  "masterDb": 0,
+  "matchTarget": false,
+  "targetDb": -22,
+  "happyDb": 0,
+  "bossDb": 0,
+  "happySpeed": 1.05,
+  "bossSpeed": 1.3,
+  "electronic": 0.15,
+  "nearDb": 0,
+  "spaceDb": 0,
+  "bossSub": 0.42,
+  "bossDrive": 1.9,
+  "greetingTemplate": "Nice to meet you, {name}.",
+  "openingDelay": 0.3,
+  "lines": [
+    {
+      "key": "Handler/WhoAreYou",
+      "label": "Character creation",
+      "text": "Who are you?",
+      "locked": true
+    },
+    {
+      "key": "Handler/Greeting",
+      "label": "Greeting fallback",
+      "text": "Nice to meet you.",
+      "locked": false
+    },
+    {
+      "key": "Handler/TutorialIntro",
+      "label": "Configuration introduction 1",
+      "text": "I know you must be confused, but don't worry.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialIntro2",
+      "label": "Configuration introduction 2",
+      "text": "I will help you.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialIntro3",
+      "label": "Configuration introduction 3",
+      "text": "My name is Happy.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialIntro4",
+      "label": "Configuration introduction 4",
+      "text": "I'm an experimental AI installed in your brain.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialIntro5",
+      "label": "Configuration introduction 5",
+      "text": "Your body was nearly destroyed during the last mission.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialIntro6",
+      "label": "Configuration introduction 6",
+      "text": "I helped you regain control of it.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialIntro7",
+      "label": "Configuration introduction 7",
+      "text": "You'll be able to do things that used to be impossible for humans.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialIntro8",
+      "label": "Configuration introduction 8",
+      "text": "Take a moment to inspect your new body's configuration page.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialIntro9",
+      "label": "Configuration introduction 9",
+      "text": "Then click on Add Rule.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialGoodbye",
+      "label": "Configuration farewell 1",
+      "text": "Unfortunately, I don't have time to explain the system to you.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialGoodbye2",
+      "label": "Configuration farewell 2",
+      "text": "I need to finish the Alpha Feasibility Pitch right now.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialGoodbye3",
+      "label": "Configuration farewell 3",
+      "text": "Good luck figuring out the body configuration system.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialGoodbye4",
+      "label": "Configuration farewell 4",
+      "text": "Bye.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/WaveOneClear",
+      "label": "Wave 1 clear 1",
+      "text": "Wave one cleared.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/WaveOneClear2",
+      "label": "Wave 1 clear 2",
+      "text": "Good job.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/WaveTwoClear",
+      "label": "Wave 2 clear 1",
+      "text": "Wave two cleared.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/WaveTwoClear2",
+      "label": "Wave 2 clear 2",
+      "text": "Clean work.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/BonusClear",
+      "label": "Bonus clear 1",
+      "text": "Contract complete.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/BonusClear2",
+      "label": "Bonus clear 2",
+      "text": "Good work.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "FinalBossVoice/Line1",
+      "label": "Wave 3 opening challenge",
+      "bossIntro": true,
+      "text": "So you think you stand a chance against me.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "FinalBossVoice/Line6",
+      "label": "Bonus offer 1",
+      "text": "There is a bonus challenge.",
+      "locked": false,
+      "bonusOffer": true
+    },
+    {
+      "key": "FinalBossVoice/Line7",
+      "label": "Bonus offer 2",
+      "text": "Do you want to enter the bonus wave?",
+      "locked": false,
+      "bonusOffer": true
+    },
+    {
+      "key": "Handler/LookOut",
+      "label": "Wave 3 opening warning",
+      "bossIntro": true,
+      "text": "Look out!",
+      "locked": false
+    },
+    {
+      "key": "FinalBossVoice/Turn1",
+      "label": "Final Boss kneeling",
+      "text": "I don't need this anymore...",
+      "locked": false,
+      "transition": true
+    },
+    {
+      "key": "Handler/EMP",
+      "label": "Final Boss electromagnetic pulse",
+      "text": "E.M...",
+      "locked": false
+    }
+  ]
+}

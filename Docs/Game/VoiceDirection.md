@@ -62,7 +62,7 @@ The [voice catalog](../../Assets/_Game/Levels/L01_Duel/Resources/VoiceStudioCata
 |---|---|---|
 | Happy · creation question | 0.3 seconds after the New Game click, as a voice-only cue while the player draws or types. | Once per New Game. Leaving the page cancels a pending question. |
 | Happy · greeting | Upload prepares an offline whole-sentence nickname greeting on desktop. First configuration plays it, with a fixed recording for empty/unsupported input or synthesis failure. | Once per new character. A click after the greeting advances to the configuration intro. |
-| Happy · configuration intro / farewell | After the greeting is acknowledged, play the nine-sentence intro one page at a time. First Add Rule cues the farewell. | Each line waits for its own click. Leaving the first configuration stops the sequence. |
+| Happy · configuration intro / farewell | After the greeting is acknowledged, play the seven-sentence intro one page at a time. First Add Rule cues the farewell. | Each line waits for its own click. Leaving the first configuration stops the sequence. |
 | Happy · Wave 1 / Wave 2 / Bonus clear | The combat result resolves a genuine victory for the corresponding encounter. | Once at settlement. A click acknowledges each result before progression. Testing, defeat and Retry have no new voice trigger. |
 | Final Boss and Happy · Wave 3 intro | Enter Wave 3 plays the Boss challenge followed by Happy’s “Look out!” | A click after each line advances. Advancing Happy’s completed sentence starts the countdown. |
 | Final Boss · Bonus offer | Wave 3 victory starts the two Bonus lines. | A click after each line advances. The last click reveals Yes / No. |

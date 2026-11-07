@@ -1,0 +1,21 @@
+{
+  "mode": "Synthesize",
+  "source": "VoiceAuthoring/media/56c7ca099220a83a68ee050e4d1451161810837237c010ac4a29557eb38f9148.wav",
+  "reference": "",
+  "text": "Your body was nearly destroyed during the last mission.",
+  "pronunciations": "",
+  "speed": 1.0,
+  "pitch": 0.0,
+  "gain": 0.0,
+  "melody": 0.0,
+  "stress": 0.0,
+  "timing": 0.0,
+  "edits": [],
+  "independent": false,
+  "overrideTone": false,
+  "electronic": 0.15,
+  "nearDb": 0.0,
+  "spaceDb": 0.0,
+  "bossSub": 0.42,
+  "bossDrive": 1.9
+}

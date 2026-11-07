@@ -62,34 +62,20 @@
     {
       "key": "Handler/TutorialIntro5",
       "label": "Configuration introduction 5",
-      "text": "Your body was nearly destroyed during the last mission.",
-      "locked": false,
-      "transcribed": false
-    },
-    {
-      "key": "Handler/TutorialIntro6",
-      "label": "Configuration introduction 6",
-      "text": "I helped you regain control of it.",
-      "locked": false,
-      "transcribed": false
-    },
-    {
-      "key": "Handler/TutorialIntro7",
-      "label": "Configuration introduction 7",
-      "text": "You'll be able to do things that used to be impossible for humans.",
+      "text": "You can now modify your body, so I can better assist you.",
       "locked": false,
       "transcribed": false
     },
     {
       "key": "Handler/TutorialIntro8",
-      "label": "Configuration introduction 8",
+      "label": "Configuration introduction 6",
       "text": "Take a moment to inspect your new body's configuration page.",
       "locked": false,
       "transcribed": false
     },
     {
       "key": "Handler/TutorialIntro9",
-      "label": "Configuration introduction 9",
+      "label": "Configuration introduction 7",
       "text": "Then click on Add Rule.",
       "locked": false,
       "transcribed": false

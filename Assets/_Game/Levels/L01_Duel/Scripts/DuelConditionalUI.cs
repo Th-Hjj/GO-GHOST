@@ -486,20 +486,22 @@ namespace GoGhost.Duel
         void BuildRuleFooter()
         {
             float w=ruleList.sizeDelta.x,h=ruleList.sizeDelta.y;
-            float buttonWidth=Mathf.Min(256,(w-16)/2);
-            dialogueFooterRightInset = page.sizeDelta.x / 2 - (ruleList.anchoredPosition.x + w / 2) + 2 * buttonWidth + 16 + 24;
+            const float gap = 16;
+            float buttonWidth=Mathf.Min(256,(w-gap)/2);
+            dialogueFooterRightInset = page.sizeDelta.x / 2 - (ruleList.anchoredPosition.x + w / 2) + 2 * (buttonWidth + gap);
+            dialogueFooterBottomInset = page.sizeDelta.y / 2 + ruleList.anchoredPosition.y - h / 2 - 56 - FooterButtonHeight / 2;
             bool editingRule=pendingRule!=null;
-            float addX=w/2-buttonWidth/2-(editingRule?0:buttonWidth+16);
+            float addX=w/2-buttonWidth/2-(editingRule?0:buttonWidth+gap);
             if(editingRule)
-                ConfigButton("CancelRuleEdit","Cancel",ruleList,new Vector2(addX-buttonWidth-16,-h/2-56),new Vector2(buttonWidth,48),CancelRuleEdit,style:DuelControlStyle.Navigation);
+                ConfigButton("CancelRuleEdit","Cancel",ruleList,new Vector2(addX-buttonWidth-gap,-h/2-56),new Vector2(buttonWidth,FooterButtonHeight),CancelRuleEdit,style:DuelControlStyle.Navigation);
             UnityEngine.Events.UnityAction submit=AddRule;
             if(editingRule)submit=CommitRuleChoice;
-            var add=ConfigButton(editingRule?"ConfirmRule":"AddRule",editingRule?"Confirm":"+ Add Rule",ruleList,new Vector2(addX,-h/2-56),new Vector2(buttonWidth,48),submit);
+            var add=ConfigButton(editingRule?"ConfirmRule":"AddRule",editingRule?"Confirm":"+ Add Rule",ruleList,new Vector2(addX,-h/2-56),new Vector2(buttonWidth,FooterButtonHeight),submit);
             add.interactable=editingRule?CanConfirmRule():game.DraftLoadout.TotalRules<ConditionalCatalog.PlayerRuleLimit;
             UnityEngine.UI.Button start=null;
             if(!editingRule)
             {
-                start=ConfigButton("StartFight","Start Testing",ruleList,new Vector2(w/2-buttonWidth/2,-h/2-56),new Vector2(buttonWidth,48),game.StartConfiguredEncounter,style:DuelControlStyle.Primary);
+                start=ConfigButton("StartFight","Start Testing",ruleList,new Vector2(w/2-buttonWidth/2,-h/2-56),new Vector2(buttonWidth,FooterButtonHeight),game.StartConfiguredEncounter,style:DuelControlStyle.Primary);
                 start.GetComponent<DuelButtonOutline>().Primary=true;start.interactable=ConfigurationReady;
             }
 #if UNITY_EDITOR

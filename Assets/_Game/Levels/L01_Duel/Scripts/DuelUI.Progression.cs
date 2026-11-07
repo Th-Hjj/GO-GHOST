@@ -8,7 +8,8 @@ namespace GoGhost.Duel
         RectTransform dialogueOverlay;
         TMPro.TMP_Text ambientDialogue, sceneDialogue;
         UnityEngine.UI.Image ambientPanel;
-        float dialogueFooterRightInset;
+        const float FooterButtonHeight = 48;
+        float dialogueFooterRightInset, dialogueFooterBottomInset;
 
         void UpdateDialogueOverlay()
         {
@@ -37,12 +38,12 @@ namespace GoGhost.Duel
                 label.anchorMax = Vector2.one;
                 label.offsetMin = new Vector2(20, -32);
                 label.offsetMax = new Vector2(-20, -8);
-                ambientDialogue = Text("", panel, Vector2.zero, Vector2.zero, 24, TMPro.TextAlignmentOptions.MidlineLeft, DialogueFont());
+                ambientDialogue = Text("", panel, Vector2.zero, Vector2.zero, 22, TMPro.TextAlignmentOptions.MidlineLeft, DialogueFont());
                 var body = ambientDialogue.rectTransform;
                 body.anchorMin = Vector2.zero;
-                body.anchorMax = Vector2.one;
-                body.offsetMin = new Vector2(20, 8);
-                body.offsetMax = new Vector2(-20, -32);
+                body.anchorMax = Vector2.right;
+                body.offsetMin = new Vector2(20, 0);
+                body.offsetMax = new Vector2(-20, FooterButtonHeight);
             }
             if (show && !dialogueOverlay.gameObject.activeSelf)
                 UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
@@ -54,8 +55,9 @@ namespace GoGhost.Duel
             if (ambient)
             {
                 float right = game.Phase == DuelPhase.Configure ? dialogueFooterRightInset : 32;
-                ambientPanel.rectTransform.offsetMin = new Vector2(32, 14);
-                ambientPanel.rectTransform.offsetMax = new Vector2(-right, 116);
+                float bottom = game.Phase == DuelPhase.Configure ? dialogueFooterBottomInset : 32;
+                ambientPanel.rectTransform.offsetMin = new Vector2(32, bottom);
+                ambientPanel.rectTransform.offsetMax = new Vector2(-right, bottom + FooterButtonHeight + 36);
                 ambientDialogue.text = game.PendingDialogue;
                 ambientDialogue.maxVisibleCharacters = game.DialogueVisibleCharacters;
             }

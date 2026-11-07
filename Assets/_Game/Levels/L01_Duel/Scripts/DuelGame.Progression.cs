@@ -13,7 +13,8 @@ namespace GoGhost.Duel
         public string FinalBossDialogueSpeaker => DialogueLines[FinalBossLine].key.StartsWith("Handler/") ? "Happy" : "Final Boss";
         public bool FinalBossChoiceReady { get; private set; }
         public string PendingDialogue => handler.PendingDialogue;
-        public bool DialogueReady => PendingDialogue != null && !handler.Speaking;
+        public bool DialogueReady => handler.DialogueReady;
+        internal int DialogueVisibleCharacters => handler.VisibleCharacters;
         public void AcknowledgeDialogue()
         {
             if (!Paused && !DeveloperToolsOpen) handler.Acknowledge();
@@ -42,8 +43,8 @@ namespace GoGhost.Duel
             if (FinalBossLine + 1 < DialogueLines.Length)
             {
                 FinalBossLine++;
-                ui.Show();
                 SpeakBossPage();
+                ui.Show();
             }
             else if (Phase == DuelPhase.FinalBoss)
             {

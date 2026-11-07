@@ -73,8 +73,8 @@ namespace GoGhost.Duel
             while (!boss.Motor.Grounded) yield return null;
             yield return new WaitForSeconds(.55f);
 
-            Show(CutsceneSpeaker.FinalBoss, "......");
-            handler.WaitForClick(CutsceneText);
+            handler.WaitForClick("......");
+            Show(CutsceneSpeaker.FinalBoss, handler.PendingDialogue);
             while (handler.PendingDialogue != null) yield return null;
             handler.SpeakDialogue("FinalBossVoice/Turn1");
             Show(CutsceneSpeaker.FinalBoss, handler.PendingDialogue);

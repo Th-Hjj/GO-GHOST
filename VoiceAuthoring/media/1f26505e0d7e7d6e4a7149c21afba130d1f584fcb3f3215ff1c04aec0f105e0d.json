@@ -1,0 +1,27 @@
+[
+  {
+    "path": "Assets/_Game/Levels/L01_Duel/Resources/FinalBossVoice/Turn1.wav",
+    "old": "VoiceAuthoring/media/87544d274289eada2c56acdb02da39f3571a4992356a508baba3d5c6efe551ba.wav",
+    "after": "0e32a9e1b769ee912bebf1c4b33efb21c77c56604f0c2131525ca868f6097a88"
+  },
+  {
+    "path": "VoiceAuthoring/recipes/FinalBossVoice-Turn1.json",
+    "old": "",
+    "after": "958770e04e8903374220a9ebd326451179f97553b545421052e71b32808689a5"
+  },
+  {
+    "path": "Assets/_Game/Levels/L01_Duel/Resources/Handler/EMP.wav",
+    "old": "",
+    "after": "56d1a0236b4ace1f8597121a492de493bec76d008072396d7e405a5fa657c9cc"
+  },
+  {
+    "path": "VoiceAuthoring/recipes/Handler-EMP.json",
+    "old": "",
+    "after": "22f153450b8a99a53cee6707ca778ee741e3ef2a4791ff79514c2daa6ed32ee8"
+  },
+  {
+    "path": "Assets/_Game/Levels/L01_Duel/Resources/VoiceStudioCatalog.json",
+    "old": "VoiceAuthoring/media/46825b4d87ff31ec340a988d1b5d3871eb7486ba9931a19eacdfd603e26dcec0.json",
+    "after": "68940a1f92c697387c5d7cbefc9fba51646ba3807f5af461d3999b410b4ae2f2"
+  }
+]

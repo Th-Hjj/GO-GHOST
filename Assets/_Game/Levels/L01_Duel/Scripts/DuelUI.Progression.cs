@@ -6,11 +6,13 @@ namespace GoGhost.Duel
     public sealed partial class DuelUI
     {
         RectTransform dialogueOverlay;
-        TMPro.TMP_Text ambientDialogue, clickHint;
+        TMPro.TMP_Text ambientDialogue, sceneDialogue;
         UnityEngine.UI.Image ambientPanel;
+        float dialogueFooterRightInset;
 
         void UpdateDialogueOverlay()
         {
+            if (sceneDialogue != null) sceneDialogue.maxVisibleCharacters = game.DialogueVisibleCharacters;
             bool show = game.PendingDialogue != null && !game.Paused && !game.DeveloperToolsOpen;
             if (!show && dialogueOverlay == null) return;
             if (dialogueOverlay == null)
@@ -23,9 +25,24 @@ namespace GoGhost.Duel
                 dialogueOverlay.anchorMax = Vector2.one;
                 blocker.gameObject.AddComponent<DialogueClickTarget>().Game = game;
                 dialogueOverlay.gameObject.SetActive(false);
-                ambientPanel = Image(dialogueOverlay, new Vector2(0,185), new Vector2(950,180), NeuralPalette.Panel);
-                ambientDialogue = Text("", ambientPanel.transform, Vector2.zero, new Vector2(900,160), 25);
-                clickHint = Text("Click to continue", dialogueOverlay, new Vector2(0,-88), new Vector2(400,42), 22);
+                ambientPanel = Image(dialogueOverlay, Vector2.zero, Vector2.zero, NeuralPalette.Panel);
+                var panel = ambientPanel.rectTransform;
+                panel.name = "Happy dialogue";
+                panel.anchorMin = Vector2.zero;
+                panel.anchorMax = Vector2.right;
+                var speaker = Text("Happy", panel, Vector2.zero, Vector2.zero, 18, TMPro.TextAlignmentOptions.MidlineLeft, headingFont);
+                speaker.color = NeuralPalette.Secondary;
+                var label = speaker.rectTransform;
+                label.anchorMin = Vector2.up;
+                label.anchorMax = Vector2.one;
+                label.offsetMin = new Vector2(20, -32);
+                label.offsetMax = new Vector2(-20, -8);
+                ambientDialogue = Text("", panel, Vector2.zero, Vector2.zero, 24, TMPro.TextAlignmentOptions.MidlineLeft);
+                var body = ambientDialogue.rectTransform;
+                body.anchorMin = Vector2.zero;
+                body.anchorMax = Vector2.one;
+                body.offsetMin = new Vector2(20, 8);
+                body.offsetMax = new Vector2(-20, -32);
             }
             if (show && !dialogueOverlay.gameObject.activeSelf)
                 UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
@@ -34,8 +51,14 @@ namespace GoGhost.Duel
             dialogueOverlay.SetAsLastSibling();
             bool ambient = game.Phase != DuelPhase.FinalBoss && game.Phase != DuelPhase.BonusOffer && !game.FinalBossCutscene;
             ambientPanel.gameObject.SetActive(ambient);
-            if (ambient) ambientDialogue.text = game.PendingDialogue;
-            clickHint.gameObject.SetActive(game.DialogueReady);
+            if (ambient)
+            {
+                float right = game.Phase == DuelPhase.Configure ? dialogueFooterRightInset : 32;
+                ambientPanel.rectTransform.offsetMin = new Vector2(32, 14);
+                ambientPanel.rectTransform.offsetMax = new Vector2(-right, 116);
+                ambientDialogue.text = game.PendingDialogue;
+                ambientDialogue.maxVisibleCharacters = game.DialogueVisibleCharacters;
+            }
         }
 
         void BuildFinalBoss()
@@ -43,7 +66,8 @@ namespace GoGhost.Duel
             bool offer = game.Phase == DuelPhase.BonusOffer;
             Text(offer ? "WAVE 3 CLEARED" : "WAVE 3",page,new Vector2(0,400),new Vector2(600,60),36,face:headingFont);
             Image(page,new Vector2(0,110),new Vector2(1040,190),NeuralPalette.Panel);
-            Text(game.FinalBossDialogue,page,new Vector2(0,110),new Vector2(920,150),32);
+            sceneDialogue = Text(game.FinalBossDialogue,page,new Vector2(0,110),new Vector2(920,150),32);
+            sceneDialogue.maxVisibleCharacters = game.FinalBossChoiceReady ? int.MaxValue : game.DialogueVisibleCharacters;
             if (!offer)
             {
                 Text(game.FinalBossDialogueSpeaker,page,new Vector2(0,177),new Vector2(600,42),24);

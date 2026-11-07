@@ -39,11 +39,11 @@ namespace GoGhost.Duel
                 foreach (var set in prefab.GetComponentsInChildren<SfxSet>(true)) set.CollectAudioClips(clips);
             }
             SetStartupProgress(.05f);
-            int voiceCount = HandlerVoice.Lines.Length + VoiceStudioCatalog.Current.Visit.Length;
+            var voiceLines = VoiceStudioCatalog.Current.lines;
+            int voiceCount = voiceLines.Length;
             for (int i = 0; i < voiceCount; i++)
             {
-                string line = i < HandlerVoice.Lines.Length ? HandlerVoice.Lines[i]
-                    : VoiceStudioCatalog.Current.Visit[i - HandlerVoice.Lines.Length].key;
+                string line = voiceLines[i].key;
                 if (!handler.TryGetLine(line, out var clip))
                 {
                     var request = Resources.LoadAsync<AudioClip>(line);

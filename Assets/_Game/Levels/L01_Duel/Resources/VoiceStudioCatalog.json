@@ -17,7 +17,7 @@
   "bossSub": 0.42,
   "bossDrive": 1.9,
   "greetingTemplate": "Nice to meet you, {name}.",
-  "openingDelay": 1,
+  "openingDelay": 0.5,
   "lines": [
     {
       "key": "Handler/WhoAreYou",
@@ -33,38 +33,136 @@
     },
     {
       "key": "Handler/TutorialIntro",
-      "label": "Configuration introduction",
-      "text": "I know you must be confused, but don't worry. I will help you. My name is Happy, and I'm an experimental AI installed in your brain. Your body was nearly destroyed from the last mission, but I helped you to regain the control over your body. You'll be able to do things that used to be impossible for humans. Please take a moment to inspect your new body's configuration page, and click on Add Rule.",
+      "label": "Configuration introduction 1",
+      "text": "I know you must be confused, but don't worry.",
       "locked": false,
-      "transcribed": true
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialIntro2",
+      "label": "Configuration introduction 2",
+      "text": "I will help you.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialIntro3",
+      "label": "Configuration introduction 3",
+      "text": "My name is Happy.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialIntro4",
+      "label": "Configuration introduction 4",
+      "text": "I'm an experimental AI installed in your brain.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialIntro5",
+      "label": "Configuration introduction 5",
+      "text": "Your body was nearly destroyed during the last mission.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialIntro6",
+      "label": "Configuration introduction 6",
+      "text": "I helped you regain control of it.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialIntro7",
+      "label": "Configuration introduction 7",
+      "text": "You'll be able to do things that used to be impossible for humans.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialIntro8",
+      "label": "Configuration introduction 8",
+      "text": "Take a moment to inspect your new body's configuration page.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialIntro9",
+      "label": "Configuration introduction 9",
+      "text": "Then click on Add Rule.",
+      "locked": false,
+      "transcribed": false
     },
     {
       "key": "Handler/TutorialGoodbye",
-      "label": "Configuration farewell",
-      "text": "Unfortunately, I don't have time to explain the system to you because I need to finish the Alpha Feasibility Pitch right now. Good luck figuring out the body configuration system. Bye.",
+      "label": "Configuration farewell 1",
+      "text": "Unfortunately, I don't have time to explain the system to you.",
       "locked": false,
-      "transcribed": true
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialGoodbye2",
+      "label": "Configuration farewell 2",
+      "text": "I need to finish the Alpha Feasibility Pitch right now.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialGoodbye3",
+      "label": "Configuration farewell 3",
+      "text": "Good luck figuring out the body configuration system.",
+      "locked": false,
+      "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialGoodbye4",
+      "label": "Configuration farewell 4",
+      "text": "Bye.",
+      "locked": false,
+      "transcribed": false
     },
     {
       "key": "Handler/WaveOneClear",
-      "label": "Wave 1 clear",
-      "text": "Wave one cleared. Good job.",
+      "label": "Wave 1 clear 1",
+      "text": "Wave one cleared.",
       "locked": false,
-      "transcribed": true
+      "transcribed": false
+    },
+    {
+      "key": "Handler/WaveOneClear2",
+      "label": "Wave 1 clear 2",
+      "text": "Good job.",
+      "locked": false,
+      "transcribed": false
     },
     {
       "key": "Handler/WaveTwoClear",
-      "label": "Wave 2 clear",
-      "text": "Wave two cleared. Clean work.",
+      "label": "Wave 2 clear 1",
+      "text": "Wave two cleared.",
       "locked": false,
-      "transcribed": true
+      "transcribed": false
+    },
+    {
+      "key": "Handler/WaveTwoClear2",
+      "label": "Wave 2 clear 2",
+      "text": "Clean work.",
+      "locked": false,
+      "transcribed": false
     },
     {
       "key": "Handler/BonusClear",
-      "label": "Bonus clear",
-      "text": "Contract complete. Good work.",
+      "label": "Bonus clear 1",
+      "text": "Contract complete.",
       "locked": false,
-      "transcribed": true
+      "transcribed": false
+    },
+    {
+      "key": "Handler/BonusClear2",
+      "label": "Bonus clear 2",
+      "text": "Good work.",
+      "locked": false,
+      "transcribed": false
     },
     {
       "key": "FinalBossVoice/Line1",

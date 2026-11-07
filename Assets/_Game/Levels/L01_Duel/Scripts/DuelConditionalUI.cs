@@ -487,6 +487,7 @@ namespace GoGhost.Duel
         {
             float w=ruleList.sizeDelta.x,h=ruleList.sizeDelta.y;
             float buttonWidth=Mathf.Min(256,(w-16)/2);
+            dialogueFooterRightInset = page.sizeDelta.x / 2 - (ruleList.anchoredPosition.x + w / 2) + 2 * buttonWidth + 16 + 24;
             bool editingRule=pendingRule!=null;
             float addX=w/2-buttonWidth/2-(editingRule?0:buttonWidth+16);
             if(editingRule)

@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — Happy’s dialogue box and click behaviour
+
+- Configuration dialogue fills the bottom-left footer up to the action buttons. Happy’s introduction, farewell and result messages have individual sentence recordings. A click reveals a partial line, then a click on a full line advances and stops its remaining audio. There is no click instruction.
+- Character creation plays the existing “Who are you?” recording 0.5 seconds after New Game without a dialogue page or input interception. The Final Boss pulse remains automatic. Fast iteration: compilation, listening and Play Mode were skipped.
+
 ## 2026-11-07 — F9 Boss shortcut
 
 - During combat, F9 empties the nearest living Boss's current health pool. Wave 3 follows the normal phase change and Bonus targets one Boss per press. The shortcut marks active playtest data as test data. Compilation and Play Mode were skipped for fast iteration.

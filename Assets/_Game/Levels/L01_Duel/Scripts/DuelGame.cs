@@ -385,7 +385,7 @@ namespace GoGhost.Duel
             if (creationQuestionAt.HasValue && AudioSettings.dspTime >= creationQuestionAt.Value)
             {
                 creationQuestionAt = null;
-                handler.SpeakDialogue("Handler/WhoAreYou");
+                handler.PlayLine("Handler/WhoAreYou");
             }
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if(Phase==DuelPhase.Fight&&Wave==BonusWave&&Player!=null&&!Player.IsDead

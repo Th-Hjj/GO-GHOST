@@ -14,16 +14,23 @@ namespace GoGhost.Duel
         AudioClip generatedGreeting;
         CancellationTokenSource pendingGreeting;
         const string TutorialIntro = "Handler/TutorialIntro", TutorialGoodbye = "Handler/TutorialGoodbye";
-        internal static readonly string[] Lines = { "Handler/Greeting", "Handler/WaveOneClear", "Handler/WaveTwoClear", "Handler/BonusClear", "Handler/LookOut", "Handler/EMP", TutorialIntro, TutorialGoodbye };
         bool tutorialActive, openedRule;
         public string PendingDialogue { get; private set; }
         Action afterDialogue;
         int dialogueFrame;
+        float revealStart, revealDuration;
+        bool revealed;
+        internal int VisibleCharacters => PendingDialogue == null || revealed ? int.MaxValue :
+            Mathf.FloorToInt(PendingDialogue.Length * Mathf.Clamp01((Time.time - revealStart) / revealDuration));
+        internal bool DialogueReady => PendingDialogue != null && VisibleCharacters >= PendingDialogue.Length;
 
         internal void WaitForClick(string text, Action advance = null)
         {
             PendingDialogue = text;
             dialogueFrame = Time.frameCount;
+            revealStart = Time.time;
+            revealDuration = Speaking ? Mathf.Max(.15f, speaker.clip.length - .2f) : Mathf.Max(.2f, text.Length / 30f);
+            revealed = false;
             afterDialogue = advance;
         }
 
@@ -35,7 +42,14 @@ namespace GoGhost.Duel
 
         internal void Acknowledge()
         {
-            if (PendingDialogue == null || Speaking || Time.frameCount == dialogueFrame) return;
+            if (PendingDialogue == null || Time.frameCount == dialogueFrame) return;
+            dialogueFrame = Time.frameCount;
+            if (!DialogueReady)
+            {
+                revealed = true;
+                return;
+            }
+            speaker.Stop();
             var advance = afterDialogue;
             PendingDialogue = null;
             afterDialogue = null;
@@ -111,19 +125,35 @@ namespace GoGhost.Duel
         {
             while (PendingDialogue != null) yield return null;
             ReleaseGreeting();
-            SpeakDialogue(TutorialIntro);
+            SpeakSequence(TutorialIntro);
             while (PendingDialogue != null || !openedRule || AudioListener.pause) yield return null;
-            SpeakDialogue(TutorialGoodbye);
-            while (PendingDialogue != null) yield return null;
-            tutorialActive = false;
+            SpeakSequence(TutorialGoodbye, () => tutorialActive = false);
+        }
+
+        void SpeakSequence(string prefix, Action finished = null)
+        {
+            var lines = VoiceStudioCatalog.Current.lines;
+            int index = 0;
+            void Next()
+            {
+                while (index < lines.Length)
+                {
+                    var line = lines[index++];
+                    if (!line.key.StartsWith(prefix, StringComparison.Ordinal)) continue;
+                    SpeakDialogue(line.key, Next);
+                    return;
+                }
+                finished?.Invoke();
+            }
+            Next();
         }
 
         public void WaveCleared(int wave, Action advance = null)
         {
             Stop();
-            if (wave == 1) SpeakDialogue("Handler/WaveOneClear", advance);
-            else if (wave == 2) SpeakDialogue("Handler/WaveTwoClear", advance);
-            else if (wave == DuelGame.BonusWave) SpeakDialogue("Handler/BonusClear", advance);
+            if (wave == 1) SpeakSequence("Handler/WaveOneClear", advance);
+            else if (wave == 2) SpeakSequence("Handler/WaveTwoClear", advance);
+            else if (wave == DuelGame.BonusWave) SpeakSequence("Handler/BonusClear", advance);
         }
 
         internal void PlayLine(string name)

@@ -59,7 +59,7 @@ The 2026-10-27 drawn-face flow supersedes this 2026-10-16 presentation. The reta
 - **Rule sidebars:** the player's sidebar sits on the left in every wave (implemented); the Final Boss's rules use a matching sidebar on the right (implemented; with both sidebars the arena is drawn smaller). The camera fills the space between them, and returns to full width when neither sidebar is shown.
 - **Phase one:** a player-sized rainbow stickman (the retired Alpha look) with an axe, using the existing tell style.
 - **Transition:** the shockwave crosses out both sidebars, drains the rainbow and turns him into a white stickman. The sidebars fade during the countdown.
-- **Phase two:** the white body keeps a clear outline. Punch effects are gold and only the eyes are red. Each eye leaves a red tail-light trail while he moves, without hiding his wind-up. There are no tell lines.
+- **Phase two:** the white body keeps a clear outline. Punch effects are gold and only the eyes are red. Each eye leaves a red tail-light trail while he moves, without hiding his wind-up. There are no tell lines. Implemented: gold (255, 204, 92) sparks at the fist, round white fists, and eye trails of 0.18 s tapering from 0.06 to 0.
 - **Antique revolver:** the player switches from the current energy revolver to an antique revolver. Only its look changes: aged brass body and cylinder, with no luminous halo (implemented).
 - **Transition presentation (implemented):** Primary-white shockwave ring; red seal crosses over dimmed cards; a 1.2 s rainbow drain to Primary; the dropped axe rests on the floor; two small red eyes; and a Panel subtitle box sized to fit between both sidebars.
 

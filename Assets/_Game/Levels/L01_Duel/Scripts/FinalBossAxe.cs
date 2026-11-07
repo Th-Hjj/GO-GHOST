@@ -61,6 +61,7 @@ namespace GoGhost.Duel
         public bool PhaseTwo { get; private set; }
         // The scripted phase change drops the axe; the Boss fights bare-handed afterwards.
         public bool Unarmed { get; private set; }
+        public FinalBossBoxer Boxer { get; private set; }
         bool transitionHeld;
         public bool AxeFlying { get; private set; }
         public Vector2 AxePosition { get; private set; }
@@ -209,6 +210,7 @@ namespace GoGhost.Duel
 
         public void Cancel()
         {
+            Boxer?.Cancel();
             if (Invading) { Invading = false; actor.Health.Invulnerable = false; }
             Current = Move.None; Phase = Stage.Idle; AxeFlying = false; AxeSpin = 0; path.Clear();
             nextDecisionAt = Time.time + .5f;
@@ -274,18 +276,18 @@ namespace GoGhost.Duel
         {
             if (Unarmed) return;
             Unarmed = true;
+            Boxer = new FinalBossBoxer(actor, actor.Player);
             actor.View?.DropAxe();
+            actor.View?.BindBoxer(Boxer);
         }
 
         public void ReleaseTransition() => transitionHeld = false;
 
-        // Phase-two placeholder until the White Boxer kit: close the distance, no attacks.
+        // Phase two: the White Boxer kit fights bare-handed.
         void TickUnarmed()
         {
-            var facts = actor.Perception.Facts;
-            if (actor.Player == null || actor.Player.IsDead || facts.Confidence <= .1f) { actor.Motor.Brake(); return; }
-            float dx = facts.Position.x - actor.Position.x;
-            actor.Motor.SetMove(Mathf.Abs(dx) > 1.2f ? Mathf.Sign(dx) : 0);
+            if (PhaseTwo) Boxer?.Tick();
+            else actor.Motor.HoldHorizontal();
         }
 
         void TrackTarget()
@@ -381,6 +383,7 @@ namespace GoGhost.Duel
         // the flying axe is a ranged projectile split into its actual path segments.
         public void Publish(List<BossThreat> output)
         {
+            if (Unarmed) { Boxer?.Publish(output); return; }
             if (Current == Move.None || Phase == Stage.Recovery || Phase == Stage.Idle) return;
             var phase = Phase == Stage.Prepare ? BossThreatPhase.Preparation : Phase == Stage.Locked ? BossThreatPhase.Locked : BossThreatPhase.Active;
             var threat = new BossThreat { ActorId = actor.ActorId, AttackId = attackId, Phase = phase, Origin = actor.Position,

@@ -66,7 +66,8 @@ public static partial class BossEncounterSmoke
         yield return Until(() => axe.Current == FinalBossAxe.Move.None, 4f);
 
         // Incoming Attack (Ranged) -> Jump, then Landed -> Chop, Took Damage -> Throw & Recall.
-        yield return Settle(-3, 3);
+        // 8 units is still Mid (Close 5.3 / Far 8.5) and leaves the bullet time to arrive before he walks into Close.
+        yield return Settle(-4, 4);
         Check("Mid distance leaves both distance rules unmatched", !rules.Rows[2].Matched && !rules.Rows[4].Matched, State());
         mousePosition = Camera.main.WorldToScreenPoint(actor.Position); mouseHeld = true;
         yield return Until(() => Ran(0), 2f);

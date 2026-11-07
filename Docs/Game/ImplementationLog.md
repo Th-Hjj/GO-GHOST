@@ -1,5 +1,25 @@
 # GO GHOST slice implementation
 
+## 2026-11-06 — White Boxer (Final Boss stage 8)
+
+- **The White Boxer:** `FinalBossBoxer` replaces the phase-two placeholder with four punches. Each has a pose-only wind-up and one hit.
+  - Jab with a step;
+  - low uppercut from a crouch;
+  - slip dash through the player, then a hook (player collision is ignored only during the slip);
+  - rage haymaker with a shaking backward twist and a lunge.
+
+  He presses at 7.5 u/s with a guard bounce and jumps after a player who is up on a platform overhead. No tell lines are drawn; melee threat boxes are still published. The view adds round fists, gold fist sparks and red `TrailRenderer` tail lights on both eyes.
+- **Unity 6000.6.0f1:** compiled with no console errors.
+  - **New check: GO GHOST > Playtest > Final Boss Boxer** passed 16/16 on run 3, after the full transition:
+    - Each punch was forced once with no enabled line renderer during its wind-up and landed exactly once.
+    - The slip switched sides.
+    - Unforced over 6 s, he closed from 12.9 to 0.1 and threw jab 1, uppercut 1, slip-hook 1 and haymaker 1. Both eye trails were drawing (11 points).
+    - Defeat opened Bonus.
+  - **Earlier runs:** run 1 missed the jab because delayed Boss perception kept him walking for about 0.9 after the teleport. The check now re-places both actors after his facts settle.
+  - **Regression checks:** Transition 14/14, Axe 17/17, Rules 9/9 and Progression 16/16. The Rules incoming-bullet step now starts at 8 units: at 6 units the Boss sometimes walked into Close and began a Spin before the first bullet arrived.
+  - **Captures:** `Logs/BossEncounter/final-boss-boxer-*.png`.
+- **NOT TESTED:** chasing onto moving platforms, hand play and balance; the punch sound cues are reused blade swings.
+
 ## 2026-11-06 — Scripted phase change (Final Boss stage 7)
 
 - **The scene:** when the first pool empties, the `DuelGame.FinalBossTransition` coroutine runs inside the fight with input off. It plays in order:

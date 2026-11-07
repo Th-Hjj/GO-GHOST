@@ -14,7 +14,7 @@ Walker's provisional intro, editable in Voice Studio:
 4. Let's see if it's enough.
 5. Are you ready?
 
-**Current source (stage 3 of the redesign below):** the Final Boss is a player-sized stickman built from the Swordsman prefab, with the Alpha rainbow shader on its body and an axe. `FinalBossAxe` replaces the sword tactics with its own AI and four telegraphed moves: Chop, Spin, Throw & Recall and Boomerang. Each move publishes threats: Chop and Spin as melee, the flying axe as ranged. Both health pools are 1000. When the first pool empties, the scripted transition below runs (stage 7). Afterwards the bare-handed Boss only closes the distance until the White Boxer kit replaces this placeholder. Retry and subsequent configuration use the equipped loadout. Walker Grupp's original prototype (commit `719c843`, 2x Swordsman with sword specials) is retired. Trial axe tuning (prepare/lock/active/recovery/cooldown, damage):
+**Current source (stage 3 of the redesign below):** the Final Boss is a player-sized stickman built from the Swordsman prefab, with the Alpha rainbow shader on its body and an axe. `FinalBossAxe` replaces the sword tactics with its own AI and four telegraphed moves: Chop, Spin, Throw & Recall and Boomerang. Each move publishes threats: Chop and Spin as melee, the flying axe as ranged. Both health pools are 1000. When the first pool empties, the scripted transition below runs (stage 7). Afterwards `FinalBossBoxer` fights bare-handed as the White Boxer (stage 8, below). Retry and subsequent configuration use the equipped loadout. Walker Grupp's original prototype (commit `719c843`, 2x Swordsman with sword specials) is retired. Trial axe tuning (prepare/lock/active/recovery/cooldown, damage):
 
 | Move | Timing (s) | Damage | Shape |
 |---|---|---|---|
@@ -80,6 +80,17 @@ The English lines are drafts.
 **Moving platforms.** From the shockwave onward, each platform oscillates 2.1 units (one tier) above and below its home height. The two inner low platforms reach floor level at the bottom of their travel. *Trial:* a cycle of about 4 s, with adjacent platforms in opposite phase so that a reachable route always exists. Platforms remain one-way and carry the actors standing on them. **Implemented (stage 6):** `PlatformOscillator` drives each stage platform as a kinematic body. Its velocity tracks a sine of 2.1 amplitude and 4 s period. Platforms are ordered left to right and alternate between phase 0 and π, so each one starts from its home height. The floor never moves. Motion starts at the shockwave and stops with the stage layout, so Retry rebuilds static platforms. Pause freezes it. `PlayerMovement` and `BossMotor2D` treat contact with a kinematic carrier that is rising at their own speed as ground. Without such a carrier their grounding is unchanged. The inner platforms reach floor level and lift anyone standing there as they rise.
 
 ### Phase 2 — White Boxer
+
+**Implemented (stage 8):** `FinalBossBoxer` presses in at the Swordsman motion speed (7.5) and bobs on his feet. When the player is up on a platform roughly overhead, he jumps after them. Each punch has a pose-only wind-up and lands at most once. No tell lines are drawn; melee threat boxes are still published.
+
+| Punch (trial) | Wind-up / active / recovery (s), cooldown | Damage | Read |
+|---|---|---|---|
+| Jab | .22 / .10 / .25, 0.8 | 12 | small pull of the lead fist, then a straight with a .9 step |
+| Low uppercut | .38 / .12 / .45, 2.2 | 20 | deep crouch with the rear fist low; the hit rises above head height |
+| Slip + hook | slip dash through to the far side, then .30 / .14 / .40, 4.0 | 22 | ducking slip, rear fist coils wide |
+| Rage haymaker | .75 / .14 / .80, 5.0 | 34 | long, shaking backward twist, then a 1.8 lunge |
+
+Gold sparks burst from the fist on each punch (larger for the uppercut and haymaker). Round white fists sit at both hands. Each red eye carries a 0.18 s `TrailRenderer` tail light. Choice in range is weighted: jab 3, slip-hook 2, uppercut 1.5, haymaker 1. The uppercut is preferred when the player is just above him.
 
 - **Fight:** 1000 HP. The player fights fully manually with the antique revolver, which uses the current weapon's stats with a new look. There is no AI assistance and there are no attack tell lines.
 - **Style:** an enraged, fast, light-footed boxer who keeps closing the distance. The player reads his wind-up, weight shift and footwork.

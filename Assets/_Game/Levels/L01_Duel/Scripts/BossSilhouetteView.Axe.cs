@@ -19,6 +19,33 @@ namespace GoGhost.Duel
         const float ShockwaveSeconds = .7f, ShockwaveRadius = 24, DropSeconds = .4f;
         static readonly Color EyeRed = new Color(1f, .16f, .18f, 1f);
         public bool EyesRed { get; private set; }
+        // Phase two: gold belongs to the punches, red to the eyes; the body stays plain white.
+        static readonly Color PunchGold = new Color32(255, 204, 92, 255);
+        SpriteRenderer frontFist, backFist;
+        FinalBossBoxer boxer;
+
+        public void BindBoxer(FinalBossBoxer value)
+        {
+            if (boxer != null) boxer.Thrown -= GoldBurst;
+            boxer = value;
+            if (boxer != null) boxer.Thrown += GoldBurst;
+        }
+
+        void GoldBurst(FinalBossBoxer.Punch punch, Vector2 fist)
+        {
+            bool heavy = punch == FinalBossBoxer.Punch.Haymaker || punch == FinalBossBoxer.Punch.Uppercut;
+            Vector2 forward = punch == FinalBossBoxer.Punch.Uppercut ? new Vector2(actor.Facing * .35f, 1).normalized : new Vector2(actor.Facing, 0);
+            float angle = Mathf.Atan2(forward.y, forward.x) * Mathf.Rad2Deg;
+            int count = heavy ? 9 : 6;
+            float reach = heavy ? .7f : .42f;
+            for (int i = 0; i < count; i++)
+            {
+                var line = NewLine("PunchSpark", true, 2);
+                Vector2 d = Angle(angle + Mathf.Lerp(-55, 55, i / (float)(count - 1)));
+                SetLine(line, fist + d * .05f, fist + d * reach * Random.Range(.7f, 1f), heavy ? .035f : .026f, PunchGold);
+                AddFlash(line, heavy ? .14f : .10f);
+            }
+        }
         bool FinalAxe => actor != null && actor.Axe != null;
 
         void ConfigureFinalBossLook()
@@ -142,6 +169,12 @@ namespace GoGhost.Duel
             var sprite = go.AddComponent<SpriteRenderer>();
             sprite.sprite = head.sprite; sprite.sharedMaterial = axeBodyMaterials != null && axeBodyMaterials[1] != null ? axeBodyMaterials[1] : head.sharedMaterial;
             sprite.sortingLayerID = head.sortingLayerID; sprite.sortingOrder = head.sortingOrder + 1;
+            // Tail-light trails: each eye leaves a short red streak while the Boss moves.
+            var trail = go.AddComponent<TrailRenderer>();
+            trail.time = .18f; trail.minVertexDistance = .02f; trail.startWidth = .06f; trail.endWidth = 0;
+            trail.sharedMaterial = glowMaterial; trail.startColor = EyeRed; trail.endColor = NeuralPalette.Alpha(EyeRed, 0);
+            trail.sortingLayerID = head.sortingLayerID; trail.sortingOrder = head.sortingOrder;
+            trail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; trail.receiveShadows = false;
             return sprite;
         }
 
@@ -161,14 +194,7 @@ namespace GoGhost.Duel
             p.WeaponAngle = 72;
             p.FrontHand = new Vector2(.22f + wave * motion * .06f, .02f);
             p.BackHand = new Vector2(-.04f - wave * motion * .10f, -.05f);
-            if (axe.Unarmed)
-            {
-                // Bare-handed guard: both fists up in front of the face.
-                p.FrontHand = new Vector2(.30f + wave * motion * .03f, .42f);
-                p.BackHand = new Vector2(.17f, .47f);
-                p.Chest.x += .03f; p.FrontFoot.x = .30f; p.BackFoot.x = -.32f;
-                return;
-            }
+            if (axe.Unarmed) { BoxerPose(ref p, wave, motion); return; }
             if (axe.Invading)
             {
                 // Invasion: axe held overhead, free hand reaching toward the player.
@@ -239,10 +265,86 @@ namespace GoGhost.Duel
             }
         }
 
+        // Bare-handed guard with a light bounce, and four wind-ups the player must learn to read.
+        void BoxerPose(ref Pose p, float wave, float motion)
+        {
+            float bounce = Mathf.Abs(Mathf.Sin(clock * 7f)) * .03f;
+            p.Hip.y += bounce; p.Chest.y += bounce; p.Head.y += bounce;
+            Vector2 front = new Vector2(.30f + wave * motion * .03f, .42f + bounce), back = new Vector2(.17f, .47f + bounce);
+            p.FrontHand = front; p.BackHand = back;
+            p.Chest.x += .03f; p.FrontFoot.x = .30f; p.BackFoot.x = -.32f;
+            var b = actor.Axe.Boxer;
+            if (b == null || b.Current == FinalBossBoxer.Punch.None) return;
+            float t = Ease(b.PhaseProgress);
+            bool wind = b.Phase == FinalBossBoxer.Stage.Windup, act = b.Phase == FinalBossBoxer.Stage.Active, rec = b.Phase == FinalBossBoxer.Stage.Recovery;
+            switch (b.Current)
+            {
+                case FinalBossBoxer.Punch.Jab:
+                    // A small pull of the lead fist, then a fast straight with a step.
+                    if (wind) { p.FrontHand = Vector2.Lerp(front, new Vector2(.18f, .40f), t); p.Chest.x += .02f * t; }
+                    else if (act) { p.FrontHand = new Vector2(.66f, .42f); p.Chest.x += .08f; p.FrontFoot.x = .45f; }
+                    else if (rec) p.FrontHand = Vector2.Lerp(new Vector2(.66f, .42f), front, t);
+                    break;
+                case FinalBossBoxer.Punch.Uppercut:
+                    // A deep crouch with the rear fist dropped low, then rising through the head height.
+                    if (wind) { p.Hip.y -= .22f * t; p.Chest.y -= .18f * t; p.Head.y -= .16f * t; p.Chest.x += .05f * t; p.BackHand = Vector2.Lerp(back, new Vector2(.10f, -.02f), t); }
+                    else if (act) { p.BackHand = new Vector2(.40f, .78f); p.Chest.y += .05f; p.Head.y += .04f; }
+                    else if (rec) p.BackHand = Vector2.Lerp(new Vector2(.40f, .78f), back, t);
+                    break;
+                case FinalBossBoxer.Punch.SlipHook:
+                    // Ducking through on the slip, then the rear fist coils wide before the hook.
+                    if (b.Phase == FinalBossBoxer.Stage.Slip) { p.Hip.y -= .12f; p.Chest.y -= .10f; p.Head.y -= .12f; p.Chest.x += .10f; }
+                    else if (wind) { p.BackHand = Vector2.Lerp(back, new Vector2(-.28f, .38f), t); p.Chest.x -= .06f * t; p.Head.x -= .04f * t; }
+                    else if (act) { p.BackHand = new Vector2(.58f, .40f); p.Chest.x += .10f; }
+                    else if (rec) p.BackHand = Vector2.Lerp(new Vector2(.58f, .40f), back, t);
+                    break;
+                case FinalBossBoxer.Punch.Haymaker:
+                    // The rage tell: a long backward twist that shakes, then a lunging overhand.
+                    if (wind)
+                    {
+                        float shake = Mathf.Sin(clock * 60f) * .012f * t;
+                        p.Chest.x -= .16f * t + shake; p.Head.x -= .14f * t + shake; p.Hip.y -= .06f * t;
+                        p.BackHand = Vector2.Lerp(back, new Vector2(-.46f, .48f), t);
+                        p.FrontHand = Vector2.Lerp(front, new Vector2(.36f, .30f), t);
+                        p.FrontFoot.x = .42f; p.BackFoot.x = -.46f;
+                    }
+                    else if (act) { p.BackHand = new Vector2(.74f, .46f); p.Chest.x += .16f; p.Head.x += .12f; p.FrontFoot.x = .48f; }
+                    else if (rec) p.BackHand = Vector2.Lerp(new Vector2(.74f, .46f), back, t);
+                    break;
+            }
+        }
+
+        void PlaceFists(Pose p)
+        {
+            bool show = actor.Axe.Unarmed && !defeated;
+            if (!show) { if (frontFist != null) frontFist.enabled = backFist.enabled = false; return; }
+            if (frontFist == null) { frontFist = BodyPart("FrontFist", Part.FrontForearm); backFist = BodyPart("BackFist", Part.BackForearm); }
+            foreach (var (fist, hand) in new[] { (frontFist, p.FrontHand), (backFist, p.BackHand) })
+            {
+                fist.enabled = true;
+                fist.transform.localPosition = hand; fist.transform.localRotation = Quaternion.identity;
+                Vector2 source = fist.sprite.bounds.size;
+                fist.transform.localScale = new Vector3(.15f / Mathf.Max(.001f, source.x), .15f / Mathf.Max(.001f, source.y), 1);
+                var color = bodyColor; color.a = alpha; fist.color = color;
+            }
+        }
+
+        SpriteRenderer BodyPart(string label, Part above)
+        {
+            var head = parts[(int)Part.Head];
+            var go = new GameObject(label);
+            go.transform.SetParent(transform, false);
+            var sprite = go.AddComponent<SpriteRenderer>();
+            sprite.sprite = head.sprite; sprite.sharedMaterial = parts[(int)above].sharedMaterial;
+            sprite.sortingLayerID = parts[(int)above].sortingLayerID; sprite.sortingOrder = parts[(int)above].sortingOrder + 1;
+            return sprite;
+        }
+
         // Called after the shared pose placement: the axe replaces the sword geometry.
         void ApplyAxe(Pose p)
         {
             PlaceEyes(p);
+            PlaceFists(p);
             if (actor.Axe.AxeFlying || actor.Axe.Unarmed) { Hide(Part.Weapon); Hide(Part.Sheath); return; }
             Vector2 direction = Angle(p.WeaponAngle);
             Place(Part.Weapon, p.FrontHand + direction * (AxeShaft * .5f - AxeGrip), new Vector2(AxeShaft, AxeShaftWidth), p.WeaponAngle);

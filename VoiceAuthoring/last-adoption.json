@@ -1,12 +1,32 @@
 [
   {
-    "path": "Assets/_Game/Levels/L01_Duel/Resources/Handler/TutorialIntro3.wav",
-    "old": "VoiceAuthoring/media/8e1d7c8bcb9aaf67860b4ad68b892e0ea7ff6effb52035ab8db294fe1712ec71.wav",
-    "after": "c87dc60d81e1e33314f3d6ac2a5edcdb0f2bf732bd43fc2fc29f287d65ce4b54"
+    "path": "Assets/_Game/Levels/L01_Duel/Resources/Handler/Mission1Title.wav",
+    "old": "",
+    "after": "735de2bd455f34481b7b4f76e6426dd883af7eb4c8c2dba9da000fb0126414c6"
   },
   {
-    "path": "VoiceAuthoring/recipes/Handler-TutorialIntro3.json",
-    "old": "VoiceAuthoring/media/5c833d4e1b09e99bfe31b55ca19de18bc06aadd526cf9869e053994a85403ca0.json",
-    "after": "2e2648c5d9d1c4f845e349f481ce212fc678f70d913006072803419f9143b9d8"
+    "path": "VoiceAuthoring/recipes/Handler-Mission1Title.json",
+    "old": "",
+    "after": "aa7088ec65a76032535173673dfe82058c7878868a3d15a4bfd5b13b41b3c19a"
+  },
+  {
+    "path": "Assets/_Game/Levels/L01_Duel/Resources/Handler/Mission2Title.wav",
+    "old": "",
+    "after": "587ddb4e83c65a33f18d0c413af0a268eb91f736b2463933b0425eb81acd47f8"
+  },
+  {
+    "path": "VoiceAuthoring/recipes/Handler-Mission2Title.json",
+    "old": "",
+    "after": "c4229e98bfdff01afb76e5af5f57f12bca3c74c81ee51e7a708f5eee97dc406f"
+  },
+  {
+    "path": "Assets/_Game/Levels/L01_Duel/Resources/Handler/Mission3Title.wav",
+    "old": "",
+    "after": "9c79a80534623a27c2429be132b70318e8c7d9a60da34bef70b270e53b0c96c2"
+  },
+  {
+    "path": "VoiceAuthoring/recipes/Handler-Mission3Title.json",
+    "old": "",
+    "after": "2e2c644fa5ff8de82df30017399347fe02d1062cbad3a8864ae7a7109ca1586f"
   }
 ]

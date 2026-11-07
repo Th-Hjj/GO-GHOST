@@ -108,7 +108,6 @@ namespace GoGhost.Duel
             if(game.Phase!=DuelPhase.Configure||helpDraft!=game.DraftLoadout)helpOpen=false;
             ConfigurePageScale();
             sceneDialogue = null;
-            openingCaption = null;
             if(page!=null){page.gameObject.SetActive(false);Destroy(page.gameObject);}
             page=Rect("Page",canvas,Vector2.zero,new Vector2(1600,900));
             pageControls=page.gameObject.AddComponent<CanvasGroup>();
@@ -161,9 +160,9 @@ namespace GoGhost.Duel
                 if (game.Wave == 1) Button("Continue to Mission 2",page,Vector2.zero,new Vector2(420,68),game.ContinueToWaveTwo,style:DuelControlStyle.Primary).name="ContinueToWaveTwo";
                 return;
             }
-            if(game.Phase==DuelPhase.FinalBoss || game.Phase==DuelPhase.BonusOffer)
+            if(game.Phase==DuelPhase.BonusOffer)
             {
-                BuildFinalBoss();return;
+                BuildBonusOffer();return;
             }
             if(game.Phase==DuelPhase.Failed || game.Phase==DuelPhase.Complete)
             {
@@ -210,7 +209,6 @@ namespace GoGhost.Duel
             }
 
             var playerBar = Rect("Player health",hud,Vector2.zero,Vector2.zero);
-            playerHealthGroup = playerBar.gameObject.AddComponent<CanvasGroup>();
             playerHealth=Text("",playerBar,new Vector2(0,-392),new Vector2(430,40),24,TextAlignmentOptions.Center,CharacterNameFont(true));
             playerHealth.textWrappingMode=TextWrappingModes.NoWrap;
             playerHealth.enableAutoSizing=true;playerHealth.fontSizeMin=14;playerHealth.fontSizeMax=24;
@@ -220,7 +218,6 @@ namespace GoGhost.Duel
             if(game.Phase==DuelPhase.Prepare)
             {
                 preparationCount=Text("3",hud,Vector2.zero,new Vector2(300,100),72,face:numericFont);
-                BuildFadingOpeningCaption(hud);
             }
             BuildFinalBossCutscene(hud);
             if(game.Phase==DuelPhase.Training)BuildTrainingButtons();

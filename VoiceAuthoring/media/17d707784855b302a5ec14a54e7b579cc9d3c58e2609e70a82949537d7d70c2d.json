@@ -1,0 +1,32 @@
+[
+  {
+    "path": "Assets/_Game/Levels/L01_Duel/Resources/FinalBossVoice/Turn1.wav",
+    "old": "VoiceAuthoring/media/0e32a9e1b769ee912bebf1c4b33efb21c77c56604f0c2131525ca868f6097a88.wav",
+    "after": "3618954f5f3b6b736dc5be55d4b067848e4470c17c25f7ae74e89b74028703b2"
+  },
+  {
+    "path": "VoiceAuthoring/recipes/FinalBossVoice-Turn1.json",
+    "old": "VoiceAuthoring/media/958770e04e8903374220a9ebd326451179f97553b545421052e71b32808689a5.json",
+    "after": "514f8a5d6bd276bf404d34bdafa09714405325be16ab0aeda121822d263914b7"
+  },
+  {
+    "path": "Assets/_Game/Levels/L01_Duel/Resources/FinalBossVoice/Turn2.wav",
+    "old": "VoiceAuthoring/media/ccc22e092bcef8148eaa371c403ae287aab16f68abd13f61fa875b6b64e7876e.wav",
+    "after": "b5f95a2f7a34dbed7863495669963156ca5520b09506bc7854054adc07426f8d"
+  },
+  {
+    "path": "VoiceAuthoring/recipes/FinalBossVoice-Turn2.json",
+    "old": "",
+    "after": "40b16a0058c213325aee72ed641ec7501540b1fc14f55cce30c180a0fc7434d2"
+  },
+  {
+    "path": "Assets/_Game/Levels/L01_Duel/Resources/FinalBossVoice/Turn3.wav",
+    "old": "VoiceAuthoring/media/ecdd41b912bfb63b33a41dbfd59d874c3586d9d7cc4922696d9dfa6a199c6820.wav",
+    "after": "6b68f22ca113c439b9b5d5fb52c10fa0c8345cb51638daa692310f1ae733ea36"
+  },
+  {
+    "path": "VoiceAuthoring/recipes/FinalBossVoice-Turn3.json",
+    "old": "",
+    "after": "57199957b134d42ac17d2af02cb5a6e5ab38a7e5e8b69fdc6722ebc0bb790034"
+  }
+]

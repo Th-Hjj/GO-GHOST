@@ -16,6 +16,8 @@ namespace GoGhost.Duel
         readonly List<(RuleRowView Row, CanvasGroup Broken)> sealMarks = new();
         readonly List<TMP_Text> sealLabels = new();
         readonly List<CanvasGroup> sealedGroups = new List<CanvasGroup>();
+        readonly List<CanvasGroup> sealFrames = new();
+        CanvasGroup empCaptionEdge;
 
         public bool SidebarsSealed => sidebarsSealed;
         float SidebarFade => sidebarFadeFrom < 0 ? 0 : Reveal(Time.time - sidebarFadeFrom, sidebarFadeSeconds);
@@ -58,7 +60,25 @@ namespace GoGhost.Duel
             sealMarks.Add((row,group));
         }
 
-        void ClearSealMarks() { sealMarks.Clear(); sealLabels.Clear(); sealedGroups.Clear(); }
+        void ClearSealMarks() { sealMarks.Clear(); sealLabels.Clear(); sealedGroups.Clear(); sealFrames.Clear(); empCaptionEdge=null; }
+
+        CanvasGroup EmpFrame(RectTransform parent)
+        {
+            var frame=Rect("EMP outline",parent,Vector2.zero,Vector2.zero);
+            frame.anchorMin=Vector2.zero; frame.anchorMax=Vector2.one;
+            var group=frame.gameObject.AddComponent<CanvasGroup>();
+            group.blocksRaycasts=false; group.alpha=0;
+            for(int i=0;i<4;i++)
+            {
+                bool horizontal=i<2;
+                var edge=Image(frame,Vector2.zero,Vector2.zero,NeuralPalette.Spine).rectTransform;
+                edge.anchorMin=horizontal?new Vector2(0,i):new Vector2(i-2,0);
+                edge.anchorMax=horizontal?new Vector2(1,i):new Vector2(i-2,1);
+                edge.pivot=horizontal?new Vector2(.5f,i):new Vector2(i-2,.5f);
+                edge.sizeDelta=horizontal?new Vector2(0,2):new Vector2(2,0);
+            }
+            return group;
+        }
 
         void SealGroup(RectTransform sidebar)
         {
@@ -66,6 +86,7 @@ namespace GoGhost.Duel
             var group = sidebar.gameObject.AddComponent<CanvasGroup>();
             group.blocksRaycasts = false;
             sealedGroups.Add(group);
+            sealFrames.Add(EmpFrame(sidebar));
             var label=Text("SEALED",sidebar,Vector2.zero,Vector2.zero,16,TextAlignmentOptions.Left,numericFont);
             label.name="Seal status";
             label.rectTransform.anchorMin=new Vector2(0,1);label.rectTransform.anchorMax=Vector2.one;
@@ -76,6 +97,8 @@ namespace GoGhost.Duel
 
         void UpdateSealMarks()
         {
+            if(empCaptionEdge!=null)
+                empCaptionEdge.alpha=.84f*Reveal(Time.time-game.EmpWarningEndsAt+.20f,.10f);
             if (!sidebarsSealed) return;
             float age = Time.time - sealStarted;
             float dim=Reveal(age,.22f), disconnect=Reveal(age-.12f,.2f);
@@ -87,6 +110,8 @@ namespace GoGhost.Duel
                 broken.alpha=disconnect;
             }
             foreach(var label in sealLabels) label.alpha=disconnect;
+            float rim=Reveal(age,.10f)*Mathf.Lerp(.85f,.33f,Reveal(age-.12f,.44f));
+            foreach(var frame in sealFrames) frame.alpha=rim;
             float alpha = 1 - SidebarFade;
             foreach (var group in sealedGroups) if (group != null) group.alpha = alpha;
         }
@@ -96,7 +121,8 @@ namespace GoGhost.Duel
             if (!game.FinalBossCutscene) return;
             if (!string.IsNullOrEmpty(game.CutsceneText))
             {
-                BuildSceneCaption(hud,new Vector2(0,225),game.CutsceneSpeakerLabel,game.CutsceneText);
+                var box=BuildSceneCaption(hud,new Vector2(0,225),game.CutsceneSpeakerLabel,game.CutsceneText);
+                if(game.CutsceneSpeakerId==DuelGame.CutsceneSpeaker.Happy)empCaptionEdge=EmpFrame(box);
             }
         }
     }

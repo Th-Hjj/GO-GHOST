@@ -16,7 +16,10 @@ namespace GoGhost.Duel
         SpriteRenderer flyingShaft, flyingHead, frontEye, backEye;
         float drainFrom = -1, drainSeconds = 1, shockwaveAt = -1;
         public const float ShockwaveSeconds = 1.25f;
-        const float ShockwaveRadius = 24;
+        public const float ShockwaveStartRadius = .4f;
+        float shockwaveReach, releasedAt = float.NegativeInfinity;
+        Vector2 shockwaveOrigin;
+        SpriteRenderer[] empEdges;
         static readonly Color EyeRed = new Color(1f, .16f, .18f, 1f);
         float eyesLitAt = float.NegativeInfinity;
         bool rising;
@@ -46,6 +49,8 @@ namespace GoGhost.Duel
         public void SetFinalBossPhaseTwo()
         {
             drainFrom = -1;
+            if (empEdges != null)
+                foreach (var edge in empEdges) edge.enabled = false;
             ApplyFinalBossBody(true);
         }
 
@@ -64,7 +69,10 @@ namespace GoGhost.Duel
 
         void UpdateFinalBossLook()
         {
-            if (rainbowMaterial == null || !FinalAxe) return;
+            if (!FinalAxe) return;
+            UpdateShockwave();
+            UpdateFlyingAxe();
+            if (rainbowMaterial == null) return;
             float height = actor.Motor.Size.y;
             rainbowMaterial.SetFloat("_RainbowBottom", actor.Position.y - height * .5f);
             rainbowMaterial.SetFloat("_RainbowHeight", height + .1f);
@@ -72,15 +80,24 @@ namespace GoGhost.Duel
             {
                 float drained = Mathf.Clamp01((clock - drainFrom) / drainSeconds);
                 rainbowMaterial.SetFloat("_RainbowAmount", 1 - drained);
-                if (drained >= 1) { drainFrom = -1; ApplyFinalBossBody(true); }
+                if (drained >= 1) SetFinalBossPhaseTwo();
             }
-            UpdateFlyingAxe();
-            UpdateShockwave();
         }
 
         // Phase-change presentation, driven by the scripted transition.
         public void DrainRainbow(float seconds) { drainFrom = clock; drainSeconds = Mathf.Max(.05f, seconds); }
-        public void Shockwave() { shockwaveAt = clock; Impact(actor.Position); }
+        internal void Shockwave(Vector2 origin, float reach)
+        {
+            shockwaveOrigin = origin;
+            shockwaveReach = reach;
+            shockwaveAt = releasedAt = Time.time;
+            empEdges = new SpriteRenderer[AxeBodyParts.Length];
+            int backOrder = int.MaxValue;
+            foreach (var part in AxeBodyParts)
+                backOrder = Mathf.Min(backOrder, parts[(int)part].sortingOrder);
+            for (int i = 0; i < AxeBodyParts.Length; i++)
+                empEdges[i] = EmpOutline.Create(parts[(int)AxeBodyParts[i]], axeBodyMaterials[i], backOrder - 1, .055f);
+        }
         public void SetEyesRed(bool value, bool immediate = false)
         {
             EyesRed = value;
@@ -89,19 +106,27 @@ namespace GoGhost.Duel
 
         void UpdateShockwave()
         {
+            if (empEdges != null && empEdges[0].enabled)
+            {
+                float age = Time.time - releasedAt;
+                float strength = Mathf.Lerp(.96f, .35f, Mathf.SmoothStep(0, 1, age / .5f));
+                if (drainFrom >= 0) strength *= 1 - Mathf.Clamp01((clock - drainFrom) / drainSeconds);
+                var tint = NeuralPalette.Alpha(NeuralPalette.Spine, strength);
+                foreach (var edge in empEdges) edge.color = tint;
+            }
             if (shockwaveAt < 0) return;
-            float t = (clock - shockwaveAt) / ShockwaveSeconds;
+            float t = (Time.time - shockwaveAt) / ShockwaveSeconds;
             if (t >= 1) { shockwaveAt = -1; if (tells[2] != null) tells[2].enabled = false; return; }
-            const int points = 48;
-            if (tells[2] == null) tells[2] = NewLine("Shockwave", true, points);
+            const int points = 96;
+            if (tells[2] == null) tells[2] = NewLine("EMP wave", false, points);
             var line = tells[2]; line.enabled = true; line.positionCount = points; line.loop = true;
-            float radius = Mathf.Lerp(.4f, ShockwaveRadius, 1 - (1 - t) * (1 - t));
-            line.startWidth = line.endWidth = Mathf.Lerp(.22f, .05f, t);
-            line.startColor = line.endColor = NeuralPalette.Alpha(NeuralPalette.Primary, 1 - t);
+            float radius = Mathf.Lerp(ShockwaveStartRadius, shockwaveReach, t);
+            line.startWidth = line.endWidth = Mathf.Lerp(.15f, .065f, t);
+            line.startColor = line.endColor = NeuralPalette.Alpha(NeuralPalette.Spine, 1 - Mathf.SmoothStep(0, 1, (t - .62f) / .38f));
             for (int i = 0; i < points; i++)
             {
                 float angle = i / (float)points * Mathf.PI * 2;
-                line.SetPosition(i, actor.Position + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius);
+                line.SetPosition(i, shockwaveOrigin + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius);
             }
         }
 

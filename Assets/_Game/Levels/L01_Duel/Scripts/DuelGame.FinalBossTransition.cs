@@ -14,6 +14,7 @@ namespace GoGhost.Duel
         public bool FinalBossCutscene { get; private set; }
         public CutsceneSpeaker CutsceneSpeakerId { get; private set; }
         public string CutsceneText { get; private set; }
+        internal float EmpWarningEndsAt { get; private set; }
         public string CutsceneSpeakerLabel => CutsceneSpeakerId switch
         {
             CutsceneSpeaker.FinalBoss => "Final Boss",
@@ -40,20 +41,18 @@ namespace GoGhost.Duel
         public void QueueFinalBossPhaseTwo() { resumeFinalBossPhaseTwo = true; finalBossPhaseTwoHealth = -1; }
 #endif
 
-        // Called once per Wave 3 encounter, after the rules are bound. Returns true when phase two starts now.
-        bool PrepareFinalBossPhase(BossAgent boss)
+        // Called once per Mission 3 encounter, after the rules are bound.
+        void PrepareFinalBossPhase(BossAgent boss)
         {
             bool resume = resumeFinalBossPhaseTwo;
             resumeFinalBossPhaseTwo = false;
-            if (!resume || boss == null || boss.Axe == null) { FinalBossPhaseTwoReached = false; finalBossPhaseTwoHealth = -1; return false; }
+            if (!resume || boss == null || boss.Axe == null) { FinalBossPhaseTwoReached = false; finalBossPhaseTwoHealth = -1; return; }
             boss.Axe.StartInPhaseTwo();
             StripPlayerAssistance();
             StartPlatformMotion();
             if (finalBossPhaseTwoHealth > 0) Player.SetRuntimeHealth(Player.MaxHealth, finalBossPhaseTwoHealth);
-            Player.GetComponent<OfficerVisual>()?.SetAntiqueRevolver(true);
             FinalBossPhaseTwoReached = true;
             Trace($"final boss phase 2 retry: player={Player.CurrentHealth}");
-            return true;
         }
 
         // The first pool is spent: the Boss holds and the scripted transition takes over.
@@ -74,18 +73,32 @@ namespace GoGhost.Duel
             while (!boss.Motor.Grounded) yield return null;
             yield return new WaitForSeconds(.55f);
 
-            handler.WaitForClick("......");
-            Show(CutsceneSpeaker.FinalBoss, handler.PendingDialogue);
-            while (handler.PendingDialogue != null) yield return null;
-            handler.SpeakDialogue("FinalBossVoice/Turn1");
-            Show(CutsceneSpeaker.FinalBoss, handler.PendingDialogue);
-            while (handler.PendingDialogue != null) yield return null;
+            foreach (var line in VoiceStudioCatalog.Current.BossTransition)
+            {
+                handler.SpeakDialogue(line.key);
+                Show(CutsceneSpeaker.FinalBoss, handler.PendingDialogue);
+                while (handler.PendingDialogue != null) yield return null;
+            }
 
             Show(CutsceneSpeaker.None, null);
-            boss.View.Shockwave();
+            Vector2 origin = boss.Position;
+            Vector2 farCorner = (Vector2)arenaBounds.extents + new Vector2(
+                Mathf.Abs(origin.x - arenaBounds.center.x), Mathf.Abs(origin.y - arenaBounds.center.y));
+            float reach = farCorner.magnitude;
+            boss.View.Shockwave(origin, reach);
+            for (int i = 1; i < ActivePlatforms.Length; i++)
+            {
+                var platform = ActivePlatforms[i];
+                if (platform == null) continue;
+                float distance = Vector2.Distance(origin, platform.ClosestPoint(origin));
+                float contact = Mathf.InverseLerp(BossSilhouetteView.ShockwaveStartRadius, reach, distance);
+                platform.gameObject.AddComponent<PlatformOscillator>().PrimeEmp(
+                    Time.time + contact * BossSilhouetteView.ShockwaveSeconds);
+            }
             encounterSounds?.Play(Sfx.BeamFire);
             const float warningStart = .24f, warningDuration = .65f;
             yield return new WaitForSeconds(warningStart);
+            EmpWarningEndsAt = Time.time + warningDuration;
             Show(CutsceneSpeaker.Happy, VoiceStudioCatalog.Current.Find("Handler/EMP").text);
             handler.PlayLine("Handler/EMP");
             yield return new WaitForSeconds(warningDuration);
@@ -111,7 +124,6 @@ namespace GoGhost.Duel
             boss.View.RiseFromKneel();
             yield return new WaitForSeconds(.6f);
 
-            Player.GetComponent<OfficerVisual>()?.SetAntiqueRevolver(true);
             ui.FadeSidebars(PreparationSeconds);
             SetPhase(DuelPhase.Prepare);
             while (Phase == DuelPhase.Prepare) yield return null;

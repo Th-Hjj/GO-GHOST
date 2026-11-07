@@ -4,7 +4,7 @@ The preparation page offers rule editing and optional **Test Loadout** practice.
 
 ## Final Boss and optional Bonus
 
-Mission 1 victory waits for **Continue to Mission 2**. Defeating Swordsman closes the Mission 2 metrics record and opens Mission 3 preparation with the same character and rules. **Start Mission** stages the real Final Boss in the five-platform arena. Player controls, physics and AI wait during the voiced intro. The Boss says “So you think you stand a chance against me.” Happy replies “Look out!” Each line reveals its text alongside the voice. Clicking a partial line reveals it in full. Clicking Happy’s complete line starts the three-second countdown.
+Mission 1 victory waits for **Continue to Mission 2**. Defeating Swordsman closes the Mission 2 metrics record and opens Mission 3 preparation with the same character and rules. **Start Mission** stages the real Final Boss in the five-platform arena. The arena fade and three-second countdown follow the same route as Missions 1 and 2.
 
 **Current source (stage 3 of the redesign below):** the Final Boss is a player-sized stickman built from the Swordsman prefab, with the Alpha rainbow shader on its body and an axe. `FinalBossAxe` replaces the sword tactics with its own AI and four telegraphed moves: Chop, Spin, Throw & Recall and Boomerang. Each move publishes threats: Chop and Spin as melee, the flying axe as ranged. Both health pools are 1000. When the first pool empties, the scripted transition below runs (stage 7). In the second phase he keeps the axe in hand for Chop and Spin. Retry and subsequent configuration use the equipped loadout. Walker Grupp's original prototype (commit `719c843`, 2x Swordsman with sword specials) is retired. Trial axe tuning (prepare/lock/active/recovery/cooldown, damage):
 
@@ -29,7 +29,7 @@ Thomas accepted this design for trial on 2026-11-06. All nine stages were implem
 
 **Premise.** The Final Boss trusts AI more than the player does. He fights with Rules and can write rules into the player's system. After losing the first phase, he disables the arena’s circuitry and fights with the axe in hand.
 
-**Entry.** Mission 3 preparation offers Test Loadout. Start Mission plays the Boss challenge and Happy’s warning, then starts the three-second countdown into phase one.
+**Entry.** Mission 3 preparation offers Test Loadout. Start Mission fades into the arena and starts the three-second countdown into phase one.
 
 ### Phase 1 — Rainbow Axeman
 
@@ -44,17 +44,17 @@ Thomas accepted this design for trial on 2026-11-06. All nine stages were implem
 
 ### Transition — electromagnetic pulse
 
-After the first health pool is spent, the Boss lands and kneels on one knee. “......” waits for a click. He says “I don't need this anymore...” and waits for another click.
+After the first health pool is spent, the Boss lands and kneels on one knee. He says “You're strong.”, “But it's not over yet.” and “Let’s see what you can do on your own.” Each line has its own recording and click. Advancing the third line releases the EMP.
 
-1. The pulse expands. Happy starts to say “E.M...” during the animation and is cut off before P.
-2. After the pulse, all five platforms start moving. They have a moment on screen before either sidebar changes.
-3. Both rule lists lose their action colors. The condition-to-action arrows disconnect and **SEALED** appears once under each sidebar heading. The player loses rule assistance.
-4. The Boss fades from rainbow to white. The white body holds briefly before his eyes light up red.
-5. The Boss rises holding his axe. The three-second countdown brings the player into phase two with the antique revolver. This sequence runs without clicks.
+1. A violet ring expands from the kneeling Boss. Happy’s “E.M...” caption briefly acquires a violet edge as her transmission cuts out.
+2. Each elevated platform picks up a thin violet rim when the wave reaches it. Once the pulse clears, all five start moving. Their subdued rims persist throughout phase two. The arena walls and floor stay neutral.
+3. A violet edge appears once around each visible rule sidebar. The cards lose their action colors, their arrows disconnect and **SEALED** appears under each heading. The player loses rule assistance.
+4. The Boss’s rainbow fill and violet outline drain together. His white body holds briefly before the red eyes light.
+5. The Boss rises holding his axe. The three-second countdown leads into phase two. The player keeps the same electromagnetic revolver. This sequence runs without clicks.
 
 ### Phase 2 — white axeman
 
-The Boss starts with 1000 HP. He uses Chop and Spin in melee range, pursues a raised player and can jump. His axe stays in his hand throughout the phase. Players read his attack poses directly, and his moving eyes leave red trails. The player has full manual control and the antique revolver uses the usual weapon stats.
+The Boss starts with 1000 HP. He uses Chop and Spin in melee range, pursues a raised player and can jump. His axe stays in his hand throughout the phase. Players read his attack poses directly, and his moving eyes leave red trails. The player has full manual control and the same gray-blue revolver with its ice-blue cylinder.
 
 **Defeat and victory.**
 - Phase-two defeat offers two choices:
@@ -65,7 +65,7 @@ The Boss starts with 1000 HP. He uses Chop and Spin in melee range, pursues a ra
 
 **Implemented (stage 9):**
 - **Defeat page:** the player's health is recorded when the first pool empties. A phase-two defeat then shows **Retry Phase 2** and **Configuration**; a phase-one defeat keeps **Retry** and **Configuration**.
-- **Retry Phase 2:** builds a fresh Wave 3 encounter that skips the intro and the transition. The Boss starts on a full second pool (`Enemy.SkipToSecondPhase`) with red eyes and the axe in hand, and the platforms move from the start. The player has the recorded health, the antique revolver, no rule assistance and a full-width camera, followed by the normal countdown. Repeated retries keep the same health.
+- **Retry Phase 2:** builds a fresh Wave 3 encounter that skips the intro and the transition. The Boss starts on a full second pool (`Enemy.SkipToSecondPhase`) with red eyes and the axe in hand. The five moving platforms start with their residual violet edges. The player has the recorded health, the original revolver, no rule assistance and a full-width camera, followed by the normal countdown. Repeated retries keep the same health.
 - **Configuration:** restores the equipped rules and replays Wave 3 from the intro.
 - **Developer shortcut:** **GO GHOST > Playtest > Wave 3 Phase 2** queues a phase-two start at full health.
 

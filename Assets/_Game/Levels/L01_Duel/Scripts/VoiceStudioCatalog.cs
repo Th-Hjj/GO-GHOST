@@ -11,8 +11,7 @@ namespace GoGhost.Duel
         public string key, label, text;
         public int profileMission;
         public string profileField, profileValue;
-        // transition: Final Boss phase-change lines, played by the scripted transition rather than the intro pages.
-        public bool locked, transcribed, bossIntro, bonusOffer, transition;
+        public bool locked, transcribed, bonusOffer, transition;
     }
 
     [Serializable]
@@ -26,8 +25,8 @@ namespace GoGhost.Duel
         public VoiceStudioLine[] lines;
         [NonSerialized] VoiceStudioLine[] visit;
         public VoiceStudioLine[] Visit => visit ?? (visit = Array.FindAll(lines, x => x.key.StartsWith("FinalBossVoice/", StringComparison.Ordinal)));
-        [NonSerialized] VoiceStudioLine[] intro, offer;
-        public VoiceStudioLine[] BossIntro => intro ?? (intro = Array.FindAll(lines, line => line.bossIntro));
+        [NonSerialized] VoiceStudioLine[] phaseChange, offer;
+        public VoiceStudioLine[] BossTransition => phaseChange ?? (phaseChange = Array.FindAll(Visit, line => line.transition));
         public VoiceStudioLine[] BonusOffer => offer ?? (offer = Array.FindAll(Visit, line => line.bonusOffer));
         static VoiceStudioCatalog current;
         public static VoiceStudioCatalog Current => current ?? (current = JsonUtility.FromJson<VoiceStudioCatalog>(

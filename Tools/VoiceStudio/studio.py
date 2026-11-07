@@ -256,7 +256,9 @@ def suggest(text, x):
 def synth_source(recipe, boss, audition_folder=None):
     speed = 1.30 if boss else 1.05
     pronunciations = recipe.get("pronunciations") or ""
-    spoken = recipe["text"].replace("“", "").replace("”", "")
+    spoken = recipe["text"].replace("“", "").replace("”", "").replace("’", "'")
+    digit_words = ("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine")
+    spoken = re.sub(r"\b([0-9])\b", lambda match: digit_words[int(match[1])], spoken)
     ident = digest(encode([spoken, pronunciations, speed, boss, "kokoro-v1-studio1"]))
     if audition_folder is not None:
         ident = "audition-" + ident

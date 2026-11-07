@@ -165,14 +165,6 @@
       "transcribed": false
     },
     {
-      "key": "FinalBossVoice/Line1",
-      "label": "Wave 3 opening challenge",
-      "bossIntro": true,
-      "text": "So you think you stand a chance against me.",
-      "locked": false,
-      "transcribed": false
-    },
-    {
       "key": "FinalBossVoice/Line6",
       "label": "Bonus offer 1",
       "text": "There is a bonus challenge.",
@@ -187,23 +179,38 @@
       "bonusOffer": true
     },
     {
-      "key": "Handler/LookOut",
-      "label": "Wave 3 opening warning",
-      "bossIntro": true,
-      "text": "Look out!",
-      "locked": false
-    },
-    {
       "key": "FinalBossVoice/Turn1",
-      "label": "Final Boss kneeling",
-      "text": "I don't need this anymore...",
+      "label": "Final Boss kneeling · 1",
+      "text": "You're strong.",
       "locked": false,
       "transition": true
+    },
+    {
+      "key": "FinalBossVoice/Turn2",
+      "label": "Final Boss kneeling · 2",
+      "text": "But it's not over yet.",
+      "locked": false,
+      "transition": true
+    },
+    {
+      "key": "FinalBossVoice/Turn3",
+      "label": "Final Boss kneeling · 3",
+      "text": "Let’s see what you can do on your own.",
+      "locked": false,
+      "transition": true,
+      "transcribed": false
     },
     {
       "key": "Handler/EMP",
       "label": "Final Boss electromagnetic pulse",
       "text": "E.M...",
+      "locked": false
+    },
+    {
+      "key": "Handler/Mission1Title",
+      "label": "Mission 1 · Target Profile",
+      "text": "Target Profile for Mission 1",
+      "profileMission": 1,
       "locked": false
     },
     {
@@ -239,6 +246,13 @@
       "profileValue": "Piercing Shot · Optical Camo"
     },
     {
+      "key": "Handler/Mission2Title",
+      "label": "Mission 2 · Target Profile",
+      "text": "Target Profile for Mission 2",
+      "profileMission": 2,
+      "locked": false
+    },
+    {
       "key": "Handler/Mission2Codename",
       "label": "Mission 2 · Codename",
       "text": "Codename, Swordsman.",
@@ -269,6 +283,13 @@
       "profileMission": 2,
       "profileField": "Skills",
       "profileValue": "Pursuit Draw · Still Blade"
+    },
+    {
+      "key": "Handler/Mission3Title",
+      "label": "Mission 3 · Target Profile",
+      "text": "Target Profile for Mission 3",
+      "profileMission": 3,
+      "locked": false
     },
     {
       "key": "Handler/Mission3Codename",

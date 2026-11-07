@@ -156,7 +156,7 @@ namespace GoGhost.Duel
             if (Phase != DuelPhase.Failed || DeveloperToolsOpen) return;
             CreateEncounter(false);
         }
-        void CreateEncounter(bool training, bool skipBossIntro = false, bool fadePreparation = false)
+        void CreateEncounter(bool training, bool fadePreparation = false)
         {
             ClearEncounter();
             ApplyPlatformLayout(training);
@@ -207,7 +207,7 @@ namespace GoGhost.Duel
             Police = actors[0].Health; // Historical development consumers; gameplay uses the full actor list.
             coordinator?.Configure(actors, navigation);
             BindEncounterRules();
-            bool finalBossPhaseTwo = !training && Wave == FinalBossWave && PrepareFinalBossPhase(actors[0]);
+            if (!training && Wave == FinalBossWave) PrepareFinalBossPhase(actors[0]);
             if (training) input.UiBlocksManualFire = ui.TrainingOwnsPointer;
             foreach (var body in encounter.GetComponentsInChildren<Rigidbody2D>())
             {
@@ -233,7 +233,6 @@ namespace GoGhost.Duel
             }
             FirstConfiguration = false;
             if (fadePreparation) SetPhase(DuelPhase.MissionEntry);
-            else if (Wave == FinalBossWave && !finalBossPhaseTwo && !skipBossIntro) StartBossDialogue(DuelPhase.FinalBoss);
             else StartCountdown();
             Trace($"start wave={Wave} player={Player.CurrentHealth} bosses={HealthSummary()} observation=empty");
         }
@@ -408,10 +407,7 @@ namespace GoGhost.Duel
                 phaseTime += Time.deltaTime;
                 ui.FadePreparation(phaseTime);
                 if (phaseTime >= PreparationFadeSeconds + .15f)
-                {
-                    if (Wave == FinalBossWave && !FinalBossPhaseTwoReached) StartBossDialogue(DuelPhase.FinalBoss);
-                    else StartCountdown();
-                }
+                    StartCountdown();
             }
         }
         void FixedUpdate()
@@ -452,7 +448,7 @@ namespace GoGhost.Duel
             sounds?.Play(defeat ? Sfx.Defeat : Sfx.Victory);
             if (!defeat && Wave == FinalBossWave)
             {
-                StartBossDialogue(DuelPhase.BonusOffer);
+                StartBonusOffer();
                 return;
             }
             SetPhase(defeat ? DuelPhase.Failed : Wave == BonusWave ? DuelPhase.Complete : DuelPhase.Between);

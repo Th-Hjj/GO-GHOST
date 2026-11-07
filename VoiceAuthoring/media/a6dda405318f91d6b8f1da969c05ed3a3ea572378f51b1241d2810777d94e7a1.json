@@ -1,0 +1,17 @@
+[
+  {
+    "path": "Assets/_Game/Levels/L01_Duel/Resources/FinalBossVoice/Turn3.wav",
+    "old": "VoiceAuthoring/media/6b68f22ca113c439b9b5d5fb52c10fa0c8345cb51638daa692310f1ae733ea36.wav",
+    "after": "f965750de23ebe546aebfcb101f8fb53c4fae54da754cde39dd7450182f2120d"
+  },
+  {
+    "path": "VoiceAuthoring/recipes/FinalBossVoice-Turn3.json",
+    "old": "VoiceAuthoring/media/57199957b134d42ac17d2af02cb5a6e5ab38a7e5e8b69fdc6722ebc0bb790034.json",
+    "after": "eaa76d0be029853e1d3422772803a8322c49551e6a08febcad569d3ddf2b736f"
+  },
+  {
+    "path": "Assets/_Game/Levels/L01_Duel/Resources/VoiceStudioCatalog.json",
+    "old": "VoiceAuthoring/media/f025ce70c87401a8fa9d5fab4c8f7bd4d425e8817a6a3a02fef3d9047eafca8e.json",
+    "after": "69e491821dfd3ca04d9970a181993aadf26547daa53f19057a1c0433766631a5"
+  }
+]

@@ -6,8 +6,7 @@ namespace GoGhost.Duel
     {
         public const int FinalBossWave = 3, BonusWave = 4;
         public string WaveLabel => Wave == BonusWave ? "BONUS WAVE" : "MISSION " + Wave;
-        VoiceStudioLine[] DialogueLines => Phase == DuelPhase.BonusOffer
-            ? VoiceStudioCatalog.Current.BonusOffer : VoiceStudioCatalog.Current.BossIntro;
+        VoiceStudioLine[] DialogueLines => VoiceStudioCatalog.Current.BonusOffer;
         public int FinalBossLine { get; private set; }
         public string FinalBossDialogue => DialogueLines[FinalBossLine].text;
         public string FinalBossDialogueSpeaker => DialogueLines[FinalBossLine].key.StartsWith("Handler/") ? "Happy" : "Final Boss";
@@ -34,11 +33,11 @@ namespace GoGhost.Duel
             SetPhase(DuelPhase.Configure);
         }
 
-        void StartBossDialogue(DuelPhase dialoguePhase)
+        void StartBonusOffer()
         {
             FinalBossLine = 0;
             FinalBossChoiceReady = false;
-            SetPhase(dialoguePhase);
+            SetPhase(DuelPhase.BonusOffer);
             SpeakBossPage();
         }
 
@@ -51,12 +50,6 @@ namespace GoGhost.Duel
                 FinalBossLine++;
                 SpeakBossPage();
                 ui.Show();
-            }
-            else if (Phase == DuelPhase.FinalBoss)
-            {
-                input.SuppressUiFireUntilRelease();
-                ui.BeginBossOpeningReveal();
-                StartCountdown();
             }
             else if (Phase == DuelPhase.BonusOffer)
             {

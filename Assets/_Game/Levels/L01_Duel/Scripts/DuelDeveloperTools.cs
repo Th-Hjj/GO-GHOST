@@ -215,7 +215,7 @@ namespace GoGhost.Duel
                 if (bossPhase == 0) return;
                 if (bossPhase == 2) resumeFinalBossPhaseTwo = true;
                 finalBossPhaseTwoHealth = -1;
-                CreateEncounter(false, skipBossIntro: true);
+                CreateEncounter(false);
                 return;
             }
             StartFight();

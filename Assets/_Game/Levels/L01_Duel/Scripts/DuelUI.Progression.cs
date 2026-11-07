@@ -82,15 +82,7 @@ namespace GoGhost.Duel
 
         internal void ClickDialogue() => game.AcknowledgeDialogue();
 
-        const float OpeningCaptionSeconds = .15f;
-        CanvasGroup openingCaption;
-
-        void BuildBossCaption(RectTransform parent, bool offer)
-        {
-            BuildSceneCaption(parent,new Vector2(0,110),offer?null:game.FinalBossDialogueSpeaker,game.FinalBossDialogue);
-        }
-
-        void BuildSceneCaption(RectTransform parent,Vector2 position,string speaker,string line)
+        RectTransform BuildSceneCaption(RectTransform parent,Vector2 position,string speaker,string line)
         {
             const float width=760, height=134, padding=24;
             var box=Image(parent,position,new Vector2(width,height),NeuralPalette.Alpha(NeuralPalette.Panel,.96f)).rectTransform;
@@ -100,23 +92,13 @@ namespace GoGhost.Duel
             sceneDialogue=Text(line,box,new Vector2(0,string.IsNullOrEmpty(speaker)?14:-12),new Vector2(width-2*padding,76),26,TMPro.TextAlignmentOptions.TopLeft,DialogueFont());
             sceneDialogue.name="CutsceneText";
             sceneDialogue.maxVisibleCharacters=game.FinalBossChoiceReady?int.MaxValue:game.DialogueVisibleCharacters;
+            return box;
         }
 
-        void BuildFadingOpeningCaption(RectTransform hud)
+        void BuildBonusOffer()
         {
-            if (OpeningAge >= OpeningCaptionSeconds) return;
-            var caption = Rect("Outgoing boss dialogue", hud, Vector2.zero, Vector2.zero);
-            openingCaption = caption.gameObject.AddComponent<CanvasGroup>();
-            openingCaption.blocksRaycasts = false;
-            BuildBossCaption(caption, false);
-        }
-
-        void BuildFinalBoss()
-        {
-            bool offer = game.Phase == DuelPhase.BonusOffer;
-            Text(offer ? "MISSION 3 CLEARED" : "MISSION 3",page,new Vector2(0,400),new Vector2(600,60),offer ? 36 : 30,face:headingFont);
-            BuildBossCaption(page, offer);
-            if (!offer) return;
+            Text("MISSION 3 CLEARED",page,new Vector2(0,400),new Vector2(600,60),36,face:headingFont);
+            BuildSceneCaption(page,new Vector2(0,110),null,game.FinalBossDialogue);
             if (game.FinalBossChoiceReady)
             {
                 Button("Yes",page,new Vector2(-110,-35),new Vector2(190,60),()=>game.ChooseBonus(true)).name="BonusYes";

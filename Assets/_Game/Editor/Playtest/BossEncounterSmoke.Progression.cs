@@ -23,7 +23,10 @@ public static partial class BossEncounterSmoke
             yield return WaitFor(() => !game.DialogueSpeaking, "Preparation voice did not finish");
             yield return null;
             Click("TargetProfile");
-            Require(game.Phase == DuelPhase.TargetProfile && game.PendingDialogue.StartsWith("Codename,"), "Missing target dossier");
+            Require(game.Phase == DuelPhase.TargetProfile && game.PendingDialogue == "Target Profile for Mission " + wave, "Missing target dossier title");
+            yield return WaitFor(() => game.DialogueReady && !game.DialogueSpeaking, "Dossier title did not finish");
+            game.AcknowledgeDialogue();
+            Require(game.PendingDialogue.StartsWith("Codename,"), "Codename did not follow the dossier title");
             yield return WaitFor(() => !game.DialogueSpeaking, "Codename recording did not finish");
             yield return null;
             Click("ProfileBack");
@@ -41,14 +44,7 @@ public static partial class BossEncounterSmoke
             Require(game.Phase == DuelPhase.Configure, "Test Loadout did not return to preparation");
             Click("StartMission");
             yield return WaitFor(() => game.Phase != DuelPhase.MissionEntry, "Mission entrance did not finish");
-            if (wave == DuelGame.FinalBossWave)
-            {
-                Require(game.Phase == DuelPhase.FinalBoss, "Missing voiced intro");
-                Require(game.FinalBossDialogueSpeaker == "Final Boss", "Missing opening challenge");
-                yield return WaitFor(() => game.Phase == DuelPhase.FinalBoss && game.FinalBossDialogueSpeaker == "Happy", "Missing Happy warning");
-                yield return WaitFor(() => game.Phase == DuelPhase.Prepare, "Wave 3 intro did not start the countdown");
-            }
-            Require(game.Phase == DuelPhase.Prepare, "Missing pre-fight countdown");
+            Require(game.Phase == DuelPhase.Prepare && game.PendingDialogue == null, "Missing direct pre-fight countdown");
             yield return WaitFor(() => game.Phase == DuelPhase.Fight, "Combat did not start");
             game.Player.IsInvulnerable = true;
             game.Bosses[0].Health.TakeDamage(100000, game.Player.gameObject);
@@ -65,6 +61,9 @@ public static partial class BossEncounterSmoke
             }
         }
 
+        foreach (var line in new[] { "You're strong.", "But it's not over yet.", "Let’s see what you can do on your own." })
+            yield return WaitFor(() => game.CutsceneText == line && game.PendingDialogue == line, "Missing kneeling dialogue: " + line);
+        yield return WaitFor(() => game.CutsceneSpeakerId == DuelGame.CutsceneSpeaker.Happy, "Missing interrupted EMP warning");
         yield return WaitFor(() => game.Bosses[0].Axe.PhaseTwo, "Phase two did not start", 30);
         game.Bosses[0].Health.TakeDamage(100000, game.Player.gameObject);
         yield return WaitFor(() => game.Phase == DuelPhase.BonusOffer, "Missing Bonus offer");

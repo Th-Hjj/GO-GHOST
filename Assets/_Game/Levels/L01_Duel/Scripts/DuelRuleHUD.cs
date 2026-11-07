@@ -10,13 +10,11 @@ namespace GoGhost.Duel
         const float RuleGlowMinimumSeconds = .30f, RuleGlowFadeSeconds = .15f;
         float rulePanelWidth=RulePanelWidth;
         const float ArenaRevealSeconds = .65f, CardRevealSeconds = .3f;
-        float openingAt = float.NegativeInfinity, firstInvadedSidebarAt = float.NegativeInfinity;
-        float OpeningAge => Time.time - openingAt;
+        float firstInvadedSidebarAt = float.NegativeInfinity;
         static float Reveal(float age, float duration) => Mathf.SmoothStep(0, 1, age / duration);
-        internal void BeginBossOpeningReveal() => openingAt = Time.time;
         internal void ResetEncounterPresentation()
         {
-            openingAt = firstInvadedSidebarAt = invadedAt = bossPoolSpentAt = secondPoolAt = float.NegativeInfinity;
+            firstInvadedSidebarAt = invadedAt = bossPoolSpentAt = secondPoolAt = float.NegativeInfinity;
             invadedOrder = -1;
         }
         sealed class RuleGlowState
@@ -281,7 +279,7 @@ namespace GoGhost.Duel
             LayoutBossRuleHud(width,height);
             float sidebar=hasRules?rulePanelWidth:0,fade=SidebarFade;
             // Sealed sidebars slide out during the phase-two countdown while the camera widens.
-            float visible = Reveal(OpeningAge, ArenaRevealSeconds) * (1 - fade);
+            float visible = 1 - fade;
             float panel=sidebar*visible*Reveal(Time.time-firstInvadedSidebarAt,ArenaRevealSeconds);
             float right=BossRulePanelWidth*visible;
             if (bossRuleSidebar != null)

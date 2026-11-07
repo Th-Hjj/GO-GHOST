@@ -1,5 +1,17 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — Mission entry, dossier titles and Final Boss dialogue
+
+- Mission 3 enters the ordinary three-second countdown. The Boss's three voiced kneeling pages are “You're strong.”, “But it's not over yet.” and “Let’s see what you can do on your own.” The third acknowledgement releases the EMP with Happy’s existing interruption.
+- Each numbered Target Profile now opens its first briefing with Happy's recorded “Target Profile for Mission X” title. Codename follows on the next click. Reopening a dossier still reveals the entire file silently.
+- Before the dossier follow-up, Unity compiled the Boss changes and Check Game Flow passed through the direct countdown, all three kneeling lines, the EMP warning and Bonus. The three new dossier titles and the final combined revision were not tested at Thomas’s request.
+
+## 2026-11-07 — Final Boss EMP and the player's revolver
+
+- The 1.25-second violet ring lights each elevated platform when it reaches the platform's nearest edge. The five platforms move on their existing beat and keep a faint rim into phase two. The floor and walls are excluded. The Boss's rim drains with his rainbow before the red eyes light.
+- Happy’s interrupted caption briefly shows a violet perimeter. Each visible sealed sidebar receives one perimeter while its cards keep the disconnected arrows and muted text. Normal transition and direct retry keep the player's original gray-blue revolver and luminous cylinder.
+- Unity 6000.6.0f1 compiled with zero errors or warnings. Play Mode took Start Mission from Mission 3 preparation, spent the first Boss pool with controlled damage, recorded the knee dialogue through the start of phase two, and exercised Retry Phase 2 after a controlled defeat. Retry began with five moving, outlined platforms, red eyes, the original revolver and no transition replay. The optional Check Game Flow also passed. The 13.5-second Game View capture with stereo game audio is in `Logs/EmpPreview/Final-Boss-EMP.mp4`. No standalone build was made.
+
 ## 2026-11-07 — Interface consistency and visual comparison
 
 - Updated the menu, creation/upload, mission preparation, configuration, Help, target profile, dialogue, combat and practice HUD, results and F8 presentation. The EMP mutes both rule lists, disconnects each arrow and labels each sidebar once. Invasion highlights the newly appended card once.

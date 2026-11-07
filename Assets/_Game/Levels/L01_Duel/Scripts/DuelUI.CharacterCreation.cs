@@ -6,7 +6,7 @@ namespace GoGhost.Duel
 {
     public sealed partial class DuelUI
     {
-        TMP_FontAsset characterControlFont, characterNumericFont, characterFallback;
+        TMP_FontAsset characterControlFont, characterNumericFont, characterFallback, dialogueFont;
         bool characterFontsInitialized;
         Button characterStart;
         RectTransform startupFill;
@@ -46,8 +46,17 @@ namespace GoGhost.Duel
             copy.fallbackFontAssetTable.Add(characterFallback);
             return copy;
         }
+        TMP_FontAsset DialogueFont()
+        {
+            var control = CharacterNameFont();
+            if (font == controlFont) return control;
+            if (characterFallback == null) return font;
+            if (dialogueFont == null) dialogueFont = WithNameFallback(font);
+            return dialogueFont;
+        }
         void DisposeCharacterFonts()
         {
+            DestroyNameFontCopy(dialogueFont);
             DestroyNameFontCopy(characterControlFont);
             DestroyNameFontCopy(characterNumericFont);
             if (characterFallback == null) return;

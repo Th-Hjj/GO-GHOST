@@ -92,7 +92,7 @@ namespace GoGhost.Duel
                     var speaker = Text(game.CutsceneSpeakerLabel, hud, new Vector2(-210, 268), new Vector2(300, 32), 22, TextAlignmentOptions.Left, headingFont);
                     speaker.color = NeuralPalette.Secondary; speaker.name = "CutsceneSpeaker";
                 }
-                sceneDialogue = Text(game.CutsceneText, hud, new Vector2(0, 212), new Vector2(720, 80), 28);
+                sceneDialogue = Text(game.CutsceneText, hud, new Vector2(0, 212), new Vector2(720, 80), 28, face:DialogueFont());
                 sceneDialogue.name = "CutsceneText";
                 sceneDialogue.maxVisibleCharacters = game.DialogueVisibleCharacters;
             }

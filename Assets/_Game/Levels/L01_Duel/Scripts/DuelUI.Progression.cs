@@ -37,7 +37,7 @@ namespace GoGhost.Duel
                 label.anchorMax = Vector2.one;
                 label.offsetMin = new Vector2(20, -32);
                 label.offsetMax = new Vector2(-20, -8);
-                ambientDialogue = Text("", panel, Vector2.zero, Vector2.zero, 24, TMPro.TextAlignmentOptions.MidlineLeft);
+                ambientDialogue = Text("", panel, Vector2.zero, Vector2.zero, 24, TMPro.TextAlignmentOptions.MidlineLeft, DialogueFont());
                 var body = ambientDialogue.rectTransform;
                 body.anchorMin = Vector2.zero;
                 body.anchorMax = Vector2.one;
@@ -66,7 +66,7 @@ namespace GoGhost.Duel
             bool offer = game.Phase == DuelPhase.BonusOffer;
             Text(offer ? "WAVE 3 CLEARED" : "WAVE 3",page,new Vector2(0,400),new Vector2(600,60),36,face:headingFont);
             Image(page,new Vector2(0,110),new Vector2(1040,190),NeuralPalette.Panel);
-            sceneDialogue = Text(game.FinalBossDialogue,page,new Vector2(0,110),new Vector2(920,150),32);
+            sceneDialogue = Text(game.FinalBossDialogue,page,new Vector2(0,110),new Vector2(920,150),32,face:DialogueFont());
             sceneDialogue.maxVisibleCharacters = game.FinalBossChoiceReady ? int.MaxValue : game.DialogueVisibleCharacters;
             if (!offer)
             {

@@ -56,7 +56,7 @@ The 2026-10-27 drawn-face flow supersedes this 2026-10-16 presentation. The reta
 ## Combat feedback
 
 **Final Boss redesign — Thomas, 2026-11-06, implementation pending:**
-- **Rule sidebars:** the player's sidebar sits on the left in every wave; the Final Boss's rules use a matching sidebar on the right. The camera fills the space between them, and returns to full width when neither sidebar is shown.
+- **Rule sidebars:** the player's sidebar sits on the left in every wave (implemented); the Final Boss's rules use a matching sidebar on the right. The camera fills the space between them, and returns to full width when neither sidebar is shown.
 - **Phase one:** a player-sized rainbow stickman (the retired Alpha look) with an axe, using the existing tell style.
 - **Transition:** the shockwave crosses out both sidebars, drains the rainbow and turns him into a white stickman. The sidebars fade during the countdown.
 - **Phase two:** the white body keeps a clear outline. Punch effects are gold and only the eyes are red. Each eye leaves a red tail-light trail while he moves, without hiding his wind-up. There are no tell lines.

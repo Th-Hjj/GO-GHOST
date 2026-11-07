@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-11-06 — Player rules on the left (Final Boss stage 2)
+
+- The combat Rules sidebar now sits on the left edge in every wave, with its divider facing the arena. The camera viewport and battle HUD fill the remaining width. A right-edge width (`BossRulePanelWidth`, currently 0) is reserved for the Final Boss sidebar in stage 4. Fights with no rules still use the full width.
+- Unity 6000.6.0f1 compiled cleanly. Ran a new focused check (**GO GHOST > Playtest > Rule Sidebar Left**) on developer Wave 1 with three rules and the normal Start Fight. It passed 12/12 at 1280, 1920, 2560 and 3840 widths: the sidebar is flush left, the camera spans from the sidebar to the right edge, and the health HUD is centered on the camera.
+  - The first run reported three spurious failures because `Screen.width` was read before the Game view resize had settled; the check now waits for it.
+  - Captures are in `Logs/BossEncounter/rule-sidebar-left-*.png`.
+  - Live mouse aim on the shifted viewport is NOT TESTED. Aim uses `Camera.ScreenToWorldPoint`, which follows the camera's pixel rect.
+
 ## 2026-11-06 — Five-rule player cap (Final Boss stage 1)
 
 - Configuration now accepts at most five rules in every wave, including Happy's starter rule (`ConditionalCatalog.PlayerRuleLimit`). Storage and validation keep `MaxRulesTotal = 20` so that later Final Boss invasions can append fight-only rules.

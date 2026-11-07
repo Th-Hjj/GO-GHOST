@@ -106,7 +106,7 @@ namespace GoGhost.Duel
             var background=ruleSidebar.gameObject.AddComponent<UnityEngine.UI.Image>();
             background.color=NeuralPalette.Background;background.raycastTarget=false;
             var divider=Image(ruleSidebar,Vector2.zero,Vector2.zero,NeuralPalette.Border);
-            divider.rectTransform.anchorMin=new Vector2(0,0);divider.rectTransform.anchorMax=new Vector2(0,1);
+            divider.rectTransform.anchorMin=new Vector2(1,0);divider.rectTransform.anchorMax=new Vector2(1,1);
             divider.rectTransform.sizeDelta=new Vector2(1,0);
             ruleHeading=Text("Rules "+ruleRows.Count,ruleSidebar,Vector2.zero,Vector2.zero,30,TextAlignmentOptions.Left,headingFont);
             ruleHeading.rectTransform.anchorMin=ruleHeading.rectTransform.anchorMax=new Vector2(.5f,1);
@@ -206,6 +206,8 @@ namespace GoGhost.Duel
             rect.anchoredPosition=new Vector2(-cardWidth/2+left+width/2,cardHeight/2-top-height/2);
         }
         float MeasureRulePanelWidth(float availableWidth)=>Mathf.Clamp(availableWidth*.24f,320,410);
+        // Width of the Final Boss rule sidebar on the right edge; zero until his rules are shown.
+        float BossRulePanelWidth=>0;
         void LayoutRuleHud(float width,float height)
         {
             float position=ruleScroll!=null&&ruleHudSize!=Vector2.zero?ruleScroll.verticalNormalizedPosition:hudScrollPosition;
@@ -239,21 +241,22 @@ namespace GoGhost.Duel
             bool hasRules=ruleSidebar!=null&&hudRules==game.Rules&&
                 (game.Phase==DuelPhase.Prepare||game.Phase==DuelPhase.Fight||game.Phase==DuelPhase.Training);
             if(hasRules&&(Mathf.Abs(ruleHudSize.x-width)>.5f||Mathf.Abs(ruleHudSize.y-height)>.5f))LayoutRuleHud(width,height);
-            float panel=hasRules?rulePanelWidth:0;
+            // Player rules occupy the left edge; the right edge is reserved for the Final Boss's rules.
+            float panel=hasRules?rulePanelWidth:0,right=BossRulePanelWidth;
             if(battleUi!=null)
             {
-                battleUi.anchoredPosition=new Vector2(-panel/2,0);
-                battleUi.sizeDelta=new Vector2(width-panel,height);
+                battleUi.anchoredPosition=new Vector2((panel-right)/2,0);
+                battleUi.sizeDelta=new Vector2(width-panel-right,height);
             }
             if(ruleSidebar!=null)
             {
-                ruleSidebar.anchoredPosition=new Vector2((width-panel)/2,0);
+                ruleSidebar.anchoredPosition=new Vector2(-(width-panel)/2,0);
                 ruleSidebar.sizeDelta=new Vector2(panel,height);
             }
             var camera=Camera.main;
             if(camera==null)return;
-            float fraction=panel/Mathf.Max(1,width);
-            camera.rect=new Rect(0,0,1-fraction,1);
+            float left=panel/Mathf.Max(1,width),rightFraction=right/Mathf.Max(1,width);
+            camera.rect=new Rect(left,0,1-left-rightFraction,1);
             float aspect=camera.pixelRect.width/Mathf.Max(1,camera.pixelRect.height);
             camera.orthographicSize=Mathf.Max(10,16.8f/Mathf.Max(.3f,aspect));
         }

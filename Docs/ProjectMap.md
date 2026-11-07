@@ -18,7 +18,7 @@ Only enabled build scene and default Editor Play entry: `Assets/_Game/Levels/L01
 | `Assets/_Game/Shared/Scripts/Compatibility` | Retained serialized/API contracts and optional components used by original executors; [details](../Assets/_Game/Shared/Scripts/Compatibility/README.md) |
 | `Assets/_Game/Shared/Prefabs`, `Data`, `Audio`, `Fonts`, `Presentation` | Reused player/projectile, physics/data, sounds, fonts and presentation assets |
 | `Assets/_Game/Editor/Build` | DuelBuild: open formal scene, set Play entry and explicit build commands |
-| `Assets/_Game/Editor/Playtest` | Current wave entries and bounded behavior, training, platform, UI and combat checks |
+| `Assets/_Game/Editor/Playtest` | Manual wave and phase entries plus the optional Check Game Flow command |
 | `Assets/_Game/Editor/Authoring` | Current Boss/presentation authoring tools |
 
 `ConditionalThreatGeometry` contains the physical threat prediction required by current rules. The old autonomous `LegacyPlayerAI` remains archived. Current body UI shares the extracted contour/pulse components and drawn face; the retained particle brain is inactive in formal configuration. It does not depend on historical MissionUI screens. The current combat prefab is `DuelCombatAttempt.prefab`; Boss assets are `Gunner` and `Swordsman`, with their existing GUIDs and enum values preserved.

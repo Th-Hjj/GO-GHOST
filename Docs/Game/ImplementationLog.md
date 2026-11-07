@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-11-06 — Lean Editor playtests
+
+- Reduced the Editor combat smoke harness from 41 scripts (9,669 lines) to two (162 lines). Removed the per-move, superseded catalog, screenshot matrix and stage-specific fixtures together with their menu entries and metadata. PitchPlaytest still opens each wave and Wave 3 Phase 2 for manual play.
+- Check Game Flow is the single optional smoke. It passed in Unity 6000.6.0f1 from New Game through all three waves, the phase change and Bonus entry, using controlled damage. It verifies the completed W2 record stays closed and exits Play Mode. Daily iteration uses a compile and the changed behavior's normal entry.
+
 ## 2026-11-06 — Shared Jump, Final Boss locomotion and F8 tuning
 
 - Jump repeats on each legal landing while a state holds; a discrete event is consumed per occurrence. Older Jump variants use the same action. The Final Boss runs the player's conditional controller for ranged attack → Jump and far enemy → Move toward enemy. Axe selection belongs to his combat AI.

@@ -38,4 +38,4 @@ Only JSON is generated for current schema 4. Existing JSON, CSV and older metric
 
 ## Verification
 
-The **Final Boss and Bonus Progression** Editor fixture checks the completed W2 JSON again after entering Bonus. **Help and Named Metrics** still expects positive Aim Assist time. That assumption predates the current catalog. The [implementation log](ImplementationLog.md) records which versions and checks actually ran.
+The optional **Check Game Flow** Editor check compares the completed W2 JSON again after entering Bonus. The [implementation log](ImplementationLog.md) records which versions and checks actually ran.

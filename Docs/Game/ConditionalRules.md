@@ -154,4 +154,4 @@ F8 groups controls under Tuning, Waves and Analytics. Tuning retains Player, Wea
 
 ## Validation and delivery
 
-For rule changes, check selector labels and parameters, migration, rule priority, manual fallback, feedback and cleanup. Some Editor fixtures predate the current catalog, Testing route and Wave 1 victory button. Review their assertions against the current route before using them as evidence. The [implementation log](ImplementationLog.md) distinguishes source inspection, compilation, Editor checks and standalone play.
+For rule changes, check selector labels and parameters, migration, rule priority, manual fallback, feedback and cleanup. During iteration, exercise the affected rule in Testing. The optional Check Game Flow command covers progression changes. The [implementation log](ImplementationLog.md) distinguishes source inspection, compilation, Editor checks and standalone play.

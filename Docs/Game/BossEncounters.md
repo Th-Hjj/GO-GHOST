@@ -378,4 +378,4 @@ Audio uses Kenney's [Sci-fi Sounds](https://kenney.nl/assets/sci-fi-sounds), [RP
 
 ## Evidence boundary
 
-The **Final Boss and Bonus Progression** Editor fixture exercises Wave 2 settlement, Wave 3 Testing, voiced intro, countdown, two health pools, retry and the optional Bonus. See the [implementation log](ImplementationLog.md).
+The optional **GO GHOST > Playtest > Check Game Flow** command follows configuration, Testing and the numbered waves through the Final Boss choice and Bonus. See the [implementation log](ImplementationLog.md).

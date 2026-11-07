@@ -35,7 +35,7 @@ Wave 2 victory closes the playtest record and opens Wave 3 Body Configuration. S
 
 The refreshed **Beta 33%** packages for Windows x64 and macOS include Happy’s starter Jump rule, personalized offline greeting, tutorial and victory lines. The desktop Kokoro bank contains Heart (speaker 0, Happy) and Michael (speaker 1, reserved for the player). Fixed dialogue uses recorded clips. [Download Beta 33%](https://github.com/Th-Hjj/GO-GHOST/releases/tag/beta-33)
 
-**GO GHOST > Playtest > Wave 1 / Wave 2 / Bonus Wave** opens empty configuration for a developer test. **Wave 3** opens Wave 3 configuration for a quick preview through Testing. See the [implementation log](ImplementationLog.md) for checks actually run.
+**GO GHOST > Playtest > Wave 1 / Wave 2 / Bonus Wave** opens empty configuration for a developer test. **Wave 3** opens Wave 3 configuration for a quick preview through Testing. Use **Check Game Flow** for a single optional end-to-end smoke. See the [implementation log](ImplementationLog.md) for checks actually run.
 
 ## Project organization
 

@@ -203,6 +203,7 @@ namespace GoGhost.Duel
             playerFill.rectTransform.pivot=new Vector2(0,.5f);
             if(game.Phase==DuelPhase.Prepare)
                 preparationCount=Text("3",hud,Vector2.zero,new Vector2(300,100),72,face:numericFont);
+            BuildFinalBossCutscene(hud);
             if(game.Phase==DuelPhase.Training)BuildTrainingButtons();
             LateUpdate();
         }

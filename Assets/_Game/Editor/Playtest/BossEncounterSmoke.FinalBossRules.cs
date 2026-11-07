@@ -86,7 +86,7 @@ public static partial class BossEncounterSmoke
 
         game.Player.IsInvulnerable = true;
         actor.Health.TakeDamage(100000, game.Player.gameObject);
-        yield return Until(() => axe.PhaseTwo, 3.5f); yield return Frames(4);
+        yield return CompleteFinalBossTransition(); yield return Frames(4);
         var bossPanel = CardsUI().GetComponentsInChildren<RectTransform>().FirstOrDefault(r => r.name == "BossRules");
         Check("Phase two seals the Boss rules, removes both sidebars and widens the camera", rules.Sealed && bossPanel == null
             && rules.Rows.All(r => !r.Matched) && Mathf.Abs(Camera.main.pixelRect.width - Screen.width) <= 1f && Camera.main.pixelRect.xMin <= 1f);

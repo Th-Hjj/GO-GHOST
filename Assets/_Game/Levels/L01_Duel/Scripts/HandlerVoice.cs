@@ -14,7 +14,7 @@ namespace GoGhost.Duel
         AudioClip generatedGreeting;
         CancellationTokenSource pendingGreeting;
         const string TutorialIntro = "Handler/TutorialIntro", TutorialGoodbye = "Handler/TutorialGoodbye";
-        internal static readonly string[] Lines = { "Handler/Greeting", "Handler/WaveOneClear", "Handler/WaveTwoClear", "Handler/BonusClear", TutorialIntro, TutorialGoodbye };
+        internal static readonly string[] Lines = { "Handler/Greeting", "Handler/WaveOneClear", "Handler/WaveTwoClear", "Handler/BonusClear", "Handler/LookOut", TutorialIntro, TutorialGoodbye };
         bool tutorialActive, openedRule;
         readonly Dictionary<string, AudioClip> lines = new Dictionary<string, AudioClip>();
         internal void CacheLine(string name, AudioClip clip) => lines[name] = clip;
@@ -137,6 +137,8 @@ namespace GoGhost.Duel
             speaker.clip = clip;
             if (clip != null) speaker.Play();
         }
+
+        public bool Speaking => speaker != null && speaker.clip != null && (speaker.isPlaying || AudioListener.pause);
 
         public void Stop()
         {

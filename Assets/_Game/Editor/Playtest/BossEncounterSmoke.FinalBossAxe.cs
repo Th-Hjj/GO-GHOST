@@ -63,7 +63,7 @@ public static partial class BossEncounterSmoke
         Check("Unforced AI selects axe moves on its own", Enumerable.Range(1, 4).Sum(i => axe.Started[i] - startedBefore[i]) >= 2, unforced);
         game.Player.IsInvulnerable = true;
         actor.Health.TakeDamage(100000, game.Player.gameObject);
-        yield return Until(() => actor.Health.PhaseIndex == 2, 3.5f);
+        yield return CompleteFinalBossTransition();
         yield return Frames(3);
         Check("Placeholder phase two refills 1000 HP and turns white", axe.PhaseTwo && actor.Health.MaxHealth == 1000
             && torso.sharedMaterial.shader.name != "GO GHOST/Final Boss Rainbow" && game.Phase == DuelPhase.Fight);

@@ -1,5 +1,34 @@
 # GO GHOST slice implementation
 
+## 2026-11-06 — Scripted phase change (Final Boss stage 7)
+
+- **The scene:** when the first pool empties, the `DuelGame.FinalBossTransition` coroutine runs inside the fight with input off. It plays in order:
+  - line 1;
+  - the shockwave and Happy's "Look out!": both sidebars freeze into dimmed, crossed-out snapshots, assistance is removed, the platforms start and the rainbow drains (new `_RainbowAmount` / `_BaseColor` shader blend);
+  - Happy's "…";
+  - line 2 and the dropped axe;
+  - the empty *click*;
+  - line 3 and the brass antique revolver (`OfficerVisual.SetAntiqueRevolver`, look only);
+  - the player's two-button choice;
+  - "…What?", the red eyes and "AAARGH!";
+  - the normal three-second countdown, while both sidebars slide and fade out and the camera widens.
+
+  The Boss stays held until the countdown ends. Phase two currently closes the distance bare-handed, with no attacks, until stage 8.
+- **Voice:** five Boss lines (`transition: true`, excluded from the intro pages) and `Handler/LookOut` are registered in the catalog. Their first takes were rendered with Voice Studio's text-preview job and the saved profiles: 24 kHz, 16-bit; Boss mono, Happy stereo. The player lines load optionally from `Resources/PlayerVoice/` and are silent until Thomas records them.
+- **Unity 6000.6.0f1:** compiled with no console errors; the shader is supported.
+  - **New check: GO GHOST > Playtest > Final Boss Transition** passed 14/14 on run 4. It covered:
+    - every scene step, pause hold and the seal crosses (14 for 7 cards);
+    - the choice through its UI callback;
+    - the camera widening from 998 to 1459 px mid-countdown;
+    - a full-width, unarmed phase two with input back, and Bonus after defeat.
+  - **Fixes from earlier runs:**
+    - The Boss sidebar was rebuilt for one tick after release; the seal now clears once the transition ends.
+    - The subtitle box and choices overflowed under the sidebars and were resized.
+    - The line-1 subtitle was missing because the coroutine handle is assigned after its first step; it now uses an explicit flag.
+  - **Updated checks:** Axe, Rules, Platforms and Progression now play through the scene with a shared helper. All passed: 17/17, 9/9, 8/8 (including a retry partway through the scene) and 16/16. Invasion passed 8/8.
+  - **Captures:** `Logs/BossEncounter/final-boss-transition-*.png`.
+- **NOT TESTED:** listening to the new takes, Thomas's recordings, and hand play. During the scene the Boss health label reads 0 until the second pool begins, and the WAVE 3 title shows again during the countdown.
+
 ## 2026-11-06 — Moving platforms in phase two (Final Boss stage 6)
 
 - **Platform motion:** the phase-two hand-off now also starts `PlatformOscillator` on the five Wave 3 platforms.

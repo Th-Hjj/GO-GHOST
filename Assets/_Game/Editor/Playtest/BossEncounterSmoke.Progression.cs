@@ -57,7 +57,7 @@ public static partial class BossEncounterSmoke
         game.Player.IsInvulnerable = true;
         actor = game.Bosses.Single();
         actor.Health.TakeDamage(100000, game.Player.gameObject);
-        yield return Until(() => actor.Health.PhaseIndex == 2, 3.5f);
+        yield return CompleteFinalBossTransition();
         Check("Second pool stays in combat with saved rules preserved", game.Phase == DuelPhase.Fight
             && actor.Health.PhaseIndex == 2 && actor.Health.MaxHealth == 1000
             && game.Rules.RuleCount(ControlOperation.Fire) == 0 && JsonUtility.ToJson(game.DraftLoadout) == rules);

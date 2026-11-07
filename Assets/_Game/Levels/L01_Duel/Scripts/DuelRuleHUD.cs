@@ -63,7 +63,7 @@ namespace GoGhost.Duel
             if(ruleScroll!=null)hudScrollPosition=ruleScroll.verticalNormalizedPosition;
             foreach(var row in ruleRows)if(row.Signals!=null)
                 foreach(var signal in row.Signals)if(signal!=null)Destroy(signal);
-            ruleRows.Clear();hudRules=null;ClearBossRuleHud();
+            ruleRows.Clear();hudRules=null;ClearBossRuleHud();ClearSealMarks();
             ruleSidebar=battleUi=ruleScrollRoot=ruleViewport=ruleContent=ruleScrollbarRoot=null;
             ruleScroll=null;ruleHeading=null;ruleHudSize=Vector2.zero;
         }
@@ -87,6 +87,13 @@ namespace GoGhost.Duel
             }
             else
 #endif
+            // Final Boss phase change: the stripped controller is shown as the frozen pre-shockwave list.
+            if(sealedPlayerRules!=null)
+            {
+                foreach(var rule in sealedPlayerRules)
+                    ruleRows.Add(new RuleRowView{Rule=rule,Operation=ConditionalCatalog.Response(rule.Action).Operation,Row=-1});
+            }
+            else
             if(hudRules!=null)
             {
                 for(int op=0;op<ConditionalCatalog.OperationLabels.Length;op++)
@@ -104,6 +111,7 @@ namespace GoGhost.Duel
             }
             if(ruleRows.Count==0)return;
             ruleSidebar=Rect("BattleRules",page,Vector2.zero,new Vector2(rulePanelWidth,900));
+            SealGroup(ruleSidebar);
             var background=ruleSidebar.gameObject.AddComponent<UnityEngine.UI.Image>();
             background.color=NeuralPalette.Background;background.raycastTarget=false;
             var divider=Image(ruleSidebar,Vector2.zero,Vector2.zero,NeuralPalette.Border);
@@ -179,6 +187,7 @@ namespace GoGhost.Duel
                 row.Border=new UnityEngine.UI.Image[12];
                 for(int edge=0;edge<row.Border.Length;edge++)
                     row.Border[edge]=Image(row.Root,Vector2.zero,Vector2.zero,Color.clear);
+                if(sidebarsSealed)AddSealMark(row);
         }
 
         // Shared by setup and combat. Text comes from the structured catalog expression;
@@ -249,7 +258,9 @@ namespace GoGhost.Duel
             if(hasRules&&(Mathf.Abs(ruleHudSize.x-width)>.5f||Mathf.Abs(ruleHudSize.y-height)>.5f))LayoutRuleHud(width,height);
             // Player rules occupy the left edge; the right edge is reserved for the Final Boss's rules.
             LayoutBossRuleHud(width,height);
-            float panel=hasRules?rulePanelWidth:0,right=BossRulePanelWidth;
+            float sidebar=hasRules?rulePanelWidth:0,fade=SidebarFade;
+            // Sealed sidebars slide out during the phase-two countdown while the camera widens.
+            float panel=sidebar*(1-fade),right=BossRulePanelWidth*(1-fade);
             if(battleUi!=null)
             {
                 battleUi.anchoredPosition=new Vector2((panel-right)/2,0);
@@ -257,8 +268,8 @@ namespace GoGhost.Duel
             }
             if(ruleSidebar!=null)
             {
-                ruleSidebar.anchoredPosition=new Vector2(-(width-panel)/2,0);
-                ruleSidebar.sizeDelta=new Vector2(panel,height);
+                ruleSidebar.anchoredPosition=new Vector2(-(width-sidebar)/2-sidebar*fade,0);
+                ruleSidebar.sizeDelta=new Vector2(sidebar,height);
             }
             var camera=Camera.main;
             if(camera==null)return;
@@ -302,6 +313,7 @@ namespace GoGhost.Duel
                 ApplyRuleGlow(row,color,Mathf.Max(live?row.Glow.Strength:0,InvasionFlash(row)));
             }
             UpdateBossRuleHud(scale);
+            UpdateSealMarks();
         }
         // A rule written by the Final Boss pulses briefly when it appears (presentation only).
         int invadedOrder=-1;float invadedUntil;

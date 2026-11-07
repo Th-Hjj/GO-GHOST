@@ -321,14 +321,30 @@ public sealed class OfficerVisual : MonoBehaviour
         part.transform.localScale = new Vector3(size.x / source.x, size.y / source.y, 1);
     }
 
+    // Final Boss phase change: the energy revolver is holstered and an antique one is drawn (look only).
+    static readonly Color AntiqueBody = new Color32(176, 132, 82, 255), AntiqueCylinder = new Color32(122, 96, 64, 255);
+    public bool AntiqueRevolver { get; private set; }
+    public void SetAntiqueRevolver(bool value) { AntiqueRevolver = value; UpdateReloadVisual(); }
+    public void SetWeaponHidden(bool hidden)
+    {
+        foreach (var part in new[] { weapon, weaponGrip, cylinder, cylinderHalo })
+            if (part != null) part.enabled = !hidden && !(part == cylinderHalo && AntiqueRevolver);
+    }
+
     private void UpdateReloadVisual()
     {
         float pulse = reloading ? .5f + .5f * Mathf.Cos((Time.time - reloadVisualStartedAt) * Mathf.PI * 6f) : 0;
-        Color tint = Color.Lerp(animate ? RevolverPresentationGeometry.BodyColor : NeuralPalette.Primary, NeuralPalette.Danger, pulse);
+        Color body = AntiqueRevolver ? AntiqueBody : animate ? RevolverPresentationGeometry.BodyColor : NeuralPalette.Primary;
+        Color tint = Color.Lerp(body, NeuralPalette.Danger, pulse);
         if (weapon != null) weapon.color = tint;
         if (weaponGrip != null) weaponGrip.color = tint;
-        if (cylinder != null) cylinder.color = Color.Lerp(RevolverPresentationGeometry.CoreColor, NeuralPalette.Danger, pulse);
-        if (cylinderHalo != null) cylinderHalo.color = Color.Lerp(new Color(.35f,.78f,1f,1f), NeuralPalette.Danger, pulse);
+        if (cylinder != null) cylinder.color = Color.Lerp(AntiqueRevolver ? AntiqueCylinder : RevolverPresentationGeometry.CoreColor, NeuralPalette.Danger, pulse);
+        if (cylinderHalo != null)
+        {
+            // The antique revolver has no luminous cylinder.
+            if (AntiqueRevolver) cylinderHalo.enabled = false;
+            else cylinderHalo.color = Color.Lerp(new Color(.35f,.78f,1f,1f), NeuralPalette.Danger, pulse);
+        }
     }
     // The UI and actor share this palette. Brightened indigo stays readable against black.
     public static Color SlotColor(LoadoutSlot slot) => slot switch

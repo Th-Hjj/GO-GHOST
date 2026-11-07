@@ -21,7 +21,8 @@ namespace GoGhost.Duel
         {
             if (game.Wave != DuelGame.FinalBossWave || (game.Phase != DuelPhase.Prepare && game.Phase != DuelPhase.Fight)) return null;
             foreach (var actor in game.Bosses)
-                if (actor != null && actor.Axe != null && actor.IsAlive && !actor.Axe.PhaseTwo && !actor.Axe.Rules.Sealed) return actor.Axe.Rules;
+                if (actor != null && actor.Axe != null && actor.IsAlive
+                    && (sidebarsSealed || actor.Axe.Transitioning || (!actor.Axe.PhaseTwo && !actor.Axe.Rules.Sealed))) return actor.Axe.Rules;
             return null;
         }
 
@@ -31,6 +32,7 @@ namespace GoGhost.Duel
             if (rules != bossGlowOwner) { bossGlowStates.Clear(); bossGlowOwner = rules; }
             if (rules == null) return;
             bossRuleSidebar = Rect("BossRules", page, Vector2.zero, new Vector2(bossRulePanelWidth, 900));
+            SealGroup(bossRuleSidebar);
             var background = bossRuleSidebar.gameObject.AddComponent<UnityEngine.UI.Image>();
             background.color = NeuralPalette.Background; background.raycastTarget = false;
             var divider = Image(bossRuleSidebar, Vector2.zero, Vector2.zero, NeuralPalette.Border);
@@ -80,7 +82,7 @@ namespace GoGhost.Duel
                 }
                 bossHudSize = new Vector2(width, height);
             }
-            bossRuleSidebar.anchoredPosition = new Vector2((width - bossRulePanelWidth) / 2, 0);
+            bossRuleSidebar.anchoredPosition = new Vector2((width - bossRulePanelWidth) / 2 + bossRulePanelWidth * SidebarFade, 0);
             bossRuleSidebar.sizeDelta = new Vector2(bossRulePanelWidth, height);
         }
 

@@ -13,7 +13,12 @@ namespace GoGhost.Duel
             Part.FrontCalf, Part.BackUpperArm, Part.BackForearm, Part.FrontUpperArm, Part.FrontForearm };
         Material rainbowMaterial;
         Material[] axeBodyMaterials;
-        SpriteRenderer flyingShaft, flyingHead;
+        SpriteRenderer flyingShaft, flyingHead, droppedShaft, droppedHead, frontEye, backEye;
+        float drainFrom = -1, drainSeconds = 1, shockwaveAt = -1, dropAt = -1;
+        Vector2 dropFrom, dropTo;
+        const float ShockwaveSeconds = .7f, ShockwaveRadius = 24, DropSeconds = .4f;
+        static readonly Color EyeRed = new Color(1f, .16f, .18f, 1f);
+        public bool EyesRed { get; private set; }
         bool FinalAxe => actor != null && actor.Axe != null;
 
         void ConfigureFinalBossLook()
@@ -29,6 +34,7 @@ namespace GoGhost.Duel
             {
                 var shader = Resources.Load<Shader>("FinalBossRainbow");
                 if (shader != null) rainbowMaterial = new Material(shader) { name = "Final Boss rainbow (runtime)", hideFlags = HideFlags.DontSave };
+                if (rainbowMaterial != null) { rainbowMaterial.SetFloat("_RainbowAmount", 1); rainbowMaterial.SetColor("_BaseColor", NeuralPalette.Primary); }
             }
             ApplyFinalBossBody(false);
         }
@@ -54,7 +60,89 @@ namespace GoGhost.Duel
             float height = actor.Motor.Size.y;
             rainbowMaterial.SetFloat("_RainbowBottom", actor.Position.y - height * .5f);
             rainbowMaterial.SetFloat("_RainbowHeight", height + .1f);
+            if (drainFrom >= 0)
+            {
+                float drained = Mathf.Clamp01((clock - drainFrom) / drainSeconds);
+                rainbowMaterial.SetFloat("_RainbowAmount", 1 - drained);
+                if (drained >= 1) { drainFrom = -1; ApplyFinalBossBody(true); }
+            }
             UpdateFlyingAxe();
+            UpdateDroppedAxe();
+            UpdateShockwave();
+        }
+
+        // Phase-change presentation, driven by the scripted transition.
+        public void DrainRainbow(float seconds) { drainFrom = clock; drainSeconds = Mathf.Max(.05f, seconds); }
+        public void Shockwave() { shockwaveAt = clock; Impact(actor.Position); }
+        public void SetEyesRed(bool value) => EyesRed = value;
+
+        public void DropAxe()
+        {
+            dropAt = clock;
+            dropFrom = actor.Position + new Vector2(actor.Facing * .25f, .35f);
+            dropTo = new Vector2(actor.Position.x + actor.Facing * .55f, actor.Position.y - actor.Motor.Size.y * .5f + .05f);
+            if (droppedShaft == null) { droppedShaft = FlyingPart("DroppedAxeShaft"); droppedHead = FlyingPart("DroppedAxeHead"); }
+        }
+
+        void UpdateDroppedAxe()
+        {
+            if (droppedShaft == null || dropAt < 0) return;
+            float t = Mathf.Clamp01((clock - dropAt) / DropSeconds);
+            // Falls with gravity-like easing and settles almost flat on the floor.
+            Vector2 at = Vector2.Lerp(dropFrom, dropTo, t * t);
+            float angle = Mathf.Lerp(72, actor.Facing >= 0 ? -8 : 188, t);
+            Vector2 direction = Angle(angle), blade = new Vector2(direction.y, -direction.x);
+            droppedShaft.enabled = droppedHead.enabled = true;
+            SetFlying(droppedShaft, at, new Vector2(AxeShaft, AxeShaftWidth), angle);
+            SetFlying(droppedHead, at + direction * (AxeShaft * .5f - .08f) + blade * .10f, AxeHeadSize, angle);
+            var color = weaponColor; color.a = .85f;
+            droppedShaft.color = droppedHead.color = color;
+        }
+
+        void UpdateShockwave()
+        {
+            if (shockwaveAt < 0) return;
+            float t = (clock - shockwaveAt) / ShockwaveSeconds;
+            if (t >= 1) { shockwaveAt = -1; if (tells[2] != null) tells[2].enabled = false; return; }
+            const int points = 48;
+            if (tells[2] == null) tells[2] = NewLine("Shockwave", true, points);
+            var line = tells[2]; line.enabled = true; line.positionCount = points; line.loop = true;
+            float radius = Mathf.Lerp(.4f, ShockwaveRadius, 1 - (1 - t) * (1 - t));
+            line.startWidth = line.endWidth = Mathf.Lerp(.22f, .05f, t);
+            line.startColor = line.endColor = NeuralPalette.Alpha(NeuralPalette.Primary, 1 - t);
+            for (int i = 0; i < points; i++)
+            {
+                float angle = i / (float)points * Mathf.PI * 2;
+                line.SetPosition(i, actor.Position + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius);
+            }
+        }
+
+        // Two red eyes on the head, mirrored with the body.
+        void PlaceEyes(Pose p)
+        {
+            if (!EyesRed) { if (frontEye != null) frontEye.enabled = backEye.enabled = false; return; }
+            if (frontEye == null) { frontEye = EyePart("FrontEye"); backEye = EyePart("BackEye"); }
+            var eye = new Vector2(.08f, .07f);
+            foreach (var (sprite, offset) in new[] { (frontEye, new Vector2(.13f, .03f)), (backEye, new Vector2(.03f, .03f)) })
+            {
+                sprite.enabled = true;
+                sprite.transform.localPosition = p.Head + offset;
+                sprite.transform.localRotation = Quaternion.identity;
+                Vector2 source = sprite.sprite.bounds.size;
+                sprite.transform.localScale = new Vector3(eye.x / Mathf.Max(.001f, source.x), eye.y / Mathf.Max(.001f, source.y), 1);
+                var color = EyeRed; color.a = alpha; sprite.color = color;
+            }
+        }
+
+        SpriteRenderer EyePart(string label)
+        {
+            var head = parts[(int)Part.Head];
+            var go = new GameObject(label);
+            go.transform.SetParent(transform, false);
+            var sprite = go.AddComponent<SpriteRenderer>();
+            sprite.sprite = head.sprite; sprite.sharedMaterial = axeBodyMaterials != null && axeBodyMaterials[1] != null ? axeBodyMaterials[1] : head.sharedMaterial;
+            sprite.sortingLayerID = head.sortingLayerID; sprite.sortingOrder = head.sortingOrder + 1;
+            return sprite;
         }
 
         void OnDestroy()
@@ -73,6 +161,14 @@ namespace GoGhost.Duel
             p.WeaponAngle = 72;
             p.FrontHand = new Vector2(.22f + wave * motion * .06f, .02f);
             p.BackHand = new Vector2(-.04f - wave * motion * .10f, -.05f);
+            if (axe.Unarmed)
+            {
+                // Bare-handed guard: both fists up in front of the face.
+                p.FrontHand = new Vector2(.30f + wave * motion * .03f, .42f);
+                p.BackHand = new Vector2(.17f, .47f);
+                p.Chest.x += .03f; p.FrontFoot.x = .30f; p.BackFoot.x = -.32f;
+                return;
+            }
             if (axe.Invading)
             {
                 // Invasion: axe held overhead, free hand reaching toward the player.
@@ -146,7 +242,8 @@ namespace GoGhost.Duel
         // Called after the shared pose placement: the axe replaces the sword geometry.
         void ApplyAxe(Pose p)
         {
-            if (actor.Axe.AxeFlying) { Hide(Part.Weapon); Hide(Part.Sheath); return; }
+            PlaceEyes(p);
+            if (actor.Axe.AxeFlying || actor.Axe.Unarmed) { Hide(Part.Weapon); Hide(Part.Sheath); return; }
             Vector2 direction = Angle(p.WeaponAngle);
             Place(Part.Weapon, p.FrontHand + direction * (AxeShaft * .5f - AxeGrip), new Vector2(AxeShaft, AxeShaftWidth), p.WeaponAngle);
             Vector2 blade = new Vector2(direction.y, -direction.x);

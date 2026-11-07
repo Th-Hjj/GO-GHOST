@@ -59,6 +59,9 @@ namespace GoGhost.Duel
         public ConditionalRule LastInvasion { get; private set; }
         public bool Transitioning { get; private set; }
         public bool PhaseTwo { get; private set; }
+        // The scripted phase change drops the axe; the Boss fights bare-handed afterwards.
+        public bool Unarmed { get; private set; }
+        bool transitionHeld;
         public bool AxeFlying { get; private set; }
         public Vector2 AxePosition { get; private set; }
         public float AxeSpin { get; private set; }
@@ -86,6 +89,7 @@ namespace GoGhost.Duel
             Rules.Sealed = PhaseTwo || Transitioning || actor.Health.AwaitingSecondPhase;
             Rules.Observe();
             if (TickTransition()) return;
+            if (Unarmed) { TickUnarmed(); return; }
             if (TickInvasion()) return;
             if (Current != Move.None) { TickMove(); return; }
             var player = actor.Player;
@@ -249,19 +253,39 @@ namespace GoGhost.Duel
             if (!Transitioning && !PhaseTwo && actor.Health.AwaitingSecondPhase)
             {
                 Cancel(); Transitioning = true; transitionUntil = Time.time + 2.2f; nextImpact = 0;
+                // The game's scripted transition holds the Boss until its countdown ends.
+                transitionHeld = onPhaseTwo != null;
                 actor.Motor.HoldHorizontal();
                 onPhaseTwo?.Invoke();
                 actor.Trace("final boss phase 2: transition");
             }
             if (!Transitioning) return false;
             actor.Motor.HoldHorizontal();
-            if (Time.time >= nextImpact) { nextImpact = Time.time + .45f; actor.View?.Impact(actor.Position); }
-            if (Time.time < transitionUntil) return true;
+            if (!transitionHeld && Time.time >= nextImpact) { nextImpact = Time.time + .45f; actor.View?.Impact(actor.Position); }
+            if (transitionHeld || Time.time < transitionUntil) return true;
             actor.Health.BeginSecondPhase();
             Transitioning = false; PhaseTwo = true;
             actor.View?.SetFinalBossPhaseTwo();
             nextDecisionAt = Time.time + .6f;
             return true;
+        }
+
+        public void DropAxe()
+        {
+            if (Unarmed) return;
+            Unarmed = true;
+            actor.View?.DropAxe();
+        }
+
+        public void ReleaseTransition() => transitionHeld = false;
+
+        // Phase-two placeholder until the White Boxer kit: close the distance, no attacks.
+        void TickUnarmed()
+        {
+            var facts = actor.Perception.Facts;
+            if (actor.Player == null || actor.Player.IsDead || facts.Confidence <= .1f) { actor.Motor.Brake(); return; }
+            float dx = facts.Position.x - actor.Position.x;
+            actor.Motor.SetMove(Mathf.Abs(dx) > 1.2f ? Mathf.Sign(dx) : 0);
         }
 
         void TrackTarget()

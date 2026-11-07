@@ -190,6 +190,7 @@ public static partial class BossEncounterSmoke
         if(mode=="final-boss-rules") {yield return FinalBossRuleList();yield break;}
         if(mode=="final-boss-invasion") {yield return FinalBossInvasions();yield break;}
         if(mode=="final-boss-platforms") {yield return FinalBossMovingPlatforms();yield break;}
+        if(mode=="final-boss-transition") {yield return FinalBossPhaseChange();yield break;}
         if(mode=="analytics-edges") {yield return AnalyticsEdges();yield break;}
         IEnumerator legacyScenario = null;
         SelectLegacyScenario(mode, ref legacyScenario);

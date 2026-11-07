@@ -14,7 +14,7 @@ Walker's provisional intro, editable in Voice Studio:
 4. Let's see if it's enough.
 5. Are you ready?
 
-**Current source (stage 3 of the redesign below):** the Final Boss is a player-sized stickman built from the Swordsman prefab, with the Alpha rainbow shader on its body and an axe. `FinalBossAxe` replaces the sword tactics with its own AI and four telegraphed moves: Chop, Spin, Throw & Recall and Boomerang. Each move publishes threats: Chop and Spin as melee, the flying axe as ranged. Both health pools are 1000. When the first pool empties, a 2.2 s placeholder hold removes active rule assistance for that attempt. The body then turns white and keeps the axe kit until the scripted transition and the White Boxer replace it. Retry and subsequent configuration use the equipped loadout. Walker Grupp's original prototype (commit `719c843`, 2x Swordsman with sword specials) is retired. Trial axe tuning (prepare/lock/active/recovery/cooldown, damage):
+**Current source (stage 3 of the redesign below):** the Final Boss is a player-sized stickman built from the Swordsman prefab, with the Alpha rainbow shader on its body and an axe. `FinalBossAxe` replaces the sword tactics with its own AI and four telegraphed moves: Chop, Spin, Throw & Recall and Boomerang. Each move publishes threats: Chop and Spin as melee, the flying axe as ranged. Both health pools are 1000. When the first pool empties, the scripted transition below runs (stage 7). Afterwards the bare-handed Boss only closes the distance until the White Boxer kit replaces this placeholder. Retry and subsequent configuration use the equipped loadout. Walker Grupp's original prototype (commit `719c843`, 2x Swordsman with sword specials) is retired. Trial axe tuning (prepare/lock/active/recovery/cooldown, damage):
 
 | Move | Timing (s) | Damage | Shape |
 |---|---|---|---|
@@ -58,6 +58,13 @@ Trial Boss rules, evaluated top to bottom. Conditions use the player catalog's w
 
 ### Transition — shockwave and the antique revolver
 
+**Implemented (stage 7):** `DuelGame.FinalBossTransition` runs the scene inside the fight. Player input is off while the Boss holds his spent first pool.
+
+- **Subtitles and voices:** lines appear in a subtitle box between the sidebars. The Boss lines are `FinalBossVoice/Turn1` to `Turn5`, and Happy's warning is `Handler/LookOut`. Their first takes were rendered with the saved Voice Studio settings. The player's line is chosen with two buttons; Thomas's recordings go to `Resources/PlayerVoice/Nostalgic.wav` and `BigPockets.wav`, and the line stays silent until they exist.
+- **Shockwave:** an expanding ring. Both sidebars freeze as dimmed, crossed-out snapshots, the player's rule assistance is removed, the platforms start, and the rainbow drains to Primary white over 1.2 s.
+- **Weapons and eyes:** the dropped axe stays on the floor and the Boss raises his fists. The energy gun clicks (*click*), then the brass antique revolver is drawn. The eyes turn red before "AAARGH!".
+- **Countdown:** the usual three-second countdown slides and fades both sidebars away while the camera widens to the full screen. Pause holds every step.
+
 The English lines are drafts.
 
 1. Boss: "Stupid AI. I don't need you anymore. I'm better than you, and I'll prove it. Ha ha ha!"
@@ -70,7 +77,7 @@ The English lines are drafts.
 8. Boss: "…What?" then "AAARGH! Now you've really pissed me off!" His eyes turn red.
 9. During the three-second countdown, the sealed sidebars fade and the camera widens to the full screen. Phase two begins.
 
-**Moving platforms.** From the shockwave onward, each platform oscillates 2.1 units (one tier) above and below its home height. The two inner low platforms reach floor level at the bottom of their travel. *Trial:* a cycle of about 4 s, with adjacent platforms in opposite phase so that a reachable route always exists. Platforms remain one-way and carry the actors standing on them. **Implemented (stage 6):** `PlatformOscillator` drives each stage platform as a kinematic body. Its velocity tracks a sine of 2.1 amplitude and 4 s period. Platforms are ordered left to right and alternate between phase 0 and π, so each one starts from its home height. The floor never moves. Motion starts when the placeholder phase-two hold begins and stops with the stage layout, so Retry rebuilds static platforms. Pause freezes it. `PlayerMovement` and `BossMotor2D` treat contact with a kinematic carrier that is rising at their own speed as ground. Without such a carrier their grounding is unchanged. The inner platforms reach floor level and lift anyone standing there as they rise.
+**Moving platforms.** From the shockwave onward, each platform oscillates 2.1 units (one tier) above and below its home height. The two inner low platforms reach floor level at the bottom of their travel. *Trial:* a cycle of about 4 s, with adjacent platforms in opposite phase so that a reachable route always exists. Platforms remain one-way and carry the actors standing on them. **Implemented (stage 6):** `PlatformOscillator` drives each stage platform as a kinematic body. Its velocity tracks a sine of 2.1 amplitude and 4 s period. Platforms are ordered left to right and alternate between phase 0 and π, so each one starts from its home height. The floor never moves. Motion starts at the shockwave and stops with the stage layout, so Retry rebuilds static platforms. Pause freezes it. `PlayerMovement` and `BossMotor2D` treat contact with a kinematic carrier that is rising at their own speed as ground. Without such a carrier their grounding is unchanged. The inner platforms reach floor level and lift anyone standing there as they rise.
 
 ### Phase 2 — White Boxer
 

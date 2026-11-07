@@ -49,13 +49,6 @@ namespace GoGhost.Duel
             return rule;
         }
 
-        // The shockwave: the player's rules go dark and the platforms start moving.
-        void BeginFinalBossPhaseTwo()
-        {
-            StripPlayerAssistance();
-            StartPlatformMotion();
-        }
-
         // Adjacent platforms (ordered left to right) bob in opposite phase. The floor never moves.
         void StartPlatformMotion(float startClock = 0)
         {

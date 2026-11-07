@@ -358,6 +358,7 @@ namespace GoGhost.Duel
         }
         void ClearEncounter(string reason = "encounter_changed")
         {
+            ResetFinalBossTransition();
             FinishMetrics("abandoned", reason: reason);
             DeveloperToolsOpen = developerResumeOnClose = false;
             StopCombat();

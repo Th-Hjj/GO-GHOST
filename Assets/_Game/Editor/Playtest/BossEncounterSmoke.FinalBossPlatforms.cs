@@ -29,7 +29,8 @@ public static partial class BossEncounterSmoke
 
         game.Player.IsInvulnerable = true;
         actor.Health.TakeDamage(100000, game.Player.gameObject);
-        yield return Until(() => platforms.All(c => c.GetComponent<PlatformOscillator>() != null), 1f);
+        // The shockwave comes after the first transition line.
+        yield return Until(() => platforms.All(c => c.GetComponent<PlatformOscillator>() != null), 10f);
         float started = Time.time;
         Check("The phase-two shockwave starts all five platforms; the floor stays", platforms.Length == 5
             && platforms.All(c => c.GetComponent<PlatformOscillator>() != null) && supports[0].GetComponent<PlatformOscillator>() == null);

@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — Rule installation and Wave 3 presentation
+
+- Advancing Happy’s “Look out!” starts the existing three-second countdown. Her dialogue fades over .15 s while the camera pulls back over .65 s. The Boss sidebar enters from the right, and the player sidebar enters from the left only when equipped. The title, countdown and health displays track the usable arena centre. Health labels, tracks and fills fade in together at their actual values.
+- Tutorial and manual additions reveal the card over .3 s before the existing .6 s body installation pulse begins. Other equipped regions retain their glow. The first invasion into an empty loadout brings in the left sidebar with the camera. Later invasions fade in the appended card before its highlight.
+- The EMP sequence ramps platform movement up over .4 s, dims both rule lists before drawing their crosses, and lights the eyes over .2 s after the body turns white. The spent Boss health display fades out and the full second pool fades in when it actually becomes active. Direct phase-two retries begin with moving platforms and lit eyes.
+- Static diff checked. Editor compilation, Play Mode and standalone builds were skipped for fast iteration.
+
 ## 2026-11-07 — Happy demonstrates the first rule
 
 First configuration starts empty. Happy introduces a rule, installs Incoming Attack (Any) → Jump as she speaks the example, and explains when she will jump. The example shares the manual editor’s row and body installation feedback. Fast iteration: compilation and Play Mode skipped.

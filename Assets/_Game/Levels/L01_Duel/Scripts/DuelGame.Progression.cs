@@ -50,6 +50,7 @@ namespace GoGhost.Duel
             else if (Phase == DuelPhase.FinalBoss)
             {
                 input.SuppressUiFireUntilRelease();
+                ui.BeginBossOpeningReveal();
                 StartCountdown();
             }
             else if (Phase == DuelPhase.BonusOffer)

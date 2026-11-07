@@ -111,6 +111,7 @@ namespace GoGhost.Duel
             if(game.Phase!=DuelPhase.Configure||helpDraft!=game.DraftLoadout)helpOpen=false;
             ConfigurePageScale();
             sceneDialogue = null;
+            openingCaption = null;
             if(page!=null){page.gameObject.SetActive(false);Destroy(page.gameObject);}
             page=Rect("Page",canvas,Vector2.zero,new Vector2(1600,900));
             developerFields.Clear();
@@ -192,24 +193,32 @@ namespace GoGhost.Duel
             policeHealth = new TMP_Text[game.Bosses.Count];
             policeFill = new UnityEngine.UI.Image[game.Bosses.Count];
             bossHealthText = new HealthTextState[game.Bosses.Count];
+            bossHealthGroups = new CanvasGroup[game.Bosses.Count];
             for (int i=0; i<game.Bosses.Count; i++)
             {
                 float y=330-i*60;
-                policeHealth[i]=Text("",hud,new Vector2(0,y+27),new Vector2(430,40),24,TextAlignmentOptions.Center,numericFont);
-                Image(hud,new Vector2(0,y),new Vector2(430,12),NeuralPalette.Border);
+                var bar = Rect("Boss health",hud,Vector2.zero,Vector2.zero);
+                bossHealthGroups[i] = bar.gameObject.AddComponent<CanvasGroup>();
+                policeHealth[i]=Text("",bar,new Vector2(0,y+27),new Vector2(430,40),24,TextAlignmentOptions.Center,numericFont);
+                Image(bar,new Vector2(0,y),new Vector2(430,12),NeuralPalette.Border);
                 var color=game.Bosses[i].IsTrainingEnemy?NeuralPalette.Secondary:game.Bosses[i].Profile.Kind==BossKind.Gunner?NeuralPalette.Gunner:NeuralPalette.Swordsman;
-                policeFill[i]=Image(hud,new Vector2(-215,y),new Vector2(430,12),color);
+                policeFill[i]=Image(bar,new Vector2(-215,y),new Vector2(430,12),color);
                 policeFill[i].rectTransform.pivot=new Vector2(0,.5f);
             }
 
-            playerHealth=Text("",hud,new Vector2(0,-392),new Vector2(430,40),24,TextAlignmentOptions.Center,CharacterNameFont(true));
+            var playerBar = Rect("Player health",hud,Vector2.zero,Vector2.zero);
+            playerHealthGroup = playerBar.gameObject.AddComponent<CanvasGroup>();
+            playerHealth=Text("",playerBar,new Vector2(0,-392),new Vector2(430,40),24,TextAlignmentOptions.Center,CharacterNameFont(true));
             playerHealth.textWrappingMode=TextWrappingModes.NoWrap;
             playerHealth.enableAutoSizing=true;playerHealth.fontSizeMin=14;playerHealth.fontSizeMax=24;
-            Image(hud,new Vector2(0,-360),new Vector2(430,12),NeuralPalette.Border);
-            playerFill=Image(hud,new Vector2(-215,-360),new Vector2(430,12),NeuralPalette.Primary);
+            Image(playerBar,new Vector2(0,-360),new Vector2(430,12),NeuralPalette.Border);
+            playerFill=Image(playerBar,new Vector2(-215,-360),new Vector2(430,12),NeuralPalette.Primary);
             playerFill.rectTransform.pivot=new Vector2(0,.5f);
             if(game.Phase==DuelPhase.Prepare)
+            {
                 preparationCount=Text("3",hud,Vector2.zero,new Vector2(300,100),72,face:numericFont);
+                BuildFadingOpeningCaption(hud);
+            }
             BuildFinalBossCutscene(hud);
             if(game.Phase==DuelPhase.Training)BuildTrainingButtons();
             LateUpdate();

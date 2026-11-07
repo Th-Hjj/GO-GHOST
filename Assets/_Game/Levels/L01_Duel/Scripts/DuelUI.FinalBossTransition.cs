@@ -12,11 +12,12 @@ namespace GoGhost.Duel
         List<ConditionalRule> sealedPlayerRules;
         bool sidebarsSealed;
         float sidebarFadeFrom = -1, sidebarFadeSeconds = 1;
-        readonly List<(RectTransform Card, UnityEngine.UI.Image A, UnityEngine.UI.Image B)> sealMarks = new List<(RectTransform, UnityEngine.UI.Image, UnityEngine.UI.Image)>();
+        float sealStarted;
+        readonly List<(RectTransform Card, UnityEngine.UI.Image Cover, UnityEngine.UI.Image A, UnityEngine.UI.Image B)> sealMarks = new();
         readonly List<CanvasGroup> sealedGroups = new List<CanvasGroup>();
 
         public bool SidebarsSealed => sidebarsSealed;
-        float SidebarFade => sidebarFadeFrom < 0 ? 0 : Mathf.Clamp01((Time.time - sidebarFadeFrom) / sidebarFadeSeconds);
+        float SidebarFade => sidebarFadeFrom < 0 ? 0 : Reveal(Time.time - sidebarFadeFrom, sidebarFadeSeconds);
 
         public void SealSidebars()
         {
@@ -28,6 +29,7 @@ namespace GoGhost.Duel
                         sealedPlayerRules.Add(rules.RuleAt((ControlOperation)op, row).Copy());
             sealedPlayerRules.Sort((a, b) => a.DisplayOrder.CompareTo(b.DisplayOrder));
             sidebarsSealed = true; sidebarFadeFrom = -1;
+            sealStarted = Time.time;
             Show();
         }
 
@@ -49,7 +51,7 @@ namespace GoGhost.Duel
             var a = Image(row.Root, Vector2.zero, Vector2.zero, NeuralPalette.Alpha(NeuralPalette.Danger, .85f));
             var b = Image(row.Root, Vector2.zero, Vector2.zero, NeuralPalette.Alpha(NeuralPalette.Danger, .85f));
             a.raycastTarget = b.raycastTarget = false; a.name = b.name = "SealCross";
-            sealMarks.Add((row.Root, a, b));
+            sealMarks.Add((row.Root, cover, a, b));
         }
 
         void ClearSealMarks() { sealMarks.Clear(); sealedGroups.Clear(); }
@@ -65,13 +67,18 @@ namespace GoGhost.Duel
         void UpdateSealMarks()
         {
             if (!sidebarsSealed) return;
-            foreach (var (card, a, b) in sealMarks)
+            float age = Time.time - sealStarted;
+            float dim = Reveal(age,.14f), stroke = Reveal(age-.14f,.2f);
+            foreach (var (card, cover, a, b) in sealMarks)
             {
                 if (card == null) continue;
                 var size = card.rect.size;
                 float length = size.magnitude - 12, angle = Mathf.Atan2(size.y, size.x) * Mathf.Rad2Deg;
-                a.rectTransform.sizeDelta = b.rectTransform.sizeDelta = new Vector2(length, 3);
-                a.rectTransform.anchoredPosition = b.rectTransform.anchoredPosition = Vector2.zero;
+                cover.color = new Color(0,0,0,.55f * dim);
+                a.rectTransform.sizeDelta = b.rectTransform.sizeDelta = new Vector2(length * stroke, 3);
+                Vector2 fromCentre = size.normalized * ((stroke-1)*length/2);
+                a.rectTransform.anchoredPosition = fromCentre;
+                b.rectTransform.anchoredPosition = new Vector2(fromCentre.x,-fromCentre.y);
                 a.rectTransform.localRotation = Quaternion.Euler(0, 0, angle);
                 b.rectTransform.localRotation = Quaternion.Euler(0, 0, -angle);
             }

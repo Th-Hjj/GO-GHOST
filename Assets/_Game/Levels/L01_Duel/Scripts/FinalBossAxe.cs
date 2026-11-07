@@ -314,7 +314,7 @@ namespace GoGhost.Duel
             PhaseTwo = true; Transitioning = false; transitionHeld = false;
             SealRules();
             actor.View?.SetFinalBossPhaseTwo();
-            actor.View?.SetEyesRed(true);
+            actor.View?.SetEyesRed(true, immediate: true);
         }
 
         void TrackTarget()

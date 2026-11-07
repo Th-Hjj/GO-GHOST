@@ -24,6 +24,10 @@ namespace GoGhost.Duel
         HealthTextState[] bossHealthText = System.Array.Empty<HealthTextState>();
         const float WaveTitleFadeSeconds = .6f;
         TMP_Text waveTitle;
+        CanvasGroup playerHealthGroup;
+        CanvasGroup[] bossHealthGroups;
+        float bossPoolSpentAt = float.NegativeInfinity, secondPoolAt = float.NegativeInfinity;
+        internal void FadeSpentBossHealth() => bossPoolSpentAt = Time.time;
 
         void ResetBattleStatus()
         {
@@ -39,6 +43,7 @@ namespace GoGhost.Duel
 
             if (preparationCount != null)
             {
+                preparationCount.alpha = Reveal(OpeningAge, OpeningCaptionSeconds);
                 int count = Mathf.CeilToInt(game.PreparationRemaining);
                 if (count != lastPreparationCount)
                 {
@@ -48,6 +53,15 @@ namespace GoGhost.Duel
             }
 
             UpdateHealthStatus();
+            if (openingCaption != null)
+            {
+                openingCaption.alpha = 1 - Reveal(OpeningAge, OpeningCaptionSeconds);
+                if (openingCaption.alpha <= 0)
+                {
+                    openingCaption.gameObject.SetActive(false);
+                    openingCaption = null;
+                }
+            }
             if (waveTitle != null)
             {
                 // The encounter clock survives pause/F8 page rebuilds and resets for each attempt.
@@ -59,6 +73,8 @@ namespace GoGhost.Duel
 
         void UpdateHealthStatus()
         {
+            float entrance = Reveal(OpeningAge - .15f, .3f);
+            playerHealthGroup.alpha = entrance;
             playerHealthText.Update(playerHealth, game.Appearance.DisplayName + "  ", game.Player.CurrentHealth);
             for (int i = 0; i < policeHealth.Length && i < game.Bosses.Count; i++)
             {
@@ -67,6 +83,17 @@ namespace GoGhost.Duel
                     continue;
                 string label = actor.IsTrainingEnemy ? "DUMMY ROBOT  "
                     : actor.IsFinalBoss ? "Final Boss  " : actor.ActorId == 1 ? "Gunner  " : "Swordsman  ";
+                float opacity = entrance;
+                if (actor.IsFinalBoss && !float.IsNegativeInfinity(bossPoolSpentAt))
+                {
+                    if (actor.Axe.PhaseTwo)
+                    {
+                        if (float.IsNegativeInfinity(secondPoolAt)) secondPoolAt = Time.time;
+                        opacity = Reveal(Time.time - secondPoolAt, .3f);
+                    }
+                    else opacity = 1 - Reveal(Time.time - bossPoolSpentAt, .25f);
+                }
+                bossHealthGroups[i].alpha = opacity;
                 bossHealthText[i].Update(policeHealth[i], label, actor.Health.CurrentHealth);
                 policeFill[i].rectTransform.sizeDelta =
                     new Vector2(430f * actor.Health.CurrentHealth / actor.Health.MaxHealth, 12);

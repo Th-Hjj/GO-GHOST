@@ -64,18 +64,32 @@ namespace GoGhost.Duel
             }
         }
 
+        const float OpeningCaptionSeconds = .15f;
+        CanvasGroup openingCaption;
+
+        void BuildBossCaption(RectTransform parent, bool offer)
+        {
+            Image(parent,new Vector2(0,110),new Vector2(1040,190),NeuralPalette.Panel);
+            sceneDialogue = Text(game.FinalBossDialogue,parent,new Vector2(0,110),new Vector2(920,150),32,face:DialogueFont());
+            sceneDialogue.maxVisibleCharacters = game.FinalBossChoiceReady ? int.MaxValue : game.DialogueVisibleCharacters;
+            if (!offer) Text(game.FinalBossDialogueSpeaker,parent,new Vector2(0,177),new Vector2(600,42),24);
+        }
+
+        void BuildFadingOpeningCaption(RectTransform hud)
+        {
+            if (OpeningAge >= OpeningCaptionSeconds) return;
+            var caption = Rect("Outgoing boss dialogue", hud, Vector2.zero, Vector2.zero);
+            openingCaption = caption.gameObject.AddComponent<CanvasGroup>();
+            openingCaption.blocksRaycasts = false;
+            BuildBossCaption(caption, false);
+        }
+
         void BuildFinalBoss()
         {
             bool offer = game.Phase == DuelPhase.BonusOffer;
-            Text(offer ? "WAVE 3 CLEARED" : "WAVE 3",page,new Vector2(0,400),new Vector2(600,60),36,face:headingFont);
-            Image(page,new Vector2(0,110),new Vector2(1040,190),NeuralPalette.Panel);
-            sceneDialogue = Text(game.FinalBossDialogue,page,new Vector2(0,110),new Vector2(920,150),32,face:DialogueFont());
-            sceneDialogue.maxVisibleCharacters = game.FinalBossChoiceReady ? int.MaxValue : game.DialogueVisibleCharacters;
-            if (!offer)
-            {
-                Text(game.FinalBossDialogueSpeaker,page,new Vector2(0,177),new Vector2(600,42),24);
-                return;
-            }
+            Text(offer ? "WAVE 3 CLEARED" : "WAVE 3",page,new Vector2(0,400),new Vector2(600,60),offer ? 36 : 30,face:headingFont);
+            BuildBossCaption(page, offer);
+            if (!offer) return;
             if (game.FinalBossChoiceReady)
             {
                 Button("Yes",page,new Vector2(-110,-35),new Vector2(190,60),()=>game.ChooseBonus(true)).name="BonusYes";

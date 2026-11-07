@@ -50,7 +50,7 @@ namespace GoGhost.Duel
         }
 
         // Adjacent platforms (ordered left to right) bob in opposite phase. The floor never moves.
-        void StartPlatformMotion(float startClock = 0)
+        void StartPlatformMotion(bool easeIn = false)
         {
             var supports = ActivePlatforms;
             if (supports == null || supports.Length < 2) return;
@@ -61,7 +61,7 @@ namespace GoGhost.Duel
             {
                 var oscillator = moving[i].GetComponent<PlatformOscillator>();
                 if (oscillator == null) oscillator = moving[i].gameObject.AddComponent<PlatformOscillator>();
-                oscillator.Begin(i % 2 == 0 ? 0 : Mathf.PI, startClock);
+                oscillator.Begin(i % 2 == 0 ? 0 : Mathf.PI, easeIn: easeIn);
             }
             Trace($"final boss phase 2: {moving.Count} platforms moving");
         }

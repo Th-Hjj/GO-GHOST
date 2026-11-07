@@ -35,6 +35,10 @@ namespace GoGhost.Duel
         int previewRow=-1,installedRow=-1;
         float installedAt=float.NegativeInfinity;
         const float BodyInstallSeconds=.6f;
+        bool revealInstalledCard;
+        CanvasGroup installingCard;
+        RectTransform installingCardRect;
+        Vector2[] retainedBodyPulses;
         TMP_Text ruleDescription;
         ConditionalRule completedPreview;
         int completedPreviewRow=-1;
@@ -69,7 +73,13 @@ namespace GoGhost.Duel
             builtSelector=selectorRow;
             Canvas.ForceUpdateCanvases();
             foreach(var scroll in page.GetComponentsInChildren<UnityEngine.UI.ScrollRect>())
-                if(!IsDetailScroll(scroll)&&configurationScroll.TryGetValue(ScrollKey(scroll.name),out float position))scroll.verticalNormalizedPosition=position;
+            {
+                if (scroll.name=="EquippedRules" && installingCard!=null &&
+                    Time.unscaledTime-installedAt < CardRevealSeconds && scroll.content.rect.height>scroll.viewport.rect.height)
+                    scroll.verticalNormalizedPosition=0;
+                else if(!IsDetailScroll(scroll)&&configurationScroll.TryGetValue(ScrollKey(scroll.name),out float position))
+                    scroll.verticalNormalizedPosition=position;
+            }
             if(focusName==null||EventSystem.current==null)return;
             UnityEngine.UI.Button target=null,fallback=null;
             foreach(var button in page.GetComponentsInChildren<UnityEngine.UI.Button>())
@@ -285,7 +295,9 @@ namespace GoGhost.Duel
                 graphic.NeuralStyle=true;graphic.NeuralRegion=i;neuralRegions[i]=graphic;
                 graphic.EmphasizeState=true;
                 graphic.PulseSpeed=150;graphic.PulseLength=170;graphic.PulseIntensity=1.1f;graphic.PulseFrequency=2;
+                if (retainedBodyPulses != null) graphic.NeuralPulseState = retainedBodyPulses[i];
             }
+            retainedBodyPulses = null;
             UpdateConfigurationSignals();
         }
 
@@ -397,21 +409,41 @@ namespace GoGhost.Duel
         }
         void UpdateConfigurationSignals()
         {
-            float age=Time.unscaledTime-installedAt;
+            float elapsed=Time.unscaledTime-installedAt;
+            float age=elapsed-(revealInstalledCard ? CardRevealSeconds : 0);
+            if (installingCard != null)
+            {
+                float opacity = Reveal(elapsed, CardRevealSeconds);
+                installingCard.alpha = opacity;
+                installingCardRect.anchoredPosition = Vector2.right * ((1-opacity)*8);
+            }
             // Keep a selected equipped row linked while its local editor is open.
             int highlightedRow=previewRow>=0?previewRow:pendingRow<displayedRules.Count?pendingRow:-1;
             var highlightedSystem=previewSystem!=NeuralBodySystem.None?previewSystem:
                 highlightedRow>=0?RuleSystem(displayedRules[highlightedRow]):NeuralBodySystem.None;
             int connectedSystems=0;
-            for(int i=0;i<displayedRules.Count;i++)connectedSystems|=1<<(int)RuleSystem(displayedRules[i]);
+            int earlierSystems=0;
+            for(int i=0;i<displayedRules.Count;i++)
+            {
+                int bit=1<<(int)RuleSystem(displayedRules[i]);
+                if (i != installedRow || !revealInstalledCard) earlierSystems |= bit;
+                if (i != installedRow || age >= 0) connectedSystems |= bit;
+            }
             for(int i=0;i<neuralRegions.Length;i++)
             {
                 var region=neuralRegions[i];if(region==null)continue;
                 var system=i==0?NeuralBodySystem.None:i==1?NeuralBodySystem.Spine:i<4?NeuralBodySystem.Arms:NeuralBodySystem.Legs;
                 bool connected=system!=NeuralBodySystem.None&&(connectedSystems&(1<<(int)system))!=0;
                 float signal=system!=NeuralBodySystem.None&&highlightedSystem==system?1:connected?.55f:0;
-                float flow=connected&&system==installedSystem&&age<BodyInstallSeconds?age/BodyInstallSeconds:-1;
-                if(flow>=0)signal=1;
+                float flow=connected&&system==installedSystem&&age>=0&&age<BodyInstallSeconds?age/BodyInstallSeconds:-1;
+                if (system==installedSystem && age<0)
+                    signal=(earlierSystems & (1<<(int)system))!=0 ? .55f : 0;
+                if(flow>=0)
+                {
+                    float baseline = (earlierSystems & (1<<(int)system))!=0 ? .55f : 0;
+                    signal = Mathf.Lerp(baseline, 1, Reveal(age,.12f));
+                    signal = Mathf.Lerp(signal,.55f,Reveal(age-BodyInstallSeconds+.12f,.12f));
+                }
                 if(!Mathf.Approximately(region.NeuralSignal,signal)||!Mathf.Approximately(region.NeuralFlow,flow))
                 {region.NeuralSignal=signal;region.NeuralFlow=flow;region.SetVerticesDirty();}
             }
@@ -443,6 +475,7 @@ namespace GoGhost.Duel
 
         void BuildRuleRows()
         {
+            installingCard = null;
             float w=ruleList.sizeDelta.x,h=ruleList.sizeDelta.y;
             Text("Rules "+displayedRules.Count,ruleList,new Vector2(0,h/2-20),new Vector2(w,40),28,TextAlignmentOptions.Left,headingFont);
             var rows=BuildRuleOptions("EquippedRules",ruleList,new Vector2(0,-28),new Vector2(w,h-56));
@@ -455,7 +488,9 @@ namespace GoGhost.Duel
                 var expression=ConditionalCatalog.Expression(visibleRule);
                 var actionSystem=string.IsNullOrEmpty(visibleRule.Action)?NeuralBodySystem.None:RuleSystem(visibleRule);
                 float rw=w-24;
-                var line=Rect("RuleRow"+i,rows,Vector2.zero,new Vector2(rw,84));
+                bool entering = revealInstalledCard && i == installedRow && Time.unscaledTime-installedAt < CardRevealSeconds;
+                var slot = entering ? Rect("Installing rule",rows,Vector2.zero,new Vector2(rw,84)) : null;
+                var line=Rect("RuleRow"+i,entering ? slot : rows,Vector2.zero,new Vector2(rw,84));
                 var background=line.gameObject.AddComponent<UnityEngine.UI.Image>();background.color=NeuralPalette.Panel;background.raycastTarget=false;
                 var number=Text((i+1).ToString(),line,Vector2.zero,Vector2.zero,20,TextAlignmentOptions.TopLeft,numericFont);
                 number.name="RuleNumber";number.color=NeuralPalette.Secondary;
@@ -465,7 +500,17 @@ namespace GoGhost.Duel
                 var action=Text(expression.Action,line,Vector2.zero,Vector2.zero,22,TextAlignmentOptions.TopLeft,controlFont);action.name="ActionText";
                 action.color=NeuralPalette.Body(actionSystem);
                 float height=LayoutRuleCard(line,number,condition,arrow,action,rw,64,120);
-                var layout=line.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();layout.minHeight=layout.preferredHeight=height;
+                var layout=(entering ? slot : line).gameObject.AddComponent<UnityEngine.UI.LayoutElement>();
+                layout.minHeight=layout.preferredHeight=height;
+                if (entering)
+                {
+                    line.anchorMin=Vector2.zero; line.anchorMax=Vector2.one; line.sizeDelta=Vector2.zero;
+                    installingCardRect=line;
+                    installingCard=line.gameObject.AddComponent<CanvasGroup>();
+                    float opacity=Reveal(Time.unscaledTime-installedAt,CardRevealSeconds);
+                    installingCard.alpha=opacity;
+                    line.anchoredPosition=Vector2.right*((1-opacity)*8);
+                }
                 CardEditArea("Rule"+i+"Condition",condition,line,()=>ChooseRule(row,true),editing&&selectingCondition,rule,row);
                 CardEditArea("Rule"+i+"Action",action,line,()=>ChooseRule(row,false),editing&&!selectingCondition,rule,row,actionSystem);
                 var accent=Image(line,new Vector2(-rw/2+2,0),new Vector2(2,height-32),NeuralPalette.Body(RuleSystem(rule)));
@@ -707,6 +752,20 @@ namespace GoGhost.Duel
         void InstallConfiguredRule(ConditionalRule complete, int row, string change)
         {
             completedPreview=complete.Copy();completedPreviewRow=row;
+            revealInstalledCard = row == displayedRules.Count;
+            if (revealInstalledCard)
+            {
+                // The page rebuild replaces every body graphic, including systems already lit.
+                int equipped = 0;
+                foreach (var rule in displayedRules) equipped |= 1 << (int)RuleSystem(rule);
+                retainedBodyPulses = new Vector2[neuralRegions.Length];
+                for (int i = 1; i < neuralRegions.Length; i++)
+                {
+                    var system = i == 1 ? NeuralBodySystem.Spine : i < 4 ? NeuralBodySystem.Arms : NeuralBodySystem.Legs;
+                    if (neuralRegions[i] != null && (equipped & (1 << (int)system)) != 0)
+                        retainedBodyPulses[i] = neuralRegions[i].NeuralPulseState;
+                }
+            }
             installedSystem=RuleSystem(complete);installedRow=row;installedAt=Time.unscaledTime;
             pendingRule=null;pendingRow=selectorRow=-1;selectingAdditional=false;
             game.EditLoadout(d=>

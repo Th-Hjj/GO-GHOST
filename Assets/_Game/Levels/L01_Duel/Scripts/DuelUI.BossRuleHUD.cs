@@ -82,7 +82,6 @@ namespace GoGhost.Duel
                 }
                 bossHudSize = new Vector2(width, height);
             }
-            bossRuleSidebar.anchoredPosition = new Vector2((width - bossRulePanelWidth) / 2 + bossRulePanelWidth * SidebarFade, 0);
             bossRuleSidebar.sizeDelta = new Vector2(bossRulePanelWidth, height);
         }
 

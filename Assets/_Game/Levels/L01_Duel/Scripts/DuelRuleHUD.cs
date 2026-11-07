@@ -9,6 +9,16 @@ namespace GoGhost.Duel
         const float RulePanelWidth = 350;
         const float RuleGlowMinimumSeconds = .30f, RuleGlowFadeSeconds = .15f;
         float rulePanelWidth=RulePanelWidth;
+        const float ArenaRevealSeconds = .65f, CardRevealSeconds = .3f;
+        float openingAt = float.NegativeInfinity, firstInvadedSidebarAt = float.NegativeInfinity;
+        float OpeningAge => Time.time - openingAt;
+        static float Reveal(float age, float duration) => Mathf.SmoothStep(0, 1, age / duration);
+        internal void BeginBossOpeningReveal() => openingAt = Time.time;
+        internal void ResetEncounterPresentation()
+        {
+            openingAt = firstInvadedSidebarAt = invadedAt = bossPoolSpentAt = secondPoolAt = float.NegativeInfinity;
+            invadedOrder = -1;
+        }
         sealed class RuleGlowState
         {
             public bool Matched;
@@ -35,6 +45,7 @@ namespace GoGhost.Duel
             public Material[] Signals;
             public RuleGlowState Glow;
             public float RenderedGlow=-1;
+            public CanvasGroup RevealGroup;
         }
         // Pause/F8 rebuild the page: retain only timing for the same controller's rules.
         readonly Dictionary<(ControlOperation,int),RuleGlowState> ruleGlowStates = new Dictionary<(ControlOperation,int),RuleGlowState>();
@@ -77,7 +88,11 @@ namespace GoGhost.Duel
             if(!battle)return;
             battleUi=Rect("BattleHUD",page,Vector2.zero,new Vector2(1600,900));
             hudRules=game.Rules;
-            if(hudScrollController!=hudRules){hudScrollPosition=1;hudScrollController=hudRules;}
+            if (hudScrollController != hudRules)
+            {
+                if (!sidebarsSealed) hudScrollPosition = Time.time-invadedAt < CardRevealSeconds ? 0 : 1;
+                hudScrollController = hudRules;
+            }
             BuildBossRuleHud();
 #if UNITY_EDITOR
             if(ruleHudViewSample!=null)
@@ -152,6 +167,11 @@ namespace GoGhost.Duel
                     row.Glow=glow;
                 }
                 BuildRuleCard(row,ruleContent,i,expression.Conditions,expression.Action,NeuralPalette.Operation(row.Operation));
+                if (row.Rule.DisplayOrder == invadedOrder && Time.time - invadedAt < CardRevealSeconds)
+                {
+                    row.RevealGroup = row.Root.gameObject.AddComponent<CanvasGroup>();
+                    row.RevealGroup.alpha = Reveal(Time.time - invadedAt, CardRevealSeconds);
+                }
             }
         }
         // One combat rule card: number, condition, arrow and coloured action, with the shared match glow.
@@ -260,7 +280,11 @@ namespace GoGhost.Duel
             LayoutBossRuleHud(width,height);
             float sidebar=hasRules?rulePanelWidth:0,fade=SidebarFade;
             // Sealed sidebars slide out during the phase-two countdown while the camera widens.
-            float panel=sidebar*(1-fade),right=BossRulePanelWidth*(1-fade);
+            float visible = Reveal(OpeningAge, ArenaRevealSeconds) * (1 - fade);
+            float panel=sidebar*visible*Reveal(Time.time-firstInvadedSidebarAt,ArenaRevealSeconds);
+            float right=BossRulePanelWidth*visible;
+            if (bossRuleSidebar != null)
+                bossRuleSidebar.anchoredPosition = new Vector2((width+BossRulePanelWidth)/2-right,0);
             if(battleUi!=null)
             {
                 battleUi.anchoredPosition=new Vector2((panel-right)/2,0);
@@ -268,7 +292,7 @@ namespace GoGhost.Duel
             }
             if(ruleSidebar!=null)
             {
-                ruleSidebar.anchoredPosition=new Vector2(-(width-sidebar)/2-sidebar*fade,0);
+                ruleSidebar.anchoredPosition=new Vector2(-(width+sidebar)/2+panel,0);
                 ruleSidebar.sizeDelta=new Vector2(sidebar,height);
             }
             var camera=Camera.main;
@@ -304,6 +328,8 @@ namespace GoGhost.Duel
             float scale=canvas!=null?Mathf.Max(.01f,canvas.GetComponent<Canvas>().scaleFactor):1;
             foreach(var row in ruleRows)
             {
+                if (row.RevealGroup != null)
+                    row.RevealGroup.alpha = Reveal(Time.time - invadedAt, CardRevealSeconds);
                 AlignRuleGlow(row,scale);
                 bool live=(game.Phase==DuelPhase.Fight||game.Phase==DuelPhase.Training)&&row.Controller!=null&&row.Controller==game.Rules;
                 var f=live
@@ -316,13 +342,19 @@ namespace GoGhost.Duel
             UpdateSealMarks();
         }
         // A rule written by the Final Boss pulses briefly when it appears (presentation only).
-        int invadedOrder=-1;float invadedUntil;
-        public void FlashInvadedRule(int displayOrder){invadedOrder=displayOrder;invadedUntil=Time.time+InvadedFlashSeconds;}
+        int invadedOrder=-1;float invadedAt=float.NegativeInfinity;
+        public void FlashInvadedRule(int displayOrder)
+        {
+            invadedOrder=displayOrder;
+            invadedAt=Time.time;
+            if (displayOrder == 0) firstInvadedSidebarAt = invadedAt;
+        }
         const float InvadedFlashSeconds=1.6f;
         float InvasionFlash(RuleRowView row)
         {
-            if(row.Rule==null||row.Rule.DisplayOrder!=invadedOrder||Time.time>=invadedUntil)return 0;
-            return .55f+.45f*Mathf.Cos((InvadedFlashSeconds-(invadedUntil-Time.time))*Mathf.PI*4);
+            float age = Time.time - invadedAt - CardRevealSeconds;
+            if(row.Rule==null||row.Rule.DisplayOrder!=invadedOrder||age<0||age>=InvadedFlashSeconds)return 0;
+            return .55f+.45f*Mathf.Cos(age*Mathf.PI*4);
         }
         void ApplyRuleGlow(RuleRowView row,Color color,float strength)
         {

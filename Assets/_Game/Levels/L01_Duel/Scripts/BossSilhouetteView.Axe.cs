@@ -18,6 +18,7 @@ namespace GoGhost.Duel
         public const float ShockwaveSeconds = 1.25f;
         const float ShockwaveRadius = 24;
         static readonly Color EyeRed = new Color(1f, .16f, .18f, 1f);
+        float eyesLitAt = float.NegativeInfinity;
         bool rising;
         float kneel;
         public void RiseFromKneel() => rising = true;
@@ -80,7 +81,11 @@ namespace GoGhost.Duel
         // Phase-change presentation, driven by the scripted transition.
         public void DrainRainbow(float seconds) { drainFrom = clock; drainSeconds = Mathf.Max(.05f, seconds); }
         public void Shockwave() { shockwaveAt = clock; Impact(actor.Position); }
-        public void SetEyesRed(bool value) => EyesRed = value;
+        public void SetEyesRed(bool value, bool immediate = false)
+        {
+            EyesRed = value;
+            eyesLitAt = immediate ? float.NegativeInfinity : clock;
+        }
 
         void UpdateShockwave()
         {
@@ -113,7 +118,7 @@ namespace GoGhost.Duel
                 sprite.transform.localRotation = Quaternion.identity;
                 Vector2 source = sprite.sprite.bounds.size;
                 sprite.transform.localScale = new Vector3(eye.x / Mathf.Max(.001f, source.x), eye.y / Mathf.Max(.001f, source.y), 1);
-                var color = EyeRed; color.a = alpha; sprite.color = color;
+                var color = EyeRed; color.a = alpha * Mathf.SmoothStep(0,1,(clock-eyesLitAt)/.2f); sprite.color = color;
             }
         }
 

@@ -63,6 +63,7 @@ namespace GoGhost.Duel
             finalBossPhaseTwoHealth = Player != null ? Player.CurrentHealth : -1;
             FinalBossPhaseTwoReached = true;
             FinalBossCutscene = true;
+            ui.FadeSpentBossHealth();
             finalBossTransition = StartCoroutine(FinalBossTransition());
         }
 
@@ -92,7 +93,7 @@ namespace GoGhost.Duel
             Show(CutsceneSpeaker.None, null);
             yield return new WaitForSeconds(BossSilhouetteView.ShockwaveSeconds - warningStart - warningDuration + .35f);
 
-            StartPlatformMotion();
+            StartPlatformMotion(easeIn: true);
             yield return new WaitForSeconds(1f);
 
             ui.SealSidebars();

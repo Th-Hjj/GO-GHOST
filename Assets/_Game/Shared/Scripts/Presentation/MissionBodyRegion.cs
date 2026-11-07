@@ -30,6 +30,11 @@ public sealed class MissionBodyRegion : UnityEngine.UI.MaskableGraphic, ICanvasR
     Rect cachedRect;
     bool cachedRound, hovered, focused;
     float pathLength, activity, pulseVisibility;
+    public Vector2 NeuralPulseState
+    {
+        get => new Vector2(activity, pulseVisibility);
+        set { activity = value.x; pulseVisibility = value.y; SetVerticesDirty(); }
+    }
     float NeuralStrokeScale => Mathf.Max(1, canvas != null ? canvas.scaleFactor : 1);
 
     void Update()

@@ -147,6 +147,15 @@ public class Enemy : MonoBehaviour, IDamageable
         CurrentHealth = secondPhaseMaxHealth;
     }
 
+    /// <summary>Final Boss phase-two retry: a fresh two-pool enemy starts directly on its full second pool.</summary>
+    public void SkipToSecondPhase()
+    {
+        if (IsDead || PhaseIndex != 1 || secondPhaseMaxHealth <= 0) return;
+        AwaitingSecondPhase = false;
+        PhaseIndex = 2;
+        CurrentHealth = secondPhaseMaxHealth;
+    }
+
     /// <summary>Fresh fixed-combat actor: one life, no phase gate and no second movement writer.</summary>
     public void ConfigureFixedSingleLife(int healthPoints)
     {

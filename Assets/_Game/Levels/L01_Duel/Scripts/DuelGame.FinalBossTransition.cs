@@ -30,10 +30,47 @@ namespace GoGhost.Duel
             _ => ""
         };
 
+        // Phase-two retry (Thomas, 2026-11-06): after a phase-two defeat the player may restart phase two
+        // directly with their health at the end of phase one, against a full second pool, with no replay.
+        int finalBossPhaseTwoHealth = -1;
+        bool resumeFinalBossPhaseTwo;
+        public bool FinalBossPhaseTwoReached { get; private set; }
+        public bool CanRetryFinalBossPhaseTwo => Phase == DuelPhase.Failed && Wave == FinalBossWave && FinalBossPhaseTwoReached;
+
+        public void RetryFinalBossPhaseTwo()
+        {
+            if (!CanRetryFinalBossPhaseTwo || DeveloperToolsOpen) return;
+            resumeFinalBossPhaseTwo = true;
+            CreateEncounter(false);
+        }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        // Developer shortcut: the next Wave 3 entry starts in phase two at full player health.
+        public void QueueFinalBossPhaseTwo() { resumeFinalBossPhaseTwo = true; finalBossPhaseTwoHealth = -1; }
+#endif
+
+        // Called once per Wave 3 encounter, after the rules are bound. Returns true when phase two starts now.
+        bool PrepareFinalBossPhase(BossAgent boss)
+        {
+            bool resume = resumeFinalBossPhaseTwo;
+            resumeFinalBossPhaseTwo = false;
+            if (!resume || boss == null || boss.Axe == null) { FinalBossPhaseTwoReached = false; finalBossPhaseTwoHealth = -1; return false; }
+            boss.Axe.StartInPhaseTwo();
+            StripPlayerAssistance();
+            StartPlatformMotion();
+            if (finalBossPhaseTwoHealth > 0) Player.SetRuntimeHealth(Player.MaxHealth, finalBossPhaseTwoHealth);
+            Player.GetComponent<OfficerVisual>()?.SetAntiqueRevolver(true);
+            FinalBossPhaseTwoReached = true;
+            Trace($"final boss phase 2 retry: player={Player.CurrentHealth}");
+            return true;
+        }
+
         // The first pool is spent: the Boss holds and the scripted transition takes over.
         void BeginFinalBossPhaseTwo()
         {
             if (FinalBossCutscene) return;
+            finalBossPhaseTwoHealth = Player != null ? Player.CurrentHealth : -1;
+            FinalBossPhaseTwoReached = true;
             FinalBossCutscene = true;
             finalBossTransition = StartCoroutine(FinalBossTransition());
         }

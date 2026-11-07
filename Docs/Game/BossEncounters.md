@@ -29,9 +29,9 @@ Preparation tracks the target and Lock freezes the attack. The boss stands still
 
 After Wave 3 victory, the Boss voices the two Bonus offer lines. Yes leads to Bonus configuration and Testing, No to the menu. The duo retains its geometry, music, AI and both-dead victory. Wave 3 and Bonus are outside the closed Wave 2 metrics record.
 
-## Final Boss redesign — approved for trial 2026-11-06, implementation pending
+## Final Boss redesign — approved for trial 2026-11-06
 
-Thomas accepted this design for trial on 2026-11-06. It will replace Walker's prototype in stages. The section above describes the current source until each stage lands. Values marked *trial* are expected to change after playtesting.
+Thomas accepted this design for trial on 2026-11-06. All nine stages were implemented on 2026-11-06 and replace Walker's prototype. Values marked *trial* are expected to change after playtesting.
 
 **Premise.** The Final Boss trusts AI more than the player does. He fights with Rules and can write rules into the player's system. After losing the first phase, he blames the AI, kills every circuit in the arena and fights bare-handed.
 
@@ -109,6 +109,12 @@ Gold sparks burst from the fist on each punch (larger for the uppercut and hayma
   - a direct phase-two retry, with the player's health at the end of phase one, a full 1000-HP Boss, platforms already moving and no transition replay. The button wording is *trial*.
 - Phase-one defeat keeps Retry and Configuration.
 - Victory keeps the existing Bonus offer, which still passes through configuration and Testing.
+
+**Implemented (stage 9):**
+- **Defeat page:** the player's health is recorded when the first pool empties. A phase-two defeat then shows **Retry Phase 2** and **Configuration**; a phase-one defeat keeps **Retry** and **Configuration**.
+- **Retry Phase 2:** builds a fresh Wave 3 encounter that skips the intro and the transition. The White Boxer starts on a full second pool (`Enemy.SkipToSecondPhase`) with red eyes and the dropped axe, and the platforms move from the start. The player has the recorded health, the antique revolver, no rule assistance and a full-width camera, followed by the normal countdown. Repeated retries keep the same health.
+- **Configuration:** restores the equipped rules and replays Wave 3 from the intro.
+- **Developer shortcut:** **GO GHOST > Playtest > Wave 3 Phase 2** queues a phase-two start at full health.
 
 ## Boss friendly fire — approved 2026-10-26
 

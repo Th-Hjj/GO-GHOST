@@ -16,6 +16,9 @@ public static class PitchPlaytest
     [MenuItem("GO GHOST/Playtest/Wave 1")] public static void Wave1()=>Open(1);
     [MenuItem("GO GHOST/Playtest/Wave 2")] public static void Wave2()=>Open(2);
     [MenuItem("GO GHOST/Playtest/Wave 3")] public static void Wave3()=>Open(3);
+    // Opens Wave 3 configuration; entering the wave starts directly in phase two.
+    [MenuItem("GO GHOST/Playtest/Wave 3 Phase 2")] public static void Wave3PhaseTwo()=>Open(PhaseTwoKey);
+    const int PhaseTwoKey=30;
     [MenuItem("GO GHOST/Playtest/Bonus Wave")] public static void BonusWave()=>Open(DuelGame.BonusWave);
     static void Open(int wave)
     {
@@ -23,7 +26,7 @@ public static class PitchPlaytest
         if(EditorApplication.isPlaying)
         {
             var game=Object.FindFirstObjectByType<DuelGame>();
-            if(game!=null && (game.Phase==DuelPhase.Menu||game.Phase==DuelPhase.Configure))game.ConfigurePlaytestWave(wave);
+            if(game!=null && (game.Phase==DuelPhase.Menu||game.Phase==DuelPhase.Configure))Configure(game,wave);
             else Debug.Log("Stop Play Mode before choosing a new playtest wave.");
             return;
         }
@@ -32,12 +35,17 @@ public static class PitchPlaytest
         if(SceneManager.GetActiveScene().path!=ScenePath)EditorSceneManager.OpenScene(ScenePath);
         SessionState.SetInt(Key,wave);EditorApplication.isPlaying=true;
     }
+    static void Configure(DuelGame game,int wave)
+    {
+        if(wave!=PhaseTwoKey){game.ConfigurePlaytestWave(wave);return;}
+        game.ConfigurePlaytestWave(DuelGame.FinalBossWave);game.QueueFinalBossPhaseTwo();
+    }
     static void OnPlayMode(PlayModeStateChange state)
     {
         if(state==PlayModeStateChange.EnteredPlayMode)
         {
             int wave=SessionState.GetInt(Key,0);SessionState.EraseInt(Key);
-            if(wave>0){var game=Object.FindFirstObjectByType<DuelGame>();if(game!=null)game.ConfigurePlaytestWave(wave);}
+            if(wave>0){var game=Object.FindFirstObjectByType<DuelGame>();if(game!=null)Configure(game,wave);}
         }
         else if(state==PlayModeStateChange.EnteredEditMode)SessionState.EraseInt(Key);
     }

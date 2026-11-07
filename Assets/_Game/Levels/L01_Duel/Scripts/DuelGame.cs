@@ -208,6 +208,7 @@ namespace GoGhost.Duel
             Police = actors[0].Health; // Historical development consumers; gameplay uses the full actor list.
             coordinator?.Configure(actors, navigation);
             BindEncounterRules();
+            bool finalBossPhaseTwo = !training && Wave == FinalBossWave && PrepareFinalBossPhase(actors[0]);
             if (training) input.UiBlocksManualFire = ui.TrainingOwnsPointer;
             foreach (var body in encounter.GetComponentsInChildren<Rigidbody2D>())
             {
@@ -232,7 +233,7 @@ namespace GoGhost.Duel
                 return;
             }
             FirstConfiguration = false;
-            if (Wave == FinalBossWave) StartBossDialogue(DuelPhase.FinalBoss);
+            if (Wave == FinalBossWave && !finalBossPhaseTwo) StartBossDialogue(DuelPhase.FinalBoss);
             else StartCountdown();
             Trace($"start wave={Wave} player={Player.CurrentHealth} bosses={HealthSummary()} observation=empty");
         }

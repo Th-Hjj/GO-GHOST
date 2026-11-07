@@ -283,6 +283,20 @@ namespace GoGhost.Duel
 
         public void ReleaseTransition() => transitionHeld = false;
 
+        // Phase-two retry: no transition replay; the White Boxer starts on his full second pool.
+        public void StartInPhaseTwo()
+        {
+            Cancel();
+            actor.Health.SkipToSecondPhase();
+            PhaseTwo = true; Transitioning = false; transitionHeld = false;
+            Unarmed = true;
+            Boxer = new FinalBossBoxer(actor, actor.Player);
+            actor.View?.SetFinalBossPhaseTwo();
+            actor.View?.SetEyesRed(true);
+            actor.View?.BindBoxer(Boxer);
+            actor.View?.DropAxe();
+        }
+
         // Phase two: the White Boxer kit fights bare-handed.
         void TickUnarmed()
         {

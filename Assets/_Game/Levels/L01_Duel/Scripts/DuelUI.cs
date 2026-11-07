@@ -165,7 +165,13 @@ namespace GoGhost.Duel
             {
                 Image(page,Vector2.zero,new Vector2(4000,4000),new Color(0,0,0,.86f));
                 Text(game.Phase==DuelPhase.Failed?"DEFEAT":"COMPLETE",page,new Vector2(0,160),new Vector2(800,90),64,face:headingFont);
-                if(game.Phase==DuelPhase.Failed)
+                if(game.CanRetryFinalBossPhaseTwo)
+                {
+                    // Phase-two defeat: retry phase two directly, or restart from configuration.
+                    Button("Retry Phase 2",page,Vector2.zero,new Vector2(360,65),game.RetryFinalBossPhaseTwo).name="RetryPhaseTwo";
+                    Button("Configuration",page,new Vector2(0,-90),new Vector2(360,65),game.Reconfigure).name="Reconfigure";
+                }
+                else if(game.Phase==DuelPhase.Failed)
                 {
                     Button("Retry",page,Vector2.zero,new Vector2(360,65),game.RetryFight);
                     Button("Configuration",page,new Vector2(0,-90),new Vector2(360,65),game.Reconfigure).name="Reconfigure";

@@ -1,5 +1,23 @@
 # GO GHOST slice implementation
 
+## 2026-11-06 — Phase-two retry and redesign wrap-up (Final Boss stage 9)
+
+- **Retry Phase 2:** the player's health is recorded when the first pool empties. A phase-two defeat shows **Retry Phase 2** and **Configuration**; a phase-one defeat keeps **Retry**.
+  - Retry Phase 2 builds a fresh encounter in which `FinalBossAxe.StartInPhaseTwo` starts the White Boxer on a full second pool (new `Enemy.SkipToSecondPhase`), with no intro or transition.
+  - The player is stripped of rules, holds the antique revolver and has the recorded health. The platforms move from the start and the normal countdown runs.
+- **Developer entry:** **GO GHOST > Playtest > Wave 3 Phase 2** queues the same start at full health.
+- **Docs:** they now describe the redesign as implemented, and the anchor of the BossEncounters redesign section was renamed.
+- **Unity 6000.6.0f1:** compiled with no console errors.
+  - **New check: GO GHOST > Playtest > Final Boss Phase 2 Retry** passed 15/15 on the first run:
+    - the defeat page buttons;
+    - two consecutive retries, each skipping the replay at 113 HP (the phase-one end), against a 1000-HP Boss on moving platforms, full width, with no sidebars and the boxer fighting;
+    - Configuration restoring the equipped rules and replaying the intro;
+    - a phase-one defeat keeping the plain Retry;
+    - the developer entry starting at full health.
+  - **Regression checks:** Progression 16/16 and Boxer 16/16.
+  - **Captures:** `Logs/BossEncounter/final-boss-retry-*.png`.
+- **NOT TESTED:** hand play of the whole Final Boss and the retries, listening to the new voice takes, standalone builds and balance. The F8 developer wave list was not changed.
+
 ## 2026-11-06 — White Boxer (Final Boss stage 8)
 
 - **The White Boxer:** `FinalBossBoxer` replaces the phase-two placeholder with four punches. Each has a pose-only wind-up and one hit.

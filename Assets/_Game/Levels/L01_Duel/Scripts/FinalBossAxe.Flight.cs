@@ -40,7 +40,7 @@ namespace GoGhost.Duel
             public Vector2 Edge(int sample,float side)
             {
                 float age=Mathf.Lerp(Start,End,sample/(float)Samples);
-                return Sample(sample)+Shaft(side,Angle(age)-EdgeOffset)*BladeReach-Shaft(side,Angle(age))*PivotOffset;
+                return Sample(sample)+Shaft(side,Angle(age)-EdgeOffset)*PhysicalEdgeReach-Shaft(side,Angle(age))*PivotOffset;
             }
         }
         static Vector2 Offset(float facing,float x,float y)=>new Vector2(facing*x,y);
@@ -66,9 +66,9 @@ namespace GoGhost.Duel
                 var caught=Pivot(p.Retreat,f,new Vector2(-.37f,.32f),145);
                 float dx=Mathf.Abs(turn.x-start.x);
                 legs.Add(new FlightLeg(start,LimitFlightPoint(start+Offset(f,dx*.32f,1.85f)),
-                    LimitFlightPoint(turn+Offset(f,-dx*.20f,1.9f)),turn,0,.66f,0,14,18,-340));
+                    LimitFlightPoint(turn+Offset(f,-dx*.20f,1.9f)),turn,0,.66f,0,16,18,-340));
                 legs.Add(new FlightLeg(turn,LimitFlightPoint(turn+Offset(f,.48f,-.62f)),
-                    LimitFlightPoint(Vector2.Lerp(turn,pass,.56f)+Vector2.down*.16f),pass,.66f,1.36f,1,19,-340,-540));
+                    LimitFlightPoint(Vector2.Lerp(turn,pass,.56f)+Vector2.down*.16f),pass,.66f,1.36f,1,22,-340,-540));
                 legs.Add(new FlightLeg(pass,LimitFlightPoint(pass+Offset(f,-1.65f,.58f)),
                     LimitFlightPoint(caught+Offset(f,-1.3f,.72f)),caught,1.36f,UnderCatch,-1,0,-540,145-1080));
             }
@@ -77,7 +77,7 @@ namespace GoGhost.Duel
                 var start=Pivot(p.Start,f,new Vector2(.39f,.31f),32);
                 var anchored=Pivot(p.Anchor,f,new Vector2(.38f,.34f),32);
                 legs.Add(new FlightLeg(start,LimitFlightPoint(Vector2.Lerp(start,anchored,.36f)+Vector2.down*.44f),
-                    LimitFlightPoint(anchored+Offset(f,-.24f,-.85f)),anchored,0,.56f,0,12,32,-328));
+                    LimitFlightPoint(anchored+Offset(f,-.24f,-.85f)),anchored,0,.56f,0,16,32,-328));
             }
             else if(p.Move==Move.PalmDeflection)
             {
@@ -85,21 +85,21 @@ namespace GoGhost.Duel
                 var turn=p.Turn;
                 var palm=Pivot(p.Start,f,new Vector2(.46f,.27f),38);
                 legs.Add(new FlightLeg(start,LimitFlightPoint(Vector2.Lerp(start,turn,.25f)+Vector2.up*.55f),
-                    LimitFlightPoint(Vector2.Lerp(start,turn,.75f)+Vector2.up*.48f),turn,0,.52f,0,10,10,-348));
+                    LimitFlightPoint(Vector2.Lerp(start,turn,.75f)+Vector2.up*.48f),turn,0,.52f,0,12,10,-348));
                 legs.Add(new FlightLeg(turn,LimitFlightPoint(Vector2.Lerp(turn,palm,.27f)+Vector2.down*.35f),
-                    LimitFlightPoint(Vector2.Lerp(turn,palm,.78f)+Vector2.down*.23f),palm,.74f,PalmAt,0,10,-348,38));
+                    LimitFlightPoint(Vector2.Lerp(turn,palm,.78f)+Vector2.down*.23f),palm,.74f,PalmAt,0,12,-348,38));
                 AddPalmOuter(p,legs,palm,p.Target);
             }
         }
         void AddPalmOuter(AxePlan p,List<FlightLeg> legs,Vector2 palm,Vector2 target)
         {
             var caught=Pivot(p.Landing,p.Facing,new Vector2(.18f,.43f),127);
-            var bank=LimitFlightPoint(new Vector2(target.x+p.Facing*1.25f,Mathf.Max(palm.y,target.y+.45f)));
+            var bank=LimitFlightPoint(new Vector2(target.x+p.Facing*1.25f,target.y+.45f));
             float dx=Mathf.Abs(bank.x-palm.x);
             legs.Add(new FlightLeg(palm,LimitFlightPoint(palm+Offset(p.Facing,dx*.10f,1.90f)),
-                LimitFlightPoint(bank+Offset(p.Facing,-dx*.14f,1.85f)),bank,PalmAt,1.85f,1,12,38,-324));
+                LimitFlightPoint(bank+Offset(p.Facing,-dx*.14f,1.85f)),bank,PalmAt,1.85f,1,15,38,-324));
             legs.Add(new FlightLeg(bank,LimitFlightPoint(bank+Offset(p.Facing,.30f,-.93f)),
-                LimitFlightPoint(Vector2.Lerp(bank,caught,.66f)+Vector2.down*.85f),caught,1.85f,PalmCatch,1,12,-324,127-720));
+                LimitFlightPoint(Vector2.Lerp(bank,caught,.66f)+Vector2.down*.85f),caught,1.85f,PalmCatch,1,15,-324,127-720));
         }
         bool FlightCorridorClear(AxePlan plan)
         {
@@ -108,7 +108,7 @@ namespace GoGhost.Duel
         }
         bool FlightIsClear(List<FlightLeg> legs,int first)
         {
-            var arena=actor.Navigation.ArenaBounds;var size=Vector2.one*(2*AxeRadius+.035f);
+            var arena=actor.Navigation.ArenaBounds;
             for(int i=first;i<legs.Count;i++)
             {
                 var leg=legs[i];var from=leg.A;
@@ -117,7 +117,7 @@ namespace GoGhost.Duel
                     var to=leg.Sample(j);
                     if(to.x<arena.min.x+AxeRadius-.01f||to.x>arena.max.x-AxeRadius+.01f||
                        to.y<arena.min.y+AxeRadius-.01f||to.y>arena.max.y-AxeRadius+.01f||
-                       !actor.Navigation.SweepTraversal(from,to,size,out _,out _))return false;
+                       ((to-from).sqrMagnitude>.000001f && Projectile.TerrainHit(from,to,AxeRadius,out _,true)))return false;
                     from=to;
                 }
             }
@@ -146,7 +146,7 @@ namespace GoGhost.Duel
             float side=acceptedPlan.Facing;
             float front=Mathf.Clamp((target.x-palm.x)*side,.5f,8.5f);
             target.x=palm.x+side*front;
-            target.y=Mathf.Clamp(target.y,palm.y-1.5f,palm.y+2f);
+            target.y=Mathf.Clamp(target.y,palm.y-4.8f,palm.y+4.8f);
             Vector2 start=actor.Position,initialLanding=acceptedPlan.Landing;
             float advance=Mathf.Clamp((target.x-start.x)*side-1.4f,0f,3.25f);
             // Try the useful forward catch first. If terrain blocks the stride,
@@ -196,7 +196,7 @@ namespace GoGhost.Duel
             Vector2 delta=b-a;float interval=(leg.End-leg.Start)/leg.Samples;
             float starts=activeAt+leg.Start+segment*interval;
             return new BossThreat{ActorId=actor.ActorId,AttackId=attackId,Phase=ThreatPhase,Valid=true,
-                Shape=BossThreatShape.Projectile,Origin=a,End=b,Direction=delta.normalized,Radius=FlightEdgeRadius,TerrainBlocked=true,
+                Shape=BossThreatShape.Projectile,Origin=a,End=b,Direction=delta.normalized,Radius=FlightEdgeRadius,TerrainBlocked=true,ThroughOneWay=true,
                 ProjectileSpeed=delta.magnitude/interval,StartsAt=starts,EndsAt=starts+interval};
         }
     }

@@ -19,9 +19,9 @@ namespace GoGhost.Duel
         {
             default,
             new Timing(.42f,.14f,.12f,.50f,1.8f,26), new Timing(.45f,.15f,1f,.65f,5f,20),
-            new Timing(.32f,.16f,1.13f,.60f,2.6f,26), new Timing(.26f,.14f,.40f,.42f,3f,22),
-            new Timing(.34f,.18f,1.75f,.70f,7f,26), new Timing(.32f,.16f,2.04f,.50f,5.8f,19),
-            new Timing(.40f,.18f,2.87f,.80f,9f,22)
+            new Timing(.32f,.16f,1.13f,.50f,2.1f,30), new Timing(.26f,.14f,.40f,.34f,2.4f,28),
+            new Timing(.34f,.18f,1.75f,.60f,5.6f,30), new Timing(.32f,.16f,2.04f,.45f,4.8f,22),
+            new Timing(.40f,.18f,2.87f,.68f,7.2f,28)
         };
         internal static BossMoveTuning DefaultTuning(Move move)
         {

@@ -7,15 +7,17 @@ namespace GoGhost.Duel
     {
         readonly struct Cut
         {
-            public readonly float Start,Duration,From,To; public readonly int Group,Damage;
-            public Cut(float start,float duration,float from,float to,int group,int damage)
-            {Start=start;Duration=duration;From=from;To=to;Group=group;Damage=damage;}
+            public readonly float Start,Duration,From,To,Reach; public readonly int Group,Damage;
+            public Cut(float start,float duration,float from,float to,int group,int damage,float reach)
+            {Start=start;Duration=duration;From=from;To=to;Group=group;Damage=damage;Reach=reach;}
         }
         static readonly Cut[] TripleCuts={
-            new Cut(0,.12f,136,-31,0,14),new Cut(.42f,.14f,-32,106,1,16),new Cut(1f,.13f,117,-39,2,26)};
-        static readonly Cut Crosscut=new Cut(.14f,.16f,133,-19,0,22);
-        static readonly Cut PalmCut=new Cut(2.63f,.24f,129,-32,2,22);
-        const float BladeReach=1.15f, EdgeOffset=28.36f;
+            new Cut(0,.12f,136,-31,0,16,2.05f),new Cut(.42f,.14f,-32,106,1,19,2.25f),new Cut(1f,.13f,117,-55,2,30,2.85f)};
+        static Cut CrosscutAt(float start,bool descending) =>
+            new Cut(start,.21f,descending?105:135,descending?-82:-32,0,28,2.55f);
+        static readonly Cut PalmCut=new Cut(2.63f,.24f,129,-45,2,28,2.65f);
+        internal const float PhysicalEdgeReach=1.15f;
+        const float EdgeOffset=28.36f;
         AxePlan acceptedPlan;
         int consumed,stepIndex;
         bool launched,pulled,caught,abortAfterCatch;
@@ -60,7 +62,7 @@ namespace GoGhost.Duel
             switch (move)
             {
                 case Move.TripleCut: toContact = TripleCuts[0].Duration * .5f; break;
-                case Move.LeapingCrosscut: toContact = Crosscut.Start + Crosscut.Duration * .5f; break;
+                case Move.LeapingCrosscut: toContact = .40f; break;
                 case Move.AnchorVault: toContact = .41f; break;
                 case Move.UnderpassReturn: toContact = .53f; break;
                 default: toContact = .36f; break;
@@ -87,7 +89,8 @@ namespace GoGhost.Duel
                 }
                 if(!actor.Motor.StartCommittedJump(acceptedPlan.JumpRoute,acceptedPlan.JumpMotion)){RecoverPhaseOne();return;}
                 launched=true;
-                activeEnds=activeAt+Mathf.Max(.40f,(acceptedPlan.JumpPath.Length-1)*Time.fixedDeltaTime);
+                var cut=GetCut(0);
+                activeEnds=activeAt+Mathf.Max(cut.Start+cut.Duration,(acceptedPlan.JumpPath.Length-1)*Time.fixedDeltaTime);
                 phaseUntil=activeEnds;
             }
             else if(flight.Count>0)
@@ -211,9 +214,10 @@ namespace GoGhost.Duel
         Cut GetCut(int index)
         {
             if(Current==Move.TripleCut)return TripleCuts[index];
-            if(Current==Move.LeapingCrosscut)return Crosscut;
+            if(Current==Move.LeapingCrosscut)
+                return CrosscutAt(acceptedPlan.CrosscutAt,acceptedPlan.Landing.y<acceptedPlan.Start.y-.70f);
             if(Current==Move.PalmDeflection)return PalmCut;
-            return new Cut(anchorCutAt,.27f,131,-53,1,26);
+            return new Cut(anchorCutAt,.27f,131,-67,1,30,2.8f);
         }
         Vector2 GripOffset(float age)
         {
@@ -278,7 +282,7 @@ namespace GoGhost.Duel
         BossThreat CutThreat(Cut cut)
         {
             return new BossThreat{ActorId=actor.ActorId,AttackId=attackId,Phase=ThreatPhase,Shape=BossThreatShape.BladeArc,
-                Valid=true,TerrainBlocked=true,Facing=lockedFacing,Origin=Hand(),ArcFrom=cut.From,ArcTo=cut.To,Reach=BladeReach,
+                Valid=true,TerrainBlocked=true,Facing=lockedFacing,Origin=Hand(),ArcFrom=cut.From,ArcTo=cut.To,Reach=cut.Reach,
                 Radius=.16f,StartsAt=activeAt+cut.Start,EndsAt=activeAt+cut.Start+cut.Duration};
         }
         public bool TryGetCut(out BossThreat threat,out bool locked,out bool active)

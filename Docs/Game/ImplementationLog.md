@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — Phase-one platform attacks
+
+Thomas reported that the Boss stayed on the ground and that the five skills lacked pressure. The previous same-support chase bypassed platform planning, and Leaping Crosscut rejected landings more than .65 units above or below takeoff. The Boss now compares useful elevated positions on the current arena geometry with attacking in place. He can route through an intermediate platform, attack from the perch and slash on the rising or descending part of a collision-checked leap. The selected landing and slash timing lock together.
+
+The five moves have stronger damage and shorter recovery and cooldown values in Boss Encounters. An active melee edge shows its damaging reach. In phase one, sight and thrown axes can cross one-way platforms; the motor still validates body travel and solid walls remain cover. Phase two restores the original movement profile.
+
+The runtime assembly compiled with the Unity 6000.6.0f1 compiler and Editor references. NOT TESTED in Play Mode or a player build. Thomas requested compilation only and will evaluate platform use and combat feel.
+
 ## 2026-11-07 — Phase-one pursuit against a moving player
 
 Thomas reported that sustained lateral movement left the Boss standing still. A held approach route used to skip attack selection for up to .45 seconds, and a failed site search ended in a brake. The axe now steers along connected ground using the observed player's trajectory. It can run up to 10.5 units per second to close on a retreating player, and it evaluates attack opportunities during travel. At close range it can take one supported step back to set up another attack while Triple Cut cools down.

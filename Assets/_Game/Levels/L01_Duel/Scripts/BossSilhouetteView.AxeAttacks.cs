@@ -255,6 +255,16 @@ namespace GoGhost.Duel
                 if (cut.TerrainBlocked && Projectile.TerrainHit(root, tip, cut.Radius, out var wall))
                     tip = root + ray * wall.distance;
                 line.SetPosition(i, ClipTellPoint(tip, width));
+                if (active && i == samples - 1 && Vector2.Distance(root,tip) > FinalBossAxe.PhysicalEdgeReach)
+                {
+                    var edge = AxeLine(1, "Axe energized edge", 2);
+                    edge.startWidth = .095f;
+                    edge.endWidth = .025f;
+                    edge.startColor = FlightIce;
+                    edge.endColor = NeuralPalette.Primary;
+                    edge.SetPosition(0, root + ray * FinalBossAxe.PhysicalEdgeReach);
+                    edge.SetPosition(1, ClipTellPoint(tip, edge.endWidth));
+                }
             }
         }
 

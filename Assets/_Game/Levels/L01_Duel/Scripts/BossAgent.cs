@@ -84,7 +84,7 @@ namespace GoGhost.Duel
         void Update()
         {
             if(!Running||!IsAlive||Time.deltaTime<=0)return;
-            Perception.Tick(Position+Vector2.up*.35f);
+            Perception.Tick(Position+Vector2.up*.35f, Axe != null && !Axe.PhaseTwo);
             if(!IsTrainingEnemy&&!Actions.Committed&&!(Axe!=null&&Axe.Committed))
             {
                 var facts=Perception.Facts;

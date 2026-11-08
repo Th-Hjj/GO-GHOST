@@ -14,13 +14,15 @@ Times below are trial values in seconds. Each move's cooldown begins after recov
 
 | Move | Prepare + lock | Damage by part | Recovery / cooldown | Commitment |
 |---|---|---|---|---|
-| Triple Cut | .32 + .16 | 14 / 16 / 26 | .60 / 2.6 | The advancing sweep, rising return and heavy cut keep the accepted facing. Each blade pass can hit once. |
-| Leaping Crosscut | .26 + .14 | 22 | .42 / 3.0 | A low forward leap delivers one airborne cut on the way to a supported landing. |
-| Anchor Vault | .34 + .18 | 12 / 26 | .70 / 7.0 | The thrown axe stops at a fixed anchor. The Boss pulls to the grip, crosses to a legal landing and cuts back. The stationary axe and pull deal no damage. |
-| Underpass Return | .32 + .16 | 14 / 19 | .50 / 5.8 | The Boss retreats into a high throw, jumps over the low return and catches behind himself. |
-| Palm Deflection | .40 + .18 | 10 / 12 / 22 | .80 / 9.0 | The first cast brakes at an arena boundary or a fixed point in open space. Throw and first recall share a hit. The palm redirects the axe into a second arc before the catch and final sweep. |
+| Triple Cut | .32 + .16 | 16 / 19 / 30 | .50 / 2.1 | The advancing sweep, rising return and heavy cut keep the accepted facing. Each blade pass can hit once. |
+| Leaping Crosscut | .26 + .14 | 28 | .34 / 2.4 | One committed slash can intercept on ascent, on the same tier or on descent from a platform. The Boss picks the swing time and a supported landing before launch. |
+| Anchor Vault | .34 + .18 | 16 / 30 | .60 / 5.6 | The thrown axe stops at a fixed anchor. The Boss pulls to the grip, crosses to a legal landing and cuts back. The stationary axe and pull deal no damage. |
+| Underpass Return | .32 + .16 | 16 / 22 | .45 / 4.8 | The Boss retreats into a high throw, jumps over the low return and catches behind himself. |
+| Palm Deflection | .40 + .18 | 12 / 15 / 28 | .68 / 7.2 | The first cast brakes at an arena boundary or a fixed point in open space. Throw and first recall share a hit. The palm redirects the axe into a second arc before the catch and final sweep. |
 
 On a shared support, the first-phase Boss steers toward the player's observed path. He can run up to 10.5 units per second to close on a retreating player. While crossing between supports he continues checking for legal attacks. During preparation he can update the chosen move's aim from a newer public observation. Its facing or destination becomes fixed at lock. Palm Deflection has one additional redirect when the returning handle reaches his palm.
+
+The Boss can take an elevated firing angle even if he and the player start on the floor. He compares reachable surfaces along the player's projected path, commits to a route and attacks from its destination. On a two-tier layout a nearer platform can serve as a stepping stone to the next attack. Phase-one sight and the detached axe pass through one-way supports. The Boss's body still needs to clear its route, and solid walls block his vision and axe. Held cuts show an energized edge to the actual hit distance, from 2.05 units on the first cut to 2.85 on the combo finisher.
 
 The Boss checks takeoff, body clearance and landing space before committing to a route. A missed move still finishes its recovery. While the axe is in flight, its damaging segments publish ranged threats. Held cuts publish melee threats for the player's existing Incoming Attack rules. The sole sidebar contains the player's Rules. The EMP and second phase use their existing routes.
 

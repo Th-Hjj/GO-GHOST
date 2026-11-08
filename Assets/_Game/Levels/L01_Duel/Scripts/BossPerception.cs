@@ -41,15 +41,18 @@ namespace GoGhost.Duel
         void OnShot(Vector2 origin,Vector2 direction)
         { if(current.Visible) { lastShotAt=Time.time;lastAim=direction; } }
         public static bool CanSee(Vector2 observer, Bounds bounds)
+            => CanSee(observer, bounds, false);
+
+        static bool CanSee(Vector2 observer, Bounds bounds, bool throughOneWay)
         {
             for(int i=0;i<3;i++)
             {
                 Vector2 p=(Vector2)bounds.center + Vector2.up*bounds.extents.y*(i==0?0:i==1?.7f:-.7f);
-                if(!Projectile.TerrainHit(observer,p,.015f,out _)) return true;
+                if(!Projectile.TerrainHit(observer,p,.015f,out _,throughOneWay)) return true;
             }
             return false;
         }
-        public void Tick(Vector2 observer)
+        public void Tick(Vector2 observer, bool throughOneWay = false)
         {
             if(player==null || player.IsDead) {current.Confidence=0;return;}
             if(hasPending && Time.time>=readyAt)
@@ -68,7 +71,7 @@ namespace GoGhost.Duel
             if(Time.time>=nextSample && !hasPending)
             {
                 nextSample=Time.time+profile.ReactionSeconds;
-                bool visible=CanSee(observer,shape.bounds);
+                bool visible=CanSee(observer,shape.bounds,throughOneWay);
                 current.Visible=visible && current.Confidence>0;
                 if(visible)
                 {

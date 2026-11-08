@@ -30,7 +30,7 @@ namespace GoGhost.Duel
         public Bounds Area;
         public float Radius, StartsAt, EndsAt, ProjectileSpeed;
         public float ArcFrom, ArcTo, Facing, Reach, Gravity;
-        public bool TerrainBlocked, Valid;
+        public bool TerrainBlocked, Valid, ThroughOneWay;
         public bool HasLandingX;
         public float LandingX;
         // Classification follows the expressed attack form, never target distance.
@@ -114,7 +114,7 @@ namespace GoGhost.Duel
                     a = Vector2.Lerp(Origin, End, (first - StartsAt) / duration);
                     b = Vector2.Lerp(Origin, End, (last - StartsAt) / duration);
                 }
-                if (TerrainBlocked && Projectile.TerrainHit(Origin, b, Radius, out var wall))
+                if (TerrainBlocked && Projectile.TerrainHit(Origin, b, Radius, out var wall, ThroughOneWay))
                 {
                     if (wall.distance <= Vector2.Distance(Origin, a)) return false;
                     b = Origin + (b - Origin).normalized * wall.distance;

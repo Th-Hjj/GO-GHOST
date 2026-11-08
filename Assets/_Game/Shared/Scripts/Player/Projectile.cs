@@ -58,6 +58,9 @@ public class Projectile : MonoBehaviour
 
     // Geometric terrain query for sight, melee and navigation. Bullets do not use terrain as cover.
     public static bool TerrainHit(Vector2 from, Vector2 to, float radius, out RaycastHit2D blocker)
+        => TerrainHit(from, to, radius, out blocker, false);
+
+    public static bool TerrainHit(Vector2 from, Vector2 to, float radius, out RaycastHit2D blocker, bool throughOneWay)
     {
         Vector2 delta = to - from;
         var filter = new ContactFilter2D().NoFilter();
@@ -65,7 +68,14 @@ public class Projectile : MonoBehaviour
         filter.useTriggers = Physics2D.queriesHitTriggers;
         Physics2D.CircleCast(from, radius, delta.normalized, filter, terrainHits, delta.magnitude);
         foreach (var hit in terrainHits)
-            if (hit.collider != null && !hit.collider.isTrigger) { blocker = hit; return true; }
+        {
+            var collider = hit.collider;
+            if (collider == null || collider.isTrigger) continue;
+            if (throughOneWay && collider.usedByEffector && collider.TryGetComponent<PlatformEffector2D>(out var effector)
+                && effector.enabled && effector.useOneWay) continue;
+            blocker = hit;
+            return true;
+        }
         blocker = default;
         return false;
     }

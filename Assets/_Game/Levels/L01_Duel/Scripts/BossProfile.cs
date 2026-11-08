@@ -18,6 +18,9 @@ namespace GoGhost.Duel
     [CreateAssetMenu(menuName="GO GHOST/Boss Profile")]
     public sealed class BossProfile : ScriptableObject
     {
+        // Profiles store base damage. A Boss attack spends whole HP, rounded half up.
+        internal static int AttackDamage(int baseDamage) => Mathf.FloorToInt(baseDamage * .75f + .5f);
+
         public BossKind Kind;
         public int Health=720;
         public BossMotionProfile Motion=new BossMotionProfile();

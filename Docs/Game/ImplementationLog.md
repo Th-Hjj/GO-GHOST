@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-08 — Combat damage and fight duration
+
+Player damage is 70% of its previous value. The six-round revolver deals 20 damage on a primary hit and 15 per burst round. Boss attacks deal 75% of base damage in all missions and the Bonus, rounded half up per hit. The test dummy keeps its practice shot. Reflections carry the damage of the projectile at launch. F8 shows the effective primary damage and Final Boss move damage.
+
+Unity 6000.6.0f1 compiled the runtime assembly. In Play Mode, Mission 1 recorded 18 ordinary hits of 20 and a burst hit of 15. Gunner dealt 9, 6 and 23 with his burst, sweep and piercing attacks. Mission 2 recorded Swordsman hits of 14, 18, 20 and 21. Mission 3 recorded the three-part 12/14/23 axe combo and phase-two hits of 20 and 15. Bonus friendly fire and reflection were checked in source only. Human playtest duration and balance are NOT TESTED.
+
 ## 2026-11-08 — Click-paced EMP invasion dialogue
 
 Fixed the CS0136 elapsed-time name collision in the triple EMP wave. Happy now waits for a separate click on each injected rule page using the existing dialogue reveal and full-screen click handling. Advancing Action releases the combat hold. Unity compiled and entered Play Mode. In Mission 3 all three pages held after audio ended, the first click during reveal completed the same line, and the final click restored normal time.

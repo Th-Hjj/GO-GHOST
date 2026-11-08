@@ -66,7 +66,9 @@ namespace GoGhost.Duel
             if(!actor.Tactics.AllyBlocks(actor.Position+Vector2.up*.28f,muzzle))
             {
                 var shot=Instantiate(actor.ProjectilePrefab,muzzle,Quaternion.identity);
-                shot.Launch(direction,p.BulletSpeed,BurstAction?p.Burst.Damage:settings.Damage,actor.gameObject,friendlyFire:true);
+                int baseDamage = BurstAction ? p.Burst.Damage : settings.Damage;
+                int damage = actor.IsTrainingEnemy ? baseDamage : BossProfile.AttackDamage(baseDamage);
+                shot.Launch(direction,p.BulletSpeed,damage,actor.gameObject,friendlyFire:true);
                 var sprite=shot.GetComponent<SpriteRenderer>();if(sprite!=null)sprite.color=actor.Profile.Kind==BossKind.Gunner?NeuralPalette.Gunner:NeuralPalette.Swordsman;
                 actor.View?.Bullet(shot,direction);
                 actor.Sounds?.Play(Sfx.BossBurst,actor.ActorId,AttackId,shotIndex);actor.View?.Muzzle(muzzle,direction);
@@ -126,8 +128,9 @@ namespace GoGhost.Duel
             HitSegment(now,now+Vector2.down*BladeReach,p.BladeRadius,settings.Damage,true);
             Origin=now;Aim=Vector2.down;End=now+Aim*BladeReach;previousBladeOrigin=now;
         }
-        void HitSegment(Vector2 from,Vector2 to,float radius,int damage,bool terrain)
+        void HitSegment(Vector2 from,Vector2 to,float radius,int baseDamage,bool terrain)
         {
+            int damage = BossProfile.AttackDamage(baseDamage);
             if(actor.Coordinator!=null)
                 foreach(var other in actor.Coordinator.Actors)
                 {

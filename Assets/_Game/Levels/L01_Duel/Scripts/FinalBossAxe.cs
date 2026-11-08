@@ -26,7 +26,7 @@ namespace GoGhost.Duel
         };
         internal static BossMoveTuning DefaultTuning(Move move)
         {
-            var t=Timings[(int)move]; return new BossMoveTuning(t.Prepare,t.Recovery,t.Cooldown,t.Damage);
+            var t=Timings[(int)move]; return new BossMoveTuning(t.Prepare,t.Recovery,t.Cooldown,BossProfile.AttackDamage(t.Damage));
         }
         public const float ChopReach=2.3f, ChopHeight=2.1f, SpinRadius=1.65f, AxeRadius=.32f;
         const float SpinMove=.45f;

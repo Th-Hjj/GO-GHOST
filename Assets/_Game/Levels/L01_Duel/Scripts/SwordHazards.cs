@@ -56,7 +56,7 @@ namespace GoGhost.Duel
                 Shape=BossThreatShape.MovingBlade,Origin=a,End=b,Direction=direction,
                 Radius=.09f,ProjectileSpeed=s.WaveSpeed,StartsAt=Time.time};
             threat.EndsAt=BoundaryEnd(threat);
-            traces.Add(new Trace {Wave=true,Damage=s.WaveDamage,WarningAt=Time.time,BornAt=Time.time,
+            traces.Add(new Trace {Wave=true,Damage=BossProfile.AttackDamage(s.WaveDamage),WarningAt=Time.time,BornAt=Time.time,
                 Threat=threat});
             Emitted++;
         }
@@ -86,7 +86,7 @@ namespace GoGhost.Duel
             candidate.Add(threat);
             if(actor.Actions.HasLivingPartner&&!deferred&&!SwordEscape.HasRoute(actor,candidate,Mathf.Min(2.5f,threat.EndsAt-Time.time)))return;
             // With no separate warning stage, expose the harmless .2 s residue immediately.
-            traces.Add(new Trace {Threat=threat,Damage=s.EchoDamage,BornAt=Time.time,WarningAt=s.EchoWarning>0?start-s.EchoWarning:Time.time,Deferred=deferred});Echoes++;
+            traces.Add(new Trace {Threat=threat,Damage=BossProfile.AttackDamage(s.EchoDamage),BornAt=Time.time,WarningAt=s.EchoWarning>0?start-s.EchoWarning:Time.time,Deferred=deferred});Echoes++;
         }
         public void Replay()
         {

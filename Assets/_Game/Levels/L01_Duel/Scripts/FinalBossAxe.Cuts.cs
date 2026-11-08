@@ -360,7 +360,9 @@ namespace GoGhost.Duel
         {
             if(!threat.IntersectsMotion(lastPlayer,centre,half,previous,now))return false;
             consumed|=1<<group;
-            Strike(Mathf.Max(1,Mathf.RoundToInt(damage*acceptedTiming.Damage/(float)Timings[(int)Current].Damage)));
+            int partDamage = BossProfile.AttackDamage(damage);
+            int defaultPeak = BossProfile.AttackDamage(Timings[(int)Current].Damage);
+            Strike(Mathf.Max(1,Mathf.RoundToInt(partDamage * acceptedTiming.Damage / (float)defaultPeak)));
             return true;
         }
         void PublishPhaseOne(List<BossThreat> output)

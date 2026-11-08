@@ -2,6 +2,8 @@
 
 The preparation page offers rule editing and optional **Test Loadout** practice. Each numbered mission also has a **Target Profile**. Back returns from either visit. **Start Mission** fades the preparation page out and reveals the live arena. Defeat offers direct Retry or Configuration.
 
+Each Boss attack deals 75% of its base damage, rounded half up per hit. Bonus friendly fire uses the same values. A reflected projectile carries its original shot damage.
+
 ## Final Boss and optional Bonus
 
 Mission 1 victory waits for **Continue to Mission 2**. Defeating Swordsman closes the Mission 2 metrics record and opens Mission 3 preparation with the same character and rules. **Start Mission** stages the real Final Boss in the five-platform arena. After the fade, the usual three-second countdown starts automatically. A direct phase-two retry starts at the countdown.
@@ -14,11 +16,11 @@ Phase-one tuning is a playable trial. Distances use world units. Angles are meas
 
 | Move | Prepare + lock | Damage by part | Recovery / cooldown | Commitment |
 |---|---|---|---|---|
-| Triple Cut | .32 + .16 | 16 / 19 / 30 | .50 / 2.1 | Step into the first cut. Each additional stroke is a new commitment on the same facing. |
-| Leaping Crosscut | .26 + .14 | 28 | .34 / 2.4 | Leap toward the observed lane. The slash and supported landing lock together. |
-| Anchor Vault | .50 + .25 | 16 / 34 | .62 / 5.6 | Lock the thrown grip. At physical catch, take a fresh sighting and spring into a descending chop. |
-| Underpass Return | .43 + .25 | 16 / 22 | .45 / 4.8 | Meet an approaching player with a high throw and a low return. |
-| Palm Deflection | .53 + .25 | 12 / 15 / 28 | .68 / 7.2 | Throw along a long or diagonal lane. The returning grip can redirect once at the palm. |
+| Triple Cut | .32 + .16 | 12 / 14 / 23 | .50 / 2.1 | Step into the first cut. Each additional stroke is a new commitment on the same facing. |
+| Leaping Crosscut | .26 + .14 | 21 | .34 / 2.4 | Leap toward the observed lane. The slash and supported landing lock together. |
+| Anchor Vault | .50 + .25 | 12 / 26 | .62 / 5.6 | Lock the thrown grip. At physical catch, take a fresh sighting and spring into a descending chop. |
+| Underpass Return | .43 + .25 | 12 / 17 | .45 / 4.8 | Meet an approaching player with a high throw and a low return. |
+| Palm Deflection | .53 + .25 | 9 / 11 / 21 | .68 / 7.2 | Throw along a long or diagonal lane. The returning grip can redirect once at the palm. |
 
 **Triple Cut.** Inside 4.2 horizontal units and 1.55 vertically with a clear opening, the Boss gives his ordinary step-in slash priority. He can advance up to 1.15 during preparation. The first slash locks its facing from the start and can miss. After each stroke he checks whether the player is still in front and within reach of the next advancing cut. A miss can lead to the next stroke. Crossing behind or leaving reach ends the sequence with the full recovery. The lock step, advancing return and final step cover up to .45, .85 and 1.20 units. The nominal strokes start at 0, .39 and .92 and reach 2.05, 2.25 and 2.85. Each committed stroke has its own Swordsman-style lock arc, active edge and one physical hit.
 
@@ -255,19 +257,19 @@ Gunner has 12 rounds, a 1.45 s reload and 24 units/s ordinary bullets. Every att
 
 | Ability | Preparation + lock (s) | Damage | Recovery / cooldown (s) | Execution |
 | --- | --- | --- | --- | --- |
-| G1 Burst | 0.24 total, including first 0.08 lock | 12 per bullet | 0.26 / 1 | Up to three bullets; alternate ordinary 0.12/0.12 and staggered 0.28/0.12 gaps outside combo assembly; each direction separately locks for 0.08 s; final shot +0.04 s tail |
+| G1 Burst | 0.24 total, including first 0.08 lock | 9 per bullet | 0.26 / 1 | Up to three bullets; alternate ordinary 0.12/0.12 and staggered 0.28/0.12 gaps outside combo assembly; each direction separately locks for 0.08 s; final shot +0.04 s tail |
 | G2 Optical Camo | 0.14 + 0 | — | 0.12 / 7 | Up to 1.8 s on a committed firing-angle route; early exit after at least 0.45 s movement and real arrival; body/weapon alpha 0; short event traces |
-| G3 Piercing Shot | 0.90 + 0.24 | 30 | 0.55 / 4.5 | Three rounds; locked instantaneous ray, brief active flash; beam radius 0.07 |
-| G4 Suppressive Sweep | 0.32 + 0.18 | 8 per bullet | 0.5 / 4 | Eight ordinary bullets, 0.12 s spacing / 0.84 s span +0.10 s tail; at least eight rounds and six clear starting rays |
+| G3 Piercing Shot | 0.90 + 0.24 | 23 | 0.55 / 4.5 | Three rounds; locked instantaneous ray, brief active flash; beam radius 0.07 |
+| G4 Suppressive Sweep | 0.32 + 0.18 | 6 per bullet | 0.5 / 4 | Eight ordinary bullets, 0.12 s spacing / 0.84 s span +0.10 s tail; at least eight rounds and six clear starting rays |
 | G5 Tactical Jump Shot | 0.12 + 0.08 | Existing Burst damage | 0.26 after landing / 4.5 | One reachable, frozen jump route; up to three airborne Burst bullets with normal ammo/speed and a separate 0.08 s aim lock per shot |
-| S1 Broken Rhythm | Per-cut table below | 18 / 18 / 26 | 0.65 / 2.4 | Independent preparation, bounded physical step, facing lock and rotating blade sweep per cut |
-| S2 Draw Dash | 0.30 + 0.18 | 28 | 0.50 / 3 | Grounded start, locked two-dimensional swept drive at speed 25; route length capped at actual same-height spacing (currently 8.75); normal gravity after exit |
-| S3 Return Cut | 0.18 + 0.16 | 24 | 0.65 / 5 | One optional Draw Dash follow-up; range 4, speed 24, separate cooldown |
-| S4 Aerial Drop Cut | 0.12 + 0.16 | 32 | 0.55 / 4 | Planned real jump; full 0.28 s tell under gravity; one downward 16-speed request, fixed horizontal speed capped at 7.5; one hit window |
+| S1 Broken Rhythm | Per-cut table below | 14 / 14 / 20 | 0.65 / 2.4 | Independent preparation, bounded physical step, facing lock and rotating blade sweep per cut |
+| S2 Draw Dash | 0.30 + 0.18 | 21 | 0.50 / 3 | Grounded start, locked two-dimensional swept drive at speed 25; route length capped at actual same-height spacing (currently 8.75); normal gravity after exit |
+| S3 Return Cut | 0.18 + 0.16 | 18 | 0.65 / 5 | One optional Draw Dash follow-up; range 4, speed 24, separate cooldown |
+| S4 Aerial Drop Cut | 0.12 + 0.16 | 24 | 0.55 / 4 | Planned real jump; full 0.28 s tell under gravity; one downward 16-speed request, fixed horizontal speed capped at 7.5; one hit window |
 | S5 Blade Guard | 0.18 + 0 | Incoming bullet damage | 0.18 / 3.5 | Full 0.70 s front 120-degree reflection, no bullet-count limit or early recovery; stationary with blade pointing down |
-| S6 Leap Slash | 0.24 + 0.12 | 28 | 0.55 after landing / 4.5 | One validated physical jump toward a public predicted approach; frozen landing route, one first-cut blade arc during approach; terrain blocks the sword |
-| Draw Dash front follow-up | 0.16 + 0.12 | 18 | 0.65 | Reuses only Rhythm cut 1; Return Cut has priority, otherwise a front target within real step/blade reach; then recovery, with no further branch |
-| Drop landing follow-up | 0.16 + 0.12 | 18 | 0.65 | One front Rhythm cut, shared Rhythm cooldown, actual ground contact and public range required; unavailable to cooperative Drop |
+| S6 Leap Slash | 0.24 + 0.12 | 21 | 0.55 after landing / 4.5 | One validated physical jump toward a public predicted approach; frozen landing route, one first-cut blade arc during approach; terrain blocks the sword |
+| Draw Dash front follow-up | 0.16 + 0.12 | 14 | 0.65 | Reuses only Rhythm cut 1; Return Cut has priority, otherwise a front target within real step/blade reach; then recovery, with no further branch |
+| Drop landing follow-up | 0.16 + 0.12 | 14 | 0.65 | One front Rhythm cut, shared Rhythm cooldown, actual ground contact and public range required; unavailable to cooperative Drop |
 
 Sword closing policy checks legal Draw Dash before cached/Flank/Leap choices when outside first-cut reach or publicly retreating beyond that reach. Readiness, grounded initiation, a reachable two-dimensional corridor and shared-threat reservation remain required; cooldown stays 3 s. Safe non-cooperative recovery can commit one .18-platform-width step on the current support at .65 move scale (at least 1.3 s between steps), approaching a distant target or backing out of body-contact range. It applies no damage and consumes the complete original recovery; branch windows and airborne commitments are retained. Ground Approach/Intercept can reconsider after .35 s for a 5% better plan, or after .25 s when the arrival prediction shifts by .45 platform width. Other route holds stay unchanged.
 

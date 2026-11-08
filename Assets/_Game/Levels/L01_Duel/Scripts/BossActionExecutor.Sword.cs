@@ -456,6 +456,7 @@ namespace GoGhost.Duel
                 ||!actor.Motor.Grounded&&actor.Velocity.y>=0))return;
             if(CurrentSwordBeat==SwordBeat.Draw)
             {
+                int damage = BossProfile.AttackDamage(p.Sword.DrawDamage);
                 Vector2 lead=SwordDrawLead;
                 // Both bodies moved during the completed physics step. Testing only the player's
                 // final centre misses a retreating body which the solid motor just stopped behind.
@@ -467,11 +468,11 @@ namespace GoGhost.Duel
                     {
                         if(other==actor||!other.IsAlive||!other.Body.enabled||bossesHitInWindow.Contains(other))continue;
                         if(sweep.IntersectsMotion(other.Motor.PreviousPosition,other.Position,other.Body.bounds.extents,sweep.StartsAt,sweep.EndsAt))
-                            HitBoss(other,p.Sword.DrawDamage,other.Body.ClosestPoint(actor.Position+lead));
+                            HitBoss(other,damage,other.Body.ClosestPoint(actor.Position+lead));
                     }
                 if(!hitInWindow&&sweep.IntersectsMotion(previousPlayer,currentPlayer,playerBody.bounds.extents,sweep.StartsAt,sweep.EndsAt))
                 {
-                    hitInWindow=true;int before=actor.Player.CurrentHealth;actor.Player.TakeDamage(p.Sword.DrawDamage,actor.gameObject);
+                    hitInWindow=true;int before=actor.Player.CurrentHealth;actor.Player.TakeDamage(damage,actor.gameObject);
                     if(actor.Player.CurrentHealth<before){ConnectedHits++;actor.View?.Impact(playerBody.ClosestPoint(actor.Position+lead));}
                 }
             }

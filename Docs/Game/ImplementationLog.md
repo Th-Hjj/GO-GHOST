@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — Industrial opacity and casino lighting
+
+Mission 1's distant factories and near columns went from 50% to 60% opacity. Mission 2 retains 60% on both plates. Its texture importer uses the painted amber marks to bake brighter cores and short orange halos into the casino sign, marquee and facade lights. The circled pair of lights beside the left marquee support was removed from the far plate.
+
+Before that removal, Unity Play Mode reached both missions through Start Mission. QHD countdown captures are in `Logs/CasinoLight/`: `Mission-1-60.png` and the `Mission-2-Before.png` / `Mission-2-After.png` lighting comparison using the same framing. That comparison predates the removal. Thomas will playtest the final edit. No standalone build.
+
 ## 2026-11-07 — Mission 2 casino facades
 
 The base beneath the CASINO sign is a centered isosceles trapezoid on the near plate. Static comparison at 60% opacity: `Logs/ParallaxPreview/Mission-2-Symmetric-Sign-Base.png`. Play Mode was not run.

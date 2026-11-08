@@ -9,6 +9,7 @@ Read this file first in every session, then the docs listed at the bottom for th
 ## Current design authority — 2026-11-05
 
 Dated decisions are ordered newest first. Later entries supersede conflicting older ones; past delivery permissions/limits belong to that delivery. The Confirmed constraints section summarizes the current source. Preserve the historical decisions as provenance.
+- **Industrial and casino lighting — Thomas, 2026-11-07:** Set both Mission 1 industrial layers to 60% opacity with the existing lighting. In Mission 2 the orange CASINO sign, marquee bulbs and scattered building lights should read as illuminated.
 - **Mission overview and Target Profile dialogue — Thomas, 2026-11-07:** Clicking reveals the current sentence. Once its text is complete, a fresh dialogue click interrupts the recording and advances. Keep buttons visually subdued while dialogue is displayed.
 - **Background tuning — Thomas, 2026-11-07:** Keep the current building artwork, reduce horizontal parallax and lower the opacity of both background layers. Thomas will judge the result in play.
 - **Mission backgrounds — Thomas, 2026-11-07:** Mission 1 uses the first industrial artwork with straight buildings, gray-blue tanks and steel columns, and the stronger fixed-arena parallax from the second preview. Mission 2 takes its visual direction from Las Vegas casinos and entertainment venues. Mission 3 builds up to a futuristic New York or Night City corporate skyline. Review new mission artwork in previews before integration.

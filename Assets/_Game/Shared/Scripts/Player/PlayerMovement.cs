@@ -84,6 +84,8 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
     private readonly RaycastHit2D[] pushHits = new RaycastHit2D[16];
     private readonly RaycastHit2D[] groundHits = new RaycastHit2D[16];
     private Collider2D groundSupport, droppingThrough;
+    private AttemptPresentationVfx footEffects;
+    private float descentSpeed;
     private float dropStartedAt;
     public Collider2D DropThroughSupport => droppingThrough;
     public int DropThroughCount { get; private set; }
@@ -104,6 +106,7 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
     {
         CleanupAttempt();
         legacyCombat = true;
+        footEffects = GetComponentInParent<AttemptPresentationVfx>();
         doubleJumpUnlocked = false;
         attemptActive = true;
         RefillAirResources();
@@ -125,6 +128,8 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         IsHovering = false;
         moveInput = Vector2.zero;
         IsGrounded = false;
+        descentSpeed = 0;
+        footEffects = null;
         IsOrdinaryMoving = false;
         jumpInFlight = jumpWasAscending = physicsObserved = false;
         ordinaryDirection = 0;
@@ -171,6 +176,7 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         if (spriteRenderer != null)
             spriteRenderer.flipX = FacingDirection < 0;
 
+        bool previouslyGrounded = IsGrounded;
         IsGrounded = false;
         groundSupport = null;
         if (groundCheck != null && (rb.linearVelocity.y <= 0.1f || RidingRisingCarrier()))
@@ -212,6 +218,9 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
 
         if (IsGrounded)
         {
+            if (!previouslyGrounded && groundSupport != null && descentSpeed > 1f && rb.simulated && input.GameplayInputEnabled)
+                footEffects?.PlayerLanded(FootContact(), groundSupport, descentSpeed);
+            descentSpeed = 0;
             RefillAirResources();
             jumpInFlight = jumpWasAscending = false;
         }
@@ -273,6 +282,13 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
     private void FixedUpdate()
     {
         UpdateDropThrough();
+        // The solver may already have zeroed vertical velocity when the next ground probe succeeds.
+        if (footEffects != null && rb.simulated && !input.NarrativePaused && input.GameplayInputEnabled)
+        {
+            // Keep the last descending sample across any extra physics steps after contact.
+            if (rb.linearVelocity.y < 0) descentSpeed = -rb.linearVelocity.y;
+            else if (rb.linearVelocity.y > .1f) descentSpeed = 0;
+        }
         // Observe the last physics result, not an input or a velocity requested against a wall.
         IsOrdinaryMoving = physicsObserved && ordinaryDirection != 0 && rb.simulated
             && input.GameplayInputEnabled && !input.NarrativePaused
@@ -399,6 +415,8 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         bool accepted = false;
         if (IsGrounded)
         {
+            if (groundSupport != null)
+                footEffects?.PlayerTookOff(FootContact(), groundSupport, moveInput.x);
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, JumpSpeed);
             IsGrounded = false;
             accepted = true;
@@ -415,6 +433,12 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
             jumpWasAscending = rb.linearVelocity.y > 0;
             JumpStarted?.Invoke();
         }
+    }
+
+    private Vector2 FootContact()
+    {
+        Bounds surface = groundSupport.bounds;
+        return new Vector2(Mathf.Clamp(movementShape.bounds.center.x, surface.min.x, surface.max.x), surface.max.y);
     }
 
     private void OnDrawGizmosSelected()

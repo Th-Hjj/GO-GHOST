@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — Player takeoff and landing flakes
+
+Added the approved gray-blue foot flakes to Test Loadout and combat. A ground jump emits three flakes from its support. A landing uses two or four according to descent speed relative to the platform. The initial heavy threshold is 14 world units per second. Continuous rule jumps merge the landing and takeoff feedback. Effects reuse up to four line renderers per attempt and follow the contacted platform through their short lifetime. Unity compilation and Play Mode were not run at Thomas's request.
+
 ## 2026-11-07 — Industrial opacity and casino lighting
 
 Mission 1's distant factories and near columns went from 50% to 60% opacity. Mission 2 retains 60% on both plates. Its texture importer uses the painted amber marks to bake brighter cores and short orange halos into the casino sign, marquee and facade lights. The circled pair of lights beside the left marquee support was removed from the far plate.

@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — Casino playtest
+
+Mission 2 loads the casino concept's resort and entrance layers for the Swordsman fight and direct retry. The casino uses 85% of authored opacity and Mission 1 uses 50%. Both use the existing 8 / 40 reference-pixel travel. Thomas will playtest the change. No compile check or Play Mode run was requested.
+
 ## 2026-11-07 — Background intensity
 
 Mission 1 center-to-edge travel now uses 8 reference pixels for distant factories and 40 for near columns. Both plates render at 60% of authored opacity. The Mission 2 casino concept uses the same settings. Thomas requested personal playtest verification. No compile or Play Mode check was run for this adjustment.

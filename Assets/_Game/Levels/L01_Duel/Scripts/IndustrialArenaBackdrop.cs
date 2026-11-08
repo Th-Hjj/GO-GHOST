@@ -9,23 +9,27 @@ namespace GoGhost.Duel
         const float VisibleWidthPixels = 966f;
         const float FarTravelPixels = 8f;
         const float NearTravelPixels = 40f;
-        const float PlateOpacity = .6f;
+        const float IndustrialOpacity = .50f;
+        const float CasinoOpacity = .85f;
 
         Transform player;
         Bounds arena;
         RawImage far, near;
 
-        public static void Create(Transform attempt, Transform player, Bounds arena)
+        public static void Create(Transform attempt, Transform player, Bounds arena, int wave)
         {
-            var farTexture = Resources.Load<Texture2D>("Arena/IndustrialFar");
-            var nearTexture = Resources.Load<Texture2D>("Arena/IndustrialNear");
+            bool casino = wave == 2;
+            string artwork = casino ? "Casino" : "Industrial";
+            float opacity = casino ? CasinoOpacity : IndustrialOpacity;
+            var farTexture = Resources.Load<Texture2D>($"Arena/{artwork}Far");
+            var nearTexture = Resources.Load<Texture2D>($"Arena/{artwork}Near");
             if (!farTexture || !nearTexture)
             {
-                Debug.LogError("Mission 1 industrial background textures could not be loaded.");
+                Debug.LogError($"Mission {wave} {artwork} background textures could not be loaded.");
                 return;
             }
 
-            var root = new GameObject("Industrial Arena Background", typeof(RectTransform), typeof(Canvas));
+            var root = new GameObject($"{artwork} Arena Background", typeof(RectTransform), typeof(Canvas));
             var rect = (RectTransform)root.transform;
             rect.SetParent(attempt, false);
             var canvas = root.GetComponent<Canvas>();
@@ -37,12 +41,12 @@ namespace GoGhost.Duel
             var backdrop = root.AddComponent<IndustrialArenaBackdrop>();
             backdrop.player = player;
             backdrop.arena = arena;
-            backdrop.far = backdrop.AddPlate("Distant Works", farTexture);
-            backdrop.near = backdrop.AddPlate("Steel Columns", nearTexture);
+            backdrop.far = backdrop.AddPlate(casino ? "Resort Hotels" : "Distant Works", farTexture, opacity);
+            backdrop.near = backdrop.AddPlate(casino ? "Casino Entrance" : "Steel Columns", nearTexture, opacity);
             backdrop.UpdateParallax();
         }
 
-        RawImage AddPlate(string label, Texture2D texture)
+        RawImage AddPlate(string label, Texture2D texture, float opacity)
         {
             var plate = new GameObject(label, typeof(RawImage)).GetComponent<RawImage>();
             var rect = plate.rectTransform;
@@ -51,7 +55,7 @@ namespace GoGhost.Duel
             rect.anchorMax = Vector2.one;
             rect.offsetMin = rect.offsetMax = Vector2.zero;
             plate.texture = texture;
-            plate.color = new Color(1f, 1f, 1f, PlateOpacity);
+            plate.color = new Color(1f, 1f, 1f, opacity);
             plate.raycastTarget = false;
             return plate;
         }

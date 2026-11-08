@@ -7,7 +7,6 @@ namespace GoGhost.Duel
     public sealed partial class DuelGame
     {
         public enum CutsceneSpeaker { None, FinalBoss, Happy }
-        const float RainbowDrainSeconds = 1.2f;
 
         Coroutine finalBossTransition;
         // Set before StartCoroutine: its first lines run before the handle is returned.
@@ -108,14 +107,10 @@ namespace GoGhost.Duel
             encounterSounds?.Play(Sfx.Glitch);
             yield return new WaitForSeconds(.9f);
 
-            boss.View.DrainRainbow(RainbowDrainSeconds);
-            yield return new WaitForSeconds(RainbowDrainSeconds);
             boss.View.SetFinalBossPhaseTwo();
-            yield return new WaitForSeconds(.45f);
+            yield return new WaitForSeconds(BossSilhouetteView.FlowRampSeconds);
             boss.View.LiftGaze();
-            yield return new WaitForSeconds(.24f);
-            boss.View.SetEyesRed(true);
-            yield return new WaitForSeconds(.70f);
+            yield return new WaitForSeconds(.35f);
             boss.View.RiseFromKneel();
             yield return new WaitForSeconds(.6f);
 

@@ -15,7 +15,7 @@ namespace GoGhost.Duel
         const float TrailLifetime = .16f;
         const int MaxTrailPoints = 22;
         static readonly Color FlightIce = new Color32(197, 237, 255, 255);
-        Sprite originalWeaponSprite, phaseOneSprite;
+        Sprite phaseOneSprite;
         SpriteRenderer flightSprite;
         Vector2 phaseOneSocket, freePalm;
         readonly List<Vector2> trailPoints = new List<Vector2>(MaxTrailPoints);
@@ -165,10 +165,9 @@ namespace GoGhost.Duel
             return grip + forward * GripToCentreForward + towardEdge * GripToCentreAcross;
         }
 
-        void PlacePhaseOneAxe(Pose p)
+        void PlaceHeldAxe(Pose p)
         {
             var weapon = parts[(int)Part.Weapon];
-            if (originalWeaponSprite == null) originalWeaponSprite = weapon.sprite;
             weapon.sprite = ApprovedAxe();
             weapon.enabled = true;
             weapon.color = NeuralPalette.Alpha(Color.white, alpha);
@@ -177,11 +176,8 @@ namespace GoGhost.Duel
             weapon.transform.localPosition = AxeSpriteCentre(grip, forward, 1);
             weapon.transform.localRotation = Quaternion.Euler(0, 0, p.WeaponAngle - 90);
             weapon.transform.localScale = Vector3.one;
-            if(chargedWeapon!=null && weapon.sharedMaterial==chargedWeapon)
-            {
-                if(kneel<=0)weapon.sharedMaterial=originalWeaponMaterial;
-                else chargedWeapon.SetFloat("_AxeCharge",1.08f*Ease((Time.time-chargeAt)/4.8f)*kneel);
-            }
+            if(chargedWeapon!=null && flowStart<0)
+                chargedWeapon.SetFloat("_AxeCharge",1.08f*Ease((Time.time-chargeAt)/4.8f));
             Hide(Part.Sheath);
             phaseOneSocket=transform.TransformPoint(grip+forward*GripToSocket);
             freePalm=transform.TransformPoint(p.BackHand);

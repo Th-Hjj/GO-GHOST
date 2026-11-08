@@ -6,6 +6,7 @@ Shader "GO GHOST/Final Boss Rainbow"
         _AxeCharge ("Axe charge", Float) = -1
         _RainbowBottom ("World bottom", Float) = 0
         _RainbowHeight ("Body height", Float) = 1.6
+        _RainbowPhase ("Rainbow flow phase", Float) = 0
         _RainbowAmount ("Rainbow amount", Range(0, 1)) = 1
         _BaseColor ("Drained colour", Color) = (1, 1, 1, 1)
     }
@@ -28,6 +29,7 @@ Shader "GO GHOST/Final Boss Rainbow"
                 float _RainbowBottom;
                 float _RainbowHeight;
                 float _RainbowAmount;
+                float _RainbowPhase;
                 float _AxeCharge;
                 half4 _BaseColor;
             CBUFFER_END
@@ -52,10 +54,10 @@ Shader "GO GHOST/Final Boss Rainbow"
                     half shade = lerp(.62, 1, max(tex.r, max(tex.g, tex.b)));
                     return half4(lerp(tex.rgb, _BaseColor.rgb * shade, front), tex.a * i.color.a);
                 }
-                float hue = (1 - saturate((i.worldY - _RainbowBottom) / max(.01, _RainbowHeight))) * .78;
+                float hue = (1 - saturate((i.worldY - _RainbowBottom) / max(.01, _RainbowHeight))) * .78 + _RainbowPhase;
                 half3 rgb = saturate(abs(frac(hue + float3(0, 2.0/3.0, 1.0/3.0)) * 6 - 3) - 1);
                 rgb = lerp(half3(1,1,1), rgb, .75);
-                // Phase change: the rainbow drains to the plain stickman colour.
+                // Non-rainbow dossier silhouettes use their ordinary body colour.
                 rgb = lerp(_BaseColor.rgb, rgb, _RainbowAmount);
                 return half4(rgb, SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv).a * i.color.a);
             }

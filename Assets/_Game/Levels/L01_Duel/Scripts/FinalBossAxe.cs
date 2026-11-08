@@ -325,14 +325,13 @@ namespace GoGhost.Duel
 
         public void ReleaseTransition() => transitionHeld = false;
 
-        // Direct retry begins with the white body, red eyes and the axe in hand.
+        // Direct retry starts with a flowing rainbow and the charged combat axe.
         public void StartInPhaseTwo()
         {
             Cancel();
             actor.Health.SkipToSecondPhase();
             PhaseTwo = true; actor.RestoreSecondPhaseMotion(); Transitioning = false; transitionHeld = false;
             actor.View?.SetFinalBossPhaseTwo();
-            actor.View?.SetEyesRed(true, immediate: true);
         }
 
     }

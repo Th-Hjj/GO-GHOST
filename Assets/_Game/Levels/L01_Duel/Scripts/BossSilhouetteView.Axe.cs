@@ -2,38 +2,33 @@ using UnityEngine;
 
 namespace GoGhost.Duel
 {
-    // Rainbow body and phase transition. Phase two retains the original axe and boxer poses.
+    // Both phases share the rainbow silhouette and axe. The EMP sets the spectrum in motion.
     public sealed partial class BossSilhouetteView
     {
-        const float AxeShaft = 1.0f, AxeShaftWidth = .075f, AxeGrip = .14f;
-        static readonly Vector2 AxeHeadSize = new Vector2(.26f, .30f);
         static readonly Part[] AxeBodyParts = { Part.Torso, Part.Head, Part.BackThigh, Part.BackCalf, Part.FrontThigh,
             Part.FrontCalf, Part.BackUpperArm, Part.BackForearm, Part.FrontUpperArm, Part.FrontForearm };
         Material rainbowMaterial;
         Material[] axeBodyMaterials;
-        Transform redEye;
-        Mesh eyeMesh;
-        TrailRenderer eyeTrail;
         float gazeAt = float.PositiveInfinity;
-        Material chargedWeapon, originalWeaponMaterial;
+        Material chargedWeapon;
+        const float RainbowCycleSeconds = 4f;
+        internal const float FlowRampSeconds = 1.2f;
+        float flowStart = -1;
         Collider2D plantedSupport;
         Vector2 plantedPoint;
         float chargeAt = float.PositiveInfinity;
         internal const float PlantedChargeSeconds = 5.10f, WaveSpacing = .70f;
-        float drainFrom = -1, drainSeconds = 1, shockwaveAt = -1;
+        float shockwaveAt = -1;
         public const float ShockwaveSeconds = 2.40f;
         public const float ShockwaveStartRadius = .4f;
         float shockwaveReach, releasedAt = float.NegativeInfinity;
         Vector2 shockwaveOrigin;
         SpriteRenderer[] empEdges;
-        static readonly Color EyeRed = new Color(1f, .16f, .18f, 1f);
-        float eyesLitAt = float.NegativeInfinity;
         // Five straight wakes per front. The other slots draw the rings and the burst at the blade.
         static readonly int[] WaveWakeSlots = {0,1,3,4,5,13,14,15,16,17,21,22,23,24,25};
         bool rising;
         float kneel;
         public void RiseFromKneel() => rising = true;
-        public bool EyesRed { get; private set; }
         bool FinalAxe => actor != null && actor.Axe != null;
 
         void ConfigureFinalBossLook()
@@ -51,28 +46,21 @@ namespace GoGhost.Duel
                 if (shader != null) rainbowMaterial = new Material(shader) { name = "Final Boss rainbow (runtime)", hideFlags = HideFlags.DontSave };
                 if (rainbowMaterial != null) { rainbowMaterial.SetFloat("_RainbowAmount", 1); rainbowMaterial.SetColor("_BaseColor", NeuralPalette.Emp); }
             }
-            ApplyFinalBossBody(false);
+            for (int i=0;i<AxeBodyParts.Length;i++)
+            {
+                var part=parts[(int)AxeBodyParts[i]];
+                if(part!=null && rainbowMaterial!=null)part.sharedMaterial=rainbowMaterial;
+            }
+            bodyColor=Color.white;
+            weaponColor=NeuralPalette.Primary;
         }
 
         public void SetFinalBossPhaseTwo()
         {
-            drainFrom = -1;
-            if (empEdges != null)
-                foreach (var edge in empEdges) edge.enabled = false;
-            ApplyFinalBossBody(true);
-        }
-
-        void ApplyFinalBossBody(bool phaseTwo)
-        {
-            if (axeBodyMaterials == null) return;
-            for (int i = 0; i < AxeBodyParts.Length; i++)
-            {
-                var part = parts[(int)AxeBodyParts[i]];
-                if (part != null) part.sharedMaterial = phaseTwo || rainbowMaterial == null ? axeBodyMaterials[i] : rainbowMaterial;
-            }
-            // The final shader colour matches the ordinary sprites on direct phase-two retry.
-            bodyColor = phaseTwo ? NeuralPalette.Emp : Color.white;
-            weaponColor = NeuralPalette.Primary;
+            if (flowStart >= 0) return;
+            flowStart = clock;
+            UseChargedWeapon();
+            if (chargedWeapon != null) chargedWeapon.SetFloat("_AxeCharge",1.08f);
         }
 
         void UpdateFinalBossLook()
@@ -86,11 +74,12 @@ namespace GoGhost.Duel
             float height = actor.Motor.Size.y;
             rainbowMaterial.SetFloat("_RainbowBottom", actor.Position.y - height * .5f);
             rainbowMaterial.SetFloat("_RainbowHeight", height + .1f);
-            if (drainFrom >= 0)
+            if (flowStart >= 0)
             {
-                float drained = Mathf.Clamp01((clock - drainFrom) / drainSeconds);
-                rainbowMaterial.SetFloat("_RainbowAmount", 1 - drained);
-                if (drained >= 1) SetFinalBossPhaseTwo();
+                float age = Mathf.Max(0,clock-flowStart);
+                // Integrate the speed ramp so the static colour bands start moving continuously.
+                float travel = age < FlowRampSeconds ? .5f*age*age/FlowRampSeconds : age-.5f*FlowRampSeconds;
+                rainbowMaterial.SetFloat("_RainbowPhase",Mathf.Repeat(travel/RainbowCycleSeconds,1));
             }
         }
 
@@ -115,15 +104,18 @@ namespace GoGhost.Duel
         internal void BeginPlantedCharge()
         {
             chargeAt = Time.time;
-            if (rainbowMaterial == null) return;
-            var weapon = parts[(int)Part.Weapon];
-            originalWeaponMaterial = weapon.sharedMaterial;
+            UseChargedWeapon();
+            if(chargedWeapon!=null)chargedWeapon.SetFloat("_AxeCharge",0);
+        }
+
+        void UseChargedWeapon()
+        {
+            if (chargedWeapon!=null || rainbowMaterial==null) return;
             chargedWeapon = new Material(rainbowMaterial) {name="Charged EMP axe",hideFlags=HideFlags.DontSave};
-            weapon.sharedMaterial = chargedWeapon;
+            parts[(int)Part.Weapon].sharedMaterial = chargedWeapon;
         }
 
         internal void LiftGaze() => gazeAt = clock;
-        public void DrainRainbow(float seconds) { drainFrom = clock; drainSeconds = Mathf.Max(.05f, seconds); }
         internal void Shockwave(Vector2 origin, float reach)
         {
             shockwaveOrigin = origin;
@@ -136,21 +128,15 @@ namespace GoGhost.Duel
             for (int i = 0; i < AxeBodyParts.Length; i++)
                 empEdges[i] = EmpOutline.Create(parts[(int)AxeBodyParts[i]], axeBodyMaterials[i], backOrder - 1, .055f);
         }
-        public void SetEyesRed(bool value, bool immediate = false)
-        {
-            EyesRed = value;
-            eyesLitAt = immediate ? float.NegativeInfinity : clock;
-        }
-
         void UpdateShockwave()
         {
             if (empEdges != null && empEdges[0].enabled)
             {
                 float age = Time.time - releasedAt;
                 float rim = Mathf.Lerp(.96f, .35f, Mathf.SmoothStep(0, 1, age / .5f));
-                if (drainFrom >= 0) rim *= 1 - Mathf.Clamp01((clock - drainFrom) / drainSeconds);
+                if (flowStart >= 0) rim *= 1 - Mathf.Clamp01((clock-flowStart)/FlowRampSeconds);
                 var tint = NeuralPalette.Alpha(NeuralPalette.Emp, rim);
-                foreach (var edge in empEdges) edge.color = tint;
+                foreach (var edge in empEdges) { edge.color = tint; edge.enabled = rim > 0; }
             }
             if (shockwaveAt < 0) return;
             float waveElapsed = Time.time - shockwaveAt;
@@ -197,50 +183,8 @@ namespace GoGhost.Duel
             }
         }
 
-        // One side-facing slit. Three flat polygons keep the graphite lid and red core readable at arena scale.
-        void PlaceEyes(Pose p)
-        {
-            if (!EyesRed) { if (redEye != null) redEye.gameObject.SetActive(false); return; }
-            if (redEye == null) CreateRedEye();
-            redEye.gameObject.SetActive(true);
-            redEye.localPosition=p.Head+new Vector2(.005f,.074f);
-            redEye.localRotation=Quaternion.Euler(0,0,-8);
-            float opening=Ease((clock-eyesLitAt)/.18f);
-            redEye.localScale=new Vector3(1,opening,1);
-            bool streak=opening>=1 && actor.Velocity.sqrMagnitude>4 && actor.Running;
-            if(!streak || (eyeTrail.emitting && Mathf.Sign(actor.Velocity.x)!=actor.Facing))eyeTrail.Clear();
-            eyeTrail.emitting=streak;
-        }
-
-        void CreateRedEye()
-        {
-            redEye=new GameObject("Red eye").transform;
-            redEye.SetParent(transform,false);
-            var head=parts[(int)Part.Head];
-            var filter=redEye.gameObject.AddComponent<MeshFilter>();
-            var ink=redEye.gameObject.AddComponent<MeshRenderer>();
-            ink.sharedMaterial=tellMaterial;
-            ink.sortingLayerID=head.sortingLayerID; ink.sortingOrder=head.sortingOrder+1;
-            eyeMesh=new Mesh {name="Final Boss eye slit"};
-            eyeMesh.vertices=new Vector3[] {
-                new(-.042f,.035f), new(.170f,.035f), new(.184f,.006f), new(.130f,-.048f), new(.008f,-.039f),
-                new(-.022f,.006f), new(.168f,.006f), new(.125f,-.041f), new(.014f,-.032f),
-                new(.050f,-.006f), new(.151f,-.006f), new(.124f,-.023f), new(.057f,-.023f) };
-            var lid=new Color32(37,33,48,255); var red=new Color32(210,37,53,255); var hot=new Color32(255,94,97,255);
-            eyeMesh.colors32=new[]{lid,lid,lid,lid,lid,red,red,red,red,hot,hot,hot,hot};
-            eyeMesh.triangles=new[]{0,1,2,0,2,3,0,3,4,5,6,7,5,7,8,9,10,11,9,11,12};
-            filter.sharedMesh=eyeMesh;
-            var corner=new GameObject("Eye streak").transform;corner.SetParent(redEye,false);
-            eyeTrail=corner.gameObject.AddComponent<TrailRenderer>();
-            eyeTrail.emitting=false;eyeTrail.time=.09f;eyeTrail.minVertexDistance=.035f;
-            eyeTrail.startWidth=.032f;eyeTrail.endWidth=0;eyeTrail.sharedMaterial=glowMaterial;
-            eyeTrail.startColor=new Color(.63f,.06f,.09f,.7f);eyeTrail.endColor=NeuralPalette.Alpha(EyeRed,0);
-            eyeTrail.sortingLayerID=head.sortingLayerID;eyeTrail.sortingOrder=head.sortingOrder;
-        }
-
         void OnDestroy()
         {
-            if (eyeMesh != null) Destroy(eyeMesh);
             if (chargedWeapon != null) Destroy(chargedWeapon);
             if (rainbowMaterial != null) Destroy(rainbowMaterial);
         }
@@ -342,25 +286,8 @@ namespace GoGhost.Duel
         // Called after the shared pose placement: the axe replaces the sword geometry.
         void ApplyAxe(Pose p)
         {
-            PlaceEyes(p);
             if (actor.Axe.AxeFlying) { Hide(Part.Weapon); Hide(Part.Sheath); return; }
             PlaceHeldAxe(p);
-        }
-
-        void PlaceHeldAxe(Pose p)
-        {
-            if (!FinalAxe || !actor.Axe.PhaseTwo)
-            {
-                PlacePhaseOneAxe(p);
-                return;
-            }
-            var weapon = parts[(int)Part.Weapon];
-            if (originalWeaponSprite != null) weapon.sprite = originalWeaponSprite;
-            Vector2 direction = Angle(p.WeaponAngle);
-            Place(Part.Weapon, p.FrontHand + direction * (AxeShaft * .5f - AxeGrip), new Vector2(AxeShaft, AxeShaftWidth), p.WeaponAngle);
-            Vector2 blade = new Vector2(direction.y, -direction.x);
-            Place(Part.Sheath, p.FrontHand + direction * (AxeShaft - AxeGrip - .08f) + blade * .10f, AxeHeadSize, p.WeaponAngle);
-            if (parts[(int)Part.Sheath] != null) { var color = weaponColor; color.a = alpha; parts[(int)Part.Sheath].color = color; }
         }
 
         internal Vector2 InvasionChargePoint => phaseOneSocket + Vector2.up * .23f;

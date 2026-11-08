@@ -4,22 +4,22 @@ The preparation page offers rule editing and optional **Test Loadout** practice.
 
 ## Final Boss and optional Bonus
 
-Mission 1 victory waits for **Continue to Mission 2**. Defeating Swordsman closes the Mission 2 metrics record and opens Mission 3 preparation with the same character and rules. **Start Mission** stages the real Final Boss in the five-platform arena. The arena fade and three-second countdown follow the same route as Missions 1 and 2.
+Mission 1 victory waits for **Continue to Mission 2**. Defeating Swordsman closes the Mission 2 metrics record and opens Mission 3 preparation with the same character and rules. **Start Mission** stages the real Final Boss in the five-platform arena. After the fade, the Boss says “So you think you're the only one with AI in your head.” Advancing the line starts the usual three-second countdown. A direct phase-two retry starts at the countdown.
 
 **Current source (stage 3 of the redesign below):** the Final Boss is a player-sized stickman built from the Swordsman prefab, with the Alpha rainbow shader on its body and an axe. `FinalBossAxe` replaces the sword tactics with its own AI and four telegraphed moves: Chop, Spin, Throw & Recall and Boomerang. Each move publishes threats: Chop and Spin as melee, the flying axe as ranged. Both health pools are 1000. When the first pool empties, the scripted transition below runs (stage 7). In the second phase he keeps the axe in hand for Chop and Spin. Retry and subsequent configuration use the equipped loadout. Walker Grupp's original prototype (commit `719c843`, 2x Swordsman with sword specials) is retired. Trial axe tuning (prepare/lock/active/recovery/cooldown, damage):
 
 | Move | Timing (s) | Damage | Shape |
 |---|---|---|---|
-| Chop | .42 / .14 / .12 / .50, cooldown 1.8 | 26 | 2.3 x 2.1 box in front |
-| Spin | .45 / .15 / 1.0 / .65, cooldown 5 | 20 | 1.65 radius, slow advance |
-| Throw & Recall | .40 / .15 / flight / .35, cooldown 4.5 | 18 per pass | straight out up to 12, .25 s hold, back along the same line |
+| Chop | .42 / .14 / .12 / .50, cooldown 1.8 | 26 | one physical step, then a 2.3 x 2.1 box in front |
+| Spin | .45 / .15 / 1.0 / .65, cooldown 5 | 20 | one stationary sweep, 1.65 radius |
+| Throw & Recall | .40 / .15 / flight / .35, cooldown 4.5 | 18 per pass | straight out up to 12, .60 s hold, straight return toward the hand position at recall |
 | Boomerang | .45 / .15 / 1.6 / .40, cooldown 5.5 | 20 per pass | high arc out to the target, low arc back |
 
-Preparation tracks the target and Lock freezes the attack. The boss stands still while the axe is thrown. The AI closes in on a level target and keeps a throwing lane against a raised one. It does not yet jump onto platforms.
+Chop steps toward its locked facing. Spin plants both feet and sweeps once. The Boss can run and jump under his two Rules after releasing a straight throw. Extending the empty hand locks a new return line. Boomerang commits its high outward and low return arcs together while the Boss stays in place. The AI favors Spin at point-blank range, Chop just outside it, a straight throw against a level target in reach and Boomerang across a height difference.
 
 **Boss Rules:** The axe wielder runs the player's `ConditionalController` with a player-valid loadout, delayed public target observations and his own motor. The current two rows are Incoming Attack (Ranged) → Jump and Horizontal Enemy Distance (Far) → Move (Toward Enemy). Jump requests another grounded jump whenever the condition still holds. His combat AI chooses Chop, Spin, Throw & Recall and Boomerang. The Boss sidebar shows the ordinary action names and parameters from the shared catalog. Both panels seal and withdraw during the phase change.
 
-**Invasions (stage 5, implemented):** at 75%, 50% and 25% of the first pool, the Boss finishes his current move and lands. He then stands invulnerable for 1.8 s (`Enemy.Invulnerable`), holds the axe overhead and sends a flickering signal into the player. At 1.4 s, `FinalBossInvasion` draws one rule at random from the 203 legal one-condition/one-action rules in the editor catalog. The rule is appended after the player's last rule in a fight-only copy of the loadout, beyond the five-rule cap, and the rules are rebound. The new card pulses for 1.6 s. Thresholds crossed by one hit queue their invasions one after another. Rebinding resets the event state of the player's existing rules once per invasion. The equipped loadout is never modified, so Retry and Configuration start without invaded rules.
+**Invasions:** at 66% and 33% of the first pool, the Boss finishes his current move and lands. He lifts the axe in one hand and channels a violet pulse while invulnerable for 1.8 s. At 1.4 s the pulse reaches the player and `FinalBossInvasion` draws one random legal rule. The rule is appended after the player's last rule in a fight-only copy of the loadout, beyond the five-rule cap, and the rules are rebound. When the channel ends, Happy says “UNAUTHORIZED ACCESS DETECTED.” Combat freezes and the new card stays highlighted until the recording finishes and the player clicks. Thresholds crossed by one hit queue their invasions one after another. Rebinding resets the event state of the player's existing rules once per invasion. The equipped loadout is never modified, so Retry and Configuration start without invaded rules.
 
 After Wave 3 victory, the Boss voices the two Bonus offer lines. Yes leads to Bonus preparation, No to the menu. The duo retains its geometry, music, AI and both-dead victory. Wave 3 and Bonus are outside the closed Wave 2 metrics record.
 
@@ -29,7 +29,7 @@ Thomas accepted this design for trial on 2026-11-06. All nine stages were implem
 
 **Premise.** The Final Boss trusts AI more than the player does. He fights with Rules and can write rules into the player's system. After losing the first phase, he disables the arena’s circuitry and fights with the axe in hand.
 
-**Entry.** Mission 3 preparation offers Test Loadout. Start Mission fades into the arena and starts the three-second countdown into phase one.
+**Entry.** Mission 3 preparation offers Test Loadout. Start Mission fades into the arena, plays the Boss opening line and starts the three-second countdown when the player advances.
 
 ### Phase 1 — Rainbow Axeman
 
@@ -38,9 +38,9 @@ Thomas accepted this design for trial on 2026-11-06. All nine stages were implem
 - **Axe:** chop, spin, straight throw and recall, and an arcing boomerang. All attacks keep the established tell style. More moves will be added later.
 - **Retired:** Walker's 2x Swordsman body, sword specials and platform destruction.
 
-**F8 tuning.** Under Waves, Start Phase 1 and Start Phase 2 start fresh encounters at the countdown. The Final Boss tuning tab selects an axe move available in the chosen phase and adjusts its wind-up, recovery, cooldown and damage. An attack snapshots these values when accepted. Try selected move closes F8 and requests the move at its next legal opportunity. Current HP targets the active pool. The 75%, 50% and 25% controls set phase-one HP so the normal invasion checks can run. Tuning lives for this game session and Restore defaults resets it.
+**F8 tuning.** Under Waves, Start Phase 1 and Start Phase 2 start fresh encounters at the selected phase. The Final Boss tuning tab selects an axe move available in the chosen phase and adjusts its wind-up, recovery, cooldown and damage. An attack snapshots these values when accepted. Try selected move closes F8 and requests the move at its next legal opportunity. Current HP targets the active pool. The 66% and 33% controls set phase-one HP so the normal invasion checks can run. Tuning lives for this game session and Restore defaults resets it.
 
-**Invasions.** At 75%, 50% and 25% phase-one health, the Boss stops, becomes invulnerable and plays an invasion animation. Each invasion appends one random legal Condition → Action rule to the end of the player's fight rules, even beyond the 5-rule cap. The equipped loadout is never modified, so Retry and Configuration discard invaded rules. Invasions are Boss abilities, not Boss rules.
+**Invasions.** At 66% and 33% phase-one health, the Boss stops, becomes invulnerable and plays an invasion animation. Each invasion appends one random legal Condition → Action rule to the end of the player's fight rules, even beyond the 5-rule cap. The equipped loadout is never modified, so Retry and Configuration discard invaded rules. Invasions are Boss abilities, not Boss rules.
 
 ### Transition — electromagnetic pulse
 

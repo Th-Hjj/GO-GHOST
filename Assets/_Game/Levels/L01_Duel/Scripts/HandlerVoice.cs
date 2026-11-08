@@ -26,25 +26,28 @@ namespace GoGhost.Duel
         int dialogueFrame;
         float revealStart, revealDuration;
         bool revealed;
+        bool realtimeReveal;
+        float RevealClock => realtimeReveal ? Time.unscaledTime : Time.time;
         internal int VisibleCharacters => PendingDialogue == null || revealed ? int.MaxValue :
-            Mathf.FloorToInt(PendingDialogue.Length * Mathf.Clamp01((Time.time - revealStart) / revealDuration));
+            Mathf.FloorToInt(PendingDialogue.Length * Mathf.Clamp01((RevealClock - revealStart) / revealDuration));
         internal bool DialogueReady => PendingDialogue != null && VisibleCharacters >= PendingDialogue.Length;
 
-        internal void WaitForClick(string text, Action advance = null)
+        internal void WaitForClick(string text, Action advance = null, bool realtime = false)
         {
             PendingDialogue = text;
             dialogueFrame = Time.frameCount;
-            revealStart = Time.time;
+            realtimeReveal = realtime;
+            revealStart = RevealClock;
             revealDuration = Speaking ? Mathf.Max(.15f, speaker.clip.length - .2f) : Mathf.Max(.2f, text.Length / 30f);
             revealed = false;
             afterDialogue = advance;
         }
 
-        internal void SpeakDialogue(string key, Action advance = null)
+        internal void SpeakDialogue(string key, Action advance = null, bool realtime = false)
         {
             if (key == "Handler/TutorialIntro3") SpeakerName = "Happy";
             PlayLine(key);
-            WaitForClick(VoiceStudioCatalog.Current.Find(key).text, advance);
+            WaitForClick(VoiceStudioCatalog.Current.Find(key).text, advance, realtime);
         }
 
         internal void Acknowledge(bool waitForVoice)

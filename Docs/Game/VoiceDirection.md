@@ -68,7 +68,7 @@ The [voice catalog](../../Assets/_Game/Levels/L01_Duel/Resources/VoiceStudioCata
 | Final Boss · phase change | The Boss kneels after his first health pool is spent. | Three voiced sentences wait for individual clicks. The third click releases the EMP. |
 | Final Boss · Bonus offer | Wave 3 victory starts the two Bonus lines. | A click after each line advances. The last click reveals Yes / No. |
 
-The three lines are “You're strong.”, “But it's not over yet.” and “Let’s see what you can do on your own.” Mission 3 enters through the ordinary countdown. Happy’s interrupted “E.M...” uses `Handler/EMP` inside that animation.
+The three lines are “You're strong.”, “But it's not over yet.” and “Let’s see what you can do on your own.” Mission 3 phase one plays `FinalBossVoice/PhaseOneOpening` before the countdown. At the end of each invasion, `Handler/InvasionWarning` plays over frozen combat. A click after playback resumes the fight. Happy’s interrupted “E.M...” uses `Handler/EMP` inside that animation.
 
 Pause/F8 follows the game's audio pause. Preserve the active phase, input permissions and metrics boundary when changing a recording. Check [the progression and script](BossEncounters.md), [voice playback](../../Assets/_Game/Levels/L01_Duel/Scripts/HandlerVoice.cs), [nickname generation](../../Assets/_Game/Levels/L01_Duel/Scripts/HandlerSpeech.cs) and [Final Boss page routing](../../Assets/_Game/Levels/L01_Duel/Scripts/DuelGame.Progression.cs) for implementation details.
 

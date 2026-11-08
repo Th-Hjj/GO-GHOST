@@ -4,9 +4,8 @@ using UnityEngine;
 namespace GoGhost.Duel
 {
     // Final Boss phase-one axe kit (Thomas, 2026-11-06 trial; tuning values are provisional).
-    // The boss's own operating AI chooses between four telegraphed moves. Boss Rules (stage 4)
-    // call TryStart before this AI. One clock drives pose, tells, damage and the public threats
-    // that player rules observe. Preparation tracks the target; Lock freezes the attack.
+    // Rules drive free movement; the combat AI commits the axe. Tells and public threats
+    // use the same attack geometry as the hit checks.
     public sealed class FinalBossAxe
     {
         public enum Move { None, Chop, Spin, Throw, Boomerang }
@@ -35,11 +34,11 @@ namespace GoGhost.Duel
         Timing acceptedTiming;
 
         public const float ChopReach = 2.3f, ChopHeight = 2.1f, SpinRadius = 1.65f, AxeRadius = .38f;
-        const float ThrowSpeed = 15, RecallSpeed = 17, ThrowHold = .25f, ThrowRange = 12, SpinMove = .45f;
+        const float ThrowSpeed = 15, RecallSpeed = 17, ThrowHold = .60f, ThrowRange = 12, SpinMove = .45f;
+        const float ChopStep = .55f, CatchSeconds = .14f;
         const int BoomerangSamples = 25;
         const int AttackIdBase = 100000;
-        // Three invasions at these phase-one health fractions; the rule lands near the end of the animation.
-        static readonly float[] InvasionThresholds = { .75f, .50f, .25f };
+        internal static readonly int[] InvasionPercents = { 66, 33 };
         public const float InvasionDuration = 1.8f, InvasionInject = 1.4f;
 
         readonly BossAgent actor;
@@ -47,13 +46,19 @@ namespace GoGhost.Duel
         readonly System.Func<ConditionalRule> onInvasion;
         internal Move PreviewMove { get; set; }
         float invasionAt;
+        int invasionsDue;
         bool invasionInjected;
         readonly Collider2D playerBody;
         readonly float[] readyAt = new float[5];
         readonly List<Vector2> path = new List<Vector2>(BoomerangSamples);
         float phaseAt, phaseUntil, activeAt, activeEnds, nextDecisionAt, transitionUntil;
         float throwOut, throwBack, lockedFacing = 1;
-        Vector2 previousAxe, spinCentre;
+        Vector2 previousAxe;
+        public bool RecallLocked { get; private set; }
+        public Vector2 RecallPoint { get; private set; }
+        float recallAt, recallHitEnds, previousFlightAt, sweptDegrees;
+        public bool ThrowAtFarEnd => Current == Move.Throw && AxeFlying && Time.time >= activeAt + throwOut;
+        public bool RecallInFlight => RecallLocked && Time.time < recallHitEnds;
         bool hitDone, outHit, backHit;
         int attackId = AttackIdBase;
 
@@ -97,7 +102,13 @@ namespace GoGhost.Duel
         public void Tick()
         {
             // Phase two seals the Boss's rules together with the player's.
-            if (TickTransition()) return;
+            if (!PhaseTwo && !Transitioning)
+            {
+                while (invasionsDue < InvasionPercents.Length &&
+                    (long)actor.Health.CurrentHealth * 100 <= (long)actor.Health.MaxHealth * InvasionPercents[invasionsDue])
+                    invasionsDue++;
+            }
+            if (Invasions >= invasionsDue && TickTransition()) return;
             if (!RulesSealed) Rules.ObserveBossRules();
             if (TickInvasion()) return;
             if (Current != Move.None) { TickMove(); return; }
@@ -115,34 +126,39 @@ namespace GoGhost.Duel
                 if (seen.Confidence <= .1f) { actor.Motor.Brake(); return; }
                 Vector2 delta = seen.Position - actor.Position;
                 float gap = Mathf.Abs(delta.x);
-                if (Mathf.Abs(delta.y) < 1.4f && Time.time >= nextDecisionAt && Decide(gap, true)) return;
+                if (Mathf.Abs(delta.y) < 1.4f && Time.time >= nextDecisionAt &&
+                    (gap < 2.5f && TryStart(Move.Chop) || gap < 2.2f && TryStart(Move.Spin))) return;
                 actor.Motor.SetMove(gap > 1.1f ? Mathf.Sign(delta.x) : 0);
                 if (delta.y > 1.4f && gap < 2.6f && actor.Motor.Grounded) actor.Motor.TryJump();
                 return;
             }
             var controls = Rules.ResolveBossLocomotion();
-            if (controls.Jump && controls.JumpOwned) return;
+            if (controls.Jump && controls.JumpOwned)
+            {
+                if (!controls.MovementOwned) actor.Motor.Brake();
+                return;
+            }
             var facts = actor.Perception.Facts;
             if (facts.Confidence <= .1f) { actor.Motor.Brake(); return; }
             Vector2 target = facts.Position, position = actor.Position;
             float dx = target.x - position.x, distance = Mathf.Abs(dx);
             bool level = Mathf.Abs(target.y - position.y) < 1.4f;
-            if (PreviewMove == Move.None && Time.time >= nextDecisionAt && Decide(distance, level)) return;
+            if (PreviewMove == Move.None && Time.time >= nextDecisionAt && ChoosePhaseOneAttack(target, level)) return;
             // Close in on a level target; keep a throwing lane on a raised one.
             if (controls.MovementOwned) return;
             if (level) actor.Motor.SetMove(distance > 2.0f ? Mathf.Sign(dx) : 0);
             else actor.Motor.SetMove(distance < 3f ? -Mathf.Sign(dx) : distance > 6f ? Mathf.Sign(dx) : 0, .7f);
         }
 
-        bool Decide(float distance, bool level)
+        bool ChoosePhaseOneAttack(Vector2 target, bool level)
         {
-            if (level && distance < 2.5f && TryStart(Move.Chop)) return true;
-            if (level && distance < 2.2f && TryStart(Move.Spin)) return true;
-            if (PhaseTwo) return false;
-            if (distance >= 6.5f && TryStart(Move.Boomerang)) return true;
-            if ((distance >= 3.5f || !level) && TryStart(Move.Throw)) return true;
+            Vector2 delta = target - actor.Position;
+            float distance = Mathf.Abs(delta.x);
+            if (level && distance <= SpinRadius + .25f && TryStart(Move.Spin)) return true;
+            if (level && distance <= ChopReach + ChopStep && delta.x * actor.Facing >= 0 && TryStart(Move.Chop)) return true;
             if (!level && TryStart(Move.Boomerang)) return true;
-            return false;
+            float targetRange = Vector2.Distance(Hand(), target);
+            return distance >= ChopReach && targetRange < ThrowRange - AxeRadius && TryStart(Move.Throw);
         }
 
         public bool TryStart(Move move)
@@ -156,6 +172,8 @@ namespace GoGhost.Duel
             timing.Damage = tuning.Damage;
             acceptedTiming = timing;
             Current = move; attackId++; Started[(int)move]++;
+            RecallLocked = false;
+            sweptDegrees = 0;
             hitDone = outHit = backHit = false; AxeFlying = false;
             readyAt[(int)move] = Time.time + timing.Cooldown;
             actor.Motor.HoldHorizontal();
@@ -176,13 +194,22 @@ namespace GoGhost.Duel
             if (Phase == Stage.Prepare)
             {
                 TrackTarget(); PlanActiveWindow();
-                if (Time.time >= phaseUntil) { SetPhase(Stage.Locked, timing.Lock); actor.Sounds?.Play(Sfx.ReturnPrepare, actor.ActorId, attackId); }
                 actor.Motor.HoldHorizontal();
+                if (Time.time >= phaseUntil)
+                {
+                    SetPhase(Stage.Locked, timing.Lock);
+                    actor.Sounds?.Play(Sfx.ReturnPrepare, actor.ActorId, attackId);
+                    if (!PhaseTwo && Current == Move.Chop)
+                    {
+                        actor.Motor.BeginStep(ChopStep);
+                        actor.Motor.SetMove(lockedFacing);
+                    }
+                }
                 return;
             }
             if (Phase == Stage.Locked)
             {
-                actor.Motor.HoldHorizontal();
+                if (PhaseTwo || Current != Move.Chop) actor.Motor.HoldHorizontal();
                 if (Time.time >= phaseUntil) Activate();
                 return;
             }
@@ -195,8 +222,9 @@ namespace GoGhost.Duel
         {
             Phase = Stage.Active; activeAt = Time.time; PlanActiveWindow();
             SetPhase(Stage.Active, activeEnds - activeAt);
-            spinCentre = actor.Position;
+            actor.Motor.HoldHorizontal();
             previousAxe = path.Count > 0 ? path[0] : actor.Position;
+            previousFlightAt = activeAt;
             actor.Sounds?.Play(Current == Move.Chop ? Sfx.BladeHeavy : Sfx.BladeLight, actor.ActorId, attackId);
         }
 
@@ -210,21 +238,30 @@ namespace GoGhost.Duel
                     if (!hitDone && ChopArea().Intersects(PlayerBounds())) hitDone = Strike(damage);
                     break;
                 case Move.Spin:
-                    float toward = actor.Player != null ? Mathf.Sign(actor.Player.transform.position.x - actor.Position.x) : 0;
-                    actor.Motor.SetMove(toward, SpinMove);
-                    AxeSpin = ActiveProgress * 360f * 3f;
-                    if (!hitDone && PlayerBounds().SqrDistance(actor.Position) <= SpinRadius * SpinRadius) hitDone = Strike(damage);
+                    if (PhaseTwo)
+                    {
+                        float toward = actor.Player != null ? Mathf.Sign(actor.Player.transform.position.x - actor.Position.x) : 0;
+                        actor.Motor.SetMove(toward, SpinMove);
+                        AxeSpin = ActiveProgress * 360f * 3f;
+                        if (!hitDone && PlayerBounds().SqrDistance(actor.Position) <= SpinRadius * SpinRadius) hitDone = Strike(damage);
+                    }
+                    else SweepPhaseOne(damage);
                     break;
                 case Move.Throw:
                 case Move.Boomerang:
-                    actor.Motor.HoldHorizontal();
+                    if (Current == Move.Throw) TickThrowLocomotion();
+                    else actor.Motor.HoldHorizontal();
                     AxeFlying = true;
                     Vector2 axe = AxeAt(Time.time, out bool returning);
-                    AxePosition = axe; AxeSpin -= Time.deltaTime * 900f * lockedFacing;
+                    AxePosition = RecallLocked && Time.time > recallHitEnds
+                        ? Vector2.Lerp(RecallPoint, Hand(), (Time.time - recallHitEnds) / CatchSeconds) : axe;
+                    AxeSpin -= Time.deltaTime * 900f * lockedFacing;
                     bool alreadyHit = returning ? backHit : outHit;
-                    if (!alreadyHit && SweptHit(previousAxe, axe))
+                    bool movingBlade = Current != Move.Throw || (returning ? previousFlightAt < recallHitEnds : previousFlightAt < activeAt + throwOut);
+                    if (movingBlade && !alreadyHit && SweptHit(previousAxe, axe))
                     { if (Strike(damage)) { if (returning) backHit = true; else outHit = true; } }
                     previousAxe = axe;
+                    previousFlightAt = Time.time;
                     break;
             }
             if (Time.time >= activeEnds)
@@ -233,6 +270,43 @@ namespace GoGhost.Duel
                 if (Current == Move.Spin) actor.Motor.HoldHorizontal();
                 SetPhase(Stage.Recovery, acceptedTiming.Recovery);
             }
+        }
+
+        void SweepPhaseOne(int damage)
+        {
+            actor.Motor.HoldHorizontal();
+            float end = ActiveProgress * 360f;
+            AxeSpin = 180f - end;
+            // Sweep between displayed poses even when a rendered frame crosses the player.
+            int samples = Mathf.Max(1, Mathf.CeilToInt((end - sweptDegrees) / 8f));
+            var target = PlayerBounds();
+            target.Expand(.24f);
+            for (int i = 0; i <= samples && !hitDone; i++)
+            {
+                float angle = (180f - Mathf.Lerp(sweptDegrees, end, i / (float)samples)) * Mathf.Deg2Rad;
+                var ray = new Ray(actor.Position, new Vector2(lockedFacing * Mathf.Cos(angle), Mathf.Sin(angle)));
+                if (target.IntersectRay(ray, out float along) && along <= SpinRadius) hitDone = Strike(damage);
+            }
+            sweptDegrees = end;
+        }
+
+        void TickThrowLocomotion()
+        {
+            if (!RecallLocked && Time.time < activeAt + throwOut + ThrowHold)
+            {
+                var controls = Rules.ResolveBossLocomotion();
+                if (!controls.MovementOwned) actor.Motor.HoldHorizontal();
+                return;
+            }
+            actor.Motor.HoldHorizontal();
+            if (RecallLocked) return;
+            RecallLocked = true;
+            RecallPoint = Hand();
+            recallAt = Time.time;
+            throwBack = Mathf.Max(.01f, Vector2.Distance(path[1], RecallPoint) / RecallSpeed);
+            recallHitEnds = recallAt + throwBack;
+            phaseUntil = activeEnds = recallHitEnds + CatchSeconds;
+            actor.Sounds?.Play(Sfx.ReturnPrepare, actor.ActorId, attackId);
         }
 
         void Finish()
@@ -257,13 +331,13 @@ namespace GoGhost.Duel
             if (!Invading)
             {
                 var health = actor.Health;
-                if (Invasions >= InvasionThresholds.Length || Current != Move.None || PhaseTwo || health.PhaseIndex != 1
-                    || health.AwaitingSecondPhase || !actor.Motor.Grounded) return false;
-                if ((float)health.CurrentHealth / health.MaxHealth > InvasionThresholds[Invasions]) return false;
+                if (Invasions >= invasionsDue || Current != Move.None || PhaseTwo || health.PhaseIndex != 1) return false;
+                if (!actor.Motor.Grounded) { actor.Motor.Brake(); return true; }
                 Invading = true; invasionInjected = false; invasionAt = Time.time;
                 health.Invulnerable = true;
                 actor.Motor.HoldHorizontal();
-                if (actor.Player != null) actor.Face((Vector2)actor.Player.transform.position - actor.Position);
+                var observed = actor.Perception.Facts;
+                if (observed.Visible) actor.Face(observed.Position - actor.Position);
                 lockedFacing = actor.Facing;
                 actor.Sounds?.Play(Sfx.Glitch, actor.ActorId);
                 actor.Trace($"invasion {Invasions + 1} begins");
@@ -279,6 +353,7 @@ namespace GoGhost.Duel
             Invading = false; Invasions++;
             actor.Health.Invulnerable = false;
             nextDecisionAt = Time.time + .3f;
+            if (LastInvasion != null) game.ReviewInvadedRule();
             return true;
         }
 
@@ -367,9 +442,9 @@ namespace GoGhost.Duel
             if (Current == Move.Throw && path.Count == 2)
             {
                 if (t <= throwOut) return Vector2.Lerp(path[0], path[1], t / Mathf.Max(.001f, throwOut));
-                if (t <= throwOut + ThrowHold) return path[1];
+                if (!RecallLocked) return path[1];
                 returning = true;
-                return Vector2.Lerp(path[1], path[0], (t - throwOut - ThrowHold) / Mathf.Max(.001f, throwBack));
+                return Vector2.Lerp(path[1], RecallPoint, (time - recallAt) / throwBack);
             }
             if (path.Count < 2) return Hand();
             float f = Mathf.Clamp01(t / Mathf.Max(.001f, activeEnds - activeAt)) * (path.Count - 1);
@@ -382,9 +457,12 @@ namespace GoGhost.Duel
         public Bounds ChopArea() => new Bounds(actor.Position + new Vector2(lockedFacing * ChopReach * .5f, .05f), new Vector3(ChopReach, ChopHeight, 1));
         Bounds SpinArea()
         {
-            float travel = actor.Motor.Profile.Speed * SpinMove * Timings[(int)Move.Spin].Active;
             var area = new Bounds(actor.Position, new Vector3(SpinRadius * 2, SpinRadius * 2, 1));
-            area.Encapsulate(new Bounds(actor.Position + Vector2.right * lockedFacing * travel, area.size));
+            if (PhaseTwo)
+            {
+                float travel = actor.Motor.Profile.Speed * SpinMove * Timings[(int)Move.Spin].Active;
+                area.Encapsulate(new Bounds(actor.Position + Vector2.right * lockedFacing * travel, area.size));
+            }
             return area;
         }
         Bounds PlayerBounds() => playerBody != null ? playerBody.bounds : new Bounds(Vector3.one * 9999, Vector3.zero);
@@ -426,7 +504,7 @@ namespace GoGhost.Duel
             if (Current == Move.Throw)
             {
                 AddSegment(output, threat, path[0], path[1], activeAt, activeAt + throwOut);
-                AddSegment(output, threat, path[1], path[0], activeAt + throwOut + ThrowHold, activeEnds);
+                if (RecallLocked) AddSegment(output, threat, path[1], RecallPoint, recallAt, recallHitEnds);
                 return;
             }
             float step = (activeEnds - activeAt) / (path.Count - 1);

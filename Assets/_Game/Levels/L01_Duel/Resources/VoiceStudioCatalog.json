@@ -20,6 +20,18 @@
   "openingDelay": 0.3,
   "lines": [
     {
+      "key": "FinalBossVoice/PhaseOneOpening",
+      "label": "Mission 3 · Phase one opening",
+      "text": "So you think you're the only one with AI in your head.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionWarning",
+      "label": "Mission 3 · Rule invasion complete",
+      "text": "UNAUTHORIZED ACCESS DETECTED.",
+      "locked": false
+    },
+    {
       "key": "Handler/WhoAreYou",
       "label": "Character creation",
       "text": "Who are you?",

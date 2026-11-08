@@ -139,10 +139,10 @@ namespace GoGhost.Duel
             AddDeveloperField("FinalBossHP","Final Boss current HP",-217,1,10000,10,
                 ()=>game.GetDeveloperHealth(2,out int hp,out _)?hp:0, v=>game.SetDeveloperHealth(2,Mathf.RoundToInt(v)),
                 ()=>game.Wave==DuelGame.FinalBossWave && game.GetDeveloperHealth(2,out _,out _),true);
-            for (int i=0;i<3;i++)
+            for (int i=0;i<FinalBossAxe.InvasionPercents.Length;i++)
             {
-                int percent = 75-25*i;
-                var jump = Button(percent+"% HP", page, new Vector2(-300+300*i,-282), new Vector2(260,48), () =>
+                int percent = FinalBossAxe.InvasionPercents[i];
+                var jump = Button(percent+"% HP", page, new Vector2(-150+300*i,-282), new Vector2(260,48), () =>
                 {
                     if (game.GetDeveloperHealth(2,out _,out int max)) game.SetDeveloperHealth(2,max*percent/100);
                     RefreshDeveloperFields();

@@ -6,6 +6,12 @@ The left office facade is now the approved showroom. Two softly lit glass entran
 
 Both plates retain their GUIDs, dimensions, 60% opacity and existing parallax. The right hotel pixels match the previous far plate. Static composite of the imported textures: `Logs/ParallaxPreview/CasinoShowroom/Mission-2-Showroom-60.png`. No gameplay test or build was run for this change.
 
+## 2026-11-07 — Final Boss phase one trial
+
+Mission 3 opens with a voiced Boss line before the countdown. The phase-one axe now takes a physical step for Chop, sweeps once from a planted stance, and locks the straight recall separately from its throw. The two visible Rules can move the empty-handed Boss before recall. Boomerang keeps its fixed arc.
+
+At 660 and 330 HP, the Boss raises the axe one-handed. A violet pulse reaches the player and appends a random legal rule at 1.4 s. At 1.8 s combat freezes while Happy voices the warning. A fresh click after playback resumes the fight. F8 has both threshold shortcuts. Both new recordings use the project Voice Studio voices. Compilation, Play Mode, listening review and builds were not run at Thomas’s request.
+
 ## 2026-11-07 — Pose-only takeoff and landing
 
 Replaced foot flakes and the Boss landing spark with the approved pose A. Player and Boss movement report the actual launch and landing. The shared pose extends the pushing leg, draws it back and bends the knees on impact. Incoming descent relative to moving support determines the depth of the crouch. Gunner, Swordsman, both Final Boss phases and the Bonus pair use their existing silhouette rigs. Attack-specific weapon poses and the Final Boss transition kneel retain priority.

@@ -44,6 +44,11 @@ public static partial class BossEncounterSmoke
             Require(game.Phase == DuelPhase.Configure, "Test Loadout did not return to preparation");
             Click("StartMission");
             yield return WaitFor(() => game.Phase != DuelPhase.MissionEntry, "Mission entrance did not finish");
+            if (wave == DuelGame.FinalBossWave)
+            {
+                Require(game.PendingDialogue == "So you think you're the only one with AI in your head.", "Missing Mission 3 opening");
+                yield return WaitFor(() => game.PendingDialogue == null, "Mission 3 opening did not advance", 15);
+            }
             Require(game.Phase == DuelPhase.Prepare && game.PendingDialogue == null, "Missing direct pre-fight countdown");
             yield return WaitFor(() => game.Phase == DuelPhase.Fight, "Combat did not start");
             game.Player.IsInvulnerable = true;
@@ -62,7 +67,7 @@ public static partial class BossEncounterSmoke
         }
 
         foreach (var line in new[] { "You're strong.", "But it's not over yet.", "Let’s see what you can do on your own." })
-            yield return WaitFor(() => game.CutsceneText == line && game.PendingDialogue == line, "Missing kneeling dialogue: " + line);
+            yield return WaitFor(() => game.CutsceneText == line && game.PendingDialogue == line, "Missing kneeling dialogue: " + line, 25);
         yield return WaitFor(() => game.CutsceneSpeakerId == DuelGame.CutsceneSpeaker.Happy, "Missing interrupted EMP warning");
         yield return WaitFor(() => game.Bosses[0].Axe.PhaseTwo, "Phase two did not start", 30);
         game.Bosses[0].Health.TakeDamage(100000, game.Player.gameObject);

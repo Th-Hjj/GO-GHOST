@@ -16,6 +16,42 @@ namespace GoGhost.Duel
         // DraftLoadout is never modified, so Retry and Configuration discard invaded rules.
         ConditionalLoadout invadedLoadout;
         public int InvadedRuleCount { get; private set; }
+        internal bool BossOpening { get; private set; }
+        internal bool InvasionReview { get; private set; }
+
+        void SpeakPhaseOneOpening()
+        {
+            BossOpening = true;
+            handler.SpeakDialogue("FinalBossVoice/PhaseOneOpening", () =>
+            {
+                BossOpening = false;
+                ui.Show();
+            });
+            ui.Show();
+        }
+
+        internal void ReviewInvadedRule()
+        {
+            if (Phase != DuelPhase.Fight || Player == null || Player.IsDead) return;
+            InvasionReview = true;
+            ApplyPause(Paused);
+            handler.SpeakDialogue("Handler/InvasionWarning", () =>
+            {
+                InvasionReview = false;
+                ApplyPause(Paused);
+                input?.SuppressUiFireUntilRelease();
+                ui.Show();
+            }, realtime: true);
+            ui.Show();
+        }
+
+        void ClearPhaseOneDialogue()
+        {
+            if (!BossOpening && !InvasionReview) return;
+            BossOpening = InvasionReview = false;
+            handler.Stop();
+            ApplyPause(Paused);
+        }
         BossAgent CreateFinalBoss(float spawnX)
         {
             var instance = Instantiate(swordsmanPrefab, new Vector3(spawnX, swordsmanSpawn.y, 0), Quaternion.identity, encounter.transform);

@@ -196,12 +196,18 @@ namespace GoGhost.Duel
             }
             if (axe.Invading)
             {
-                // Invasion: axe held overhead, free hand reaching toward the player.
-                float reach = Ease(Mathf.Clamp01(axe.InvasionProgress / .2f));
+                float progress = axe.InvasionProgress;
+                float reach = Ease(Mathf.Clamp01(progress / .20f)) * (1 - Ease(Mathf.InverseLerp(.82f, 1, progress)));
                 p.WeaponAngle = Mathf.Lerp(72, 95, reach);
                 p.FrontHand = Vector2.Lerp(p.FrontHand, new Vector2(-.06f, .58f), reach);
-                p.BackHand = Vector2.Lerp(p.BackHand, new Vector2(.48f, .36f), reach);
+                p.BackHand = Vector2.Lerp(p.BackHand, new Vector2(-.23f, -.10f), reach);
                 p.Chest.x -= .04f * reach; p.Head.y += .02f * reach;
+                return;
+            }
+            if (!axe.PhaseTwo && axe.Current == FinalBossAxe.Move.None)
+            {
+                p.WeaponAngle = -54;
+                p.FrontHand = new Vector2(.30f, -.07f + wave * motion * .035f);
                 return;
             }
             switch (axe.Current)
@@ -211,7 +217,7 @@ namespace GoGhost.Duel
                     if (prepare || locked)
                     {
                         float raise = prepare ? t : 1;
-                        p.WeaponAngle = Mathf.Lerp(72, 158, raise);
+                        p.WeaponAngle = Mathf.Lerp(axe.PhaseTwo ? 72 : -54, 158, raise);
                         p.FrontHand = Vector2.Lerp(p.FrontHand, new Vector2(-.02f, .66f), raise);
                         p.Chest.x -= .06f * raise; p.Head.x -= .04f * raise;
                     }
@@ -221,12 +227,17 @@ namespace GoGhost.Duel
                         p.WeaponAngle = Mathf.Lerp(158, -38, cut);
                         p.FrontHand = Vector2.Lerp(new Vector2(-.02f, .66f), new Vector2(.40f, .02f), cut);
                         p.Chest.x += .12f * settle; p.Head.x += .09f * settle; p.Hip.y -= .07f * settle;
-                        if (recover) p.WeaponAngle = Mathf.Lerp(-38, 72, t);
+                        if (recover)
+                        {
+                            p.WeaponAngle = Mathf.Lerp(-38, axe.PhaseTwo ? 72 : -54, t);
+                            if (!axe.PhaseTwo) p.FrontHand = Vector2.Lerp(p.FrontHand, new Vector2(.30f, -.07f), t);
+                        }
                     }
                     p.BackHand = p.FrontHand + new Vector2(-.12f, -.06f);
                     break;
                 case FinalBossAxe.Move.Spin:
-                    p.FrontFoot.x = .36f; p.BackFoot.x = -.36f; p.Hip.y -= .08f; p.Chest.y -= .05f;
+                    p.FrontFoot.x = .36f; p.BackFoot.x = -.36f;
+                    p.Hip.y -= axe.PhaseTwo ? .08f : .15f; p.Chest.y -= axe.PhaseTwo ? .05f : .11f;
                     if (active)
                     {
                         // The whole axe sweeps a full circle around the body at arm's length.
@@ -237,7 +248,7 @@ namespace GoGhost.Duel
                     {
                         float out_ = prepare ? t : locked ? 1 : settle;
                         p.WeaponAngle = Mathf.Lerp(72, 180, out_);
-                        p.FrontHand = Vector2.Lerp(p.FrontHand, new Vector2(-.40f, .22f), out_);
+                        p.FrontHand = Vector2.Lerp(p.FrontHand, new Vector2(-.40f, axe.PhaseTwo ? .22f : .02f), out_);
                     }
                     p.BackHand = new Vector2(.30f, .20f);
                     break;
@@ -248,14 +259,16 @@ namespace GoGhost.Duel
                     if (prepare || locked)
                     {
                         float wind = prepare ? t : 1;
-                        p.WeaponAngle = Mathf.Lerp(72, overhand ? 140 : 205, wind);
-                        p.FrontHand = Vector2.Lerp(p.FrontHand, overhand ? new Vector2(-.26f, .52f) : new Vector2(-.34f, .12f), wind);
-                        p.Chest.x -= .07f * wind;
+                        p.WeaponAngle = Mathf.Lerp(-54, overhand ? 140 : 115, wind);
+                        p.FrontHand = Vector2.Lerp(p.FrontHand, overhand ? new Vector2(-.26f, .52f) : new Vector2(-.38f, .65f), wind);
+                        p.Chest.x -= (overhand ? .07f : .16f) * wind;
                     }
                     else
                     {
                         // The empty hand stays forward until the axe returns to it.
                         p.FrontHand = new Vector2(.42f, overhand ? .30f : .16f);
+                        if (overhand && active && !axe.RecallLocked)
+                            p.FrontHand = new Vector2(.18f, -.02f);
                         p.Chest.x += .08f * settle;
                         if (recover) p.WeaponAngle = Mathf.Lerp(20, 72, t);
                     }
@@ -319,23 +332,41 @@ namespace GoGhost.Duel
             sprite.transform.localScale = new Vector3(size.x / Mathf.Max(.001f, source.x), size.y / Mathf.Max(.001f, source.y), 1);
         }
 
-        // A jagged, flickering signal from the Boss's reaching hand into the player's body.
+        // A tight coil at the raised blade sends one violet trace; the receiving ring lands at the write.
         void InvasionSignal(FinalBossAxe axe)
         {
-            if (actor.Player == null || axe.InvasionProgress < .2f) return;
-            const int points = 14;
-            if (tells[1] == null) tells[1] = NewLine("InvasionSignal", true, points);
-            var line = tells[1]; line.enabled = true; line.positionCount = points;
-            Vector2 from = actor.Position + new Vector2(actor.Facing * .48f, .36f), to = actor.Player.transform.position;
-            Vector2 normal = new Vector2(-(to - from).y, (to - from).x).normalized;
-            float pulse = .55f + .45f * Mathf.Sin(clock * 38f);
-            Color color = NeuralPalette.Alpha(NeuralPalette.Primary, .45f + .5f * pulse);
-            line.startWidth = line.endWidth = .035f + .025f * pulse; line.startColor = line.endColor = color;
-            for (int i = 0; i < points; i++)
+            if (actor.Player == null) return;
+            float age = axe.InvasionProgress * FinalBossAxe.InvasionDuration;
+            Vector2 from = parts[(int)Part.Sheath].bounds.center;
+            Vector2 to = actor.Player.transform.position;
+            float charge = Mathf.SmoothStep(0, 1, Mathf.InverseLerp(.12f, .70f, age));
+            float release = Mathf.InverseLerp(FinalBossAxe.InvasionInject, FinalBossAxe.InvasionDuration, age);
+            var violet = NeuralPalette.Spine;
+            DrawInvasionRing(3, from, Mathf.Lerp(.14f,.48f,charge), .065f,
+                NeuralPalette.Alpha(violet, charge * (1-release) * .88f));
+            if (age < .55f) return;
+            float travel = Mathf.SmoothStep(0,1,Mathf.InverseLerp(.55f,FinalBossAxe.InvasionInject,age));
+            var tip = Vector2.Lerp(from,to,travel);
+            if (tells[1] == null) tells[1] = NewLine("Invasion trace", true, 2);
+            SetLine(tells[1], from, tip, .035f, NeuralPalette.Alpha(violet,(1-release)*.65f));
+            if (tells[4] == null) tells[4] = NewLine("Invasion pulse", true, 2);
+            SetLine(tells[4], Vector2.Lerp(from,tip,.82f), tip, .085f,
+                NeuralPalette.Alpha(Color.Lerp(violet, NeuralPalette.Primary, .30f), 1-release));
+            if (age >= FinalBossAxe.InvasionInject)
+                DrawInvasionRing(5,to,Mathf.Lerp(.24f,1.08f,release),.075f,NeuralPalette.Alpha(violet,1-release));
+        }
+
+        void DrawInvasionRing(int slot, Vector2 center, float radius, float width, Color color)
+        {
+            const int points = 40;
+            if (tells[slot] == null) tells[slot] = NewLine("Invasion ring", true, points);
+            var line = tells[slot];
+            line.enabled = true; line.loop = true;
+            line.startWidth = line.endWidth = width; line.startColor = line.endColor = color;
+            for (int i=0; i<points; i++)
             {
-                float t = i / (float)(points - 1);
-                float jitter = (i == 0 || i == points - 1) ? 0 : Mathf.Sin(clock * 47f + i * 2.3f) * .22f;
-                line.SetPosition(i, ClipTellPoint(Vector2.Lerp(from, to, t) + normal * jitter, line.startWidth));
+                float angle = 2*Mathf.PI*i/points;
+                line.SetPosition(i, ClipTellPoint(center + radius*new Vector2(Mathf.Cos(angle),Mathf.Sin(angle)),width));
             }
         }
 
@@ -390,6 +421,12 @@ namespace GoGhost.Duel
                     if (tells[0] == null) tells[0] = NewLine("AxePathTell", false, path.Count);
                     var line = tells[0]; line.enabled = true; line.positionCount = path.Count;
                     line.startWidth = line.endWidth = width; line.startColor = line.endColor = color;
+                    if (axe.Current == FinalBossAxe.Move.Throw && axe.ThrowAtFarEnd)
+                    {
+                        if (axe.RecallInFlight) SetLine(line, axe.AxePosition, axe.RecallPoint, width, color);
+                        else line.enabled = false;
+                        break;
+                    }
                     for (int i = 0; i < path.Count; i++) line.SetPosition(i, ClipTellPoint(path[i], width));
                     break;
                 }

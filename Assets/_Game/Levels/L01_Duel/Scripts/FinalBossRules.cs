@@ -52,7 +52,7 @@ namespace GoGhost.Duel
         internal void ObserveBossRules()
         {
             var observed = bossOwner.Perception.Facts;
-            visible[0] = observed.Confidence > .1f;
+            visible[0] = observed.Visible && observed.Confidence > .1f;
             allVisible = visible[0] ? 1 : 0;
             contacts[0].Bounds = observed.Body;
             if (visible[0]) UpdateDistance(0, Mathf.Abs(observed.Position.x - shape.bounds.center.x));

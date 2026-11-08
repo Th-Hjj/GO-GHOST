@@ -91,6 +91,7 @@ namespace GoGhost.Duel
                 if (!sidebarsSealed) hudScrollPosition = Time.time-invadedAt < CardRevealSeconds ? 0 : 1;
                 hudScrollController = hudRules;
             }
+            if (game.InvasionReview) hudScrollPosition = 0;
             BuildBossRuleHud();
 #if UNITY_EDITOR
             if(ruleHudViewSample!=null)
@@ -283,7 +284,7 @@ namespace GoGhost.Duel
             float visible = game.Phase == DuelPhase.Prepare && !sidebarsSealed
                 ? Reveal(DuelGame.PreparationSeconds - game.PreparationRemaining, ArenaRevealSeconds)
                 : 1 - SidebarFade;
-            float panel=sidebar*visible*Reveal(Time.time-firstInvadedSidebarAt,ArenaRevealSeconds);
+            float panel=sidebar*visible*Reveal(Time.unscaledTime-firstInvadedSidebarAt,ArenaRevealSeconds);
             float right=BossRulePanelWidth*visible;
             if (bossRuleSidebar != null)
                 bossRuleSidebar.anchoredPosition = new Vector2((width+BossRulePanelWidth)/2-right,0);
@@ -338,7 +339,9 @@ namespace GoGhost.Duel
                     ?row.Controller.Feedback(row.Operation,row.Row).Visual:default;
                 var color=NeuralPalette.Operation(row.Operation);
                 if(live&&!game.Paused)row.Glow.Update(f.Matched,Time.time);
-                ApplyRuleGlow(row,color,sidebarsSealed?0:Mathf.Max(live?row.Glow.Strength:0,InvasionFlash(row)));
+                float intrusion = InvasionFlash(row);
+                ApplyRuleGlow(row,Color.Lerp(color,NeuralPalette.Spine,intrusion),
+                    sidebarsSealed?0:Mathf.Max(live?row.Glow.Strength:0,intrusion));
             }
             UpdateBossRuleHud(scale);
             UpdateSealMarks();
@@ -349,13 +352,15 @@ namespace GoGhost.Duel
         {
             invadedOrder=displayOrder;
             invadedAt=Time.time;
-            if (displayOrder == 0) firstInvadedSidebarAt = invadedAt;
+            if (displayOrder == 0) firstInvadedSidebarAt = Time.unscaledTime;
         }
         const float InvadedFlashSeconds=.85f;
         float InvasionFlash(RuleRowView row)
         {
             float age = Time.time - invadedAt - CardRevealSeconds;
-            if(row.Rule==null||row.Rule.DisplayOrder!=invadedOrder||age<0||age>=InvadedFlashSeconds)return 0;
+            if(row.Rule==null||row.Rule.DisplayOrder!=invadedOrder)return 0;
+            if(game.InvasionReview)return 1;
+            if(age<0||age>=InvadedFlashSeconds)return 0;
             return 1-Mathf.SmoothStep(0,1,age/InvadedFlashSeconds);
         }
         void ApplyRuleGlow(RuleRowView row,Color color,float strength)

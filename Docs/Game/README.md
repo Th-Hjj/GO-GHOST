@@ -29,7 +29,7 @@ Each preparation page keeps the body and Rules list beside + Add Rule. Edit a ru
 
 Help provides **What're the controls?** and **What is configuration?**, preserving the current draft on return. Its pages contain brief controls and the Condition/Action definitions only. Presets and death-based unlocks are removed. Each New Game saves one independent JSON record with the character nickname; see [Gameplay Analytics](GameplayAnalytics.md).
 
-Mission 2 victory closes the playtest record. Mission 3 starts with the same three-second countdown as Missions 1 and 2. Its five-platform fight includes rule invasions and the electromagnetic transition. Phase-two defeat offers **Retry Phase 2**. Victory offers the optional duo Bonus. [Progression and dialogue](BossEncounters.md#final-boss-and-optional-bonus)
+Mission 2 victory closes the playtest record. Mission 3 phase one opens with a spoken Boss line before the three-second countdown. Its five-platform fight includes rule invasions and the electromagnetic transition. Phase-two defeat offers **Retry Phase 2**. Victory offers the optional duo Bonus. [Progression and dialogue](BossEncounters.md#final-boss-and-optional-bonus)
 
 ## Builds and Editor checks
 

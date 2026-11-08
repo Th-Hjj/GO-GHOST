@@ -381,12 +381,6 @@
       "transcribed": false
     },
     {
-      "key": "Handler/EMP",
-      "label": "Final Boss electromagnetic pulse",
-      "text": "E.M...",
-      "locked": false
-    },
-    {
       "key": "Handler/Mission1Title",
       "label": "Mission 1 · Target Profile",
       "text": "Target Profile for Mission 1",

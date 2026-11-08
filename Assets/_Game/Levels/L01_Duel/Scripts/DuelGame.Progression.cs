@@ -9,7 +9,7 @@ namespace GoGhost.Duel
         VoiceStudioLine[] DialogueLines => VoiceStudioCatalog.Current.BonusOffer;
         public int FinalBossLine { get; private set; }
         public string FinalBossDialogue => DialogueLines[FinalBossLine].text;
-        public string FinalBossDialogueSpeaker => DialogueLines[FinalBossLine].key.StartsWith("Handler/") ? "Happy" : "Final Boss";
+        public string FinalBossDialogueSpeaker => DialogueLines[FinalBossLine].key.StartsWith("Handler/") ? "Happy" : BossAgent.FinalBossName;
         public bool FinalBossChoiceReady { get; private set; }
         HandlerVoice CurrentVoice => Phase == DuelPhase.TargetProfile || Phase == DuelPhase.Training ? preparationVoice : handler;
         public string PendingDialogue => CurrentVoice.PendingDialogue;

@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-08 — GOAT of War HUD and phase change
+
+Both health pools display a horizontal rainbow under the GOAT of War name. His phase change emits three EMP fronts with one burst cue. Happy’s EMP interruption was removed from playback and the voice catalog. Compilation and Play Mode were not run at Thomas’s request.
+
 ## 2026-11-08 — Final Boss EMP rule invasions
 
 The 66% and 33% health marks announce two one-handed axe raises. Violet filaments converge above the blade, contract and burst into the EMP ring. Its first contact with the player suspends the simulation while Happy confirms the rule and reads its actual Condition and Action. Each injected card keeps its label. Dodge now uses lemon yellow, and the phase change adds a white front and a second violet ring. Both releases use the approved 3.3 s ScifiCannon edit.

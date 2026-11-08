@@ -81,7 +81,7 @@ namespace GoGhost.Duel
                 if (actor == null)
                     continue;
                 string label = actor.IsTrainingEnemy ? "DUMMY ROBOT  "
-                    : actor.IsFinalBoss ? "Final Boss  " : actor.ActorId == 1 ? "Gunner  " : "Swordsman  ";
+                    : actor.IsFinalBoss ? BossAgent.FinalBossName + "  " : actor.ActorId == 1 ? "Gunner  " : "Swordsman  ";
                 float opacity = 1;
                 if (actor.IsFinalBoss && !float.IsNegativeInfinity(bossPoolSpentAt))
                 {
@@ -113,4 +113,28 @@ namespace GoGhost.Duel
         }
 
     }
+    // Same hue range and white mix as the Boss silhouette, across the remaining HP.
+    internal sealed class RainbowHealthFill : UnityEngine.UI.Image
+    {
+        protected override void OnPopulateMesh(UnityEngine.UI.VertexHelper mesh)
+        {
+            mesh.Clear();
+            var rect = GetPixelAdjustedRect();
+            if (rect.width <= 0 || rect.height <= 0) return;
+            const float lastHue = .78f;
+            for (int i = 0; i <= 5; i++)
+            {
+                float hue = Mathf.Min(i / 6f, lastHue);
+                float x = Mathf.Lerp(rect.xMin, rect.xMax, hue / lastHue);
+                Color32 tint = Color.HSVToRGB(hue, .75f, 1);
+                mesh.AddVert(new Vector3(x, rect.yMin), tint, Vector2.zero);
+                mesh.AddVert(new Vector3(x, rect.yMax), tint, Vector2.zero);
+                if (i == 0) continue;
+                int n = i * 2;
+                mesh.AddTriangle(n - 2, n - 1, n);
+                mesh.AddTriangle(n, n - 1, n + 1);
+            }
+        }
+    }
+
 }

@@ -10,6 +10,7 @@ namespace GoGhost.Duel
     /// </summary>
     public sealed partial class BossAgent
     {
+        public const string FinalBossName = "GOAT of War";
         public bool IsFinalBoss { get; private set; }
         public FinalBossAxe Axe { get; private set; }
         float secondPhaseMoveSpeed, secondPhaseJumpSpeed, secondPhaseAirControl;

@@ -103,7 +103,7 @@ public static class PlayMetrics
     public static bool RunActive => run != null && !run.finished;
     public static bool CheckpointDue => RunActive && Time.realtimeSinceStartupAsDouble - lastSave >= 10;
     public static bool Counting => counting && Current != null;
-    public static string BossName(int wave) => wave switch { 1 => "Gunner", 2 => "Swordsman", 3 => "Final Boss", DuelGame.BonusWave => "Bonus Duo", _ => "-" };
+    public static string BossName(int wave) => wave switch { 1 => "Gunner", 2 => "Swordsman", 3 => BossAgent.FinalBossName, DuelGame.BonusWave => "Bonus Duo", _ => "-" };
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void InitializeSession()

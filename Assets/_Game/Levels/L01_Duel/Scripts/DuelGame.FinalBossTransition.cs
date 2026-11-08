@@ -14,10 +14,9 @@ namespace GoGhost.Duel
         public bool FinalBossCutscene { get; private set; }
         public CutsceneSpeaker CutsceneSpeakerId { get; private set; }
         public string CutsceneText { get; private set; }
-        internal float EmpWarningEndsAt { get; private set; }
         public string CutsceneSpeakerLabel => CutsceneSpeakerId switch
         {
-            CutsceneSpeaker.FinalBoss => "Final Boss",
+            CutsceneSpeaker.FinalBoss => BossAgent.FinalBossName,
             CutsceneSpeaker.Happy => "Happy",
             _ => ""
         };
@@ -96,15 +95,7 @@ namespace GoGhost.Duel
                     Time.time + contact * BossSilhouetteView.ShockwaveSeconds);
             }
             encounterSounds?.Play(Sfx.EmpBurst);
-            const float warningStart = .24f, warningDuration = .65f;
-            yield return new WaitForSeconds(warningStart);
-            EmpWarningEndsAt = Time.time + warningDuration;
-            Show(CutsceneSpeaker.Happy, VoiceStudioCatalog.Current.Find("Handler/EMP").text);
-            handler.PlayLine("Handler/EMP");
-            yield return new WaitForSeconds(warningDuration);
-            handler.Stop();
-            Show(CutsceneSpeaker.None, null);
-            yield return new WaitForSeconds(BossSilhouetteView.ShockwaveSeconds - warningStart - warningDuration + .35f);
+            yield return new WaitForSeconds(BossSilhouetteView.ShockwaveSeconds + .35f);
 
             StartPlatformMotion(easeIn: true);
             yield return new WaitForSeconds(1f);

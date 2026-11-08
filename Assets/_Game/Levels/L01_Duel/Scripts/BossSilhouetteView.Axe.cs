@@ -113,14 +113,20 @@ namespace GoGhost.Duel
                 foreach (var edge in empEdges) edge.color = tint;
             }
             if (shockwaveAt < 0) return;
-            float t = (Time.time - shockwaveAt) / ShockwaveSeconds;
-            if (t >= 1) { shockwaveAt = -1; if (tells[2] != null) tells[2].enabled = false; return; }
-            float radius = Mathf.Lerp(ShockwaveStartRadius, shockwaveReach, t);
-            float strength=1-Mathf.SmoothStep(0,1,(t-.62f)/.38f);
-            DrawEmpRing(2,shockwaveOrigin,radius,Mathf.Lerp(.24f,.09f,t),NeuralPalette.Alpha(NeuralPalette.Emp,strength));
-            DrawEmpRing(18,shockwaveOrigin,radius,.044f,NeuralPalette.Alpha(NeuralPalette.Primary,strength*.85f));
-            if(t>.11f) DrawEmpRing(19,shockwaveOrigin,Mathf.Lerp(ShockwaveStartRadius,shockwaveReach,(t-.11f)/.89f),
-                .19f,NeuralPalette.Alpha(NeuralPalette.Emp,strength*.52f));
+            const float spacing = .16f;
+            float age = Time.time - shockwaveAt;
+            if (age >= ShockwaveSeconds + 2 * spacing) { shockwaveAt = -1; return; }
+            for (int i = 0; i < 3; i++)
+            {
+                float t = (age - i * spacing) / ShockwaveSeconds;
+                if (t < 0 || t >= 1) continue;
+                float radius = Mathf.Lerp(ShockwaveStartRadius, shockwaveReach, t);
+                float strength = (1 - .16f * i) * (1 - Mathf.SmoothStep(0, 1, (t - .62f) / .38f));
+                DrawEmpRing(18 + i, shockwaveOrigin, radius, Mathf.Lerp(.24f, .09f, t),
+                    NeuralPalette.Alpha(NeuralPalette.Emp, strength));
+                if (i == 0)
+                    DrawEmpRing(2, shockwaveOrigin, radius, .044f, NeuralPalette.Alpha(NeuralPalette.Primary, strength * .85f));
+            }
         }
 
         void DrawEmpRing(int slot,Vector2 origin,float radius,float width,Color color)

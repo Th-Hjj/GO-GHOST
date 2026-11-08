@@ -214,7 +214,9 @@ namespace GoGhost.Duel
                 policeHealth[i]=Text("",bar,new Vector2(0,y+27),new Vector2(430,40),24,TextAlignmentOptions.Center,numericFont);
                 Image(bar,new Vector2(0,y),new Vector2(430,12),NeuralPalette.Border);
                 var color=game.Bosses[i].IsTrainingEnemy?NeuralPalette.Secondary:game.Bosses[i].Profile.Kind==BossKind.Gunner?NeuralPalette.Gunner:NeuralPalette.Swordsman;
-                policeFill[i]=Image(bar,new Vector2(-215,y),new Vector2(430,12),color);
+                policeFill[i]=game.Bosses[i].IsFinalBoss
+                    ? Rect("Rainbow health",bar,new Vector2(-215,y),new Vector2(430,12)).gameObject.AddComponent<RainbowHealthFill>()
+                    : Image(bar,new Vector2(-215,y),new Vector2(430,12),color);
                 policeFill[i].rectTransform.pivot=new Vector2(0,.5f);
                 if(game.Bosses[i].IsFinalBoss && !game.Bosses[i].Axe.PhaseTwo) BuildInvasionMarks(bar,y);
             }

@@ -14,7 +14,6 @@ namespace GoGhost.Duel
         readonly List<(RuleRowView Row, CanvasGroup Broken)> sealMarks = new();
         TMP_Text sealLabel;
         CanvasGroup sealedGroup, sealFrame;
-        CanvasGroup empCaptionEdge;
 
         public bool SidebarsSealed => sidebarsSealed;
         float SidebarFade => sidebarFadeFrom < 0 ? 0 : Reveal(Time.time - sidebarFadeFrom, sidebarFadeSeconds);
@@ -57,7 +56,7 @@ namespace GoGhost.Duel
             sealMarks.Add((row,group));
         }
 
-        void ClearSealMarks() { sealMarks.Clear(); sealLabel=null; sealedGroup=sealFrame=empCaptionEdge=null; }
+        void ClearSealMarks() { sealMarks.Clear(); sealLabel=null; sealedGroup=sealFrame=null; }
 
         CanvasGroup EmpFrame(RectTransform parent)
         {
@@ -93,8 +92,6 @@ namespace GoGhost.Duel
 
         void UpdateSealMarks()
         {
-            if(empCaptionEdge!=null)
-                empCaptionEdge.alpha=.84f*Reveal(Time.time-game.EmpWarningEndsAt+.20f,.10f);
             if (!sidebarsSealed) return;
             float age = Time.time - sealStarted;
             float dim=Reveal(age,.22f), disconnect=Reveal(age-.12f,.2f);
@@ -116,8 +113,7 @@ namespace GoGhost.Duel
             if (!game.FinalBossCutscene) return;
             if (!string.IsNullOrEmpty(game.CutsceneText))
             {
-                var box=BuildSceneCaption(hud,new Vector2(0,225),game.CutsceneSpeakerLabel,game.CutsceneText);
-                if(game.CutsceneSpeakerId==DuelGame.CutsceneSpeaker.Happy)empCaptionEdge=EmpFrame(box);
+                BuildSceneCaption(hud,new Vector2(0,225),game.CutsceneSpeakerLabel,game.CutsceneText);
             }
         }
     }

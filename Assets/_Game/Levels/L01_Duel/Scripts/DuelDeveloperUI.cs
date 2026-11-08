@@ -66,7 +66,7 @@ namespace GoGhost.Duel
             for(int wave=1;wave<=DuelGame.BonusWave;wave++)
             {
                 int target=wave;
-                string label=wave==DuelGame.BonusWave?"Bonus":wave==DuelGame.FinalBossWave?"Final Boss":"Mission "+wave;
+                string label=wave==DuelGame.BonusWave?"Bonus":wave==DuelGame.FinalBossWave?BossAgent.FinalBossName:"Mission "+wave;
                 var jump=Button(label,page,new Vector2(-495+(wave-1)*330,70),new Vector2(300,60),
                     ()=>game.JumpToDeveloperWave(target),game.Wave==wave);
                 jump.name="Dev_Wave"+wave;

@@ -38,7 +38,7 @@ At actual grip contact he reads the latest visible player observation and at mos
 
 **Invasions.** Violet question marks mark 66% and 33% of the first health pool. Each threshold queues once. The Boss completes his move, lands, dips and raises the axe overhead. At .90 s violet filaments gather above the blade. At 2.02 s the core contracts and at 2.15 s it releases the EMP ring with the 3.3 s burst recording. The player can move until the expanding ring reaches their collider. Combat then freezes in place, including projectiles and cooldowns. After .45 s the Boss appends one random legal fight-only rule beyond the equipped cap. Happy says “New Rule, Confirmed.” and reads the actual Condition and Action with parameters, highlighting each field. Combat resumes .75 s after playback ends. Each added card keeps its RULE INJECTED label. Retry and Configuration discard injected rules. If one hit crosses both marks, the two invasions run in order.
 
-The EMP release uses the 3.3 s edit of BigDino1995’s [ScifiCannon](https://freesound.org/people/BigDino1995/sounds/569903/) (CC0), with a stretched low-frequency tail and short fade. The later phase change uses the same sound, a wider white-rimmed front and a second violet ring across the platforms.
+The EMP release uses the 3.3 s edit of BigDino1995’s [ScifiCannon](https://freesound.org/people/BigDino1995/sounds/569903/) (CC0), with a stretched low-frequency tail and short fade. The later phase change uses the same sound, a wider white-rimmed front and two trailing violet rings across the platforms.
 
 After Wave 3 victory, the Boss voices the two Bonus offer lines. Yes leads to Bonus preparation, No to the menu. The duo retains its geometry, music, AI and both-dead victory. Wave 3 and Bonus are outside the closed Wave 2 metrics record.
 
@@ -65,7 +65,7 @@ Thomas accepted the original design for trial on 2026-11-06. Its nine stages rep
 
 After the first health pool is spent, the Boss lands and kneels on one knee. He says “You're strong.”, “But it's not over yet.” and “Let’s see what you can do on your own.” Each line has its own recording and click. Advancing the third line releases the EMP.
 
-1. A violet ring expands from the kneeling Boss. Happy’s “E.M...” caption briefly acquires a violet edge as her transmission cuts out.
+1. A violet ring expands from the kneeling Boss. Two additional fronts follow at .16 s intervals with one EMP burst sound.
 2. Each elevated platform picks up a thin violet rim when the wave reaches it. Once the pulse clears, all five start moving. Their subdued rims persist throughout phase two. The arena walls and floor stay neutral.
 3. A violet edge appears around the player’s visible rule sidebar. The cards lose their action colors, their arrows disconnect and **SEALED** appears under the heading. The player loses rule assistance. The sidebar fades during the countdown.
 4. The Boss’s rainbow fill and violet outline drain together. His white body holds briefly before the red eyes light.

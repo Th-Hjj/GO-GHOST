@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-08 — Anchor Vault execution
+
+Anchor Vault now owns the selected grip, pull, catch-time sighting and leaping chop. Phase-one tactics still decides when to use it. The cast locks the grip, the physical catch fixes the jump, and a successful takeoff makes the chop available to the shared hit and threat systems. A blocked pull retrieves the axe harmlessly. A failed leap after the catch leaves it in the Boss's hand.
+
+Compiled the runtime assembly with Unity 6000.6.0f1 and the Editor references. The compiler reported zero errors and 13 warnings in other files. Play Mode and manual combat verification were not run.
+
 ## 2026-11-08 — Phase-one melee, grip leap and cast tells
 
 Thomas reported scarce melee, throws that were hard to read, and a displaced axe chop aimed at an old position. Removed predicted-hit requirements from attack selection and positioning. Triple Cut commits its opening swing on spacing, then expresses only the strokes it actually follows through. Crosscut chooses a physical lane and can miss. Underpass answers an approach, and Palm favors long or cross-tier casts.

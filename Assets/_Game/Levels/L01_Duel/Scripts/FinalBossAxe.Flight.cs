@@ -88,11 +88,7 @@ namespace GoGhost.Duel
             }
             else if(p.Move==Move.AnchorVault)
             {
-                float angle=VaultGripAngle(p);
-                var start=Pivot(p.Start,f,new Vector2(.39f,.31f),angle);
-                var anchored=Pivot(p.Anchor,f,new Vector2(.38f,.34f),angle);
-                legs.Add(new FlightLeg(start,LimitFlightPoint(Vector2.Lerp(start,anchored,.36f)+Vector2.down*.44f),
-                    LimitFlightPoint(Vector2.Lerp(start,anchored,.78f)+Vector2.down*.60f),anchored,0,VaultCastTime(p),0,16,angle,angle-360));
+                legs.Add(p.Vault.Outbound);
             }
             else if(p.Move==Move.PalmDeflection)
             {

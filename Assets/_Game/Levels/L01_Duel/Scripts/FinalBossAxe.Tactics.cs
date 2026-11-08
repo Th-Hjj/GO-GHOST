@@ -11,7 +11,8 @@ namespace GoGhost.Duel
             public Move Move;
             public float Facing, FirstThreat, FinishFacing;
             public Cut Swing;
-            public Vector2 Start, Target, Landing, Anchor, Turn, Retreat;
+            public Vector2 Start, Target, Landing, Turn, Retreat;
+            public AnchorVault Vault;
             public ArenaNavigation2D.Route JumpRoute;
             public Vector2[] JumpPath;
             public BossMotionProfile JumpMotion;
@@ -306,7 +307,7 @@ namespace GoGhost.Duel
                 if(pendingResult==Move.PalmDeflection)missedPalmAim=(acceptedPlan.Target-lastStartup).normalized;
             }
             else missedUntil[move]=0;
-            if(pendingResult==Move.AnchorVault && reboundAt>=0 ||
+            if(pendingResult==Move.AnchorVault && acceptedPlan.Vault.Launched ||
                pendingResult==Move.UnderpassReturn && caught && !abortAfterCatch)pressUntil=Time.time+1.1f;
             if (pendingResult == Move.UnderpassReturn || pendingResult == Move.PalmDeflection)
             {
@@ -422,7 +423,7 @@ namespace GoGhost.Duel
             {
                 case Move.TripleCut: return true;
                 case Move.LeapingCrosscut: return PlanCrosscut(plan,facts,wind);
-                case Move.AnchorVault: return PlanVault(plan);
+                case Move.AnchorVault: return AnchorVault.TryPlan(this, plan);
                 case Move.UnderpassReturn: return PlanUnderpass(plan);
                 case Move.PalmDeflection: return PlanDeflection(plan);
                 default:return false;

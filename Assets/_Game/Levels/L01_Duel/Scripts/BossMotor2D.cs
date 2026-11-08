@@ -82,6 +82,15 @@ namespace GoGhost.Duel
         }
         public void SetMove(float direction, float speedScale = 1)
         { move = Mathf.Clamp(direction, -1, 1); this.speedScale = Mathf.Clamp01(speedScale); }
+        // Chase speed applies only to a live pursuit on one support. Authored jumps
+        // and routes retain the motion profile used to validate their trajectory.
+        internal void PursueOnGround(float direction, float speed)
+        {
+            if (!enabledCombat || !Grounded || Profile == null || DashActive || dropping) return;
+            Brake();
+            move = Mathf.Clamp(direction, -1f, 1f);
+            speedScale = Mathf.Max(0f, speed) / Mathf.Max(.01f, Profile.Speed);
+        }
         public void Brake() { route = null; routeMotion = null; stepping = false; BrakeMotion(); }
         public void HoldHorizontal()
         {
@@ -143,6 +152,7 @@ namespace GoGhost.Duel
             => SetRoute(value, null);
         public void SetRoute(ArenaNavigation2D.Route value, BossMotionProfile motion)
         {
+            speedScale = Mathf.Min(speedScale, 1f);
             route = value; routeMotion=motion; stepIndex = 0; launched = leftGround = false;
             RouteFailed = false; RouteFailure = null; RouteCompleted = value == null || value.Steps.Count == 0;
             routeAge = progressAge = 0; progressPosition = Position;
@@ -260,7 +270,8 @@ namespace GoGhost.Duel
                 footing.TakeOff(Time.fixedTime);
             }
             var motion=TraversalProfile;
-            float horizontal = dropping ? dropHorizontal : StepHorizontal(body.linearVelocity.x, move * motion.Speed * speedScale, Grounded, motion, dt);
+            float travelScale = Grounded ? speedScale : Mathf.Min(1f, speedScale);
+            float horizontal = dropping ? dropHorizontal : StepHorizontal(body.linearVelocity.x, move * motion.Speed * travelScale, Grounded, motion, dt);
             if(dropping&&fixedDropLanding)
             {
                 float remaining=dropLandingX-here.x;

@@ -126,22 +126,45 @@ namespace GoGhost.Duel
         void RedirectPalm()
         {
             redirected=true;
-            // Palm contact is the only new aim sample after release. Snapshot it here.
-            var seen=actor.Perception.Facts;
-            Vector2 target=acceptedPlan.Target;
-            if(seen.Confidence>.1f)target+=Vector2.ClampMagnitude(seen.Predict(.18f)-target,1.25f);
             var palm=flight[1].D;
             var physicalPalm=actor.Position+OrientedGrip(PalmAt)+Shaft(acceptedPlan.Facing,38)*PivotOffset;
             if(Vector2.Distance(physicalPalm,palm)>.30f)
             {abortAfterCatch=true;BeginRetrieval();return;}
-            candidateFlight.Clear();AddPalmOuter(acceptedPlan,candidateFlight,palm,target);
-            if(FlightIsClear(candidateFlight,0))
+            // The palm strike is the one deliberate redirection after release. The
+            // target may have crossed several units since the first throw. Use the
+            // new public intercept and a reachable catch instead of inheriting its old aim.
+            if(!TryRedirectPalm(palm)&&!FlightIsClear(flight,2))
+            {abortAfterCatch=true;BeginRetrieval();return;}
+            actor.Sounds?.Play(Sfx.ReturnPrepare,actor.ActorId,attackId);
+        }
+        bool TryRedirectPalm(Vector2 palm)
+        {
+            var seen=actor.Perception.Facts;
+            if(seen.Confidence<=.12f||seen.Body.size.x<=.01f)return false;
+
+            Vector2 target=PublicPosition(seen,.48f);
+            float side=acceptedPlan.Facing;
+            float front=Mathf.Clamp((target.x-palm.x)*side,.5f,8.5f);
+            target.x=palm.x+side*front;
+            target.y=Mathf.Clamp(target.y,palm.y-1.5f,palm.y+2f);
+            Vector2 start=actor.Position,initialLanding=acceptedPlan.Landing;
+            float advance=Mathf.Clamp((target.x-start.x)*side-1.4f,0f,3.25f);
+            // Try the useful forward catch first. If terrain blocks the stride,
+            // a shorter catch can still redirect the blade into the same lane.
+            for(int step=2;step>=0;step--)
             {
+                Vector2 landing=start+Vector2.right*(side*advance*step*.5f);
+                if(!SameSupportWalk(start,landing))continue;
+                acceptedPlan.Landing=landing;
+                candidateFlight.Clear();
+                AddPalmOuter(acceptedPlan,candidateFlight,palm,target);
+                if(!FlightIsClear(candidateFlight,0))continue;
                 flight.RemoveRange(2,flight.Count-2);
                 flight.AddRange(candidateFlight);
+                return true;
             }
-            else if(!FlightIsClear(flight,2)){abortAfterCatch=true;BeginRetrieval();return;}
-            actor.Sounds?.Play(Sfx.ReturnPrepare,actor.ActorId,attackId);
+            acceptedPlan.Landing=initialLanding;
+            return false;
         }
         void FlightPose(float age)
         {

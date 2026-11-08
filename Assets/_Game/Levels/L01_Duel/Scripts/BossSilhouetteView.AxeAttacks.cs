@@ -59,8 +59,11 @@ namespace GoGhost.Duel
                     crouch = .07f + .08f * Mathf.Clamp01(-direction.y);
                     if (axe.Phase == FinalBossAxe.Stage.Active || recover)
                         support = Mathf.InverseLerp(.60f, .96f, axe.ActiveTime);
-                    p.FrontFoot.x = Mathf.Lerp(p.FrontFoot.x, .34f, weight);
-                    p.BackFoot.x = Mathf.Lerp(p.BackFoot.x, -.41f, weight);
+                    // Preserve the walking legs while the body actually steps into
+                    // the warning. Plant the guard as the forward stride ends.
+                    float planted = prepare ? weight * (1 - motion) : weight;
+                    p.FrontFoot.x = Mathf.Lerp(p.FrontFoot.x, .34f, planted);
+                    p.BackFoot.x = Mathf.Lerp(p.BackFoot.x, -.41f, planted);
                     break;
                 case FinalBossAxe.Move.LeapingCrosscut:
                     lean = actor.Motor.Grounded ? .10f : .17f;

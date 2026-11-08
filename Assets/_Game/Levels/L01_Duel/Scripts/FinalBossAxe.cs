@@ -97,7 +97,10 @@ namespace GoGhost.Duel
             if(!CanStart(plan.Move))return false;
             acceptedPlan=plan;
             actor.Face(Vector2.right*plan.Facing); lockedFacing=actor.Facing;
-            actor.Motor.EndAttackMotion();
+            // Melee keeps the momentum of its approach until the wind-up ends.
+            // A throw instead winds up from a planted stance.
+            if (AdvancesDuringWindup(plan.Move)) actor.Motor.ClearRoute();
+            else actor.Motor.EndAttackMotion();
             ResetPhaseOneState();
             BuildFlight(plan,flight);
             Begin(plan.Move);
@@ -118,7 +121,7 @@ namespace GoGhost.Duel
             var def=Timings[(int)move];
             acceptedTiming=new Timing(tuning.Windup,def.Lock,def.Active,tuning.Recovery,tuning.Cooldown,tuning.Damage);
             Current=move;attackId++;Started[(int)move]++;hitDone=false;AxeFlying=false;
-            actor.Motor.HoldHorizontal();
+            if (!AdvancesDuringWindup(move) || !StepIntoWindup(move)) actor.Motor.HoldHorizontal();
             SetPhase(Stage.Prepare,acceptedTiming.Prepare);
             activeAt=phaseUntil+acceptedTiming.Lock;
             activeEnds=activeAt+acceptedTiming.Active;
@@ -133,11 +136,22 @@ namespace GoGhost.Duel
             if(Phase==Stage.Prepare)
             {
                 if(PhaseTwo)TrackPhaseTwoTarget();
-                actor.Motor.HoldHorizontal();
+                if(!AdvancesDuringWindup(Current))actor.Motor.HoldHorizontal();
                 if(Time.time>=phaseUntil)
                 {
+                    // The pose signals the move on acceptance. Its final facing,
+                    // trajectory and destination lock using the most recent public sample.
+                    if(!PhaseTwo&&TryRefreshPhaseOnePlan(Current,out var refreshed))
+                    {
+                        acceptedPlan=refreshed;
+                        actor.Face(Vector2.right*refreshed.Facing);
+                        lockedFacing=actor.Facing;
+                        BuildFlight(refreshed,flight);
+                    }
                     SetPhase(Stage.Locked,acceptedTiming.Lock);activeAt=phaseUntil;activeEnds=activeAt+acceptedTiming.Active;
-                    if(Current==Move.TripleCut)SafeStep(.45f*lockedFacing);
+                    if(Current==Move.TripleCut&&!SafeStep(.45f*lockedFacing))actor.Motor.HoldHorizontal();
+                    if(Current==Move.LeapingCrosscut)actor.Motor.HoldHorizontal();
+                    if(!PhaseTwo)UpdateFlightWarning();
                     actor.Sounds?.Play(Sfx.ReturnPrepare,actor.ActorId,attackId);
                 }
             }

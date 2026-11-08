@@ -29,21 +29,62 @@ namespace GoGhost.Duel
             consumed=stepIndex=0;launched=pulled=caught=redirected=abortAfterCatch=false;
             retrieveAt=-1;anchorCutAt=-1;path.Clear();AxeSpin=0;
         }
-        void SafeStep(float signedDistance)
+        static bool AdvancesDuringWindup(Move move) => move==Move.TripleCut || move==Move.LeapingCrosscut;
+        static float CrosscutRunIn(float forwardGap) => Mathf.Clamp(forwardGap - 3f, 0, 1.65f);
+
+        bool StepIntoWindup(Move move)
+        {
+            float forwardGap = (acceptedPlan.Target.x - actor.Position.x) * lockedFacing;
+            float stride = move==Move.LeapingCrosscut
+                ? CrosscutRunIn(forwardGap)
+                : Mathf.Clamp(forwardGap - .95f, 0, 1.15f);
+            return SafeStep(stride * lockedFacing);
+        }
+
+        bool SafeStep(float signedDistance)
         {
             if(Mathf.Abs(signedDistance)<.025f||!actor.Motor.Grounded||
-                !actor.Navigation.TrySupport(actor.Position,actor.Motor.Size,out var support))return;
+                !actor.Navigation.TrySupport(actor.Position,actor.Motor.Size,out var support))return false;
             float extent=actor.Motor.Size.x*.5f;
             float x=Mathf.Clamp(actor.Position.x+signedDistance,support.bounds.min.x+extent,support.bounds.max.x-extent);
             float dx=x-actor.Position.x;
-            if(dx*signedDistance<=0||!actor.Navigation.TryDash(actor.Position,new Vector2(x,actor.Position.y),actor.Motor.Size,out _))return;
+            if(dx*signedDistance<=0||!actor.Navigation.TryDash(actor.Position,new Vector2(x,actor.Position.y),actor.Motor.Size,out _))return false;
             actor.Motor.BeginStep(Mathf.Abs(dx));actor.Motor.SetMove(Mathf.Sign(dx));
+            return true;
+        }
+
+        Vector2 ProjectedAttackTarget(Move move, BossObservation facts, float remainingWindup)
+        {
+            var timing = Timings[(int)move];
+            float toContact;
+            switch (move)
+            {
+                case Move.TripleCut: toContact = TripleCuts[0].Duration * .5f; break;
+                case Move.LeapingCrosscut: toContact = Crosscut.Start + Crosscut.Duration * .5f; break;
+                case Move.AnchorVault: toContact = .41f; break;
+                case Move.UnderpassReturn: toContact = .53f; break;
+                default: toContact = .36f; break;
+            }
+            // Swordsman's terrain-aware prediction already includes observation age
+            // and stops extrapolating a visible Dodge after its travel interval.
+            float horizon = Mathf.Min(.86f, Mathf.Max(0,remainingWindup) + timing.Lock + toContact);
+            return PublicPosition(facts,horizon);
         }
         void ActivatePhaseOne()
         {
             lastAge=0;lastBody=actor.Position;lastPlayer=PlayerBounds().center;path.Clear();
             if(Current==Move.LeapingCrosscut)
             {
+                // The running tell can finish slightly short at an edge or against a body.
+                // Preserve the locked landing and refresh both the execution and its public forecast.
+                if(Vector2.Distance(acceptedPlan.JumpPath[0],actor.Position)>.04f)
+                {
+                    if(!actor.Navigation.TryJumpTrajectory(actor.Position,acceptedPlan.Landing,acceptedPlan.JumpMotion,
+                        actor.Motor.Size,out var route,out var samples)){RecoverPhaseOne();return;}
+                    acceptedPlan.Start=actor.Position;
+                    acceptedPlan.JumpRoute=route;
+                    acceptedPlan.JumpPath=samples;
+                }
                 if(!actor.Motor.StartCommittedJump(acceptedPlan.JumpRoute,acceptedPlan.JumpMotion)){RecoverPhaseOne();return;}
                 launched=true;
                 activeEnds=activeAt+Mathf.Max(.40f,(acceptedPlan.JumpPath.Length-1)*Time.fixedDeltaTime);

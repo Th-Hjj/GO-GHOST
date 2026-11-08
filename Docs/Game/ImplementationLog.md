@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — Phase-one pursuit against a moving player
+
+Thomas reported that sustained lateral movement left the Boss standing still. A held approach route used to skip attack selection for up to .45 seconds, and a failed site search ended in a brake. The axe now steers along connected ground using the observed player's trajectory. It can run up to 10.5 units per second to close on a retreating player, and it evaluates attack opportunities during travel. At close range it can take one supported step back to set up another attack while Triple Cut cools down.
+
+Triple Cut and Leaping Crosscut can step forward during preparation. The attack gets its last target update at lock. Palm Deflection uses the permitted palm contact to pick a fresh intercept and a reachable forward catch. The five moves retain their damage values and cooldowns.
+
+Compiled the runtime scripts with the Unity 6000.6.0f1 Roslyn compiler and Editor references. The reported encounter had no per-decision log. NOT TESTED in Play Mode or a player build.
+
 ## 2026-11-07 — Five-move Final Boss phase one
 
 Mission 3's first phase uses Triple Cut, Leaping Crosscut, Anchor Vault, Underpass Return and Palm Deflection. The Boss compares physical routes and attacks using delayed observations, clearance and the position he will occupy after the move. Missing attacks from one position encourages relocation. Losing sight of the player starts a search of reachable surfaces. In open space Palm Deflection uses a fixed brake point before the recall.

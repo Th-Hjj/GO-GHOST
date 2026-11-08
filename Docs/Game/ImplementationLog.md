@@ -2,6 +2,8 @@
 
 ## 2026-11-07 — Mission 2 casino facades
 
+Removed the marked vertical trim on the right tower and the short projecting stroke on its lower tier from the Mission 2 far plate. The static before/after at `Logs/ParallaxPreview/Mission-2-Right-Tower-Trim-Comparison.png` uses the near plate and 60% opacity. Play Mode was not run.
+
 Both casino facades continue their own upper columns and horizontal bands to ground level. The left follows the approved preview, and both lower facades carry scattered single and paired amber lights. Static composite at 60% opacity: `Logs/ParallaxPreview/Mission-2-Casino-Both-Facades-60.png`. Play Mode was not run.
 
 Mission 2 now renders both casino plates at 60% opacity. Play Mode was not run.

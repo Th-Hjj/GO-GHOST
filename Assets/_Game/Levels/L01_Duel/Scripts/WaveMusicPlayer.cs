@@ -8,10 +8,10 @@ namespace GoGhost.Duel
     public sealed class WaveMusicPlayer : MonoBehaviour
     {
         [SerializeField] AudioSource output;
-        [Tooltip("Wave 1, Wave 2, Bonus. Each retry starts the selected track from the beginning.")]
-        [SerializeField] AudioClip[] waveTracks = new AudioClip[3];
+        [Tooltip("Mission 1, Mission 2, Bonus, Mission 3 phase one. Each retry starts at the beginning.")]
+        [SerializeField] AudioClip[] waveTracks = new AudioClip[4];
         [Tooltip("Per-wave loudness trims, measured against Wave 1. Values above 1 boost quieter tracks before the independent music volume.")]
-        [SerializeField] float[] waveGains = { 1f, 1.513561f, .699842f };
+        [SerializeField] float[] waveGains = { 1f, 1.513561f, .699842f, 1.273503f };
         [SerializeField, Range(0, 1)] float musicVolume = .18f;
         [SerializeField, Min(0)] float fadeSeconds = .35f;
         float fade, targetFade, loadingSeconds;
@@ -24,7 +24,14 @@ namespace GoGhost.Duel
             if (waveTracks == null) return;
             foreach (var track in waveTracks) if (track != null) destination.Add(track);
         }
-        static int TrackIndex(int wave) => wave == DuelGame.BonusWave ? 2 : wave <= 2 ? wave - 1 : -1;
+        static int TrackIndex(int wave) => wave switch
+        {
+            1 => 0,
+            2 => 1,
+            DuelGame.BonusWave => 2,
+            DuelGame.FinalBossWave => 3,
+            _ => -1
+        };
         public float CurrentTrackGain => waveGains != null && TrackIndex(CurrentWave) >= 0 && TrackIndex(CurrentWave) < waveGains.Length
             ? Mathf.Max(0, waveGains[TrackIndex(CurrentWave)]) : 1f;
 

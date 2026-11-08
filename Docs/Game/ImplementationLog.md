@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-08 — Efe Inan's Mission 3 phase-one music
+
+Mission 3 previously had no assigned music. The arena now binds Efe Inan's original `mx_bosstheme3_p1_wip.wav` to the existing music player for the first countdown and health pool. The track fades at the start of the kneeling transition. Phase-two retries stay silent. The 137.25-second stereo recording uses the Mission 2 streaming settings and a +2.1 dB trim to match the music reference. The [music manifest](../../Assets/_Game/Levels/L01_Duel/Audio/Music/Licenses/music-manifest.json) records the source and credit. Play Mode, listening review and standalone build were not run.
+
 ## 2026-11-08 — Dossier locations and Test Room
 
 Target Profile displays Location between Weapon and Skills. On the first visit Happy reads Factory, Casino or Tower for Missions 1, 2 and 3 respectively. The dossier dividers use whole screen pixels and a closing line below Skills. The practice button and room title now say Test Room. Both preparation tutorial captions and their Happy recordings use Thomas’s revised wording.

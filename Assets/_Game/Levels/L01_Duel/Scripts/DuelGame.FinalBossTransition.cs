@@ -60,6 +60,7 @@ namespace GoGhost.Duel
             finalBossPhaseTwoHealth = Player != null ? Player.CurrentHealth : -1;
             FinalBossPhaseTwoReached = true;
             FinalBossCutscene = true;
+            music?.StopMusic();
             ui.FadeSpentBossHealth();
             finalBossTransition = StartCoroutine(FinalBossTransition());
         }

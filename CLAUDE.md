@@ -9,6 +9,7 @@ Read this file first in every session, then the docs listed at the bottom for th
 ## Current design authority — 2026-11-05
 
 Dated decisions are ordered newest first. Later entries supersede conflicting older ones; past delivery permissions/limits belong to that delivery. The Confirmed constraints section summarizes the current source. Preserve the historical decisions as provenance.
+- **Mission 3 phase-one music — Thomas, 2026-11-08:** Use collaborator Efe Inan's supplied `mx_bosstheme3_p1_wip.wav` for the GOAT of War's first phase.
 - **Mission dossier and practice room — Thomas, 2026-11-08:** Display Location immediately after Weapon. The three locations are Factory, Casino and Tower in mission order. Name the practice button Test Room and use the revised tutorial dialogue in the voice catalog.
 - **First mission preparation tutorial — Thomas, 2026-11-08:** After the guided first rule is confirmed, introduce Target Profile and Test Loadout on the overview, then tell the player to click Start Mission when ready. Highlight the corresponding control for each line.
 - **Phase-two appearance — Thomas, 2026-11-08:** After the Rules seal, the rainbow starts flowing up the Boss. The planted axe stays violet through Chop, Spin and direct phase-two retry. Remove the red eye and its streak.

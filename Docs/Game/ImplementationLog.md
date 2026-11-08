@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-08 — Click-paced EMP invasion dialogue
+
+Fixed the CS0136 elapsed-time name collision in the triple EMP wave. Happy now waits for a separate click on each injected rule page using the existing dialogue reveal and full-screen click handling. Advancing Action releases the combat hold. Unity compiled and entered Play Mode. In Mission 3 all three pages held after audio ended, the first click during reveal completed the same line, and the final click restored normal time.
+
 ## 2026-11-08 — GOAT of War HUD and phase change
 
 Both health pools display a horizontal rainbow under the GOAT of War name. His phase change emits three EMP fronts with one burst cue. Happy’s EMP interruption was removed from playback and the voice catalog. Compilation and Play Mode were not run at Thomas’s request.

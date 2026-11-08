@@ -238,11 +238,13 @@ namespace GoGhost.Duel
                 var dim=Image(hud,Vector2.zero,Vector2.zero,NeuralPalette.Alpha(NeuralPalette.Background,.20f)).rectTransform;
                 dim.anchorMin=Vector2.zero; dim.anchorMax=Vector2.one;
                 dim.SetAsFirstSibling();
-                if(game.InvasionCaption!=null)
+                if(game.PendingDialogue!=null)
                 {
                     var caption=Image(hud,new Vector2(0,218),new Vector2(720,86),NeuralPalette.Alpha(NeuralPalette.Panel,.96f)).rectTransform;
                     Text("Happy",caption,new Vector2(0,23),new Vector2(680,25),17,TextAlignmentOptions.MidlineLeft,headingFont).color=NeuralPalette.Secondary;
-                    Text(game.InvasionCaption,caption,new Vector2(0,-9),new Vector2(680,44),25,TextAlignmentOptions.MidlineLeft,DialogueFont()).name="Invasion caption";
+                    sceneDialogue=Text(game.PendingDialogue,caption,new Vector2(0,-9),new Vector2(680,44),25,TextAlignmentOptions.MidlineLeft,DialogueFont());
+                    sceneDialogue.name="Invasion caption";
+                    sceneDialogue.maxVisibleCharacters=game.DialogueVisibleCharacters;
                 }
             }
             if(game.Phase==DuelPhase.Training)BuildTrainingButtons();

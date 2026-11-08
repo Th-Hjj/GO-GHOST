@@ -16,10 +16,9 @@ namespace GoGhost.Duel
         // DraftLoadout is never modified, so Retry and Configuration discard invaded rules.
         ConditionalLoadout invadedLoadout;
         public int InvadedRuleCount { get; private set; }
-        internal enum InvasionBeat { None, Contact, Confirm, Condition, Action, Read }
+        internal enum InvasionBeat { None, Contact, Confirm, Condition, Action }
         internal InvasionBeat InvasionPage { get; private set; }
         internal bool InvasionHeld => InvasionPage != InvasionBeat.None;
-        internal string InvasionCaption { get; private set; }
         FinalBossAxe readingAxe;
         float invasionPageAge;
         readonly System.Collections.Generic.List<SpriteRenderer> contactEdges = new();
@@ -50,7 +49,6 @@ namespace GoGhost.Duel
             if (!InvasionHeld) return;
             readingAxe = null;
             InvasionPage = InvasionBeat.None;
-            InvasionCaption = null;
             handler.Stop();
             foreach(var edge in contactEdges)if(edge!=null)Destroy(edge.gameObject);
             contactEdges.Clear();
@@ -61,23 +59,17 @@ namespace GoGhost.Duel
 
         void TickInvasionReading()
         {
+            if (InvasionPage != InvasionBeat.Contact) return;
             invasionPageAge += Time.unscaledDeltaTime;
-            if(InvasionPage==InvasionBeat.Contact)
-                foreach(var edge in contactEdges)if(edge!=null)
-                    edge.color=NeuralPalette.Alpha(NeuralPalette.Emp,Mathf.Lerp(1,.48f,Mathf.Clamp01(invasionPageAge/.45f)));
-            if (InvasionPage == InvasionBeat.Contact)
-            {
-                if (invasionPageAge < .45f) return;
-                if (readingAxe.WriteInvasion() == null) { EndInvasionReading(); ui.Show(); return; }
-                ReadInvasionLine(InvasionBeat.Confirm,"Handler/InvasionWarning");
-                return;
-            }
-            if (InvasionPage == InvasionBeat.Read)
-            {
-                if (invasionPageAge >= .75f) { EndInvasionReading(); ui.Show(); }
-                return;
-            }
-            if (handler.Speaking) return;
+            foreach(var edge in contactEdges)if(edge!=null)
+                edge.color=NeuralPalette.Alpha(NeuralPalette.Emp,Mathf.Lerp(1,.48f,Mathf.Clamp01(invasionPageAge/.45f)));
+            if (invasionPageAge < .45f) return;
+            if (readingAxe.WriteInvasion() == null) { EndInvasionReading(); ui.Show(); return; }
+            ReadInvasionLine(InvasionBeat.Confirm,"Handler/InvasionWarning");
+        }
+
+        void AdvanceInvasionReading()
+        {
             var rule = readingAxe.LastInvasion;
             if (InvasionPage == InvasionBeat.Confirm)
                 ReadInvasionLine(InvasionBeat.Condition,InvasionVoiceKey("Condition",ConditionalCatalog.RuleConditionLabel(rule)));
@@ -85,8 +77,8 @@ namespace GoGhost.Duel
                 ReadInvasionLine(InvasionBeat.Action,InvasionVoiceKey("Action",ConditionalCatalog.RuleActionLabel(rule)));
             else
             {
-                InvasionPage = InvasionBeat.Read;
-                invasionPageAge = 0;
+                EndInvasionReading();
+                ui.Show();
             }
         }
 
@@ -100,9 +92,7 @@ namespace GoGhost.Duel
         void ReadInvasionLine(InvasionBeat beat,string key)
         {
             InvasionPage = beat;
-            invasionPageAge = 0;
-            InvasionCaption = VoiceStudioCatalog.Current.Find(key).text;
-            handler.PlayLine(key);
+            handler.SpeakDialogue(key,AdvanceInvasionReading,realtime:true);
             ui.Show();
         }
 

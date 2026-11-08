@@ -114,11 +114,11 @@ namespace GoGhost.Duel
             }
             if (shockwaveAt < 0) return;
             const float spacing = .16f;
-            float age = Time.time - shockwaveAt;
-            if (age >= ShockwaveSeconds + 2 * spacing) { shockwaveAt = -1; return; }
+            float waveElapsed = Time.time - shockwaveAt;
+            if (waveElapsed >= ShockwaveSeconds + 2 * spacing) { shockwaveAt = -1; return; }
             for (int i = 0; i < 3; i++)
             {
-                float t = (age - i * spacing) / ShockwaveSeconds;
+                float t = (waveElapsed - i * spacing) / ShockwaveSeconds;
                 if (t < 0 || t >= 1) continue;
                 float radius = Mathf.Lerp(ShockwaveStartRadius, shockwaveReach, t);
                 float strength = (1 - .16f * i) * (1 - Mathf.SmoothStep(0, 1, (t - .62f) / .38f));

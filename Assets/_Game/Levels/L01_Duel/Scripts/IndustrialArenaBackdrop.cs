@@ -7,10 +7,10 @@ namespace GoGhost.Duel
     sealed class IndustrialArenaBackdrop : MonoBehaviour
     {
         const float VisibleWidthPixels = 966f;
-        const float FarTravelPixels = 8f;
-        const float NearTravelPixels = 40f;
+        const float FarTravelPixels = 7f;
+        const float NearTravelPixels = 36f;
         const float IndustrialOpacity = .50f;
-        const float CasinoOpacity = .85f;
+        const float CasinoOpacity = .70f;
 
         Transform player;
         Bounds arena;

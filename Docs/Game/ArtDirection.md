@@ -85,9 +85,9 @@ Aim+Fire and Move+Jump aggregate with bounded maxima, never additive white-out. 
 
 ## Arena and actors
 
-Missions 1 and 2 use two silhouette layers behind the fixed arena. Both positions depend on the player's horizontal location. They stop when the player stands still and retrace their movement on return. Center-to-edge travel is 8 pixels for the far layer and 40 for the near layer in the 966-pixel-wide reference arena. The art scales with the arena as the viewport changes. The black center keeps gunfire and platform edges visible.
+Missions 1 and 2 use two silhouette layers behind the fixed arena. Both positions depend on the player's horizontal location. They stop when the player stands still and retrace their movement on return. Center-to-edge travel is 7 pixels for the far layer and 36 for the near layer in the 966-pixel-wide reference arena. The art scales with the arena as the viewport changes. The black center keeps gunfire and platform edges visible.
 
-Mission 1 uses distant factory roofs and tanks with near steel columns, at 50% of authored opacity. Mission 2 uses the Las Vegas entertainment district artwork with resort hotels behind the casino marquee, entrance lights and palms. Its playtest opacity is 85%. Mission 3's art direction is a dense corporate megacity inspired by futuristic New York and Night City.
+Mission 1 uses distant factory roofs and tanks with near steel columns, at 50% of authored opacity. Mission 2 uses the Las Vegas entertainment district artwork with resort hotels behind the casino marquee, entrance lights and palms. Its playtest opacity is 70%. Mission 3's art direction is a dense corporate megacity inspired by futuristic New York and Night City.
 
 Retain stickman poses, weapons, collision geometry, platforms, camera and combat. Boss weapon structures are neutral with small owner accents. Player HP is cold white, changing to Danger through the existing Low Health latch/hysteresis; retain left anchors and numbers. Player bullets have the same neutral identity for manual and automatic shots. Enemy bullets, beams and blade effects use their actual Boss identity with unchanged geometry, timing and alpha hierarchy.
 

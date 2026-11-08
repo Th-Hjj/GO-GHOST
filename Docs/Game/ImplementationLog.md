@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — Background motion refinement
+
+Mission 1 and 2 center-to-edge travel is now 7 reference pixels for the far layer and 36 for the near layer. The Mission 2 casino plates render at 70% of authored opacity. Thomas will verify the feel in play.
+
 ## 2026-11-07 — Casino playtest
 
 Mission 2 loads the casino concept's resort and entrance layers for the Swordsman fight and direct retry. The casino uses 85% of authored opacity and Mission 1 uses 50%. Both use the existing 8 / 40 reference-pixel travel. Thomas will playtest the change. No compile check or Play Mode run was requested.

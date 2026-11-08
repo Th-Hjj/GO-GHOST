@@ -2,6 +2,8 @@
 
 ## 2026-11-07 — Mission 2 casino facades
 
+Both casino facades continue their own upper columns and horizontal bands to ground level. The left follows the approved preview, and both lower facades carry scattered single and paired amber lights. Static composite at 60% opacity: `Logs/ParallaxPreview/Mission-2-Casino-Both-Facades-60.png`. Play Mode was not run.
+
 Mission 2 now renders both casino plates at 60% opacity. Play Mode was not run.
 
 Cleared the three marked dark protrusions from the far plate to expose the sky above the casino rooflines. Static two-layer preview: `Logs/ParallaxPreview/Mission-2-Clean-Rooflines.png`. Unity Play Mode was not run.

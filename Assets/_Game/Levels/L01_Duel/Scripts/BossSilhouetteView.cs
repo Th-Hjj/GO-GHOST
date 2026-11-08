@@ -96,7 +96,7 @@ namespace GoGhost.Duel
             foreach (var line in tells) if (line != null) line.enabled = false;
             for (int i = flashes.Count - 1; i >= 0; i--) RemoveFlash(i);
             ClearGunBullets();
-            if (flyingShaft != null) flyingShaft.enabled = flyingHead.enabled = false;
+            ClearPhaseOneFlight();
         }
         void LateUpdate()
         {
@@ -287,13 +287,13 @@ namespace GoGhost.Duel
             Leg(Part.FrontThigh,Part.FrontCalf,Part.FrontFoot,p.Hip+new Vector2(.075f,0),p.FrontFoot,.18f,p);
             Arm(Part.BackUpperArm,Part.BackForearm,p.Chest+new Vector2(-.10f,-.04f),p.BackHand,-.08f);
             Arm(Part.FrontUpperArm,Part.FrontForearm,p.Chest+new Vector2(.08f,-.04f),p.FrontHand,.06f);
+            if (FinalAxe) { ApplyAxe(p); return; }
             bool gunner=visualKind==BossKind.Gunner;
             float bladeLength=SwordBladeLength;
             Place(Part.Weapon,p.Weapon,gunner?new Vector2(.54f,.14f):new Vector2(bladeLength,.075f),p.WeaponAngle);
             // Retain the serialized slot as the gun's simple grip; the blade needs no extra outline.
             if(gunner)Place(Part.Sheath,p.Weapon+Rotate(new Vector2(-.15f,-.09f),p.WeaponAngle),new Vector2(.075f,.18f),p.WeaponAngle);
             else Place(Part.Sheath,p.Weapon-Angle(p.WeaponAngle)*(bladeLength*.5f-.12f),new Vector2(.14f,.12f),p.WeaponAngle);
-            if(FinalAxe)ApplyAxe(p);
         }
         void Leg(Part thigh,Part calf,Part foot,Vector2 hip,Vector2 toe,float offset,Pose pose)
         {

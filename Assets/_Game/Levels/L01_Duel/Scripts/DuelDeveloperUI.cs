@@ -19,7 +19,19 @@ namespace GoGhost.Duel
         readonly List<DeveloperFieldView> developerFields=new List<DeveloperFieldView>();
         int developerTab,developerSection,developerShortcutFrame=-1;
         bool tuningPhaseTwo;
-        int tuningMove = 1;
+        static readonly (FinalBossAxe.Move id, string label)[] phaseOneMoves =
+        {
+            (FinalBossAxe.Move.TripleCut, "Triple Cut"),
+            (FinalBossAxe.Move.LeapingCrosscut, "Leaping Crosscut"),
+            (FinalBossAxe.Move.AnchorVault, "Anchor Vault"),
+            (FinalBossAxe.Move.UnderpassReturn, "Underpass Return"),
+            (FinalBossAxe.Move.PalmDeflection, "Palm Deflection")
+        };
+        static readonly (FinalBossAxe.Move id, string label)[] phaseTwoMoves =
+        {
+            (FinalBossAxe.Move.Chop, "Chop"), (FinalBossAxe.Move.Spin, "Spin")
+        };
+        int tuningMove = (int)FinalBossAxe.Move.TripleCut;
         TMP_Text developerStatus;
         public bool DeveloperShortcutConsumed=>developerShortcutFrame==Time.frameCount;
 
@@ -113,17 +125,22 @@ namespace GoGhost.Duel
             {
                 bool phaseTwo = phase == 2;
                 Button(phaseTwo ? "Phase 2 Axe" : "Phase 1 Axe", page, new Vector2(phaseTwo ? 160 : -160, 150), new Vector2(290,48),
-                    () => { tuningPhaseTwo = phaseTwo; tuningMove = 1; Show(); }, tuningPhaseTwo == phaseTwo);
+                    () =>
+                    {
+                        tuningPhaseTwo = phaseTwo;
+                        tuningMove = (int)(phaseTwo ? phaseTwoMoves : phaseOneMoves)[0].id;
+                        Show();
+                    }, tuningPhaseTwo == phaseTwo);
             }
             var preview = Button("Try selected move", page, new Vector2(-210,-400), new Vector2(360,54),
                 () => game.PreviewBossMove(tuningPhaseTwo,tuningMove));
             preview.interactable = game.CanPreviewBossMove(tuningPhaseTwo);
-            string[] names = tuningPhaseTwo ? new[] { "Chop", "Spin" }
-                : new[] { "Chop", "Spin", "Throw / Recall", "Boomerang" };
-            for (int i = 0; i < names.Length; i++)
+            var moves = tuningPhaseTwo ? phaseTwoMoves : phaseOneMoves;
+            for (int i = 0; i < moves.Length; i++)
             {
-                int move = i + 1;
-                Button(names[i], page, new Vector2(-465 + 310*i,85), new Vector2(290,48),
+                int move = (int)moves[i].id;
+                float x = (i - (moves.Length - 1) * .5f) * 272;
+                Button(moves[i].label, page, new Vector2(x,85), new Vector2(258,48),
                     () => { tuningMove = move; Show(); }, tuningMove == move);
             }
             BossMoveTuning Read() => game.GetBossMoveTuning(tuningPhaseTwo,tuningMove);
@@ -134,7 +151,7 @@ namespace GoGhost.Duel
                 v=>{var t=Read(); t.Recovery=v; Write(t);},()=>true);
             AddDeveloperField("BossCooldown","Cooldown (s)",-97,.1f,15,.1f,()=>Read().Cooldown,
                 v=>{var t=Read(); t.Cooldown=v; Write(t);},()=>true);
-            AddDeveloperField("BossDamage","Damage",-155,1,500,1,()=>Read().Damage,
+            AddDeveloperField("BossDamage",tuningPhaseTwo ? "Damage" : "Strongest hit",-155,1,500,1,()=>Read().Damage,
                 v=>{var t=Read(); t.Damage=Mathf.RoundToInt(v); Write(t);},()=>true);
             AddDeveloperField("FinalBossHP","Final Boss current HP",-217,1,10000,10,
                 ()=>game.GetDeveloperHealth(2,out int hp,out _)?hp:0, v=>game.SetDeveloperHealth(2,Mathf.RoundToInt(v)),

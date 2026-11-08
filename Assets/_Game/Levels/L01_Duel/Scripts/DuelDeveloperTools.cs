@@ -52,7 +52,7 @@ namespace GoGhost.Duel
         {
             if (!DeveloperToolsOpen) return;
             var list = phaseTwo ? phaseTwoTuning : axeTuning;
-            if (move < 1 || move >= list.Length) return;
+            if (move < (phaseTwo ? (int)FinalBossAxe.Move.Chop : (int)FinalBossAxe.Move.TripleCut) || move >= list.Length) return;
             value.Windup = Mathf.Clamp(value.Windup, .05f, 4f);
             value.Recovery = Mathf.Clamp(value.Recovery, .05f, 4f);
             value.Cooldown = Mathf.Clamp(value.Cooldown, .1f, 15f);
@@ -188,7 +188,8 @@ namespace GoGhost.Duel
 
         public void PreviewBossMove(bool phaseTwo, int move)
         {
-            if (!CanPreviewBossMove(phaseTwo) || move < 1 || move >= (phaseTwo ? phaseTwoTuning.Length : axeTuning.Length)) return;
+            if (!CanPreviewBossMove(phaseTwo) || move < (phaseTwo ? (int)FinalBossAxe.Move.Chop : (int)FinalBossAxe.Move.TripleCut)
+                || move >= (phaseTwo ? phaseTwoTuning.Length : axeTuning.Length)) return;
             var axe = actors[0].Axe;
             axe.PreviewMove = (FinalBossAxe.Move)move;
             developerResumeOnClose = true;

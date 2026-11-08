@@ -254,7 +254,7 @@ namespace GoGhost.Duel
             else if(dropping&&!DropBlocked)vertical=Mathf.Min(vertical,-GetComponent<BossAgent>().Profile.DropSpeed);
             if (jumpRequested)
             {
-                vertical = Profile.JumpSpeed;
+                vertical = TraversalProfile.JumpSpeed;
                 JumpStartedAt = Time.fixedTime;
                 jumpRequested = false; Grounded = false;
                 footing.TakeOff(Time.fixedTime);

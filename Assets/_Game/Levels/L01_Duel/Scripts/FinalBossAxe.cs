@@ -3,305 +3,228 @@ using UnityEngine;
 
 namespace GoGhost.Duel
 {
-    // Final Boss phase-one axe kit (Thomas, 2026-11-06 trial; tuning values are provisional).
-    // The combat AI controls spacing and axe attacks. Tells and public threats
-    // use the same attack geometry as the hit checks.
-    public sealed class FinalBossAxe
+    public sealed partial class FinalBossAxe
     {
-        public enum Move { None, Chop, Spin, Throw, Boomerang }
+        // Chop and Spin remain the independent, untold phase-two axe attacks.
+        public enum Move { None, Chop, Spin, TripleCut, LeapingCrosscut, AnchorVault, UnderpassReturn, PalmDeflection }
         public enum Stage { Idle, Prepare, Locked, Active, Recovery }
-
-        struct Timing
+        readonly struct Timing
         {
-            public float Prepare, Lock, Active, Recovery, Cooldown; public int Damage;
-            public Timing(float prepare, float locked, float active, float recovery, float cooldown, int damage)
-            { Prepare = prepare; Lock = locked; Active = active; Recovery = recovery; Cooldown = cooldown; Damage = damage; }
+            public readonly float Prepare, Lock, Active, Recovery, Cooldown;
+            public readonly int Damage;
+            public Timing(float prepare,float locked,float active,float recovery,float cooldown,int damage)
+            { Prepare=prepare; Lock=locked; Active=active; Recovery=recovery; Cooldown=cooldown; Damage=damage; }
         }
         static readonly Timing[] Timings =
         {
             default,
-            new Timing(.42f, .14f, .12f, .50f, 1.8f, 26),  // Chop
-            new Timing(.45f, .15f, 1.0f, .65f, 5.0f, 20),  // Spin
-            new Timing(.40f, .15f, 0, .35f, 4.5f, 18),     // Throw & Recall (active from the path)
-            new Timing(.45f, .15f, 1.6f, .40f, 5.5f, 20),  // Boomerang
+            new Timing(.42f,.14f,.12f,.50f,1.8f,26), new Timing(.45f,.15f,1f,.65f,5f,20),
+            new Timing(.32f,.16f,1.13f,.60f,2.6f,26), new Timing(.26f,.14f,.40f,.42f,3f,22),
+            new Timing(.34f,.18f,1.75f,.70f,7f,26), new Timing(.32f,.16f,2.04f,.50f,5.8f,19),
+            new Timing(.40f,.18f,2.87f,.80f,9f,22)
         };
         internal static BossMoveTuning DefaultTuning(Move move)
         {
-            var t = Timings[(int)move];
-            return new BossMoveTuning(t.Prepare, t.Recovery, t.Cooldown, t.Damage);
+            var t=Timings[(int)move]; return new BossMoveTuning(t.Prepare,t.Recovery,t.Cooldown,t.Damage);
         }
+        public const float ChopReach=2.3f, ChopHeight=2.1f, SpinRadius=1.65f, AxeRadius=.32f;
+        const float SpinMove=.45f;
+        internal static readonly int[] InvasionPercents={66,33};
+        public const float InvasionDuration=1.8f, InvasionInject=1.4f;
+
         readonly DuelGame game;
-        Timing acceptedTiming;
-
-        public const float ChopReach = 2.3f, ChopHeight = 2.1f, SpinRadius = 1.65f, AxeRadius = .38f;
-        const float ThrowSpeed = 15, RecallSpeed = 17, ThrowHold = .60f, ThrowRange = 12, SpinMove = .45f;
-        const float ChopStep = .55f, CatchSeconds = .14f;
-        const int BoomerangSamples = 25;
-        const int AttackIdBase = 100000;
-        internal static readonly int[] InvasionPercents = { 66, 33 };
-        public const float InvasionDuration = 1.8f, InvasionInject = 1.4f;
-
         readonly BossAgent actor;
+        readonly Collider2D playerBody;
         readonly System.Action onPhaseTwo;
         readonly System.Func<ConditionalRule> onInvasion;
-        internal Move PreviewMove { get; set; }
-        float invasionAt;
-        int invasionsDue;
-        bool invasionInjected;
-        readonly Collider2D playerBody;
-        readonly float[] readyAt = new float[5];
-        readonly List<Vector2> path = new List<Vector2>(BoomerangSamples);
-        float phaseAt, phaseUntil, activeAt, activeEnds, nextDecisionAt, transitionUntil;
-        float throwOut, throwBack, lockedFacing = 1;
-        Vector2 previousAxe;
-        public bool RecallLocked { get; private set; }
-        public Vector2 RecallPoint { get; private set; }
-        float recallAt, recallHitEnds, previousFlightAt, sweptDegrees;
-        public bool ThrowAtFarEnd => Current == Move.Throw && AxeFlying && Time.time >= activeAt + throwOut;
-        public bool RecallInFlight => RecallLocked && Time.time < recallHitEnds;
-        bool hitDone, outHit, backHit;
-        int attackId = AttackIdBase;
+        readonly float[] readyAt=new float[Timings.Length];
+        readonly List<Vector2> path=new List<Vector2>(12);
+        int attackId=100000,invasionsDue;
+        bool invasionInjected,transitionHeld,hitDone;
+        float phaseAt,phaseUntil,activeAt,activeEnds,nextDecisionAt,transitionUntil,invasionAt,lockedFacing=1;
+        Timing acceptedTiming;
+        internal Move PreviewMove {get;set;}
+        public Move Current {get;private set;}
+        public Stage Phase {get;private set;}
+        public float PhaseProgress=>Mathf.InverseLerp(phaseAt,phaseUntil,Time.time);
+        public float ActiveProgress=>Mathf.InverseLerp(activeAt,activeEnds,Time.time);
+        public float ActiveTime=>Mathf.Max(0,Time.time-activeAt);
+        public bool Committed=>Current!=Move.None||Transitioning||Invading;
+        public bool Invading {get;private set;}
+        public int Invasions {get;private set;}
+        public float InvasionProgress=>Mathf.Clamp01((Time.time-invasionAt)/InvasionDuration);
+        public ConditionalRule LastInvasion {get;private set;}
+        public bool Transitioning {get;private set;}
+        public bool PhaseTwo {get;private set;}
+        public bool AxeFlying {get;private set;}
+        public Vector2 AxePosition {get;private set;}
+        public float AxeSpin {get;private set;}
+        public float LockedFacing=>lockedFacing;
+        public IReadOnlyList<Vector2> Path=>path;
+        public readonly int[] Started=new int[Timings.Length],Hits=new int[Timings.Length];
 
-        public Move Current { get; private set; }
-        public Stage Phase { get; private set; }
-        public float PhaseProgress => Mathf.Clamp01((Time.time - phaseAt) / Mathf.Max(.001f, phaseUntil - phaseAt));
-        public float ActiveProgress => Mathf.Clamp01((Time.time - activeAt) / Mathf.Max(.001f, activeEnds - activeAt));
-        public bool Committed => Current != Move.None || Transitioning || Invading;
-        public bool Invading { get; private set; }
-        public int Invasions { get; private set; }
-        public float InvasionProgress => Mathf.Clamp01((Time.time - invasionAt) / InvasionDuration);
-        public ConditionalRule LastInvasion { get; private set; }
-        public bool Transitioning { get; private set; }
-        public bool PhaseTwo { get; private set; }
-        bool transitionHeld;
-        public bool AxeFlying { get; private set; }
-        public Vector2 AxePosition { get; private set; }
-        public float AxeSpin { get; private set; }
-        public float LockedFacing => lockedFacing;
-        public IReadOnlyList<Vector2> Path => path;
-        public readonly int[] Started = new int[5], Hits = new int[5];
-
-        public FinalBossAxe(BossAgent owner, PlayerHealth player, System.Action phaseTwo, System.Func<ConditionalRule> invasion)
+        public FinalBossAxe(BossAgent owner,PlayerHealth player,System.Action phaseTwo,System.Func<ConditionalRule> invasion)
         {
-            game = owner.GetComponentInParent<DuelGame>();
-            actor = owner; onPhaseTwo = phaseTwo; onInvasion = invasion;
-            playerBody = player != null ? player.GetComponent<Collider2D>() : null;
-            for (int i = 0; i < readyAt.Length; i++) readyAt[i] = 0;
-            nextDecisionAt = Time.time + 1.0f;
+            game=owner.GetComponentInParent<DuelGame>(); actor=owner; onPhaseTwo=phaseTwo; onInvasion=invasion;
+            playerBody=player!=null?player.GetComponent<Collider2D>():null;
+            nextDecisionAt=Time.time+1f;
         }
-
-        public bool Ready(Move move) => move != Move.None && Time.time >= readyAt[(int)move];
-        public bool CanStart(Move move) => move != Move.None && Current == Move.None && !Transitioning
-            && (!PhaseTwo || move == Move.Chop || move == Move.Spin)
-            && actor.Running && actor.IsAlive && !actor.Health.AwaitingSecondPhase && actor.Motor.Grounded && Ready(move);
+        public bool Ready(Move move)=>move>Move.None&&(int)move<readyAt.Length&&Time.time>=readyAt[(int)move];
+        public bool CanStart(Move move)=>Ready(move)&&Current==Move.None&&!Invading&&!Transitioning&&
+            (PhaseTwo?(move==Move.Chop||move==Move.Spin):move>=Move.TripleCut)&&actor.Running&&actor.IsAlive&&
+            !actor.Health.AwaitingSecondPhase&&actor.Motor.Grounded;
 
         public void Tick()
         {
-            if (!PhaseTwo && !Transitioning)
-            {
-                while (invasionsDue < InvasionPercents.Length &&
-                    (long)actor.Health.CurrentHealth * 100 <= (long)actor.Health.MaxHealth * InvasionPercents[invasionsDue])
-                    invasionsDue++;
-            }
-            if (Invasions >= invasionsDue && TickTransition()) return;
-            if (TickInvasion()) return;
-            if (Current != Move.None) { TickMove(); return; }
-            var player = actor.Player;
-            if (player == null || player.IsDead) { actor.Motor.Brake(); return; }
-
-            if (PreviewMove != Move.None && TryStart(PreviewMove))
-            {
-                PreviewMove = Move.None;
-                return;
-            }
-            if (PhaseTwo)
-            {
-                var seen = actor.Perception.Facts;
-                if (seen.Confidence <= .1f) { actor.Motor.Brake(); return; }
-                Vector2 delta = seen.Position - actor.Position;
-                float gap = Mathf.Abs(delta.x);
-                if (Mathf.Abs(delta.y) < 1.4f && Time.time >= nextDecisionAt &&
-                    (gap < 2.5f && TryStart(Move.Chop) || gap < 2.2f && TryStart(Move.Spin))) return;
-                actor.Motor.SetMove(gap > 1.1f ? Mathf.Sign(delta.x) : 0);
-                if (delta.y > 1.4f && gap < 2.6f && actor.Motor.Grounded) actor.Motor.TryJump();
-                return;
-            }
-            var facts = actor.Perception.Facts;
-            if (facts.Confidence <= .1f) { actor.Motor.Brake(); return; }
-            Vector2 target = facts.Position, position = actor.Position;
-            float dx = target.x - position.x, distance = Mathf.Abs(dx);
-            bool level = Mathf.Abs(target.y - position.y) < 1.4f;
-            if (PreviewMove == Move.None && Time.time >= nextDecisionAt && ChoosePhaseOneAttack(target, level)) return;
-            // Close in on a level target; keep a throwing lane on a raised one.
-            if (level) actor.Motor.SetMove(distance > 2.0f ? Mathf.Sign(dx) : 0);
-            else actor.Motor.SetMove(distance < 3f ? -Mathf.Sign(dx) : distance > 6f ? Mathf.Sign(dx) : 0, .7f);
+            if(!PhaseTwo&&!Transitioning)
+                while(invasionsDue<InvasionPercents.Length&&(long)actor.Health.CurrentHealth*100<=(long)actor.Health.MaxHealth*InvasionPercents[invasionsDue]) invasionsDue++;
+            if(Invasions>=invasionsDue&&TickTransition())return;
+            if(TickInvasion())return;
+            if(Current!=Move.None) { TickMove(); return; }
+            if(actor.Player==null||actor.Player.IsDead){actor.Motor.Brake();return;}
+            if(!PhaseTwo) { if(Time.time>=nextDecisionAt)TickPhaseOneTactics(); return; }
+            if(PreviewMove!=Move.None&&TryStart(PreviewMove)){PreviewMove=Move.None;return;}
+            var seen=actor.Perception.Facts;
+            if(seen.Confidence<=.1f){actor.Motor.Brake();return;}
+            Vector2 delta=seen.Position-actor.Position;float gap=Mathf.Abs(delta.x);
+            if(Mathf.Abs(delta.y)<1.4f&&Time.time>=nextDecisionAt&&
+                (gap<2.5f&&TryStart(Move.Chop)||gap<2.2f&&TryStart(Move.Spin)))return;
+            actor.Motor.SetMove(gap>1.1f?Mathf.Sign(delta.x):0);
+            if(delta.y>1.4f&&gap<2.6f&&actor.Motor.Grounded)actor.Motor.TryJump();
         }
-
-        bool ChoosePhaseOneAttack(Vector2 target, bool level)
+        bool StartPhaseOne(AxePlan plan)
         {
-            Vector2 delta = target - actor.Position;
-            float distance = Mathf.Abs(delta.x);
-            if (level && distance <= SpinRadius + .25f && TryStart(Move.Spin)) return true;
-            if (level && distance <= ChopReach + ChopStep && delta.x * actor.Facing >= 0 && TryStart(Move.Chop)) return true;
-            if (!level && TryStart(Move.Boomerang)) return true;
-            float targetRange = Vector2.Distance(Hand(), target);
-            return distance >= ChopReach && targetRange < ThrowRange - AxeRadius && TryStart(Move.Throw);
-        }
-
-        public bool TryStart(Move move)
-        {
-            if (!CanStart(move)) return false;
-            var timing = Timings[(int)move];
-            var tuning = game.GetBossMoveTuning(PhaseTwo, (int)move);
-            timing.Prepare = tuning.Windup;
-            timing.Cooldown = tuning.Cooldown;
-            timing.Recovery = tuning.Recovery;
-            timing.Damage = tuning.Damage;
-            acceptedTiming = timing;
-            Current = move; attackId++; Started[(int)move]++;
-            RecallLocked = false;
-            sweptDegrees = 0;
-            hitDone = outHit = backHit = false; AxeFlying = false;
-            readyAt[(int)move] = Time.time + timing.Cooldown;
-            actor.Motor.HoldHorizontal();
-            TrackTarget();
-            SetPhase(Stage.Prepare, timing.Prepare);
-            PlanActiveWindow();
-            actor.Sounds?.Play(Sfx.DrawPrepare, actor.ActorId, attackId);
-            actor.Perception.ExpressedPressure(actor.Position);
-            actor.Trace($"axe prepare {move} attack={attackId}");
+            if(!CanStart(plan.Move))return false;
+            acceptedPlan=plan;
+            actor.Face(Vector2.right*plan.Facing); lockedFacing=actor.Facing;
+            actor.Motor.EndAttackMotion();
+            ResetPhaseOneState();
+            BuildFlight(plan,flight);
+            Begin(plan.Move);
             return true;
         }
-
-        void SetPhase(Stage stage, float seconds) { Phase = stage; phaseAt = Time.time; phaseUntil = Time.time + Mathf.Max(0, seconds); }
-
+        public bool TryStart(Move move)
+        {
+            if(!CanStart(move))return false;
+            if(!PhaseTwo)return TryPlanPhaseOne(move,true,out var plan)&&StartPhaseOne(plan);
+            TrackPhaseTwoTarget();
+            Begin(move);
+            readyAt[(int)move]=Time.time+acceptedTiming.Cooldown;
+            return true;
+        }
+        void Begin(Move move)
+        {
+            var tuning=game.GetBossMoveTuning(PhaseTwo,(int)move);
+            var def=Timings[(int)move];
+            acceptedTiming=new Timing(tuning.Windup,def.Lock,def.Active,tuning.Recovery,tuning.Cooldown,tuning.Damage);
+            Current=move;attackId++;Started[(int)move]++;hitDone=false;AxeFlying=false;
+            actor.Motor.HoldHorizontal();
+            SetPhase(Stage.Prepare,acceptedTiming.Prepare);
+            activeAt=phaseUntil+acceptedTiming.Lock;
+            activeEnds=activeAt+acceptedTiming.Active;
+            actor.Sounds?.Play(Sfx.DrawPrepare,actor.ActorId,attackId);
+            actor.Perception.ExpressedPressure(actor.Position);
+            actor.Trace($"axe prepare {move} attack={attackId}");
+        }
+        void SetPhase(Stage stage,float seconds){Phase=stage;phaseAt=Time.time;phaseUntil=phaseAt+Mathf.Max(0,seconds);}
         void TickMove()
         {
-            var timing = acceptedTiming;
-            if (Phase == Stage.Prepare)
+            if(!PhaseTwo)UpdateFlightWarning();
+            if(Phase==Stage.Prepare)
             {
-                TrackTarget(); PlanActiveWindow();
+                if(PhaseTwo)TrackPhaseTwoTarget();
                 actor.Motor.HoldHorizontal();
-                if (Time.time >= phaseUntil)
+                if(Time.time>=phaseUntil)
                 {
-                    SetPhase(Stage.Locked, timing.Lock);
-                    actor.Sounds?.Play(Sfx.ReturnPrepare, actor.ActorId, attackId);
-                    if (!PhaseTwo && Current == Move.Chop)
-                    {
-                        actor.Motor.BeginStep(ChopStep);
-                        actor.Motor.SetMove(lockedFacing);
-                    }
+                    SetPhase(Stage.Locked,acceptedTiming.Lock);activeAt=phaseUntil;activeEnds=activeAt+acceptedTiming.Active;
+                    if(Current==Move.TripleCut)SafeStep(.45f*lockedFacing);
+                    actor.Sounds?.Play(Sfx.ReturnPrepare,actor.ActorId,attackId);
                 }
-                return;
             }
-            if (Phase == Stage.Locked)
+            else if(Phase==Stage.Locked)
             {
-                if (PhaseTwo || Current != Move.Chop) actor.Motor.HoldHorizontal();
-                if (Time.time >= phaseUntil) Activate();
-                return;
+                if(Current!=Move.TripleCut)actor.Motor.HoldHorizontal();
+                if(Time.time>=phaseUntil)
+                {
+                    activeAt=Time.time;activeEnds=activeAt+acceptedTiming.Active;
+                    SetPhase(Stage.Active,acceptedTiming.Active);
+                    if(!PhaseTwo)ActivatePhaseOne();
+                    actor.Sounds?.Play(Current==Move.Chop?Sfx.BladeHeavy:Sfx.BladeLight,actor.ActorId,attackId);
+                }
             }
-            if (Phase == Stage.Active) { TickActive(); return; }
-            actor.Motor.HoldHorizontal();
-            if (Time.time >= phaseUntil) Finish();
-        }
-
-        void Activate()
-        {
-            Phase = Stage.Active; activeAt = Time.time; PlanActiveWindow();
-            SetPhase(Stage.Active, activeEnds - activeAt);
-            actor.Motor.HoldHorizontal();
-            previousAxe = path.Count > 0 ? path[0] : actor.Position;
-            previousFlightAt = activeAt;
-            actor.Sounds?.Play(Current == Move.Chop ? Sfx.BladeHeavy : Sfx.BladeLight, actor.ActorId, attackId);
-        }
-
-        void TickActive()
-        {
-            int damage = acceptedTiming.Damage;
-            switch (Current)
+            else if(Phase==Stage.Active)
             {
-                case Move.Chop:
-                    actor.Motor.HoldHorizontal();
-                    if (!hitDone && ChopArea().Intersects(PlayerBounds())) hitDone = Strike(damage);
-                    break;
-                case Move.Spin:
-                    if (PhaseTwo)
-                    {
-                        float toward = actor.Player != null ? Mathf.Sign(actor.Player.transform.position.x - actor.Position.x) : 0;
-                        actor.Motor.SetMove(toward, SpinMove);
-                        AxeSpin = ActiveProgress * 360f * 3f;
-                        if (!hitDone && PlayerBounds().SqrDistance(actor.Position) <= SpinRadius * SpinRadius) hitDone = Strike(damage);
-                    }
-                    else SweepPhaseOne(damage);
-                    break;
-                case Move.Throw:
-                case Move.Boomerang:
-                    actor.Motor.HoldHorizontal();
-                    if (Current == Move.Throw) TryLockRecall();
-                    AxeFlying = true;
-                    Vector2 axe = AxeAt(Time.time, out bool returning);
-                    AxePosition = RecallLocked && Time.time > recallHitEnds
-                        ? Vector2.Lerp(RecallPoint, Hand(), (Time.time - recallHitEnds) / CatchSeconds) : axe;
-                    AxeSpin -= Time.deltaTime * 900f * lockedFacing;
-                    bool alreadyHit = returning ? backHit : outHit;
-                    bool movingBlade = Current != Move.Throw || (returning ? previousFlightAt < recallHitEnds : previousFlightAt < activeAt + throwOut);
-                    if (movingBlade && !alreadyHit && SweptHit(previousAxe, axe))
-                    { if (Strike(damage)) { if (returning) backHit = true; else outHit = true; } }
-                    previousAxe = axe;
-                    previousFlightAt = Time.time;
-                    break;
+                if(PhaseTwo)TickPhaseTwoAttack();else TickPhaseOneAttack();
             }
-            if (Time.time >= activeEnds)
+            else
             {
-                AxeFlying = false; AxeSpin = 0;
-                if (Current == Move.Spin) actor.Motor.HoldHorizontal();
-                SetPhase(Stage.Recovery, acceptedTiming.Recovery);
+                actor.Motor.HoldHorizontal();
+                if(Time.time>=phaseUntil)
+                {
+                    if(!PhaseTwo)readyAt[(int)Current]=Time.time+acceptedTiming.Cooldown;
+                    actor.Trace($"axe finish {Current} attack={attackId}");
+                    Current=Move.None;Phase=Stage.Idle;AxeFlying=false;path.Clear();
+                    nextDecisionAt=Time.time+(PhaseTwo?.25f:0);
+                }
             }
         }
-
-        void SweepPhaseOne(int damage)
+        void TrackPhaseTwoTarget()
         {
-            actor.Motor.HoldHorizontal();
-            float end = ActiveProgress * 360f;
-            AxeSpin = 180f - end;
-            // Sweep between displayed poses even when a rendered frame crosses the player.
-            int samples = Mathf.Max(1, Mathf.CeilToInt((end - sweptDegrees) / 8f));
-            var target = PlayerBounds();
-            target.Expand(.24f);
-            for (int i = 0; i <= samples && !hitDone; i++)
+            var facts=actor.Perception.Facts;
+            if(facts.Confidence>.1f)actor.Face(facts.Position-actor.Position);
+            lockedFacing=actor.Facing;
+        }
+        void TickPhaseTwoAttack()
+        {
+            if(Current==Move.Chop)
             {
-                float angle = (180f - Mathf.Lerp(sweptDegrees, end, i / (float)samples)) * Mathf.Deg2Rad;
-                var ray = new Ray(actor.Position, new Vector2(lockedFacing * Mathf.Cos(angle), Mathf.Sin(angle)));
-                if (target.IntersectRay(ray, out float along) && along <= SpinRadius) hitDone = Strike(damage);
+                actor.Motor.HoldHorizontal();
+                if(!hitDone&&ChopArea().Intersects(PlayerBounds()))hitDone=Strike(acceptedTiming.Damage);
             }
-            sweptDegrees = end;
+            else
+            {
+                float toward=actor.Player!=null?Mathf.Sign(actor.Player.transform.position.x-actor.Position.x):0;
+                actor.Motor.SetMove(toward,SpinMove);
+                AxeSpin=ActiveProgress*1080f;
+                if(!hitDone&&PlayerBounds().SqrDistance(actor.Position)<=SpinRadius*SpinRadius)hitDone=Strike(acceptedTiming.Damage);
+            }
+            if(Current!=Move.None&&Time.time>=activeEnds)
+            {
+                AxeSpin=0;actor.Motor.HoldHorizontal();SetPhase(Stage.Recovery,acceptedTiming.Recovery);
+            }
         }
-
-        void TryLockRecall()
+        Bounds PlayerBounds()=>playerBody!=null?playerBody.bounds:new Bounds(Vector3.one*9999,Vector3.zero);
+        bool Strike(int damage)
         {
-            if (RecallLocked || Time.time < activeAt + throwOut + ThrowHold) return;
-            RecallLocked = true;
-            RecallPoint = Hand();
-            recallAt = Time.time;
-            throwBack = Mathf.Max(.01f, Vector2.Distance(path[1], RecallPoint) / RecallSpeed);
-            recallHitEnds = recallAt + throwBack;
-            phaseUntil = activeEnds = recallHitEnds + CatchSeconds;
-            actor.Sounds?.Play(Sfx.ReturnPrepare, actor.ActorId, attackId);
+            var player=actor.Player;if(player==null||player.IsDead)return false;
+            var move=Current;int before=player.CurrentHealth;
+            player.TakeDamage(damage,actor.gameObject);
+            if(player.CurrentHealth<before)Hits[(int)move]++;
+            return true;
         }
-
-        void Finish()
+        public Bounds ChopArea()=>new Bounds(actor.Position+new Vector2(lockedFacing*ChopReach*.5f,.05f),new Vector3(ChopReach,ChopHeight,1));
+        Bounds SpinArea()
         {
-            actor.Trace($"axe finish {Current} attack={attackId}");
-            Current = Move.None; Phase = Stage.Idle; AxeFlying = false; path.Clear();
-            nextDecisionAt = Time.time + .25f;
+            var area=new Bounds(actor.Position,new Vector3(SpinRadius*2,SpinRadius*2,1));
+            float travel=actor.Motor.Profile.Speed*SpinMove*Timings[(int)Move.Spin].Active;
+            area.Encapsulate(new Bounds(actor.Position+Vector2.right*lockedFacing*travel,area.size));return area;
         }
-
+        public void Publish(List<BossThreat> output)
+        {
+            if(Current==Move.None||Phase==Stage.Recovery||Phase==Stage.Idle)return;
+            if(!PhaseTwo){PublishPhaseOne(output);return;}
+            output.Add(new BossThreat{ActorId=actor.ActorId,AttackId=attackId,Valid=true,Facing=lockedFacing,
+                Phase=ThreatPhase,Shape=BossThreatShape.Box,Area=Current==Move.Chop?ChopArea():SpinArea(),
+                Origin=actor.Position,StartsAt=activeAt,EndsAt=activeEnds});
+        }
+        BossThreatPhase ThreatPhase=>Phase==Stage.Prepare?BossThreatPhase.Preparation:Phase==Stage.Locked?BossThreatPhase.Locked:BossThreatPhase.Active;
         public void Cancel()
         {
-            PreviewMove = Move.None;
-            if (Invading) { Invading = false; actor.Health.Invulnerable = false; }
-            Current = Move.None; Phase = Stage.Idle; AxeFlying = false; AxeSpin = 0; path.Clear();
-            nextDecisionAt = Time.time + .5f;
+            PreviewMove=Move.None;
+            if(Invading){Invading=false;actor.Health.Invulnerable=false;}
+            if(!PhaseTwo&&Current!=Move.None)actor.Motor?.EndAttackMotion();
+            Current=Move.None;Phase=Stage.Idle;AxeFlying=false;AxeSpin=0;path.Clear();flight.Clear();
+            nextDecisionAt=Time.time+.5f;
         }
 
         // At each threshold the Boss finishes his current move, lands, then stands invulnerable and
@@ -354,6 +277,7 @@ namespace GoGhost.Duel
             if (transitionHeld || Time.time < transitionUntil) return true;
             actor.Health.BeginSecondPhase();
             Transitioning = false; PhaseTwo = true;
+            actor.RestoreSecondPhaseMotion();
             actor.View?.SetFinalBossPhaseTwo();
             nextDecisionAt = Time.time + .6f;
             return true;
@@ -366,142 +290,10 @@ namespace GoGhost.Duel
         {
             Cancel();
             actor.Health.SkipToSecondPhase();
-            PhaseTwo = true; Transitioning = false; transitionHeld = false;
+            PhaseTwo = true; actor.RestoreSecondPhaseMotion(); Transitioning = false; transitionHeld = false;
             actor.View?.SetFinalBossPhaseTwo();
             actor.View?.SetEyesRed(true, immediate: true);
         }
 
-        void TrackTarget()
-        {
-            var facts = actor.Perception.Facts;
-            Vector2 target = facts.Confidence > .1f ? facts.Position : actor.Position + Vector2.right * actor.Facing;
-            actor.Face(target - actor.Position);
-            lockedFacing = actor.Facing;
-            if (Current != Move.Throw && Current != Move.Boomerang) return;
-            var arena = actor.Navigation.ArenaBounds;
-            Vector2 hand = Hand();
-            path.Clear(); path.Add(hand);
-            if (Current == Move.Throw)
-            {
-                Vector2 direction = target - hand;
-                if (direction.sqrMagnitude < .01f) direction = Vector2.right * lockedFacing;
-                direction.Normalize();
-                float reach = Mathf.Min(ThrowRange, ArenaBoundary2D.ExitDistance(arena, hand, direction, AxeRadius));
-                path.Add(hand + direction * Mathf.Max(1, reach));
-                return;
-            }
-            // Boomerang: out along a high arc to the target, back along a low arc to the hand.
-            Vector2 end = ArenaBoundary2D.ClampPoint(arena, target, AxeRadius + .1f);
-            Vector2 mid = (hand + end) * .5f;
-            Vector2 high = new Vector2(mid.x, Mathf.Min(Mathf.Max(hand.y, end.y) + 2.8f, arena.max.y - AxeRadius - .2f));
-            Vector2 low = new Vector2(mid.x, Mathf.Max(Mathf.Min(hand.y, end.y) - .8f, arena.min.y + AxeRadius + .45f));
-            int half = BoomerangSamples / 2;
-            for (int i = 1; i <= half; i++) path.Add(Bezier(hand, high, end, i / (float)half));
-            for (int i = 1; i < BoomerangSamples - half; i++) path.Add(Bezier(end, low, hand, i / (float)(BoomerangSamples - half - 1)));
-        }
-
-        void PlanActiveWindow()
-        {
-            // Activate sets activeAt itself; earlier phases predict it from the remaining tell.
-            if (Phase == Stage.Prepare) activeAt = phaseUntil + acceptedTiming.Lock;
-            else if (Phase == Stage.Locked) activeAt = phaseUntil;
-            float active = acceptedTiming.Active;
-            if (Current == Move.Throw && path.Count == 2)
-            {
-                float length = Vector2.Distance(path[0], path[1]);
-                throwOut = length / ThrowSpeed; throwBack = length / RecallSpeed;
-                active = throwOut + ThrowHold + throwBack;
-            }
-            activeEnds = activeAt + active;
-        }
-
-        Vector2 AxeAt(float time, out bool returning)
-        {
-            float t = time - activeAt; returning = false;
-            if (Current == Move.Throw && path.Count == 2)
-            {
-                if (t <= throwOut) return Vector2.Lerp(path[0], path[1], t / Mathf.Max(.001f, throwOut));
-                if (!RecallLocked) return path[1];
-                returning = true;
-                return Vector2.Lerp(path[1], RecallPoint, (time - recallAt) / throwBack);
-            }
-            if (path.Count < 2) return Hand();
-            float f = Mathf.Clamp01(t / Mathf.Max(.001f, activeEnds - activeAt)) * (path.Count - 1);
-            int i = Mathf.Min(path.Count - 2, Mathf.FloorToInt(f));
-            returning = i >= BoomerangSamples / 2;
-            return Vector2.Lerp(path[i], path[i + 1], f - i);
-        }
-
-        public Vector2 Hand() => actor.Position + new Vector2(lockedFacing * .35f, .25f);
-        public Bounds ChopArea() => new Bounds(actor.Position + new Vector2(lockedFacing * ChopReach * .5f, .05f), new Vector3(ChopReach, ChopHeight, 1));
-        Bounds SpinArea()
-        {
-            var area = new Bounds(actor.Position, new Vector3(SpinRadius * 2, SpinRadius * 2, 1));
-            if (PhaseTwo)
-            {
-                float travel = actor.Motor.Profile.Speed * SpinMove * Timings[(int)Move.Spin].Active;
-                area.Encapsulate(new Bounds(actor.Position + Vector2.right * lockedFacing * travel, area.size));
-            }
-            return area;
-        }
-        Bounds PlayerBounds() => playerBody != null ? playerBody.bounds : new Bounds(Vector3.one * 9999, Vector3.zero);
-        bool SweptHit(Vector2 from, Vector2 to)
-        {
-            var bounds = PlayerBounds();
-            for (int i = 0; i <= 4; i++)
-                if (bounds.SqrDistance(Vector2.Lerp(from, to, i / 4f)) <= AxeRadius * AxeRadius) return true;
-            return false;
-        }
-        bool Strike(int damage)
-        {
-            var player = actor.Player;
-            if (player == null || player.IsDead) return false;
-            int before = player.CurrentHealth;
-            player.TakeDamage(damage, actor.gameObject);
-            if (player.CurrentHealth < before) Hits[(int)Current]++;
-            return true;
-        }
-        static Vector2 Bezier(Vector2 a, Vector2 b, Vector2 c, float t) => Vector2.Lerp(Vector2.Lerp(a, b, t), Vector2.Lerp(b, c, t), t);
-
-        // Expressed geometry for player rules (Incoming Attack). Chop and Spin are melee boxes;
-        // the flying axe is a ranged projectile split into its actual path segments.
-        public void Publish(List<BossThreat> output)
-        {
-            if (Current == Move.None || Phase == Stage.Recovery || Phase == Stage.Idle) return;
-            var phase = Phase == Stage.Prepare ? BossThreatPhase.Preparation : Phase == Stage.Locked ? BossThreatPhase.Locked : BossThreatPhase.Active;
-            var threat = new BossThreat { ActorId = actor.ActorId, AttackId = attackId, Phase = phase, Origin = actor.Position,
-                Facing = lockedFacing, Valid = true, TerrainBlocked = false, StartsAt = activeAt, EndsAt = activeEnds };
-            if (Current == Move.Chop || Current == Move.Spin)
-            {
-                threat.Shape = BossThreatShape.Box;
-                threat.Area = Current == Move.Chop ? ChopArea() : SpinArea();
-                output.Add(threat);
-                return;
-            }
-            if (path.Count < 2) return;
-            threat.Shape = BossThreatShape.Projectile; threat.Radius = AxeRadius;
-            if (Current == Move.Throw)
-            {
-                AddSegment(output, threat, path[0], path[1], activeAt, activeAt + throwOut);
-                if (RecallLocked) AddSegment(output, threat, path[1], RecallPoint, recallAt, recallHitEnds);
-                return;
-            }
-            float step = (activeEnds - activeAt) / (path.Count - 1);
-            for (int i = 0; i < path.Count - 1; i++)
-            {
-                float end = activeAt + step * (i + 1);
-                if (Phase == Stage.Active && end < Time.time) continue;
-                AddSegment(output, threat, path[i], path[i + 1], activeAt + step * i, end);
-            }
-        }
-        static void AddSegment(List<BossThreat> output, BossThreat threat, Vector2 from, Vector2 to, float starts, float ends)
-        {
-            if (ends < Time.time) return;
-            Vector2 delta = to - from;
-            threat.Origin = from; threat.End = to; threat.Direction = delta.sqrMagnitude > .0001f ? delta.normalized : Vector2.right;
-            threat.ProjectileSpeed = delta.magnitude / Mathf.Max(.001f, ends - starts);
-            threat.StartsAt = starts; threat.EndsAt = ends;
-            output.Add(threat);
-        }
     }
 }

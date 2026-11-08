@@ -59,7 +59,7 @@ The 2026-10-27 drawn-face flow supersedes this 2026-10-16 presentation. The reta
 
 **Final Boss presentation, updated 2026-11-07**
 - The player’s Rules occupy the left edge in every wave. The combat camera fills the remaining width and uses the full screen when the sidebar is hidden.
-- **Phase one:** a player-sized rainbow stickman (the retired Alpha look) with an axe, using the existing tell style.
+- **Phase one:** the player-sized rainbow stickman wields a bearded axe with a short poll, broad curved blade and swept haft. The flat gray-blue silhouette (#6F8191) and ice-blue socket (#C5EDFF) match the electromagnetic revolver. Grounded cuts use the Swordsman's local lock arc and a short trail along the active blade. Airborne cuts show the active blade. An anchored axe stays in place while the Boss moves toward its grip.
 - After the shockwave and platform movement, the player’s rule arrows disconnect, the cards lose their action colors and the sidebar reads **SEALED**. The Boss drains to white before his red eyes light. The sidebar fades during the countdown.
 - **Phase two:** the white Boss retains the axe for Chop and Spin, with no tell lines. His red eye trails follow his movement.
 - The EMP wave and outlines use violet #B28CFF. Moving platforms keep their gray surface and a subdued violet edge after contact. A violet outline appears around the player’s visible sidebar. The Boss loses his rim as the rainbow drains. The interrupted Happy caption shows its rim immediately before cutoff.

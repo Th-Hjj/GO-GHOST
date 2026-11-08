@@ -2,9 +2,7 @@ using UnityEngine;
 
 namespace GoGhost.Duel
 {
-    // Final Boss presentation: the player-sized stickman with the retired Alpha rainbow shader on
-    // its body, a neutral axe (shaft in the Weapon slot, head in the Sheath slot) and the shared
-    // preparation/lock/active tell hierarchy. Phase two restores plain white body materials.
+    // Rainbow body and phase transition. Phase two retains the original axe and boxer poses.
     public sealed partial class BossSilhouetteView
     {
         const float AxeShaft = 1.0f, AxeShaftWidth = .075f, AxeGrip = .14f;
@@ -13,7 +11,7 @@ namespace GoGhost.Duel
             Part.FrontCalf, Part.BackUpperArm, Part.BackForearm, Part.FrontUpperArm, Part.FrontForearm };
         Material rainbowMaterial;
         Material[] axeBodyMaterials;
-        SpriteRenderer flyingShaft, flyingHead, frontEye, backEye;
+        SpriteRenderer frontEye, backEye;
         float drainFrom = -1, drainSeconds = 1, shockwaveAt = -1;
         public const float ShockwaveSeconds = 1.25f;
         public const float ShockwaveStartRadius = .4f;
@@ -204,10 +202,9 @@ namespace GoGhost.Duel
                 p.Chest.x -= .04f * reach; p.Head.y += .02f * reach;
                 return;
             }
-            if (!axe.PhaseTwo && axe.Current == FinalBossAxe.Move.None)
+            if (!axe.PhaseTwo)
             {
-                p.WeaponAngle = -54;
-                p.FrontHand = new Vector2(.30f, -.07f + wave * motion * .035f);
+                PhaseOneAxePose(ref p, axe, wave, motion);
                 return;
             }
             switch (axe.Current)
@@ -217,7 +214,7 @@ namespace GoGhost.Duel
                     if (prepare || locked)
                     {
                         float raise = prepare ? t : 1;
-                        p.WeaponAngle = Mathf.Lerp(axe.PhaseTwo ? 72 : -54, 158, raise);
+                        p.WeaponAngle = Mathf.Lerp(72, 158, raise);
                         p.FrontHand = Vector2.Lerp(p.FrontHand, new Vector2(-.02f, .66f), raise);
                         p.Chest.x -= .06f * raise; p.Head.x -= .04f * raise;
                     }
@@ -229,15 +226,14 @@ namespace GoGhost.Duel
                         p.Chest.x += .12f * settle; p.Head.x += .09f * settle; p.Hip.y -= .07f * settle;
                         if (recover)
                         {
-                            p.WeaponAngle = Mathf.Lerp(-38, axe.PhaseTwo ? 72 : -54, t);
-                            if (!axe.PhaseTwo) p.FrontHand = Vector2.Lerp(p.FrontHand, new Vector2(.30f, -.07f), t);
+                            p.WeaponAngle = Mathf.Lerp(-38, 72, t);
                         }
                     }
                     p.BackHand = p.FrontHand + new Vector2(-.12f, -.06f);
                     break;
                 case FinalBossAxe.Move.Spin:
                     p.FrontFoot.x = .36f; p.BackFoot.x = -.36f;
-                    p.Hip.y -= axe.PhaseTwo ? .08f : .15f; p.Chest.y -= axe.PhaseTwo ? .05f : .11f;
+                    p.Hip.y -= .08f; p.Chest.y -= .05f;
                     if (active)
                     {
                         // The whole axe sweeps a full circle around the body at arm's length.
@@ -248,31 +244,9 @@ namespace GoGhost.Duel
                     {
                         float out_ = prepare ? t : locked ? 1 : settle;
                         p.WeaponAngle = Mathf.Lerp(72, 180, out_);
-                        p.FrontHand = Vector2.Lerp(p.FrontHand, new Vector2(-.40f, axe.PhaseTwo ? .22f : .02f), out_);
+                        p.FrontHand = Vector2.Lerp(p.FrontHand, new Vector2(-.40f, .22f), out_);
                     }
                     p.BackHand = new Vector2(.30f, .20f);
-                    break;
-                case FinalBossAxe.Move.Throw:
-                case FinalBossAxe.Move.Boomerang:
-                    bool overhand = axe.Current == FinalBossAxe.Move.Throw;
-                    p.FrontFoot.x = .36f; p.BackFoot.x = -.40f;
-                    if (prepare || locked)
-                    {
-                        float wind = prepare ? t : 1;
-                        p.WeaponAngle = Mathf.Lerp(-54, overhand ? 140 : 115, wind);
-                        p.FrontHand = Vector2.Lerp(p.FrontHand, overhand ? new Vector2(-.26f, .52f) : new Vector2(-.38f, .65f), wind);
-                        p.Chest.x -= (overhand ? .07f : .16f) * wind;
-                    }
-                    else
-                    {
-                        // The empty hand stays forward until the axe returns to it.
-                        p.FrontHand = new Vector2(.42f, overhand ? .30f : .16f);
-                        if (overhand && active && !axe.RecallLocked)
-                            p.FrontHand = new Vector2(.18f, -.02f);
-                        p.Chest.x += .08f * settle;
-                        if (recover) p.WeaponAngle = Mathf.Lerp(20, 72, t);
-                    }
-                    p.BackHand = new Vector2(-.18f, .02f);
                     break;
             }
         }
@@ -287,6 +261,13 @@ namespace GoGhost.Duel
 
         void PlaceHeldAxe(Pose p)
         {
+            if (!FinalAxe || !actor.Axe.PhaseTwo)
+            {
+                PlacePhaseOneAxe(p);
+                return;
+            }
+            var weapon = parts[(int)Part.Weapon];
+            if (originalWeaponSprite != null) weapon.sprite = originalWeaponSprite;
             Vector2 direction = Angle(p.WeaponAngle);
             Place(Part.Weapon, p.FrontHand + direction * (AxeShaft * .5f - AxeGrip), new Vector2(AxeShaft, AxeShaftWidth), p.WeaponAngle);
             Vector2 blade = new Vector2(direction.y, -direction.x);
@@ -294,50 +275,12 @@ namespace GoGhost.Duel
             if (parts[(int)Part.Sheath] != null) { var color = weaponColor; color.a = alpha; parts[(int)Part.Sheath].color = color; }
         }
 
-        void UpdateFlyingAxe()
-        {
-            var axe = actor.Axe;
-            bool flying = axe.AxeFlying && !defeated;
-            if (flying && flyingShaft == null)
-            {
-                flyingShaft = FlyingPart("FlyingAxeShaft");
-                flyingHead = FlyingPart("FlyingAxeHead");
-            }
-            if (flyingShaft == null) return;
-            flyingShaft.enabled = flyingHead.enabled = flying;
-            if (!flying) return;
-            Vector2 direction = Angle(axe.AxeSpin), blade = new Vector2(direction.y, -direction.x);
-            SetFlying(flyingShaft, axe.AxePosition - direction * .18f, new Vector2(AxeShaft, AxeShaftWidth), axe.AxeSpin);
-            SetFlying(flyingHead, axe.AxePosition + direction * .24f + blade * .10f, AxeHeadSize, axe.AxeSpin);
-        }
-
-        SpriteRenderer FlyingPart(string label)
-        {
-            var source = parts[(int)Part.Weapon];
-            var go = new GameObject(label);
-            // Parented to the actor root (never mirrored by the view's facing scale).
-            go.transform.SetParent(actor.transform, false);
-            var sprite = go.AddComponent<SpriteRenderer>();
-            sprite.sprite = source.sprite; sprite.sharedMaterial = source.sharedMaterial;
-            sprite.sortingLayerID = source.sortingLayerID; sprite.sortingOrder = source.sortingOrder;
-            sprite.color = weaponColor;
-            return sprite;
-        }
-
-        static void SetFlying(SpriteRenderer sprite, Vector2 centre, Vector2 size, float angle)
-        {
-            sprite.transform.position = new Vector3(centre.x, centre.y, sprite.transform.position.z);
-            sprite.transform.rotation = Quaternion.Euler(0, 0, angle);
-            Vector2 source = sprite.sprite.bounds.size;
-            sprite.transform.localScale = new Vector3(size.x / Mathf.Max(.001f, source.x), size.y / Mathf.Max(.001f, source.y), 1);
-        }
-
         // A tight coil at the raised blade sends one violet trace; the receiving ring lands at the write.
         void InvasionSignal(FinalBossAxe axe)
         {
             if (actor.Player == null) return;
             float age = axe.InvasionProgress * FinalBossAxe.InvasionDuration;
-            Vector2 from = parts[(int)Part.Sheath].bounds.center;
+            Vector2 from = phaseOneSocket;
             Vector2 to = actor.Player.transform.position;
             float charge = Mathf.SmoothStep(0, 1, Mathf.InverseLerp(.12f, .70f, age));
             float release = Mathf.InverseLerp(FinalBossAxe.InvasionInject, FinalBossAxe.InvasionDuration, age);
@@ -382,55 +325,7 @@ namespace GoGhost.Duel
             var axe = actor.Axe;
             if (axe.PhaseTwo) return;
             if (axe.Invading) { InvasionSignal(axe); return; }
-            if (axe.Current == FinalBossAxe.Move.None || axe.Phase == FinalBossAxe.Stage.Recovery) return;
-            bool active = axe.Phase == FinalBossAxe.Stage.Active, locked = axe.Phase == FinalBossAxe.Stage.Locked || active;
-            float width = SwordTellWidth(active, locked);
-            Color color = AxeTellColor(active, locked);
-            switch (axe.Current)
-            {
-                case FinalBossAxe.Move.Chop:
-                {
-                    // The swing arc: overhead to the ground in front, at the strike reach.
-                    if (tells[0] == null) tells[0] = NewLine("AxeChopTell", false, 17);
-                    var line = tells[0]; line.enabled = true; line.positionCount = 17;
-                    line.startWidth = line.endWidth = width; line.startColor = line.endColor = color;
-                    Vector2 root = actor.Position + Vector2.up * .3f;
-                    for (int i = 0; i < 17; i++)
-                    {
-                        float angle = Mathf.Lerp(100, -40, i / 16f) * Mathf.Deg2Rad;
-                        line.SetPosition(i, ClipTellPoint(root + new Vector2(axe.LockedFacing * Mathf.Cos(angle), Mathf.Sin(angle)) * FinalBossAxe.ChopReach, width));
-                    }
-                    break;
-                }
-                case FinalBossAxe.Move.Spin:
-                {
-                    if (tells[0] == null) tells[0] = NewLine("AxeSpinTell", false, 33);
-                    var line = tells[0]; line.enabled = true; line.positionCount = 33;
-                    line.startWidth = line.endWidth = width; line.startColor = line.endColor = color;
-                    for (int i = 0; i < 33; i++)
-                    {
-                        float angle = i / 32f * Mathf.PI * 2;
-                        line.SetPosition(i, ClipTellPoint(actor.Position + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * FinalBossAxe.SpinRadius, width));
-                    }
-                    break;
-                }
-                default:
-                {
-                    var path = axe.Path;
-                    if (path.Count < 2) break;
-                    if (tells[0] == null) tells[0] = NewLine("AxePathTell", false, path.Count);
-                    var line = tells[0]; line.enabled = true; line.positionCount = path.Count;
-                    line.startWidth = line.endWidth = width; line.startColor = line.endColor = color;
-                    if (axe.Current == FinalBossAxe.Move.Throw && axe.ThrowAtFarEnd)
-                    {
-                        if (axe.RecallInFlight) SetLine(line, axe.AxePosition, axe.RecallPoint, width, color);
-                        else line.enabled = false;
-                        break;
-                    }
-                    for (int i = 0; i < path.Count; i++) line.SetPosition(i, ClipTellPoint(path[i], width));
-                    break;
-                }
-            }
+            DrawPhaseOneAttack(axe);
         }
     }
 }

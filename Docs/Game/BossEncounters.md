@@ -6,18 +6,21 @@ The preparation page offers rule editing and optional **Test Loadout** practice.
 
 Mission 1 victory waits for **Continue to Mission 2**. Defeating Swordsman closes the Mission 2 metrics record and opens Mission 3 preparation with the same character and rules. **Start Mission** stages the real Final Boss in the five-platform arena. After the fade, the Boss says “So you think you're the only one with AI in your head.” Advancing the line starts the usual three-second countdown. A direct phase-two retry starts at the countdown.
 
-**Current source (stage 3 of the redesign below):** the Final Boss is a player-sized stickman built from the Swordsman prefab, with the Alpha rainbow shader on its body and an axe. `FinalBossAxe` replaces the sword tactics with its own AI and four telegraphed moves: Chop, Spin, Throw & Recall and Boomerang. Each move publishes threats: Chop and Spin as melee, the flying axe as ranged. Both health pools are 1000. When the first pool empties, the scripted transition below runs (stage 7). In the second phase he keeps the axe in hand for Chop and Spin. Retry and subsequent configuration use the equipped loadout. Walker Grupp's original prototype (commit `719c843`, 2x Swordsman with sword specials) is retired. Trial axe tuning (prepare/lock/active/recovery/cooldown, damage):
+The Final Boss uses the Swordsman body, the Alpha rainbow shader and an axe. Each phase has 1000 HP. His first-phase AI chooses movement and attacks from a five-move kit using delayed observations of the player. It considers walking and jumping across reachable supports, how soon a move puts the player in danger, and where the Boss will finish the attack. The player's equipped Rules continue to control their selected actions.
 
-| Move | Timing (s) | Damage | Shape |
-|---|---|---|---|
-| Chop | .42 / .14 / .12 / .50, cooldown 1.8 | 26 | one physical step, then a 2.3 x 2.1 box in front |
-| Spin | .45 / .15 / 1.0 / .65, cooldown 5 | 20 | one stationary sweep, 1.65 radius |
-| Throw & Recall | .40 / .15 / flight / .35, cooldown 4.5 | 18 per pass | straight out up to 12, .60 s hold, straight return toward the hand position at recall |
-| Boomerang | .45 / .15 / 1.6 / .40, cooldown 5.5 | 20 per pass | high arc out to the target, low arc back |
+### Phase-one attacks
 
-Chop steps toward its locked facing. Spin plants both feet and sweeps once. For a straight throw, the Boss stays planted from release through catch. After the axe pauses at the far end, he extends his empty hand and locks the return line to its position at that moment. Boomerang commits its high outward and low return arcs together. The AI favors Spin at point-blank range, Chop just outside it, a straight throw against a level target in reach and Boomerang across a height difference.
+Times below are trial values in seconds. Each move's cooldown begins after recovery. The damage column gives the maximum damage from each independently damaging part of the attack.
 
-The axe wielder’s combat AI uses delayed public observations for movement and attack selection. Between attacks he closes on a level target or adjusts horizontal spacing across a height difference. Rules belong to the player. The left sidebar shows the player’s active list, including any rule added by an invasion. The arena extends to the right edge of the screen.
+| Move | Prepare + lock | Damage by part | Recovery / cooldown | Commitment |
+|---|---|---|---|---|
+| Triple Cut | .32 + .16 | 14 / 16 / 26 | .60 / 2.6 | The advancing sweep, rising return and heavy cut keep the accepted facing. Each blade pass can hit once. |
+| Leaping Crosscut | .26 + .14 | 22 | .42 / 3.0 | A low forward leap delivers one airborne cut on the way to a supported landing. |
+| Anchor Vault | .34 + .18 | 12 / 26 | .70 / 7.0 | The thrown axe stops at a fixed anchor. The Boss pulls to the grip, crosses to a legal landing and cuts back. The stationary axe and pull deal no damage. |
+| Underpass Return | .32 + .16 | 14 / 19 | .50 / 5.8 | The Boss retreats into a high throw, jumps over the low return and catches behind himself. |
+| Palm Deflection | .40 + .18 | 10 / 12 / 22 | .80 / 9.0 | The first cast brakes at an arena boundary or a fixed point in open space. Throw and first recall share a hit. The palm redirects the axe into a second arc before the catch and final sweep. |
+
+The Boss checks takeoff, body clearance and landing space before committing to a route. A missed move still finishes its recovery. While the axe is in flight, its damaging segments publish ranged threats. Held cuts publish melee threats for the player's existing Incoming Attack rules. The sole sidebar contains the player's Rules. The EMP and second phase use their existing routes.
 
 **Invasions:** at 66% and 33% of the first pool, the Boss finishes his current move and lands. He lifts the axe in one hand and channels a violet pulse while invulnerable for 1.8 s. At 1.4 s the pulse reaches the player and `FinalBossInvasion` draws one random legal rule. The rule is appended after the player's last rule in a fight-only copy of the loadout, beyond the five-rule cap, and the rules are rebound. When the channel ends, Happy says “UNAUTHORIZED ACCESS DETECTED.” Combat freezes and the new card stays highlighted until the recording finishes and the player clicks. Thresholds crossed by one hit queue their invasions one after another. Rebinding resets the event state of the player's existing rules once per invasion. The equipped loadout is never modified, so Retry and Configuration start without invaded rules.
 
@@ -35,10 +38,10 @@ Thomas accepted the original design for trial on 2026-11-06. Its nine stages rep
 
 - **Body:** a player-sized stickman with the same proportions and silhouette as Waves 1 and 2, using the retired Alpha rainbow look. 1000 HP.
 - His combat AI controls movement and commits axe attacks. The poses and attack tells show what he is about to do.
-- **Axe:** chop, spin, straight throw and recall, and an arcing boomerang. All attacks keep the established tell style. More moves will be added later.
+- **Axe:** The five phase-one moves and tuning are listed above. Phase two retains Chop and Spin.
 - **Retired:** Walker's 2x Swordsman body, sword specials and platform destruction.
 
-**F8 tuning.** Under Waves, Start Phase 1 and Start Phase 2 start fresh encounters at the selected phase. The Final Boss tuning tab selects an axe move available in the chosen phase and adjusts its wind-up, recovery, cooldown and damage. An attack snapshots these values when accepted. Try selected move closes F8 and requests the move at its next legal opportunity. Current HP targets the active pool. The 66% and 33% controls set phase-one HP so the normal invasion checks can run. Tuning lives for this game session and Restore defaults resets it.
+**F8 tuning.** Under Missions, Start Phase 1 and Start Phase 2 start fresh encounters at the selected phase. Tuning → Final Boss exposes the five first-phase moves and the two second-phase axe moves. Each move snapshots wind-up, recovery, cooldown and damage on acceptance. For phase one, Strongest hit scales the other damage values proportionally. Try selected move closes F8 and requests the move at a legal opportunity. Current HP targets the active pool. The 66% and 33% buttons trigger the ordinary invasion thresholds. Tuning applies for the session and Restore defaults resets it.
 
 **Invasions.** At 66% and 33% phase-one health, the Boss stops, becomes invulnerable and plays an invasion animation. Each invasion appends one random legal Condition → Action rule to the end of the player's fight rules, even beyond the 5-rule cap. The equipped loadout is never modified, so Retry and Configuration discard invaded rules. Invasions are Boss abilities, not Boss rules.
 

@@ -12,6 +12,9 @@ namespace GoGhost.Duel
     {
         public bool IsFinalBoss { get; private set; }
         public FinalBossAxe Axe { get; private set; }
+        float secondPhaseMoveSpeed;
+
+        internal void RestoreSecondPhaseMotion() => profile.Motion.Speed = secondPhaseMoveSpeed;
 
         public void ConfigureFinal(PlayerHealth player, ArenaNavigation2D navigation, DuoCoordinator coordinator, int actorId,
             int firstHealth, int secondHealth, System.Action onPhaseTwo, System.Func<ConditionalRule> onInvasion)
@@ -21,6 +24,8 @@ namespace GoGhost.Duel
             profile.name = "Final boss (runtime)";
             profile.hideFlags = HideFlags.DontSave;
             profile.Health = firstHealth;
+            secondPhaseMoveSpeed = profile.Motion.Speed;
+            profile.Motion.Speed = 7.6f;
             if (profile.Sword != null) profile.Sword.UnboundHealth = -1f;   // the sword kit never runs
             gameObject.AddComponent<FinalBossProfileOwner>().Profile = profile;
             // Created before Configure so the view can apply the Final Boss look on its first frame.

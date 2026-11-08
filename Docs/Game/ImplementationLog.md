@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — Five-move Final Boss phase one
+
+Mission 3's first phase uses Triple Cut, Leaping Crosscut, Anchor Vault, Underpass Return and Palm Deflection. The Boss compares physical routes and attacks using delayed observations, clearance and the position he will occupy after the move. Missing attacks from one position encourages relocation. Losing sight of the player starts a search of reachable surfaces. In open space Palm Deflection uses a fixed brake point before the recall.
+
+The approved gray-blue axe with an ice-blue socket appears in the target dossier, the Boss's hand and the flight animation. The local slash arc and moving flight segments supply the corresponding melee and ranged threats to player Rules. F8 offers the five phase-one moves and keeps the phase-two Chop and Spin controls. The existing 66% and 33% invasions, EMP and direct phase-two retry remain part of the fight.
+
+The runtime scripts compiled with the Unity 6000.6.0f1 Roslyn compiler and Editor references. NOT TESTED in Play Mode or a player build. Thomas will test the encounter.
+
 ## 2026-11-07 — Final Boss uses his own combat AI
 
 Removed the Boss’s conditional controller and right sidebar. His existing axe AI handles spacing between attacks. He holds position while the straight axe is away and locks its return to his hand at recall. The combat view now extends to the right edge. Threshold invasions still add a fight-only rule to the player’s left sidebar. The EMP seals that sidebar before the phase-two countdown.

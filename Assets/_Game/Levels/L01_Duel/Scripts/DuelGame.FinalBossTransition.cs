@@ -95,7 +95,7 @@ namespace GoGhost.Duel
                 platform.gameObject.AddComponent<PlatformOscillator>().PrimeEmp(
                     Time.time + contact * BossSilhouetteView.ShockwaveSeconds);
             }
-            encounterSounds?.Play(Sfx.BeamFire);
+            encounterSounds?.Play(Sfx.EmpBurst);
             const float warningStart = .24f, warningDuration = .65f;
             yield return new WaitForSeconds(warningStart);
             EmpWarningEndsAt = Time.time + warningDuration;

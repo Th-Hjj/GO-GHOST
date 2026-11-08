@@ -18,7 +18,7 @@ namespace GoGhost.Duel
             Vector3 size = Vector3.Scale(source.localBounds.size, source.transform.lossyScale);
             edge.transform.localScale = new Vector3(1 + 2 * width / Mathf.Max(.001f, Mathf.Abs(size.x)),
                 1 + 2 * width / Mathf.Max(.001f, Mathf.Abs(size.y)), 1);
-            edge.color = NeuralPalette.Alpha(NeuralPalette.Spine, 0);
+            edge.color = NeuralPalette.Alpha(NeuralPalette.Emp, 0);
             return edge;
         }
     }

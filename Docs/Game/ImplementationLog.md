@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-08 — Final Boss EMP rule invasions
+
+The 66% and 33% health marks announce two one-handed axe raises. Violet filaments converge above the blade, contract and burst into the EMP ring. Its first contact with the player suspends the simulation while Happy confirms the rule and reads its actual Condition and Action. Each injected card keeps its label. Dodge now uses lemon yellow, and the phase change adds a white front and a second violet ring. Both releases use the approved 3.3 s ScifiCannon edit.
+
+Unity 6000.6.0f1 compiled the changes. In Play Mode, Mission 3 Start Mission led through its countdown. Two threshold crossings produced two bursts, two rules, zero measured player/Boss displacement or fight-clock advance during holds, and normal time on release. A second run crossed both thresholds with five equipped rules, closed F8 during a hold, showed seven fight rules and returned to configuration with five. The phase transition also reached phase two and emitted its own burst. All 29 possible field clips resolved to stereo assets. The recorded stereo mix contains both bursts and all six spoken cues at their captured beats. [Game View recording](../../Logs/EmpInvasion/Mission-3-EMP.mp4) (local). Standalone build and manual balance playtest NOT TESTED.
+
 ## 2026-11-08 — Anchor Vault execution
 
 Anchor Vault now owns the selected grip, pull, catch-time sighting and leaping chop. Phase-one tactics still decides when to use it. The cast locks the grip, the physical catch fixes the jump, and a successful takeoff makes the chop available to the shared hit and threat systems. A blocked pull retrieves the axe harmlessly. A failed leap after the catch leaves it in the Boss's hand.
@@ -25,6 +31,10 @@ Compiled the runtime assembly with the Unity 6000.6.0f1 compiler and Editor refe
 Thomas reported that Anchor Vault traveled a short distance and finished almost in place. The grip used to sit directly above the landing. The move now requires a 5.5–11-unit cast and an independently validated 2.6–4.4-unit rebound. The Boss can continue forward or cut back from the far side. The other four moves have distinct spacing, contact windows and visual cues documented in Boss Encounters. The AI compares actual blade contact, ending position, observed approaches and reversals, and recent misses when choosing an attack or platform route.
 
 The Unity 6000.6.0f1 runtime assembly compiled with Editor references. Play Mode, visual review and balance are NOT TESTED. Thomas requested compilation only and will playtest the encounter.
+
+## 2026-11-07 — Final Boss phase-one dialogue
+
+Mission 3 enters the shared three-second countdown immediately after the arena fade. Each completed rule invasion plays Happy’s warning as background audio while the player and Boss continue fighting. NOT TESTED at Thomas’s request.
 
 ## 2026-11-07 — Phase-one platform attacks
 

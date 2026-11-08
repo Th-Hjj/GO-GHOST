@@ -20,15 +20,183 @@
   "openingDelay": 0.3,
   "lines": [
     {
-      "key": "FinalBossVoice/PhaseOneOpening",
-      "label": "Mission 3 · Phase one opening",
-      "text": "So you think you're the only one with AI in your head.",
+      "key": "Handler/InvasionWarning",
+      "label": "Mission 3 · New Rule, Confirmed",
+      "text": "New Rule, Confirmed.",
       "locked": false
     },
     {
-      "key": "Handler/InvasionWarning",
-      "label": "Mission 3 · Rule invasion complete",
-      "text": "UNAUTHORIZED ACCESS DETECTED.",
+      "key": "Handler/InvasionActionAutoAim",
+      "label": "Mission 3 · Action, Auto Aim",
+      "text": "Action, Auto Aim.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionActionChangePlatformHigher",
+      "label": "Mission 3 · Action, Change Platform, Higher",
+      "text": "Action, Change Platform, Higher.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionActionChangePlatformLower",
+      "label": "Mission 3 · Action, Change Platform, Lower",
+      "text": "Action, Change Platform, Lower.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionActionDodgeAwayfromThreat",
+      "label": "Mission 3 · Action, Dodge, Away from Threat",
+      "text": "Action, Dodge, Away from Threat.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionActionDodgeTowardEnemy",
+      "label": "Mission 3 · Action, Dodge, Toward Enemy",
+      "text": "Action, Dodge, Toward Enemy.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionActionFireKeepFiring",
+      "label": "Mission 3 · Action, Fire, Keep Firing",
+      "text": "Action, Fire, Keep Firing.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionActionFireShortBurst",
+      "label": "Mission 3 · Action, Fire, Short Burst",
+      "text": "Action, Fire, Short Burst.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionActionJump",
+      "label": "Mission 3 · Action, Jump",
+      "text": "Action, Jump.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionActionKeepDistanceClose",
+      "label": "Mission 3 · Action, Keep Distance, Close",
+      "text": "Action, Keep Distance, Close.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionActionKeepDistanceFar",
+      "label": "Mission 3 · Action, Keep Distance, Far",
+      "text": "Action, Keep Distance, Far.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionActionKeepDistanceMid",
+      "label": "Mission 3 · Action, Keep Distance, Mid",
+      "text": "Action, Keep Distance, Mid.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionActionMoveAwayfromEnemy",
+      "label": "Mission 3 · Action, Move, Away from Enemy",
+      "text": "Action, Move, Away from Enemy.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionActionMoveTowardEnemy",
+      "label": "Mission 3 · Action, Move, Toward Enemy",
+      "text": "Action, Move, Toward Enemy.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionConditionAirborne",
+      "label": "Mission 3 · Condition, Airborne",
+      "text": "Condition, Airborne.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionConditionEnemyNearYourAim",
+      "label": "Mission 3 · Condition, Enemy Near Your Aim",
+      "text": "Condition, Enemy Near Your Aim.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionConditionGrounded",
+      "label": "Mission 3 · Condition, Grounded",
+      "text": "Condition, Grounded.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionConditionHitEnemy",
+      "label": "Mission 3 · Condition, Hit Enemy",
+      "text": "Condition, Hit Enemy.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionConditionHorizontalEnemyDistanceClose",
+      "label": "Mission 3 · Condition, Horizontal Enemy Distance, Close",
+      "text": "Condition, Horizontal Enemy Distance, Close.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionConditionHorizontalEnemyDistanceFar",
+      "label": "Mission 3 · Condition, Horizontal Enemy Distance, Far",
+      "text": "Condition, Horizontal Enemy Distance, Far.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionConditionHorizontalEnemyDistanceMid",
+      "label": "Mission 3 · Condition, Horizontal Enemy Distance, Mid",
+      "text": "Condition, Horizontal Enemy Distance, Mid.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionConditionIncomingAttackAny",
+      "label": "Mission 3 · Condition, Incoming Attack, Any",
+      "text": "Condition, Incoming Attack, Any.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionConditionIncomingAttackMelee",
+      "label": "Mission 3 · Condition, Incoming Attack, Melee",
+      "text": "Condition, Incoming Attack, Melee.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionConditionIncomingAttackRanged",
+      "label": "Mission 3 · Condition, Incoming Attack, Ranged",
+      "text": "Condition, Incoming Attack, Ranged.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionConditionLanded",
+      "label": "Mission 3 · Condition, Landed",
+      "text": "Condition, Landed.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionConditionNearWall",
+      "label": "Mission 3 · Condition, Near Wall",
+      "text": "Condition, Near Wall.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionConditionPlayerLowHealth",
+      "label": "Mission 3 · Condition, Player Low Health",
+      "text": "Condition, Player Low Health.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionConditionReloading",
+      "label": "Mission 3 · Condition, Reloading",
+      "text": "Condition, Reloading.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionConditionTookDamage",
+      "label": "Mission 3 · Condition, Took Damage",
+      "text": "Condition, Took Damage.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionConditionTriggerHeld",
+      "label": "Mission 3 · Condition, Trigger Held",
+      "text": "Condition, Trigger Held.",
       "locked": false
     },
     {

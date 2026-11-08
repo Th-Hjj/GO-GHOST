@@ -16,42 +16,96 @@ namespace GoGhost.Duel
         // DraftLoadout is never modified, so Retry and Configuration discard invaded rules.
         ConditionalLoadout invadedLoadout;
         public int InvadedRuleCount { get; private set; }
-        internal bool BossOpening { get; private set; }
-        internal bool InvasionReview { get; private set; }
+        internal enum InvasionBeat { None, Contact, Confirm, Condition, Action, Read }
+        internal InvasionBeat InvasionPage { get; private set; }
+        internal bool InvasionHeld => InvasionPage != InvasionBeat.None;
+        internal string InvasionCaption { get; private set; }
+        FinalBossAxe readingAxe;
+        float invasionPageAge;
+        readonly System.Collections.Generic.List<SpriteRenderer> contactEdges = new();
 
-        void SpeakPhaseOneOpening()
+        internal void HoldInvasion(FinalBossAxe axe)
         {
-            BossOpening = true;
-            handler.SpeakDialogue("FinalBossVoice/PhaseOneOpening", () =>
-            {
-                BossOpening = false;
-                ui.Show();
-            });
+            readingAxe = axe;
+            InvasionPage = InvasionBeat.Contact;
+            invasionPageAge = 0;
+            Time.timeScale = 0;
+            input.SetNarrativePaused(true);
+            Rules?.SetFeedbackPaused(true);
+            var visual=Player.GetComponent<OfficerVisual>();
+            if(visual!=null)
+                for(int slot=0;slot<=(int)LoadoutSlot.Brain;slot++)
+                {
+                    var part=visual.Part((LoadoutSlot)slot);
+                    if(part==null || !part.enabled)continue;
+                    var edge=EmpOutline.Create(part,part.sharedMaterial,part.sortingOrder-1,.065f);
+                    edge.color=NeuralPalette.Emp;
+                    contactEdges.Add(edge);
+                }
             ui.Show();
         }
 
-        internal void ReviewInvadedRule()
+        void EndInvasionReading()
         {
-            if (Phase != DuelPhase.Fight || Player == null || Player.IsDead) return;
-            InvasionReview = true;
-            ApplyPause(Paused);
-            handler.SpeakDialogue("Handler/InvasionWarning", () =>
-            {
-                InvasionReview = false;
-                ApplyPause(Paused);
-                input?.SuppressUiFireUntilRelease();
-                ui.Show();
-            }, realtime: true);
-            ui.Show();
-        }
-
-        void ClearPhaseOneDialogue()
-        {
-            if (!BossOpening && !InvasionReview) return;
-            BossOpening = InvasionReview = false;
+            if (!InvasionHeld) return;
+            readingAxe = null;
+            InvasionPage = InvasionBeat.None;
+            InvasionCaption = null;
             handler.Stop();
-            ApplyPause(Paused);
+            foreach(var edge in contactEdges)if(edge!=null)Destroy(edge.gameObject);
+            contactEdges.Clear();
+            input?.SetNarrativePaused(Paused);
+            Rules?.SetFeedbackPaused(Paused);
+            Time.timeScale = Paused ? 0 : 1;
         }
+
+        void TickInvasionReading()
+        {
+            invasionPageAge += Time.unscaledDeltaTime;
+            if(InvasionPage==InvasionBeat.Contact)
+                foreach(var edge in contactEdges)if(edge!=null)
+                    edge.color=NeuralPalette.Alpha(NeuralPalette.Emp,Mathf.Lerp(1,.48f,Mathf.Clamp01(invasionPageAge/.45f)));
+            if (InvasionPage == InvasionBeat.Contact)
+            {
+                if (invasionPageAge < .45f) return;
+                if (readingAxe.WriteInvasion() == null) { EndInvasionReading(); ui.Show(); return; }
+                ReadInvasionLine(InvasionBeat.Confirm,"Handler/InvasionWarning");
+                return;
+            }
+            if (InvasionPage == InvasionBeat.Read)
+            {
+                if (invasionPageAge >= .75f) { EndInvasionReading(); ui.Show(); }
+                return;
+            }
+            if (handler.Speaking) return;
+            var rule = readingAxe.LastInvasion;
+            if (InvasionPage == InvasionBeat.Confirm)
+                ReadInvasionLine(InvasionBeat.Condition,InvasionVoiceKey("Condition",ConditionalCatalog.RuleConditionLabel(rule)));
+            else if (InvasionPage == InvasionBeat.Condition)
+                ReadInvasionLine(InvasionBeat.Action,InvasionVoiceKey("Action",ConditionalCatalog.RuleActionLabel(rule)));
+            else
+            {
+                InvasionPage = InvasionBeat.Read;
+                invasionPageAge = 0;
+            }
+        }
+
+        internal static string InvasionVoiceKey(string field,string label)
+        {
+            var key = new System.Text.StringBuilder("Handler/Invasion").Append(field);
+            foreach (char c in label) if (char.IsLetterOrDigit(c)) key.Append(c);
+            return key.ToString();
+        }
+
+        void ReadInvasionLine(InvasionBeat beat,string key)
+        {
+            InvasionPage = beat;
+            invasionPageAge = 0;
+            InvasionCaption = VoiceStudioCatalog.Current.Find(key).text;
+            handler.PlayLine(key);
+            ui.Show();
+        }
+
         BossAgent CreateFinalBoss(float spawnX)
         {
             var instance = Instantiate(swordsmanPrefab, new Vector3(spawnX, swordsmanSpawn.y, 0), Quaternion.identity, encounter.transform);

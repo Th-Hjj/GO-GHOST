@@ -10,19 +10,19 @@ public enum Sfx
     BossBurst = 10, BeamCharge = 11, BeamLock = 12, BeamFire = 13,
     CamoEnter = 14, CamoExit = 15, BladeLight = 16, BladeHeavy = 17,
     DrawPrepare = 18, DashCut = 19, ReturnPrepare = 20, GuardBlock = 21,
-    Footstep = 22, Land = 23, Reload = 24, BossDefeat = 25
+    Footstep = 22, Land = 23, Reload = 24, BossDefeat = 25, EmpBurst = 26
 }
 
 /// <summary>One existing attempt/menu sound scope; only accepted public events request cues.</summary>
 [RequireComponent(typeof(PresentationOneShot))]
 public sealed class SfxSet : MonoBehaviour
 {
-    public const int CueCount = 26;
+    public const int CueCount = 27;
     [Tooltip("Indexed by Sfx. Original ten indices are unchanged; Boss cues are appended.")]
     [SerializeField] private AudioClip[] clips = new AudioClip[CueCount];
     [SerializeField] private float gain = 1f;
     private PresentationOneShot output;
-    private AudioClip defeatCue;
+    private AudioClip defeatCue, empBurst;
     private readonly int[] requested = new int[CueCount];
     private readonly Dictionary<(int actor, int cue), int> lastFrame = new Dictionary<(int, int), int>();
     private readonly HashSet<(int actor, int attack, int phase, int cue)> accepted = new HashSet<(int, int, int, int)>();
@@ -51,6 +51,7 @@ public sealed class SfxSet : MonoBehaviour
     public void SetPaused(bool value) => output?.SetPaused(value);
     public void CollectAudioClips(HashSet<AudioClip> destination)
     {
+        if (Clip(Sfx.EmpBurst) is AudioClip burst) destination.Add(burst);
         if (clips == null) return;
         foreach (var clip in clips) if (clip != null) destination.Add(clip);
     }
@@ -103,6 +104,7 @@ public sealed class SfxSet : MonoBehaviour
             if (defeatCue == null) defeatCue = CreateDefeatCue();
             return defeatCue;
         }
+        if (id == Sfx.EmpBurst) return empBurst != null ? empBurst : empBurst = Resources.Load<AudioClip>("EmpBurst");
         int index = (int)id;
         return clips != null && index >= 0 && index < clips.Length ? clips[index] : null;
     }
@@ -146,6 +148,7 @@ public sealed class SfxSet : MonoBehaviour
         switch (id)
         {
             case Sfx.BeamLock: return 24;
+            case Sfx.EmpBurst: return 40;
             case Sfx.DrawPrepare: case Sfx.ReturnPrepare: return 32;
             case Sfx.BeamCharge: case Sfx.BeamFire: case Sfx.DashCut: return 48;
             case Sfx.PlayerHurt: case Sfx.Victory: case Sfx.Defeat: return 64;
@@ -171,6 +174,7 @@ public sealed class SfxSet : MonoBehaviour
             case Sfx.BeamCharge: return .32f;
             case Sfx.BeamLock: return .60f;
             case Sfx.BeamFire: return .46f;
+            case Sfx.EmpBurst: return .65f;
             case Sfx.DrawPrepare: case Sfx.ReturnPrepare: return .56f;
             case Sfx.CamoEnter: case Sfx.CamoExit: return .23f;
             case Sfx.BladeLight: return .30f;

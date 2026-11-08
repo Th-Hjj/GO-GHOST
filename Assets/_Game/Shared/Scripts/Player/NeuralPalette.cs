@@ -11,7 +11,8 @@ public static class NeuralPalette
     public static readonly Color Secondary = new Color32(155, 171, 181, 255);
     public static readonly Color Arms = new Color32(53, 207, 255, 255);
     public static readonly Color Legs = new Color32(92, 247, 162, 255);
-    public static readonly Color Spine = new Color32(178, 140, 255, 255);
+    public static readonly Color Spine = new Color32(228, 240, 107, 255);
+    public static readonly Color Emp = new Color32(178, 140, 255, 255);
     // Gold contour only. No current head/Ultimate gameplay system.
     public static readonly Color HeadReserved = new Color32(248, 200, 92, 255);
     public static readonly Color Gunner = new Color32(255, 154, 98, 255);

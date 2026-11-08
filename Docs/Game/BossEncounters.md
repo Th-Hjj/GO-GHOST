@@ -4,7 +4,7 @@ The preparation page offers rule editing and optional **Test Loadout** practice.
 
 ## Final Boss and optional Bonus
 
-Mission 1 victory waits for **Continue to Mission 2**. Defeating Swordsman closes the Mission 2 metrics record and opens Mission 3 preparation with the same character and rules. **Start Mission** stages the real Final Boss in the five-platform arena. After the fade, the Boss says “So you think you're the only one with AI in your head.” Advancing the line starts the usual three-second countdown. A direct phase-two retry starts at the countdown.
+Mission 1 victory waits for **Continue to Mission 2**. Defeating Swordsman closes the Mission 2 metrics record and opens Mission 3 preparation with the same character and rules. **Start Mission** stages the real Final Boss in the five-platform arena. After the fade, the usual three-second countdown starts automatically. A direct phase-two retry starts at the countdown.
 
 The Final Boss uses the Swordsman body, the Alpha rainbow shader and an axe. Each phase has 1000 HP. His first-phase AI chooses movement and attacks from a five-move kit using delayed observations of the player. It considers walking and jumping across reachable supports, how soon a move puts the player in danger, and where the Boss will finish the attack. The player's equipped Rules continue to control their selected actions.
 
@@ -36,7 +36,9 @@ At actual grip contact he reads the latest visible player observation and at mos
 
 **Telegraphs.** All three throws charge the socket of the approved gray-blue axe from the beginning of preparation. An ice-blue ring contracts on the moving socket. Underpass draws the axe low behind the hip, Vault raises it overhead, and Palm presents the empty hand out front. Their default total startup times are .68, .75 and .78 respectively. A tapered cue marks the locked flight direction for the final .25 before release. A white-tipped trail follows the active spinning edge for up to 1.15 units. One-way supports allow sight and axe flight. Solid walls and the arena perimeter bound the attacks. Damaging flight legs and committed melee strokes publish their actual threats to the player's Incoming Attack rules.
 
-**Invasions:** at 66% and 33% of the first pool, the Boss finishes his current move and lands. He lifts the axe in one hand and channels a violet pulse while invulnerable for 1.8 s. At 1.4 s the pulse reaches the player and `FinalBossInvasion` draws one random legal rule. The rule is appended after the player's last rule in a fight-only copy of the loadout, beyond the five-rule cap, and the rules are rebound. When the channel ends, Happy says “UNAUTHORIZED ACCESS DETECTED.” Combat freezes and the new card stays highlighted until the recording finishes and the player clicks. Thresholds crossed by one hit queue their invasions one after another. Rebinding resets the event state of the player's existing rules once per invasion. The equipped loadout is never modified, so Retry and Configuration start without invaded rules.
+**Invasions.** Violet question marks mark 66% and 33% of the first health pool. Each threshold queues once. The Boss completes his move, lands, dips and raises the axe overhead. At .90 s violet filaments gather above the blade. At 2.02 s the core contracts and at 2.15 s it releases the EMP ring with the 3.3 s burst recording. The player can move until the expanding ring reaches their collider. Combat then freezes in place, including projectiles and cooldowns. After .45 s the Boss appends one random legal fight-only rule beyond the equipped cap. Happy says “New Rule, Confirmed.” and reads the actual Condition and Action with parameters, highlighting each field. Combat resumes .75 s after playback ends. Each added card keeps its RULE INJECTED label. Retry and Configuration discard injected rules. If one hit crosses both marks, the two invasions run in order.
+
+The EMP release uses the 3.3 s edit of BigDino1995’s [ScifiCannon](https://freesound.org/people/BigDino1995/sounds/569903/) (CC0), with a stretched low-frequency tail and short fade. The later phase change uses the same sound, a wider white-rimmed front and a second violet ring across the platforms.
 
 After Wave 3 victory, the Boss voices the two Bonus offer lines. Yes leads to Bonus preparation, No to the menu. The duo retains its geometry, music, AI and both-dead victory. Wave 3 and Bonus are outside the closed Wave 2 metrics record.
 
@@ -46,7 +48,7 @@ Thomas accepted the original design for trial on 2026-11-06. Its nine stages rep
 
 **Premise.** The Final Boss trusts AI more than the player does. He can write rules into the player's system. After losing the first phase, he disables the arena’s circuitry and fights with the axe in hand.
 
-**Entry.** Mission 3 preparation offers Test Loadout. Start Mission fades into the arena, plays the Boss opening line and starts the three-second countdown when the player advances.
+**Entry.** Mission 3 preparation offers Test Loadout. Start Mission fades into the arena and starts the same three-second countdown as Missions 1 and 2.
 
 ### Phase 1 — Rainbow Axeman
 
@@ -82,8 +84,8 @@ The Boss starts with 1000 HP. He uses Chop and Spin in melee range, pursues a ra
 
 **Implemented (stage 9):**
 - **Defeat page:** the player's health is recorded when the first pool empties. A phase-two defeat then shows **Retry Phase 2** and **Configuration**; a phase-one defeat keeps **Retry** and **Configuration**.
-- **Retry Phase 2:** builds a fresh Wave 3 encounter that skips the intro and the transition. The Boss starts on a full second pool (`Enemy.SkipToSecondPhase`) with red eyes and the axe in hand. The five moving platforms start with their residual violet edges. The player has the recorded health, the original revolver, no rule assistance and a full-width camera, followed by the normal countdown. Repeated retries keep the same health.
-- **Configuration:** restores the equipped rules and replays Wave 3 from the intro.
+- **Retry Phase 2:** builds a fresh Wave 3 encounter that skips phase one and the transition. The Boss starts on a full second pool (`Enemy.SkipToSecondPhase`) with red eyes and the axe in hand. The five moving platforms start with their residual violet edges. The player has the recorded health, the original revolver, no rule assistance and a full-width camera, followed by the normal countdown. Repeated retries keep the same health.
+- **Configuration:** restores the equipped rules and restarts Wave 3 from phase one.
 - **Developer shortcut:** **GO GHOST > Playtest > Wave 3 Phase 2** queues a phase-two start at full health.
 
 ## Boss friendly fire — approved 2026-10-26

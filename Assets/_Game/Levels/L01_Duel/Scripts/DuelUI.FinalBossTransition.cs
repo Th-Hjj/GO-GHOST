@@ -68,7 +68,7 @@ namespace GoGhost.Duel
             for(int i=0;i<4;i++)
             {
                 bool horizontal=i<2;
-                var edge=Image(frame,Vector2.zero,Vector2.zero,NeuralPalette.Spine).rectTransform;
+                var edge=Image(frame,Vector2.zero,Vector2.zero,NeuralPalette.Emp).rectTransform;
                 edge.anchorMin=horizontal?new Vector2(0,i):new Vector2(i-2,0);
                 edge.anchorMax=horizontal?new Vector2(1,i):new Vector2(i-2,1);
                 edge.pivot=horizontal?new Vector2(.5f,i):new Vector2(i-2,.5f);

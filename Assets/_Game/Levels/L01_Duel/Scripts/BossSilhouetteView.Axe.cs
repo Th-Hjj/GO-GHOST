@@ -107,24 +107,31 @@ namespace GoGhost.Duel
             if (empEdges != null && empEdges[0].enabled)
             {
                 float age = Time.time - releasedAt;
-                float strength = Mathf.Lerp(.96f, .35f, Mathf.SmoothStep(0, 1, age / .5f));
-                if (drainFrom >= 0) strength *= 1 - Mathf.Clamp01((clock - drainFrom) / drainSeconds);
-                var tint = NeuralPalette.Alpha(NeuralPalette.Spine, strength);
+                float rim = Mathf.Lerp(.96f, .35f, Mathf.SmoothStep(0, 1, age / .5f));
+                if (drainFrom >= 0) rim *= 1 - Mathf.Clamp01((clock - drainFrom) / drainSeconds);
+                var tint = NeuralPalette.Alpha(NeuralPalette.Emp, rim);
                 foreach (var edge in empEdges) edge.color = tint;
             }
             if (shockwaveAt < 0) return;
             float t = (Time.time - shockwaveAt) / ShockwaveSeconds;
             if (t >= 1) { shockwaveAt = -1; if (tells[2] != null) tells[2].enabled = false; return; }
-            const int points = 96;
-            if (tells[2] == null) tells[2] = NewLine("EMP wave", false, points);
-            var line = tells[2]; line.enabled = true; line.positionCount = points; line.loop = true;
             float radius = Mathf.Lerp(ShockwaveStartRadius, shockwaveReach, t);
-            line.startWidth = line.endWidth = Mathf.Lerp(.15f, .065f, t);
-            line.startColor = line.endColor = NeuralPalette.Alpha(NeuralPalette.Spine, 1 - Mathf.SmoothStep(0, 1, (t - .62f) / .38f));
+            float strength=1-Mathf.SmoothStep(0,1,(t-.62f)/.38f);
+            DrawEmpRing(2,shockwaveOrigin,radius,Mathf.Lerp(.24f,.09f,t),NeuralPalette.Alpha(NeuralPalette.Emp,strength));
+            DrawEmpRing(18,shockwaveOrigin,radius,.044f,NeuralPalette.Alpha(NeuralPalette.Primary,strength*.85f));
+            if(t>.11f) DrawEmpRing(19,shockwaveOrigin,Mathf.Lerp(ShockwaveStartRadius,shockwaveReach,(t-.11f)/.89f),
+                .19f,NeuralPalette.Alpha(NeuralPalette.Emp,strength*.52f));
+        }
+
+        void DrawEmpRing(int slot,Vector2 origin,float radius,float width,Color color)
+        {
+            const int points=96;
+            var line=AxeLine(slot,"EMP wave",points);
+            line.loop=true; line.startWidth=line.endWidth=width; line.startColor=line.endColor=color;
             for (int i = 0; i < points; i++)
             {
                 float angle = i / (float)points * Mathf.PI * 2;
-                line.SetPosition(i, shockwaveOrigin + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius);
+                line.SetPosition(i, origin + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius);
             }
         }
 
@@ -194,12 +201,16 @@ namespace GoGhost.Duel
             }
             if (axe.Invading)
             {
-                float progress = axe.InvasionProgress;
-                float reach = Ease(Mathf.Clamp01(progress / .20f)) * (1 - Ease(Mathf.InverseLerp(.82f, 1, progress)));
-                p.WeaponAngle = Mathf.Lerp(72, 95, reach);
-                p.FrontHand = Vector2.Lerp(p.FrontHand, new Vector2(-.06f, .58f), reach);
-                p.BackHand = Vector2.Lerp(p.BackHand, new Vector2(-.23f, -.10f), reach);
-                p.Chest.x -= .04f * reach; p.Head.y += .02f * reach;
+                float age=axe.InvasionAge, lift=Ease(Mathf.InverseLerp(.30f,.88f,age));
+                float dip=Ease(age/.30f)*(1-lift), reach=lift*(1-Ease(axe.InvasionRecovery));
+                p.WeaponAngle=72-108*dip+36*reach;
+                p.FrontHand=Vector2.Lerp(p.FrontHand,new Vector2(.40f,-.30f),dip);
+                p.FrontHand=Vector2.Lerp(p.FrontHand,new Vector2(-.14f,.88f),reach);
+                p.BackHand=Vector2.Lerp(p.BackHand,new Vector2(-.58f,.08f),reach);
+                p.Hip+=new Vector2(-.09f,-.20f)*dip;
+                p.Chest+=new Vector2(.16f,-.21f)*dip+new Vector2(-.13f,.10f)*reach;
+                p.Head+=new Vector2(.12f,-.21f)*dip+new Vector2(-.12f,.10f)*reach;
+                p.FrontFoot.x+=.18f*(dip+reach); p.BackFoot.x-=.21f*(dip+reach);
                 return;
             }
             if (!axe.PhaseTwo)
@@ -275,43 +286,68 @@ namespace GoGhost.Duel
             if (parts[(int)Part.Sheath] != null) { var color = weaponColor; color.a = alpha; parts[(int)Part.Sheath].color = color; }
         }
 
-        // A tight coil at the raised blade sends one violet trace; the receiving ring lands at the write.
+        internal Vector2 InvasionChargePoint => phaseOneSocket + Vector2.up * .23f;
+
         void InvasionSignal(FinalBossAxe axe)
         {
-            if (actor.Player == null) return;
-            float age = axe.InvasionProgress * FinalBossAxe.InvasionDuration;
-            Vector2 from = phaseOneSocket;
-            Vector2 to = actor.Player.transform.position;
-            float charge = Mathf.SmoothStep(0, 1, Mathf.InverseLerp(.12f, .70f, age));
-            float release = Mathf.InverseLerp(FinalBossAxe.InvasionInject, FinalBossAxe.InvasionDuration, age);
-            var violet = NeuralPalette.Spine;
-            DrawInvasionRing(3, from, Mathf.Lerp(.14f,.48f,charge), .065f,
-                NeuralPalette.Alpha(violet, charge * (1-release) * .88f));
-            if (age < .55f) return;
-            float travel = Mathf.SmoothStep(0,1,Mathf.InverseLerp(.55f,FinalBossAxe.InvasionInject,age));
-            var tip = Vector2.Lerp(from,to,travel);
-            if (tells[1] == null) tells[1] = NewLine("Invasion trace", true, 2);
-            SetLine(tells[1], from, tip, .035f, NeuralPalette.Alpha(violet,(1-release)*.65f));
-            if (tells[4] == null) tells[4] = NewLine("Invasion pulse", true, 2);
-            SetLine(tells[4], Vector2.Lerp(from,tip,.82f), tip, .085f,
-                NeuralPalette.Alpha(Color.Lerp(violet, NeuralPalette.Primary, .30f), 1-release));
-            if (age >= FinalBossAxe.InvasionInject)
-                DrawInvasionRing(5,to,Mathf.Lerp(.24f,1.08f,release),.075f,NeuralPalette.Alpha(violet,1-release));
-        }
-
-        void DrawInvasionRing(int slot, Vector2 center, float radius, float width, Color color)
-        {
-            const int points = 40;
-            if (tells[slot] == null) tells[slot] = NewLine("Invasion ring", true, points);
-            var line = tells[slot];
-            line.enabled = true; line.loop = true;
-            line.startWidth = line.endWidth = width; line.startColor = line.endColor = color;
-            for (int i=0; i<points; i++)
+            float age=axe.InvasionAge;
+            if(age<FinalBossAxe.ChargeAt) return;
+            if(age<FinalBossAxe.BurstAt)
             {
-                float angle = 2*Mathf.PI*i/points;
-                line.SetPosition(i, ClipTellPoint(center + radius*new Vector2(Mathf.Cos(angle),Mathf.Sin(angle)),width));
+                DrawCharge(age);
+                return;
+            }
+            if(axe.WaveRadius<=0) return;
+            float fade=1-Ease(axe.InvasionRecovery);
+            DrawEmpRing(2,axe.WaveOrigin,axe.WaveRadius,.105f,NeuralPalette.Alpha(NeuralPalette.Emp,fade));
+            float burst=Mathf.Clamp01((age-FinalBossAxe.BurstAt)/.22f);
+            if(burst<1)
+            {
+                for(int i=0;i<8;i++)
+                {
+                    Vector2 dir=Angle(45*i+8*Mathf.Sin(i));
+                    SetLine(AxeLine(8+i,"EMP burst spark",2),axe.WaveOrigin+dir*(.04f+.25f*burst),
+                        axe.WaveOrigin+dir*(.50f+.36f*burst+.1f*(i%3)),.054f*(1-burst),
+                        NeuralPalette.Alpha(i%2==0?NeuralPalette.Emp:NeuralPalette.Primary,1-burst));
+                }
             }
         }
+
+        void DrawCharge(float age)
+        {
+            Vector2 center=InvasionChargePoint;
+            float charge=Ease(Mathf.InverseLerp(FinalBossAxe.ChargeAt,FinalBossAxe.PinchAt,age));
+            float pinch=Ease(Mathf.InverseLerp(FinalBossAxe.PinchAt,FinalBossAxe.BurstAt,age));
+            float size=Mathf.Lerp(.04f,.21f,charge)*(1-.52f*pinch);
+            SetLine(AxeLine(3,"Charged axe",2),phaseOneSocket,center,.028f,NeuralPalette.Alpha(NeuralPalette.Emp,charge));
+            DrawEmpRing(4,center,size*.64f,size,NeuralPalette.Alpha(NeuralPalette.Emp,.84f));
+            SetLine(AxeLine(5,"EMP core",2),center-Vector2.up*size*.28f,center+Vector2.up*size*.28f,size*.72f,NeuralPalette.Primary);
+            for(int i=0;i<16;i++)
+            {
+                float travel=(age-FinalBossAxe.ChargeAt-i*.05f)/(.43f-i*.008f);
+                if(travel<=0||travel>=1) continue;
+                float a=i*137.5f;
+                Vector2 dir=Angle(a+travel*15),side=new Vector2(-dir.y,dir.x);
+                float distance=.55f+(i%5)*.12f;
+                Vector2 tip=center+dir*distance*(1-Ease(travel));
+                float tail=distance*(1-Ease(Mathf.Max(0,travel-.28f)));
+                var line=AxeLine(8+i,"EMP charge filament",3);
+                line.SetPosition(0,center+dir*tail);
+                line.SetPosition(1,(center+dir*tail+tip)*.5f+side*.06f);
+                line.SetPosition(2,tip);
+                line.startWidth=.022f; line.endWidth=.045f;
+                line.startColor=NeuralPalette.Alpha(NeuralPalette.Emp,.35f);
+                line.endColor=Color.Lerp(NeuralPalette.Emp,NeuralPalette.Primary,.55f);
+            }
+        }
+
+        internal void DrawInvasionContact(FinalBossAxe axe)
+        {
+            // Draw the contact frame immediately, even if time stops before the next LateUpdate.
+            UpdateTells();
+            DrawEmpRing(24,axe.WaveContact,.20f,.07f,NeuralPalette.Primary);
+        }
+
 
         Color AxeTellColor(bool active, bool locked)
         {

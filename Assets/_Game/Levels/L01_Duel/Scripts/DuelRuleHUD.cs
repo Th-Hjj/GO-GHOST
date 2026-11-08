@@ -16,6 +16,7 @@ namespace GoGhost.Duel
         {
             firstInvadedSidebarAt = invadedAt = bossPoolSpentAt = secondPoolAt = float.NegativeInfinity;
             invadedOrder = -1;
+            injectedOrders.Clear();
         }
         sealed class RuleGlowState
         {
@@ -39,7 +40,7 @@ namespace GoGhost.Duel
             public RectTransform Root;
             public UnityEngine.UI.Image Background;
             public UnityEngine.UI.Image[] Border;
-            public TMP_Text Number, Condition, Action, Arrow;
+            public TMP_Text Number, Condition, Action, Arrow, Injected;
             public Material[] Signals;
             public RuleGlowState Glow;
             public float RenderedGlow=-1;
@@ -88,10 +89,9 @@ namespace GoGhost.Duel
             hudRules=game.Rules;
             if (hudScrollController != hudRules)
             {
-                if (!sidebarsSealed) hudScrollPosition = Time.time-invadedAt < CardRevealSeconds ? 0 : 1;
+                if (!sidebarsSealed) hudScrollPosition = Time.unscaledTime-invadedAt < CardRevealSeconds ? 0 : 1;
                 hudScrollController = hudRules;
             }
-            if (game.InvasionReview) hudScrollPosition = 0;
 #if UNITY_EDITOR
             if(ruleHudViewSample!=null)
             {
@@ -165,10 +165,10 @@ namespace GoGhost.Duel
                     row.Glow=glow;
                 }
                 BuildRuleCard(row,ruleContent,i,expression.Conditions,expression.Action,NeuralPalette.Operation(row.Operation));
-                if (row.Rule.DisplayOrder == invadedOrder && Time.time - invadedAt < CardRevealSeconds)
+                if (row.Rule.DisplayOrder == invadedOrder && Time.unscaledTime - invadedAt < CardRevealSeconds)
                 {
                     row.RevealGroup = row.Root.gameObject.AddComponent<CanvasGroup>();
-                    row.RevealGroup.alpha = Reveal(Time.time - invadedAt, CardRevealSeconds);
+                    row.RevealGroup.alpha = Reveal(Time.unscaledTime - invadedAt, CardRevealSeconds);
                 }
             }
         }
@@ -181,6 +181,11 @@ namespace GoGhost.Duel
                 row.Background.raycastTarget=false;row.Background.color=NeuralPalette.Panel;
                 row.Number=Text((i+1).ToString(),row.Root,Vector2.zero,Vector2.zero,20,TextAlignmentOptions.TopLeft,numericFont);
                 row.Number.name="RuleNumber";row.Number.color=NeuralPalette.Secondary;
+                if(injectedOrders.Contains(row.Rule.DisplayOrder))
+                {
+                    row.Injected=Text("RULE INJECTED",row.Root,Vector2.zero,Vector2.zero,15,TextAlignmentOptions.TopLeft,controlFont);
+                    row.Injected.color=sidebarsSealed?NeuralPalette.Secondary:NeuralPalette.Emp;
+                }
                 row.Condition=Text(conditions,row.Root,Vector2.zero,Vector2.zero,22,TextAlignmentOptions.TopLeft);
                 row.Condition.name="ConditionText";
                 row.Arrow=Text("→",row.Root,Vector2.zero,Vector2.zero,22,TextAlignmentOptions.TopLeft,controlFont);
@@ -188,6 +193,11 @@ namespace GoGhost.Duel
                 row.Action=Text(action,row.Root,Vector2.zero,Vector2.zero,22,TextAlignmentOptions.TopLeft,controlFont);
                 row.Action.name="ActionText";
                 row.Action.color=actionColor;
+                if(game.InvasionHeld && row.Injected!=null && row.Rule.DisplayOrder==invadedOrder)
+                {
+                    if(game.InvasionPage==DuelGame.InvasionBeat.Condition)row.Condition.fontStyle=FontStyles.Bold;
+                    if(game.InvasionPage==DuelGame.InvasionBeat.Action)row.Action.fontStyle=FontStyles.Bold;
+                }
                 // Preserve each font atlas and fixed geometry; the entire card shares one match signal.
                 var texts=new[]{row.Number,row.Condition,row.Arrow,row.Action};
                 row.Signals=new Material[texts.Length];
@@ -211,7 +221,7 @@ namespace GoGhost.Duel
         // Shared by setup and combat. Text comes from the structured catalog expression;
         // measurement uses the final fixed fonts, never temporary emphasis or auto-sizing.
         float LayoutRuleCard(RectTransform root,TMP_Text number,TMP_Text condition,TMP_Text arrow,TMP_Text action,
-            float width,float rightInset=14,float minHeight=0,bool compact=false)
+            float width,float rightInset=14,float minHeight=0,bool compact=false,TMP_Text injected=null)
         {
             float left=compact?23:48, pad=compact?9:16, gap=compact?5:8, arrowWidth=compact?18:24;
             if(compact)rightInset=7;
@@ -223,10 +233,12 @@ namespace GoGhost.Duel
             float conditionHeight=Mathf.Max(28,TextHeight(condition,conditionWidth));
             float actionHeight=Mathf.Max(28,TextHeight(action,actionWidth));
             float arrowHeight=Mathf.Max(28,TextHeight(arrow,arrowWidth));
-            float actionTop=pad+conditionHeight+gap;
-            float height=Mathf.Max(minHeight,conditionHeight+gap+Mathf.Max(actionHeight,arrowHeight)+pad*2);
+            float header=injected!=null?22:0;
+            float actionTop=pad+header+conditionHeight+gap;
+            float height=Mathf.Max(minHeight,header+conditionHeight+gap+Mathf.Max(actionHeight,arrowHeight)+pad*2);
             root.sizeDelta=new Vector2(width,height);
-            SetCardTextRect(condition,left,pad,conditionWidth,conditionHeight,width,height);
+            if(injected!=null)SetCardTextRect(injected,left,pad,available,header,width,height);
+            SetCardTextRect(condition,left,pad+header,conditionWidth,conditionHeight,width,height);
             float arrowLeft=left;
             SetCardTextRect(arrow,arrowLeft,actionTop,arrowWidth,arrowHeight,width,height);
             SetCardTextRect(action,arrowLeft+arrowWidth,actionTop,actionWidth,actionHeight,width,height);
@@ -255,7 +267,7 @@ namespace GoGhost.Duel
             foreach(var row in ruleRows)
             {
                 float cardWidth=viewportWidth-4;
-                float cardHeight=LayoutRuleCard(row.Root,row.Number,row.Condition,row.Arrow,row.Action,cardWidth,compact:true);
+                float cardHeight=LayoutRuleCard(row.Root,row.Number,row.Condition,row.Arrow,row.Action,cardWidth,compact:true,injected:row.Injected);
                 row.Root.anchoredPosition=new Vector2(0,-y-cardHeight/2);
                 y+=cardHeight+8;
             }
@@ -323,7 +335,7 @@ namespace GoGhost.Duel
             foreach(var row in ruleRows)
             {
                 if (row.RevealGroup != null)
-                    row.RevealGroup.alpha = Reveal(Time.time - invadedAt, CardRevealSeconds);
+                    row.RevealGroup.alpha = Reveal(Time.unscaledTime - invadedAt, CardRevealSeconds);
                 AlignRuleGlow(row,scale);
                 bool live=(game.Phase==DuelPhase.Fight||game.Phase==DuelPhase.Training)&&row.Controller!=null&&row.Controller==game.Rules;
                 var f=live
@@ -331,25 +343,33 @@ namespace GoGhost.Duel
                 var color=NeuralPalette.Operation(row.Operation);
                 if(live&&!game.Paused)row.Glow.Update(f.Matched,Time.time);
                 float intrusion = InvasionFlash(row);
-                ApplyRuleGlow(row,Color.Lerp(color,NeuralPalette.Spine,intrusion),
+                ApplyRuleGlow(row,Color.Lerp(color,NeuralPalette.Emp,intrusion),
                     sidebarsSealed?0:Mathf.Max(live?row.Glow.Strength:0,intrusion));
+                if(game.InvasionHeld && row.Rule.DisplayOrder==invadedOrder && row.Injected!=null)
+                {
+                    var beat=game.InvasionPage;
+                    row.Action.color=beat==DuelGame.InvasionBeat.Condition?Color.Lerp(color,NeuralPalette.Panel,.48f):color;
+                    row.Condition.color=beat==DuelGame.InvasionBeat.Action?NeuralPalette.Secondary:NeuralPalette.Primary;
+                }
             }
             UpdateSealMarks();
         }
         // A rule written by the Final Boss pulses briefly when it appears (presentation only).
         int invadedOrder=-1;float invadedAt=float.NegativeInfinity;
+        readonly HashSet<int> injectedOrders=new();
         public void FlashInvadedRule(int displayOrder)
         {
             invadedOrder=displayOrder;
-            invadedAt=Time.time;
+            injectedOrders.Add(displayOrder);
+            invadedAt=Time.unscaledTime;
             if (displayOrder == 0) firstInvadedSidebarAt = Time.unscaledTime;
         }
         const float InvadedFlashSeconds=.85f;
         float InvasionFlash(RuleRowView row)
         {
-            float age = Time.time - invadedAt - CardRevealSeconds;
+            float age = Time.unscaledTime - invadedAt - CardRevealSeconds;
             if(row.Rule==null||row.Rule.DisplayOrder!=invadedOrder)return 0;
-            if(game.InvasionReview)return 1;
+            if(game.InvasionHeld && game.InvasionPage!=DuelGame.InvasionBeat.Contact)return .8f;
             if(age<0||age>=InvadedFlashSeconds)return 0;
             return 1-Mathf.SmoothStep(0,1,age/InvadedFlashSeconds);
         }

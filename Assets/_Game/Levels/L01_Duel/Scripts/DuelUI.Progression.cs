@@ -58,7 +58,7 @@ namespace GoGhost.Duel
             if (!show) return;
             dialogueOverlay.SetAsLastSibling();
             bool ambient = game.Phase != DuelPhase.FinalBoss && game.Phase != DuelPhase.BonusOffer
-                && !game.FinalBossCutscene && !game.BossOpening && !game.InvasionReview;
+                && !game.FinalBossCutscene;
             ambientPanel.gameObject.SetActive(ambient);
             if (ambient)
             {

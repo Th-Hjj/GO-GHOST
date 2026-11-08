@@ -25,6 +25,18 @@ namespace GoGhost.Duel
         const float WaveTitleFadeSeconds = .6f;
         TMP_Text waveTitle;
         CanvasGroup[] bossHealthGroups;
+        readonly TMP_Text[] invasionThresholdMarks = new TMP_Text[2];
+
+        void BuildInvasionMarks(RectTransform bar,float y)
+        {
+            for(int i=0;i<FinalBossAxe.InvasionPercents.Length;i++)
+            {
+                float x=430*(FinalBossAxe.InvasionPercents[i]/100f-.5f);
+                Image(bar,new Vector2(x,y-7),new Vector2(2,6),NeuralPalette.Emp);
+                var mark=Text("?",bar,new Vector2(x,y-23),new Vector2(30,28),21,TextAlignmentOptions.Center,controlFont);
+                mark.color=NeuralPalette.Emp; invasionThresholdMarks[i]=mark;
+            }
+        }
         float bossPoolSpentAt = float.NegativeInfinity, secondPoolAt = float.NegativeInfinity;
         internal void FadeSpentBossHealth() => bossPoolSpentAt = Time.time;
 
@@ -81,6 +93,15 @@ namespace GoGhost.Duel
                     else opacity = 1 - Reveal(Time.time - bossPoolSpentAt, .25f);
                 }
                 bossHealthGroups[i].alpha = opacity;
+                if(actor.IsFinalBoss && !actor.Axe.PhaseTwo)
+                    for(int j=0;j<invasionThresholdMarks.Length;j++)
+                    {
+                        var mark=invasionThresholdMarks[j]; if(mark==null)continue;
+                        bool spent=j<game.InvadedRuleCount;
+                        bool reached=(long)actor.Health.CurrentHealth*100<=(long)actor.Health.MaxHealth*FinalBossAxe.InvasionPercents[j];
+                        mark.text=spent?"·":"?";
+                        mark.color=spent?NeuralPalette.Secondary:reached?Color.Lerp(NeuralPalette.Emp,NeuralPalette.Primary,.55f):NeuralPalette.Emp;
+                    }
                 bossHealthText[i].Update(policeHealth[i], label, actor.Health.CurrentHealth);
                 policeFill[i].rectTransform.sizeDelta =
                     new Vector2(430f * actor.Health.CurrentHealth / actor.Health.MaxHealth, 12);

@@ -23,8 +23,8 @@ namespace GoGhost.Duel
         public void AcknowledgeDialogue()
         {
             if (Paused || DeveloperToolsOpen || PendingDialogue == null) return;
-            if (Phase == DuelPhase.Training || InvasionReview) input?.SuppressUiFireUntilRelease();
-            CurrentVoice.Acknowledge(waitForVoice: Phase == DuelPhase.Training || InvasionReview);
+            if (Phase == DuelPhase.Training) input?.SuppressUiFireUntilRelease();
+            CurrentVoice.Acknowledge(waitForVoice: Phase == DuelPhase.Training);
         }
 
         public void ContinueToWaveTwo()

@@ -216,6 +216,7 @@ namespace GoGhost.Duel
                 var color=game.Bosses[i].IsTrainingEnemy?NeuralPalette.Secondary:game.Bosses[i].Profile.Kind==BossKind.Gunner?NeuralPalette.Gunner:NeuralPalette.Swordsman;
                 policeFill[i]=Image(bar,new Vector2(-215,y),new Vector2(430,12),color);
                 policeFill[i].rectTransform.pivot=new Vector2(0,.5f);
+                if(game.Bosses[i].IsFinalBoss && !game.Bosses[i].Axe.PhaseTwo) BuildInvasionMarks(bar,y);
             }
 
             var playerBar = Rect("Player health",hud,Vector2.zero,Vector2.zero);
@@ -225,13 +226,23 @@ namespace GoGhost.Duel
             Image(playerBar,new Vector2(0,-360),new Vector2(430,12),NeuralPalette.Border);
             playerFill=Image(playerBar,new Vector2(-215,-360),new Vector2(430,12),NeuralPalette.Primary);
             playerFill.rectTransform.pivot=new Vector2(0,.5f);
-            if(game.Phase==DuelPhase.Prepare && !game.BossOpening)
+            if(game.Phase==DuelPhase.Prepare)
             {
                 preparationCount=Text("3",hud,Vector2.zero,new Vector2(300,100),72,face:numericFont);
             }
             BuildFinalBossCutscene(hud);
-            if (game.BossOpening || game.InvasionReview)
-                BuildSceneCaption(hud, new Vector2(0, 170), game.BossOpening ? "Final Boss" : "Happy", game.PendingDialogue);
+            if(game.InvasionHeld)
+            {
+                var dim=Image(hud,Vector2.zero,Vector2.zero,NeuralPalette.Alpha(NeuralPalette.Background,.20f)).rectTransform;
+                dim.anchorMin=Vector2.zero; dim.anchorMax=Vector2.one;
+                dim.SetAsFirstSibling();
+                if(game.InvasionCaption!=null)
+                {
+                    var caption=Image(hud,new Vector2(0,218),new Vector2(720,86),NeuralPalette.Alpha(NeuralPalette.Panel,.96f)).rectTransform;
+                    Text("Happy",caption,new Vector2(0,23),new Vector2(680,25),17,TextAlignmentOptions.MidlineLeft,headingFont).color=NeuralPalette.Secondary;
+                    Text(game.InvasionCaption,caption,new Vector2(0,-9),new Vector2(680,44),25,TextAlignmentOptions.MidlineLeft,DialogueFont()).name="Invasion caption";
+                }
+            }
             if(game.Phase==DuelPhase.Training)BuildTrainingButtons();
             LateUpdate();
         }

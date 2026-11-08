@@ -31,7 +31,7 @@ namespace GoGhost.Duel
         public const float ChopReach=2.3f, ChopHeight=2.1f, SpinRadius=1.65f, AxeRadius=.32f;
         const float SpinMove=.45f;
         internal static readonly int[] InvasionPercents={66,33};
-        public const float InvasionDuration=1.8f, InvasionInject=1.4f;
+        internal const float ChargeAt=.90f, PinchAt=2.02f, BurstAt=2.15f;
 
         readonly DuelGame game;
         readonly BossAgent actor;
@@ -41,7 +41,11 @@ namespace GoGhost.Duel
         readonly float[] readyAt=new float[Timings.Length];
         readonly List<Vector2> path=new List<Vector2>(12);
         int attackId=100000,invasionsDue;
-        bool invasionInjected,transitionHeld,hitDone;
+        bool waveReleased, waveTouched, transitionHeld,hitDone;
+        float invasionRecoverAt;
+        internal Vector2 WaveOrigin { get; private set; }
+        internal float WaveRadius { get; private set; }
+        internal Vector2 WaveContact { get; private set; }
         float phaseAt,phaseUntil,activeAt,activeEnds,nextDecisionAt,transitionUntil,invasionAt,lockedFacing=1;
         Timing acceptedTiming;
         internal Move PreviewMove {get;set;}
@@ -53,7 +57,8 @@ namespace GoGhost.Duel
         public bool Committed=>Current!=Move.None||Transitioning||Invading;
         public bool Invading {get;private set;}
         public int Invasions {get;private set;}
-        public float InvasionProgress=>Mathf.Clamp01((Time.time-invasionAt)/InvasionDuration);
+        internal float InvasionAge=>Mathf.Max(0,Time.time-invasionAt);
+        internal float InvasionRecovery=>invasionRecoverAt<0?0:Mathf.Clamp01((Time.time-invasionRecoverAt)/.42f);
         public ConditionalRule LastInvasion {get;private set;}
         public bool Transitioning {get;private set;}
         public bool PhaseTwo {get;private set;}
@@ -256,29 +261,44 @@ namespace GoGhost.Duel
                 if (Invasions >= invasionsDue || Current != Move.None || PhaseTwo || health.PhaseIndex != 1) return false;
                 if (!actor.Motor.Grounded) { if(!actor.Motor.HasRoute)RecoverFooting(); return true; }
                 ClearAttackPosition();
-                Invading = true; invasionInjected = false; invasionAt = Time.time;
+                Invading = true; waveReleased = waveTouched = false; invasionAt = Time.time;
+                WaveRadius = 0; LastInvasion = null; invasionRecoverAt = -1;
                 health.Invulnerable = true;
                 actor.Motor.HoldHorizontal();
                 var observed = actor.Perception.Facts;
                 if (observed.Visible) actor.Face(observed.Position - actor.Position);
                 lockedFacing = actor.Facing;
-                actor.Sounds?.Play(Sfx.Glitch, actor.ActorId);
                 actor.Trace($"invasion {Invasions + 1} begins");
             }
             actor.Motor.HoldHorizontal();
-            if (!invasionInjected && Time.time - invasionAt >= InvasionInject)
+            if (InvasionAge < BurstAt) return true;
+            if (!waveReleased)
             {
-                invasionInjected = true;
-                LastInvasion = onInvasion?.Invoke();
-                actor.Sounds?.Play(Sfx.Glitch, actor.ActorId);
+                waveReleased = true;
+                WaveOrigin = actor.View.InvasionChargePoint;
+                actor.Sounds?.Play(Sfx.EmpBurst, actor.ActorId);
             }
-            if (Time.time - invasionAt < InvasionDuration) return true;
+            WaveRadius = BossSilhouetteView.ShockwaveStartRadius + (InvasionAge - BurstAt) * 22f;
+            if (!waveTouched && playerBody != null && actor.Player != null && !actor.Player.IsDead)
+            {
+                WaveContact = playerBody.ClosestPoint(WaveOrigin);
+                float distance = Vector2.Distance(WaveOrigin,WaveContact);
+                if (WaveRadius < distance) return true;
+                WaveRadius = distance;
+                waveTouched = true;
+                actor.View.DrawInvasionContact(this);
+                game.HoldInvasion(this);
+                return true;
+            }
+            if (invasionRecoverAt < 0) invasionRecoverAt = Time.time;
+            if (InvasionRecovery < 1) return true;
             Invading = false; Invasions++;
             actor.Health.Invulnerable = false;
             nextDecisionAt = Time.time + .3f;
-            if (LastInvasion != null) game.ReviewInvadedRule();
             return true;
         }
+
+        internal ConditionalRule WriteInvasion() => LastInvasion ??= onInvasion?.Invoke();
 
         // Hold the spent first pool until the scripted transition releases combat.
         bool TickTransition()

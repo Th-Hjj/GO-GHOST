@@ -36,7 +36,7 @@ namespace GoGhost.Duel
             if (edgeSettled || empEdge == null) return;
             float age = Time.time - contactAt;
             float alpha = age < 0 ? 0 : Mathf.Lerp(.86f, EdgeRestAlpha, Mathf.SmoothStep(0, 1, age / .48f));
-            empEdge.color = NeuralPalette.Alpha(NeuralPalette.Spine, alpha);
+            empEdge.color = NeuralPalette.Alpha(NeuralPalette.Emp, alpha);
             edgeSettled = age >= .48f;
         }
 

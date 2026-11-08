@@ -279,7 +279,6 @@ namespace GoGhost.Duel
         {
             SetPhase(DuelPhase.Prepare);
             music?.PlayWave(Wave);
-            if (Wave == FinalBossWave && !FinalBossPhaseTwoReached) SpeakPhaseOneOpening();
         }
         void BeginCombat()
         {
@@ -316,13 +315,12 @@ namespace GoGhost.Duel
         {
             Paused = value;
             MetricsStage();
-            bool freezeCombat = value || InvasionReview;
-            Rules?.SetFeedbackPaused(freezeCombat);
-            input?.SetNarrativePaused(freezeCombat);
-            foreach (var actor in actors) if (actor != null) actor.SetPaused(freezeCombat);
-            coordinator?.SetPaused(freezeCombat);
-            effects?.SetPaused(freezeCombat || Phase == DuelPhase.Prepare);
-            Time.timeScale = freezeCombat ? 0 : 1;
+            Rules?.SetFeedbackPaused(value || InvasionHeld);
+            input?.SetNarrativePaused(value || InvasionHeld);
+            foreach (var actor in actors) if (actor != null) actor.SetPaused(value);
+            coordinator?.SetPaused(value);
+            effects?.SetPaused(value || Phase == DuelPhase.Prepare);
+            Time.timeScale = value || InvasionHeld ? 0 : 1;
             AudioListener.pause = value;
         }
         void SetPhase(DuelPhase value)
@@ -354,6 +352,7 @@ namespace GoGhost.Duel
         }
         void StopCombat()
         {
+            EndInvasionReading();
             Rules?.Dispose();Rules=null;
             Player?.GetComponent<OfficerVisual>()?.ClearConditionalGlow();
             music?.StopMusic();
@@ -368,7 +367,7 @@ namespace GoGhost.Duel
         }
         void ClearEncounter(string reason = "encounter_changed")
         {
-            ClearPhaseOneDialogue();
+            if (Wave == FinalBossWave && Phase == DuelPhase.Fight) handler.Stop();
             ui.ResetEncounterPresentation();
             ResetFinalBossTransition();
             FinishMetrics("abandoned", reason: reason);
@@ -390,7 +389,8 @@ namespace GoGhost.Duel
         {
             TickMetrics();
             if (!ui.DeveloperShortcutConsumed && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) SetPause(!Paused);
-            if (Paused || DeveloperToolsOpen || BossOpening || InvasionReview) return;
+            if (Paused || DeveloperToolsOpen) return;
+            if (InvasionHeld) { TickInvasionReading(); return; }
             if (Keyboard.current != null && Keyboard.current.f9Key.wasPressedThisFrame)
                 DefeatCurrentBoss();
             if (creationQuestionAt.HasValue && AudioSettings.dspTime >= creationQuestionAt.Value)
@@ -433,7 +433,6 @@ namespace GoGhost.Duel
             foreach (var actor in actors) if (actor != null && actor.IsAlive) { allDead = false; break; }
             if (!Player.IsDead && !allDead) return;
             bool defeat = Player.IsDead;
-            ClearPhaseOneDialogue();
             if (defeat && FinalBossCutscene) ResetFinalBossTransition();
             Trace($"result wave={Wave} player={Player.CurrentHealth} bosses={HealthSummary()} elapsed={FightClock:0.00}");
             FinishMetrics(defeat ? "died" : "won", !defeat && Wave == 2);

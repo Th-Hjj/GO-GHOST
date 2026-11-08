@@ -44,11 +44,6 @@ public static partial class BossEncounterSmoke
             Require(game.Phase == DuelPhase.Configure, "Test Loadout did not return to preparation");
             Click("StartMission");
             yield return WaitFor(() => game.Phase != DuelPhase.MissionEntry, "Mission entrance did not finish");
-            if (wave == DuelGame.FinalBossWave)
-            {
-                Require(game.PendingDialogue == "So you think you're the only one with AI in your head.", "Missing Mission 3 opening");
-                yield return WaitFor(() => game.PendingDialogue == null, "Mission 3 opening did not advance", 15);
-            }
             Require(game.Phase == DuelPhase.Prepare && game.PendingDialogue == null, "Missing direct pre-fight countdown");
             yield return WaitFor(() => game.Phase == DuelPhase.Fight, "Combat did not start");
             game.Player.IsInvulnerable = true;

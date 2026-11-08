@@ -1,42 +1,35 @@
 using UnityEditor;
 using UnityEngine;
 
-// Bake the casino's amber lights into their own parallax plates at import.
-// The runtime still draws the same two images with the same opacity.
+// Bake the amber entrance lights on the near plate. The far artwork is already lit.
 sealed class CasinoLightImporter : AssetPostprocessor
 {
     const string Arena = "Assets/_Game/Levels/L01_Duel/Resources/Arena/";
 
-    public override uint GetVersion() => 1;
+    public override uint GetVersion() => 2;
 
     void OnPostprocessTexture(Texture2D texture)
     {
-        bool entrance = assetPath == Arena + "CasinoNear.png";
-        if (!entrance && assetPath != Arena + "CasinoFar.png") return;
+        if (assetPath != Arena + "CasinoNear.png") return;
 
         int width = texture.width, height = texture.height;
         Color32[] pixels = texture.GetPixels32();
         var core = new float[pixels.Length];
         var halo = new float[pixels.Length];
-        int radius = entrance ? 5 : 3;
-        // The far plate's right-hand hotel already contains the approved amber lighting.
-        int paintedWindowWidth = entrance ? width : width / 2;
+        const int radius = 5;
         for (int y = 0; y < height; y++)
-        for (int x = 0; x < paintedWindowWidth; x++)
+        for (int x = 0; x < width; x++)
         {
             int i = y * width + x;
             float amber = Amber(pixels[i]);
             if (amber <= 0) continue;
 
-            if (entrance)
-            {
-                // Bulbs and lettering have dark gaps. The continuous bronze trim
-                // shares their palette but should pick up much less light.
-                int left = y * width + Mathf.Max(x - 4, 0);
-                int right = y * width + Mathf.Min(x + 4, width - 1);
-                float gap = Mathf.Clamp01(amber - Mathf.Min(Amber(pixels[left]), Amber(pixels[right])));
-                amber *= Mathf.Lerp(.18f, 1f, gap);
-            }
+            // Bulbs and lettering have dark gaps. The continuous bronze trim
+            // shares their palette but should pick up much less light.
+            int left = y * width + Mathf.Max(x - 4, 0);
+            int right = y * width + Mathf.Min(x + 4, width - 1);
+            float gap = Mathf.Clamp01(amber - Mathf.Min(Amber(pixels[left]), Amber(pixels[right])));
+            amber *= Mathf.Lerp(.18f, 1f, gap);
             core[i] = amber;
             for (int dy = -radius; dy <= radius; dy++)
             for (int dx = -radius; dx <= radius; dx++)
@@ -51,11 +44,11 @@ sealed class CasinoLightImporter : AssetPostprocessor
         }
 
         Color32 orange = new Color32(242, 123, 43, 255);
-        Color32 filament = entrance ? new Color32(255, 204, 125, 255) : new Color32(240, 175, 96, 255);
+        Color32 filament = new Color32(255, 204, 125, 255);
         for (int i = 0; i < pixels.Length; i++)
         {
             if (halo[i] <= 0) continue;
-            Color32 lit = LightOver(pixels[i], orange, halo[i] * (entrance ? .42f : .32f));
+            Color32 lit = LightOver(pixels[i], orange, halo[i] * .42f);
             pixels[i] = LightOver(lit, filament, core[i]);
         }
         texture.SetPixels32(pixels);

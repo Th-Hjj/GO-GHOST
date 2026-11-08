@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — Mission 2 casino showroom
+
+The left office facade is now the approved showroom. Two softly lit glass entrances sit between fluted piers beneath rounded terraces with bronze roof trim. The far layer uses the proposal for the visible architecture and a clean wall behind the moving marquee. The CASINO sign and both bulb rows remain on the near layer. The old freestanding post below the marquee was removed.
+
+Both plates retain their GUIDs, dimensions, 60% opacity and existing parallax. The right hotel pixels match the previous far plate. Static composite of the imported textures: `Logs/ParallaxPreview/CasinoShowroom/Mission-2-Showroom-60.png`. No gameplay test or build was run for this change.
+
 ## 2026-11-07 — Pose-only takeoff and landing
 
 Replaced foot flakes and the Boss landing spark with the approved pose A. Player and Boss movement report the actual launch and landing. The shared pose extends the pushing leg, draws it back and bends the knees on impact. Incoming descent relative to moving support determines the depth of the crouch. Gunner, Swordsman, both Final Boss phases and the Bonus pair use their existing silhouette rigs. Attack-specific weapon poses and the Final Boss transition kneel retain priority.

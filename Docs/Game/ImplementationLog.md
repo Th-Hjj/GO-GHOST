@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — Mission 1 industrial parallax
+
+- Mission 1 loads the first approved industrial plates on entry and direct retry. Two cropped textures cover the arena behind the combat renderers. Horizontal player position drives the 12 / 64 reference-pixel offsets.
+- Unity 6000.6.0f1 compiled. In Play Mode, Start Mission entered the countdown and Gunner fight. Simulated D and Left Shift produced 7.62 world units of travel including an accepted Dodge. The near and far crops moved 32.51 and 6.10 source pixels, with zero camera displacement. The crops held while stopped and paused. A controlled defeat and retry created one fresh backdrop at the starting offset. Returning to the menu cleared it. Mission 2 reached its Swordsman fight without the industrial art. The Game View capture is in `Logs/ParallaxPreview/Mission-1-Industrial-GameView.png`. No standalone build was run.
+
 ## 2026-11-07 — Preparation dialogue and navigation
 
 The dialogue overlay, page controls and preparation exits now read `DuelGame.DialogueAllowsPreparationNavigation` for the playback rule. A sentence can remain visible after playback while a fresh click takes an available exit. Each exit still checks its own phase and availability.

@@ -85,6 +85,10 @@ Aim+Fire and Move+Jump aggregate with bounded maxima, never additive white-out. 
 
 ## Arena and actors
 
+Mission 1 uses two industrial silhouette plates behind the fixed arena. The far plate contains tanks and factory roofs. Near steel columns shift farther in the opposite direction to the player's horizontal movement. Both positions depend on the player's location within the arena. They stop when the player stands still and retrace their movement on return. The approved center-to-edge travel is 12 and 64 pixels respectively in the 966-pixel-wide reference arena. The art scales with the arena as the viewport changes. The black center keeps gunfire and platform edges visible.
+
+Thomas's direction for Mission 2 is a Las Vegas entertainment district with casinos. Mission 3 rises into a dense corporate megacity inspired by futuristic New York and Night City. The Mission 2 casino entrance and resort towers are proposed artwork pending preview review.
+
 Retain stickman poses, weapons, collision geometry, platforms, camera and combat. Boss weapon structures are neutral with small owner accents. Player HP is cold white, changing to Danger through the existing Low Health latch/hysteresis; retain left anchors and numbers. Player bullets have the same neutral identity for manual and automatic shots. Enemy bullets, beams and blade effects use their actual Boss identity with unchanged geometry, timing and alpha hierarchy.
 
 Sword guard follow-up, Thomas 2026-10-16: Swordsman stands still with the blade vertically downward during active reflection. Preparation lowers the blade into this stance; recovery returns it to the normal pose. The weapon stays neutral, and reflected bullets adopt Swordsman coral to show their changed ownership. Keep the existing narrow guard/contact cues and stickman proportions.

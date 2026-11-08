@@ -172,6 +172,8 @@ namespace GoGhost.Duel
             navigation = encounter.AddComponent<ArenaNavigation2D>();
             navigation.Initialize(ArenaBounds);
             AlignPlayerOpeningSupport();
+            if (!training && Wave == 1)
+                IndustrialArenaBackdrop.Create(encounter.transform, Player.transform, arenaBounds);
             Player.GetComponent<PlayerMovement>().ConfigureLegacyCombat();
             Rifle.ConfigureLegacyCombat();
             Dodge.ConfigureLegacyCombat();

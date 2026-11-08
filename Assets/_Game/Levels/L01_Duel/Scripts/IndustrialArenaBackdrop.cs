@@ -11,6 +11,7 @@ namespace GoGhost.Duel
         const float NearTravelPixels = 36f;
         const float IndustrialOpacity = .50f;
         const float CasinoOpacity = .70f;
+        const float MegacityOpacity = .60f;
 
         Transform player;
         Bounds arena;
@@ -18,9 +19,22 @@ namespace GoGhost.Duel
 
         public static void Create(Transform attempt, Transform player, Bounds arena, int wave)
         {
-            bool casino = wave == 2;
-            string artwork = casino ? "Casino" : "Industrial";
-            float opacity = casino ? CasinoOpacity : IndustrialOpacity;
+            string artwork, farLabel, nearLabel;
+            float opacity;
+            switch (wave)
+            {
+                case 1:
+                    (artwork, farLabel, nearLabel, opacity) = ("Industrial", "Distant Works", "Steel Columns", IndustrialOpacity);
+                    break;
+                case 2:
+                    (artwork, farLabel, nearLabel, opacity) = ("Casino", "Resort Hotels", "Casino Entrance", CasinoOpacity);
+                    break;
+                case DuelGame.FinalBossWave:
+                    (artwork, farLabel, nearLabel, opacity) = ("Megacity", "Distant Skyline", "Corporate Towers", MegacityOpacity);
+                    break;
+                default:
+                    return;
+            }
             var farTexture = Resources.Load<Texture2D>($"Arena/{artwork}Far");
             var nearTexture = Resources.Load<Texture2D>($"Arena/{artwork}Near");
             if (!farTexture || !nearTexture)
@@ -41,8 +55,8 @@ namespace GoGhost.Duel
             var backdrop = root.AddComponent<IndustrialArenaBackdrop>();
             backdrop.player = player;
             backdrop.arena = arena;
-            backdrop.far = backdrop.AddPlate(casino ? "Resort Hotels" : "Distant Works", farTexture, opacity);
-            backdrop.near = backdrop.AddPlate(casino ? "Casino Entrance" : "Steel Columns", nearTexture, opacity);
+            backdrop.far = backdrop.AddPlate(farLabel, farTexture, opacity);
+            backdrop.near = backdrop.AddPlate(nearLabel, nearTexture, opacity);
             backdrop.UpdateParallax();
         }
 

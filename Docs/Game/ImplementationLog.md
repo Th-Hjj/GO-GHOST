@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — Mission 3 corporate skyline
+
+The Final Boss encounter now loads two plates from the approved skyline illustration at 60% opacity. The countdown, both phases and direct phase-two retry share the encounter background. It uses the same 7 / 36 reference-pixel travel as Missions 1 and 2. Unity imported the plates. Play Mode verification is left to Thomas.
+
 ## 2026-11-07 — Background motion refinement
 
 Mission 1 and 2 center-to-edge travel is now 7 reference pixels for the far layer and 36 for the near layer. The Mission 2 casino plates render at 70% of authored opacity. Thomas will verify the feel in play.

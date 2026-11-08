@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — Mission 2 casino facades
+
+The far plate extends both casino buildings to ground level with the approved horizontal bands, vertical divisions and scattered amber lights. The marquee, canopy and palms use the existing near plate. Both layers render at 65% opacity with the existing 7 / 36 reference-pixel parallax. NOT TESTED at Thomas's request. Thomas will verify in game.
+
 ## 2026-11-07 — Boss footing at platform edges
 
 The Boss support probe now spans the collider’s foot width. Navigation identifies the supporting surface from the actual foot contact, including when the body centre overhangs the edge.

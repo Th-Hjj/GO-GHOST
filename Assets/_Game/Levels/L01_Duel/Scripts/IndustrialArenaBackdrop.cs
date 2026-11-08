@@ -10,7 +10,7 @@ namespace GoGhost.Duel
         const float FarTravelPixels = 7f;
         const float NearTravelPixels = 36f;
         const float IndustrialOpacity = .50f;
-        const float CasinoOpacity = .70f;
+        const float CasinoOpacity = .65f;
         const float MegacityOpacity = .60f;
 
         Transform player;

@@ -8,6 +8,7 @@ namespace GoGhost.Duel
         // Chop and Spin remain the independent, untold phase-two axe attacks.
         public enum Move { None, Chop, Spin, TripleCut, LeapingCrosscut, AnchorVault, UnderpassReturn, PalmDeflection }
         public enum Stage { Idle, Prepare, Locked, Active, Recovery }
+        const float CastLock=.25f;
         readonly struct Timing
         {
             public readonly float Prepare, Lock, Active, Recovery, Cooldown;
@@ -20,8 +21,8 @@ namespace GoGhost.Duel
             default,
             new Timing(.42f,.14f,.12f,.50f,1.8f,26), new Timing(.45f,.15f,1f,.65f,5f,20),
             new Timing(.32f,.16f,1.12f,.50f,2.1f,30), new Timing(.26f,.14f,.40f,.34f,2.4f,28),
-            new Timing(.34f,.20f,2.50f,.62f,5.6f,34), new Timing(.32f,.16f,UnderCatch,.45f,4.8f,22),
-            new Timing(.40f,.18f,PalmCatch+.44f,.68f,7.2f,28)
+            new Timing(.50f,CastLock,2.50f,.62f,5.6f,34), new Timing(.43f,CastLock,UnderCatch,.45f,4.8f,22),
+            new Timing(.53f,CastLock,PalmCatch+.44f,.68f,7.2f,28)
         };
         internal static BossMoveTuning DefaultTuning(Move move)
         {
@@ -57,6 +58,10 @@ namespace GoGhost.Duel
         public bool Transitioning {get;private set;}
         public bool PhaseTwo {get;private set;}
         public bool AxeFlying {get;private set;}
+        public bool WindingCast => (Phase==Stage.Prepare || Phase==Stage.Locked) &&
+            (Current==Move.AnchorVault || Current==Move.UnderpassReturn || Current==Move.PalmDeflection);
+        public float CastProgress => !WindingCast?0:(Phase==Stage.Prepare?acceptedTiming.Prepare*PhaseProgress:
+            acceptedTiming.Prepare+acceptedTiming.Lock*PhaseProgress)/(acceptedTiming.Prepare+acceptedTiming.Lock);
         public Vector2 AxePosition {get;private set;}
         public float AxeSpin {get;private set;}
         public float LockedFacing=>lockedFacing;
@@ -139,15 +144,7 @@ namespace GoGhost.Duel
                 if(!AdvancesDuringWindup(Current))actor.Motor.HoldHorizontal();
                 if(Time.time>=phaseUntil)
                 {
-                    // The pose signals the move on acceptance. Its final facing,
-                    // trajectory and destination lock using the most recent public sample.
-                    if(!PhaseTwo&&TryRefreshPhaseOnePlan(Current,out var refreshed))
-                    {
-                        acceptedPlan=refreshed;
-                        actor.Face(Vector2.right*refreshed.Facing);
-                        lockedFacing=actor.Facing;
-                        BuildFlight(refreshed,flight);
-                    }
+                    if(!PhaseTwo && !LockPhaseOneAim()){RecoverPhaseOne();return;}
                     SetPhase(Stage.Locked,acceptedTiming.Lock);activeAt=phaseUntil;activeEnds=activeAt+acceptedTiming.Active;
                     if(Current==Move.TripleCut&&!SafeStep(TripleStrides[0]*lockedFacing))actor.Motor.HoldHorizontal();
                     if(Current==Move.LeapingCrosscut)actor.Motor.HoldHorizontal();
@@ -163,7 +160,8 @@ namespace GoGhost.Duel
                     activeAt=Time.time;activeEnds=activeAt+acceptedTiming.Active;
                     SetPhase(Stage.Active,acceptedTiming.Active);
                     if(!PhaseTwo)ActivatePhaseOne();
-                    actor.Sounds?.Play(Current==Move.Chop?Sfx.BladeHeavy:Sfx.BladeLight,actor.ActorId,attackId);
+                    if(Phase==Stage.Active)
+                        actor.Sounds?.Play(Current==Move.Chop?Sfx.BladeHeavy:Sfx.BladeLight,actor.ActorId,attackId);
                 }
             }
             else if(Phase==Stage.Active)

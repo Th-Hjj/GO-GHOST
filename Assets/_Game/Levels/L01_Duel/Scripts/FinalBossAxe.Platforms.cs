@@ -30,8 +30,8 @@ namespace GoGhost.Duel
         int intentTargetDirection;
         float arriveAt, intentDeadline, nextPlatformChoice, nextBackstep, lastPlatformAt;
 
-        // Reuse the actual attack planners at a possible launch position. A setup earns
-        // no guaranteed attack: on arrival the Boss must still see a legal opening.
+        // Travel is chosen from spacing and public motion. A perch doesn't need a
+        // predicted hit. Attack-specific clearance is checked at the actual takeoff.
         bool ChooseFootwork(BossObservation facts,Vector2 target,AxePlan attack,float attackCost)
         {
             var motor=actor.Motor;
@@ -39,21 +39,21 @@ namespace GoGhost.Duel
             float gap=Mathf.Abs(target.x-actor.Position.x);
             bool connected=TryGroundPressure(facts,target,out var pursuit);
             bool holdsExit=connected && gap<4.5f && HoldsWallSide(target,facts);
-            var melee=attacksHere[(int)Move.TripleCut];
-            if(melee!=null && (holdsExit || Time.time<pressUntil || melee.FirstThreat<.78f))
-                return CommitTacticalAttack(melee,false);
             if(holdsExit)return GuardInside(facts,target,pursuit);
+            if(attack!=null && attack.Move==Move.LeapingCrosscut)return CommitTacticalAttack(attack,false);
             if(ContinueAttackPosition(facts,target,support))return true;
 
             float chaseCost=pursuit.FirstThreat+.15f;
             if(Time.time<pressUntil)chaseCost-=.30f;
-            bool chase=connected && pursuit.Direction!=0 && chaseCost<attackCost;
+            bool runningAway=facts.Velocity.x*Mathf.Sign(target.x-actor.Position.x)>1.25f;
+            bool chase=connected && pursuit.Direction!=0 && (chaseCost<attackCost ||
+                attack!=null && attack.Move==Move.PalmDeflection && runningAway);
             var choice=new AttackPosition { Cost=chase?chaseCost:attackCost };
             ConsiderGroundSetups(facts,target,support,ref choice);
             if(Time.time>=nextPlatformChoice)
             {
                 nextPlatformChoice=Time.time+.35f;
-                ConsiderPlatforms(facts,target,support,ref choice);
+                ConsiderPlatforms(facts,target,support,!(connected && runningAway),ref choice);
             }
             if(choice.Attack!=Move.None)
             {
@@ -184,8 +184,7 @@ namespace GoGhost.Duel
             float side=Mathf.Sign(target.x-start.x);
             float away=facts.Velocity.x*side;
             float speed=actor.Motor.Profile.Speed;
-            // Move to where the first cut can meet the runner, then check the cut
-            // at its own wind-up and swing time. This also works on a bare floor.
+            // Close to an attacking distance. The runner can still leave during the swing.
             float advance=(PublicPosition(facts,.45f).x-start.x)*side-1.65f;
             if(advance>.55f && height<2.7f)
             {
@@ -236,20 +235,22 @@ namespace GoGhost.Duel
             float travel=site.Travel;
             if(readyAt[(int)site.Attack]>Time.time+travel)return;
             float wind=game.GetBossMoveTuning(false,(int)site.Attack).Windup;
-            if(!PlanFrom(site.Attack,false,facts,site.Point,travel,wind,out var plan))return;
-            if(site.Attack==Move.LeapingCrosscut && !plan.DirectCut)return;
+            var plan=ReadOpening(site.Attack,false,facts,site.Point,travel,wind);
+            if(plan==null)return;
             site.TargetAtArrival=PublicPosition(facts,travel);
             if(site.Attack==Move.UnderpassReturn)
             {
                 // The outward step and the throw's own retreat share a spacing budget.
-                float spacing=Mathf.Abs(site.TargetAtArrival.x-plan.Retreat.x);
+                float stride=SupportedStride(site.Point,-plan.Facing*1.5f);
+                if(Mathf.Abs(stride)<.75f)return;
+                float spacing=Mathf.Abs(site.TargetAtArrival.x-site.Point.x-stride);
                 if(spacing<4f || spacing>6.15f)return;
             }
             site.Cost=travel+AttackCost(plan,facts)-benefit;
             if(site.Cost<choice.Cost)choice=site;
         }
 
-        void ConsiderPlatforms(BossObservation facts,Vector2 target,Collider2D here,ref AttackPosition choice)
+        void ConsiderPlatforms(BossObservation facts,Vector2 target,Collider2D here,bool allowPalm,ref AttackPosition choice)
         {
             var nav=actor.Navigation;
             Vector2 start=actor.Position;
@@ -271,7 +272,7 @@ namespace GoGhost.Duel
                 if(Mathf.Abs(height)<1.45f)RankPlatform(node.Collider,point,Move.TripleCut,rank+Mathf.Abs(lane-1.65f)*.32f);
                 if(lane<7.5f && (Mathf.Abs(height)>1.2f || !facts.Grounded))
                     RankPlatform(node.Collider,point,Move.LeapingCrosscut,rank+Mathf.Abs(lane-2.7f)*.34f);
-                if(Mathf.Abs(height)>.7f || changeAngle)
+                if(allowPalm && (Mathf.Abs(height)>.7f || changeAngle))
                     RankPlatform(node.Collider,point,Move.PalmDeflection,rank+Mathf.Abs(lane-5.2f)*.33f);
             }
             platformSites.Sort((a,b)=>a.Rank.CompareTo(b.Rank));

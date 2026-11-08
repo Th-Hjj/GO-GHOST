@@ -211,7 +211,8 @@ namespace GoGhost.Duel
             float age=Time.time-activeAt;
             foreach(var leg in flight)
             {
-                if(leg.Group<0||age>=leg.Start||age<leg.Start-.24f)continue;
+                bool firstLock=Phase==Stage.Locked && leg.Start==0;
+                if(leg.Group<0 || age>=leg.Start || !firstLock && age<leg.Start-.24f)continue;
                 if(Current==Move.PalmDeflection && (leg.Start>=PalmAt&&!redirected || leg.Start==PalmBank))continue;
                 // Each separately committed throw/return has one short directional tell.
                 // The continuous outer bank has no extra lock at its apex.

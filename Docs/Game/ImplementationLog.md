@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-11-08 — Phase-one melee, grip leap and cast tells
+
+Thomas reported scarce melee, throws that were hard to read, and a displaced axe chop aimed at an old position. Removed predicted-hit requirements from attack selection and positioning. Triple Cut commits its opening swing on spacing, then expresses only the strokes it actually follows through. Crosscut chooses a physical lane and can miss. Underpass answers an approach, and Palm favors long or cross-tier casts.
+
+Anchor Vault commits its pull separately from its second jump. On grip contact the Boss reads one fresh public sighting, braces for .20 seconds and launches toward it, preferring 4–7 units of horizontal travel when there is room. Every first cast now has a contracting ice-blue socket cue, a distinct silhouette and a .25-second directional lock. Default startup is .68 for Underpass, .75 for Vault and .78 for Palm.
+
+Compiled the runtime assembly using the Unity 6000.6.0f1 compiler and Editor references. Play Mode, visual readability and combat balance are NOT TESTED. Thomas requested compilation only and will playtest.
+
 ## 2026-11-08 — Phase-one axe positioning
 
 Phase one now compares an immediate attack with a ground step into Triple Cut, a forward platform intercept and a short retreat into a real throw. Candidate attacks use the estimated arrival time and the player's delayed public trajectory. The Boss can guard the inside of a corner, aim Crosscut at a projected landing, and regain space after Vault or Underpass. At Palm's second catch the physical blade decides whether a grounded follow-up can connect. A distant catch goes directly into full recovery. The five moves retain their damage, recovery durations and cooldowns.

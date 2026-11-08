@@ -11,12 +11,13 @@ namespace GoGhost.Duel
         const float GripToCentreForward = (300f - 192f) / AxePixelsPerUnit;
         const float GripToCentreAcross = (144f - 96f) / AxePixelsPerUnit;
         const float GripToFlightPivot = .736f;
+        const float GripToSocket = (523f-192f)/AxePixelsPerUnit;
         const float TrailLifetime = .16f;
         const int MaxTrailPoints = 22;
         static readonly Color FlightIce = new Color32(197, 237, 255, 255);
         Sprite originalWeaponSprite, phaseOneSprite;
         SpriteRenderer flightSprite;
-        Vector2 phaseOneSocket;
+        Vector2 phaseOneSocket, freePalm;
         readonly List<Vector2> trailPoints = new List<Vector2>(MaxTrailPoints);
         readonly List<float> trailTimes = new List<float>(MaxTrailPoints);
         readonly Vector2[] recentHands=new Vector2[24];
@@ -40,17 +41,16 @@ namespace GoGhost.Duel
             float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
             p.FrontHand = recover ? Vector2.Lerp(restingHand, grip, weight) : grip;
             p.WeaponAngle = recover ? Mathf.LerpAngle(56, angle, weight) : angle;
-            if (prepare || axe.Phase == FinalBossAxe.Stage.Locked)
+            if(axe.WindingCast)
             {
-                if (axe.Current == FinalBossAxe.Move.UnderpassReturn ||
-                    axe.Current == FinalBossAxe.Move.AnchorVault || axe.Current == FinalBossAxe.Move.PalmDeflection)
-                    WindUpCast(ref p, axe, restingHand, grip, angle);
-                else if (prepare)
-                {
-                    float raise = Ease(axe.PhaseProgress);
-                    p.FrontHand = Vector2.Lerp(restingHand, grip, raise);
-                    p.FrontHand += new Vector2(-.28f, .13f) * Mathf.Sin(raise * Mathf.PI);
-                }
+                WindUpCast(ref p,axe,restingHand,grip,angle);
+                return;
+            }
+            if(prepare)
+            {
+                float raise = Ease(axe.PhaseProgress);
+                p.FrontHand = Vector2.Lerp(restingHand, grip, raise);
+                p.FrontHand += new Vector2(-.28f, .13f) * Mathf.Sin(raise * Mathf.PI);
             }
             float support = 0, lean = 0, crouch = 0;
             float reach = Mathf.Clamp(p.FrontHand.x / .55f, -1f, 1f);
@@ -94,6 +94,17 @@ namespace GoGhost.Duel
                         p.BackFoot += new Vector2(-.22f, .15f);
                         p.FrontFoot.x -= .12f;
                     }
+                    else if(axe.BracedOnAxe)
+                    {
+                        lean=-.12f; crouch=.14f;
+                        p.FrontFoot+=new Vector2(.16f,.22f);
+                        p.BackFoot+=new Vector2(-.12f,.12f);
+                    }
+                    else if(!actor.Motor.Grounded && !axe.AxeFlying)
+                    {
+                        lean=.18f;
+                        p.BackFoot+=new Vector2(-.18f,.13f);
+                    }
                     support = !prepare && !axe.AxeFlying ? 1 : 0;
                     break;
                 case FinalBossAxe.Move.PalmDeflection:
@@ -108,25 +119,38 @@ namespace GoGhost.Duel
             p.BackHand = Vector2.Lerp(p.BackHand, p.FrontHand - Angle(p.WeaponAngle) * .17f, support * weight);
         }
 
-        // The underpass leaves low from the hip. The anchor and deflection throws
-        // open the shoulder behind the head. All three arrive at the real release grip.
+        // Reach the signature silhouette early, hold it, then release to the real grip.
         static void WindUpCast(ref Pose p, FinalBossAxe axe, Vector2 idleHand, Vector2 releaseHand, float releaseAngle)
         {
-            bool low = axe.Current == FinalBossAxe.Move.UnderpassReturn;
-            Vector2 woundHand = low ? new Vector2(-.23f, -.03f) : new Vector2(-.22f, .48f);
-            float woundAngle = low ? 136 : 151;
-            if (axe.Phase == FinalBossAxe.Stage.Prepare)
+            Vector2 woundHand, offHand;
+            float woundAngle, crouch;
+            switch(axe.Current)
             {
-                float raise = Ease(axe.PhaseProgress);
-                p.FrontHand = Vector2.Lerp(idleHand, woundHand, raise);
-                p.WeaponAngle = Mathf.Lerp(56, woundAngle, raise);
+                case FinalBossAxe.Move.UnderpassReturn:
+                    woundHand=new Vector2(-.35f,-.17f); offHand=new Vector2(.25f,.10f);
+                    woundAngle=174; crouch=.16f;
+                    break;
+                case FinalBossAxe.Move.AnchorVault:
+                    woundHand=new Vector2(-.13f,.64f); offHand=new Vector2(-.21f,.50f);
+                    woundAngle=108; crouch=.05f;
+                    break;
+                default: // Palm Deflection presents the empty palm ahead of the loaded axe.
+                    woundHand=new Vector2(-.38f,.18f); offHand=new Vector2(.54f,.32f);
+                    woundAngle=74; crouch=.07f;
+                    break;
             }
-            else
-            {
-                float release = Ease(axe.PhaseProgress);
-                p.FrontHand = Vector2.Lerp(woundHand, releaseHand, release);
-                p.WeaponAngle = Mathf.Lerp(woundAngle, releaseAngle, release);
-            }
+            bool prepare=axe.Phase==FinalBossAxe.Stage.Prepare;
+            float raise=prepare?Ease(axe.PhaseProgress/.55f):1f;
+            float release=prepare?0:Ease(axe.PhaseProgress);
+            float brace=raise*(1-release);
+            p.FrontHand=Vector2.Lerp(Vector2.Lerp(idleHand,woundHand,raise),releaseHand,release);
+            p.WeaponAngle=Mathf.LerpAngle(Mathf.LerpAngle(56,woundAngle,raise),releaseAngle,release);
+            p.BackHand=Vector2.Lerp(p.BackHand,offHand,brace);
+            p.FrontFoot.x=Mathf.Lerp(p.FrontFoot.x,.33f,brace);
+            p.BackFoot.x=Mathf.Lerp(p.BackFoot.x,-.43f,brace);
+            p.Chest+=new Vector2(-.14f,-crouch)*brace;
+            p.Head+=new Vector2(-.13f,-crouch)*brace;
+            p.Hip.y-=crouch*brace;
         }
 
         Sprite ApprovedAxe()
@@ -153,8 +177,8 @@ namespace GoGhost.Duel
             weapon.transform.localRotation = Quaternion.Euler(0, 0, p.WeaponAngle - 90);
             weapon.transform.localScale = Vector3.one;
             Hide(Part.Sheath);
-            // The invasion starts at the ice-blue socket of the raised axe.
-            phaseOneSocket = transform.TransformPoint(p.FrontHand + forward * (59.8f * 5.5f / AxePixelsPerUnit));
+            phaseOneSocket=transform.TransformPoint(p.FrontHand+forward*GripToSocket);
+            freePalm=transform.TransformPoint(p.BackHand);
         }
 
         void UpdateFlyingAxe()
@@ -193,6 +217,7 @@ namespace GoGhost.Duel
         void DrawPhaseOneAttack(FinalBossAxe axe)
         {
             if (axe.Current == FinalBossAxe.Move.None || axe.Phase == FinalBossAxe.Stage.Recovery) return;
+            if(axe.WindingCast)DrawCastCharge(axe);
             RecordGrip(axe.Hand());
             if (axe.TryGetCut(out var cut, out bool locked, out bool active))
             {
@@ -213,8 +238,8 @@ namespace GoGhost.Duel
             {
                 var line = AxeLine(6, "Axe flight warning", axe.Path.Count);
                 float width = SwordTellWidth(false,true);
-                line.startWidth=width;line.endWidth=width*.55f;
-                line.startColor=AxeTellColor(false,true);line.endColor=NeuralPalette.Alpha(FlightIce,.34f);
+                line.startWidth=width*1.45f;line.endWidth=width*.65f;
+                line.startColor=NeuralPalette.Primary;line.endColor=NeuralPalette.Alpha(FlightIce,.55f);
                 for (int i = 0; i < axe.Path.Count; i++) line.SetPosition(i, ClipTellPoint(axe.Path[i], width));
             }
             if(axe.FlightLive)DrawAxeTrail(axe.FlyingEdge);
@@ -232,6 +257,24 @@ namespace GoGhost.Duel
                         NeuralPalette.Alpha(FlightIce, axe.PalmAccent));
                 }
             }
+        }
+
+        void DrawCastCharge(FinalBossAxe axe)
+        {
+            float t=Ease(axe.CastProgress);
+            float radius=Mathf.Lerp(.49f,.085f,t);
+            const int points=32;
+            var ring=AxeLine(14,"Axe socket wind-up",points);
+            ring.loop=true;
+            ring.startWidth=ring.endWidth=Mathf.Lerp(.045f,.065f,t);
+            ring.startColor=ring.endColor=NeuralPalette.Alpha(FlightIce,.72f+.25f*t);
+            for(int i=0;i<points;i++)
+                ring.SetPosition(i,ClipTellPoint(phaseOneSocket+Angle(i*360f/points)*radius,ring.startWidth));
+            SetLine(AxeLine(15,"Charged socket",2),phaseOneSocket-Vector2.up*.038f,phaseOneSocket+Vector2.up*.038f,
+                .075f+.055f*t,NeuralPalette.Primary);
+            if(axe.Current==FinalBossAxe.Move.PalmDeflection)
+                SetLine(AxeLine(16,"Open palm",2),freePalm-Vector2.up*.055f,freePalm+Vector2.up*.095f,
+                    .055f,NeuralPalette.Alpha(FlightIce,.9f));
         }
 
         void DrawLatchedAnchor(FinalBossAxe axe)

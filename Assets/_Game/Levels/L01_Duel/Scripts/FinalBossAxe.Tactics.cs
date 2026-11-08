@@ -9,8 +9,7 @@ namespace GoGhost.Duel
         sealed class AxePlan
         {
             public Move Move;
-            public float Facing, FirstThreat, FinishFacing, TravelTime;
-            public bool DirectCut;
+            public float Facing, FirstThreat, FinishFacing;
             public Cut Swing;
             public Vector2 Start, Target, Landing, Anchor, Turn, Retreat;
             public ArenaNavigation2D.Route JumpRoute;
@@ -99,7 +98,8 @@ namespace GoGhost.Duel
             {
                 attacksHere[(int)move]=null;
                 if (probe && move != PreviewMove || !CanStart(move)
-                    || !PlanFrom(move, probe, facts, actor.Position, 0, game.GetBossMoveTuning(false,(int)move).Windup, out var candidate)) continue;
+                    || !PlanFrom(move, probe, facts, actor.Position, game.GetBossMoveTuning(false,(int)move).Windup, out var candidate)) continue;
+                if(move==Move.TripleCut && CommitTacticalAttack(candidate,probe))return;
                 attacksHere[(int)move]=candidate;
                 float cost=probe?candidate.FirstThreat:AttackCost(candidate,facts);
                 if(cost>=first)continue;
@@ -129,8 +129,8 @@ namespace GoGhost.Duel
             }
         }
 
-        // Compare legal actions in seconds. The first real contact, the next fighting
-        // position, and what the player is visibly doing can favor different moves.
+        // Compare time to an offensive beat and the purpose of the move. Whether it
+        // damages anything is resolved only by the active blade.
         float AttackCost(AxePlan plan,BossObservation facts)
         {
             float gap=Mathf.Abs(plan.Target.x-plan.Start.x);
@@ -147,15 +147,11 @@ namespace GoGhost.Duel
                     if(Time.time<pressUntil)cost-=.30f;
                     break;
                 case Move.LeapingCrosscut:
-                    if(plan.DirectCut)cost+=(crossTier || !facts.Grounded) ? -.46f : .20f;
-                    else cost+=.24f;
+                    cost-=(crossTier || !facts.Grounded) ? .40f : .20f;
                     break;
                 case Move.AnchorVault:
-                    // A grip beyond the player can close six units and attack back into
-                    // their exit. The outbound edge alone does not earn the full bonus.
-                    float gain=Vector2.Distance(plan.Start,plan.Target)-Vector2.Distance(plan.Landing,plan.Target);
-                    cost-=Mathf.InverseLerp(3.5f,10f,gain)*(plan.DirectCut?.95f:.42f);
-                    if(plan.DirectCut && away>2f)cost-=.30f;
+                    cost-=Mathf.InverseLerp(7f,13f,gap)*.48f;
+                    if(away>2f)cost-=.22f;
                     break;
                 case Move.UnderpassReturn:
                     cost-=.8f*Mathf.InverseLerp(1f,5f,-away);
@@ -168,7 +164,7 @@ namespace GoGhost.Duel
             }
             if(plan.Move==lastAttack)cost+=.28f;
             int i=(int)plan.Move;
-            if(Time.time<missedUntil[i])
+            if((plan.Move==Move.PalmDeflection || plan.Move==Move.UnderpassReturn) && Time.time<missedUntil[i])
             {
                 bool sameAngle=plan.Move==Move.PalmDeflection && Mathf.Abs(plan.Start.y-missedOrigin[i].y)<.8f &&
                     Vector2.Dot((plan.Target-plan.Start).normalized,missedPalmAim)>.93f;
@@ -346,60 +342,90 @@ namespace GoGhost.Duel
             plan = null;
             var facts = actor.Perception.Facts;
             return CanStart(move) && facts.Confidence > .12f && facts.Body.size.x > .01f
-                && PlanFrom(move, preview, facts, actor.Position, 0, game.GetBossMoveTuning(false,(int)move).Windup, out plan);
+                && PlanFrom(move, preview, facts, actor.Position, game.GetBossMoveTuning(false,(int)move).Windup, out plan);
         }
 
-        bool TryRefreshPhaseOnePlan(Move move, out AxePlan plan)
+        bool LockPhaseOneAim()
         {
-            var facts = actor.Perception.Facts;
-            plan = null;
-            return facts.Confidence > .12f && facts.Body.size.x > .01f
-                && PlanFrom(move, true, facts, actor.Position, 0, 0, out plan);
+            // The first cut keeps the facing that started its advancing pose. Other
+            // moves take a final sighting without re-running the decision to attack.
+            if(Current==Move.TripleCut)return true;
+            var facts=actor.Perception.Facts;
+            if(!facts.Visible || facts.Confidence<=.12f || facts.Body.size.x<=0)return true;
+            var plan=AimAt(Current,facts,actor.Position,PublicPosition(facts,0),0,0);
+            if(!PlanMotion(plan,facts,0))return false;
+            acceptedPlan=plan;
+            actor.Face(Vector2.right*plan.Facing);
+            lockedFacing=actor.Facing;
+            BuildFlight(plan,flight);
+            return true;
         }
 
-        bool PlanFrom(Move move,bool preview,BossObservation facts,Vector2 start,float travel,float wind,out AxePlan plan)
+        // Eligibility depends on the situation the Boss can see. Once a move is
+        // accepted, only its physical execution can fail. Damage is resolved live.
+        AxePlan ReadOpening(Move move,bool preview,BossObservation facts,Vector2 start,float travel,float wind)
         {
-            Vector2 target = ProjectedAttackTarget(move,facts,wind,travel);
-            Vector2 delta = PublicPosition(facts,travel)-start;
-            float dx = Mathf.Abs(delta.x), dy = Mathf.Abs(delta.y);
-            float face = Mathf.Abs(target.x-start.x) > .05f ? Mathf.Sign(target.x-start.x) : actor.Facing;
-            float lead = (target.x-start.x)*face;
-            bool leaving = facts.Velocity.x*face > 2f && delta.x*face >= -.1f;
-            plan = new AxePlan { Move=move, Start=start, Target=target, Facing=face, FinishFacing=face, Landing=start, Retreat=start, TravelTime=travel };
-            switch (move)
+            Vector2 seen=PublicPosition(facts,travel);
+            Vector2 delta=seen-start;
+            float gap=Mathf.Abs(delta.x), height=Mathf.Abs(delta.y);
+            switch(move)
             {
                 case Move.TripleCut:
-                    return dx<=4.2f && dy<1.55f && PlanTriple(plan,facts,wind);
+                    if(gap>4.2f || height>=1.55f ||
+                        Projectile.TerrainHit(start+Vector2.up*.15f,seen,.08f,out _,false))return null;
+                    break;
                 case Move.LeapingCrosscut:
-                    if(dx<1.55f && dy<1.25f && !(leaving && lead>=2.3f) ||
-                        dx>7.5f || dy>=5f || !PlanCrosscut(plan,facts,wind))return false;
-                    // Spend a same-tier leap on a real cut. An ordinary run already
-                    // covers this lane if the only payoff of jumping is to get closer.
-                    return preview || plan.DirectCut || !facts.Grounded ||
-                        !SameSupportWalk(start,new Vector2(start.x+delta.x,start.y)) || dy>=1.25f;
+                    if(gap>8f || height>=5f || gap<1.55f && height<1.25f)return null;
+                    break;
                 case Move.AnchorVault:
-                    return dx<=15f && dy<=5f && (dx>=4.1f || leaving && lead>=5f) && PlanVault(ref plan,facts,wind);
+                    if(gap<6.5f || gap>16f || height>5f)return null;
+                    break;
                 case Move.UnderpassReturn:
-                    if (!preview && (NeedNewOrigin(start) || facts.Velocity.x*face>1.25f ||
-                        !facts.Grounded && facts.Velocity.y>=0)) return false;
-                    if(dx<3.45f || dx>9f || dy>=1.55f || !PlanUnderpass(plan))return false;
-                    float under=FlightOpportunity(plan,facts,wind+.16f,float.PositiveInfinity);
-                    if(!preview && float.IsPositiveInfinity(under))return false;
-                    plan.FirstThreat=wind+.16f+Mathf.Min(under,UnderPassAt);
-                    return true;
+                    if(gap<3.45f || gap>9f || height>=1.55f ||
+                        !preview && (facts.Velocity.x*Mathf.Sign(delta.x)>-1.25f || !facts.Grounded && facts.Velocity.y>0))
+                        return null;
+                    break;
                 case Move.PalmDeflection:
-                    if(!preview && NeedNewOrigin(start) || dx<3.3f && dy<1.65f && !(leaving && lead>=3.9f) ||
-                        dx>11f || dy>4.8f || !PlanDeflection(plan))return false;
-                    float first=FlightOpportunity(plan,facts,wind+.18f,float.PositiveInfinity);
-                    if(float.IsPositiveInfinity(first))
-                    {
-                        var sweep=PalmCutAt(PalmCatch+PalmSweepLock);
-                        if(!preview && !PalmSweepConnects(plan.Landing,plan.Facing,facts,travel+wind+.18f+PalmCatch,sweep))return false;
-                        first=sweep.Start;
-                    }
-                    plan.FirstThreat=wind+.18f+first;
-                    return true;
-                default: return false;
+                    if(gap>11f || height>4.8f || gap<3.3f && height<1.65f ||
+                        !preview && (height<1.65f && gap<8.5f || NeedNewOrigin(start)))return null;
+                    break;
+                default:return null;
+            }
+            return AimAt(move,facts,start,seen,travel,wind);
+        }
+
+        AxePlan AimAt(Move move,BossObservation facts,Vector2 start,Vector2 seen,float travel,float wind)
+        {
+            float dx=seen.x-start.x;
+            float face=Mathf.Abs(dx)>.10f?Mathf.Sign(dx):actor.Facing;
+            float lead=move==Move.TripleCut?.08f:.20f;
+            Vector2 aim=Vector2.MoveTowards(seen,PublicPosition(facts,travel+lead),1.1f);
+            if((aim.x-start.x)*face<0)aim.x=seen.x;
+            float firstBeat=move switch
+            {
+                Move.TripleCut => 0, Move.LeapingCrosscut => .25f, Move.AnchorVault => .40f,
+                Move.UnderpassReturn => .45f, _ => .36f
+            };
+            return new AxePlan { Move=move, Start=start, Target=aim, Facing=face, FinishFacing=face,
+                Landing=start, Retreat=start, FirstThreat=wind+Timings[(int)move].Lock+firstBeat };
+        }
+
+        bool PlanFrom(Move move,bool preview,BossObservation facts,Vector2 start,float wind,out AxePlan plan)
+        {
+            plan=ReadOpening(move,preview,facts,start,0,wind);
+            return plan!=null && PlanMotion(plan,facts,wind);
+        }
+
+        bool PlanMotion(AxePlan plan,BossObservation facts,float wind)
+        {
+            switch(plan.Move)
+            {
+                case Move.TripleCut: return true;
+                case Move.LeapingCrosscut: return PlanCrosscut(plan,facts,wind);
+                case Move.AnchorVault: return PlanVault(plan);
+                case Move.UnderpassReturn: return PlanUnderpass(plan);
+                case Move.PalmDeflection: return PlanDeflection(plan);
+                default:return false;
             }
         }
 
@@ -407,32 +433,7 @@ namespace GoGhost.Duel
         float Followup(Vector2 point, Vector2 target)
         {
             Vector2 delta = target-point;
-            return Mathf.Max(0,Mathf.Abs(delta.x)-2f)/actor.Motor.Profile.Speed
-                + Mathf.Abs(delta.y)*.25f;
-        }
-
-        // FlightCorridorClear has just built the candidate's actual public flight segments.
-        // A high arc that misses the observed body does not earn an instant hit opportunity.
-        float FlightOpportunity(AxePlan plan,BossObservation facts,float releaseAfter,float otherContact)
-        {
-            Vector3 size=facts.Body.size;
-            var window=new Bounds(Vector3.zero,new Vector3(size.x+2*FlightEdgeRadius,size.y+2*FlightEdgeRadius,1f));
-            foreach(var leg in candidateFlight)
-            {
-                if(leg.Group<0)continue;
-                var from=leg.Edge(0,plan.Facing) - PublicPosition(facts,plan.TravelTime+releaseAfter+leg.Start);
-                for(int i=1;i<=leg.Samples;i++)
-                {
-                    float segment=(leg.End-leg.Start)/leg.Samples;
-                    var to=leg.Edge(i,plan.Facing) - PublicPosition(facts,plan.TravelTime+releaseAfter+leg.Start+i*segment);
-                    var delta=to-from;
-                    if(window.Contains(from))return leg.Start+(i-1)*segment;
-                    if(delta.sqrMagnitude>.000001f && window.IntersectRay(new Ray(from,delta.normalized),out float distance)
-                        && distance<=delta.magnitude)return leg.Start+(i-1+distance/delta.magnitude)*segment;
-                    from=to;
-                }
-            }
-            return otherContact;
+            return Mathf.Max(0,Mathf.Abs(delta.x)-2f)/actor.Motor.Profile.Speed + Mathf.Abs(delta.y)*.25f;
         }
 
         BossMotionProfile LeapMotion(float rise)
@@ -455,51 +456,47 @@ namespace GoGhost.Duel
             Vector2 stepped=launch+Vector2.right*(advance*plan.Facing);
             if (advance>0 && SameSupportWalk(launch,stepped)) launch=stepped;
             float release=wind+Timings[(int)Move.LeapingCrosscut].Lock;
-            bool intercept=TryReadLanding(facts,plan.TravelTime+release,out var landingTarget);
+            bool intercept=TryReadLanding(facts,release,out var landingTarget);
             RankCrosscutLandings(plan,intercept,landingTarget);
-            bool found=false;
-            float best=float.PositiveInfinity;
-            int checkedFromSetup=0;
             foreach (var site in attackSites)
             {
                 float shift=(site.Point.x-launch.x)*plan.Facing;
-                float rise=site.Point.y-launch.y;
-                if (shift<-.15f||shift>9f) continue;
-                if(plan.TravelTime>0 && ++checkedFromSetup>6)break;
-                var motion=LeapMotion(rise);
-                if (!actor.Navigation.TryJumpTrajectory(launch,site.Point,motion,motor.Size,out var route,out var path)) continue;
-                if (!PathInBounds(path)) continue;
+                if (shift<-.15f || shift>9f) continue;
+                var motion=LeapMotion(site.Point.y-launch.y);
+                if (!actor.Navigation.TryJumpTrajectory(launch,site.Point,motion,motor.Size,out var route,out var path)
+                    || !PathInBounds(path)) continue;
+
+                // The destination is ranked by where the opponent was seen. The blade
+                // passes through that lane even when the opponent subsequently leaves.
+                Vector2 aim=intercept?landingTarget:plan.Target;
                 float touchdown=(path.Length-1)*Time.fixedDeltaTime;
                 float latest=Mathf.Max(.06f,touchdown-.21f);
-                var swing=CrosscutForPath(path,latest);
-                float threat=float.PositiveInfinity;
-                // Evaluate actual blade contacts on the rising and falling parts of this jump.
-                // Choose the beat before launch so the landing and slash cannot home.
-                for(float at=Mathf.Min(.08f,latest);;at=Mathf.Min(latest,at+.12f))
-                {
-                    var cut=CrosscutForPath(path,at);
-                    float contact=PathCutContact(plan.Facing,path,facts,plan.TravelTime+release,cut);
-                    if(contact<threat){threat=contact;swing=cut;}
-                    if(at>=latest)break;
-                }
-                bool direct=!float.IsPositiveInfinity(threat);
-                if (!direct)
-                {
-                    // A gap-closing leap can be useful, but its landing alone is not a hit.
-                    Vector2 playerAtLanding=PublicPosition(facts,plan.TravelTime+release+touchdown);
-                    if (Vector2.Distance(site.Point,playerAtLanding)+.75f >= Vector2.Distance(plan.Start,playerAtLanding)) continue;
-                    float remaining=Followup(site.Point,playerAtLanding);
-                    threat=touchdown+game.GetBossMoveTuning(false,(int)Move.LeapingCrosscut).Recovery+remaining;
-                }
-                float cost=threat;
-                if(intercept)cost+=.22f*Followup(site.Point,landingTarget);
-                if (found && (plan.DirectCut && !direct || plan.DirectCut==direct && cost>=best)) continue;
-                found=true; best=cost;
-                plan.FirstThreat=release+threat;
-                plan.Landing=site.Point; plan.JumpMotion=motion; plan.JumpRoute=route; plan.JumpPath=path;
-                plan.Swing=swing; plan.DirectCut=direct;
+                float at=ClosestCutStart(path,aim,plan.Facing,Mathf.Min(.08f,latest),latest,.11f);
+                plan.Swing=CrosscutForPath(path,at);
+                plan.FirstThreat=release+at;
+                plan.Landing=site.Point;
+                plan.JumpMotion=motion;
+                plan.JumpRoute=route;
+                plan.JumpPath=path;
+                return true;
             }
-            return found;
+            return false;
+        }
+
+        // Choose a swing time along an already feasible jump, never a condition for
+        // starting it. The target is a snapshot, including during a real whiff.
+        static float ClosestCutStart(Vector2[] path,Vector2 target,float facing,float earliest,float latest,float toEdge)
+        {
+            float dt=Time.fixedDeltaTime;
+            float best=earliest, score=float.PositiveInfinity;
+            for(float at=earliest;;at=Mathf.Min(latest,at+dt))
+            {
+                int k=Mathf.Clamp(Mathf.RoundToInt((at+toEdge)/dt),0,path.Length-1);
+                Vector2 delta=target-path[k];
+                float cost=Mathf.Abs(delta.x*facing-1.3f)+Mathf.Abs(delta.y+.25f)*.70f;
+                if(cost<score){best=at;score=cost;}
+                if(at>=latest)return best;
+            }
         }
 
         static Cut CrosscutForPath(Vector2[] path,float start)
@@ -509,25 +506,6 @@ namespace GoGhost.Duel
             return CrosscutAt(start,path[last].y-path[first].y);
         }
 
-        float PathCutContact(float facing, Vector2[] path, BossObservation facts, float release, Cut cut)
-        {
-            float dt=Time.fixedDeltaTime;
-            for (float age=cut.Start; age<=cut.Start+cut.Duration; age+=dt)
-            {
-                int k=Mathf.Clamp(Mathf.RoundToInt(age/dt),0,path.Length-1);
-                if(BladeContact(path[k],facing,cut,age-cut.Start,facts,release+age))return age;
-            }
-            return float.PositiveInfinity;
-        }
-
-        bool BladeContact(Vector2 centre,float facing,Cut cut,float t,BossObservation facts,float after)
-        {
-            Vector2 hand=centre+Offset(facing,.45f,.20f);
-            Vector2 ray=Shaft(facing,Mathf.Lerp(cut.From,cut.To,t/cut.Duration));
-            var target=new Bounds(PublicPosition(facts,after),facts.Body.size+Vector3.one*.32f);
-            return target.Contains(hand) || target.IntersectRay(new Ray(hand,ray),out float distance) &&
-                distance<=cut.Reach && !Projectile.TerrainHit(hand,hand+ray*distance,.16f,out _);
-        }
 
         bool TryReadLanding(BossObservation facts,float release,out Vector2 landing)
         {
@@ -560,7 +538,9 @@ namespace GoGhost.Duel
                 if(advance<0 || advance>9f || Mathf.Abs(p.y-plan.Start.y)>4.8f)continue;
                 bool nearNow=Mathf.Abs(p.x-plan.Target.x)<=3.2f && Mathf.Abs(p.y-plan.Target.y)<=2.45f;
                 bool nearLanding=intercept && Mathf.Abs(p.x-landingTarget.x)<=3.2f && Mathf.Abs(p.y-landingTarget.y)<=2.45f;
-                if(!nearNow && !nearLanding)continue;
+                if(!nearNow && !nearLanding && (advance<1f ||
+                    Vector2.Distance(p,plan.Target)+.8f>=Vector2.Distance(plan.Start,plan.Target)))continue;
+                if(advance<.5f && Mathf.Abs(p.y-plan.Start.y)<.5f && Mathf.Abs(plan.Target.y-plan.Start.y)<1.25f)continue;
                 var ideal=(nearLanding?landingTarget:plan.Target)-Vector2.right*plan.Facing*.85f;
                 attackSites.Add(new Site { Point=p,Cost=(p-ideal).sqrMagnitude });
             }
@@ -596,13 +576,13 @@ namespace GoGhost.Duel
                 || !PathInBounds(path)) return false;
             plan.Retreat=plan.Landing=retreat;
             plan.JumpRoute=route; plan.JumpPath=path; plan.JumpMotion=actor.Motor.Profile;
-            plan.Turn=BrakePoint(plan,1.0f,.40f,9.2f);
+            plan.Turn=BrakePoint(plan,1.0f,.40f,3.6f,9.2f);
             return (plan.Turn.x-plan.Start.x)*plan.Facing>=3.6f && FlightCorridorClear(plan);
         }
         bool PlanDeflection(AxePlan plan)
         {
-            plan.Turn=BrakePoint(plan,1.60f,.38f,10.6f);
             float minimumLane=Mathf.Abs(plan.Target.y-plan.Start.y)>1.5f?1.0f:3.0f;
+            plan.Turn=BrakePoint(plan,1.60f,.38f,minimumLane,10.6f);
             if ((plan.Turn.x-plan.Start.x)*plan.Facing<minimumLane) return false;
             for (int step=3;step>=0;step--)
             {
@@ -613,11 +593,11 @@ namespace GoGhost.Duel
             }
             return false;
         }
-        Vector2 BrakePoint(AxePlan plan,float overrun,float height,float maxTravel)
+        Vector2 BrakePoint(AxePlan plan,float overrun,float height,float minTravel,float maxTravel)
         {
             var b=actor.Navigation.Bounds;
             var p=plan.Target+new Vector2(plan.Facing*overrun,height);
-            float forward=Mathf.Clamp((p.x-plan.Start.x)*plan.Facing,0,maxTravel);
+            float forward=Mathf.Clamp((p.x-plan.Start.x)*plan.Facing,minTravel,maxTravel);
             p.x=plan.Start.x+plan.Facing*forward;
             return ArenaBoundary2D.ClampPoint(b,p,SpinningClearance);
         }

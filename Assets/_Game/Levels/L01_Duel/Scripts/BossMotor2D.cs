@@ -51,7 +51,7 @@ namespace GoGhost.Duel
         int stepIndex;
         bool enabledCombat, launched, leftGround, jumpRequested, dashStopPending;
         float move, speedScale = 1, dashRemaining, dashSpeed, routeAge, progressAge;
-        bool dropping, dropRequested, stepping;
+        bool dropping, dropRequested, stepping, holdingAxeGrip;
         float dropHorizontal, stepRemaining,dropLandingX;
         bool fixedDropLanding;
         Vector2 stepPosition;
@@ -120,7 +120,8 @@ namespace GoGhost.Duel
         // Retire attack motion without disabling terrain/body collision or normal gravity.
         public void EndAttackMotion()
         {
-            bool driven=DashActive;
+            bool driven=DashActive || holdingAxeGrip;
+            holdingAxeGrip=false;
             DashActive=dashStopPending=dropping=dropRequested=stepping=jumpRequested=false;
             fixedDropLanding=false;ClearRoute();
             if(body!=null)body.linearVelocity=new Vector2(0,driven?0:body.linearVelocity.y);
@@ -128,10 +129,22 @@ namespace GoGhost.Duel
         public bool StartCommittedJump(ArenaNavigation2D.Route value, BossMotionProfile motion=null)
             => Grounded && LaunchValidatedJump(value,motion);
 
-        // The fixed axe grip supplies the second takeoff of Anchor Vault. Ordinary
-        // jumps still require footing. Both launches use the same swept route and motor.
+        internal bool CatchAxeGrip(Vector2 grip)
+        {
+            if(!enabledCombat || Vector2.Distance(Position,grip)>.15f)return false;
+            EndAttackMotion();
+            body.linearVelocity=Vector2.zero;
+            holdingAxeGrip=true;
+            return true;
+        }
+
+        // Only a physical catch supplies this aerial takeoff.
         internal bool ReboundFromGrip(Vector2 grip, ArenaNavigation2D.Route route, BossMotionProfile motion)
-            => Vector2.Distance(Position,grip) <= .15f && LaunchValidatedJump(route,motion);
+        {
+            if(!holdingAxeGrip)return false;
+            EndAttackMotion();
+            return Vector2.Distance(Position,grip)<=.15f && LaunchValidatedJump(route,motion);
+        }
 
         bool LaunchValidatedJump(ArenaNavigation2D.Route value, BossMotionProfile motion)
         {
@@ -169,7 +182,7 @@ namespace GoGhost.Duel
         public void Stop()
         {
             JumpStartedAt=-1;
-            dropping = dropRequested = stepping = false;
+            dropping = dropRequested = stepping = holdingAxeGrip = false;
             DropBlocked = false;
             route = null; DashActive = false; DashBlocked = dashStopPending = false; jumpRequested = false;
             RouteFailed = RouteCompleted = false; RouteFailure = null; launched = leftGround = false;
@@ -215,6 +228,14 @@ namespace GoGhost.Duel
                 airborneDescent = 0f;
             }
             else airborneDescent = -body.linearVelocity.y;
+            if(holdingAxeGrip)
+            {
+                // Counter just this fixed step's gravity while braced on the axe.
+                // Keep ordinary dynamic contacts, without snapping to the anchor.
+                body.linearVelocity=-Physics2D.gravity*(body.gravityScale*dt);
+                PreviousPosition=here;
+                return;
+            }
             if (dropping && !dropRequested && body.linearVelocity.y > -.2f)
             {
                 DropBlocked=false;

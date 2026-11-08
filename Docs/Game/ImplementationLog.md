@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — Boss footing at platform edges
+
+The Boss support probe now spans the collider’s foot width. Navigation identifies the supporting surface from the actual foot contact, including when the body centre overhangs the edge.
+
+Unity 6000.6.0f1 compiled in an isolated project copy. Play Mode used Start Mission, then placed the player on the far side and each Boss at three offsets from its left platform’s right edge. At a 0.32-unit overhang, Swordsman’s stationary interval went from 0.97 s to 0.30 s and the prepared jump launched. Gunner stayed at the edge throughout the original six-second sample and moved after the fix. At both tested overhangs the route query recovered the same reachable destinations as the inside-edge control (41 for Mission 2, 21 for Mission 1). A foot entirely beyond the lip did not report support from that platform. The phase-one Final Boss remained grounded, waited with the player out of sight and used Boomerang after sight returned. Bonus, phase two and a standalone build were not tested.
+
 ## 2026-11-07 — Mission 3 corporate skyline
 
 The Final Boss encounter now loads two plates from the approved skyline illustration at 60% opacity. The countdown, both phases and direct phase-two retry share the encounter background. It uses the same 7 / 36 reference-pixel travel as Missions 1 and 2. Unity imported the plates. Play Mode verification is left to Thomas.

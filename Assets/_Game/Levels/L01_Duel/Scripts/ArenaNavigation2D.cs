@@ -303,18 +303,25 @@ namespace GoGhost.Duel
         }
         public bool TrySupport(Vector2 center, Vector2 size, out Collider2D support)
         {
-            support = null;
+            bool supported = TrySupportHit(center, size, out var hit);
+            support = hit.collider;
+            return supported;
+        }
+        bool TrySupportHit(Vector2 center, Vector2 size, out RaycastHit2D support)
+        {
+            support = default;
             Vector2 foot = center - Vector2.up * (size.y * .5f);
             float best = float.PositiveInfinity;
+            // A box can rest on the last few centimetres of a ledge.
             Physics2D.BoxCast(foot + Vector2.up * .055f,
-                new Vector2(Mathf.Max(.04f, size.x - .10f), .035f), 0, Vector2.down, GroundFilter(), supportHits, .115f);
+                new Vector2(size.x, .035f), 0, Vector2.down, GroundFilter(), supportHits, .115f);
             foreach (var hit in supportHits)
             {
                 if (hit.collider == null || hit.collider.isTrigger || hit.normal.y < .7f || hit.distance >= best) continue;
                 if (OneWay(hit.collider, out var effector) && Vector2.Dot(hit.normal, effector.transform.up) < Mathf.Cos(effector.surfaceArc * .5f * Mathf.Deg2Rad)) continue;
-                support = hit.collider; best = hit.distance;
+                support = hit; best = hit.distance;
             }
-            return support != null;
+            return support.collider != null;
         }
         public bool SweepTraversal(Vector2 from, Vector2 to, Vector2 size, out RaycastHit2D blocker, out Vector2 safeEnd,
             Collider2D ignoredSupport = null)
@@ -360,13 +367,15 @@ namespace GoGhost.Duel
         }
         Surface SurfaceAt(Vector2 center, Vector2 size)
         {
-            if (!TrySupport(center, size, out var support)) return null;
+            if (!TrySupportHit(center, size, out var hit)) return null;
+            // The foot contact stays on the surface even when the body centre overhangs it.
+            float x = hit.point.x;
             float foot = center.y - size.y * .5f;
             Surface best = null; float error = .18f;
             foreach (var surface in surfaces)
             {
-                if (surface.Collider != support || center.x < surface.A.x - .1f || center.x > surface.B.x + .1f) continue;
-                float y = Mathf.Lerp(surface.A.y, surface.B.y, Mathf.InverseLerp(surface.A.x, surface.B.x, center.x));
+                if (surface.Collider != hit.collider || x < surface.A.x - .1f || x > surface.B.x + .1f) continue;
+                float y = Mathf.Lerp(surface.A.y, surface.B.y, Mathf.InverseLerp(surface.A.x, surface.B.x, x));
                 if (Mathf.Abs(y - foot) < error) { error = Mathf.Abs(y - foot); best = surface; }
             }
             return best;

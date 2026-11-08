@@ -35,6 +35,7 @@ namespace GoGhost.Duel
         Vector2 projectileContact;
         float projectileContactAt=-100;
         bool wasGrounded, wasClose;
+        AttemptPresentationVfx footEffects;
         public float VisualAlpha=>!IsCamo ? 1 : profile.CamoAlpha;
         public void Configure(PlayerHealth player,ArenaNavigation2D navigation,DuoCoordinator coordinator,int actorId,bool diagnostics)
         {
@@ -42,6 +43,7 @@ namespace GoGhost.Duel
             Health=GetComponent<Enemy>(); Body=GetComponent<Collider2D>(); Motor=GetComponent<BossMotor2D>();
             Actions=GetComponent<BossActionExecutor>(); View=GetComponentInChildren<BossSilhouetteView>();
             Sounds=GetComponentInParent<SfxSet>();
+            footEffects=GetComponentInParent<AttemptPresentationVfx>();
             Health.ConfigureFixedSingleLife(profile.Health);Health.SetTarget(player);
             Health.OnDied+=OnDied;Health.OnDamaged+=OnDamaged;
             Motor.Configure(profile.Motion,navigation);Motor.SetCombatEnabled(false);
@@ -52,6 +54,15 @@ namespace GoGhost.Duel
             if(PlayerRuleBodyVisible())lastPlayerRuleContact=CreateContact(true);
         }
         public void StartCombat() {Running=true;Motor.SetCombatEnabled(true);}
+        internal void ShowFootContact(Collider2D surface, bool takeoff, float motion)
+        {
+            if (!Running || !IsAlive || IsCamo || IsTrainingEnemy || View == null || footEffects == null || surface == null) return;
+            Bounds bounds = surface.bounds;
+            Vector2 point = new Vector2(Mathf.Clamp(Position.x, bounds.min.x, bounds.max.x), bounds.max.y);
+            Color tint = View.FootFlakeColor;
+            if (takeoff) footEffects.TookOff(ActorId, point, surface, motion, tint);
+            else footEffects.Landed(ActorId, point, surface, motion, tint);
+        }
         public void SetPaused(bool paused) {View?.SetPaused(paused);}
         public void StopCombat()
         { Running=false;Axe?.Cancel();Actions?.StopCombat();Motor?.SetCombatEnabled(false);Health?.StopCombat();Sounds?.StopActor(ActorId);View?.ClearTells(); }

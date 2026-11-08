@@ -4,7 +4,7 @@ Confirmed by Thomas, 2026-10-16. This direction supersedes earlier monochrome co
 
 ## Palette and identity
 
-**Player footing.** Manual and rule-driven ground jumps leave three flat gray-blue flakes at the takeoff point for .12 s. Running jumps bias them behind the player. An ordinary landing scatters two flakes for .14 s. A harder landing scatters four over a wider area for .18 s. A jump immediately following a landing shares that contact burst.
+**Footing.** Players and visible Bosses leave two faint flakes at takeoff for .12 s. Movement biases the flakes behind the actor. An ordinary landing scatters two flakes for .14 s, and a harder landing scatters three over a wider area for .18 s. A jump immediately following a landing shares that actor's contact burst. The player uses gray-blue, Gunner warm orange, and Swordsman coral. The Final Boss uses the violet from the feet of his rainbow silhouette in phase one and cold white in phase two. Gunner's optical camo suppresses new flakes.
 
 **Drawn player face.** **Who Are You** shows a black head with a gray-blue rim and ink, matching the idle body contour. **Clear** sits to the right of the face. The optional nickname uses the dark Panel field, Primary text and Secondary placeholder. **Upload** gives way to a progress bar labeled **Uploading** with a percentage while encounter audio and the greeting are prepared. Body Configuration keeps the black head and gray-blue drawing. Testing, preparation and combat render the same ink mask in black on a cold-white Primary head (#DCE7ED).
 

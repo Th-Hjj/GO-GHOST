@@ -41,6 +41,8 @@ namespace GoGhost.Duel
         public ArenaNavigation2D Navigation => navigation;
         public float JumpStartedAt { get; private set; } = -1;
         Rigidbody2D body;
+        BossAgent actor;
+        float airborneDescent;
         BoxCollider2D shape;
         Vector2 centreOffset, dashDirection, progressPosition;
         ArenaNavigation2D navigation;
@@ -56,6 +58,7 @@ namespace GoGhost.Duel
         void Awake()
         {
             body = GetComponent<Rigidbody2D>(); shape = GetComponent<BoxCollider2D>();
+            actor = GetComponent<BossAgent>();
             centreOffset = (Vector2)shape.bounds.center - body.position;
             PreviousPosition = Position;
         }
@@ -73,6 +76,7 @@ namespace GoGhost.Duel
         public void SetCombatEnabled(bool value)
         {
             enabledCombat = value;
+            airborneDescent = 0f;
             if (!value) Stop();
         }
         public void SetMove(float direction, float speedScale = 1)
@@ -183,7 +187,15 @@ namespace GoGhost.Duel
             bool supported = navigation != null && navigation.TrySupport(here, Size, out support);
             var carrier = support != null ? support.attachedRigidbody : null;
             float carrierSpeed = carrier != null && carrier.bodyType == RigidbodyType2D.Kinematic ? carrier.linearVelocity.y : 0;
+            bool previouslyGrounded = Grounded;
             Grounded = supported && body.linearVelocity.y <= carrierSpeed + .1f;
+            if (Grounded)
+            {
+                if (!previouslyGrounded && airborneDescent + carrierSpeed > 1f)
+                    actor?.ShowFootContact(support, false, airborneDescent);
+                airborneDescent = 0f;
+            }
+            else airborneDescent = -body.linearVelocity.y;
             if (dropping && !dropRequested && body.linearVelocity.y > -.2f)
             {
                 DropBlocked=false;
@@ -244,6 +256,7 @@ namespace GoGhost.Duel
                 vertical = Profile.JumpSpeed;
                 JumpStartedAt = Time.fixedTime;
                 jumpRequested = false; Grounded = false;
+                if (supported) actor?.ShowFootContact(support, true, move);
             }
             var motion=TraversalProfile;
             float horizontal = dropping ? dropHorizontal : StepHorizontal(body.linearVelocity.x, move * motion.Speed * speedScale, Grounded, motion, dt);

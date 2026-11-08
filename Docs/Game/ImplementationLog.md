@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — Lighter player and Boss foot flakes
+
+Reduced takeoff to two flakes and hard landings to three, kept two for light landings, and lowered peak opacity. Gunner, Swordsman and both Final Boss phases now emit their own body-colored flakes at physical takeoff and landing. Each combatant reuses its own lines, including both Bonus opponents. Concealed Gunner emits no new flakes. The runtime assembly compiled with Unity 6000.6.0f1's Roslyn compiler and Editor compilation flags. No Play Mode check or build was run.
+
 ## 2026-11-07 — Mission 2 casino hotel
 
 The distant right office towers are now the approved casino resort. Its five-fin crown, stepped wings and amber rooflines follow the concept. The hotel podium and columns continue behind the foreground palms, actors and platforms. The far plate keeps its existing GUID, dimensions, parallax and 60% opacity. The importer lights the left facade and near marquee, while the hotel uses the highlights painted into its artwork.

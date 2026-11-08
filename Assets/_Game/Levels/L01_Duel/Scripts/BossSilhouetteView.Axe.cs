@@ -28,6 +28,22 @@ namespace GoGhost.Duel
         public bool EyesRed { get; private set; }
         bool FinalAxe => actor != null && actor.Axe != null;
 
+        internal Color FootFlakeColor
+        {
+            get
+            {
+                Color tint = bodyColor;
+                if (FinalAxe && rainbowMaterial != null && parts[(int)Part.FrontCalf].sharedMaterial == rainbowMaterial)
+                {
+                    // Match the hue at the foot of the vertical FinalBossRainbow gradient.
+                    Color footHue = Color.HSVToRGB(.78f, .75f, 1f);
+                    tint = Color.Lerp(NeuralPalette.Primary, footHue, rainbowMaterial.GetFloat("_RainbowAmount"));
+                }
+                tint.a = alpha;
+                return tint;
+            }
+        }
+
         void ConfigureFinalBossLook()
         {
             if (!FinalAxe) return;

@@ -43,16 +43,23 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
 
     // Distance, arc height and full length of each tapered flake, in world units.
     private static readonly Vector3[] TakeoffFlakes = {
-        new(-.37f,.125f,.15f), new(.32f,.15f,.12f), new(-.20f,.065f,.10f) };
+        new(-.37f,.125f,.15f), new(.32f,.15f,.12f) };
     private static readonly Vector3[] LightLandingFlakes = {
         new(-.40f,.085f,.165f), new(.37f,.09f,.16f) };
     private static readonly Vector3[] HeavyLandingFlakes = {
-        new(-.85f,.125f,.22f), new(.90f,.13f,.23f), new(-.46f,.21f,.14f), new(.52f,.19f,.165f) };
-    private readonly LineRenderer[] footLines = new LineRenderer[4];
-    private Vector3[] footPattern;
-    private Collider2D footSurface;
-    private Vector3 footAnchor;
-    private float footBorn, footLife, strideBias;
+        new(-.85f,.125f,.22f), new(.90f,.13f,.23f), new(-.46f,.21f,.14f) };
+    private sealed class FootBurst
+    {
+        public readonly LineRenderer[] Lines = new LineRenderer[HeavyLandingFlakes.Length];
+        public Vector3[] Pattern;
+        public Collider2D Surface;
+        public Vector3 Anchor;
+        public Color Tint;
+        public float Born, Life, StrideBias;
+    }
+
+    private readonly Dictionary<int, FootBurst> footBursts = new();
+    private static readonly Color PlayerFlakeTint = new Color32(166, 185, 195, 255);
 
     public void BeginAttempt()
     {
@@ -73,9 +80,7 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
         slowAnchor = null;
         slowRoot = null;
         slowLines = null;
-        footPattern = null;
-        footSurface = null;
-        System.Array.Clear(footLines, 0, footLines.Length);
+        footBursts.Clear();
         flashes.Clear();
         if (owned != null)
         {
@@ -163,63 +168,72 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
     public void BulletHit(Vector3 contact, Vector2 outward) => Rays(contact, outward, 3, .17f, .10f);
 
     public void PlayerTookOff(Vector2 point, Collider2D surface, float movement)
-    {
-        // A rule can take off again on the same landing. Keep that one contact visible.
-        if (footPattern != null && footPattern != TakeoffFlakes && footSurface == surface
-            && PresentationClock - footBorn < .06f) return;
-        StartFootFlakes(point, surface, TakeoffFlakes, .12f, Mathf.Clamp(movement, -1f, 1f));
-    }
+        => TookOff(0, point, surface, movement, PlayerFlakeTint);
 
     public void PlayerLanded(Vector2 point, Collider2D surface, float descentSpeed)
+        => Landed(0, point, surface, descentSpeed, PlayerFlakeTint);
+
+    public void TookOff(int actorId, Vector2 point, Collider2D surface, float movement, Color tint)
+    {
+        // Only merge the same actor's immediate landing and takeoff on this support.
+        if (footBursts.TryGetValue(actorId, out var burst) && burst.Pattern != TakeoffFlakes
+            && burst.Surface == surface && PresentationClock - burst.Born < .06f) return;
+        StartFootFlakes(actorId, point, surface, TakeoffFlakes, .12f, Mathf.Clamp(movement, -1f, 1f), tint);
+    }
+
+    public void Landed(int actorId, Vector2 point, Collider2D surface, float descentSpeed, Color tint)
     {
         float relativeSpeed = descentSpeed + (surface.attachedRigidbody != null ? surface.attachedRigidbody.linearVelocity.y : 0f);
         bool heavy = relativeSpeed >= 14f;
-        StartFootFlakes(point, surface, heavy ? HeavyLandingFlakes : LightLandingFlakes, heavy ? .18f : .14f, 0f);
+        StartFootFlakes(actorId, point, surface, heavy ? HeavyLandingFlakes : LightLandingFlakes, heavy ? .18f : .14f, 0f, tint);
     }
 
-    private void StartFootFlakes(Vector2 point, Collider2D surface, Vector3[] pattern, float duration, float bias)
+    private void StartFootFlakes(int actorId, Vector2 point, Collider2D surface, Vector3[] pattern, float duration, float bias, Color tint)
     {
         if (!CanDraw || paused || lineMaterial == null) return;
-        footPattern = pattern;
-        footSurface = surface;
-        footAnchor = surface.transform.InverseTransformPoint(point);
-        footBorn = PresentationClock;
-        footLife = duration;
-        strideBias = bias;
-        if (footLines[0] == null)
+        if (!footBursts.TryGetValue(actorId, out var burst))
         {
-            var group = Child("Player Foot Flakes");
+            burst = new FootBurst();
+            footBursts.Add(actorId, burst);
+            var group = Child($"Foot Flakes {actorId}");
             var taper = new AnimationCurve(new Keyframe(0, 0), new Keyframe(.5f, 1), new Keyframe(1, 0));
-            for (int i = 0; i < footLines.Length; i++)
+            for (int i = 0; i < burst.Lines.Length; i++)
             {
                 var line = Line(group, new Vector3[3], 1, Color.white);
                 line.widthCurve = taper;
-                footLines[i] = line;
+                burst.Lines[i] = line;
             }
         }
-        UpdateFootFlakes(footBorn);
+        burst.Pattern = pattern;
+        burst.Surface = surface;
+        burst.Anchor = surface.transform.InverseTransformPoint(point);
+        burst.Born = PresentationClock;
+        burst.Life = duration;
+        burst.StrideBias = bias;
+        burst.Tint = tint;
+        UpdateFootFlakes(burst, burst.Born);
     }
 
-    private void UpdateFootFlakes(float now)
+    private void UpdateFootFlakes(FootBurst burst, float now)
     {
-        if (footPattern == null) return;
-        float t = Mathf.Clamp01((now - footBorn) / footLife);
-        if (t >= 1 || footSurface == null || !footSurface.isActiveAndEnabled)
+        if (burst.Pattern == null) return;
+        float t = Mathf.Clamp01((now - burst.Born) / burst.Life);
+        if (t >= 1 || burst.Surface == null || !burst.Surface.isActiveAndEnabled)
         {
-            foreach (var line in footLines) line.enabled = false;
-            footPattern = null;
+            foreach (var line in burst.Lines) line.enabled = false;
+            burst.Pattern = null;
             return;
         }
-        Vector3 origin = footSurface.transform.TransformPoint(footAnchor);
+        Vector3 origin = burst.Surface.transform.TransformPoint(burst.Anchor);
         float travel = 1 - Mathf.Pow(1 - t, 1.5f);
-        for (int i = 0; i < footLines.Length; i++)
+        for (int i = 0; i < burst.Lines.Length; i++)
         {
-            var line = footLines[i];
-            line.enabled = i < footPattern.Length;
+            var line = burst.Lines[i];
+            line.enabled = i < burst.Pattern.Length;
             if (!line.enabled) continue;
-            Vector3 flake = footPattern[i];
+            Vector3 flake = burst.Pattern[i];
             float side = Mathf.Sign(flake.x);
-            float x = side * .15f + (flake.x - strideBias * .14f) * travel;
+            float x = side * .15f + (flake.x - burst.StrideBias * .14f) * travel;
             float y = .038f + 4 * flake.y * t * (1 - t);
             Vector3 center = origin + new Vector3(x, y);
             float angle = side * (.38f - .65f * t - (i % 2) * .16f);
@@ -228,8 +242,8 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
             line.SetPosition(1, center);
             line.SetPosition(2, center + tip);
             line.widthMultiplier = (i < 2 ? .064f : .05f) * (1 - .3f * t);
-            Color color = new Color32((byte)(166 - i * 7), (byte)(185 - i * 6), (byte)(195 - i * 4), 232);
-            color.a *= 1 - Mathf.Pow(t, 1.25f);
+            Color color = burst.Tint;
+            color.a *= (.78f - .05f * i) * (1 - Mathf.Pow(t, 1.25f));
             line.startColor = line.endColor = color;
             ClipToArena(line);
         }
@@ -365,7 +379,7 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
     {
         if (!CanDraw || paused) return;
         float now = PresentationClock;
-        UpdateFootFlakes(now);
+        foreach (var burst in footBursts.Values) UpdateFootFlakes(burst, now);
         for (int i = flashes.Count - 1; i >= 0; i--)
         {
             var f = flashes[i];

@@ -2,6 +2,8 @@
 
 ## 2026-11-07 — Mission 2 casino facades
 
+Mission 2 now renders both casino plates at 60% opacity. Play Mode was not run.
+
 Cleared the three marked dark protrusions from the far plate to expose the sky above the casino rooflines. Static two-layer preview: `Logs/ParallaxPreview/Mission-2-Clean-Rooflines.png`. Unity Play Mode was not run.
 
 The near plate's right observation deck now carries a level fascia and light strip. The far plate's lower walls and accent lights use colors sampled from its upper facade. Both plates retain 65% opacity. A static composite is available at `Logs/ParallaxPreview/Mission-2-Level-Terrace-65.png`. Unity verification is left to Thomas.

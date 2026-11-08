@@ -57,14 +57,14 @@ The 2026-10-27 drawn-face flow supersedes this 2026-10-16 presentation. The reta
 
 ## Combat feedback
 
-**Final Boss redesign — Thomas, 2026-11-06 (implemented; trial values):**
-- **Rule sidebars:** the player's sidebar sits on the left in every wave (implemented); the Final Boss's rules use a matching sidebar on the right (implemented; with both sidebars the arena is drawn smaller). The camera fills the space between them, and returns to full width when neither sidebar is shown.
+**Final Boss presentation, updated 2026-11-07**
+- The player’s Rules occupy the left edge in every wave. The combat camera fills the remaining width and uses the full screen when the sidebar is hidden.
 - **Phase one:** a player-sized rainbow stickman (the retired Alpha look) with an axe, using the existing tell style.
-- **Transition:** after the shockwave and platform movement, the arrows disconnect, the cards lose their action colors and each sidebar reads **SEALED**. The Boss drains to white before his red eyes light. Both sidebars fade during the countdown.
+- After the shockwave and platform movement, the player’s rule arrows disconnect, the cards lose their action colors and the sidebar reads **SEALED**. The Boss drains to white before his red eyes light. The sidebar fades during the countdown.
 - **Phase two:** the white Boss retains the axe for Chop and Spin, with no tell lines. His red eye trails follow his movement.
-- **EMP outline:** the wave and thin outlines use the existing violet #B28CFF. Moving platforms keep their gray surface and a subdued violet edge after contact. Both rule sidebars acquire one perimeter each. The Boss loses his rim as the rainbow drains. The interrupted Happy caption shows its rim immediately before cutoff.
+- The EMP wave and outlines use violet #B28CFF. Moving platforms keep their gray surface and a subdued violet edge after contact. A violet outline appears around the player’s visible sidebar. The Boss loses his rim as the rainbow drains. The interrupted Happy caption shows its rim immediately before cutoff.
 - **Player revolver:** the weapon keeps its gray-blue silhouette and ice-blue cylinder through the EMP, phase two and direct retry.
-- **Dialogue:** the Boss’s three kneeling lines use a left-aligned speaker and sentence in a two-line Panel between the sidebars. Happy’s preparation dialogue uses the same hierarchy in the lower-left footer.
+- The Boss’s three kneeling lines use a left-aligned speaker and sentence in a two-line panel within the combat view. Happy’s preparation dialogue uses the same hierarchy in the lower-left footer.
 
 [Boss Encounters](BossEncounters.md#final-boss-redesign--approved-for-trial-2026-11-06)
 

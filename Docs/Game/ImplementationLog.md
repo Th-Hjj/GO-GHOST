@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — Final Boss uses his own combat AI
+
+Removed the Boss’s conditional controller and right sidebar. His existing axe AI handles spacing between attacks. He holds position while the straight axe is away and locks its return to his hand at recall. The combat view now extends to the right edge. Threshold invasions still add a fight-only rule to the player’s left sidebar. The EMP seals that sidebar before the phase-two countdown.
+
+NOT TESTED. Thomas requested this change without verification. Compilation and Play Mode were skipped.
+
 ## 2026-11-07 — Mission 2 casino showroom
 
 The left office facade is now the approved showroom. Two softly lit glass entrances sit between fluted piers beneath rounded terraces with bronze roof trim. The far layer uses the proposal for the visible architecture and a clean wall behind the moving marquee. The CASINO sign and both bulb rows remain on the near layer. The old freestanding post below the marquee was removed.

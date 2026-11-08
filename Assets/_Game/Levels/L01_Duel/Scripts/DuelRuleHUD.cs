@@ -72,7 +72,7 @@ namespace GoGhost.Duel
             if(ruleScroll!=null)hudScrollPosition=ruleScroll.verticalNormalizedPosition;
             foreach(var row in ruleRows)if(row.Signals!=null)
                 foreach(var signal in row.Signals)if(signal!=null)Destroy(signal);
-            ruleRows.Clear();hudRules=null;ClearBossRuleHud();ClearSealMarks();
+            ruleRows.Clear();hudRules=null;ClearSealMarks();
             ruleSidebar=battleUi=ruleScrollRoot=ruleViewport=ruleContent=ruleScrollbarRoot=null;
             ruleScroll=null;ruleHeading=null;ruleHudSize=Vector2.zero;
         }
@@ -92,7 +92,6 @@ namespace GoGhost.Duel
                 hudScrollController = hudRules;
             }
             if (game.InvasionReview) hudScrollPosition = 0;
-            BuildBossRuleHud();
 #if UNITY_EDITOR
             if(ruleHudViewSample!=null)
             {
@@ -241,8 +240,6 @@ namespace GoGhost.Duel
             rect.anchoredPosition=new Vector2(-cardWidth/2+left+width/2,cardHeight/2-top-height/2);
         }
         float MeasureRulePanelWidth(float availableWidth)=>Mathf.Min(availableWidth * .19f, Mathf.Clamp(availableWidth * .155f, 214, 280));
-        // Width of the Final Boss rule sidebar on the right edge; zero until his rules are shown.
-        float BossRulePanelWidth=>bossRuleSidebar!=null?bossRulePanelWidth:0;
         void LayoutRuleHud(float width,float height)
         {
             float position=ruleScroll!=null&&ruleHudSize!=Vector2.zero?ruleScroll.verticalNormalizedPosition:hudScrollPosition;
@@ -276,22 +273,16 @@ namespace GoGhost.Duel
             bool hasRules=ruleSidebar!=null&&hudRules==game.Rules&&
                 (game.Phase==DuelPhase.Prepare||game.Phase==DuelPhase.Fight||game.Phase==DuelPhase.Training);
             if(hasRules&&(Mathf.Abs(ruleHudSize.x-width)>.5f||Mathf.Abs(ruleHudSize.y-height)>.5f))LayoutRuleHud(width,height);
-            // Player rules occupy the left edge; the right edge is reserved for the Final Boss's rules.
-            LayoutBossRuleHud(width,height);
             float sidebar=hasRules?rulePanelWidth:0;
-            // Start the countdown at full width and reveal both panels with the combat camera.
-            // The phase-two countdown already slides its sealed panels in the opposite direction.
+            // Reveal the player's sidebar at the opening countdown and withdraw it after the EMP.
             float visible = game.Phase == DuelPhase.Prepare && !sidebarsSealed
                 ? Reveal(DuelGame.PreparationSeconds - game.PreparationRemaining, ArenaRevealSeconds)
                 : 1 - SidebarFade;
             float panel=sidebar*visible*Reveal(Time.unscaledTime-firstInvadedSidebarAt,ArenaRevealSeconds);
-            float right=BossRulePanelWidth*visible;
-            if (bossRuleSidebar != null)
-                bossRuleSidebar.anchoredPosition = new Vector2((width+BossRulePanelWidth)/2-right,0);
             if(battleUi!=null)
             {
-                battleUi.anchoredPosition=new Vector2((panel-right)/2,0);
-                battleUi.sizeDelta=new Vector2(width-panel-right,height);
+                battleUi.anchoredPosition=new Vector2(panel/2,0);
+                battleUi.sizeDelta=new Vector2(width-panel,height);
             }
             if(ruleSidebar!=null)
             {
@@ -300,8 +291,8 @@ namespace GoGhost.Duel
             }
             var camera=Camera.main;
             if(camera==null)return;
-            float left=panel/Mathf.Max(1,width),rightFraction=right/Mathf.Max(1,width);
-            camera.rect=new Rect(left,0,1-left-rightFraction,1);
+            float left=panel/Mathf.Max(1,width);
+            camera.rect=new Rect(left,0,1-left,1);
             float aspect=camera.pixelRect.width/Mathf.Max(1,camera.pixelRect.height);
             camera.orthographicSize=Mathf.Max(10,16.8f/Mathf.Max(.3f,aspect));
         }
@@ -343,7 +334,6 @@ namespace GoGhost.Duel
                 ApplyRuleGlow(row,Color.Lerp(color,NeuralPalette.Spine,intrusion),
                     sidebarsSealed?0:Mathf.Max(live?row.Glow.Strength:0,intrusion));
             }
-            UpdateBossRuleHud(scale);
             UpdateSealMarks();
         }
         // A rule written by the Final Boss pulses briefly when it appears (presentation only).

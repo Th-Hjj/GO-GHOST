@@ -110,7 +110,6 @@ namespace GoGhost.Duel
             yield return new WaitForSeconds(1f);
 
             ui.SealSidebars();
-            boss.Axe.SealRules();
             StripPlayerAssistance();
             encounterSounds?.Play(Sfx.Glitch);
             yield return new WaitForSeconds(.9f);

@@ -4,9 +4,7 @@ using UnityEngine;
 
 namespace GoGhost.Duel
 {
-    // Final Boss phase change: both rule sidebars freeze as disconnected
-    // snapshots at the shockwave, fade and slide away during the countdown while the camera widens,
-    // and the scripted lines appear in a subtitle box.
+    // The EMP freezes the player's rule cards. The sidebar withdraws during the countdown.
     public sealed partial class DuelUI
     {
         List<ConditionalRule> sealedPlayerRules;
@@ -14,9 +12,8 @@ namespace GoGhost.Duel
         float sidebarFadeFrom = -1, sidebarFadeSeconds = 1;
         float sealStarted;
         readonly List<(RuleRowView Row, CanvasGroup Broken)> sealMarks = new();
-        readonly List<TMP_Text> sealLabels = new();
-        readonly List<CanvasGroup> sealedGroups = new List<CanvasGroup>();
-        readonly List<CanvasGroup> sealFrames = new();
+        TMP_Text sealLabel;
+        CanvasGroup sealedGroup, sealFrame;
         CanvasGroup empCaptionEdge;
 
         public bool SidebarsSealed => sidebarsSealed;
@@ -60,7 +57,7 @@ namespace GoGhost.Duel
             sealMarks.Add((row,group));
         }
 
-        void ClearSealMarks() { sealMarks.Clear(); sealLabels.Clear(); sealedGroups.Clear(); sealFrames.Clear(); empCaptionEdge=null; }
+        void ClearSealMarks() { sealMarks.Clear(); sealLabel=null; sealedGroup=sealFrame=empCaptionEdge=null; }
 
         CanvasGroup EmpFrame(RectTransform parent)
         {
@@ -83,16 +80,15 @@ namespace GoGhost.Duel
         void SealGroup(RectTransform sidebar)
         {
             if (sidebar == null || !sidebarsSealed) return;
-            var group = sidebar.gameObject.AddComponent<CanvasGroup>();
-            group.blocksRaycasts = false;
-            sealedGroups.Add(group);
-            sealFrames.Add(EmpFrame(sidebar));
+            sealedGroup = sidebar.gameObject.AddComponent<CanvasGroup>();
+            sealedGroup.blocksRaycasts = false;
+            sealFrame = EmpFrame(sidebar);
             var label=Text("SEALED",sidebar,Vector2.zero,Vector2.zero,16,TextAlignmentOptions.Left,numericFont);
             label.name="Seal status";
             label.rectTransform.anchorMin=new Vector2(0,1);label.rectTransform.anchorMax=Vector2.one;
             label.rectTransform.offsetMin=new Vector2(16,-72);label.rectTransform.offsetMax=new Vector2(-12,-49);
             label.color=NeuralPalette.Secondary;
-            sealLabels.Add(label);
+            sealLabel = label;
         }
 
         void UpdateSealMarks()
@@ -109,11 +105,10 @@ namespace GoGhost.Duel
                 row.Arrow.alpha=1-disconnect;
                 broken.alpha=disconnect;
             }
-            foreach(var label in sealLabels) label.alpha=disconnect;
+            if(sealLabel!=null) sealLabel.alpha=disconnect;
             float rim=Reveal(age,.10f)*Mathf.Lerp(.85f,.33f,Reveal(age-.12f,.44f));
-            foreach(var frame in sealFrames) frame.alpha=rim;
-            float alpha = 1 - SidebarFade;
-            foreach (var group in sealedGroups) if (group != null) group.alpha = alpha;
+            if(sealFrame!=null) sealFrame.alpha=rim;
+            if(sealedGroup!=null) sealedGroup.alpha=1-SidebarFade;
         }
 
         void BuildFinalBossCutscene(RectTransform hud)

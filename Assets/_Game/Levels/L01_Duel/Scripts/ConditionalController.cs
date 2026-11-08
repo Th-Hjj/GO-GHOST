@@ -108,6 +108,8 @@ namespace GoGhost.Duel
         public bool IsLowHealth => lowHealth;
         public int RuleCount(ControlOperation operation)=>loadout.Operations[(int)operation].Rules.Count;
         public ConditionalRule RuleAt(ControlOperation operation,int row)=>loadout.Operations[(int)operation].Rules[row].Copy();
+        public IReadOnlyList<(int Op, int Row)> OrderedRows => priorityRows;
+        public bool RowMatches(int op, int row) => visualMatches[op, row];
         ConditionalController(ConditionalLoadout snapshot, int contactCount)
         {
             if (!ConditionalCatalog.IsValid(snapshot))
@@ -172,7 +174,6 @@ namespace GoGhost.Duel
             if (disposed)
                 return;
             disposed = true;
-            if (bossOwner != null) return; // Boss inputs are polled and have no event subscriptions.
             gun.ReloadStarted -= ReloadStarted;
             gun.ReloadFinished -= ReloadFinished;
             gun.EnemyHit -= EnemyHit;

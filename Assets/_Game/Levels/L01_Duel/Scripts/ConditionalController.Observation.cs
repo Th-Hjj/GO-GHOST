@@ -250,7 +250,6 @@ namespace GoGhost.Duel
                     if(left&&right){ctx.Source=Choose(ctx.Candidates,"Q01");ctx.HasPosition=true;ctx.Position=contacts[ctx.Source].Bounds.center;}
                     return left&&right;
                 case 53:
-                    if (bossOwner != null) return BossIncomingAttack((IncomingAttackOption)option);
                     ctx.EnemyBound=true;ctx.IsThreat=true;
                     if(option==(int)IncomingAttackOption.Low)return false;
                     ctx.ThreatKind=option==(int)IncomingAttackOption.Ranged?41:option==(int)IncomingAttackOption.Melee?42:0;
@@ -320,7 +319,7 @@ namespace GoGhost.Duel
                     if(contacts[i].HealthFraction<contacts[best].HealthFraction){best=i;bestScore=score;continue;}
                 }
                 if(response=="Q04"&&actors[i].Profile.Kind==BossKind.Gunner||response=="Q05"&&actors[i].Profile.Kind==BossKind.Swordsman)score-=100000;
-                if(score<bestScore-.0001f||Mathf.Abs(score-bestScore)<.0001f&&(best<0||bossOwner == null && actors[i].ActorId<actors[best].ActorId)) {best=i;bestScore=score;}
+                if(score<bestScore-.0001f||Mathf.Abs(score-bestScore)<.0001f&&(best<0||actors[i].ActorId<actors[best].ActorId)) {best=i;bestScore=score;}
             }
             return best;
         }

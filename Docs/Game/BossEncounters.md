@@ -15,9 +15,9 @@ Mission 1 victory waits for **Continue to Mission 2**. Defeating Swordsman close
 | Throw & Recall | .40 / .15 / flight / .35, cooldown 4.5 | 18 per pass | straight out up to 12, .60 s hold, straight return toward the hand position at recall |
 | Boomerang | .45 / .15 / 1.6 / .40, cooldown 5.5 | 20 per pass | high arc out to the target, low arc back |
 
-Chop steps toward its locked facing. Spin plants both feet and sweeps once. The Boss can run and jump under his two Rules after releasing a straight throw. Extending the empty hand locks a new return line. Boomerang commits its high outward and low return arcs together while the Boss stays in place. The AI favors Spin at point-blank range, Chop just outside it, a straight throw against a level target in reach and Boomerang across a height difference.
+Chop steps toward its locked facing. Spin plants both feet and sweeps once. For a straight throw, the Boss stays planted from release through catch. After the axe pauses at the far end, he extends his empty hand and locks the return line to its position at that moment. Boomerang commits its high outward and low return arcs together. The AI favors Spin at point-blank range, Chop just outside it, a straight throw against a level target in reach and Boomerang across a height difference.
 
-**Boss Rules:** The axe wielder runs the player's `ConditionalController` with a player-valid loadout, delayed public target observations and his own motor. The current two rows are Incoming Attack (Ranged) → Jump and Horizontal Enemy Distance (Far) → Move (Toward Enemy). Jump requests another grounded jump whenever the condition still holds. His combat AI chooses Chop, Spin, Throw & Recall and Boomerang. The Boss sidebar shows the ordinary action names and parameters from the shared catalog. Both panels seal and withdraw during the phase change.
+The axe wielder’s combat AI uses delayed public observations for movement and attack selection. Between attacks he closes on a level target or adjusts horizontal spacing across a height difference. Rules belong to the player. The left sidebar shows the player’s active list, including any rule added by an invasion. The arena extends to the right edge of the screen.
 
 **Invasions:** at 66% and 33% of the first pool, the Boss finishes his current move and lands. He lifts the axe in one hand and channels a violet pulse while invulnerable for 1.8 s. At 1.4 s the pulse reaches the player and `FinalBossInvasion` draws one random legal rule. The rule is appended after the player's last rule in a fight-only copy of the loadout, beyond the five-rule cap, and the rules are rebound. When the channel ends, Happy says “UNAUTHORIZED ACCESS DETECTED.” Combat freezes and the new card stays highlighted until the recording finishes and the player clicks. Thresholds crossed by one hit queue their invasions one after another. Rebinding resets the event state of the player's existing rules once per invasion. The equipped loadout is never modified, so Retry and Configuration start without invaded rules.
 
@@ -25,16 +25,16 @@ After Wave 3 victory, the Boss voices the two Bonus offer lines. Yes leads to Bo
 
 ## Final Boss redesign — approved for trial 2026-11-06
 
-Thomas accepted this design for trial on 2026-11-06. All nine stages were implemented on 2026-11-06 and replace Walker's prototype. Values marked *trial* are expected to change after playtesting.
+Thomas accepted the original design for trial on 2026-11-06. Its nine stages replaced Walker's prototype. On 2026-11-07 Thomas retired the Boss’s two locomotion rules and right sidebar so players could follow his attacks without monitoring a second list. The description below incorporates that revision.
 
-**Premise.** The Final Boss trusts AI more than the player does. He fights with Rules and can write rules into the player's system. After losing the first phase, he disables the arena’s circuitry and fights with the axe in hand.
+**Premise.** The Final Boss trusts AI more than the player does. He can write rules into the player's system. After losing the first phase, he disables the arena’s circuitry and fights with the axe in hand.
 
 **Entry.** Mission 3 preparation offers Test Loadout. Start Mission fades into the arena, plays the Boss opening line and starts the three-second countdown when the player advances.
 
 ### Phase 1 — Rainbow Axeman
 
 - **Body:** a player-sized stickman with the same proportions and silhouette as Waves 1 and 2, using the retired Alpha rainbow look. 1000 HP.
-- **AI and Rules:** like the player, he has an operating AI and a fixed rule list. Shared Jump and Move requests drive locomotion when the Boss is free to act. The combat AI selects and commits axe attacks. His rules appear in a right sidebar; the player's are on the left.
+- His combat AI controls movement and commits axe attacks. The poses and attack tells show what he is about to do.
 - **Axe:** chop, spin, straight throw and recall, and an arcing boomerang. All attacks keep the established tell style. More moves will be added later.
 - **Retired:** Walker's 2x Swordsman body, sword specials and platform destruction.
 
@@ -48,7 +48,7 @@ After the first health pool is spent, the Boss lands and kneels on one knee. He 
 
 1. A violet ring expands from the kneeling Boss. Happy’s “E.M...” caption briefly acquires a violet edge as her transmission cuts out.
 2. Each elevated platform picks up a thin violet rim when the wave reaches it. Once the pulse clears, all five start moving. Their subdued rims persist throughout phase two. The arena walls and floor stay neutral.
-3. A violet edge appears once around each visible rule sidebar. The cards lose their action colors, their arrows disconnect and **SEALED** appears under each heading. The player loses rule assistance.
+3. A violet edge appears around the player’s visible rule sidebar. The cards lose their action colors, their arrows disconnect and **SEALED** appears under the heading. The player loses rule assistance. The sidebar fades during the countdown.
 4. The Boss’s rainbow fill and violet outline drain together. His white body holds briefly before the red eyes light.
 5. The Boss rises holding his axe. The three-second countdown leads into phase two. The player keeps the same electromagnetic revolver. This sequence runs without clicks.
 

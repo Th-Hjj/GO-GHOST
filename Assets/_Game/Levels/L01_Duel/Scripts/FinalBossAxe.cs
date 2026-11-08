@@ -4,7 +4,7 @@ using UnityEngine;
 namespace GoGhost.Duel
 {
     // Final Boss phase-one axe kit (Thomas, 2026-11-06 trial; tuning values are provisional).
-    // Rules drive free movement; the combat AI commits the axe. Tells and public threats
+    // The combat AI controls spacing and axe attacks. Tells and public threats
     // use the same attack geometry as the hit checks.
     public sealed class FinalBossAxe
     {
@@ -80,9 +80,6 @@ namespace GoGhost.Duel
         public float LockedFacing => lockedFacing;
         public IReadOnlyList<Vector2> Path => path;
         public readonly int[] Started = new int[5], Hits = new int[5];
-        public ConditionalController Rules { get; }
-        public bool RulesSealed { get; private set; }
-        public void SealRules() => RulesSealed = true;
 
         public FinalBossAxe(BossAgent owner, PlayerHealth player, System.Action phaseTwo, System.Func<ConditionalRule> invasion)
         {
@@ -90,7 +87,6 @@ namespace GoGhost.Duel
             actor = owner; onPhaseTwo = phaseTwo; onInvasion = invasion;
             playerBody = player != null ? player.GetComponent<Collider2D>() : null;
             for (int i = 0; i < readyAt.Length; i++) readyAt[i] = 0;
-            Rules = new ConditionalController(owner);
             nextDecisionAt = Time.time + 1.0f;
         }
 
@@ -101,7 +97,6 @@ namespace GoGhost.Duel
 
         public void Tick()
         {
-            // Phase two seals the Boss's rules together with the player's.
             if (!PhaseTwo && !Transitioning)
             {
                 while (invasionsDue < InvasionPercents.Length &&
@@ -109,7 +104,6 @@ namespace GoGhost.Duel
                     invasionsDue++;
             }
             if (Invasions >= invasionsDue && TickTransition()) return;
-            if (!RulesSealed) Rules.ObserveBossRules();
             if (TickInvasion()) return;
             if (Current != Move.None) { TickMove(); return; }
             var player = actor.Player;
@@ -132,12 +126,6 @@ namespace GoGhost.Duel
                 if (delta.y > 1.4f && gap < 2.6f && actor.Motor.Grounded) actor.Motor.TryJump();
                 return;
             }
-            var controls = Rules.ResolveBossLocomotion();
-            if (controls.Jump && controls.JumpOwned)
-            {
-                if (!controls.MovementOwned) actor.Motor.Brake();
-                return;
-            }
             var facts = actor.Perception.Facts;
             if (facts.Confidence <= .1f) { actor.Motor.Brake(); return; }
             Vector2 target = facts.Position, position = actor.Position;
@@ -145,7 +133,6 @@ namespace GoGhost.Duel
             bool level = Mathf.Abs(target.y - position.y) < 1.4f;
             if (PreviewMove == Move.None && Time.time >= nextDecisionAt && ChoosePhaseOneAttack(target, level)) return;
             // Close in on a level target; keep a throwing lane on a raised one.
-            if (controls.MovementOwned) return;
             if (level) actor.Motor.SetMove(distance > 2.0f ? Mathf.Sign(dx) : 0);
             else actor.Motor.SetMove(distance < 3f ? -Mathf.Sign(dx) : distance > 6f ? Mathf.Sign(dx) : 0, .7f);
         }
@@ -249,8 +236,8 @@ namespace GoGhost.Duel
                     break;
                 case Move.Throw:
                 case Move.Boomerang:
-                    if (Current == Move.Throw) TickThrowLocomotion();
-                    else actor.Motor.HoldHorizontal();
+                    actor.Motor.HoldHorizontal();
+                    if (Current == Move.Throw) TryLockRecall();
                     AxeFlying = true;
                     Vector2 axe = AxeAt(Time.time, out bool returning);
                     AxePosition = RecallLocked && Time.time > recallHitEnds
@@ -290,16 +277,9 @@ namespace GoGhost.Duel
             sweptDegrees = end;
         }
 
-        void TickThrowLocomotion()
+        void TryLockRecall()
         {
-            if (!RecallLocked && Time.time < activeAt + throwOut + ThrowHold)
-            {
-                var controls = Rules.ResolveBossLocomotion();
-                if (!controls.MovementOwned) actor.Motor.HoldHorizontal();
-                return;
-            }
-            actor.Motor.HoldHorizontal();
-            if (RecallLocked) return;
+            if (RecallLocked || Time.time < activeAt + throwOut + ThrowHold) return;
             RecallLocked = true;
             RecallPoint = Hand();
             recallAt = Time.time;
@@ -387,7 +367,6 @@ namespace GoGhost.Duel
             Cancel();
             actor.Health.SkipToSecondPhase();
             PhaseTwo = true; Transitioning = false; transitionHeld = false;
-            SealRules();
             actor.View?.SetFinalBossPhaseTwo();
             actor.View?.SetEyesRed(true, immediate: true);
         }

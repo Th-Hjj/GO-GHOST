@@ -85,7 +85,7 @@ Aim+Fire and Move+Jump aggregate with bounded maxima, never additive white-out. 
 
 ## Arena and actors
 
-Mission 1 uses two industrial silhouette plates behind the fixed arena. The far plate contains tanks and factory roofs. Near steel columns shift farther in the opposite direction to the player's horizontal movement. Both positions depend on the player's location within the arena. They stop when the player stands still and retrace their movement on return. The approved center-to-edge travel is 12 and 64 pixels respectively in the 966-pixel-wide reference arena. The art scales with the arena as the viewport changes. The black center keeps gunfire and platform edges visible.
+Mission 1 uses two industrial silhouette plates behind the fixed arena. The far plate contains tanks and factory roofs. Near steel columns shift farther in the opposite direction to the player's horizontal movement. Both positions depend on the player's location within the arena. They stop when the player stands still and retrace their movement on return. Current center-to-edge travel is 8 pixels for the far layer and 40 for the near layer in the 966-pixel-wide reference arena. Each layer renders at 60% of its authored opacity. The art scales with the arena as the viewport changes. The black center keeps gunfire and platform edges visible.
 
 Thomas's direction for Mission 2 is a Las Vegas entertainment district with casinos. Mission 3 rises into a dense corporate megacity inspired by futuristic New York and Night City. The Mission 2 casino entrance and resort towers are proposed artwork pending preview review.
 

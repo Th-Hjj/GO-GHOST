@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — Background intensity
+
+Mission 1 center-to-edge travel now uses 8 reference pixels for distant factories and 40 for near columns. Both plates render at 60% of authored opacity. The Mission 2 casino concept uses the same settings. Thomas requested personal playtest verification. No compile or Play Mode check was run for this adjustment.
+
 ## 2026-11-07 — Mission 1 industrial parallax
 
 - Mission 1 loads the first approved industrial plates on entry and direct retry. Two cropped textures cover the arena behind the combat renderers. Horizontal player position drives the 12 / 64 reference-pixel offsets.

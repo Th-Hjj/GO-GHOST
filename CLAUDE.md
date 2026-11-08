@@ -9,6 +9,7 @@ Read this file first in every session, then the docs listed at the bottom for th
 ## Current design authority — 2026-11-05
 
 Dated decisions are ordered newest first. Later entries supersede conflicting older ones; past delivery permissions/limits belong to that delivery. The Confirmed constraints section summarizes the current source. Preserve the historical decisions as provenance.
+- **Background tuning — Thomas, 2026-11-07:** Keep the current building artwork, reduce horizontal parallax and lower the opacity of both background layers. Thomas will judge the result in play.
 - **Mission backgrounds — Thomas, 2026-11-07:** Mission 1 uses the first industrial artwork with straight buildings, gray-blue tanks and steel columns, and the stronger fixed-arena parallax from the second preview. Mission 2 takes its visual direction from Las Vegas casinos and entertainment venues. Mission 3 builds up to a futuristic New York or Night City corporate skyline. Review new mission artwork in previews before integration.
 - **Target Profile title — Thomas, 2026-11-07:** On first opening a numbered dossier, Happy says “Target Profile for Mission X”, using that mission’s number. One click advances to Codename. Revisits still open the full dossier silently.
 - **Final Boss dialogue — Thomas, 2026-11-07:** Mission 3 enters the same countdown as Missions 1 and 2. The kneeling Boss says “You're strong.”, “But it's not over yet.” and “Let’s see what you can do on your own.” on three clicked pages. Advancing the last line releases the EMP and interrupts Happy’s “E.M...”.

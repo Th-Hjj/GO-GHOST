@@ -7,8 +7,9 @@ namespace GoGhost.Duel
     sealed class IndustrialArenaBackdrop : MonoBehaviour
     {
         const float VisibleWidthPixels = 966f;
-        const float FarTravelPixels = 12f;
-        const float NearTravelPixels = 64f;
+        const float FarTravelPixels = 8f;
+        const float NearTravelPixels = 40f;
+        const float PlateOpacity = .6f;
 
         Transform player;
         Bounds arena;
@@ -50,6 +51,7 @@ namespace GoGhost.Duel
             rect.anchorMax = Vector2.one;
             rect.offsetMin = rect.offsetMax = Vector2.zero;
             plate.texture = texture;
+            plate.color = new Color(1f, 1f, 1f, PlateOpacity);
             plate.raycastTarget = false;
             return plate;
         }

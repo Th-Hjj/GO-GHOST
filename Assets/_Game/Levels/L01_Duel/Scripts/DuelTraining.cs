@@ -21,7 +21,7 @@ namespace GoGhost.Duel
             SetPhase(DuelPhase.Configure);
         }
 
-        // Kept for existing scripted callers. Test Loadout itself offers only Back.
+        // Kept for existing scripted callers. Test Room itself offers only Back.
         public void ContinueFromTraining()
         {
             if (Phase != DuelPhase.Training || !DialogueAllowsPreparationNavigation) return;

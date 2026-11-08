@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-08 — Dossier locations and Test Room
+
+Target Profile displays Location between Weapon and Skills. On the first visit Happy reads Factory, Casino or Tower for Missions 1, 2 and 3 respectively. The dossier dividers use whole screen pixels and a closing line below Skills. The practice button and room title now say Test Room. Both preparation tutorial captions and their Happy recordings use Thomas’s revised wording.
+
+Play Mode, screenshot comparison, listening review and standalone build were left for Thomas’s review.
+
 ## 2026-11-08 — Mission 1 preparation tutorial
 
 The first guided Confirm previously ended Happy's instructions. It now leads to three voiced overview pages. A cold-white frame follows Target Profile, Test Loadout and Start Mission while other controls dim. Visiting the highlighted dossier or practice room continues to the next line on Back. The player can also click through all three explanations and stay in preparation.

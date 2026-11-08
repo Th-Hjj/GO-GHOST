@@ -19,9 +19,17 @@ namespace GoGhost.Duel
             page.sizeDelta = (Vector2)profileResolution / scale;
             float half = page.sizeDelta.x/2, height = page.sizeDelta.y, top = height/2-32;
             float left = -half+32, width = half-64;
+            float strokePixels = Mathf.Max(2, Mathf.Round(2 * scale));
+            void Divider(RectTransform parent, float x, float y, float length, Color color)
+            {
+                // Both panels share the page centre. Snap the lower edge to a screen pixel.
+                float bottomPixel = Mathf.Round((y + height/2) * scale - strokePixels/2);
+                float center = (bottomPixel + strokePixels/2) / scale - height/2;
+                Image(parent, new Vector2(x, center), new Vector2(length, strokePixels/scale), color);
+            }
             var panel = Image(page, new Vector2(half/2,0), new Vector2(half,height), NeuralPalette.Panel).rectTransform;
             for (int i=1;i<=4;i++)
-                Image(panel,new Vector2(0,height*(i*.19f-.47f)),new Vector2(half*.85f,1),NeuralPalette.Border);
+                Divider(panel,0,height*(i*.19f-.47f),half*.85f,NeuralPalette.Border);
             foreach(int side in new[]{-1,1})
             {
                 Vector2 corner=new Vector2(side*half*.43f,-side*height*.42f);
@@ -33,11 +41,11 @@ namespace GoGhost.Duel
             DrawProfileSilhouette(panel,game.Wave==DuelGame.FinalBossWave,game.Wave==2 && skills);
             var back=ConfigButton("ProfileBack","← Back",page,new Vector2(left+64,top-24),new Vector2(128,48),game.BackFromProfile,style:DuelControlStyle.Navigation);
             dialogueExits.Add((RectTransform)back.transform);
-            Image(page,new Vector2(left+width/2,top-80),new Vector2(width,1),NeuralPalette.Secondary);
+            Divider(page,left+width/2,top-80,width,NeuralPalette.Secondary);
             var mission = Text("MISSION "+game.Wave,page,new Vector2(left+width/2,top-112),new Vector2(width,32),20,TextAlignmentOptions.Left,numericFont);
             mission.color=NeuralPalette.Secondary;
             Text("Target Profile",page,new Vector2(left+width/2,top-170),new Vector2(width,80),46,TextAlignmentOptions.Left,headingFont);
-            string[] fields={"Codename","Threat","Weapon","Skills"};
+            string[] fields={"Codename","Threat","Weapon","Location","Skills"};
             for (int i=0;i<fields.Length;i++)
             {
                 float y=top-252-i*72;
@@ -45,8 +53,9 @@ namespace GoGhost.Duel
                 for(int j=0;j<=last;j++)
                     if(game.ProfileLines[j].profileField==fields[i])value=game.ProfileLines[j].profileValue;
                 bool current=game.ProfilePage<game.ProfileLines.Length && game.ProfileLines[game.ProfilePage].profileField==fields[i];
-                Image(page,new Vector2(left+width/2,y+34),new Vector2(width,1),NeuralPalette.Border);
-                if(current) Image(page,new Vector2(left+18,y+34),new Vector2(36,2),NeuralPalette.Primary);
+                Divider(page,left+width/2,y+34,width,NeuralPalette.Border);
+                if(current) Divider(page,left+18,y+34,36,NeuralPalette.Primary);
+                if(i==fields.Length-1) Divider(page,left+width/2,y+34-72,width,NeuralPalette.Border);
                 float labelWidth=width*.33f;
                 var label=Text(fields[i].ToUpperInvariant(),page,new Vector2(left+labelWidth/2,y),new Vector2(labelWidth,58),18,TextAlignmentOptions.Left,numericFont);
                 label.color=current?NeuralPalette.Primary:NeuralPalette.Secondary;

@@ -1,6 +1,6 @@
 # GO GHOST — Boss Encounters
 
-The preparation page offers rule editing and optional **Test Loadout** practice. Each numbered mission also has a **Target Profile**. Back returns from either visit. **Start Mission** fades the preparation page out and reveals the live arena. Defeat offers direct Retry or Configuration.
+The preparation page offers rule editing and optional **Test Room** practice. Each numbered mission also has a **Target Profile**. Back returns from either visit. **Start Mission** fades the preparation page out and reveals the live arena. Defeat offers direct Retry or Configuration.
 
 Each Boss attack deals 75% of its base damage, rounded half up per hit. Bonus friendly fire uses the same values. A reflected projectile carries its original shot damage.
 
@@ -50,7 +50,7 @@ Thomas accepted the original design for trial on 2026-11-06. Its nine stages rep
 
 **Premise.** The Final Boss trusts AI more than the player does. He can write rules into the player's system. After losing the first phase, he disables the arena’s circuitry and fights with the axe in hand.
 
-**Entry.** Mission 3 preparation offers Test Loadout. Start Mission fades into the arena and starts the same three-second countdown as Missions 1 and 2.
+**Entry.** Mission 3 preparation offers Test Room. Start Mission fades into the arena and starts the same three-second countdown as Missions 1 and 2.
 
 ### Phase 1 — Rainbow Axeman
 
@@ -112,7 +112,7 @@ Swordsman enters Unbound once at **33% remaining health**, at the existing idle 
 
 ## Training robot override — 2026-10-24
 
-The training robot starts with 200 HP. On death it returns with full health after three combat seconds at the initial spawn captured for that attempt, even if the player is near that position. Pause freezes the timer. Leaving Test Loadout via Back cancels pending respawns. Patrol, attacks, player recovery and numbered-wave Boss profiles are unchanged.
+The training robot starts with 200 HP. On death it returns with full health after three combat seconds at the initial spawn captured for that attempt, even if the player is near that position. Pause freezes the timer. Leaving Test Room via Back cancels pending respawns. Patrol, attacks, player recovery and numbered-wave Boss profiles are unchanged.
 
 Player-control authority: [ConditionalRules.md](ConditionalRules.md), Thomas 2026-10-15. Five conditional operations replace permanent module AI and the old autonomous Legs policy. Build/release scope follows the current request. This file retains Boss combat. Boss foundation: Thomas's **2026-10-05 solo Boss pressure / gunner mobility upgrade**, including his correction that Drop Cut pushes the player while the sword keeps its locked landing. It extends Optical Camo, Player Legs Platform Use + Light Duo and the focused Boss pressure pass. This specification records confirmed scope and implemented source. Runtime checks and limits belong in [ImplementationLog.md](ImplementationLog.md); controlled fixtures do not prove balance or a normal all-AI result.
 

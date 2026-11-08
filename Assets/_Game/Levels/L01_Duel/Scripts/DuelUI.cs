@@ -205,7 +205,7 @@ namespace GoGhost.Duel
             }
             var hud=battleUi!=null?battleUi:page;
             if(game.Phase==DuelPhase.Training)
-                Text("TEST LOADOUT",hud,new Vector2(0,400),new Vector2(320,36),24,face:controlFont).color=NeuralPalette.Secondary;
+                Text("TEST ROOM",hud,new Vector2(0,400),new Vector2(320,36),24,face:controlFont).color=NeuralPalette.Secondary;
             else if(game.Phase==DuelPhase.Prepare || game.Phase==DuelPhase.Fight && game.FightClock<WaveTitleFadeSeconds)
                 waveTitle=Text(game.WaveLabel,hud,new Vector2(0,400),new Vector2(320,36),27,face:headingFont);
             if(waveTitle!=null)waveTitle.color=NeuralPalette.Secondary;

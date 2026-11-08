@@ -571,7 +571,7 @@ namespace GoGhost.Duel
                     tutorialProfile = (RectTransform)profile.transform;
                     dialogueExits.Add(tutorialProfile);
                 }
-                var test=ConfigButton("TestLoadout","Test Loadout",page,new Vector2(x,game.Wave<=DuelGame.FinalBossWave?y-68:y),new Vector2(rail,56),game.StartConfiguredEncounter,left:true,style:DuelControlStyle.Option);
+                var test=ConfigButton("TestLoadout","Test Room",page,new Vector2(x,game.Wave<=DuelGame.FinalBossWave?y-68:y),new Vector2(rail,56),game.StartConfiguredEncounter,left:true,style:DuelControlStyle.Option);
                 test.interactable=ConfigurationReady;
                 tutorialTest = (RectTransform)test.transform;
                 if (test.interactable) dialogueExits.Add(tutorialTest);

@@ -41,7 +41,7 @@ public static partial class BossEncounterSmoke
             Click("TestLoadout");
             Require(game.Phase == DuelPhase.Training && game.Bosses[0].IsTrainingEnemy, "Missing test room");
             Click("← Back");
-            Require(game.Phase == DuelPhase.Configure, "Test Loadout did not return to preparation");
+            Require(game.Phase == DuelPhase.Configure, "Test Room did not return to preparation");
             Click("StartMission");
             yield return WaitFor(() => game.Phase != DuelPhase.MissionEntry, "Mission entrance did not finish");
             Require(game.Phase == DuelPhase.Prepare && game.PendingDialogue == null, "Missing direct pre-fight countdown");

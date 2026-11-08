@@ -311,13 +311,13 @@
     {
       "key": "Handler/TutorialPreparationProfile",
       "label": "First mission preparation · Target Profile",
-      "text": "Target Profile shows who you're up against and what weapon they carry.",
+      "text": "Target Profile shows information about your next mission.",
       "locked": false
     },
     {
       "key": "Handler/TutorialPreparationTest",
-      "label": "First mission preparation · Test Loadout",
-      "text": "In Test Loadout, you can try your rules against a practice dummy.",
+      "label": "First mission preparation · Test Room",
+      "text": "In the Test Room, you can try out your current rule setup.",
       "locked": false
     },
     {
@@ -436,6 +436,15 @@
       "profileValue": "Gun"
     },
     {
+      "key": "Handler/Mission1Location",
+      "label": "Mission 1 · Location",
+      "text": "Location, Factory.",
+      "profileMission": 1,
+      "profileField": "Location",
+      "profileValue": "Factory",
+      "locked": false
+    },
+    {
       "key": "Handler/Mission1Skills",
       "label": "Mission 1 · Skills",
       "text": "Skills, Piercing Shot, Optical Camo.",
@@ -473,6 +482,15 @@
       "profileMission": 2,
       "profileField": "Weapon",
       "profileValue": "Sword"
+    },
+    {
+      "key": "Handler/Mission2Location",
+      "label": "Mission 2 · Location",
+      "text": "Location, Casino.",
+      "profileMission": 2,
+      "profileField": "Location",
+      "profileValue": "Casino",
+      "locked": false
     },
     {
       "key": "Handler/Mission2Skills",
@@ -520,6 +538,15 @@
       "profileMission": 3,
       "profileField": "Weapon",
       "profileValue": "Axe"
+    },
+    {
+      "key": "Handler/Mission3Location",
+      "label": "Mission 3 · Location",
+      "text": "Location, Tower.",
+      "profileMission": 3,
+      "profileField": "Location",
+      "profileValue": "Tower",
+      "locked": false
     },
     {
       "key": "Handler/Mission3Skills",

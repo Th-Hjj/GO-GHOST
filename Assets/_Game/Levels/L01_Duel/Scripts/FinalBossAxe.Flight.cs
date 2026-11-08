@@ -5,12 +5,26 @@ namespace GoGhost.Duel
 {
     public sealed partial class FinalBossAxe
     {
-        const float PivotOffset=.736f, FlightEdgeRadius=.20f, PullAt=.81f, PalmAt=1.24f, PalmCatch=2.43f, UnderCatch=2.02f;
+        const float PivotOffset=.736f, FlightEdgeRadius=.20f, SpinningClearance=.84f;
+        const float UnderTurn=.59f, UnderReturn=UnderTurn+.18f, UnderHopAt=.82f, UnderPassAt=1.42f, UnderCatch=1.96f;
+        const float PalmAt=1.24f, PalmRelease=PalmAt+.22f, PalmBank=PalmRelease+.55f, PalmCatch=PalmBank+.57f;
         readonly List<FlightLeg> flight=new List<FlightLeg>(6), candidateFlight=new List<FlightLeg>(6);
         bool redirected;
-        public bool AnchorPulling=>Current==Move.AnchorVault&&Phase==Stage.Active&&AxeFlying&&ActiveTime>=PullAt&&retrieveAt<0;
-        public float PalmAccent=>Current==Move.PalmDeflection&&Phase==Stage.Active&&redirected ? 1-Mathf.Clamp01((ActiveTime-PalmAt)/.16f):0;
+        public float PalmAccent=>Current==Move.PalmDeflection&&Phase==Stage.Active&&redirected&&!abortAfterCatch ?
+            1-Mathf.Clamp01((ActiveTime-PalmAt)/(PalmRelease-PalmAt)):0;
         public bool FlightWarning=>path.Count>1;
+        public float FlightFacing=>acceptedPlan.Facing;
+        public Vector2 FlyingEdge => AxePosition+Shaft(1,AxeSpin-FlightFacing*EdgeOffset)*PhysicalEdgeReach-Shaft(1,AxeSpin)*PivotOffset;
+        public bool FlightLive
+        {
+            get
+            {
+                if(!AxeFlying || retrieveAt>=0 || abortAfterCatch)return false;
+                foreach(var leg in flight)
+                    if(leg.Group>=0 && ActiveTime>=leg.Start && ActiveTime<leg.End)return true;
+                return false;
+            }
+        }
 
         readonly struct FlightLeg
         {
@@ -52,7 +66,7 @@ namespace GoGhost.Duel
         static float WorldAngle(float side,float local)=>side>0?local:180f-local;
         static Vector2 Pivot(Vector2 body,float side,Vector2 handLocal,float angle)=>
             body+Offset(side,handLocal.x,handLocal.y)+Shaft(side,angle)*PivotOffset;
-        Vector2 LimitFlightPoint(Vector2 point)=>ArenaBoundary2D.ClampPoint(actor.Navigation.ArenaBounds,point,AxeRadius+.025f);
+        Vector2 LimitFlightPoint(Vector2 point)=>ArenaBoundary2D.ClampPoint(actor.Navigation.ArenaBounds,point,SpinningClearance);
 
         void BuildFlight(AxePlan p,List<FlightLeg> legs)
         {
@@ -62,22 +76,23 @@ namespace GoGhost.Duel
             {
                 var start=Pivot(p.Start,f,new Vector2(.39f,.24f),18);
                 var turn=p.Turn;
-                var pass=p.Retreat+Offset(f,.04f,-actor.Motor.Size.y*.5f+.60f);
+                var pass=p.Retreat+Offset(f,.04f,-actor.Motor.Size.y*.5f+SpinningClearance);
                 var caught=Pivot(p.Retreat,f,new Vector2(-.37f,.32f),145);
                 float dx=Mathf.Abs(turn.x-start.x);
                 legs.Add(new FlightLeg(start,LimitFlightPoint(start+Offset(f,dx*.32f,1.85f)),
-                    LimitFlightPoint(turn+Offset(f,-dx*.20f,1.9f)),turn,0,.66f,0,16,18,-340));
-                legs.Add(new FlightLeg(turn,LimitFlightPoint(turn+Offset(f,.48f,-.62f)),
-                    LimitFlightPoint(Vector2.Lerp(turn,pass,.56f)+Vector2.down*.16f),pass,.66f,1.36f,1,22,-340,-540));
+                    LimitFlightPoint(turn+Offset(f,-dx*.20f,1.9f)),turn,0,UnderTurn,0,16,18,-340));
+                legs.Add(new FlightLeg(turn,LimitFlightPoint(new Vector2(turn.x+f*.26f,pass.y+.04f)),
+                    LimitFlightPoint(new Vector2(Mathf.Lerp(turn.x,pass.x,.55f),pass.y)),pass,UnderReturn,UnderPassAt,1,22,-340,-540));
                 legs.Add(new FlightLeg(pass,LimitFlightPoint(pass+Offset(f,-1.65f,.58f)),
-                    LimitFlightPoint(caught+Offset(f,-1.3f,.72f)),caught,1.36f,UnderCatch,-1,0,-540,145-1080));
+                    LimitFlightPoint(caught+Offset(f,-1.3f,.72f)),caught,UnderPassAt,UnderCatch,-1,0,-540,145-1080));
             }
             else if(p.Move==Move.AnchorVault)
             {
-                var start=Pivot(p.Start,f,new Vector2(.39f,.31f),32);
-                var anchored=Pivot(p.Anchor,f,new Vector2(.38f,.34f),32);
+                float angle=VaultGripAngle(p);
+                var start=Pivot(p.Start,f,new Vector2(.39f,.31f),angle);
+                var anchored=Pivot(p.Anchor,f,new Vector2(.38f,.34f),angle);
                 legs.Add(new FlightLeg(start,LimitFlightPoint(Vector2.Lerp(start,anchored,.36f)+Vector2.down*.44f),
-                    LimitFlightPoint(anchored+Offset(f,-.24f,-.85f)),anchored,0,.56f,0,16,32,-328));
+                    LimitFlightPoint(Vector2.Lerp(start,anchored,.78f)+Vector2.down*.60f),anchored,0,VaultCastTime(p),0,16,angle,angle-360));
             }
             else if(p.Move==Move.PalmDeflection)
             {
@@ -93,31 +108,42 @@ namespace GoGhost.Duel
         }
         void AddPalmOuter(AxePlan p,List<FlightLeg> legs,Vector2 palm,Vector2 target)
         {
-            var caught=Pivot(p.Landing,p.Facing,new Vector2(.18f,.43f),127);
-            var bank=LimitFlightPoint(new Vector2(target.x+p.Facing*1.25f,target.y+.45f));
+            float side=p.FinishFacing;
+            var caught=Pivot(p.Landing,side,new Vector2(.18f,.43f),127);
+            var bank=LimitFlightPoint(new Vector2(target.x+side*1.25f,target.y+.45f));
             float dx=Mathf.Abs(bank.x-palm.x);
-            legs.Add(new FlightLeg(palm,LimitFlightPoint(palm+Offset(p.Facing,dx*.10f,1.90f)),
-                LimitFlightPoint(bank+Offset(p.Facing,-dx*.14f,1.85f)),bank,PalmAt,1.85f,1,15,38,-324));
-            legs.Add(new FlightLeg(bank,LimitFlightPoint(bank+Offset(p.Facing,.30f,-.93f)),
-                LimitFlightPoint(Vector2.Lerp(bank,caught,.66f)+Vector2.down*.85f),caught,1.85f,PalmCatch,1,15,-324,127-720));
+            float catchAngle=side==p.Facing?127:180-127;
+            legs.Add(new FlightLeg(palm,LimitFlightPoint(palm+Offset(side,dx*.28f,1.90f)),
+                LimitFlightPoint(bank+Offset(side,-dx*.14f,1.85f)),bank,PalmRelease,PalmBank,1,15,38,-324));
+            legs.Add(new FlightLeg(bank,LimitFlightPoint(bank+Offset(side,.30f,-.93f)),
+                LimitFlightPoint(Vector2.Lerp(bank,caught,.66f)+Vector2.down*.85f),caught,PalmBank,PalmCatch,1,15,-324,catchAngle-720));
         }
         bool FlightCorridorClear(AxePlan plan)
         {
             BuildFlight(plan,candidateFlight);
-            return FlightIsClear(candidateFlight,0);
+            return FlightIsClear(candidateFlight,0,plan.Facing);
         }
-        bool FlightIsClear(List<FlightLeg> legs,int first)
+        bool FlightIsClear(List<FlightLeg> legs,int first,float facing)
         {
             var arena=actor.Navigation.ArenaBounds;
             for(int i=first;i<legs.Count;i++)
             {
                 var leg=legs[i];var from=leg.A;
+                Vector2 lastEdge=leg.Edge(0,facing);
                 for(int j=0;j<=leg.Samples;j++)
                 {
                     var to=leg.Sample(j);
                     if(to.x<arena.min.x+AxeRadius-.01f||to.x>arena.max.x-AxeRadius+.01f||
                        to.y<arena.min.y+AxeRadius-.01f||to.y>arena.max.y-AxeRadius+.01f||
                        ((to-from).sqrMagnitude>.000001f && Projectile.TerrainHit(from,to,AxeRadius,out _,true)))return false;
+                    if(leg.Group>=0)
+                    {
+                        Vector2 edge=leg.Edge(j,facing);
+                        if(edge.x<arena.min.x+FlightEdgeRadius || edge.x>arena.max.x-FlightEdgeRadius ||
+                           edge.y<arena.min.y+FlightEdgeRadius || edge.y>arena.max.y-FlightEdgeRadius ||
+                           j>0 && Projectile.TerrainHit(lastEdge,edge,FlightEdgeRadius,out _,true))return false;
+                        lastEdge=edge;
+                    }
                     from=to;
                 }
             }
@@ -133,7 +159,7 @@ namespace GoGhost.Duel
             // The palm strike is the one deliberate redirection after release. The
             // target may have crossed several units since the first throw. Use the
             // new public intercept and a reachable catch instead of inheriting its old aim.
-            if(!TryRedirectPalm(palm)&&!FlightIsClear(flight,2))
+            if(!TryRedirectPalm(palm)&&!FlightIsClear(flight,2,acceptedPlan.Facing))
             {abortAfterCatch=true;BeginRetrieval();return;}
             actor.Sounds?.Play(Sfx.ReturnPrepare,actor.ActorId,attackId);
         }
@@ -142,12 +168,12 @@ namespace GoGhost.Duel
             var seen=actor.Perception.Facts;
             if(seen.Confidence<=.12f||seen.Body.size.x<=.01f)return false;
 
-            Vector2 target=PublicPosition(seen,.48f);
-            float side=acceptedPlan.Facing;
-            float front=Mathf.Clamp((target.x-palm.x)*side,.5f,8.5f);
-            target.x=palm.x+side*front;
+            Vector2 target=PublicPosition(seen,.62f);
+            float delta=target.x-palm.x;
+            float side=Mathf.Abs(delta)>.55f?Mathf.Sign(delta):acceptedPlan.Facing;
+            target.x=palm.x+Mathf.Clamp(Mathf.Abs(delta),.5f,8.5f)*side;
             target.y=Mathf.Clamp(target.y,palm.y-4.8f,palm.y+4.8f);
-            Vector2 start=actor.Position,initialLanding=acceptedPlan.Landing;
+            Vector2 start=actor.Position;
             float advance=Mathf.Clamp((target.x-start.x)*side-1.4f,0f,3.25f);
             // Try the useful forward catch first. If terrain blocks the stride,
             // a shorter catch can still redirect the blade into the same lane.
@@ -155,15 +181,16 @@ namespace GoGhost.Duel
             {
                 Vector2 landing=start+Vector2.right*(side*advance*step*.5f);
                 if(!SameSupportWalk(start,landing))continue;
-                acceptedPlan.Landing=landing;
+                var redirect=new AxePlan{Facing=acceptedPlan.Facing,FinishFacing=side,Landing=landing};
                 candidateFlight.Clear();
-                AddPalmOuter(acceptedPlan,candidateFlight,palm,target);
-                if(!FlightIsClear(candidateFlight,0))continue;
+                AddPalmOuter(redirect,candidateFlight,palm,target);
+                if(!FlightIsClear(candidateFlight,0,acceptedPlan.Facing))continue;
+                acceptedPlan.Landing=landing;
+                acceptedPlan.FinishFacing=side;
                 flight.RemoveRange(2,flight.Count-2);
                 flight.AddRange(candidateFlight);
                 return true;
             }
-            acceptedPlan.Landing=initialLanding;
             return false;
         }
         void FlightPose(float age)
@@ -180,13 +207,24 @@ namespace GoGhost.Duel
         void UpdateFlightWarning()
         {
             path.Clear();
-            if(flight.Count==0||Phase==Stage.Recovery||retrieveAt>=0)return;
+            if(flight.Count==0||Phase==Stage.Prepare||Phase==Stage.Recovery||retrieveAt>=0||abortAfterCatch)return;
             float age=Time.time-activeAt;
             foreach(var leg in flight)
             {
-                if(leg.Group<0||age>=leg.Start||age<leg.Start-.24f&&leg.Start>0)continue;
-                if(Current==Move.PalmDeflection&&leg.Start>=PalmAt&&!redirected)continue;
-                for(int j=0;j<=Mathf.Max(2,leg.Samples/2);j++)path.Add(leg.Sample(j));
+                if(leg.Group<0||age>=leg.Start||age<leg.Start-.24f)continue;
+                if(Current==Move.PalmDeflection && (leg.Start>=PalmAt&&!redirected || leg.Start==PalmBank))continue;
+                // Each separately committed throw/return has one short directional tell.
+                // The continuous outer bank has no extra lock at its apex.
+                path.Add(leg.A);
+                float remaining=2.4f;
+                for(int j=1;j<=leg.Samples;j++)
+                {
+                    var previous=path[path.Count-1];
+                    var point=leg.Sample(j);
+                    float length=Vector2.Distance(previous,point);
+                    if(length>=remaining){path.Add(Vector2.MoveTowards(previous,point,remaining));break;}
+                    path.Add(point);remaining-=length;
+                }
                 break;
             }
         }

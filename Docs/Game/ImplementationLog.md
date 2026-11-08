@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-08 — Phase-one axe commitments and combat roles
+
+Thomas reported that Anchor Vault traveled a short distance and finished almost in place. The grip used to sit directly above the landing. The move now requires a 5.5–11-unit cast and an independently validated 2.6–4.4-unit rebound. The Boss can continue forward or cut back from the far side. The other four moves have distinct spacing, contact windows and visual cues documented in Boss Encounters. The AI compares actual blade contact, ending position, observed approaches and reversals, and recent misses when choosing an attack or platform route.
+
+The Unity 6000.6.0f1 runtime assembly compiled with Editor references. Play Mode, visual review and balance are NOT TESTED. Thomas requested compilation only and will playtest the encounter.
+
 ## 2026-11-07 — Phase-one platform attacks
 
 Thomas reported that the Boss stayed on the ground and that the five skills lacked pressure. The previous same-support chase bypassed platform planning, and Leaping Crosscut rejected landings more than .65 units above or below takeoff. The Boss now compares useful elevated positions on the current arena geometry with attacking in place. He can route through an intermediate platform, attack from the perch and slash on the rising or descending part of a collision-checked leap. The selected landing and slash timing lock together.

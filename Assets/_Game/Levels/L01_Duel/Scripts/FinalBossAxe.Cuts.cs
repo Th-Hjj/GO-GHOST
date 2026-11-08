@@ -11,17 +11,22 @@ namespace GoGhost.Duel
             public Cut(float start,float duration,float from,float to,int group,int damage,float reach)
             {Start=start;Duration=duration;From=from;To=to;Group=group;Damage=damage;Reach=reach;}
         }
+        static readonly float[] TripleStrides={.45f,.85f,1.20f};
         static readonly Cut[] TripleCuts={
-            new Cut(0,.12f,136,-31,0,16,2.05f),new Cut(.42f,.14f,-32,106,1,19,2.25f),new Cut(1f,.13f,117,-55,2,30,2.85f)};
-        static Cut CrosscutAt(float start,bool descending) =>
-            new Cut(start,.21f,descending?105:135,descending?-82:-32,0,28,2.55f);
-        static readonly Cut PalmCut=new Cut(2.63f,.24f,129,-45,2,28,2.65f);
+            new Cut(0,.14f,136,-31,0,16,2.05f),new Cut(.39f,.16f,-32,106,1,19,2.25f),new Cut(.92f,.20f,117,-55,2,30,2.85f)};
+        static Cut CrosscutAt(float start, float riseDuringSwing)
+        {
+            if (riseDuringSwing>.40f) return new Cut(start,.21f,-45,105,0,28,2.55f);
+            if (riseDuringSwing<-.40f) return new Cut(start,.21f,108,-82,0,28,2.55f);
+            return new Cut(start,.21f,125,-35,0,28,2.55f);
+        }
+        static readonly Cut PalmCut=new Cut(PalmCatch+.20f,.24f,129,-45,2,28,2.65f);
         internal const float PhysicalEdgeReach=1.15f;
         const float EdgeOffset=28.36f;
         AxePlan acceptedPlan;
         int consumed,stepIndex;
         bool launched,pulled,caught,abortAfterCatch;
-        float lastAge,anchorCutAt,retrieveAt,retrieveAngle;
+        float lastAge,reboundAt,anchorCutAt,retrieveAt,retrieveAngle;
         Vector2 lastBody,lastPlayer,retrieveOrigin,anchorLatchOffset;
         readonly Vector2[] actualOrigins=new Vector2[2];
         readonly Vector2[][] futureOrigins={new Vector2[16],new Vector2[16],new Vector2[16]};
@@ -29,7 +34,7 @@ namespace GoGhost.Duel
         void ResetPhaseOneState()
         {
             consumed=stepIndex=0;launched=pulled=caught=redirected=abortAfterCatch=false;
-            retrieveAt=-1;anchorCutAt=-1;path.Clear();AxeSpin=0;
+            retrieveAt=reboundAt=anchorCutAt=-1;path.Clear();AxeSpin=0;
         }
         static bool AdvancesDuringWindup(Move move) => move==Move.TripleCut || move==Move.LeapingCrosscut;
         static float CrosscutRunIn(float forwardGap) => Mathf.Clamp(forwardGap - 3f, 0, 1.65f);
@@ -45,14 +50,47 @@ namespace GoGhost.Duel
 
         bool SafeStep(float signedDistance)
         {
-            if(Mathf.Abs(signedDistance)<.025f||!actor.Motor.Grounded||
-                !actor.Navigation.TrySupport(actor.Position,actor.Motor.Size,out var support))return false;
-            float extent=actor.Motor.Size.x*.5f;
-            float x=Mathf.Clamp(actor.Position.x+signedDistance,support.bounds.min.x+extent,support.bounds.max.x-extent);
-            float dx=x-actor.Position.x;
-            if(dx*signedDistance<=0||!actor.Navigation.TryDash(actor.Position,new Vector2(x,actor.Position.y),actor.Motor.Size,out _))return false;
+            if(!actor.Motor.Grounded)return false;
+            float dx=SupportedStride(actor.Position,signedDistance);
+            if(Mathf.Abs(dx)<.025f)return false;
             actor.Motor.BeginStep(Mathf.Abs(dx));actor.Motor.SetMove(Mathf.Sign(dx));
             return true;
+        }
+
+        float SupportedStride(Vector2 start,float signedDistance)
+        {
+            if(Mathf.Abs(signedDistance)<.025f||!actor.Navigation.TrySupport(start,actor.Motor.Size,out var support))return 0;
+            float extent=actor.Motor.Size.x*.5f;
+            float x=Mathf.Clamp(start.x+signedDistance,support.bounds.min.x+extent,support.bounds.max.x-extent);
+            float dx=x-start.x;
+            if(dx*signedDistance<=0||!actor.Navigation.TryDash(start,new Vector2(x,start.y),actor.Motor.Size,out _))return 0;
+            return dx;
+        }
+
+        bool PlanTriple(AxePlan plan,BossObservation facts,float wind)
+        {
+            float side=plan.Facing;
+            float runIn=Mathf.Min(Mathf.Clamp((plan.Target.x-plan.Start.x)*side-.95f,0,1.15f),wind*actor.Motor.Profile.Speed);
+            float release=wind+Timings[(int)Move.TripleCut].Lock;
+            // The lock step and the two steps between strokes have independent lengths.
+            Vector2 centre=plan.Start;
+            centre.x+=SupportedStride(centre,runIn*side);
+            for(int i=0;i<TripleCuts.Length;i++)
+            {
+                centre.x+=SupportedStride(centre,TripleStrides[i]*side);
+                if(plan.DirectCut)continue;
+                var cut=TripleCuts[i];
+                for(float t=0;t<=cut.Duration;t+=Time.fixedDeltaTime)
+                {
+                    float age=release+cut.Start+t;
+                    if(!BladeContact(centre,side,cut,t,facts,age))continue;
+                    plan.FirstThreat=age;
+                    plan.DirectCut=true;
+                    break;
+                }
+            }
+            plan.Landing=centre;
+            return plan.DirectCut;
         }
 
         Vector2 ProjectedAttackTarget(Move move, BossObservation facts, float remainingWindup)
@@ -101,7 +139,12 @@ namespace GoGhost.Duel
                     // the locked destinations but release from the physical grip.
                     acceptedPlan.Start=actor.Position;
                     BuildFlight(acceptedPlan,flight);
-                    if(!FlightIsClear(flight,0)){RecoverPhaseOne();return;}
+                    if(Current==Move.AnchorVault)
+                    {
+                        float span=(acceptedPlan.Anchor.x-acceptedPlan.Start.x)*acceptedPlan.Facing;
+                        if(span<VaultMinCast||span>VaultMaxCast){RecoverPhaseOne();return;}
+                    }
+                    if(!FlightIsClear(flight,0,acceptedPlan.Facing)){RecoverPhaseOne();return;}
                 }
                 AxeFlying=true;FlightPose(0);
                 if(Current==Move.UnderpassReturn)SafeStep(acceptedPlan.Retreat.x-actor.Position.x);
@@ -112,21 +155,28 @@ namespace GoGhost.Duel
             float age=ActiveTime;
             if(Current==Move.TripleCut)
             {
-                if(stepIndex<1&&age>=.23f){SafeStep(.29f*lockedFacing);stepIndex=1;}
-                if(stepIndex<2&&age>=.75f){SafeStep(.46f*lockedFacing);stepIndex=2;}
+                if(stepIndex<1&&age>=.18f){SafeStep(TripleStrides[1]*lockedFacing);stepIndex=1;}
+                if(stepIndex<2&&age>=.59f){SafeStep(TripleStrides[2]*lockedFacing);stepIndex=2;}
             }
             else if(Current==Move.UnderpassReturn)
             {
-                if(age>=.76f&&!launched)
+                if(age>=UnderHopAt&&!launched)
                 {
-                    launched=true;actor.Motor.HoldHorizontal();actor.Motor.TryJump();
+                    launched=true;actor.Motor.HoldHorizontal();
+                    if(!actor.Motor.StartCommittedJump(acceptedPlan.JumpRoute,acceptedPlan.JumpMotion))
+                    {abortAfterCatch=true;BeginRetrieval();}
                 }
             }
             else if(Current==Move.AnchorVault)DriveAnchor(age);
-            else if(Current==Move.PalmDeflection && age>=PalmAt && !redirected)
+            else if(Current==Move.PalmDeflection)
             {
-                RedirectPalm();
-                if(!abortAfterCatch)SafeStep(acceptedPlan.Landing.x-actor.Position.x);
+                if(age>=PalmAt && !redirected)RedirectPalm();
+                if(age>=PalmRelease && !abortAfterCatch && stepIndex==0)
+                {
+                    stepIndex++;
+                    FaceFinisher();
+                    SafeStep(acceptedPlan.Landing.x-actor.Position.x);
+                }
             }
             // A contact spanning a release, end, or flight-leg boundary is still resolved once.
             ResolvePhaseOneHits(Mathf.Min(age,activeEnds-activeAt));
@@ -147,44 +197,17 @@ namespace GoGhost.Duel
             if(!actor.Motor.Grounded&&Time.time<activeEnds+.65f)return;
             RecoverPhaseOne();
         }
-        void DriveAnchor(float age)
+        void FaceFinisher()
         {
-            if(!pulled&&age>=PullAt)
-            {
-                pulled=true;
-                Vector2 delta=acceptedPlan.Anchor-actor.Position;
-                if(delta.sqrMagnitude<.01f||!actor.Navigation.TryDash(actor.Position,acceptedPlan.Anchor,actor.Motor.Size,out _))
-                {abortAfterCatch=true;BeginRetrieval();return;}
-                actor.Motor.StartDash(delta,delta.magnitude,delta.magnitude/.50f);
-            }
-            if(!pulled||caught||retrieveAt>=0||!AxeFlying)return;
-            bool arrived=Vector2.Distance(actor.Position,acceptedPlan.Anchor)<.15f;
-            if(arrived&&(!actor.Motor.DashActive||age>=PullAt+.47f))
-            {
-                actor.Motor.EndAttackMotion();AxeFlying=false;caught=true;
-                anchorLatchOffset=flight[0].D-Shaft(acceptedPlan.Facing,32)*PivotOffset-actor.Position;
-                // The anchor position and pull were committed at release. The ending chop
-                // may choose its direction exactly once, as the hand actually meets the grip.
-                var facts=actor.Perception.Facts;
-                if(facts.Confidence>.1f)actor.Face(facts.Position-actor.Position);
-                lockedFacing=actor.Facing;anchorCutAt=age+.12f;
-                activeEnds=phaseUntil=activeAt+anchorCutAt+.27f;
-                if(!actor.Motor.Grounded)
-                {
-                    float dx=acceptedPlan.Landing.x-actor.Position.x;
-                    actor.Motor.StartDrop(Mathf.Clamp(dx/.28f,-actor.Motor.Profile.Speed,actor.Motor.Profile.Speed),acceptedPlan.Landing.x);
-                }
-                actor.Sounds?.Play(Sfx.BladeHeavy,actor.ActorId,attackId);
-            }
-            else if(actor.Motor.DashBlocked||age>PullAt+.72f)
-            {
-                actor.Motor.EndAttackMotion();abortAfterCatch=true;BeginRetrieval();
-            }
+            actor.Face(Vector2.right*acceptedPlan.FinishFacing);
+            lockedFacing=actor.Facing;
         }
         void CatchOrRetrieve()
         {
-            var held=Hand()+Shaft(lockedFacing,HeldShaftAngle)*PivotOffset;
-            if(Vector2.Distance(AxePosition,held)>.18f){BeginRetrieval();return;}
+            bool palm=Current==Move.PalmDeflection;
+            var local=palm?new Vector2(.18f,.43f):new Vector2(-.37f,.32f);
+            var held=Pivot(actor.Position,lockedFacing,local,palm?127:145);
+            if(Vector2.Distance(AxePosition,held)>.18f){abortAfterCatch=true;BeginRetrieval();return;}
             caught=true;AxeFlying=false;
             actor.Sounds?.Play(Sfx.ReturnPrepare,actor.ActorId,attackId);
         }
@@ -209,15 +232,15 @@ namespace GoGhost.Duel
             SetPhase(Stage.Recovery,acceptedTiming.Recovery);
         }
 
-        int CutCount=>Current==Move.TripleCut?3:Current==Move.LeapingCrosscut||Current==Move.PalmDeflection||
+        int CutCount=>Current==Move.TripleCut?3:Current==Move.LeapingCrosscut||Current==Move.PalmDeflection&&caught||
             Current==Move.AnchorVault&&anchorCutAt>=0?1:0;
         Cut GetCut(int index)
         {
             if(Current==Move.TripleCut)return TripleCuts[index];
             if(Current==Move.LeapingCrosscut)
-                return CrosscutAt(acceptedPlan.CrosscutAt,acceptedPlan.Landing.y<acceptedPlan.Start.y-.70f);
+                return acceptedPlan.Swing;
             if(Current==Move.PalmDeflection)return PalmCut;
-            return new Cut(anchorCutAt,.27f,131,-67,1,30,2.8f);
+            return VaultCutAt(anchorCutAt);
         }
         Vector2 GripOffset(float age)
         {
@@ -228,7 +251,7 @@ namespace GoGhost.Duel
                 if(caught&&anchorCutAt>=0)
                 {
                     var latch=new Vector2(anchorLatchOffset.x*lockedFacing,anchorLatchOffset.y);
-                    return Vector2.Lerp(latch,new Vector2(.43f,.17f),Mathf.InverseLerp(anchorCutAt-.12f,anchorCutAt,age));
+                    return Vector2.Lerp(latch,new Vector2(.45f,.20f),Mathf.InverseLerp(reboundAt,anchorCutAt,age));
                 }
                 return Vector2.Lerp(new Vector2(.39f,.31f),new Vector2(.38f,.34f),Mathf.InverseLerp(.54f,1.15f,age));
             }
@@ -237,9 +260,11 @@ namespace GoGhost.Duel
                 var wind=new Vector2(-.16f,.03f);var palm=new Vector2(.46f,.27f);var raised=new Vector2(.39f,.61f);
                 if(age<1.02f)return Vector2.Lerp(new Vector2(.39f,.31f),wind,Mathf.InverseLerp(.75f,1.02f,age));
                 if(age<=PalmAt)return Vector2.Lerp(wind,palm,Mathf.InverseLerp(1.02f,PalmAt,age));
-                if(age<PalmAt+.14f)return Vector2.Lerp(palm,raised,Mathf.InverseLerp(PalmAt,PalmAt+.14f,age));
-                if(age<=PalmCatch)return Vector2.Lerp(raised,new Vector2(.18f,.43f),Mathf.InverseLerp(PalmAt+.14f,PalmCatch,age));
-                return Vector2.Lerp(new Vector2(.18f,.43f),new Vector2(.45f,.20f),Mathf.InverseLerp(PalmCatch,2.77f,age));
+                if(age<=PalmRelease)return palm;
+                palm.x*=acceptedPlan.Facing*lockedFacing;
+                if(age<PalmRelease+.14f)return Vector2.Lerp(palm,raised,Mathf.InverseLerp(PalmRelease,PalmRelease+.14f,age));
+                if(age<=PalmCatch)return Vector2.Lerp(raised,new Vector2(.18f,.43f),Mathf.InverseLerp(PalmRelease+.14f,PalmCatch,age));
+                return Vector2.Lerp(new Vector2(.18f,.43f),new Vector2(.45f,.20f),Mathf.InverseLerp(PalmCatch,PalmCut.Start,age));
             }
             return new Vector2(.45f,.20f);
         }
@@ -254,15 +279,16 @@ namespace GoGhost.Duel
             {
                 float age=Time.time-activeAt;
                 if(Current==Move.UnderpassReturn)return age<.02f?18:145;
-                if(Current==Move.AnchorVault&&!caught)return 32;
+                if(Current==Move.AnchorVault&&!caught)return VaultGripAngle(acceptedPlan);
                 if(Current==Move.AnchorVault&&anchorCutAt>=0&&age<anchorCutAt)
                 {
-                    float catchAngle=acceptedPlan.Facing==lockedFacing?32:148;
-                    return Mathf.Lerp(catchAngle,131+EdgeOffset,Mathf.InverseLerp(anchorCutAt-.12f,anchorCutAt,age));
+                    float castAngle=VaultGripAngle(acceptedPlan);
+                    float catchAngle=acceptedPlan.Facing==lockedFacing?castAngle:180-castAngle;
+                    return Mathf.Lerp(catchAngle,acceptedPlan.Swing.From+EdgeOffset,Mathf.InverseLerp(reboundAt,anchorCutAt,age));
                 }
-                if(Current==Move.PalmDeflection&&age<2.63f)
+                if(Current==Move.PalmDeflection&&age<PalmCut.Start)
                     return age<=.01f?10:age<PalmAt+.01f?38:
-                        Mathf.Lerp(127,129+EdgeOffset,Mathf.InverseLerp(PalmCatch,2.63f,age));
+                        Mathf.Lerp(127,129+EdgeOffset,Mathf.InverseLerp(PalmCatch,PalmCut.Start,age));
                 float angle=65;
                 for(int i=0;i<CutCount;i++)
                 {
@@ -349,14 +375,24 @@ namespace GoGhost.Duel
                 if(threat.StartsAt>to||threat.EndsAt<from)continue;
                 // For the committed leap, the forecast uses its physically solved motor route.
                 var points=futureOrigins[i];
+                bool useFlight=Current==Move.LeapingCrosscut || Current==Move.AnchorVault&&reboundAt>=0;
+                float launchAge=Current==Move.AnchorVault?reboundAt:0;
+                var jump=acceptedPlan.JumpPath;
+                Vector2 offset=Vector2.zero;
+                if(useFlight && jump!=null && Phase==Stage.Active)
+                {
+                    int now=Mathf.Clamp(Mathf.RoundToInt((from-activeAt-launchAge)/Time.fixedDeltaTime),0,jump.Length-1);
+                    offset=actor.Position-jump[now];
+                    useFlight=!actor.Motor.RouteFailed && offset.sqrMagnitude<.35f*.35f;
+                }
                 for(int j=0;j<points.Length;j++)
                 {
                     float dt=.02f*j,age=from+dt-activeAt;
                     Vector2 centre=actor.Position;
-                    if(Current==Move.LeapingCrosscut&&acceptedPlan.JumpPath!=null)
+                    if(useFlight && jump!=null)
                     {
-                        int k=Mathf.Clamp(Mathf.RoundToInt(age/Time.fixedDeltaTime),0,acceptedPlan.JumpPath.Length-1);
-                        centre=acceptedPlan.JumpPath[k];
+                        int k=Mathf.Clamp(Mathf.RoundToInt((age-launchAge)/Time.fixedDeltaTime),0,jump.Length-1);
+                        centre=jump[k]+offset;
                     }
                     else if(!actor.Motor.Grounded)centre+=actor.Velocity*dt;
                     else centre.x+=actor.Velocity.x*Mathf.Min(dt,.12f);

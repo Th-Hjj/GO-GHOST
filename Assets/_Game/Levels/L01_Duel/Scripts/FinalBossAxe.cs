@@ -19,9 +19,9 @@ namespace GoGhost.Duel
         {
             default,
             new Timing(.42f,.14f,.12f,.50f,1.8f,26), new Timing(.45f,.15f,1f,.65f,5f,20),
-            new Timing(.32f,.16f,1.13f,.50f,2.1f,30), new Timing(.26f,.14f,.40f,.34f,2.4f,28),
-            new Timing(.34f,.18f,1.75f,.60f,5.6f,30), new Timing(.32f,.16f,2.04f,.45f,4.8f,22),
-            new Timing(.40f,.18f,2.87f,.68f,7.2f,28)
+            new Timing(.32f,.16f,1.12f,.50f,2.1f,30), new Timing(.26f,.14f,.40f,.34f,2.4f,28),
+            new Timing(.34f,.20f,2.50f,.62f,5.6f,34), new Timing(.32f,.16f,UnderCatch,.45f,4.8f,22),
+            new Timing(.40f,.18f,PalmCatch+.44f,.68f,7.2f,28)
         };
         internal static BossMoveTuning DefaultTuning(Move move)
         {
@@ -149,7 +149,7 @@ namespace GoGhost.Duel
                         BuildFlight(refreshed,flight);
                     }
                     SetPhase(Stage.Locked,acceptedTiming.Lock);activeAt=phaseUntil;activeEnds=activeAt+acceptedTiming.Active;
-                    if(Current==Move.TripleCut&&!SafeStep(.45f*lockedFacing))actor.Motor.HoldHorizontal();
+                    if(Current==Move.TripleCut&&!SafeStep(TripleStrides[0]*lockedFacing))actor.Motor.HoldHorizontal();
                     if(Current==Move.LeapingCrosscut)actor.Motor.HoldHorizontal();
                     if(!PhaseTwo)UpdateFlightWarning();
                     actor.Sounds?.Play(Sfx.ReturnPrepare,actor.ActorId,attackId);
@@ -249,7 +249,7 @@ namespace GoGhost.Duel
             {
                 var health = actor.Health;
                 if (Invasions >= invasionsDue || Current != Move.None || PhaseTwo || health.PhaseIndex != 1) return false;
-                if (!actor.Motor.Grounded) { actor.Motor.Brake(); return true; }
+                if (!actor.Motor.Grounded) { if(!actor.Motor.HasRoute)RecoverFooting(); return true; }
                 Invading = true; invasionInjected = false; invasionAt = Time.time;
                 health.Invulnerable = true;
                 actor.Motor.HoldHorizontal();

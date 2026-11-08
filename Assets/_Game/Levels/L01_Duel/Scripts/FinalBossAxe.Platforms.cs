@@ -24,13 +24,17 @@ namespace GoGhost.Duel
             var motor = actor.Motor;
             var nav = actor.Navigation;
             if (!nav.TrySupport(actor.Position, motor.Size, out var here)) return false;
-            bool immediateHit = attack != null && first < .82f;
+            bool movingCut = attack != null && attack.DirectCut &&
+                (attack.Move==Move.AnchorVault || attack.Move==Move.LeapingCrosscut && Mathf.Abs(attack.Landing.y-attack.Start.y)>1.3f);
+            // A legal traveling attack already provides both traversal and a strike.
+            // Leave a perch route at grounded boundaries when it would duplicate that travel.
+            bool takeAttack = attack!=null && (first<.82f || movingCut);
 
             if (platformGoal != null)
             {
                 if (here == platformGoal)
                 {
-                    if (!immediateHit && motor.HasRoute && Mathf.Abs(actor.Position.x-routeGoal.x)>.45f &&
+                    if (!takeAttack && motor.HasRoute && Mathf.Abs(actor.Position.x-routeGoal.x)>.45f &&
                         Time.time<platformDeadline) return true;
                     lastAttackPlatform = here;
                     lastPlatformAt = Time.time;
@@ -39,7 +43,7 @@ namespace GoGhost.Duel
                     motor.ClearRoute();
                     movingToSite = false;
                 }
-                else if (motor.HasRoute && Time.time < platformDeadline && platformGoal.enabled && !immediateHit &&
+                else if (motor.HasRoute && Time.time < platformDeadline && platformGoal.enabled && !takeAttack &&
                     Mathf.Abs(routeGoal.x-target.x)<Mathf.Max(10f,platformTargetGap+3f))
                     return true;
                 else
@@ -50,7 +54,7 @@ namespace GoGhost.Duel
                 }
             }
             bool highAngle = actor.Position.y-target.y>.95f && first<1.65f;
-            if (attack != null && (immediateHit || highAngle || here == lastAttackPlatform && Time.time < platformOpeningUntil))
+            if (attack != null && (takeAttack || highAngle || here == lastAttackPlatform && Time.time < platformOpeningUntil))
             {
                 useOpening = true;
                 return true;

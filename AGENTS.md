@@ -163,6 +163,8 @@ Dated decisions are ordered newest first. Later entries supersede conflicting ol
 - Validate changes with the checks appropriate to current scope. For runtime changes, compile and exercise the affected path. Use Check Game Flow when the change affects progression. Documentation-only work needs source/link/diff checks. Dated Build/Release instructions apply only to their original delivery; never imply an old package contains current source features. Record unrun checks as NOT TESTED and unseen behavior as NOT OBSERVED.
 
 ## How to work
+Do not use the `engineer-any-prototype` skill anywhere in GO GHOST.
+
 1. Read the existing code before proposing anything. Reuse first: direct reuse, then minimal extension, then local refactor, then replacement only with approval.
 2. Never rewrite a working script because of naming or style. Keep class names, public APIs, serialized field names, Inspector values, prefab overrides, and assembly placement.
 3. Do not add managers, event buses, dependency injection, ECS, save frameworks, dialogue editors, or middleware without an explicit request.

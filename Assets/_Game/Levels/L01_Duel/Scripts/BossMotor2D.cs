@@ -126,8 +126,16 @@ namespace GoGhost.Duel
             if(body!=null)body.linearVelocity=new Vector2(0,driven?0:body.linearVelocity.y);
         }
         public bool StartCommittedJump(ArenaNavigation2D.Route value, BossMotionProfile motion=null)
+            => Grounded && LaunchValidatedJump(value,motion);
+
+        // The fixed axe grip supplies the second takeoff of Anchor Vault. Ordinary
+        // jumps still require footing. Both launches use the same swept route and motor.
+        internal bool ReboundFromGrip(Vector2 grip, ArenaNavigation2D.Route route, BossMotionProfile motion)
+            => Vector2.Distance(Position,grip) <= .15f && LaunchValidatedJump(route,motion);
+
+        bool LaunchValidatedJump(ArenaNavigation2D.Route value, BossMotionProfile motion)
         {
-            if(!enabledCombat || !Grounded || DashActive || value==null || value.Version!=navigation.Version
+            if(!enabledCombat || DashActive || value==null || value.Version!=navigation.Version
                 || value.Steps.Count!=1 || value.Steps[0].Kind!=ArenaNavigation2D.TravelKind.Jump
                 || Mathf.Abs(Velocity.x)>.15f)return false;
             if(motion==null ? !navigation.ValidateStep(value.Steps[0],this)

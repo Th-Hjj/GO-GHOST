@@ -19,6 +19,9 @@ namespace GoGhost.Duel
         Vector2 phaseOneSocket;
         readonly List<Vector2> trailPoints = new List<Vector2>(MaxTrailPoints);
         readonly List<float> trailTimes = new List<float>(MaxTrailPoints);
+        readonly Vector2[] recentHands=new Vector2[24];
+        readonly float[] handTimes=new float[24];
+        int handHead,handCount;
 
         void PhaseOneAxePose(ref Pose p, FinalBossAxe axe, float wave, float motion)
         {
@@ -173,10 +176,10 @@ namespace GoGhost.Duel
                 flightSprite.sprite = ApprovedAxe();
             }
             flightSprite.enabled = true;
-            flightSprite.flipX = axe.LockedFacing < 0;
+            flightSprite.flipX = axe.FlightFacing < 0;
             var forward = Angle(axe.AxeSpin);
             Vector2 grip = axe.AxePosition - forward * GripToFlightPivot;
-            Vector2 centre = AxeSpriteCentre(grip, forward, axe.LockedFacing);
+            Vector2 centre = AxeSpriteCentre(grip, forward, axe.FlightFacing);
             flightSprite.transform.SetPositionAndRotation(centre, Quaternion.Euler(0, 0, axe.AxeSpin - 90));
         }
 
@@ -190,40 +193,89 @@ namespace GoGhost.Duel
         void DrawPhaseOneAttack(FinalBossAxe axe)
         {
             if (axe.Current == FinalBossAxe.Move.None || axe.Phase == FinalBossAxe.Stage.Recovery) return;
-            if (axe.TryGetCut(out var cut, out bool locked, out bool active) && (locked || active))
+            RecordGrip(axe.Hand());
+            if (axe.TryGetCut(out var cut, out bool locked, out bool active))
             {
-                // Swordsman's airborne cut leaves just the live leading edge. At rest the
-                // short commitment arc appears only once the destination is locked.
-                bool airborneCut = axe.Current == FinalBossAxe.Move.LeapingCrosscut || axe.Current == FinalBossAxe.Move.AnchorVault;
-                if (active || !airborneCut) DrawAxeCut(cut, active);
+                if(active||locked)DrawAxeCut(cut,active);
+                else if(axe.Phase==FinalBossAxe.Stage.Active && !axe.AxeFlying &&
+                    (axe.Current==FinalBossAxe.Move.LeapingCrosscut||axe.Current==FinalBossAxe.Move.AnchorVault))
+                {
+                    // The airborne wind-up reads on the raised weapon. Only the actual
+                    // swing draws a blade arc; the body's flight has no danger guide.
+                    float charge=Mathf.InverseLerp(cut.StartsAt-.22f,cut.StartsAt,Time.time);
+                    Vector2 shaft=Angle(axe.HeldShaftAngle);
+                    shaft.x*=axe.LockedFacing;
+                    if(charge>0)SetLine(AxeLine(3,"Raised axe socket",2),axe.Hand()+shaft*.88f,
+                        axe.Hand()+shaft*1.09f,.035f,NeuralPalette.Alpha(FlightIce,.28f+.62f*charge));
+                }
             }
             if (axe.FlightWarning && axe.Path.Count >= 2)
             {
                 var line = AxeLine(6, "Axe flight warning", axe.Path.Count);
-                float width = SwordTellWidth(false, axe.Phase == FinalBossAxe.Stage.Locked);
-                line.startWidth = line.endWidth = width;
-                line.startColor = line.endColor = AxeTellColor(false, axe.Phase == FinalBossAxe.Stage.Locked);
+                float width = SwordTellWidth(false,true);
+                line.startWidth=width;line.endWidth=width*.55f;
+                line.startColor=AxeTellColor(false,true);line.endColor=NeuralPalette.Alpha(FlightIce,.34f);
                 for (int i = 0; i < axe.Path.Count; i++) line.SetPosition(i, ClipTellPoint(axe.Path[i], width));
             }
-            if (axe.AxeFlying) DrawAxeTrail(axe.AxePosition);
-            if (axe.AnchorPulling)
-            {
-                var tether = AxeLine(8, "Anchor pull", 2);
-                Vector2 flyingGrip = axe.AxePosition - Angle(axe.AxeSpin) * GripToFlightPivot;
-                SetLine(tether, axe.Hand(), flyingGrip, .024f, NeuralPalette.Alpha(FlightIce, .55f));
-            }
+            if(axe.FlightLive)DrawAxeTrail(axe.FlyingEdge);
+            else {trailPoints.Clear();trailTimes.Clear();}
+            if(axe.AnchorLatched)DrawLatchedAnchor(axe);
             if (axe.PalmAccent > 0)
             {
                 Vector2 palm = axe.Hand();
+                float angle=axe.Path.Count>1?Vector2.SignedAngle(Vector2.right,axe.Path[1]-axe.Path[0]):axe.AxeSpin;
                 for (int i = 0; i < 3; i++)
                 {
-                    Vector2 ray = Angle(32 + i * 56);
-                    ray.x *= axe.LockedFacing;
+                    Vector2 ray = Angle(angle+(i-1)*32);
                     Vector2 a = palm + ray * (.08f + .12f * (1 - axe.PalmAccent));
                     SetLine(AxeLine(9 + i, "Palm deflection", 2), a, a + ray * .13f, .025f,
                         NeuralPalette.Alpha(FlightIce, axe.PalmAccent));
                 }
             }
+        }
+
+        void DrawLatchedAnchor(FinalBossAxe axe)
+        {
+            Vector2 forward=Angle(axe.AxeSpin);
+            Vector2 grip=axe.AxePosition-forward*GripToFlightPivot;
+            float tension=axe.AnchorLatchProgress;
+            // A thin steel tether denotes travel. The two socket ticks close as the
+            // pull engages. Neither has the white core of a live cut.
+            SetLine(AxeLine(8,"Axe tether",2),axe.Hand(),grip,.012f+.008f*tension,
+                NeuralPalette.Alpha(new Color32(111,129,145,255),.45f+.25f*tension));
+            Vector2 normal=new Vector2(-forward.y,forward.x);
+            for(int i=0;i<2;i++)
+            {
+                Vector2 root=axe.AxePosition+normal*((i==0?-1:1)*Mathf.Lerp(.36f,.19f,tension));
+                SetLine(AxeLine(12+i,"Anchor clasp",2),root-forward*.09f,root+forward*.09f,
+                    .026f,NeuralPalette.Alpha(FlightIce,.7f));
+            }
+        }
+
+        void RecordGrip(Vector2 point)
+        {
+            float now=Time.time;
+            if(handCount>0)
+            {
+                if(now==handTimes[handHead])return;
+                if(now-handTimes[handHead]>.20f||now<handTimes[handHead])handCount=0;
+            }
+            handHead=(handHead+1)%recentHands.Length;
+            recentHands[handHead]=point;handTimes[handHead]=now;
+            handCount=Mathf.Min(handCount+1,recentHands.Length);
+        }
+
+        Vector2 GripAt(float t)
+        {
+            int next=handHead;
+            for(int i=1;i<handCount;i++)
+            {
+                int previous=(next+recentHands.Length-1)%recentHands.Length;
+                if(handTimes[previous]<=t)
+                    return Vector2.Lerp(recentHands[previous],recentHands[next],Mathf.InverseLerp(handTimes[previous],handTimes[next],t));
+                next=previous;
+            }
+            return recentHands[next];
         }
 
         LineRenderer AxeLine(int slot, string label, int points)
@@ -250,7 +302,7 @@ namespace GoGhost.Duel
                 float step = Mathf.Lerp(start, finish, i / (samples - 1f));
                 Vector2 ray = Angle(Mathf.Lerp(cut.ArcFrom, cut.ArcTo, step));
                 ray.x *= cut.Facing;
-                Vector2 root = active ? cut.OriginAt(Mathf.Lerp(cut.StartsAt, cut.EndsAt, step)) : actor.Axe.Hand();
+                Vector2 root = active ? GripAt(Mathf.Lerp(cut.StartsAt, cut.EndsAt, step)) : actor.Axe.Hand();
                 Vector2 tip = root + ray * cut.Reach;
                 if (cut.TerrainBlocked && Projectile.TerrainHit(root, tip, cut.Radius, out var wall))
                     tip = root + ray * wall.distance;
@@ -268,7 +320,7 @@ namespace GoGhost.Duel
             }
         }
 
-        void DrawAxeTrail(Vector2 pivot)
+        void DrawAxeTrail(Vector2 edge)
         {
             float now = Time.time;
             int expired = 0;
@@ -278,20 +330,31 @@ namespace GoGhost.Duel
                 trailTimes.RemoveRange(0, expired);
                 trailPoints.RemoveRange(0, expired);
             }
-            if (trailPoints.Count == 0 || (trailPoints[trailPoints.Count - 1] - pivot).sqrMagnitude > .0004f)
+            if (trailPoints.Count == 0 || (trailPoints[trailPoints.Count - 1] - edge).sqrMagnitude > .0004f)
             {
                 if (trailPoints.Count == MaxTrailPoints)
                 {
                     trailPoints.RemoveAt(0); trailTimes.RemoveAt(0);
                 }
-                trailPoints.Add(pivot); trailTimes.Add(now);
+                trailPoints.Add(edge); trailTimes.Add(now);
             }
             if (trailPoints.Count < 2) return;
-            var line = AxeLine(7, "Flying axe trace", trailPoints.Count);
-            line.startWidth = .012f; line.endWidth = .045f;
+            int first=trailPoints.Count-1;
+            Vector2 tail=trailPoints[first];
+            float length=1.15f;
+            while(first>0 && length>0)
+            {
+                Vector2 point=trailPoints[--first];
+                float segment=Vector2.Distance(point,tail);
+                tail=Vector2.MoveTowards(tail,point,length);
+                length-=segment;
+            }
+            var line = AxeLine(7, "Flying axe trace", trailPoints.Count-first);
+            line.startWidth = .012f; line.endWidth = .065f;
             line.startColor = NeuralPalette.Alpha(FlightIce, .05f);
-            line.endColor = NeuralPalette.Alpha(FlightIce, .70f);
-            for (int i = 0; i < trailPoints.Count; i++) line.SetPosition(i, ClipTellPoint(trailPoints[i], .045f));
+            line.endColor = NeuralPalette.Primary;
+            line.SetPosition(0,ClipTellPoint(tail,.065f));
+            for(int i=first+1;i<trailPoints.Count;i++)line.SetPosition(i-first,ClipTellPoint(trailPoints[i],.065f));
         }
     }
 }

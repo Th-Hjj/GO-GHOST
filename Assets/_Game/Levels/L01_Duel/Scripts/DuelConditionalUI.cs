@@ -163,6 +163,7 @@ namespace GoGhost.Duel
 
         void CancelRuleEdit()
         {
+            game.ConfigurationVoice?.RuleEditorClosed(false);
             pendingRule = null;
             pendingRow = selectorRow = -1;
             selectingAdditional=false;
@@ -313,6 +314,7 @@ namespace GoGhost.Duel
             previewParts.Clear();
             float w=right-left;
             var strip=Rect("RulePreview",page,new Vector2((left+right)/2,y),new Vector2(w,100));
+            tutorialPreview = strip;
             var rule=pendingRule??completedPreview;
             var expression=ConditionalCatalog.Expression(rule);
             int count=Mathf.Max(rule?.ConditionCount??1,pendingRule!=null&&selectingCondition?selectedConditionIndex+1:1);
@@ -498,6 +500,7 @@ namespace GoGhost.Duel
                 bool entering = revealInstalledCard && i == installedRow && Time.unscaledTime-installedAt < CardRevealSeconds;
                 var slot = entering ? Rect("Installing rule",rows,Vector2.zero,new Vector2(rw,84)) : null;
                 var line=Rect("RuleRow"+i,entering ? slot : rows,Vector2.zero,new Vector2(rw,84));
+                if (i == 0) tutorialExample = line;
                 var background=line.gameObject.AddComponent<UnityEngine.UI.Image>();background.color=NeuralPalette.Panel;background.raycastTarget=false;
                 var number=Text((i+1).ToString(),line,Vector2.zero,Vector2.zero,20,TextAlignmentOptions.TopLeft,numericFont);
                 number.name="RuleNumber";number.color=NeuralPalette.Secondary;
@@ -551,6 +554,12 @@ namespace GoGhost.Duel
             if(editingRule)submit=CommitRuleChoice;
             var add=ConfigButton(editingRule?"ConfirmRule":"AddRule",editingRule?"Confirm":"+ Add Rule",ruleList,new Vector2(editingRule?addX:-w/2+208,editingRule?footerY:h/2-20),new Vector2(editingRule?buttonWidth:180,FooterButtonHeight),submit,style:editingRule?DuelControlStyle.Primary:DuelControlStyle.Option);
             add.interactable=editingRule?CanConfirmRule():game.DraftLoadout.TotalRules<ConditionalCatalog.PlayerRuleLimit;
+            tutorialSubmit = (RectTransform)add.transform;
+            if (editingRule && game.ConfigurationVoice.Focus != TutorialFocus.None)
+            {
+                game.ConfigurationVoice.RuleDraftChanged(add.interactable);
+                page.GetComponentsInChildren(false, tutorialEditorButtons);
+            }
             UnityEngine.UI.Button start=null;
             if(!editingRule)
             {
@@ -559,14 +568,17 @@ namespace GoGhost.Duel
                 if(game.Wave<=DuelGame.FinalBossWave)
                 {
                     var profile=ConfigButton("TargetProfile","Target Profile",page,new Vector2(x,y),new Vector2(rail,56),game.OpenTargetProfile,left:true,style:DuelControlStyle.Option);
-                    dialogueExits.Add((RectTransform)profile.transform);
+                    tutorialProfile = (RectTransform)profile.transform;
+                    dialogueExits.Add(tutorialProfile);
                 }
                 var test=ConfigButton("TestLoadout","Test Loadout",page,new Vector2(x,game.Wave<=DuelGame.FinalBossWave?y-68:y),new Vector2(rail,56),game.StartConfiguredEncounter,left:true,style:DuelControlStyle.Option);
                 test.interactable=ConfigurationReady;
-                if (test.interactable) dialogueExits.Add((RectTransform)test.transform);
+                tutorialTest = (RectTransform)test.transform;
+                if (test.interactable) dialogueExits.Add(tutorialTest);
                 start=ConfigButton("StartMission","Start Mission",page,new Vector2(x,-page.sizeDelta.y/2+32+FooterButtonHeight/2),new Vector2(rail,FooterButtonHeight),game.StartMission,style:DuelControlStyle.Primary);
                 start.GetComponent<DuelButtonOutline>().Primary=true;start.interactable=ConfigurationReady;
-                if (start.interactable) dialogueExits.Add((RectTransform)start.transform);
+                tutorialStart = (RectTransform)start.transform;
+                if (start.interactable) dialogueExits.Add(tutorialStart);
             }
 #if UNITY_EDITOR
             if(ruleSetupViewSample!=null)
@@ -615,14 +627,15 @@ namespace GoGhost.Duel
 #if UNITY_EDITOR
             if(ruleSetupViewSample!=null)return;
 #endif
-            if (pendingRule != null || game.DraftLoadout.TotalRules >= ConditionalCatalog.PlayerRuleLimit) return;
+            if (pendingRule != null || game.DraftLoadout.TotalRules >= ConditionalCatalog.PlayerRuleLimit
+                || !game.ConfigurationVoice.CanOpenRuleEditor) return;
             // Incomplete choices stay UI-local; the combat loadout only receives a complete pair.
             pendingRule = new ConditionalRule();
-            game.RuleEditorOpened();
             selectingAdditional=false;
             pendingRow = displayedRules.Count;
             conditionCategory = 0;
             ChooseRule(pendingRow, true);
+            game.ConfigurationVoice.RuleEditorOpened();
         }
 
         void RemoveRule(int row)
@@ -761,6 +774,8 @@ namespace GoGhost.Duel
             var complete=pendingRule.Copy();
             string change=row==displayedRules.Count?"add":"edit";
             InstallConfiguredRule(complete, row, change);
+            // The rebuilt overview now owns the page-entry delay for Happy's next line.
+            game.ConfigurationVoice.RuleEditorClosed(true);
         }
 
         internal void InstallTutorialJumpRule()

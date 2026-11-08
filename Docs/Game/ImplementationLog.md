@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-08 — Mission 1 preparation tutorial
+
+The first guided Confirm previously ended Happy's instructions. It now leads to three voiced overview pages. A cold-white frame follows Target Profile, Test Loadout and Start Mission while other controls dim. Visiting the highlighted dossier or practice room continues to the next line on Back. The player can also click through all three explanations and stay in preparation.
+
+Unity 6000.6.0f1 compiled the final scripts. Two New Game → Upload runs used Game View UI clicks to install a second rule. One visited the dossier and practice, then started Mission 1 and reached combat. The other skipped both visits, dismissed the final line and returned from practice without replay. All three highlights enclosed the corresponding buttons at 2560×1440 and used their matching stereo clips. The existing Game Flow check passed after removing its obsolete wait for Happy's retired Mission 3 EMP interruption. Standalone build and listening review were not run. [Target Profile](../../Logs/MissionPreparationTutorial/TargetProfile.png) · [Test Loadout](../../Logs/MissionPreparationTutorial/TestLoadout.png) · [Start Mission](../../Logs/MissionPreparationTutorial/StartMission.png) (local captures).
+
 ## 2026-11-08 — Phase-two flowing rainbow and violet axe
 
 The body keeps its rainbow when Rules seal. Its colours accelerate upward over 1.2 seconds and cycle every four seconds. The charged axe keeps the approved silhouette through the pull, Chop, Spin and direct retry. Removed the red eye, movement streak and eye-lighting beat. Compilation and Play Mode skipped at Thomas’s request.
@@ -55,6 +61,18 @@ Compiled the runtime assembly with the Unity 6000.6.0f1 compiler and Editor refe
 Thomas reported that Anchor Vault traveled a short distance and finished almost in place. The grip used to sit directly above the landing. The move now requires a 5.5–11-unit cast and an independently validated 2.6–4.4-unit rebound. The Boss can continue forward or cut back from the far side. The other four moves have distinct spacing, contact windows and visual cues documented in Boss Encounters. The AI compares actual blade contact, ending position, observed approaches and reversals, and recent misses when choosing an attack or platform route.
 
 The Unity 6000.6.0f1 runtime assembly compiled with Editor references. Play Mode, visual review and balance are NOT TESTED. Thomas requested compilation only and will playtest the encounter.
+
+## 2026-11-07 — Happy page-entry timing
+
+Mission preparation, the rule editor, Target Profile and victory pages give Happy 0.3 seconds before her entry recording and caption. Returning to an interrupted preparation line uses the same delay. Advancing a sentence or changing a selection on the same page keeps its normal timing. The H14 recording and caption now say “When the condition is met, I’ll try to do the action.”
+
+Compilation, Play Mode and listening review were not run.
+
+## 2026-11-07 — First Body Configuration tutorial
+
+Happy's Mission 1 introduction points to the body, Rules, the installed Jump card and + Add Rule. The first editor visit highlights the full Condition column, the full Action column and their shared preview on separate lines. Players choose freely. The existing rule validator controls the Confirm highlight and its one-time voice prompt. Seven Happy recordings were rendered with Voice Studio, including the revised AI introduction and invitation.
+
+NOT TESTED at Thomas's request. No compilation, Play Mode, listening review or build was run.
 
 ## 2026-11-07 — Final Boss phase-one dialogue
 

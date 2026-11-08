@@ -235,7 +235,7 @@
     {
       "key": "Handler/TutorialIntro4",
       "label": "Configuration introduction 4",
-      "text": "I'm an experimental AI installed in your brain.",
+      "text": "I'm an experimental AI.",
       "locked": false,
       "transcribed": false
     },
@@ -270,37 +270,61 @@
     {
       "key": "Handler/TutorialIntro9",
       "label": "Configuration introduction 9",
-      "text": "Try adding a rule by your self.",
+      "text": "Try adding a rule of your own.",
       "locked": false,
       "transcribed": false
     },
     {
-      "key": "Handler/TutorialGoodbye",
-      "label": "Configuration farewell 1",
-      "text": "Unfortunately, I don't have time to explain the system to you.",
+      "key": "Handler/TutorialEditorCondition",
+      "label": "H12 · Condition area",
+      "text": "A condition tells me when to act.",
       "locked": false,
       "transcribed": false
     },
     {
-      "key": "Handler/TutorialGoodbye2",
-      "label": "Configuration farewell 2",
-      "text": "I need to finish the Alpha Feasibility Pitch right now.",
+      "key": "Handler/TutorialEditorAction",
+      "label": "H13 · Action area",
+      "text": "An action tells me what you want me to do.",
       "locked": false,
       "transcribed": false
     },
     {
-      "key": "Handler/TutorialGoodbye3",
-      "label": "Configuration farewell 3",
-      "text": "Good luck figuring out the body configuration system.",
+      "key": "Handler/TutorialEditorRelation",
+      "label": "H14 · Condition and action preview",
+      "text": "When the condition is met, I’ll try to do the action.",
       "locked": false,
       "transcribed": false
     },
     {
-      "key": "Handler/TutorialGoodbye4",
-      "label": "Configuration farewell 4",
-      "text": "Bye.",
+      "key": "Handler/TutorialEditorPick",
+      "label": "H15 · Free choice",
+      "text": "Try picking a condition and an action.",
+      "locked": false
+    },
+    {
+      "key": "Handler/TutorialConfirm",
+      "label": "H16 · First complete rule",
+      "text": "Click Confirm to install the rule.",
       "locked": false,
       "transcribed": false
+    },
+    {
+      "key": "Handler/TutorialPreparationProfile",
+      "label": "First mission preparation · Target Profile",
+      "text": "Target Profile shows who you're up against and what weapon they carry.",
+      "locked": false
+    },
+    {
+      "key": "Handler/TutorialPreparationTest",
+      "label": "First mission preparation · Test Loadout",
+      "text": "In Test Loadout, you can try your rules against a practice dummy.",
+      "locked": false
+    },
+    {
+      "key": "Handler/TutorialPreparationStart",
+      "label": "First mission preparation · Start Mission",
+      "text": "When you're ready, click Start Mission.",
+      "locked": false
     },
     {
       "key": "Handler/WaveOneClear",

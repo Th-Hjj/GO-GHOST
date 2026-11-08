@@ -103,6 +103,12 @@ namespace GoGhost.Duel
         public void Show()
         {
             if (canvas == null) return;
+            BuildPage();
+            NoteDialoguePage();
+        }
+
+        void BuildPage()
+        {
             CaptureConfigurationView();
             CaptureHelpView();
             if(game.Phase!=DuelPhase.Configure||helpDraft!=game.DraftLoadout)helpOpen=false;
@@ -113,6 +119,7 @@ namespace GoGhost.Duel
             pageControls=page.gameObject.AddComponent<CanvasGroup>();
             developerFields.Clear();
             dialogueExits.Clear();
+            ClearTutorialView();
             trainingBack=null;
             ClearRuleHud();BuildRuleHud();UpdateBattleLayout();
             playerHealth=null; playerFill=null;
@@ -283,7 +290,8 @@ namespace GoGhost.Duel
         {
             if(Edges==null||Button==null)return;
             // Keep controls visually quiet until the dialogue closes, including gaps between recordings.
-            bool available=Button.IsInteractable() && !(Owner != null && Owner.DialogueVisible);
+            bool available=Owner != null && Owner.TutorialHighlightsControl(Button)
+                ? Button.interactable : Button.IsInteractable() && !(Owner != null && Owner.DialogueVisible);
             float scale=Mathf.Max(.01f,transform.lossyScale.x);
             int state=(available?1:0)|(hovered?2:0)|(focused?4:0)|(Persistent?8:0)|(Primary?16:0)|(Subtle?32:0)|(TextRegion?64:0)|((int)LabelSystem<<7)|((int)Style<<10)|(Placeholder?8192:0);
             if(state==lastState&&Mathf.Approximately(scale,lastScale))return;

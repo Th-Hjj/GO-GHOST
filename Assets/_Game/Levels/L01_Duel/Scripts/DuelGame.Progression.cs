@@ -11,7 +11,7 @@ namespace GoGhost.Duel
         public string FinalBossDialogue => DialogueLines[FinalBossLine].text;
         public string FinalBossDialogueSpeaker => DialogueLines[FinalBossLine].key.StartsWith("Handler/") ? "Happy" : BossAgent.FinalBossName;
         public bool FinalBossChoiceReady { get; private set; }
-        HandlerVoice CurrentVoice => Phase == DuelPhase.TargetProfile || Phase == DuelPhase.Training ? preparationVoice : handler;
+        internal HandlerVoice CurrentVoice => Phase == DuelPhase.TargetProfile || Phase == DuelPhase.Training ? preparationVoice : handler;
         public string PendingDialogue => CurrentVoice.PendingDialogue;
         internal string HappySpeakerName => Phase == DuelPhase.TargetProfile ? "Happy" : handler.SpeakerName;
         public bool DialogueReady => CurrentVoice.DialogueReady;

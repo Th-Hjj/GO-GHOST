@@ -8,13 +8,16 @@ using UnityEngine;
 
 namespace GoGhost.Duel
 {
+    internal enum TutorialFocus { None, Body, Rules, Example, AddRule, Condition, Action, Relation, Pick, Confirm, TargetProfile, TestLoadout, StartMission }
+
     public sealed class HandlerVoice : MonoBehaviour
     {
         AudioSource speaker;
         AudioClip generatedGreeting;
         CancellationTokenSource pendingGreeting;
-        const string TutorialIntro = "Handler/TutorialIntro", TutorialGoodbye = "Handler/TutorialGoodbye";
-        bool tutorialActive, openedRule;
+        bool tutorialActive, editorExplained, confirmSpoken;
+        internal TutorialFocus Focus { get; private set; }
+        internal bool CanOpenRuleEditor => !tutorialActive || Focus == TutorialFocus.AddRule;
         bool suspended;
         AudioClip interruptedClip;
         int interruptedSample;
@@ -27,8 +30,13 @@ namespace GoGhost.Duel
         float revealStart, revealDuration;
         bool revealed;
         bool realtimeReveal;
+        const double PageSpeechDelay = .3;
+        double pageSpeechAt, dialogueStartsAt;
+        internal void PageEntered() => pageSpeechAt = AudioSettings.dspTime + PageSpeechDelay;
+        float RemainingSpeechDelay => (float)Math.Max(0, dialogueStartsAt - AudioSettings.dspTime);
+        internal bool WaitingForPageSpeech => PendingDialogue != null && RemainingSpeechDelay > 0;
         float RevealClock => realtimeReveal ? Time.unscaledTime : Time.time;
-        internal int VisibleCharacters => PendingDialogue == null || revealed ? int.MaxValue :
+        internal int VisibleCharacters => WaitingForPageSpeech ? 0 : PendingDialogue == null || revealed ? int.MaxValue :
             Mathf.FloorToInt(PendingDialogue.Length * Mathf.Clamp01((RevealClock - revealStart) / revealDuration));
         internal bool DialogueReady => PendingDialogue != null && VisibleCharacters >= PendingDialogue.Length;
 
@@ -37,7 +45,7 @@ namespace GoGhost.Duel
             PendingDialogue = text;
             dialogueFrame = Time.frameCount;
             realtimeReveal = realtime;
-            revealStart = RevealClock;
+            revealStart = RevealClock + RemainingSpeechDelay;
             revealDuration = Speaking ? Mathf.Max(.15f, speaker.clip.length - .2f) : Mathf.Max(.2f, text.Length / 30f);
             revealed = false;
             afterDialogue = advance;
@@ -46,13 +54,33 @@ namespace GoGhost.Duel
         internal void SpeakDialogue(string key, Action advance = null, bool realtime = false)
         {
             if (key == "Handler/TutorialIntro3") SpeakerName = "Happy";
-            PlayLine(key);
+            if (tutorialActive)
+            {
+                Focus = key switch
+                {
+                    "Handler/TutorialIntro5" => TutorialFocus.Body,
+                    "Handler/TutorialIntro8" => TutorialFocus.Rules,
+                    "Handler/TutorialIntroJump" or "Handler/TutorialIntroAssist" => TutorialFocus.Example,
+                    "Handler/TutorialIntro9" => TutorialFocus.AddRule,
+                    "Handler/TutorialEditorCondition" => TutorialFocus.Condition,
+                    "Handler/TutorialEditorAction" => TutorialFocus.Action,
+                    "Handler/TutorialEditorRelation" => TutorialFocus.Relation,
+                    "Handler/TutorialEditorPick" => TutorialFocus.Pick,
+                    "Handler/TutorialConfirm" => TutorialFocus.Confirm,
+                    "Handler/TutorialPreparationProfile" => TutorialFocus.TargetProfile,
+                    "Handler/TutorialPreparationTest" => TutorialFocus.TestLoadout,
+                    "Handler/TutorialPreparationStart" => TutorialFocus.StartMission,
+                    _ => TutorialFocus.None
+                };
+                if (Focus == TutorialFocus.Pick) editorExplained = true;
+            }
+            PlayRecordedLine(key, waitForPage: key.StartsWith("Handler/", StringComparison.Ordinal));
             WaitForClick(VoiceStudioCatalog.Current.Find(key).text, advance, realtime);
         }
 
         internal void Acknowledge(bool waitForVoice)
         {
-            if (PendingDialogue == null || Time.frameCount == dialogueFrame) return;
+            if (PendingDialogue == null || WaitingForPageSpeech || Time.frameCount == dialogueFrame) return;
             dialogueFrame = Time.frameCount;
             if (!DialogueReady || waitForVoice && Speaking)
             {
@@ -114,17 +142,72 @@ namespace GoGhost.Duel
         {
             speaker.volume = VoiceStudioCatalog.Current.Volume(false);
             tutorialActive = true;
-            openedRule = false;
+            editorExplained = confirmSpoken = false;
+            Focus = TutorialFocus.None;
             if (generatedGreeting != null)
             {
-                Play(generatedGreeting);
+                Play(generatedGreeting, waitForPage: true);
                 WaitForClick(VoiceStudioCatalog.Current.greetingTemplate.Replace("{name}", nickname));
             }
             else SpeakDialogue("Handler/Greeting");
             StartCoroutine(ConfigurationTutorial(installExample));
         }
 
-        internal void RuleEditorOpened() => openedRule = true;
+        internal void RuleEditorOpened()
+        {
+            if (Focus != TutorialFocus.AddRule) return;
+            if (editorExplained) Focus = TutorialFocus.Pick;
+            else SpeakSequence("Handler/TutorialEditor");
+        }
+
+        internal void RuleDraftChanged(bool complete)
+        {
+            if (Focus != TutorialFocus.Pick && Focus != TutorialFocus.Confirm) return;
+            if (complete && !confirmSpoken)
+            {
+                confirmSpoken = true;
+                SpeakDialogue("Handler/TutorialConfirm");
+            }
+            else
+            {
+                if (!complete && Focus == TutorialFocus.Confirm) EndTutorialPage();
+                Focus = complete ? TutorialFocus.Confirm : TutorialFocus.Pick;
+            }
+        }
+
+        internal void RuleEditorClosed(bool installed)
+        {
+            if (Focus is not (TutorialFocus.Condition or TutorialFocus.Action or TutorialFocus.Relation
+                or TutorialFocus.Pick or TutorialFocus.Confirm)) return;
+            EndTutorialPage();
+            if (!installed)
+            {
+                Focus = TutorialFocus.AddRule;
+                return;
+            }
+            SpeakSequence("Handler/TutorialPreparation", () =>
+            {
+                tutorialActive = false;
+                Focus = TutorialFocus.None;
+            });
+        }
+
+        internal void ReturnFromPreparationVisit(DuelPhase visited)
+        {
+            SuspendConfiguration(false);
+            // Following the highlighted invitation also acknowledges its explanation.
+            if ((visited == DuelPhase.TargetProfile && Focus == TutorialFocus.TargetProfile)
+                || (visited == DuelPhase.Training && Focus == TutorialFocus.TestLoadout))
+                Acknowledge(waitForVoice: false);
+        }
+
+        void EndTutorialPage()
+        {
+            speaker.Stop();
+            dialogueStartsAt = 0;
+            PendingDialogue = null;
+            afterDialogue = null;
+        }
 
         internal void LeaveConfiguration()
         {
@@ -137,25 +220,28 @@ namespace GoGhost.Duel
             suspended = value;
             if (value)
             {
-                suspendedAt = Time.time;
-                if (speaker.isPlaying)
+                suspendedAt = RevealClock;
+                // A scheduled line may not have started revealing text yet.
+                revealStart = Mathf.Min(revealStart, suspendedAt);
+                if (speaker.clip != null && (speaker.isPlaying || WaitingForPageSpeech))
                 {
                     interruptedClip = speaker.clip;
-                    interruptedSample = speaker.timeSamples;
+                    interruptedSample = WaitingForPageSpeech ? 0 : speaker.timeSamples;
                 }
                 speaker.Stop();
                 speaker.clip = null;
+                dialogueStartsAt = 0;
             }
             else
             {
-                revealStart += Time.time - suspendedAt;
                 if (interruptedClip != null)
                 {
                     speaker.clip = interruptedClip;
                     speaker.timeSamples = Mathf.Clamp(interruptedSample, 0, interruptedClip.samples-1);
-                    speaker.Play();
+                    StartClip(waitForPage: true);
                     interruptedClip = null;
                 }
+                revealStart += RevealClock - suspendedAt + RemainingSpeechDelay;
             }
         }
 
@@ -163,9 +249,7 @@ namespace GoGhost.Duel
         {
             while (suspended || PendingDialogue != null) yield return null;
             ReleaseGreeting();
-            SpeakSequence(TutorialIntro, installExample: installExample);
-            while (suspended || PendingDialogue != null || !openedRule || AudioListener.pause) yield return null;
-            SpeakSequence(TutorialGoodbye, () => tutorialActive = false);
+            SpeakSequence("Handler/TutorialIntro", installExample: installExample);
         }
 
         void SpeakSequence(string prefix, Action finished = null, Action installExample = null)
@@ -195,7 +279,9 @@ namespace GoGhost.Duel
             else if (wave == DuelGame.BonusWave) SpeakSequence("Handler/BonusClear", advance);
         }
 
-        internal void PlayLine(string name)
+        internal void PlayLine(string name) => PlayRecordedLine(name, waitForPage: false);
+
+        void PlayRecordedLine(string name, bool waitForPage)
         {
             AudioClip clip;
 #if UNITY_EDITOR
@@ -203,9 +289,8 @@ namespace GoGhost.Duel
             else
 #endif
             if (!TryGetLine(name, out clip)) clip = Resources.Load<AudioClip>(name);
-            speaker.Stop();
             speaker.volume = VoiceStudioCatalog.Current.Volume(name.StartsWith("FinalBossVoice/", StringComparison.Ordinal));
-            Play(clip);
+            Play(clip, waitForPage);
         }
 
 #if UNITY_EDITOR
@@ -230,19 +315,31 @@ namespace GoGhost.Duel
         }
 #endif
 
-        void Play(AudioClip clip)
+        void Play(AudioClip clip, bool waitForPage)
         {
+            speaker.Stop();
             speaker.clip = clip;
-            if (clip != null) speaker.Play();
+            StartClip(waitForPage);
         }
 
-        public bool Speaking => speaker != null && speaker.clip != null && (speaker.isPlaying || AudioListener.pause);
+        void StartClip(bool waitForPage)
+        {
+            dialogueStartsAt = waitForPage ? pageSpeechAt : 0;
+            if (speaker.clip == null) return;
+            if (dialogueStartsAt > AudioSettings.dspTime) speaker.PlayScheduled(dialogueStartsAt);
+            else speaker.Play();
+        }
+
+        public bool Speaking => speaker != null && speaker.clip != null
+            && (RemainingSpeechDelay > 0 || speaker.isPlaying || AudioListener.pause);
 
         public void Stop()
         {
             suspended = false;
             interruptedClip = null;
+            dialogueStartsAt = 0;
             tutorialActive = false;
+            Focus = TutorialFocus.None;
             PendingDialogue = null;
             afterDialogue = null;
             StopAllCoroutines();

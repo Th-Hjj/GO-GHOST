@@ -14,13 +14,28 @@ namespace GoGhost.Duel
         UnityEngine.UI.Image ambientPanel;
         const float FooterButtonHeight = 48;
         float dialogueFooterRightInset, dialogueFooterBottomInset;
+        (DuelPhase phase, bool editor, bool help, bool pause, bool tools)? lastDialoguePage;
+
+        void NoteDialoguePage()
+        {
+            bool configure = game.Phase == DuelPhase.Configure;
+            var current = (game.Phase, configure && selectorRow >= 0, configure && helpOpen,
+                game.Paused, game.DeveloperToolsOpen);
+            if (lastDialoguePage.HasValue && lastDialoguePage.Value == current) return;
+            lastDialoguePage = current;
+            game.CurrentVoice.PageEntered();
+        }
 
         void UpdateDialogueOverlay()
         {
             if (sceneDialogue != null) sceneDialogue.maxVisibleCharacters = game.DialogueVisibleCharacters;
-            bool show = game.PendingDialogue != null && !game.Paused && !game.DeveloperToolsOpen;
+            bool show = game.PendingDialogue != null && !game.Paused && !game.DeveloperToolsOpen
+                && !(game.Phase == DuelPhase.Configure && helpOpen);
             DialogueVisible = show;
-            if (pageControls != null) pageControls.interactable = game.StartupProgress < 0 && (!show || game.DialogueAllowsPreparationNavigation);
+            UpdateTutorialFocus();
+            bool explainingEditor = VisibleTutorialFocus is TutorialFocus.Condition or TutorialFocus.Action or TutorialFocus.Relation;
+            if (pageControls != null) pageControls.interactable = game.StartupProgress < 0
+                && (!show || TutorialChoiceOpen || (!explainingEditor && game.DialogueAllowsPreparationNavigation));
             if (!show && dialogueOverlay == null) return;
             if (dialogueOverlay == null)
             {
@@ -59,7 +74,7 @@ namespace GoGhost.Duel
             dialogueOverlay.SetAsLastSibling();
             bool ambient = game.Phase != DuelPhase.FinalBoss && game.Phase != DuelPhase.BonusOffer
                 && !game.FinalBossCutscene && !game.InvasionHeld;
-            ambientPanel.gameObject.SetActive(ambient);
+            ambientPanel.gameObject.SetActive(ambient && !game.CurrentVoice.WaitingForPageSpeech);
             if (ambient)
             {
                 float width = canvas.rect.width;
@@ -76,7 +91,13 @@ namespace GoGhost.Duel
 
         internal bool CaptureDialogueClick(Vector2 point, Camera eventCamera)
         {
+            if (TutorialChoiceOpen)
+                foreach (var button in tutorialEditorButtons)
+                    if (button != null && button.IsInteractable() && RectTransformUtility.RectangleContainsScreenPoint(
+                        (RectTransform)button.transform, point, eventCamera)) return false;
             if (!game.DialogueAllowsPreparationNavigation) return true;
+            if (game.Phase == DuelPhase.Configure && OnPreparationOverview && game.ConfigurationVoice.Focus == TutorialFocus.AddRule
+                && tutorialSubmit != null && RectTransformUtility.RectangleContainsScreenPoint(tutorialSubmit, point, eventCamera)) return false;
             // Between spoken lines, a fresh press on an explicit exit can leave preparation.
             foreach (var exit in dialogueExits)
                 if (RectTransformUtility.RectangleContainsScreenPoint(exit, point, eventCamera)) return false;

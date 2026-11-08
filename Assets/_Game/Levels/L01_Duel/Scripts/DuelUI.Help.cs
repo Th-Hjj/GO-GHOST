@@ -14,6 +14,7 @@ namespace GoGhost.Duel
 
         void OpenHelp()
         {
+            game.ConfigurationVoice.SuspendConfiguration(true);
             helpDraft=game.DraftLoadout;
             helpOpen=true;
             PlayMetrics.OpenHelp();
@@ -24,6 +25,7 @@ namespace GoGhost.Duel
         {
             helpOpen=false;
             Show();
+            game.ConfigurationVoice.SuspendConfiguration(false);
         }
 
         void CaptureHelpView()

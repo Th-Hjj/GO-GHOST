@@ -133,7 +133,7 @@ namespace GoGhost.Duel
             SetPhase(DuelPhase.Configure);
             handler.PlayGreeting(Appearance.Name, installStarterRule ? ui.InstallTutorialJumpRule : (System.Action)null);
         }
-        internal void RuleEditorOpened() => handler.RuleEditorOpened();
+        internal HandlerVoice ConfigurationVoice => handler;
         public void SetDraft(int module, bool automatic)
         {
             // Retained development API cannot re-enable the retired permanent-AI route.
@@ -326,11 +326,12 @@ namespace GoGhost.Duel
         void SetPhase(DuelPhase value)
         {
             creationQuestionAt = null;
-            bool wasVisiting = Phase == DuelPhase.TargetProfile || Phase == DuelPhase.Training;
+            var previousPhase = Phase;
+            bool wasVisiting = previousPhase == DuelPhase.TargetProfile || previousPhase == DuelPhase.Training;
             bool visiting = value == DuelPhase.TargetProfile || value == DuelPhase.Training;
+            bool returning = wasVisiting && value == DuelPhase.Configure;
             if (Phase == DuelPhase.Configure && visiting) handler.SuspendConfiguration(true);
-            else if (wasVisiting && value == DuelPhase.Configure) handler.SuspendConfiguration(false);
-            else if (Phase == DuelPhase.Configure || wasVisiting) handler.LeaveConfiguration();
+            else if (!returning && !visiting && (Phase == DuelPhase.Configure || wasVisiting)) handler.LeaveConfiguration();
             if (wasVisiting) preparationVoice.Stop();
             if (Phase == DuelPhase.MissionEntry) ui.EndPreparationFade();
             if (startup != null)
@@ -349,6 +350,7 @@ namespace GoGhost.Duel
             if (value == DuelPhase.Complete) PlayMetrics.EndRun("complete");
             phaseTime = 0;
             ui.Show();
+            if (returning) handler.ReturnFromPreparationVisit(previousPhase);
         }
         void StopCombat()
         {

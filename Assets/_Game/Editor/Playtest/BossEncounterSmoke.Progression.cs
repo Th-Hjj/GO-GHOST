@@ -63,7 +63,6 @@ public static partial class BossEncounterSmoke
 
         foreach (var line in new[] { "You're strong.", "But it's not over yet.", "Let’s see what you can do on your own." })
             yield return WaitFor(() => game.CutsceneText == line && game.PendingDialogue == line, "Missing kneeling dialogue: " + line, 25);
-        yield return WaitFor(() => game.CutsceneSpeakerId == DuelGame.CutsceneSpeaker.Happy, "Missing interrupted EMP warning");
         yield return WaitFor(() => game.Bosses[0].Axe.PhaseTwo, "Phase two did not start", 30);
         game.Bosses[0].Health.TakeDamage(100000, game.Player.gameObject);
         yield return WaitFor(() => game.Phase == DuelPhase.BonusOffer, "Missing Bonus offer");

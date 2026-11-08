@@ -9,6 +9,7 @@ namespace GoGhost.Duel
         RectTransform dialogueOverlay;
         readonly List<RectTransform> dialogueExits = new List<RectTransform>(3);
         CanvasGroup pageControls;
+        internal bool DialogueVisible { get; private set; }
         TMPro.TMP_Text ambientSpeaker, ambientDialogue, sceneDialogue;
         UnityEngine.UI.Image ambientPanel;
         const float FooterButtonHeight = 48;
@@ -18,6 +19,7 @@ namespace GoGhost.Duel
         {
             if (sceneDialogue != null) sceneDialogue.maxVisibleCharacters = game.DialogueVisibleCharacters;
             bool show = game.PendingDialogue != null && !game.Paused && !game.DeveloperToolsOpen;
+            DialogueVisible = show;
             if (pageControls != null) pageControls.interactable = game.StartupProgress < 0 && (!show || game.DialogueAllowsPreparationNavigation);
             if (!show && dialogueOverlay == null) return;
             if (dialogueOverlay == null)

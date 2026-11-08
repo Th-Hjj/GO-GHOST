@@ -277,9 +277,12 @@ namespace GoGhost.Duel
             if(hasRules&&(Mathf.Abs(ruleHudSize.x-width)>.5f||Mathf.Abs(ruleHudSize.y-height)>.5f))LayoutRuleHud(width,height);
             // Player rules occupy the left edge; the right edge is reserved for the Final Boss's rules.
             LayoutBossRuleHud(width,height);
-            float sidebar=hasRules?rulePanelWidth:0,fade=SidebarFade;
-            // Sealed sidebars slide out during the phase-two countdown while the camera widens.
-            float visible = 1 - fade;
+            float sidebar=hasRules?rulePanelWidth:0;
+            // Start the countdown at full width and reveal both panels with the combat camera.
+            // The phase-two countdown already slides its sealed panels in the opposite direction.
+            float visible = game.Phase == DuelPhase.Prepare && !sidebarsSealed
+                ? Reveal(DuelGame.PreparationSeconds - game.PreparationRemaining, ArenaRevealSeconds)
+                : 1 - SidebarFade;
             float panel=sidebar*visible*Reveal(Time.time-firstInvadedSidebarAt,ArenaRevealSeconds);
             float right=BossRulePanelWidth*visible;
             if (bossRuleSidebar != null)

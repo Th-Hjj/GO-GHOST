@@ -85,7 +85,7 @@ namespace GoGhost.Duel
             var b=r.gameObject.AddComponent<UnityEngine.UI.Button>(); b.targetGraphic=image; b.onClick.AddListener(click);
             var c=b.colors; c.normalColor=Color.white; c.highlightedColor=Color.white; c.selectedColor=Color.white; c.disabledColor=Color.white; c.pressedColor=NeuralPalette.Secondary; b.colors=c;
             var t=Text(title,r,Vector2.zero,size,24,face:controlFont);
-            var outline=r.gameObject.AddComponent<DuelButtonOutline>();outline.Persistent=selected;outline.Style=style;outline.Button=b;outline.Label=t;
+            var outline=r.gameObject.AddComponent<DuelButtonOutline>();outline.Owner=this;outline.Persistent=selected;outline.Style=style;outline.Button=b;outline.Label=t;
             outline.Edges=new UnityEngine.UI.Image[4];
             for(int i=0;i<4;i++)
             {
@@ -140,9 +140,19 @@ namespace GoGhost.Duel
             }
             if(game.Phase==DuelPhase.Menu)
             {
-                Text("GO GHOST",page,new Vector2(0,116),new Vector2(1000,120),78,face:headingFont);
-                Button("New Game",page,Vector2.zero,new Vector2(350,68),game.NewGame,style:DuelControlStyle.Primary);
-                Button("Quit",page,new Vector2(0,-80),new Vector2(350,56),Application.Quit,style:DuelControlStyle.Navigation); return;
+                page.anchorMin=Vector2.zero;
+                page.anchorMax=Vector2.one;
+                page.sizeDelta=Vector2.zero;
+
+                var title=Text("GO GHOST",page,Vector2.zero,new Vector2(1120,174),132,face:headingFont);
+                title.characterSpacing=4;
+                title.rectTransform.anchorMin=title.rectTransform.anchorMax=new Vector2(.5f,.65f);
+
+                var actions=Rect("Main menu actions",page,Vector2.zero,new Vector2(232,0));
+                actions.anchorMin=actions.anchorMax=new Vector2(.5f,.35f);
+                Button("New Game",actions,Vector2.zero,new Vector2(232,58),game.NewGame,style:DuelControlStyle.Primary);
+                Button("Quit",actions,new Vector2(0,-66),new Vector2(232,50),Application.Quit,style:DuelControlStyle.Navigation);
+                return;
             }
             if(game.Phase==DuelPhase.CharacterCreation)
             {
@@ -238,6 +248,7 @@ namespace GoGhost.Duel
 
     public sealed class DuelButtonOutline : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, ISelectHandler, IDeselectHandler, IMoveHandler
     {
+        internal DuelUI Owner;
         public UnityEngine.UI.Button Button;
         public UnityEngine.UI.Image[] Edges;
         public UnityEngine.UI.Image Selection;
@@ -254,7 +265,8 @@ namespace GoGhost.Duel
         public void Refresh()
         {
             if(Edges==null||Button==null)return;
-            bool available=Button.IsInteractable();
+            // Keep controls visually quiet until the dialogue closes, including gaps between recordings.
+            bool available=Button.IsInteractable() && !(Owner != null && Owner.DialogueVisible);
             float scale=Mathf.Max(.01f,transform.lossyScale.x);
             int state=(available?1:0)|(hovered?2:0)|(focused?4:0)|(Persistent?8:0)|(Primary?16:0)|(Subtle?32:0)|(TextRegion?64:0)|((int)LabelSystem<<7)|((int)Style<<10)|(Placeholder?8192:0);
             if(state==lastState&&Mathf.Approximately(scale,lastScale))return;

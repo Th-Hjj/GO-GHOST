@@ -24,7 +24,7 @@ namespace GoGhost.Duel
         {
             if (Paused || DeveloperToolsOpen || PendingDialogue == null) return;
             if (Phase == DuelPhase.Training) input?.SuppressUiFireUntilRelease();
-            CurrentVoice.Acknowledge(waitForVoice: OnPreparationPage);
+            CurrentVoice.Acknowledge(waitForVoice: Phase == DuelPhase.Training);
         }
 
         public void ContinueToWaveTwo()

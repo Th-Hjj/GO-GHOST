@@ -16,7 +16,9 @@ namespace GoGhost.Duel
         internal string HappySpeakerName => Phase == DuelPhase.TargetProfile ? "Happy" : handler.SpeakerName;
         public bool DialogueReady => CurrentVoice.DialogueReady;
         public bool DialogueSpeaking => PendingDialogue != null && CurrentVoice.Speaking;
-        internal bool OnPreparationPage => Phase == DuelPhase.Configure || Phase == DuelPhase.TargetProfile || Phase == DuelPhase.Training;
+        bool OnPreparationPage => Phase == DuelPhase.Configure || Phase == DuelPhase.TargetProfile || Phase == DuelPhase.Training;
+        // A finished sentence can remain on screen while a fresh click takes a preparation exit.
+        internal bool DialogueAllowsPreparationNavigation => OnPreparationPage && !DialogueSpeaking;
         internal int DialogueVisibleCharacters => CurrentVoice.VisibleCharacters;
         public void AcknowledgeDialogue()
         {

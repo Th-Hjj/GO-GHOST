@@ -148,7 +148,7 @@ namespace GoGhost.Duel
         }
         public void StartFight()
         {
-            if (Phase != DuelPhase.Configure || Paused || DialogueSpeaking || !ui.ConfigurationReady) return;
+            if (Phase != DuelPhase.Configure || Paused || !DialogueAllowsPreparationNavigation || !ui.ConfigurationReady) return;
             CreateEncounter(false);
         }
         public void RetryFight()

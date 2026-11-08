@@ -15,7 +15,7 @@ namespace GoGhost.Duel
 
         public void OpenTargetProfile()
         {
-            if (Phase != DuelPhase.Configure || Paused || DeveloperToolsOpen || DialogueSpeaking || !ui.OnPreparationOverview || Wave > FinalBossWave) return;
+            if (Phase != DuelPhase.Configure || Paused || DeveloperToolsOpen || !DialogueAllowsPreparationNavigation || !ui.OnPreparationOverview || Wave > FinalBossWave) return;
             profileLines = Array.FindAll(VoiceStudioCatalog.Current.lines, line => line.profileMission == Wave);
             ProfilePage = profileOpened[Wave] ? profileLines.Length : 0;
             profileOpened[Wave] = true;
@@ -36,12 +36,12 @@ namespace GoGhost.Duel
 
         public void BackFromProfile()
         {
-            if (Phase == DuelPhase.TargetProfile && !DeveloperToolsOpen && !DialogueSpeaking) SetPhase(DuelPhase.Configure);
+            if (Phase == DuelPhase.TargetProfile && !DeveloperToolsOpen && DialogueAllowsPreparationNavigation) SetPhase(DuelPhase.Configure);
         }
 
         public void StartMission()
         {
-            if (Phase != DuelPhase.Configure || Paused || DeveloperToolsOpen || DialogueSpeaking || !ui.ConfigurationReady) return;
+            if (Phase != DuelPhase.Configure || Paused || DeveloperToolsOpen || !DialogueAllowsPreparationNavigation || !ui.ConfigurationReady) return;
             ui.KeepPreparationForFade();
             CreateEncounter(false, fadePreparation: true);
             ui.FadePreparation(0);

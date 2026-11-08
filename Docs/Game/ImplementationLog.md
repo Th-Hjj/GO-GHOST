@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — Preparation dialogue and navigation
+
+The dialogue overlay, page controls and preparation exits now read `DuelGame.DialogueAllowsPreparationNavigation` for the playback rule. A sentence can remain visible after playback while a fresh click takes an available exit. Each exit still checks its own phase and availability.
+
+Unity 6000.6.0f1 compiled. In Play Mode, simulated Input System mouse events went through New Game and Upload. Holding Back during the Mission 1 dossier title revealed its text. Releasing after playback kept the title open. A fresh click in the page advanced to Codename, and a fresh Back click after Codename returned to preparation. The dossier reopened silently. Test Loadout accepted a click while the restored overview sentence awaited acknowledgement, and its Back button returned to preparation. Check Game Flow passed through the optional Bonus. No standalone build.
+
 ## 2026-11-07 — Mission entry, dossier titles and Final Boss dialogue
 
 - Mission 3 enters the ordinary three-second countdown. The Boss's three voiced kneeling pages are “You're strong.”, “But it's not over yet.” and “Let’s see what you can do on your own.” The third acknowledgement releases the EMP with Happy’s existing interruption.

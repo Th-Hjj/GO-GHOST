@@ -18,7 +18,7 @@ namespace GoGhost.Duel
         {
             if (sceneDialogue != null) sceneDialogue.maxVisibleCharacters = game.DialogueVisibleCharacters;
             bool show = game.PendingDialogue != null && !game.Paused && !game.DeveloperToolsOpen;
-            if (pageControls != null) pageControls.interactable = game.StartupProgress < 0 && (!show || game.OnPreparationPage && !game.DialogueSpeaking);
+            if (pageControls != null) pageControls.interactable = game.StartupProgress < 0 && (!show || game.DialogueAllowsPreparationNavigation);
             if (!show && dialogueOverlay == null) return;
             if (dialogueOverlay == null)
             {
@@ -73,7 +73,7 @@ namespace GoGhost.Duel
 
         internal bool CaptureDialogueClick(Vector2 point, Camera eventCamera)
         {
-            if (!game.OnPreparationPage || game.DialogueSpeaking) return true;
+            if (!game.DialogueAllowsPreparationNavigation) return true;
             // Between spoken lines, a fresh press on an explicit exit can leave preparation.
             foreach (var exit in dialogueExits)
                 if (RectTransformUtility.RectangleContainsScreenPoint(exit, point, eventCamera)) return false;

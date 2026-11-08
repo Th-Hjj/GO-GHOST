@@ -41,7 +41,8 @@ namespace GoGhost.Duel
         public ArenaNavigation2D Navigation => navigation;
         public float JumpStartedAt { get; private set; } = -1;
         Rigidbody2D body;
-        BossAgent actor;
+        private JumpLandingPose footing;
+        internal JumpLandingPose Footing => footing;
         float airborneDescent;
         BoxCollider2D shape;
         Vector2 centreOffset, dashDirection, progressPosition;
@@ -58,7 +59,6 @@ namespace GoGhost.Duel
         void Awake()
         {
             body = GetComponent<Rigidbody2D>(); shape = GetComponent<BoxCollider2D>();
-            actor = GetComponent<BossAgent>();
             centreOffset = (Vector2)shape.bounds.center - body.position;
             PreviousPosition = Position;
         }
@@ -76,6 +76,7 @@ namespace GoGhost.Duel
         public void SetCombatEnabled(bool value)
         {
             enabledCombat = value;
+            footing = default;
             airborneDescent = 0f;
             if (!value) Stop();
         }
@@ -192,7 +193,7 @@ namespace GoGhost.Duel
             if (Grounded)
             {
                 if (!previouslyGrounded && airborneDescent + carrierSpeed > 1f)
-                    actor?.ShowFootContact(support, false, airborneDescent);
+                    footing.Land(Time.fixedTime, airborneDescent + carrierSpeed);
                 airborneDescent = 0f;
             }
             else airborneDescent = -body.linearVelocity.y;
@@ -256,7 +257,7 @@ namespace GoGhost.Duel
                 vertical = Profile.JumpSpeed;
                 JumpStartedAt = Time.fixedTime;
                 jumpRequested = false; Grounded = false;
-                if (supported) actor?.ShowFootContact(support, true, move);
+                footing.TakeOff(Time.fixedTime);
             }
             var motion=TraversalProfile;
             float horizontal = dropping ? dropHorizontal : StepHorizontal(body.linearVelocity.x, move * motion.Speed * speedScale, Grounded, motion, dt);

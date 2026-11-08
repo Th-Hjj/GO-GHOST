@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — Pose-only takeoff and landing
+
+Replaced foot flakes and the Boss landing spark with the approved pose A. Player and Boss movement report the actual launch and landing. The shared pose extends the pushing leg, draws it back and bends the knees on impact. Incoming descent relative to moving support determines the depth of the crouch. Gunner, Swordsman, both Final Boss phases and the Bonus pair use their existing silhouette rigs. Attack-specific weapon poses and the Final Boss transition kneel retain priority.
+
+The gameplay assembly compiled with Unity 6000.6.0f1. The Editor loaded the new pose and returned peak offsets of .16 and .31 world units for incoming speeds of 10 and 16, both returning to zero by .4 s. The Gunner and Swordsman prefabs have their motor, head, torso, thighs, calves and weapon bound. The Final Boss uses the Swordsman rig. Individual Boss fights and the look of the animation in live combat were not playtested.
+
 ## 2026-11-07 — Lighter player and Boss foot flakes
 
 Reduced takeoff to two flakes and hard landings to three, kept two for light landings, and lowered peak opacity. Gunner, Swordsman and both Final Boss phases now emit their own body-colored flakes at physical takeoff and landing. Each combatant reuses its own lines, including both Bonus opponents. Concealed Gunner emits no new flakes. The runtime assembly compiled with Unity 6000.6.0f1's Roslyn compiler and Editor compilation flags. No Play Mode check or build was run.

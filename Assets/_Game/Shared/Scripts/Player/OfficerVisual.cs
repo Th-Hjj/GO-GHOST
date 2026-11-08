@@ -13,7 +13,7 @@ public sealed class OfficerVisual : MonoBehaviour
     [SerializeField] private SpriteRenderer weaponGrip;
     private bool reloading;
     private float reloadVisualStartedAt;
-    private bool animate, wasGrounded = true;
+    private bool animate;
     private PlayerMovement movement;
     private PlayerInputReader input;
     private PlayerShooting shooting;
@@ -23,7 +23,7 @@ public sealed class OfficerVisual : MonoBehaviour
     private Collider2D bodyCollider;
     private SpriteRenderer leftForearm, rightForearm, leftCalf, rightCalf;
     private SpriteRenderer cylinder, cylinderHalo, triggerPalm, supportPalm;
-    private float clock, gait, stride, landing, recoil;
+    private float clock, gait, stride, recoil;
     private int lastShots;
     private SpriteRenderer[] glowParts;
     private Material[] originalMaterials;
@@ -159,8 +159,7 @@ public sealed class OfficerVisual : MonoBehaviour
             palm.color = NeuralPalette.Primary;
         }
         UpdateReloadVisual();
-        clock = gait = stride = landing = recoil = 0;
-        wasGrounded = true;
+        clock = gait = stride = recoil = 0;
         lastShots = shooting.ShotsFired;
         Pose(true, Vector2.zero, 0);
     }
@@ -186,9 +185,6 @@ public sealed class OfficerVisual : MonoBehaviour
             clock += dt;
             Vector2 velocity = body.linearVelocity;
             bool grounded = movement.IsGrounded;
-            landing = Mathf.MoveTowards(landing, 0, dt / .18f);
-            if (grounded && !wasGrounded) landing = 1;
-            wasGrounded = grounded;
             bool dodging = dodge != null && dodge.IsDodging;
             stride = Mathf.MoveTowards(stride, grounded && !dodging ? Mathf.Clamp01(Mathf.Abs(velocity.x) / 7f) : 0, dt * 12);
             if (grounded && !dodging) gait += velocity.x * dt * 2.8f;
@@ -219,12 +215,14 @@ public sealed class OfficerVisual : MonoBehaviour
         // Arms stay attached to the independently aimed Revolver when the legs face the other way.
         int aimFacing = shooting.CurrentWeaponFacing;
         float wave = Mathf.Sin(gait), lift = Mathf.Cos(gait);
-        float crouch = landing * .12f + (dashDirection != 0 ? .17f : 0);
+        float compression = grounded ? movement.Footing.Compression(Time.time) : 0;
+        float extension = grounded ? 0 : movement.Footing.Extension(Time.time);
+        float crouch = compression + (dashDirection != 0 ? .17f : 0);
         float breath = Mathf.Sin(clock * 2.4f) * .009f;
         float lean = Mathf.Clamp(velocity.x * .009f, -.07f, .07f) + dashDirection * .15f;
-        Vector2 hip = new Vector2(0, -.12f - crouch + Mathf.Abs(wave) * stride * .025f);
-        Vector2 chest = new Vector2(lean, .34f - crouch + breath) - aim * (recoil * .035f);
-        Vector2 headPoint = new Vector2(lean * .8f, .57f - crouch + breath) - aim * (recoil * .02f);
+        Vector2 hip = new Vector2(-.34f * compression * facing, -.12f - crouch + Mathf.Abs(wave) * stride * .025f);
+        Vector2 chest = new Vector2(lean + .13f * compression * facing, .34f - crouch + breath) - aim * (recoil * .035f);
+        Vector2 headPoint = new Vector2(lean * .8f + .2f * compression * facing, .57f - crouch + breath) - aim * (recoil * .02f);
         float floor = bodyCollider != null ? transform.InverseTransformPoint(bodyCollider.bounds.min).y + (grounded ? .025f : .075f) : -.87f;
         Vector2 front = new Vector2(.15f * facing + wave * .30f * stride, floor + Mathf.Max(0, lift) * .15f * stride);
         Vector2 back = new Vector2(-.15f * facing - wave * .30f * stride, floor + Mathf.Max(0, -lift) * .15f * stride);
@@ -233,6 +231,7 @@ public sealed class OfficerVisual : MonoBehaviour
             float rising = Mathf.InverseLerp(-2, 3, velocity.y);
             front = new Vector2(.25f * facing, floor + Mathf.Lerp(.10f, .34f, rising));
             back = new Vector2(-.22f * facing, floor + Mathf.Lerp(.26f, .14f, rising));
+            JumpLandingPose.ExtendFeet(ref back, ref front, floor - .05f, facing, extension);
         }
         if (dashDirection != 0)
         {
@@ -242,8 +241,8 @@ public sealed class OfficerVisual : MonoBehaviour
         }
         Segment(torso, hip, chest + Vector2.up * .035f, .17f);
         Place(head, headPoint, new Vector2(.46f, .46f), 0);
-        Limb(leftLeg, leftCalf, hip + Vector2.left * (.075f * facing), back, new Vector2(.12f * facing, 0), .17f);
-        Limb(rightLeg, rightCalf, hip + Vector2.right * (.075f * facing), front, new Vector2(.18f * facing, 0), .17f);
+        Limb(leftLeg, leftCalf, hip + Vector2.left * (.075f * facing), back, new Vector2(.12f * facing, 0), true, compression, extension);
+        Limb(rightLeg, rightCalf, hip + Vector2.right * (.075f * facing), front, new Vector2(.18f * facing, 0), false, compression, extension);
 
         // FirePoint remains entirely owned by PlayerShooting. The barrel ends at its real muzzle.
         weapon.transform.localPosition = Vector3.zero;
@@ -300,11 +299,11 @@ public sealed class OfficerVisual : MonoBehaviour
             Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
     }
 
-    private void Limb(SpriteRenderer upper, SpriteRenderer lower, Vector2 start, Vector2 end, Vector2 bend, float width)
+    private void Limb(SpriteRenderer upper, SpriteRenderer lower, Vector2 start, Vector2 end, Vector2 bend, bool rear, float compression, float extension)
     {
-        Vector2 joint = (start + end) * .5f + bend;
-        Segment(upper, start, joint, width);
-        Segment(lower, joint, end, width);
+        Vector2 joint = JumpLandingPose.Knee(start, end, bend, movement.FacingDirection, rear, compression, extension);
+        Segment(upper, start, joint, .17f);
+        Segment(lower, joint, end, .17f);
     }
 
     private void Segment(SpriteRenderer part, Vector2 start, Vector2 end, float width)

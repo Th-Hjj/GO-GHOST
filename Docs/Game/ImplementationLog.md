@@ -2,6 +2,8 @@
 
 ## 2026-11-07 — Mission 2 casino facades
 
+The base beneath the CASINO sign is a centered isosceles trapezoid on the near plate. Static comparison at 60% opacity: `Logs/ParallaxPreview/Mission-2-Symmetric-Sign-Base.png`. Play Mode was not run.
+
 The wide marquee below the left CASINO sign has level upper and lower edges and matching right-hand chamfers. Its two rows of amber lights follow the reshaped face on the near plate. Static comparison at 60% opacity: `Logs/ParallaxPreview/Mission-2-Marquee-Chamfers.png`. Play Mode was not run.
 
 Removed the marked vertical trim on the right tower and the short projecting stroke on its lower tier from the Mission 2 far plate. The static before/after at `Logs/ParallaxPreview/Mission-2-Right-Tower-Trim-Comparison.png` uses the near plate and 60% opacity. Play Mode was not run.

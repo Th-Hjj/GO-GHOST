@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-08 — Planted axe EMP and violet phase two
+
+The blade corner anchors to the current support through the three clicked Boss lines. After 4.8 s of inward straight currents and a .30 s pinch, three EMP fronts release .70 s apart and travel for 2.4 s each. Platforms start moving after the final front. The sidebar seals, the body drains to EMP violet, then the Boss looks up, opens a narrow red eye and pulls his axe free. The phase-one intake now lasts 2.6 s. Platform amplitude is 1.05, retaining the four-second period and alternating phase.
+
+Unity 6000.6.0f1 compiled the scripts and shader. Play Mode traversed both threshold invasions and the transition from Mission 3. The preview captured one phase-change burst, five moving platforms, a peak 1.05-unit offset and a separate red-eye beat about 3.9 s after platform movement began. Retry Phase 2 began with a B28CFF torso, the red eye, five oscillators and zero new EMP bursts. [Game View recording](../../Logs/GoatPhaseTransition/GOAT-of-War-Phase-2.mp4) (local). Standalone build and manual combat balance were not tested.
+
 ## 2026-11-08 — Combat damage and fight duration
 
 Player damage is 70% of its previous value. The six-round revolver deals 20 damage on a primary hit and 15 per burst round. Boss attacks deal 75% of base damage in all missions and the Bonus, rounded half up per hit. The test dummy keeps its practice shot. Reflections carry the damage of the projectile at launch. F8 shows the effective primary damage and Final Boss move damage.

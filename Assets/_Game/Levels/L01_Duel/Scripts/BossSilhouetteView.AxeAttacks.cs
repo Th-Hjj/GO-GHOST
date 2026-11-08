@@ -173,11 +173,17 @@ namespace GoGhost.Duel
             weapon.enabled = true;
             weapon.color = NeuralPalette.Alpha(Color.white, alpha);
             Vector2 forward = Angle(p.WeaponAngle);
-            weapon.transform.localPosition = AxeSpriteCentre(p.FrontHand, forward, 1);
+            var grip=p.FrontHand-forward*(.30f*kneel);
+            weapon.transform.localPosition = AxeSpriteCentre(grip, forward, 1);
             weapon.transform.localRotation = Quaternion.Euler(0, 0, p.WeaponAngle - 90);
             weapon.transform.localScale = Vector3.one;
+            if(chargedWeapon!=null && weapon.sharedMaterial==chargedWeapon)
+            {
+                if(kneel<=0)weapon.sharedMaterial=originalWeaponMaterial;
+                else chargedWeapon.SetFloat("_AxeCharge",1.08f*Ease((Time.time-chargeAt)/4.8f)*kneel);
+            }
             Hide(Part.Sheath);
-            phaseOneSocket=transform.TransformPoint(p.FrontHand+forward*GripToSocket);
+            phaseOneSocket=transform.TransformPoint(grip+forward*GripToSocket);
             freePalm=transform.TransformPoint(p.BackHand);
         }
 

@@ -2,14 +2,14 @@ using UnityEngine;
 
 namespace GoGhost.Duel
 {
-    // Final Boss phase two (Thomas, 2026-11-06): the shockwave sets each platform bobbing one tier
-    // (2.1) above and below its home height. A kinematic body driven by velocity pushes riders
+    // Final Boss phase two (Thomas, 2026-11-06): the shockwave sets each platform bobbing half a tier
+    // (1.05) above and below its home height. A kinematic body driven by velocity pushes riders
     // physically and lets their grounding read the carrier's speed. Trial cycle: 4 s, adjacent
     // platforms in opposite phase. FixedUpdate stops while paused; the stage layout owns cleanup.
     [RequireComponent(typeof(Collider2D))]
     public sealed class PlatformOscillator : MonoBehaviour
     {
-        public const float Amplitude = DuelGame.PlatformTierRise, Period = 4f;
+        public const float Amplitude = DuelGame.PlatformTierRise * .5f, Period = 4f;
         Rigidbody2D body;
         Vector2 home;
         float phase, clock, rampRemaining;

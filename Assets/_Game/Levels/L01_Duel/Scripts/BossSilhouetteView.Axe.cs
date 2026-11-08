@@ -11,15 +11,25 @@ namespace GoGhost.Duel
             Part.FrontCalf, Part.BackUpperArm, Part.BackForearm, Part.FrontUpperArm, Part.FrontForearm };
         Material rainbowMaterial;
         Material[] axeBodyMaterials;
-        SpriteRenderer frontEye, backEye;
+        Transform redEye;
+        Mesh eyeMesh;
+        TrailRenderer eyeTrail;
+        float gazeAt = float.PositiveInfinity;
+        Material chargedWeapon, originalWeaponMaterial;
+        Collider2D plantedSupport;
+        Vector2 plantedPoint;
+        float chargeAt = float.PositiveInfinity;
+        internal const float PlantedChargeSeconds = 5.10f, WaveSpacing = .70f;
         float drainFrom = -1, drainSeconds = 1, shockwaveAt = -1;
-        public const float ShockwaveSeconds = 1.25f;
+        public const float ShockwaveSeconds = 2.40f;
         public const float ShockwaveStartRadius = .4f;
         float shockwaveReach, releasedAt = float.NegativeInfinity;
         Vector2 shockwaveOrigin;
         SpriteRenderer[] empEdges;
         static readonly Color EyeRed = new Color(1f, .16f, .18f, 1f);
         float eyesLitAt = float.NegativeInfinity;
+        // Five straight wakes per front. The other slots draw the rings and the burst at the blade.
+        static readonly int[] WaveWakeSlots = {0,1,3,4,5,13,14,15,16,17,21,22,23,24,25};
         bool rising;
         float kneel;
         public void RiseFromKneel() => rising = true;
@@ -39,7 +49,7 @@ namespace GoGhost.Duel
             {
                 var shader = Resources.Load<Shader>("FinalBossRainbow");
                 if (shader != null) rainbowMaterial = new Material(shader) { name = "Final Boss rainbow (runtime)", hideFlags = HideFlags.DontSave };
-                if (rainbowMaterial != null) { rainbowMaterial.SetFloat("_RainbowAmount", 1); rainbowMaterial.SetColor("_BaseColor", NeuralPalette.Primary); }
+                if (rainbowMaterial != null) { rainbowMaterial.SetFloat("_RainbowAmount", 1); rainbowMaterial.SetColor("_BaseColor", NeuralPalette.Emp); }
             }
             ApplyFinalBossBody(false);
         }
@@ -52,22 +62,24 @@ namespace GoGhost.Duel
             ApplyFinalBossBody(true);
         }
 
-        void ApplyFinalBossBody(bool white)
+        void ApplyFinalBossBody(bool phaseTwo)
         {
             if (axeBodyMaterials == null) return;
             for (int i = 0; i < AxeBodyParts.Length; i++)
             {
                 var part = parts[(int)AxeBodyParts[i]];
-                if (part != null) part.sharedMaterial = white || rainbowMaterial == null ? axeBodyMaterials[i] : rainbowMaterial;
+                if (part != null) part.sharedMaterial = phaseTwo || rainbowMaterial == null ? axeBodyMaterials[i] : rainbowMaterial;
             }
-            // The rainbow shader keeps only the tint's alpha; phase two uses the player's Primary white.
-            bodyColor = white ? NeuralPalette.Primary : Color.white;
+            // The final shader colour matches the ordinary sprites on direct phase-two retry.
+            bodyColor = phaseTwo ? NeuralPalette.Emp : Color.white;
             weaponColor = NeuralPalette.Primary;
         }
 
         void UpdateFinalBossLook()
         {
             if (!FinalAxe) return;
+            if (chargeAt <= Time.time && releasedAt < chargeAt)
+                DrawPlantedCharge();
             UpdateShockwave();
             UpdateFlyingAxe();
             if (rainbowMaterial == null) return;
@@ -83,6 +95,34 @@ namespace GoGhost.Duel
         }
 
         // Phase-change presentation, driven by the scripted transition.
+        internal Vector2 PlantedContact => plantedSupport != null
+            ? (Vector2)plantedSupport.transform.TransformPoint(plantedPoint) : plantedPoint;
+
+        internal void PlantAxe()
+        {
+            actor.Navigation.TrySupport(actor.Position, actor.Motor.Size, out plantedSupport);
+            float x = actor.Position.x + actor.Facing * .54f;
+            if (plantedSupport == null)
+            {
+                plantedPoint = new Vector2(x, actor.Body.bounds.min.y);
+                return;
+            }
+            var surface = plantedSupport.bounds;
+            x = Mathf.Clamp(x,surface.min.x+.05f,surface.max.x-.05f);
+            plantedPoint = plantedSupport.transform.InverseTransformPoint(new Vector2(x,surface.max.y));
+        }
+
+        internal void BeginPlantedCharge()
+        {
+            chargeAt = Time.time;
+            if (rainbowMaterial == null) return;
+            var weapon = parts[(int)Part.Weapon];
+            originalWeaponMaterial = weapon.sharedMaterial;
+            chargedWeapon = new Material(rainbowMaterial) {name="Charged EMP axe",hideFlags=HideFlags.DontSave};
+            weapon.sharedMaterial = chargedWeapon;
+        }
+
+        internal void LiftGaze() => gazeAt = clock;
         public void DrainRainbow(float seconds) { drainFrom = clock; drainSeconds = Mathf.Max(.05f, seconds); }
         internal void Shockwave(Vector2 origin, float reach)
         {
@@ -113,17 +153,33 @@ namespace GoGhost.Duel
                 foreach (var edge in empEdges) edge.color = tint;
             }
             if (shockwaveAt < 0) return;
-            const float spacing = .16f;
             float waveElapsed = Time.time - shockwaveAt;
-            if (waveElapsed >= ShockwaveSeconds + 2 * spacing) { shockwaveAt = -1; return; }
+            if (waveElapsed >= ShockwaveSeconds + 2 * WaveSpacing) { shockwaveAt = -1; return; }
             for (int i = 0; i < 3; i++)
             {
-                float t = (waveElapsed - i * spacing) / ShockwaveSeconds;
+                float t = (waveElapsed - i * WaveSpacing) / ShockwaveSeconds;
                 if (t < 0 || t >= 1) continue;
                 float radius = Mathf.Lerp(ShockwaveStartRadius, shockwaveReach, t);
                 float strength = (1 - .16f * i) * (1 - Mathf.SmoothStep(0, 1, (t - .62f) / .38f));
-                DrawEmpRing(18 + i, shockwaveOrigin, radius, Mathf.Lerp(.24f, .09f, t),
+                DrawEmpRing(18 + i, shockwaveOrigin, radius, Mathf.Lerp(i==1?.40f:i==2?.13f:.26f, i==1?.20f:.075f, t),
                     NeuralPalette.Alpha(NeuralPalette.Emp, strength));
+                float wakeLength=(i==1?1.25f:.85f)*Mathf.Sin(t*Mathf.PI);
+                for(int j=0;j<5;j++)
+                {
+                    Vector2 dir=Angle(12+j*39+i*4);
+                    Vector2 leading=shockwaveOrigin+dir*radius;
+                    SetLine(AxeLine(WaveWakeSlots[i*5+j],"EMP wave streak",2),leading-dir*wakeLength,leading,
+                        .034f,NeuralPalette.Alpha(NeuralPalette.Emp,strength*.58f));
+                }
+                float age = t * ShockwaveSeconds;
+                if (age < .30f)
+                    for (int j=0; j<7; j++)
+                    {
+                        Vector2 dir=Angle(6+j*28);
+                        float length=(1-age/.30f)*(i==0?2.1f:1.25f);
+                        SetLine(AxeLine(6+j,"EMP release",2),shockwaveOrigin+dir*.10f,
+                            shockwaveOrigin+dir*(.11f+length),.045f,NeuralPalette.Alpha(NeuralPalette.Emp,1-age/.30f));
+                    }
                 if (i == 0)
                     DrawEmpRing(2, shockwaveOrigin, radius, .044f, NeuralPalette.Alpha(NeuralPalette.Primary, strength * .85f));
             }
@@ -141,42 +197,51 @@ namespace GoGhost.Duel
             }
         }
 
-        // Two red eyes on the head, mirrored with the body.
+        // One side-facing slit. Three flat polygons keep the graphite lid and red core readable at arena scale.
         void PlaceEyes(Pose p)
         {
-            if (!EyesRed) { if (frontEye != null) frontEye.enabled = backEye.enabled = false; return; }
-            if (frontEye == null) { frontEye = EyePart("FrontEye"); backEye = EyePart("BackEye"); }
-            var eye = new Vector2(.08f, .07f);
-            foreach (var (sprite, offset) in new[] { (frontEye, new Vector2(.13f, .03f)), (backEye, new Vector2(.03f, .03f)) })
-            {
-                sprite.enabled = true;
-                sprite.transform.localPosition = p.Head + offset;
-                sprite.transform.localRotation = Quaternion.identity;
-                Vector2 source = sprite.sprite.bounds.size;
-                sprite.transform.localScale = new Vector3(eye.x / Mathf.Max(.001f, source.x), eye.y / Mathf.Max(.001f, source.y), 1);
-                var color = EyeRed; color.a = alpha * Mathf.SmoothStep(0,1,(clock-eyesLitAt)/.2f); sprite.color = color;
-            }
+            if (!EyesRed) { if (redEye != null) redEye.gameObject.SetActive(false); return; }
+            if (redEye == null) CreateRedEye();
+            redEye.gameObject.SetActive(true);
+            redEye.localPosition=p.Head+new Vector2(.005f,.074f);
+            redEye.localRotation=Quaternion.Euler(0,0,-8);
+            float opening=Ease((clock-eyesLitAt)/.18f);
+            redEye.localScale=new Vector3(1,opening,1);
+            bool streak=opening>=1 && actor.Velocity.sqrMagnitude>4 && actor.Running;
+            if(!streak || (eyeTrail.emitting && Mathf.Sign(actor.Velocity.x)!=actor.Facing))eyeTrail.Clear();
+            eyeTrail.emitting=streak;
         }
 
-        SpriteRenderer EyePart(string label)
+        void CreateRedEye()
         {
-            var head = parts[(int)Part.Head];
-            var go = new GameObject(label);
-            go.transform.SetParent(transform, false);
-            var sprite = go.AddComponent<SpriteRenderer>();
-            sprite.sprite = head.sprite; sprite.sharedMaterial = axeBodyMaterials != null && axeBodyMaterials[1] != null ? axeBodyMaterials[1] : head.sharedMaterial;
-            sprite.sortingLayerID = head.sortingLayerID; sprite.sortingOrder = head.sortingOrder + 1;
-            // Tail-light trails: each eye leaves a short red streak while the Boss moves.
-            var trail = go.AddComponent<TrailRenderer>();
-            trail.time = .18f; trail.minVertexDistance = .02f; trail.startWidth = .06f; trail.endWidth = 0;
-            trail.sharedMaterial = glowMaterial; trail.startColor = EyeRed; trail.endColor = NeuralPalette.Alpha(EyeRed, 0);
-            trail.sortingLayerID = head.sortingLayerID; trail.sortingOrder = head.sortingOrder;
-            trail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; trail.receiveShadows = false;
-            return sprite;
+            redEye=new GameObject("Red eye").transform;
+            redEye.SetParent(transform,false);
+            var head=parts[(int)Part.Head];
+            var filter=redEye.gameObject.AddComponent<MeshFilter>();
+            var ink=redEye.gameObject.AddComponent<MeshRenderer>();
+            ink.sharedMaterial=tellMaterial;
+            ink.sortingLayerID=head.sortingLayerID; ink.sortingOrder=head.sortingOrder+1;
+            eyeMesh=new Mesh {name="Final Boss eye slit"};
+            eyeMesh.vertices=new Vector3[] {
+                new(-.042f,.035f), new(.170f,.035f), new(.184f,.006f), new(.130f,-.048f), new(.008f,-.039f),
+                new(-.022f,.006f), new(.168f,.006f), new(.125f,-.041f), new(.014f,-.032f),
+                new(.050f,-.006f), new(.151f,-.006f), new(.124f,-.023f), new(.057f,-.023f) };
+            var lid=new Color32(37,33,48,255); var red=new Color32(210,37,53,255); var hot=new Color32(255,94,97,255);
+            eyeMesh.colors32=new[]{lid,lid,lid,lid,lid,red,red,red,red,hot,hot,hot,hot};
+            eyeMesh.triangles=new[]{0,1,2,0,2,3,0,3,4,5,6,7,5,7,8,9,10,11,9,11,12};
+            filter.sharedMesh=eyeMesh;
+            var corner=new GameObject("Eye streak").transform;corner.SetParent(redEye,false);
+            eyeTrail=corner.gameObject.AddComponent<TrailRenderer>();
+            eyeTrail.emitting=false;eyeTrail.time=.09f;eyeTrail.minVertexDistance=.035f;
+            eyeTrail.startWidth=.032f;eyeTrail.endWidth=0;eyeTrail.sharedMaterial=glowMaterial;
+            eyeTrail.startColor=new Color(.63f,.06f,.09f,.7f);eyeTrail.endColor=NeuralPalette.Alpha(EyeRed,0);
+            eyeTrail.sortingLayerID=head.sortingLayerID;eyeTrail.sortingOrder=head.sortingOrder;
         }
 
         void OnDestroy()
         {
+            if (eyeMesh != null) Destroy(eyeMesh);
+            if (chargedWeapon != null) Destroy(chargedWeapon);
             if (rainbowMaterial != null) Destroy(rainbowMaterial);
         }
 
@@ -191,18 +256,24 @@ namespace GoGhost.Duel
             p.WeaponAngle = 72;
             p.FrontHand = new Vector2(.22f + wave * motion * .06f, .02f);
             p.BackHand = new Vector2(-.04f - wave * motion * .10f, -.05f);
-            kneel = Mathf.MoveTowards(kneel, axe.Transitioning && !rising && actor.Motor.Grounded ? 1 : 0, Time.deltaTime * 2.4f);
+            kneel = Mathf.MoveTowards(kneel, axe.Transitioning && !rising && (actor.Motor.Grounded || kneel>0) ? 1 : 0, Time.deltaTime * 2.4f);
             if (kneel > 0)
             {
                 p.Hip = Vector2.Lerp(p.Hip, new Vector2(-.05f, -.43f), kneel);
                 p.Chest = Vector2.Lerp(p.Chest, new Vector2(.08f, -.04f), kneel);
-                p.Head = Vector2.Lerp(p.Head, new Vector2(.16f, .14f), kneel);
+                float gaze = Ease((clock-gazeAt)/.24f);
+                p.Head = Vector2.Lerp(p.Head, new Vector2(.16f+.035f*gaze,.11f+.095f*gaze), kneel);
                 float floor = -actor.Motor.Size.y * .5f + .06f;
                 p.FrontFoot = Vector2.Lerp(p.FrontFoot, new Vector2(.44f, floor), kneel);
                 p.BackFoot = Vector2.Lerp(p.BackFoot, new Vector2(-.48f, floor), kneel);
-                p.FrontHand = Vector2.Lerp(p.FrontHand, new Vector2(.31f, -.18f), kneel);
-                p.BackHand = Vector2.Lerp(p.BackHand, new Vector2(.10f, -.19f), kneel);
-                p.WeaponAngle = 80;
+                const float plantAngle=-67;
+                var forward=Angle(plantAngle);
+                var across=new Vector2(forward.y,-forward.x);
+                // Authored axe: from the grip (96,192) to the blade corner (257,579), at 299 px/unit.
+                var grip=LocalPoint(PlantedContact)-forward*(387f/AxePixelsPerUnit)-across*(161f/AxePixelsPerUnit);
+                p.FrontHand=Vector2.Lerp(p.FrontHand,grip+forward*.30f,kneel);
+                p.BackHand=Vector2.Lerp(p.BackHand,grip+forward*.03f,kneel);
+                p.WeaponAngle=Mathf.LerpAngle(p.WeaponAngle,plantAngle,kneel);
                 return;
             }
             if (axe.Invading)
@@ -324,27 +395,45 @@ namespace GoGhost.Duel
             Vector2 center=InvasionChargePoint;
             float charge=Ease(Mathf.InverseLerp(FinalBossAxe.ChargeAt,FinalBossAxe.PinchAt,age));
             float pinch=Ease(Mathf.InverseLerp(FinalBossAxe.PinchAt,FinalBossAxe.BurstAt,age));
-            float size=Mathf.Lerp(.04f,.21f,charge)*(1-.52f*pinch);
-            SetLine(AxeLine(3,"Charged axe",2),phaseOneSocket,center,.028f,NeuralPalette.Alpha(NeuralPalette.Emp,charge));
-            DrawEmpRing(4,center,size*.64f,size,NeuralPalette.Alpha(NeuralPalette.Emp,.84f));
-            SetLine(AxeLine(5,"EMP core",2),center-Vector2.up*size*.28f,center+Vector2.up*size*.28f,size*.72f,NeuralPalette.Primary);
-            for(int i=0;i<16;i++)
+            DrawAbsorption(center,age-FinalBossAxe.ChargeAt,charge,pinch,false);
+        }
+
+        void DrawPlantedCharge()
+        {
+            float age=Time.time-chargeAt;
+            float charge=Ease(age/4.8f),pinch=Ease((age-4.8f)/.30f);
+            DrawAbsorption(PlantedContact,age,charge,pinch,true);
+        }
+
+        static readonly float[] LiftedLanes={25,74,133,172};
+        static readonly float[] GroundLanes={0,180,35,147,68,112,91};
+
+        void DrawAbsorption(Vector2 center,float age,float charge,float pinch,bool planted)
+        {
+            var lanes=planted?GroundLanes:LiftedLanes;
+            for(int i=0;i<lanes.Length;i++)
             {
-                float travel=(age-FinalBossAxe.ChargeAt-i*.05f)/(.43f-i*.008f);
-                if(travel<=0||travel>=1) continue;
-                float a=i*137.5f;
-                Vector2 dir=Angle(a+travel*15),side=new Vector2(-dir.y,dir.x);
-                float distance=.55f+(i%5)*.12f;
-                Vector2 tip=center+dir*distance*(1-Ease(travel));
-                float tail=distance*(1-Ease(Mathf.Max(0,travel-.28f)));
-                var line=AxeLine(8+i,"EMP charge filament",3);
-                line.SetPosition(0,center+dir*tail);
-                line.SetPosition(1,(center+dir*tail+tip)*.5f+side*.06f);
-                line.SetPosition(2,tip);
-                line.startWidth=.022f; line.endWidth=.045f;
-                line.startColor=NeuralPalette.Alpha(NeuralPalette.Emp,.35f);
-                line.endColor=Color.Lerp(NeuralPalette.Emp,NeuralPalette.Primary,.55f);
+                float elapsed=age-i*(planted?.32f:.12f);
+                if(elapsed<=0)continue;
+                Vector2 dir=Angle(lanes[i]);
+                float span=Mathf.Lerp(planted?2.4f:1.4f,planted?10.5f:3.6f,charge)*(1-(i%3)*.075f);
+                float travel=Mathf.Repeat(elapsed/(planted?1.27f:1.03f),1);
+                float far=(1-travel*travel)*span*(1-pinch);
+                float near=Mathf.Max(0,far-span*(.22f+.28f*charge));
+                float strength=Mathf.Clamp01(elapsed/.25f)*(1-pinch);
+                SetLine(AxeLine(i,"EMP intake lane",2),center,center+dir*span*(1-pinch),.019f,
+                    NeuralPalette.Alpha(NeuralPalette.Emp,strength*.23f));
+                SetLine(AxeLine(8+i,"EMP incoming current",2),center+dir*near,center+dir*far,.039f+.027f*charge,
+                    NeuralPalette.Alpha(NeuralPalette.Emp,strength*Mathf.Sin(Mathf.PI*travel)));
+                SetLine(AxeLine(18+i,"EMP bright tip",2),center+dir*near,center+dir*Mathf.Lerp(near,far,.22f),.028f,
+                    NeuralPalette.Alpha(NeuralPalette.Primary,strength*Mathf.Sin(Mathf.PI*travel)));
             }
+            float size=Mathf.Lerp(.04f,planted?.31f:.18f,charge)*(1-.62f*pinch);
+            var core=AxeLine(27,"Square EMP core",2);
+            core.numCapVertices=0;
+            SetLine(core,center-Vector2.right*size*.5f,center+Vector2.right*size*.5f,size,NeuralPalette.Emp);
+            var middle=AxeLine(28,"Square EMP centre",2);middle.numCapVertices=0;
+            SetLine(middle,center-Vector2.right*size*.22f,center+Vector2.right*size*.22f,size*.44f,NeuralPalette.Primary);
         }
 
         internal void DrawInvasionContact(FinalBossAxe axe)

@@ -70,7 +70,8 @@ namespace GoGhost.Duel
             var boss = System.Array.Find(actors, actor => actor != null && actor.Axe != null);
             input.SetGameplayInputEnabled(false);
             while (!boss.Motor.Grounded) yield return null;
-            yield return new WaitForSeconds(.55f);
+            boss.View.PlantAxe();
+            yield return new WaitForSeconds(.62f);
 
             foreach (var line in VoiceStudioCatalog.Current.BossTransition)
             {
@@ -80,7 +81,9 @@ namespace GoGhost.Duel
             }
 
             Show(CutsceneSpeaker.None, null);
-            Vector2 origin = boss.Position;
+            boss.View.BeginPlantedCharge();
+            yield return new WaitForSeconds(BossSilhouetteView.PlantedChargeSeconds);
+            Vector2 origin = boss.View.PlantedContact;
             Vector2 farCorner = (Vector2)arenaBounds.extents + new Vector2(
                 Mathf.Abs(origin.x - arenaBounds.center.x), Mathf.Abs(origin.y - arenaBounds.center.y));
             float reach = farCorner.magnitude;
@@ -95,7 +98,7 @@ namespace GoGhost.Duel
                     Time.time + contact * BossSilhouetteView.ShockwaveSeconds);
             }
             encounterSounds?.Play(Sfx.EmpBurst);
-            yield return new WaitForSeconds(BossSilhouetteView.ShockwaveSeconds + .35f);
+            yield return new WaitForSeconds(BossSilhouetteView.ShockwaveSeconds + 2 * BossSilhouetteView.WaveSpacing);
 
             StartPlatformMotion(easeIn: true);
             yield return new WaitForSeconds(1f);
@@ -109,8 +112,10 @@ namespace GoGhost.Duel
             yield return new WaitForSeconds(RainbowDrainSeconds);
             boss.View.SetFinalBossPhaseTwo();
             yield return new WaitForSeconds(.45f);
+            boss.View.LiftGaze();
+            yield return new WaitForSeconds(.24f);
             boss.View.SetEyesRed(true);
-            yield return new WaitForSeconds(.8f);
+            yield return new WaitForSeconds(.70f);
             boss.View.RiseFromKneel();
             yield return new WaitForSeconds(.6f);
 

@@ -31,7 +31,7 @@ namespace GoGhost.Duel
         public const float ChopReach=2.3f, ChopHeight=2.1f, SpinRadius=1.65f, AxeRadius=.32f;
         const float SpinMove=.45f;
         internal static readonly int[] InvasionPercents={66,33};
-        internal const float ChargeAt=.90f, PinchAt=2.02f, BurstAt=2.15f;
+        internal const float ChargeAt=.90f, PinchAt=3.50f, BurstAt=3.70f;
 
         readonly DuelGame game;
         readonly BossAgent actor;

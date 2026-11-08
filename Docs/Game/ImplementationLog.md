@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-08 — Phase-one axe positioning
+
+Phase one now compares an immediate attack with a ground step into Triple Cut, a forward platform intercept and a short retreat into a real throw. Candidate attacks use the estimated arrival time and the player's delayed public trajectory. The Boss can guard the inside of a corner, aim Crosscut at a projected landing, and regain space after Vault or Underpass. At Palm's second catch the physical blade decides whether a grounded follow-up can connect. A distant catch goes directly into full recovery. The five moves retain their damage, recovery durations and cooldowns.
+
+Compiled the runtime assembly with the Unity 6000.6.0f1 compiler and Editor references. Play Mode, combat feel and balance are NOT TESTED. Thomas will playtest.
+
 ## 2026-11-08 — Phase-one axe commitments and combat roles
 
 Thomas reported that Anchor Vault traveled a short distance and finished almost in place. The grip used to sit directly above the landing. The move now requires a 5.5–11-unit cast and an independently validated 2.6–4.4-unit rebound. The Boss can continue forward or cut back from the far side. The other four moves have distinct spacing, contact windows and visual cues documented in Boss Encounters. The AI compares actual blade contact, ending position, observed approaches and reversals, and recent misses when choosing an attack or platform route.

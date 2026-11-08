@@ -9,7 +9,7 @@ namespace GoGhost.Duel
         sealed class AxePlan
         {
             public Move Move;
-            public float Facing, FirstThreat, FinishFacing;
+            public float Facing, FirstThreat, FinishFacing, TravelTime;
             public bool DirectCut;
             public Cut Swing;
             public Vector2 Start, Target, Landing, Anchor, Turn, Retreat;
@@ -39,7 +39,8 @@ namespace GoGhost.Duel
         float nextTacticsTick, routeHoldUntil, failedRouteUntil, relocateUntil, lastSeenAt;
         Vector2 routeGoal, failedRouteGoal, lastSeenPoint, missedFrom;
         bool movingToSite, searching, hasLastSeen;
-        float laneUntil, laneRetryAt, laneEndX;
+        readonly AxePlan[] attacksHere = new AxePlan[Timings.Length];
+        float pressUntil;
         Move lastAttack, pendingResult;
         Vector2 lastStartup;
         int hitsAtStartup, sameSpotMisses;
@@ -47,6 +48,7 @@ namespace GoGhost.Duel
         float turnedAt=-100, travelSeenAt=-100;
         readonly float[] missedUntil=new float[Timings.Length];
         readonly Vector2[] missedOrigin=new Vector2[Timings.Length];
+        Vector2 missedPalmAim;
 
         void TickPhaseOneTactics()
         {
@@ -58,8 +60,6 @@ namespace GoGhost.Duel
                 if (!motor.HasRoute) RecoverFooting();
                 return;
             }
-            ObserveLastAttack();
-
             if (movingToSite && motor.RouteFailed)
             {
                 failedRouteGoal = routeGoal;
@@ -74,6 +74,7 @@ namespace GoGhost.Duel
             var facts = actor.Perception.Facts;
             if (facts.Confidence <= .12f || facts.Body.size.x < .01f)
             {
+                ClearAttackPosition();
                 if (!movingToSite || !motor.HasRoute) SeekContact();
                 return;
             }
@@ -96,37 +97,19 @@ namespace GoGhost.Duel
             float first = float.PositiveInfinity, next = float.PositiveInfinity;
             foreach (var move in PhaseOneMoves)
             {
+                attacksHere[(int)move]=null;
                 if (probe && move != PreviewMove || !CanStart(move)
-                    || !PlanForTarget(move, probe, facts, target, game.GetBossMoveTuning(false,(int)move).Windup, out var candidate)) continue;
-                float follow = Followup(candidate.Landing, candidate.Target);
-                float cost=probe?candidate.FirstThreat:AttackCost(candidate,facts,follow);
+                    || !PlanFrom(move, probe, facts, actor.Position, 0, game.GetBossMoveTuning(false,(int)move).Windup, out var candidate)) continue;
+                attacksHere[(int)move]=candidate;
+                float cost=probe?candidate.FirstThreat:AttackCost(candidate,facts);
                 if(cost>=first)continue;
-                best=candidate; first=cost; next=follow;
+                best=candidate; first=cost;
             }
 
-            if (!probe && ChooseAttackPlatform(facts,target,best,best?.FirstThreat??float.PositiveInfinity,out bool useOpening))
-            {
-                if (useOpening) CommitTacticalAttack(best, false);
-                return;
-            }
-
-            // Chase on connected ground with persistent motor input. A running target can
-            // move several body widths during a held graph route. There is no reason to
-            // brake at a sampled node, or wait for a route hold to start a legal attack.
-            GroundPressure pursuit = default;
-            bool direct = !probe && TryGroundPressure(facts, target, out pursuit);
-            if (direct)
-            {
-                if (best == null && TryOpenAttackLane(facts,target)) return;
-                if (best == null || (Time.time >= laneUntil && pursuit.Direction != 0 && pursuit.FirstThreat + .18f < first))
-                {
-                    movingToSite = searching = false;
-                    motor.PursueOnGround(pursuit.Direction, pursuit.Speed);
-                    return;
-                }
-            }
-            else if ((!probe || best == null) &&
-                     !(movingToSite && motor.HasRoute && !searching && Time.time < routeHoldUntil))
+            if (probe) ClearAttackPosition();
+            else if (ChooseFootwork(facts,target,best,first)) return;
+            if (best != null && CommitTacticalAttack(best, probe)) return;
+            if (!(movingToSite && motor.HasRoute && !searching && Time.time < routeHoldUntil))
             {
                 Vector2 intercept = PublicPosition(facts, .40f);
                 Move approach=probe?PreviewMove:ApproachFor(facts,target);
@@ -136,7 +119,6 @@ namespace GoGhost.Duel
                     return;
                 }
             }
-            if (best != null && CommitTacticalAttack(best, probe)) return;
             if (motor.HasRoute) return;
             // A failed graph shortlist should still allow progress along the present
             // ledge toward the target or toward the next launch site.
@@ -149,20 +131,23 @@ namespace GoGhost.Duel
 
         // Compare legal actions in seconds. The first real contact, the next fighting
         // position, and what the player is visibly doing can favor different moves.
-        float AttackCost(AxePlan plan,BossObservation facts,float follow)
+        float AttackCost(AxePlan plan,BossObservation facts)
         {
             float gap=Mathf.Abs(plan.Target.x-plan.Start.x);
             float away=facts.Velocity.x*plan.Facing;
             bool crossTier=Mathf.Abs(plan.Target.y-plan.Start.y)>1.3f;
-            float cost=plan.FirstThreat+Mathf.Min(.50f,follow*.26f);
+            float cost=plan.FirstThreat;
+            float exitGap=Mathf.Abs(plan.Target.x-plan.Landing.x);
             bool open=facts.ReloadVisible||!facts.Dodging&&Time.time-actor.Perception.LastDodgeObservedAt<.48f;
             switch(plan.Move)
             {
                 case Move.TripleCut:
+                    cost+=Mathf.Min(.50f,Followup(plan.Landing,plan.Target)*.26f);
                     if(open || gap<2f)cost-=.22f;
+                    if(Time.time<pressUntil)cost-=.30f;
                     break;
                 case Move.LeapingCrosscut:
-                    if(plan.DirectCut)cost-=(crossTier || !facts.Grounded) ? .46f : .14f;
+                    if(plan.DirectCut)cost+=(crossTier || !facts.Grounded) ? -.46f : .20f;
                     else cost+=.24f;
                     break;
                 case Move.AnchorVault:
@@ -174,6 +159,7 @@ namespace GoGhost.Duel
                     break;
                 case Move.UnderpassReturn:
                     cost-=.8f*Mathf.InverseLerp(1f,5f,-away);
+                    cost+=Mathf.Clamp(exitGap-6f,0,4f)*.10f;
                     break;
                 case Move.PalmDeflection:
                     if(Time.time-turnedAt<.85f)cost-=.48f;
@@ -182,7 +168,12 @@ namespace GoGhost.Duel
             }
             if(plan.Move==lastAttack)cost+=.28f;
             int i=(int)plan.Move;
-            if(Time.time<missedUntil[i] && Vector2.Distance(plan.Start,missedOrigin[i])<2f)cost+=.65f;
+            if(Time.time<missedUntil[i])
+            {
+                bool sameAngle=plan.Move==Move.PalmDeflection && Mathf.Abs(plan.Start.y-missedOrigin[i].y)<.8f &&
+                    Vector2.Dot((plan.Target-plan.Start).normalized,missedPalmAim)>.93f;
+                if(sameAngle || Vector2.Distance(plan.Start,missedOrigin[i])<2f)cost+=.65f;
+            }
             return Mathf.Max(.05f,cost);
         }
 
@@ -199,8 +190,7 @@ namespace GoGhost.Duel
         {
             if (!StartPhaseOne(plan)) return false;
             movingToSite = searching = false;
-            platformGoal = null;
-            laneUntil = 0;
+            positionIntent=default;
             pendingResult = lastAttack = plan.Move;
             lastStartup = plan.Start;
             hitsAtStartup = Hits[(int)plan.Move];
@@ -283,47 +273,6 @@ namespace GoGhost.Duel
             return true;
         }
 
-        bool TryOpenAttackLane(BossObservation facts, Vector2 target)
-        {
-            var motor = actor.Motor;
-            Vector2 start = actor.Position;
-            float dx = target.x-start.x;
-            float side = Mathf.Sign(dx);
-            float tripleWait = readyAt[(int)Move.TripleCut]-Time.time;
-            if (tripleWait < .50f || facts.Velocity.x*side > 1.5f)
-            {
-                laneUntil = 0;
-                return false;
-            }
-            if (Time.time >= laneUntil)
-            {
-                if (Time.time < laneRetryAt || Mathf.Abs(dx)>2.0f) return false;
-                float spacing;
-                if(readyAt[(int)Move.LeapingCrosscut]<=Time.time+.55f)spacing=3.65f;
-                else if(Ready(Move.UnderpassReturn)||Ready(Move.PalmDeflection))spacing=4.8f;
-                else return false;
-                if (!actor.Navigation.TrySupport(start,motor.Size,out var support)) return false;
-                float margin=motor.Size.x*.5f+.08f;
-                float min=support.bounds.min.x+margin, max=support.bounds.max.x-margin;
-                if (min >= max) return false;
-                float goal=Mathf.Clamp(target.x-side*spacing,min,max);
-                if ((target.x-goal)*side < 2.7f || !SameSupportWalk(start,new Vector2(goal,start.y))) return false;
-                laneEndX=goal;
-                laneUntil=Time.time+Mathf.Abs(goal-start.x)/motor.Profile.Speed+.22f;
-                // Commit this setup once during the cooldown. A fresh legal attack or
-                // an observed retreat ends it early, with no frame-to-frame direction flips.
-                laneRetryAt=Time.time+tripleWait;
-            }
-            float travel=laneEndX-start.x;
-            if (travel*side >= -.12f || !SameSupportWalk(start,new Vector2(laneEndX,start.y)))
-            {
-                laneUntil=0;
-                return false;
-            }
-            movingToSite=searching=false;
-            motor.PursueOnGround(Mathf.Sign(travel),Mathf.Min(motor.Profile.Speed,Mathf.Abs(travel)/.13f));
-            return true;
-        }
 
         bool ApproachOnCurrentSupport(Vector2 target)
         {
@@ -354,8 +303,15 @@ namespace GoGhost.Duel
             if (pendingResult == Move.None) return;
             int move=(int)pendingResult;
             bool hit=Hits[move]>hitsAtStartup;
-            if(!hit){missedUntil[move]=Time.time+5f;missedOrigin[move]=lastStartup;}
+            if(!hit)
+            {
+                missedUntil[move]=Mathf.Max(Time.time+5f,readyAt[move]+1.25f);
+                missedOrigin[move]=lastStartup;
+                if(pendingResult==Move.PalmDeflection)missedPalmAim=(acceptedPlan.Target-lastStartup).normalized;
+            }
             else missedUntil[move]=0;
+            if(pendingResult==Move.AnchorVault && reboundAt>=0 ||
+               pendingResult==Move.UnderpassReturn && caught && !abortAfterCatch)pressUntil=Time.time+1.1f;
             if (pendingResult == Move.UnderpassReturn || pendingResult == Move.PalmDeflection)
             {
                 if (hit) sameSpotMisses = 0;
@@ -363,7 +319,8 @@ namespace GoGhost.Duel
                 {
                     if (Vector2.Distance(missedFrom,lastStartup) > 2f) sameSpotMisses = 0;
                     missedFrom = lastStartup;
-                    if (++sameSpotMisses >= 2) relocateUntil = Time.time + 2.4f;
+                    sameSpotMisses++;
+                    if (pendingResult==Move.PalmDeflection || sameSpotMisses>=2)relocateUntil=Time.time+2.4f;
                 }
             }
             pendingResult = Move.None;
@@ -389,7 +346,7 @@ namespace GoGhost.Duel
             plan = null;
             var facts = actor.Perception.Facts;
             return CanStart(move) && facts.Confidence > .12f && facts.Body.size.x > .01f
-                && PlanForTarget(move, preview, facts, PublicPosition(facts,0), game.GetBossMoveTuning(false,(int)move).Windup, out plan);
+                && PlanFrom(move, preview, facts, actor.Position, 0, game.GetBossMoveTuning(false,(int)move).Windup, out plan);
         }
 
         bool TryRefreshPhaseOnePlan(Move move, out AxePlan plan)
@@ -397,25 +354,29 @@ namespace GoGhost.Duel
             var facts = actor.Perception.Facts;
             plan = null;
             return facts.Confidence > .12f && facts.Body.size.x > .01f
-                && PlanForTarget(move, true, facts, PublicPosition(facts,0), 0, out plan);
+                && PlanFrom(move, true, facts, actor.Position, 0, 0, out plan);
         }
 
-        bool PlanForTarget(Move move, bool preview, BossObservation facts, Vector2 present, float wind, out AxePlan plan)
+        bool PlanFrom(Move move,bool preview,BossObservation facts,Vector2 start,float travel,float wind,out AxePlan plan)
         {
-            Vector2 target = ProjectedAttackTarget(move, facts, wind);
-            Vector2 start = actor.Position, delta = present-start;
+            Vector2 target = ProjectedAttackTarget(move,facts,wind,travel);
+            Vector2 delta = PublicPosition(facts,travel)-start;
             float dx = Mathf.Abs(delta.x), dy = Mathf.Abs(delta.y);
             float face = Mathf.Abs(target.x-start.x) > .05f ? Mathf.Sign(target.x-start.x) : actor.Facing;
             float lead = (target.x-start.x)*face;
             bool leaving = facts.Velocity.x*face > 2f && delta.x*face >= -.1f;
-            plan = new AxePlan { Move=move, Start=start, Target=target, Facing=face, FinishFacing=face, Landing=start, Retreat=start };
+            plan = new AxePlan { Move=move, Start=start, Target=target, Facing=face, FinishFacing=face, Landing=start, Retreat=start, TravelTime=travel };
             switch (move)
             {
                 case Move.TripleCut:
                     return dx<=4.2f && dy<1.55f && PlanTriple(plan,facts,wind);
                 case Move.LeapingCrosscut:
-                    return (dx>=1.55f || dy>=1.25f || leaving && lead>=2.3f) &&
-                        dx<=7.5f && dy<5f && PlanCrosscut(plan,facts,wind);
+                    if(dx<1.55f && dy<1.25f && !(leaving && lead>=2.3f) ||
+                        dx>7.5f || dy>=5f || !PlanCrosscut(plan,facts,wind))return false;
+                    // Spend a same-tier leap on a real cut. An ordinary run already
+                    // covers this lane if the only payoff of jumping is to get closer.
+                    return preview || plan.DirectCut || !facts.Grounded ||
+                        !SameSupportWalk(start,new Vector2(start.x+delta.x,start.y)) || dy>=1.25f;
                 case Move.AnchorVault:
                     return dx<=15f && dy<=5f && (dx>=4.1f || leaving && lead>=5f) && PlanVault(ref plan,facts,wind);
                 case Move.UnderpassReturn:
@@ -429,8 +390,13 @@ namespace GoGhost.Duel
                 case Move.PalmDeflection:
                     if(!preview && NeedNewOrigin(start) || dx<3.3f && dy<1.65f && !(leaving && lead>=3.9f) ||
                         dx>11f || dy>4.8f || !PlanDeflection(plan))return false;
-                    float first=FlightOpportunity(plan,facts,wind+.18f,2.5f);
-                    if(!preview && first>=2.5f && Followup(plan.Landing,target)>.18f)return false;
+                    float first=FlightOpportunity(plan,facts,wind+.18f,float.PositiveInfinity);
+                    if(float.IsPositiveInfinity(first))
+                    {
+                        var sweep=PalmCutAt(PalmCatch+PalmSweepLock);
+                        if(!preview && !PalmSweepConnects(plan.Landing,plan.Facing,facts,travel+wind+.18f+PalmCatch,sweep))return false;
+                        first=sweep.Start;
+                    }
                     plan.FirstThreat=wind+.18f+first;
                     return true;
                 default: return false;
@@ -454,11 +420,11 @@ namespace GoGhost.Duel
             foreach(var leg in candidateFlight)
             {
                 if(leg.Group<0)continue;
-                var from=leg.Edge(0,plan.Facing) - PublicPosition(facts,releaseAfter+leg.Start);
+                var from=leg.Edge(0,plan.Facing) - PublicPosition(facts,plan.TravelTime+releaseAfter+leg.Start);
                 for(int i=1;i<=leg.Samples;i++)
                 {
                     float segment=(leg.End-leg.Start)/leg.Samples;
-                    var to=leg.Edge(i,plan.Facing) - PublicPosition(facts,releaseAfter+leg.Start+i*segment);
+                    var to=leg.Edge(i,plan.Facing) - PublicPosition(facts,plan.TravelTime+releaseAfter+leg.Start+i*segment);
                     var delta=to-from;
                     if(window.Contains(from))return leg.Start+(i-1)*segment;
                     if(delta.sqrMagnitude>.000001f && window.IntersectRay(new Ray(from,delta.normalized),out float distance)
@@ -488,20 +454,22 @@ namespace GoGhost.Duel
             float advance=wind>0?CrosscutRunIn((plan.Target.x-plan.Start.x)*plan.Facing):0;
             Vector2 stepped=launch+Vector2.right*(advance*plan.Facing);
             if (advance>0 && SameSupportWalk(launch,stepped)) launch=stepped;
-            var ideal = plan.Target - Vector2.right*plan.Facing*.85f;
-            RankCrosscutLandings(plan, ideal);
+            float release=wind+Timings[(int)Move.LeapingCrosscut].Lock;
+            bool intercept=TryReadLanding(facts,plan.TravelTime+release,out var landingTarget);
+            RankCrosscutLandings(plan,intercept,landingTarget);
             bool found=false;
             float best=float.PositiveInfinity;
+            int checkedFromSetup=0;
             foreach (var site in attackSites)
             {
                 float shift=(site.Point.x-launch.x)*plan.Facing;
                 float rise=site.Point.y-launch.y;
                 if (shift<-.15f||shift>9f) continue;
+                if(plan.TravelTime>0 && ++checkedFromSetup>6)break;
                 var motion=LeapMotion(rise);
                 if (!actor.Navigation.TryJumpTrajectory(launch,site.Point,motion,motor.Size,out var route,out var path)) continue;
                 if (!PathInBounds(path)) continue;
                 float touchdown=(path.Length-1)*Time.fixedDeltaTime;
-                float release=wind+.14f;
                 float latest=Mathf.Max(.06f,touchdown-.21f);
                 var swing=CrosscutForPath(path,latest);
                 float threat=float.PositiveInfinity;
@@ -510,7 +478,7 @@ namespace GoGhost.Duel
                 for(float at=Mathf.Min(.08f,latest);;at=Mathf.Min(latest,at+.12f))
                 {
                     var cut=CrosscutForPath(path,at);
-                    float contact=PathCutContact(plan.Facing,path,facts,release,cut);
+                    float contact=PathCutContact(plan.Facing,path,facts,plan.TravelTime+release,cut);
                     if(contact<threat){threat=contact;swing=cut;}
                     if(at>=latest)break;
                 }
@@ -518,13 +486,15 @@ namespace GoGhost.Duel
                 if (!direct)
                 {
                     // A gap-closing leap can be useful, but its landing alone is not a hit.
-                    Vector2 playerAtLanding=PublicPosition(facts,release+touchdown);
+                    Vector2 playerAtLanding=PublicPosition(facts,plan.TravelTime+release+touchdown);
                     if (Vector2.Distance(site.Point,playerAtLanding)+.75f >= Vector2.Distance(plan.Start,playerAtLanding)) continue;
                     float remaining=Followup(site.Point,playerAtLanding);
                     threat=touchdown+game.GetBossMoveTuning(false,(int)Move.LeapingCrosscut).Recovery+remaining;
                 }
-                if (threat>=best) continue;
-                found=true; best=threat;
+                float cost=threat;
+                if(intercept)cost+=.22f*Followup(site.Point,landingTarget);
+                if (found && (plan.DirectCut && !direct || plan.DirectCut==direct && cost>=best)) continue;
+                found=true; best=cost;
                 plan.FirstThreat=release+threat;
                 plan.Landing=site.Point; plan.JumpMotion=motion; plan.JumpRoute=route; plan.JumpPath=path;
                 plan.Swing=swing; plan.DirectCut=direct;
@@ -559,7 +529,27 @@ namespace GoGhost.Duel
                 distance<=cut.Reach && !Projectile.TerrainHit(hand,hand+ray*distance,.16f,out _);
         }
 
-        void RankCrosscutLandings(AxePlan plan, Vector2 ideal)
+        bool TryReadLanding(BossObservation facts,float release,out Vector2 landing)
+        {
+            float start=Mathf.Min(release,1.2f);
+            Vector2 previous=PublicPosition(facts,Mathf.Max(0,start-.10f));
+            bool descending=!facts.Grounded && facts.Velocity.y<0;
+            for(float t=start;t<=1.25f;t+=.10f)
+            {
+                var point=PublicPosition(facts,t);
+                descending|=point.y<previous.y-.02f;
+                if(descending && point.y<=previous.y+.02f && actor.Navigation.TrySupport(point,facts.Body.size,out _))
+                {
+                    landing=point;
+                    return true;
+                }
+                previous=point;
+            }
+            landing=default;
+            return false;
+        }
+
+        void RankCrosscutLandings(AxePlan plan,bool intercept,Vector2 landingTarget)
         {
             attackSites.Clear();
             var size=actor.Motor.Size;
@@ -567,8 +557,11 @@ namespace GoGhost.Duel
             {
                 var p=node.Center(size);
                 float advance=(p.x-plan.Start.x)*plan.Facing;
-                if (advance<0 || advance>9f || Mathf.Abs(p.x-plan.Target.x)>3.2f
-                    || Mathf.Abs(p.y-plan.Target.y)>2.45f || Mathf.Abs(p.y-plan.Start.y)>4.8f) continue;
+                if(advance<0 || advance>9f || Mathf.Abs(p.y-plan.Start.y)>4.8f)continue;
+                bool nearNow=Mathf.Abs(p.x-plan.Target.x)<=3.2f && Mathf.Abs(p.y-plan.Target.y)<=2.45f;
+                bool nearLanding=intercept && Mathf.Abs(p.x-landingTarget.x)<=3.2f && Mathf.Abs(p.y-landingTarget.y)<=2.45f;
+                if(!nearNow && !nearLanding)continue;
+                var ideal=(nearLanding?landingTarget:plan.Target)-Vector2.right*plan.Facing*.85f;
                 attackSites.Add(new Site { Point=p,Cost=(p-ideal).sqrMagnitude });
             }
             attackSites.Sort(SiteOrder);
@@ -740,11 +733,11 @@ namespace GoGhost.Duel
             unreachableUntil[goal]=Time.time+1.25f;
             return false;
         }
-        void FollowRoute(ArenaNavigation2D.Route route,bool isSearch)
+        void FollowRoute(ArenaNavigation2D.Route route,bool isSearch,bool exact=false)
         {
             var motor=actor.Motor;
             var end=route.Steps[route.Steps.Count-1].End;
-            if(movingToSite && motor.HasRoute && searching==isSearch && Vector2.Distance(routeGoal,end)<.65f)return;
+            if(movingToSite && motor.HasRoute && searching==isSearch && Vector2.Distance(routeGoal,end)<(exact?.08f:.65f))return;
             routeGoal=end;routeHoldUntil=Time.time+.45f;movingToSite=true;searching=isSearch;
             motor.SetRoute(route);
         }

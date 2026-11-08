@@ -20,10 +20,12 @@ namespace GoGhost.Duel
             if (riseDuringSwing<-.40f) return new Cut(start,.21f,108,-82,0,28,2.55f);
             return new Cut(start,.21f,125,-35,0,28,2.55f);
         }
-        static readonly Cut PalmCut=new Cut(PalmCatch+.20f,.24f,129,-45,2,28,2.65f);
+        const float PalmSweepLock=.20f;
+        static Cut PalmCutAt(float start) => new Cut(start,.24f,129,-45,2,28,2.65f);
         internal const float PhysicalEdgeReach=1.15f;
         const float EdgeOffset=28.36f;
         AxePlan acceptedPlan;
+        Cut palmSwing;
         int consumed,stepIndex;
         bool launched,pulled,caught,abortAfterCatch;
         float lastAge,reboundAt,anchorCutAt,retrieveAt,retrieveAngle;
@@ -34,6 +36,7 @@ namespace GoGhost.Duel
         void ResetPhaseOneState()
         {
             consumed=stepIndex=0;launched=pulled=caught=redirected=abortAfterCatch=false;
+            palmSwing=default;
             retrieveAt=reboundAt=anchorCutAt=-1;path.Clear();AxeSpin=0;
         }
         static bool AdvancesDuringWindup(Move move) => move==Move.TripleCut || move==Move.LeapingCrosscut;
@@ -83,7 +86,7 @@ namespace GoGhost.Duel
                 for(float t=0;t<=cut.Duration;t+=Time.fixedDeltaTime)
                 {
                     float age=release+cut.Start+t;
-                    if(!BladeContact(centre,side,cut,t,facts,age))continue;
+                    if(!BladeContact(centre,side,cut,t,facts,plan.TravelTime+age))continue;
                     plan.FirstThreat=age;
                     plan.DirectCut=true;
                     break;
@@ -93,7 +96,7 @@ namespace GoGhost.Duel
             return plan.DirectCut;
         }
 
-        Vector2 ProjectedAttackTarget(Move move, BossObservation facts, float remainingWindup)
+        Vector2 ProjectedAttackTarget(Move move, BossObservation facts, float remainingWindup, float travel)
         {
             var timing = Timings[(int)move];
             float toContact;
@@ -108,7 +111,7 @@ namespace GoGhost.Duel
             // Swordsman's terrain-aware prediction already includes observation age
             // and stops extrapolating a visible Dodge after its travel interval.
             float horizon = Mathf.Min(.86f, Mathf.Max(0,remainingWindup) + timing.Lock + toContact);
-            return PublicPosition(facts,horizon);
+            return PublicPosition(facts,travel+horizon);
         }
         void ActivatePhaseOne()
         {
@@ -209,7 +212,31 @@ namespace GoGhost.Duel
             var held=Pivot(actor.Position,lockedFacing,local,palm?127:145);
             if(Vector2.Distance(AxePosition,held)>.18f){abortAfterCatch=true;BeginRetrieval();return;}
             caught=true;AxeFlying=false;
+            if(palm)
+            {
+                // The physical catch is the decision boundary. Commit to one fully
+                // telegraphed sweep or end the move here with its full recovery.
+                var facts=actor.Perception.Facts;
+                var cut=PalmCutAt(ActiveTime+PalmSweepLock);
+                if(actor.Motor.Grounded && facts.Visible && facts.Confidence>.12f && facts.Body.size.x>0 &&
+                    PalmSweepConnects(actor.Position,lockedFacing,facts,0,cut))
+                {
+                    palmSwing=cut;
+                    activeEnds=phaseUntil=activeAt+cut.Start+cut.Duration;
+                }
+                else activeEnds=phaseUntil=Time.time;
+            }
             actor.Sounds?.Play(Sfx.ReturnPrepare,actor.ActorId,attackId);
+        }
+
+        bool PalmSweepConnects(Vector2 centre,float facing,BossObservation facts,float untilCatch,Cut cut)
+        {
+            Vector2 hand=centre+Offset(facing,.45f,.20f);
+            var body=new Bounds(PublicPosition(facts,untilCatch),facts.Body.size);
+            if(body.SqrDistance(hand)>(cut.Reach+.16f)*(cut.Reach+.16f))return false;
+            for(float t=0;t<=cut.Duration;t+=Time.fixedDeltaTime)
+                if(BladeContact(centre,facing,cut,t,facts,untilCatch+PalmSweepLock+t))return true;
+            return false;
         }
         void BeginRetrieval()
         {
@@ -232,14 +259,14 @@ namespace GoGhost.Duel
             SetPhase(Stage.Recovery,acceptedTiming.Recovery);
         }
 
-        int CutCount=>Current==Move.TripleCut?3:Current==Move.LeapingCrosscut||Current==Move.PalmDeflection&&caught||
+        int CutCount=>Current==Move.TripleCut?3:Current==Move.LeapingCrosscut||Current==Move.PalmDeflection&&palmSwing.Duration>0||
             Current==Move.AnchorVault&&anchorCutAt>=0?1:0;
         Cut GetCut(int index)
         {
             if(Current==Move.TripleCut)return TripleCuts[index];
             if(Current==Move.LeapingCrosscut)
                 return acceptedPlan.Swing;
-            if(Current==Move.PalmDeflection)return PalmCut;
+            if(Current==Move.PalmDeflection)return palmSwing;
             return VaultCutAt(anchorCutAt);
         }
         Vector2 GripOffset(float age)
@@ -264,7 +291,8 @@ namespace GoGhost.Duel
                 palm.x*=acceptedPlan.Facing*lockedFacing;
                 if(age<PalmRelease+.14f)return Vector2.Lerp(palm,raised,Mathf.InverseLerp(PalmRelease,PalmRelease+.14f,age));
                 if(age<=PalmCatch)return Vector2.Lerp(raised,new Vector2(.18f,.43f),Mathf.InverseLerp(PalmRelease+.14f,PalmCatch,age));
-                return Vector2.Lerp(new Vector2(.18f,.43f),new Vector2(.45f,.20f),Mathf.InverseLerp(PalmCatch,PalmCut.Start,age));
+                if(palmSwing.Duration==0)return new Vector2(.18f,.43f);
+                return Vector2.Lerp(new Vector2(.18f,.43f),new Vector2(.45f,.20f),Mathf.InverseLerp(palmSwing.Start-PalmSweepLock,palmSwing.Start,age));
             }
             return new Vector2(.45f,.20f);
         }
@@ -286,9 +314,13 @@ namespace GoGhost.Duel
                     float catchAngle=acceptedPlan.Facing==lockedFacing?castAngle:180-castAngle;
                     return Mathf.Lerp(catchAngle,acceptedPlan.Swing.From+EdgeOffset,Mathf.InverseLerp(reboundAt,anchorCutAt,age));
                 }
-                if(Current==Move.PalmDeflection&&age<PalmCut.Start)
-                    return age<=.01f?10:age<PalmAt+.01f?38:
-                        Mathf.Lerp(127,129+EdgeOffset,Mathf.InverseLerp(PalmCatch,PalmCut.Start,age));
+                if(Current==Move.PalmDeflection && (palmSwing.Duration==0 || age<palmSwing.Start))
+                {
+                    if(age<=.01f)return 10;
+                    if(age<PalmAt+.01f)return 38;
+                    if(palmSwing.Duration==0)return 127;
+                    return Mathf.Lerp(127,palmSwing.From+EdgeOffset,Mathf.InverseLerp(palmSwing.Start-PalmSweepLock,palmSwing.Start,age));
+                }
                 float angle=65;
                 for(int i=0;i<CutCount;i++)
                 {

@@ -29,7 +29,7 @@ namespace GoGhost.Duel
         // can be short of the player (continue forward) or beyond them (cut back).
         bool PlanVault(ref AxePlan plan,BossObservation facts,float wind)
         {
-            Vector2 target=PublicPosition(facts,1.2f);
+            Vector2 target=PublicPosition(facts,plan.TravelTime+1.2f);
             vaultSites.Clear();
             foreach(var node in actor.Navigation.Nodes)
             {
@@ -47,8 +47,13 @@ namespace GoGhost.Duel
                         if(cast<VaultMinCast||cast>VaultMaxCast||!WithinArena(grip,actor.Motor.Size))continue;
                         float cost=Mathf.Abs(gap-1.05f)+Mathf.Abs(land.y-target.y)*.8f
                             +Mathf.Abs(span-3.5f)*.12f+(height-2.1f)*.09f;
-                        // Against a runner, a catch on their far side threatens the lane back.
-                        if(facts.Velocity.x*side>2f)cost+=.25f;
+                        // Reward a real far-side grip with a chop into the runner's
+                        // lane. At a wall retain the inside landing after the rebound.
+                        float lead=(land.x-target.x)*plan.Facing;
+                        if(facts.Velocity.x*plan.Facing>2f && lead>.35f && side==-plan.Facing)cost-=.55f;
+                        var bounds=actor.Navigation.ArenaBounds;
+                        float room=plan.Facing>0?bounds.max.x-target.x:target.x-bounds.min.x;
+                        if(room<2.3f && lead>0)cost+=1.5f;
                         vaultSites.Add(new VaultSite{Anchor=grip,Landing=land,Facing=side,Cost=cost});
                     }
                 }
@@ -60,12 +65,12 @@ namespace GoGhost.Duel
             foreach(var site in vaultSites)
             {
                 var trial=new AxePlan{Move=Move.AnchorVault,Facing=plan.Facing,Start=plan.Start,
-                    Target=target,Anchor=site.Anchor,Landing=site.Landing,FinishFacing=site.Facing};
+                    Target=target,Anchor=site.Anchor,Landing=site.Landing,FinishFacing=site.Facing,TravelTime=plan.TravelTime};
                 if(!VaultPullClear(trial,facts,release) || !actor.Navigation.CanStand(site.Landing,actor.Motor.Size))continue;
                 if(++simulated>18)break;
                 if(!PlanRebound(trial) || !FlightCorridorClear(trial))continue;
                 float untilGrip=VaultCastTime(trial)+VaultLatchTime+VaultPullTime(trial);
-                float chop=PathCutContact(site.Facing,trial.JumpPath,facts,release+untilGrip,trial.Swing);
+                float chop=PathCutContact(site.Facing,trial.JumpPath,facts,trial.TravelTime+release+untilGrip,trial.Swing);
                 trial.DirectCut=!float.IsPositiveInfinity(chop);
                 float contact=FlightOpportunity(trial,facts,release,untilGrip+chop);
                 if(trial.DirectCut)
@@ -91,7 +96,7 @@ namespace GoGhost.Duel
         bool VaultPullClear(AxePlan plan,BossObservation facts,float release)
         {
             if(!actor.Navigation.TryDash(plan.Start,plan.Anchor,actor.Motor.Size,out _))return false;
-            float pullStart=release+VaultCastTime(plan)+VaultLatchTime;
+            float pullStart=plan.TravelTime+release+VaultCastTime(plan)+VaultLatchTime;
             float seconds=VaultPullTime(plan);
             Vector2 half=(actor.Motor.Size+(Vector2)facts.Body.size)*.5f;
             int steps=Mathf.CeilToInt(Vector2.Distance(plan.Start,plan.Anchor)/.40f);

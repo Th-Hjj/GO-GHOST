@@ -175,7 +175,11 @@ namespace GoGhost.Duel
                 actor.Motor.HoldHorizontal();
                 if(Time.time>=phaseUntil)
                 {
-                    if(!PhaseTwo)readyAt[(int)Current]=Time.time+acceptedTiming.Cooldown;
+                    if(!PhaseTwo)
+                    {
+                        readyAt[(int)Current]=Time.time+acceptedTiming.Cooldown;
+                        ObserveLastAttack();
+                    }
                     actor.Trace($"axe finish {Current} attack={attackId}");
                     Current=Move.None;Phase=Stage.Idle;AxeFlying=false;path.Clear();
                     nextDecisionAt=Time.time+(PhaseTwo?.25f:0);
@@ -235,6 +239,9 @@ namespace GoGhost.Duel
         public void Cancel()
         {
             PreviewMove=Move.None;
+            ClearAttackPosition();
+            pressUntil=0;
+            pendingResult=Move.None;
             if(Invading){Invading=false;actor.Health.Invulnerable=false;}
             if(!PhaseTwo&&Current!=Move.None)actor.Motor?.EndAttackMotion();
             Current=Move.None;Phase=Stage.Idle;AxeFlying=false;AxeSpin=0;path.Clear();flight.Clear();
@@ -250,6 +257,7 @@ namespace GoGhost.Duel
                 var health = actor.Health;
                 if (Invasions >= invasionsDue || Current != Move.None || PhaseTwo || health.PhaseIndex != 1) return false;
                 if (!actor.Motor.Grounded) { if(!actor.Motor.HasRoute)RecoverFooting(); return true; }
+                ClearAttackPosition();
                 Invading = true; invasionInjected = false; invasionAt = Time.time;
                 health.Invulnerable = true;
                 actor.Motor.HoldHorizontal();

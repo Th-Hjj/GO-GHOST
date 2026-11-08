@@ -7,6 +7,8 @@ sealed class CasinoLightImporter : AssetPostprocessor
 {
     const string Arena = "Assets/_Game/Levels/L01_Duel/Resources/Arena/";
 
+    public override uint GetVersion() => 1;
+
     void OnPostprocessTexture(Texture2D texture)
     {
         bool entrance = assetPath == Arena + "CasinoNear.png";
@@ -17,8 +19,10 @@ sealed class CasinoLightImporter : AssetPostprocessor
         var core = new float[pixels.Length];
         var halo = new float[pixels.Length];
         int radius = entrance ? 5 : 3;
+        // The far plate's right-hand hotel already contains the approved amber lighting.
+        int paintedWindowWidth = entrance ? width : width / 2;
         for (int y = 0; y < height; y++)
-        for (int x = 0; x < width; x++)
+        for (int x = 0; x < paintedWindowWidth; x++)
         {
             int i = y * width + x;
             float amber = Amber(pixels[i]);

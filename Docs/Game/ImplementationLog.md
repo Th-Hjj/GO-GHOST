@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-07 — Mission 2 casino hotel
+
+The distant right office towers are now the approved casino resort. Its five-fin crown, stepped wings and amber rooflines follow the concept. The hotel podium and columns continue behind the foreground palms, actors and platforms. The far plate keeps its existing GUID, dimensions, parallax and 60% opacity. The importer lights the left facade and near marquee, while the hotel uses the highlights painted into its artwork.
+
+The static composite of the two imported textures is `Logs/ParallaxPreview/CasinoHotel/Mission-2-Hotel-60.png`. No Play Mode run or build was performed for this integration. Thomas will playtest it.
+
 ## 2026-11-07 — Player takeoff and landing flakes
 
 Added the approved gray-blue foot flakes to Test Loadout and combat. A ground jump emits three flakes from its support. A landing uses two or four according to descent speed relative to the platform. The initial heavy threshold is 14 world units per second. Continuous rule jumps merge the landing and takeoff feedback. Effects reuse up to four line renderers per attempt and follow the contacted platform through their short lifetime. Unity compilation and Play Mode were not run at Thomas's request.

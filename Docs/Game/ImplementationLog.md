@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-08 - Mission 1 and Bonus Challenge music
+
+Mission 1 now plays Achilles and Bonus Challenge plays Open Warfare. Each recording keeps its own gain and opening envelope. Unity compiled and both clips played in the arena in Play Mode.
+
 ## 2026-11-08 - Battle music opening levels
 
 The five battle themes already matched at -13.6 LUFS integrated before the music master. Smooth per-track opening trims follow playback position and end at 33 seconds. In FFmpeg EBU R128 scans, the spread of median short-term loudness from 3 to 10 seconds fell from 8.1 to 2.6 LU. Full recordings with the new curves measured -13.7 to -13.3 LUFS. Unity compiled and all five clips started through PlayWave in Play Mode. Human listening with combat effects and standalone builds were not checked.

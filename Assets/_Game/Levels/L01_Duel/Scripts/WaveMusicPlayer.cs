@@ -10,8 +10,8 @@ namespace GoGhost.Duel
         [SerializeField] AudioSource output;
         [Tooltip("Mission 1, Mission 2, Bonus, Mission 3 phase one. Each retry starts at the beginning.")]
         [SerializeField] AudioClip[] waveTracks = new AudioClip[4];
-        [Tooltip("Per-wave loudness trims, measured against Wave 1. Values above 1 boost quieter tracks before the independent music volume.")]
-        [SerializeField] float[] waveGains = { 1f, 1.513561f, .699842f, 1.273503f };
+        [Tooltip("Per-wave loudness trims, measured against the music reference. Values above 1 boost quieter tracks before the independent music volume.")]
+        [SerializeField] float[] waveGains = { .699842f, 1.513561f, 1f, 1.273503f };
         [SerializeField, Range(0, 1)] float musicVolume = .18f;
         [SerializeField, Min(0)] float fadeSeconds = .35f;
         float fade, targetFade, loadingSeconds;
@@ -21,11 +21,11 @@ namespace GoGhost.Duel
 
         // Short-term loudness trims (dB) at 3, 9, 15, 21, 27 and 33 seconds.
         // Keep a softer countdown, then converge on the existing full-track mix.
-        static readonly float[] gunnerIntro = { 1.5f, 3.3f, 3.1f, 3.2f, 0f, 0f };
+        static readonly float[] openWarfareIntro = { 1.5f, 3.3f, 3.1f, 3.2f, 0f, 0f };
         static readonly float[] swordsmanIntro = { 0f, -1.6f, -.6f, 0f, 0f, 0f };
         static readonly float[] axeIntro = { 0f, .9f, -.8f, -.6f, -1.8f, 0f };
         static readonly float[] boxerIntro = { 7f, -.6f, 0f, 0f, 0f, 0f };
-        static readonly float[] bonusIntro = { 5.7f, 3.4f, 2.6f, .4f, 0f, 0f };
+        static readonly float[] achillesIntro = { 5.7f, 3.4f, 2.6f, .4f, 0f, 0f };
         float[] introTrim;
 
         public int CurrentWave { get; private set; }
@@ -81,10 +81,10 @@ namespace GoGhost.Duel
             output.clip = track;
             introTrim = wave switch
             {
-                1 => gunnerIntro,
+                1 => achillesIntro,
                 2 => swordsmanIntro,
                 DuelGame.FinalBossWave => finalBossPhaseTwo ? boxerIntro : axeIntro,
-                DuelGame.BonusWave => bonusIntro,
+                DuelGame.BonusWave => openWarfareIntro,
                 _ => null
             };
             CurrentWave = wave;

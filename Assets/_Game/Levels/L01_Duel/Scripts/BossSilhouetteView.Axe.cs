@@ -12,6 +12,8 @@ namespace GoGhost.Duel
         float gazeAt = float.PositiveInfinity;
         Material chargedWeapon;
         const float RainbowCycleSeconds = 4f;
+        internal float RainbowPhase { get; private set; }
+        const float AxeFlowCycleSeconds = 2.4f;
         internal const float FlowRampSeconds = 1.2f;
         float flowStart = -1;
         Collider2D plantedSupport;
@@ -65,7 +67,11 @@ namespace GoGhost.Duel
             if (flowStart >= 0) return;
             flowStart = clock;
             UseChargedWeapon();
-            if (chargedWeapon != null) chargedWeapon.SetFloat("_AxeCharge",1.08f);
+            if (chargedWeapon != null)
+            {
+                chargedWeapon.SetFloat("_AxeCharge", 1.08f);
+                chargedWeapon.SetFloat("_AxeFlowPhase", 0);
+            }
         }
 
         void UpdateFinalBossLook()
@@ -84,7 +90,10 @@ namespace GoGhost.Duel
                 float age = Mathf.Max(0,clock-flowStart);
                 // Integrate the speed ramp so the static colour bands start moving continuously.
                 float travel = age < FlowRampSeconds ? .5f*age*age/FlowRampSeconds : age-.5f*FlowRampSeconds;
-                rainbowMaterial.SetFloat("_RainbowPhase",Mathf.Repeat(travel/RainbowCycleSeconds,1));
+                RainbowPhase = Mathf.Repeat(travel / RainbowCycleSeconds, 1f);
+                rainbowMaterial.SetFloat("_RainbowPhase", RainbowPhase);
+                if (chargedWeapon != null)
+                    chargedWeapon.SetFloat("_AxeFlowPhase", Mathf.Repeat(age / AxeFlowCycleSeconds, 1f));
             }
         }
 
@@ -119,6 +128,8 @@ namespace GoGhost.Duel
             if (chargedWeapon!=null || rainbowMaterial==null) return;
             chargedWeapon = new Material(rainbowMaterial) {name="Charged EMP axe",hideFlags=HideFlags.DontSave};
             parts[(int)Part.Weapon].sharedMaterial = chargedWeapon;
+            chargedWeapon.SetColor("_AxeShadow", NeuralPalette.EmpShadow);
+            chargedWeapon.SetColor("_AxeHighlight", NeuralPalette.EmpHighlight);
         }
 
         internal void LiftGaze() => gazeAt = clock;

@@ -4,6 +4,9 @@ Shader "GO GHOST/Final Boss Rainbow"
     {
         [PerRendererData] _MainTex ("Sprite", 2D) = "white" {}
         _AxeCharge ("Axe charge", Float) = -1
+        _AxeFlowPhase ("Phase two axe flow", Float) = -1
+        _AxeShadow ("Axe deep violet", Color) = (0.400, 0.278, 0.647, 1)
+        _AxeHighlight ("Axe pale violet", Color) = (0.773, 0.655, 0.973, 1)
         _RainbowBottom ("World bottom", Float) = 0
         _RainbowHeight ("Body height", Float) = 1.6
         _RainbowPhase ("Rainbow flow phase", Float) = 0
@@ -31,7 +34,10 @@ Shader "GO GHOST/Final Boss Rainbow"
                 float _RainbowAmount;
                 float _RainbowPhase;
                 float _AxeCharge;
+                float _AxeFlowPhase;
                 half4 _BaseColor;
+                half4 _AxeShadow;
+                half4 _AxeHighlight;
             CBUFFER_END
             struct Attributes { float3 positionOS : POSITION; float2 uv : TEXCOORD0; half4 color : COLOR; };
             struct Varyings { float4 positionCS : SV_POSITION; float2 uv : TEXCOORD0; float worldY : TEXCOORD1; half4 color : COLOR; };
@@ -50,6 +56,17 @@ Shader "GO GHOST/Final Boss Rainbow"
                 if (_AxeCharge >= 0)
                 {
                     half4 tex = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
+                    if (_AxeFlowPhase >= 0)
+                    {
+                        // The shaft runs along local V. Bow the bands as they cross the wider blade.
+                        float across = i.uv.x - .33;
+                        float path = i.uv.y * 1.25 + across * (.12 + .34 * across);
+                        float wave = sin((path - _AxeFlowPhase) * 6.2831853);
+                        half3 violet = lerp(_BaseColor.rgb, _AxeShadow.rgb, smoothstep(0, 1, -wave));
+                        violet = lerp(violet, _AxeHighlight.rgb, smoothstep(.10, 1, wave));
+                        half relief = lerp(.82, 1, max(tex.r, max(tex.g, tex.b)));
+                        return half4(violet * relief, tex.a * i.color.a);
+                    }
                     float front = 1 - smoothstep(_AxeCharge - .055, _AxeCharge + .055, i.uv.y);
                     half shade = lerp(.62, 1, max(tex.r, max(tex.g, tex.b)));
                     return half4(lerp(tex.rgb, _BaseColor.rgb * shade, front), tex.a * i.color.a);

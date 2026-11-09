@@ -172,7 +172,7 @@ namespace GoGhost.Duel
             weapon.enabled = true;
             weapon.color = NeuralPalette.Alpha(Color.white, alpha);
             Vector2 forward = Angle(p.WeaponAngle);
-            var grip=p.FrontHand-forward*(.30f*kneel);
+            var grip=p.FrontHand-forward*(.30f*plantedGrip);
             weapon.transform.localPosition = AxeSpriteCentre(grip, forward, 1);
             weapon.transform.localRotation = Quaternion.Euler(0, 0, p.WeaponAngle - 90);
             weapon.transform.localScale = Vector3.one;

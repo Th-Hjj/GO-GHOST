@@ -27,7 +27,12 @@ namespace GoGhost.Duel
         // Five straight wakes per front. The other slots draw the rings and the burst at the blade.
         static readonly int[] WaveWakeSlots = {0,1,3,4,5,13,14,15,16,17,21,22,23,24,25};
         bool rising;
-        float kneel;
+        float kneel, plantedGrip;
+        float knockdownAt = float.PositiveInfinity;
+        const float KneeDownAt = 2.15f;
+        const float LookToPlayerAt = KneeDownAt + 1.4f;
+        const float LookToPlayerSeconds = .45f;
+        internal bool ReadyForKneelingDialogue => clock - knockdownAt >= LookToPlayerAt + LookToPlayerSeconds;
         public void RiseFromKneel() => rising = true;
         bool FinalAxe => actor != null && actor.Axe != null;
 
@@ -99,6 +104,7 @@ namespace GoGhost.Duel
             var surface = plantedSupport.bounds;
             x = Mathf.Clamp(x,surface.min.x+.05f,surface.max.x-.05f);
             plantedPoint = plantedSupport.transform.InverseTransformPoint(new Vector2(x,surface.max.y));
+            knockdownAt = clock;
         }
 
         internal void BeginPlantedCharge()
@@ -200,13 +206,14 @@ namespace GoGhost.Duel
             p.WeaponAngle = 72;
             p.FrontHand = new Vector2(.22f + wave * motion * .06f, .02f);
             p.BackHand = new Vector2(-.04f - wave * motion * .10f, -.05f);
-            kneel = Mathf.MoveTowards(kneel, axe.Transitioning && !rising && (actor.Motor.Grounded || kneel>0) ? 1 : 0, Time.deltaTime * 2.4f);
-            if (kneel > 0)
+            float knockdownElapsed = clock - knockdownAt;
+            if (axe.Transitioning && knockdownElapsed >= 0 && (!rising || kneel > 0))
             {
                 p.Hip = Vector2.Lerp(p.Hip, new Vector2(-.05f, -.43f), kneel);
                 p.Chest = Vector2.Lerp(p.Chest, new Vector2(.08f, -.04f), kneel);
                 float gaze = Ease((clock-gazeAt)/.24f);
-                p.Head = Vector2.Lerp(p.Head, new Vector2(.16f+.035f*gaze,.11f+.095f*gaze), kneel);
+                float bowed = 1 - Ease((knockdownElapsed - LookToPlayerAt) / LookToPlayerSeconds);
+                p.Head = Vector2.Lerp(p.Head, new Vector2(.16f+.035f*gaze,.11f+.095f*gaze-.09f*bowed), kneel);
                 float floor = -actor.Motor.Size.y * .5f + .06f;
                 p.FrontFoot = Vector2.Lerp(p.FrontFoot, new Vector2(.44f, floor), kneel);
                 p.BackFoot = Vector2.Lerp(p.BackFoot, new Vector2(-.48f, floor), kneel);
@@ -215,9 +222,9 @@ namespace GoGhost.Duel
                 var across=new Vector2(forward.y,-forward.x);
                 // Authored axe: from the grip (96,192) to the blade corner (257,579), at 299 px/unit.
                 var grip=LocalPoint(PlantedContact)-forward*(387f/AxePixelsPerUnit)-across*(161f/AxePixelsPerUnit);
-                p.FrontHand=Vector2.Lerp(p.FrontHand,grip+forward*.30f,kneel);
-                p.BackHand=Vector2.Lerp(p.BackHand,grip+forward*.03f,kneel);
-                p.WeaponAngle=Mathf.LerpAngle(p.WeaponAngle,plantAngle,kneel);
+                p.FrontHand=Vector2.Lerp(p.FrontHand,grip+forward*.30f,plantedGrip);
+                p.BackHand=Vector2.Lerp(p.BackHand,grip+forward*.03f,plantedGrip);
+                p.WeaponAngle=Mathf.LerpAngle(p.WeaponAngle,plantAngle,plantedGrip);
                 return;
             }
             if (axe.Invading)
@@ -235,6 +242,22 @@ namespace GoGhost.Duel
                 return;
             }
             if (!axe.PhaseTwo)
+                if (rising)
+                {
+                    kneel = Mathf.MoveTowards(kneel, 0, Time.deltaTime * 2.4f);
+                    plantedGrip = kneel;
+                }
+                else
+                {
+                    // The blade catches his weight before the back knee reaches the floor.
+                    float recoil = Ease(knockdownElapsed / .25f) * (1 - Ease((knockdownElapsed - .25f) / .55f));
+                    p.Hip += new Vector2(-.08f, -.09f) * recoil;
+                    p.Chest += new Vector2(-.17f, -.07f) * recoil;
+                    p.Head += new Vector2(-.22f, -.09f) * recoil;
+                    p.WeaponAngle += 16 * recoil;
+                    plantedGrip = Ease(Mathf.InverseLerp(.25f, 1.1f, knockdownElapsed));
+                    kneel = Ease(Mathf.InverseLerp(.85f, KneeDownAt, knockdownElapsed));
+                }
             {
                 PhaseOneAxePose(ref p, axe, wave, motion);
                 return;

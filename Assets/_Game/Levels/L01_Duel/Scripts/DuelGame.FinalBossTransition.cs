@@ -71,7 +71,7 @@ namespace GoGhost.Duel
             input.SetGameplayInputEnabled(false);
             while (!boss.Motor.Grounded) yield return null;
             boss.View.PlantAxe();
-            yield return new WaitForSeconds(.62f);
+            while (!boss.View.ReadyForKneelingDialogue) yield return null;
 
             foreach (var line in VoiceStudioCatalog.Current.BossTransition)
             {
@@ -106,14 +106,16 @@ namespace GoGhost.Duel
             ui.SealSidebars();
             StripPlayerAssistance();
             encounterSounds?.Play(Sfx.Glitch);
-            yield return new WaitForSeconds(.9f);
+            while (boss.View.WaveProgress(2) < 1) yield return null;
+            StartPlatformMotion(easeIn: true);
+            yield return new WaitForSeconds(.85f);
 
             boss.View.SetFinalBossPhaseTwo();
             yield return new WaitForSeconds(BossSilhouetteView.FlowRampSeconds);
             boss.View.LiftGaze();
-            yield return new WaitForSeconds(.35f);
+            yield return new WaitForSeconds(.5f);
             boss.View.RiseFromKneel();
-            yield return new WaitForSeconds(.6f);
+            yield return new WaitForSeconds(.9f);
 
             ui.FadeSidebars(PreparationSeconds);
             StartCountdown();

@@ -1,5 +1,33 @@
 # GO GHOST slice implementation
 
+## 2026-11-08 — Second EMP front hits the player
+
+The passing second front flashes a thin violet outline around the player's body. Following Thomas's revision, the player health bar, nickname and HP digits use their ordinary presentation throughout phase two, including direct retry. Compilation and Play Mode review are left for Thomas.
+
+## 2026-11-08 — Phase-two Boss health bar
+
+The GOAT of War’s second health pool uses the same rainbow phase as his body, including direct phase-two entry. The gradient travels across the remaining HP and the full name and health label. Changing digits pick up the current gradient as the text mesh rebuilds. The depleted track stays gray and the first pool retains its static gradient. Compilation and Play Mode review are left for Thomas.
+
+## 2026-11-08 — Mission 3 skyline cleanup and thin EMP outlines
+
+Removed the detached rooftop fragments in the upper-left sky and the isolated dash at upper right from the far plate. The EMP now traces the sky-facing sides of the roofs, antennas and bridge opening. The stroke is 0.9 source texels on distant buildings and 1.15 on the near towers. Each outline follows its own parallax crop, and near buildings cover the distant outline. [Mask baker](../../Tools/bake_megacity_contours.py). Unity compilation and Game view review were left for Thomas.
+
+## 2026-11-08 — Mission 3 EMP surface, Rules and skyline sweeps
+
+The three 2.4-second rings now have one-second gaps. The first reveals the original .065-unit platform rim on the terrain and perimeter. The second flashes the player and sweeps the Rules cards. The third traces the parallax buildings using contour masks derived from both original plates. Direct phase-two entry starts with these rims visible. EMP’s shared violet is now #9B73E3. The axe carries a rolling gradient from handle to blade in phase two. Thomas reviewed the earlier filled-color trial and requested these outline corrections. The revised visuals, compilation and retry are left for Thomas’s own check.
+
+## 2026-11-08 — Final Boss invasion health gates
+
+Previously a lethal hit or F9 could empty phase one and queue both invasions. Phase one now stops damage at the next mark (660, then 330). The invasion releases that floor after its briefing and recovery. F9 uses the same damage path. Direct phase-two retry starts without a floor. No compilation or Play Mode run in this iteration.
+
+## 2026-11-08 — Final Boss knockdown before the first line
+
+The earlier kneel took about 0.42 seconds. The grounded knockdown now separates recoil, blade contact and knee contact. The Boss holds his head low and looks up slightly before the first line, about four seconds after landing. The subsequent EMP cue still starts on the final dialogue click. Compilation, playback and testing were skipped for this iteration.
+
+## 2026-11-08 — Page speech, Final Boss timing and Efe’s phase-two theme
+
+New pages allow 0.8 s before entry speech. The first phase ends with a one-second hold after the planted pose settles. The three lines advance on clicks. The last click starts an approximately 13-second charge, EMP and recovery sequence. Efe Inan’s phase-two WAV loops from the three-second countdown on normal entry and direct retry. The wave music player applies a −0.2 dB trim to match the existing music reference. [Boss encounter timing](BossEncounters.md) lists the cue points for the separate transition composition. Compilation, playback, listening review and tests were skipped at Thomas’s request.
+
 ## 2026-11-08 — Happy reads rule editor choices
 
 Body Configuration uses the preparation dialogue box for rule descriptions. Hovering a Condition or Action shows its text, and selecting the card plays the corresponding Happy recording. Leaving the cards clears the preview even when the draft has a selection. The 11 Condition and seven Action takes are available in Voice Studio. Compilation, Play Mode and listening review were skipped at Thomas's request.

@@ -38,7 +38,7 @@ At actual grip contact he reads the latest visible player observation and at mos
 
 **Telegraphs.** All three throws charge the socket of the approved gray-blue axe from the beginning of preparation. An ice-blue ring contracts on the moving socket. Underpass draws the axe low behind the hip, Vault raises it overhead, and Palm presents the empty hand out front. Their default total startup times are .68, .75 and .78 respectively. A tapered cue marks the locked flight direction for the final .25 before release. A white-tipped trail follows the active spinning edge for up to 1.15 units. One-way supports allow sight and axe flight. Solid walls and the arena perimeter bound the attacks. Damaging flight legs and committed melee strokes publish their actual threats to the player's Incoming Attack rules.
 
-**Invasions.** Violet question marks mark 66% and 33% of the first health pool. Each threshold queues once. The Boss completes his move, lands, dips and raises the axe overhead. At .90 s violet currents start flowing along four fixed straight lines into the square axe core. They gather for 2.6 s, contract at 3.50 s and release at 3.70 s. The axe emits the EMP ring with the 3.3 s burst recording. The player can move until the expanding ring reaches their collider. Combat then freezes in place, including projectiles and cooldowns. After .45 s the Boss appends one random legal fight-only rule beyond the equipped cap. Happy says “New Rule, Confirmed.” and reads the actual Condition and Action with parameters, highlighting each field. Confirm, Condition and Action each wait for a dialogue click. A click during reveal completes the text. Advancing the complete Action restores combat. Each added card keeps its RULE INJECTED label. Retry and Configuration discard injected rules. If one hit crosses both marks, the two invasions run in order.
+**Invasions.** Violet question marks mark 66% and 33% of the first health pool. Hits stop exactly at 660 HP and then 330 HP. Each mark holds through the Boss’s current move, landing, EMP, briefing and recovery. The Boss completes his move, lands, dips and raises the axe overhead. At .90 s violet currents start flowing along four fixed straight lines into the square axe core. They gather for 2.6 s, contract at 3.50 s and release at 3.70 s. The axe emits the EMP ring with the 3.3 s burst recording. The player can move until the expanding ring reaches their collider. Combat then freezes in place, including projectiles and cooldowns. After .45 s the Boss appends one random legal fight-only rule beyond the equipped cap. Happy says “New Rule, Confirmed.” and reads the actual Condition and Action with parameters, highlighting each field. Confirm, Condition and Action each wait for a dialogue click. A click during reveal completes the text. Advancing the complete Action restores combat. Each added card keeps its RULE INJECTED label. Retry and Configuration discard injected rules. Only the damage up to the next mark counts. Further hits during the lock and excess damage are discarded. F9 follows the same rule: three separate presses after each lock opens take a fresh first pool to 660, then 330, then zero.
 
 The EMP release uses the 3.3 s edit of BigDino1995’s [ScifiCannon](https://freesound.org/people/BigDino1995/sounds/569903/) (CC0), with a stretched low-frequency tail and short fade. The later phase change uses the same sound, a wider white-rimmed front and two trailing violet rings across the platforms.
 
@@ -54,29 +54,44 @@ Thomas accepted the original design for trial on 2026-11-06. Its nine stages rep
 
 ### Phase 1 — Rainbow Axeman
 
-- **Music.** Efe Inan's `mx_bosstheme3_p1_wip.wav` loops from the Mission 3 countdown. Spending the first Boss health pool fades it out over 0.35 seconds before the kneeling dialogue. A phase-one retry restarts the track. A direct phase-two retry starts with no music.
+- **Music.** Efe Inan's `mx_bosstheme3_p1_wip.wav` loops from the Mission 3 countdown. Spending the first Boss health pool fades it out over 0.35 seconds before the kneeling dialogue. A phase-one retry restarts the track. Efe Inan’s `mx_bosstheme3_p2_wip.wav` starts on the phase-two countdown, including direct retry, and loops through combat.
 - **Body:** a player-sized stickman with the same proportions and silhouette as Waves 1 and 2, using the retired Alpha rainbow look. 1000 HP.
 - His combat AI controls movement and commits axe attacks. The poses and attack tells show what he is about to do.
 - **Axe:** The five phase-one moves and tuning are listed above. Phase two retains Chop and Spin.
 - **Retired:** Walker's 2x Swordsman body, sword specials and platform destruction.
 
-**F8 tuning.** Under Missions, Start Phase 1 and Start Phase 2 start fresh encounters at the selected phase. Tuning → Final Boss exposes the five first-phase moves and the two second-phase axe moves. Each move snapshots wind-up, recovery, cooldown and damage on acceptance. For phase one, Strongest hit scales the other damage values proportionally. Try selected move closes F8 and requests the move at a legal opportunity. Current HP targets the active pool. The 66% and 33% buttons trigger the ordinary invasion thresholds. Tuning applies for the session and Restore defaults resets it.
+**F8 tuning.** Under Missions, Start Phase 1 and Start Phase 2 start fresh encounters at the selected phase. Tuning → Final Boss exposes the five first-phase moves and the two second-phase axe moves. Each move snapshots wind-up, recovery, cooldown and damage on acceptance. For phase one, Strongest hit scales the other damage values proportionally. Try selected move closes F8 and requests the move at a legal opportunity. Current HP targets the active pool. The HP field and percentage buttons respect the current invasion floor. Tuning applies for the session and Restore defaults resets it.
 
 **Invasions.** At 66% and 33% phase-one health, the Boss stops, becomes invulnerable and plays an invasion animation. Each invasion appends one random legal Condition → Action rule to the end of the player's fight rules, even beyond the 5-rule cap. The equipped loadout is never modified, so Retry and Configuration discard invaded rules. Invasions are Boss abilities, not Boss rules.
 
 ### Transition — electromagnetic pulse
 
-After the first health pool is spent, the Boss lands and kneels on one knee. He says “You're strong.”, “But it's not over yet.” and “Let’s see what you can do on your own.” Each line has its own recording and click. His hands hold the shaft at separate grip points and the blade corner rests on the current support. Advancing the third line starts the long charge.
+After the first pool is spent, the Boss lands and recoils. In the current timing trial he swings the blade into the floor between 0.25 and 1.10 seconds after landing. His back knee lowers from 0.85 to 2.15 seconds as both hands brace on the planted shaft. He holds his head bowed for 1.40 seconds, then lifts it slightly over 0.45 seconds. His first line starts at about 4.0 seconds after landing. He says “You're strong.”, “But it's not over yet.” and “Let’s see what you can do on your own.” Each line has its own recording and click. His hands hold the shaft at separate grip points and the blade corner rests on the current support. Advancing the third line starts the long charge.
 
-1. Straight violet currents travel inward for 4.8 s along the ground and diagonal lanes. A violet fill runs down the shaft into the blade. The charge contracts for .30 s, then the 3.3 s burst recording accompanies the first EMP front from the ground contact. The next two fronts follow at .70 s intervals. Each front travels for 2.4 s.
-2. Each elevated platform picks up a thin violet rim when the wave reaches it. Once the third front clears, all five start moving. Each moves 1.05 units above and below home with a four-second period, with adjacent platforms in opposite phase. Their subdued rims persist throughout phase two. The arena walls and floor stay neutral.
-3. A violet edge appears around the player’s visible rule sidebar. The cards lose their action colors, their arrows disconnect and **SEALED** appears under the heading. The player loses rule assistance. The sidebar fades during the countdown.
+1. Straight violet currents travel inward for 4.8 s. The charge contracts for .30 s, then the burst recording accompanies the first front from the blade contact. Each front expands for 2.4 s and there is a one-second gap before the next.
+2. The first front traces the rims of the five platforms, floor, walls and ceiling as its arc reaches each edge. The second flashes the player violet on contact and paints the Rules cards as the same projected arc crosses them. At the end of this front the player loses rule assistance, the arrows disconnect and **SEALED** appears under the heading. The sidebar fades during the countdown.
+3. The third front reveals the thin violet silhouettes of the city buildings. These contours follow their respective parallax layers. The terrain and building outlines persist in phase two and on direct retry. Once the third front clears, all five platforms start moving. Each moves 1.05 units above and below home with a four-second period, with adjacent platforms in opposite phase.
 4. The EMP outline fades as the body’s rainbow starts flowing from foot to head. The colours accelerate over 1.2 s to one cycle every four seconds. The Boss lifts his head before pulling the violet axe free.
 5. The Boss rises holding his axe. The three-second countdown leads into phase two. The player keeps the same electromagnetic revolver. This sequence runs without clicks.
 
+**Timing for Efe’s transition cue.** The three dialogue lines advance on player clicks. Start the musical clock on the last acknowledgment, as the axe begins charging. Target these offsets in game seconds.
+
+| Time | Event |
+|---|---|
+| 0.0 | Straight currents gather along the planted axe. |
+| 4.8 | The charge pinches down. |
+| 5.1 / 8.5 / 11.9 | Terrain, player and Rules, then skyline fronts launch. The burst sound plays on the first. |
+| 10.9 | The second front ends and the player’s Rules seal. |
+| 14.3 | The last front clears and the platforms start moving. |
+| 15.15 | The rainbow starts flowing upward. |
+| 16.35 / 16.85 | The Boss raises his head, then pulls the axe free. |
+| 17.75 | Phase-two music and the three-second countdown begin together. |
+
+The separate transition recording is pending. The current sequence gives it about 17.75 seconds from the last click to the countdown.
+
 ### Phase 2 — flowing rainbow
 
-The Boss starts with 1000 HP. He uses Chop and Spin in melee range, pursues a raised player and can jump. The violet axe uses the approved phase-one silhouette and grip throughout both attacks. Players read the poses against the moving body colours. The player has full manual control and the same gray-blue revolver with its ice-blue cylinder.
+The Boss starts with 1000 HP. He uses Chop and Spin in melee range, pursues a raised player and can jump. Light and deep violet flow along the phase-two axe from grip to blade throughout both attacks and on direct retry. The player has full manual control and the same gray-blue revolver with its ice-blue cylinder.
 
 **Defeat and victory.**
 - Phase-two defeat offers two choices:
@@ -87,7 +102,7 @@ The Boss starts with 1000 HP. He uses Chop and Spin in melee range, pursues a ra
 
 **Implemented (stage 9):**
 - **Defeat page:** the player's health is recorded when the first pool empties. A phase-two defeat then shows **Retry Phase 2** and **Configuration**; a phase-one defeat keeps **Retry** and **Configuration**.
-- **Retry Phase 2:** builds a fresh Wave 3 encounter that skips phase one and the transition. The Boss starts on a full second pool (`Enemy.SkipToSecondPhase`) with the flowing rainbow and violet axe in hand. The five moving platforms start with their residual violet edges. The player has the recorded health, the original revolver, no rule assistance and a full-width camera, followed by the normal countdown. Repeated retries keep the same health.
+- **Retry Phase 2:** builds a fresh Wave 3 encounter that skips phase one and the transition. The Boss starts on a full second pool (`Enemy.SkipToSecondPhase`) with the flowing rainbow and violet axe in hand. The moving platforms, arena perimeter and skyline start with their violet outlines. The player has the recorded health, the original revolver, no rule assistance and a full-width camera, followed by the normal countdown. Repeated retries keep the same health.
 - **Configuration:** restores the equipped rules and restarts Wave 3 from phase one.
 - **Developer shortcut:** **GO GHOST > Playtest > Wave 3 Phase 2** queues a phase-two start at full health.
 

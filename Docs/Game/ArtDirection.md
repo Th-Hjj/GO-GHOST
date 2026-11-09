@@ -23,7 +23,7 @@ The creation page, formal body diagram and player actors share one runtime drawi
 | Arms | #35CFFF | Aim / Fire |
 | Legs | #5CF7A2 | Movement / Jump |
 | Spine | #E4F06B | Dodge only |
-| EMP | #B28CFF | Boss EMP wave, threshold marks and injected rule status |
+| EMP | #9B73E3 | Boss EMP wave, threshold marks, injected rule status and phase-two axe |
 | HeadReserved | #F8C85C | Reserved gold; no current head rule |
 | Gunner | #FF9A62 | Gunner, HP and sourced attacks |
 | Swordsman / Danger | #FF6375 | Sword Boss, HP, sourced attacks and low player HP |
@@ -61,9 +61,9 @@ The 2026-10-27 drawn-face flow supersedes this 2026-10-16 presentation. The reta
 **Final Boss presentation, updated 2026-11-07**
 - The player’s Rules occupy the left edge in every wave. The combat camera fills the remaining width and uses the full screen when the sidebar is hidden.
 - **Phase one:** the player-sized rainbow stickman wields the approved flat gray-blue (#6F8191) bearded axe with an ice-blue (#C5EDFF) socket. The first beat of every throw lights the socket and starts a contracting ring attached to the posed weapon. Underpass lowers the axe behind the hip, Vault raises it above the shoulder, and Palm extends the empty hand while loading the axe on the other side. The final .25 seconds show a short tapered cue along the committed direction. The cold-white edge trail appears on release and clears at the brake. Anchor Vault closes two ticks on the embedded axe, draws the thin gray tether taut, then turns the body and raises the weapon at the grip before the second leap. Palm Deflection flashes at the actual redirect. Each committed grounded stroke uses the Swordsman's local lock arc. Airborne slashes light the raised socket and show the live edge.
-- After the shockwave and platform movement, the player’s rule arrows disconnect, the cards lose their action colors and the sidebar reads **SEALED**. The EMP rim fades and the rainbow starts flowing upward across the whole figure. The sidebar fades during the countdown.
-- **Phase two:** the Boss retains his round, featureless head. A shared rainbow cycles up his body every four seconds. The axe retains its approved silhouette, tint and grip from the EMP for Chop and Spin.
-- The EMP wave and outlines use violet #B28CFF. Moving platforms keep their gray surface and a subdued violet edge after contact. A violet outline appears around the player’s visible sidebar. The Boss loses his rim as the rainbow drains. The GOAT of War health bar spans the Boss silhouette’s rainbow hues. After the two-handed planted charge, three staggered fronts expand from the blade corner on the support. The five platforms travel 1.05 units either side of their original heights.
+- The second EMP front flashes across the player and paints the visible portions of the Rules cards violet as it crosses them. On completion the arrows disconnect and the sidebar reads **SEALED**. The sidebar fades during the countdown.
+- **Phase two:** the Boss retains his round, featureless head. A shared rainbow cycles up his body every four seconds. The axe retains its silhouette and grip for Chop and Spin. A continuous violet gradient travels from the handle into the blade in local weapon coordinates. The trial uses #6647A5, EMP violet #9B73E3 and #C5A7F8, cycling every 2.4 seconds.
+- The three fronts use EMP violet #9B73E3 and expand from the blade corner for 2.4 s each, with a one-second gap between fronts. The first reveals the thin platform rim along the platforms, floor, walls and ceiling as it passes. The third picks out the architectural contours on each parallax layer. The gray terrain surfaces, dark sky and building interiors keep their original colors. The outlines persist in phase two. The platforms then travel 1.05 units either side of their original heights. The Boss loses his rim as his rainbow begins to flow. His health bar retains the same spectrum.
 - **Player revolver:** the weapon keeps its gray-blue silhouette and ice-blue cylinder through the EMP, phase two and direct retry.
 - The Boss’s three kneeling lines use a left-aligned speaker and sentence in a two-line panel within the combat view. Happy’s preparation dialogue uses the same hierarchy in the lower-left footer.
 
@@ -89,6 +89,8 @@ Aim+Fire and Move+Jump aggregate with bounded maxima, never additive white-out. 
 ## Arena and actors
 
 All three missions use two background layers behind the fixed arena. Both positions depend on the player's horizontal location. They stop when the player stands still and retrace their movement on return. Center-to-edge travel is 7 pixels for the far layer and 36 for the near layer in the 966-pixel-wide reference arena. The art scales with the arena as the viewport changes. The dark center keeps gunfire and platform edges visible.
+
+In Mission 3 the EMP traces the sky-facing side of the architectural silhouettes. The line is 0.9 source texels on distant buildings and 1.15 on the near towers. Near buildings occlude the far stroke as the plates move. The open span beneath the bridge shows the distant city through it.
 
 Mission 1 uses distant factory roofs and tanks with near steel columns, at 60% of authored opacity. In Mission 2, the left showroom has low rounded terraces, bronze roof trim and two recessed glass entrances framed by fluted piers. The right hotel has a five-fin fan crown above a fluted tower, stepped wings and thin amber rooflines. The lighting for both buildings is painted into the far plate. The CASINO marquee, canopy and palms move on the near plate. Both plates use 60% opacity. The CASINO lettering and marquee bulbs get their bright cores and short orange halos on import. Mission 3 uses the approved corporate skyline. The stepped headquarters and skybridge towers move in front of the distant city at a starting playtest opacity of 60%.
 

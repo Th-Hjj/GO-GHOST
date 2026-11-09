@@ -16,11 +16,14 @@ namespace GoGhost.Duel
         [SerializeField, Min(0)] float fadeSeconds = .35f;
         float fade, targetFade, loadingSeconds;
         bool pending;
+        AudioClip finalBossPhaseTwoTrack;
+        const float FinalBossPhaseTwoGain = .977237f; // -0.2 dB relative to the music reference
 
         public int CurrentWave { get; private set; }
         public float Volume => musicVolume;
         internal void CollectAudioClips(System.Collections.Generic.HashSet<AudioClip> destination)
         {
+            if (finalBossPhaseTwoTrack != null) destination.Add(finalBossPhaseTwoTrack);
             if (waveTracks == null) return;
             foreach (var track in waveTracks) if (track != null) destination.Add(track);
         }
@@ -32,11 +35,20 @@ namespace GoGhost.Duel
             DuelGame.FinalBossWave => 3,
             _ => -1
         };
-        public float CurrentTrackGain => waveGains != null && TrackIndex(CurrentWave) >= 0 && TrackIndex(CurrentWave) < waveGains.Length
-            ? Mathf.Max(0, waveGains[TrackIndex(CurrentWave)]) : 1f;
+        public float CurrentTrackGain
+        {
+            get
+            {
+                if (finalBossPhaseTwoTrack != null && output != null && output.clip == finalBossPhaseTwoTrack)
+                    return FinalBossPhaseTwoGain;
+                int index = TrackIndex(CurrentWave);
+                return waveGains != null && index >= 0 && index < waveGains.Length ? Mathf.Max(0, waveGains[index]) : 1f;
+            }
+        }
 
         void Awake()
         {
+            finalBossPhaseTwoTrack = Resources.Load<AudioClip>("mx_bosstheme3_p2_wip");
             if (output == null) output = GetComponent<AudioSource>();
             output.playOnAwake = false;
             output.loop = true;
@@ -49,13 +61,15 @@ namespace GoGhost.Duel
             StopMusic(true);
         }
 
-        public void PlayWave(int wave)
+        public void PlayWave(int wave, bool finalBossPhaseTwo = false)
         {
             StopMusic(true);
             int index = TrackIndex(wave);
-            if (output == null || !isActiveAndEnabled || waveTracks == null
-                || index < 0 || index >= waveTracks.Length || waveTracks[index] == null) return;
-            output.clip = waveTracks[index];
+            AudioClip track = wave == DuelGame.FinalBossWave && finalBossPhaseTwo
+                ? finalBossPhaseTwoTrack
+                : waveTracks != null && index >= 0 && index < waveTracks.Length ? waveTracks[index] : null;
+            if (output == null || !isActiveAndEnabled || track == null) return;
+            output.clip = track;
             CurrentWave = wave;
             pending = true;
             targetFade = 1;

@@ -277,8 +277,7 @@ namespace GoGhost.Duel
         void StartCountdown()
         {
             SetPhase(DuelPhase.Prepare);
-            if (Wave != FinalBossWave || !FinalBossPhaseTwoReached)
-                music?.PlayWave(Wave);
+            music?.PlayWave(Wave, finalBossPhaseTwo: FinalBossPhaseTwoReached);
         }
         void BeginCombat()
         {

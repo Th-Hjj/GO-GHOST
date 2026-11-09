@@ -116,7 +116,7 @@ namespace GoGhost.Duel
             yield return new WaitForSeconds(.6f);
 
             ui.FadeSidebars(PreparationSeconds);
-            SetPhase(DuelPhase.Prepare);
+            StartCountdown();
             while (Phase == DuelPhase.Prepare) yield return null;
             boss.Axe.ReleaseTransition();
             while (boss.Axe.Transitioning) yield return null;

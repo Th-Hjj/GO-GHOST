@@ -99,7 +99,8 @@ namespace GoGhost.Duel
                 arriveAt=launchAt+distance/FlightSpeed;
                 weapon=WeaponState.Flying;
                 lastTip=AxeEdge; lastAxeSample=launchAt; lastAxePlayer=playerBody.bounds.center;
-                actor.Sounds?.Play(Sfx.DashCut,actor.ActorId,300000+Orders);
+                actor.Sounds?.PlayPanned(Sfx.AxeFlight,actor.Axe.PanAt(startEdge.x),actor.ActorId,300000+Orders,
+                    coverSeconds:arriveAt-launchAt);
             }
             if (weapon!=WeaponState.Flying) return;
             float now=Mathf.Min(Time.time,arriveAt);
@@ -128,17 +129,24 @@ namespace GoGhost.Duel
                 }
                 lastTip=AxeEdge; lastAxeSample=at; lastAxePlayer=sampleTarget.center;
             }
-            if (now<arriveAt) return;
+            if (now<arriveAt)
+            {
+                actor.Sounds?.SetAttackPan(actor.ActorId,300000+Orders,actor.Axe.PanAt(AxeEdge.x));
+                return;
+            }
+            actor.Sounds?.StopAttack(actor.ActorId,300000+Orders);
             weapon=WeaponState.Planted;
             PlantedAt=Time.time; lastAxeMiss=!axeSpent; lastAxeTarget=Destination;
             nextOrder=Time.time+(Order==AxeOrder.Shoulder?.78f:.40f);
-            actor.Sounds?.Play(Sfx.GuardBlock,actor.ActorId,300000+Orders);
+            actor.Sounds?.PlayPanned(Sfx.AxePlant,actor.Axe.PanAt(Destination.x),actor.ActorId,300000+Orders,
+                pitch:AnchorNormal.y>0 ? .90f : 1f);
         }
         void Arm(OrderPlan plan)
         {
             weapon=WeaponState.Armed;
             CommandAt=Time.time; launchAt=CommandAt+LaunchDelay;
             Destination=plan.End; Order=plan.Kind; axeSpent=false; Orders++;
+            actor.Sounds?.PlayPanned(Sfx.AxeCommand,actor.Axe.PanAt(actor.Position.x),actor.ActorId,300000+Orders);
             if (detached) { startPivot=AxePivot; startAngle=AxeAngle; }
             actor.Trace($"axe order {Order}: {Destination}");
         }

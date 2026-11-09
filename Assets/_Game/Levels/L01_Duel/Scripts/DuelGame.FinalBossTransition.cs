@@ -90,6 +90,7 @@ namespace GoGhost.Duel
 
             Show(CutsceneSpeaker.None, null);
             boss.View.BeginPlantedCharge();
+            encounterSounds?.Play(Sfx.EmpGather);
             yield return new WaitForSeconds(BossSilhouetteView.PlantedChargeSeconds);
             Vector2 origin = boss.View.PlantedContact;
             Vector2 farCorner = (Vector2)arenaBounds.extents + new Vector2(
@@ -100,10 +101,14 @@ namespace GoGhost.Duel
             CreateEmpSweep(boss.View, origin);
             ui.ShowEmpOnRuleCards(EmpSweep.Cards);
             encounterSounds?.Play(Sfx.EmpBurst);
+            while (boss.View.WaveProgress(1) < 0) yield return null;
+            encounterSounds?.Play(Sfx.EmpBurst);
             while (boss.View.WaveProgress(1) < 1) yield return null;
             ui.SealSidebars();
             StripPlayerAssistance();
             encounterSounds?.Play(Sfx.Glitch);
+            while (boss.View.WaveProgress(2) < 0) yield return null;
+            encounterSounds?.Play(Sfx.EmpBurst);
             while (boss.View.WaveProgress(2) < 1) yield return null;
             StartPlatformMotion(easeIn: true);
             yield return new WaitForSeconds(.85f);

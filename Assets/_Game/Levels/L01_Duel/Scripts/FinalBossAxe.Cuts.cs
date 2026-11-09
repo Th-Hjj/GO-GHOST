@@ -29,6 +29,8 @@ namespace GoGhost.Duel
         AxePlan acceptedPlan;
         Cut palmSwing;
         int consumed;
+        int soundedCuts;
+        bool flightSound;
         bool launched,caught,abortAfterCatch,palmStepped;
         float lastAge,retrieveAt,retrieveAngle;
         Vector2 lastBody,lastPlayer,retrieveOrigin;
@@ -38,6 +40,7 @@ namespace GoGhost.Duel
         void ResetPhaseOneState()
         {
             consumed=0;launched=caught=redirected=abortAfterCatch=palmStepped=false;
+            soundedCuts=0;
             palmSwing=default;
             comboCount=1;
             combo[0]=TripleCuts[0];
@@ -142,6 +145,9 @@ namespace GoGhost.Duel
                 }
                 if(!FlightIsClear(flight,0,acceptedPlan.Facing)){RecoverPhaseOne();return;}
                 AxeFlying=true;FlightPose(0);
+                flightSound=true;
+                actor.Sounds?.PlayPanned(Sfx.AxeFlight,PanAt(AxePosition.x),actor.ActorId,-attackId,
+                    coverSeconds:flight[flight.Count-1].End);
                 if(Current==Move.UnderpassReturn)SafeStep(acceptedPlan.Retreat.x-actor.Position.x);
             }
         }
@@ -173,6 +179,13 @@ namespace GoGhost.Duel
                 }
             }
             // A contact spanning a release, end, or flight-leg boundary is still resolved once.
+            for (int i=soundedCuts;i<CutCount;i++)
+            {
+                if (age<GetCut(i).Start) break;
+                float level=Current!=Move.TripleCut || i==2 ? 1f : i==0 ? .72f : .84f;
+                actor.Sounds?.PlayPanned(Sfx.AxeSwing,PanAt(actor.Position.x),actor.ActorId,attackId,i,level:level);
+                soundedCuts++;
+            }
             ResolvePhaseOneHits(Mathf.Min(age,activeEnds-activeAt));
             if(Current==Move.None)return; // A lethal hit can stop and clear the encounter synchronously.
             if(AxeFlying)
@@ -184,6 +197,11 @@ namespace GoGhost.Duel
                     if(Current==Move.UnderpassReturn&&age>=UnderCatch||Current==Move.PalmDeflection&&age>=PalmCatch)
                         CatchOrRetrieve();
                 }
+            }
+            if (flightSound)
+            {
+                if (!AxeFlying || Current==Move.AnchorVault && acceptedPlan.Vault.Latched) StopFlightSound();
+                else actor.Sounds?.SetAttackPan(actor.ActorId,-attackId,PanAt(AxePosition.x));
             }
             if(Time.time<activeEnds||AxeFlying)return;
             // Finish the fall before starting the punish window. A body-blocked landing
@@ -233,8 +251,15 @@ namespace GoGhost.Duel
             AxeSpin=Mathf.LerpAngle(retrieveAngle,WorldAngle(lockedFacing,HeldShaftAngle),t);
             if(t>=1){AxeFlying=false;caught=true;retrieveAt=-1;actor.Sounds?.Play(Sfx.ReturnPrepare,actor.ActorId,attackId);}
         }
+        void StopFlightSound()
+        {
+            if (!flightSound) return;
+            actor.Sounds?.StopAttack(actor.ActorId,-attackId);
+            flightSound=false;
+        }
         void RecoverPhaseOne()
         {
+            StopFlightSound();
             AxeFlying=false;AxeSpin=0;path.Clear();
             actor.Motor.EndAttackMotion();
             SetPhase(Stage.Recovery,acceptedTiming.Recovery);

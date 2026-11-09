@@ -65,7 +65,7 @@ public sealed class PresentationOneShot : MonoBehaviour
     public void Play(AudioClip clip, float gain = 1f) => TryPlay(clip, gain, 128);
 
     public bool TryPlay(AudioClip clip, float gain, int priority, float pitch = 1f,
-        float pan = 0f, int actorId = 0, int attackId = 0)
+        float pan = 0f, int actorId = 0, int attackId = 0, float coverSeconds = 0f)
     {
         if (!scopeOpen || paused || AudioListener.pause || !isActiveAndEnabled || clip == null || voices == null) return false;
         int slot = -1;
@@ -86,6 +86,7 @@ public sealed class PresentationOneShot : MonoBehaviour
         selected.volume = sourceVolume * Mathf.Clamp01(gain);
         selected.priority = Mathf.Clamp(priority, 0, 256);
         selected.pitch = Mathf.Clamp(pitch, .9f, 1.1f);
+        if (coverSeconds>0) selected.pitch=Mathf.Min(selected.pitch,clip.length/coverSeconds);
         selected.panStereo = Mathf.Clamp(pan, -.5f, .5f);
         voiceActors[slot] = actorId;
         voiceAttacks[slot] = attackId;
@@ -115,6 +116,14 @@ public sealed class PresentationOneShot : MonoBehaviour
                 resume[i] = false;
             }
         }
+    }
+
+    public void SetAttackPan(int actorId,int attackId,float pan)
+    {
+        if (voices == null) return;
+        for (int i=0;i<voices.Length;i++)
+            if (voiceActors[i]==actorId && voiceAttacks[i]==attackId && voices[i]!=null)
+                voices[i].panStereo=Mathf.Clamp(pan,-.5f,.5f);
     }
 
     public void StopActor(int actorId)

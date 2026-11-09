@@ -228,7 +228,6 @@ namespace GoGhost.Duel
                 LaunchAge = age;
                 Chop = new Cut(age + cutDelay, ChopDuration, 112f, -78f, 1, 34, 2.9f);
                 axe.activeEnds = axe.phaseUntil = axe.activeAt + age + Mathf.Max(JumpDuration, cutDelay + ChopDuration);
-                axe.actor.Sounds?.Play(Sfx.BladeHeavy, axe.actor.ActorId, axe.attackId);
             }
 
             void Abort()

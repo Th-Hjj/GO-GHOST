@@ -10,19 +10,21 @@ public enum Sfx
     BossBurst = 10, BeamCharge = 11, BeamLock = 12, BeamFire = 13,
     CamoEnter = 14, CamoExit = 15, BladeLight = 16, BladeHeavy = 17,
     DrawPrepare = 18, DashCut = 19, ReturnPrepare = 20, GuardBlock = 21,
-    Footstep = 22, Land = 23, Reload = 24, BossDefeat = 25, EmpBurst = 26
+    Footstep = 22, Land = 23, Reload = 24, BossDefeat = 25, EmpBurst = 26,
+    AxeFlight = 27, AxePlant, JabAir, HeavyFist, AxeSwing, MeteorGround, AxeCommand, EmpGather
 }
 
 /// <summary>One existing attempt/menu sound scope; only accepted public events request cues.</summary>
 [RequireComponent(typeof(PresentationOneShot))]
 public sealed class SfxSet : MonoBehaviour
 {
-    public const int CueCount = 27;
+    public const int CueCount = (int)Sfx.EmpGather + 1;
     [Tooltip("Indexed by Sfx. Original ten indices are unchanged; Boss cues are appended.")]
     [SerializeField] private AudioClip[] clips = new AudioClip[CueCount];
     [SerializeField] private float gain = 1f;
     private PresentationOneShot output;
     private AudioClip defeatCue, empBurst;
+    private readonly AudioClip[] finalBossClips = new AudioClip[CueCount-(int)Sfx.AxeFlight];
     private readonly int[] requested = new int[CueCount];
     private readonly Dictionary<(int actor, int cue), int> lastFrame = new Dictionary<(int, int), int>();
     private readonly HashSet<(int actor, int attack, int phase, int cue)> accepted = new HashSet<(int, int, int, int)>();
@@ -52,11 +54,14 @@ public sealed class SfxSet : MonoBehaviour
     public void CollectAudioClips(HashSet<AudioClip> destination)
     {
         if (Clip(Sfx.EmpBurst) is AudioClip burst) destination.Add(burst);
+        for (int i=(int)Sfx.AxeFlight;i<CueCount;i++)
+            if (Clip((Sfx)i) is AudioClip clip) destination.Add(clip);
         if (clips == null) return;
         foreach (var clip in clips) if (clip != null) destination.Add(clip);
     }
     public void StopActor(int actorId) => output?.StopActor(actorId);
     public void StopAttack(int actorId, int attackId) => output?.StopAttack(actorId, attackId);
+    public void SetAttackPan(int actorId,int attackId,float pan) => output?.SetAttackPan(actorId,attackId,pan);
 
     // Existing callers keep their API and same-frame impact coalescing.
     public void Play(Sfx id) => Play(id, 0, 0);
@@ -67,6 +72,9 @@ public sealed class SfxSet : MonoBehaviour
     /// With attackId zero, only identical actor/cue requests in the same frame are merged.
     /// </summary>
     public void Play(Sfx id, int actorId, int attackId = 0, int phase = 0)
+        => PlayPanned(id,0f,actorId,attackId,phase);
+
+    public void PlayPanned(Sfx id,float pan,int actorId,int attackId,int phase=0,float coverSeconds=0,float level=1f,float pitch=1f)
     {
         int index = (int)id;
         if (output == null || !output.ScopeOpen || AudioListener.pause || output.Paused
@@ -88,13 +96,12 @@ public sealed class SfxSet : MonoBehaviour
         }
         requested[index]++;
         // No gameplay Random consumption: sound variation must not change tactics or combat outcomes.
-        float pitch = 1f;
         if (id == Sfx.BossBurst || id == Sfx.Footstep)
         {
             uint variation = unchecked((uint)(actorId * 397 ^ attackId * 31 ^ phase * 17 ^ requested[index]));
             pitch += ((variation % 7) - 3f) * .01f;
         }
-        output.TryPlay(clip, gain * Level(id), Priority(id), pitch, 0f, actorId, attackId);
+        output.TryPlay(clip, gain * Level(id) * level, Priority(id), pitch, pan, actorId, attackId,coverSeconds);
     }
 
     public AudioClip Clip(Sfx id)
@@ -106,6 +113,12 @@ public sealed class SfxSet : MonoBehaviour
         }
         if (id == Sfx.EmpBurst) return empBurst != null ? empBurst : empBurst = Resources.Load<AudioClip>("EmpBurst");
         int index = (int)id;
+        if (index>=(int)Sfx.AxeFlight && index<CueCount)
+        {
+            int slot=index-(int)Sfx.AxeFlight;
+            return finalBossClips[slot]!=null ? finalBossClips[slot] :
+                finalBossClips[slot]=Resources.Load<AudioClip>("FinalBossSfx/"+id);
+        }
         return clips != null && index >= 0 && index < clips.Length ? clips[index] : null;
     }
 
@@ -149,6 +162,9 @@ public sealed class SfxSet : MonoBehaviour
         {
             case Sfx.BeamLock: return 24;
             case Sfx.EmpBurst: return 40;
+            case Sfx.EmpGather: case Sfx.MeteorGround: return 40;
+            case Sfx.AxeFlight: case Sfx.AxePlant: case Sfx.AxeCommand: return 48;
+            case Sfx.AxeSwing: case Sfx.HeavyFist: case Sfx.JabAir: return 64;
             case Sfx.DrawPrepare: case Sfx.ReturnPrepare: return 32;
             case Sfx.BeamCharge: case Sfx.BeamFire: case Sfx.DashCut: return 48;
             case Sfx.PlayerHurt: case Sfx.Victory: case Sfx.Defeat: return 64;
@@ -175,6 +191,11 @@ public sealed class SfxSet : MonoBehaviour
             case Sfx.BeamLock: return .60f;
             case Sfx.BeamFire: return .46f;
             case Sfx.EmpBurst: return .65f;
+            case Sfx.EmpGather: return .63f;
+            case Sfx.AxeFlight: case Sfx.AxeSwing: return .54f;
+            case Sfx.AxePlant: case Sfx.MeteorGround: return .62f;
+            case Sfx.AxeCommand: return .55f;
+            case Sfx.JabAir: case Sfx.HeavyFist: return .58f;
             case Sfx.DrawPrepare: case Sfx.ReturnPrepare: return .56f;
             case Sfx.CamoEnter: case Sfx.CamoExit: return .23f;
             case Sfx.BladeLight: return .30f;

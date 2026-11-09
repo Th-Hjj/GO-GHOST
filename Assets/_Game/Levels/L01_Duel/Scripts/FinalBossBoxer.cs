@@ -164,7 +164,7 @@ namespace GoGhost.Duel
                         ImpactAt=Time.time;
                         impactX=actor.Position.x; impactSupport=support; impactSpent=hit;
                         TickImpact();
-                        actor.Sounds?.Play(Sfx.Land,actor.ActorId);
+                        actor.Sounds?.PlayPanned(Sfx.MeteorGround,actor.Axe.PanAt(impactX),actor.ActorId,200000+Stroke);
                     }
                     else if (Time.time<phaseUntil) return;
                     if (Current != Punch.None) Recover();
@@ -231,7 +231,8 @@ namespace GoGhost.Duel
             SetPhase(Stage.Active,active);
             punchTime=Time.time;
             lastSample=Time.time; lastFist=StrokeStart=Fist(); lastPlayer=playerBody.bounds.center;
-            actor.Sounds?.Play(Current==Punch.Jab && !Cross ? Sfx.BladeLight : Sfx.BladeHeavy,actor.ActorId,200000+Stroke);
+            actor.Sounds?.PlayPanned(Current==Punch.Jab && !Cross ? Sfx.JabAir : Sfx.HeavyFist,
+                actor.Axe.PanAt(actor.Position.x),actor.ActorId,200000+Stroke);
             Thrown?.Invoke(Current,lastFist);
         }
 
@@ -312,6 +313,7 @@ namespace GoGhost.Duel
         }
         public void Cancel()
         {
+            if (InFlight) actor.Sounds?.StopAttack(actor.ActorId,300000+Orders);
             if (Current != Punch.None) actor.Motor?.EndAttackMotion();
             Current=Punch.None; Phase=Stage.Idle; PreviewPunch=Punch.None;
             weapon=WeaponState.Retired; detached=false; impactSupport=null;

@@ -68,7 +68,7 @@ Thomas accepted the original design for trial on 2026-11-06. Its nine stages rep
 
 After the first pool is spent, the Boss lands and recoils. In the current timing trial he swings the blade into the floor between 0.25 and 1.10 seconds after landing. His back knee lowers from 0.85 to 2.15 seconds as both hands brace on the planted shaft. He holds his head bowed for 1.40 seconds, then lifts it slightly over 0.45 seconds. His first line starts at about 4.0 seconds after landing. He says “You're strong.”, “But it's not over yet.” and “Let’s see what you can do on your own.” Each line has its own recording and click. His hands hold the shaft at separate grip points and the blade corner rests on the current support. Advancing the third line starts the long charge.
 
-1. Straight violet currents travel inward for 4.8 s. The charge contracts for .30 s, then the burst recording accompanies the first front from the blade contact. Each front expands for 2.4 s and there is a one-second gap before the next.
+1. The 5.1 s EmpGather cue accompanies the 4.8 s current and .30 s contraction. Each of the three fronts plays the approved 3.3 s EmpBurst at its own launch. Each front expands for 2.4 s and there is a one-second gap before the next.
 2. The first front traces the rims of the five platforms, floor, walls and ceiling as its arc reaches each edge. The second flashes the player violet on contact and paints the Rules cards as the same projected arc crosses them. At the end of this front the player loses rule assistance, the arrows disconnect and **SEALED** appears under the heading. The sidebar fades during the countdown.
 3. The third front reveals the thin violet silhouettes of the city buildings. These contours follow their respective parallax layers. The terrain and building outlines persist in phase two and on direct retry. Once the third front clears, all five platforms start moving. Each moves 1.05 units above and below home with a four-second period, with adjacent platforms in opposite phase.
 4. The EMP outline fades as the body’s rainbow starts flowing from foot to head. The colours accelerate over 1.2 s to one cycle every four seconds. The Boss lifts his head before pulling the violet axe free.
@@ -80,7 +80,7 @@ After the first pool is spent, the Boss lands and recoils. In the current timing
 |---|---|
 | 0.0 | Straight currents gather along the planted axe. |
 | 4.8 | The charge pinches down. |
-| 5.1 / 8.5 / 11.9 | Terrain, player and Rules, then skyline fronts launch. The burst sound plays on the first. |
+| 5.1 / 8.5 / 11.9 | The terrain, player/Rules and skyline fronts launch. Each plays one EMP explosion. |
 | 10.9 | The second front ends and the player’s Rules seal. |
 | 14.3 | The last front clears and the platforms start moving. |
 | 15.15 | The rainbow starts flowing upward. |

@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-08 — GOAT of War combat sound
+
+Integrated the eight approved synthesized mono WAVs. Each committed phase-one stroke plays the heavy axe swing, including individual Triple Cut strokes. Flight follows the blade across the stereo field. In phase two the command comes from the boxer, the flight starts one second later, and the plant comes from the actual contact point. Fists use the two air sounds and Meteor plays its ground impact on contact. The transition plays EmpGather, then the existing EmpBurst once at each terrain, Rules and skyline front (5.1, 8.5 and 11.9 s from the start of the charge). Each phase-one invasion still releases a single front.
+
+Unity compiled and the formal combat prefab resolved all eight mono clips, with SHA-256 matches to the approved audition. The Mission 3 shortcut declined to enter Play Mode because the open scene had unsaved changes. In-game playback and mix are not verified.
+
 ## 2026-11-08 - Mission 1 and Bonus Challenge music
 
 Mission 1 now plays Achilles and Bonus Challenge plays Open Warfare. Each recording keeps its own gain and opening envelope. Unity compiled and both clips played in the arena in Play Mode.

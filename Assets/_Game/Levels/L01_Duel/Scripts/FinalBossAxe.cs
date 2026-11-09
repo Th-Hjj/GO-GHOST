@@ -30,6 +30,11 @@ namespace GoGhost.Duel
         }
         public const float ChopReach=2.3f, ChopHeight=2.1f, SpinRadius=1.65f, AxeRadius=.32f;
         public FinalBossBoxer Boxer { get; private set; }
+        internal float PanAt(float x)
+        {
+            var arena=actor.Navigation.ArenaBounds;
+            return Mathf.Clamp((x-arena.center.x)/arena.size.x,-.5f,.5f);
+        }
         internal static readonly int[] InvasionPercents={66,33};
         internal const float ChargeAt=.90f, PinchAt=3.50f, BurstAt=3.70f;
 
@@ -150,8 +155,6 @@ namespace GoGhost.Duel
                     activeAt=Time.time;activeEnds=activeAt+acceptedTiming.Active;
                     SetPhase(Stage.Active,acceptedTiming.Active);
                     ActivatePhaseOne();
-                    if(Phase==Stage.Active)
-                        actor.Sounds?.Play(Current==Move.Chop?Sfx.BladeHeavy:Sfx.BladeLight,actor.ActorId,attackId);
                 }
             }
             else if(Phase==Stage.Active)
@@ -189,6 +192,7 @@ namespace GoGhost.Duel
         BossThreatPhase ThreatPhase=>Phase==Stage.Prepare?BossThreatPhase.Preparation:Phase==Stage.Locked?BossThreatPhase.Locked:BossThreatPhase.Active;
         public void Cancel()
         {
+            StopFlightSound();
             Boxer?.Cancel();
             PreviewMove=Move.None;
             ClearAttackPosition();

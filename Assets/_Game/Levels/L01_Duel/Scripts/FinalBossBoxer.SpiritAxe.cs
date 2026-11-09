@@ -26,7 +26,6 @@ namespace GoGhost.Duel
         public int Orders { get; private set; }
         public int AxeHits { get; private set; }
         public bool Gesturing => Time.time-CommandAt<GestureSeconds;
-        internal Vector2 FlightStart => startEdge;
         internal Vector2 AnchorPoint => lastAxeTarget;
         internal Vector2 AnchorNormal => Mathf.Abs(lastAxeTarget.y-floor)<.02f ? Vector2.up
             : (lastAxeTarget.x<actor.Navigation.ArenaBounds.center.x ? Vector2.right : Vector2.left);

@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-08 — Phase-two axe trail and notch removal
+
+Removed the detached axe’s flight strokes and persistent surface notches. Its brief contact sweep still plays when it strikes a wall or the floor. Static diff check only. Thomas will test in game.
+
 ## 2026-11-08 — Phase-two axe speed and combat strokes
 
 The opening throw and all later orders use 15 world units per second. The opening pose lifts the axe outside the shoulder and holds before release. The command hand and ring are visible for 0.5 s, with the existing 0.2 s body commitment and one-second launch delay. Two slim violet strokes follow the cutting corner. Planting the blade sends lines along the wall or floor, leaves two notches at the contact, and rocks the handle around the embedded edge. Three colored lines trace the actual fist path. Meteor Fist retains its existing ground arc and rays.

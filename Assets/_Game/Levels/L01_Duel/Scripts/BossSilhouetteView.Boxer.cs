@@ -90,28 +90,10 @@ namespace GoGhost.Duel
                 DrawEmpRing(14,commandPalm,Mathf.Lerp(.54f,.07f,pinch),.063f,
                     Color.Lerp(NeuralPalette.EmpHighlight,NeuralPalette.Emp,pinch));
             }
-            if (boxer.InFlight)
-                DrawSpiritFlight(boxer);
-            else if (boxer.Detached)
+            if (boxer.Detached && !boxer.InFlight)
                 DrawSpiritContact(boxer);
             DrawFistTrace(boxer);
             DrawMeteorImpact(boxer);
-        }
-
-        void DrawSpiritFlight(FinalBossBoxer boxer)
-        {
-            Vector2 tip=boxer.AxeEdge;
-            Vector2 travel=tip-boxer.FlightStart;
-            float length=Mathf.Min(travel.magnitude,1.8f);
-            if (length<.02f) return;
-            Vector2 direction=travel.normalized;
-            Vector2 normal=new Vector2(-direction.y,direction.x);
-            var blade=AxeLine(7,"Violet blade stroke",2);
-            SetLine(blade,tip-direction*length,tip,.068f,NeuralPalette.EmpHighlight);
-            blade.startWidth=.024f;
-            Vector2 inset=normal*.12f;
-            SetLine(AxeLine(8,"Violet blade echo",2),tip-direction*length*.87f+inset,
-                tip-direction*length*.22f+inset,.044f,NeuralPalette.Emp);
         }
 
         void DrawSpiritContact(FinalBossBoxer boxer)
@@ -119,12 +101,10 @@ namespace GoGhost.Duel
             Vector2 normal=boxer.AnchorNormal, tangent=new Vector2(-normal.y,normal.x);
             Vector2 contact=boxer.AnchorPoint+normal*.10f;
             float t=Mathf.Clamp01((Time.time-boxer.PlantedAt)/.34f);
+            if (t>=1) return;
             for (int i=0;i<2;i++)
             {
                 Vector2 along=tangent*(i==0 ? -1 : 1);
-                SetLine(AxeLine(9+i,"Violet blade notch",2),contact+along*.07f,
-                    contact+along*.38f+normal*.17f,.060f,NeuralPalette.EmpHighlight);
-                if (t>=1) continue;
                 float lead=Mathf.Lerp(.16f,1.36f,Ease(t));
                 float tail=Mathf.Lerp(.05f,1.33f,Ease(t*t));
                 SetLine(AxeLine(11+i,"Violet contact sweep",2),contact+along*tail,

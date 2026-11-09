@@ -2,6 +2,8 @@
 
 ## 2026-11-08 — Combat sound balance
 
+Follow-up: the phase-two flight multiplier is now 0.60, another 1.46 dB below the first mix.
+
 The phase-two flight uses 0.71 times the shared axe gain (−2.97 dB) on both the opening throw and later commands. The plant is 1.2 dB softer, Meteor contact is 1.5 dB softer and ordinary Boss landings are 1.6 dB softer. The Rules seal glitch peaked at −4.0 dBFS at combat gain, so it now plays 7.5 dB lower. The three EMP fronts each retain their existing explosion level.
 
 Unity compiled. In a prefab preview scene the combat AudioSource played the flight at 0.2684, compared with 0.3780 for the phase-one throw, and the pan moved from −0.40 to +0.40. Verified the plant, Meteor, landing, glitch, revolver and EMP source gains on the same pool. The stereo A/B uses identical cue timings and a shared playback level. Full encounter listening was not run.

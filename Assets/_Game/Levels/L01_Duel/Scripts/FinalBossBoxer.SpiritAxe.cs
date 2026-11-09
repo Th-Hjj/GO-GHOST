@@ -100,7 +100,7 @@ namespace GoGhost.Duel
                 weapon=WeaponState.Flying;
                 lastTip=AxeEdge; lastAxeSample=launchAt; lastAxePlayer=playerBody.bounds.center;
                 actor.Sounds?.PlayPanned(Sfx.AxeFlight,actor.Axe.PanAt(startEdge.x),actor.ActorId,300000+Orders,
-                    coverSeconds:arriveAt-launchAt, level:.71f);
+                    coverSeconds:arriveAt-launchAt, level:.60f);
             }
             if (weapon!=WeaponState.Flying) return;
             float now=Mathf.Min(Time.time,arriveAt);

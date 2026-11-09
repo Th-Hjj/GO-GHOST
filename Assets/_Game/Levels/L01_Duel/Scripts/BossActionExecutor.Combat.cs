@@ -149,7 +149,7 @@ namespace GoGhost.Duel
             if(Vector2.Distance(point,nearest)>radius)return;
             if(terrain&&Projectile.TerrainHit(from,point,.015f,out _))return;
             hitInWindow=true;int before=actor.Player.CurrentHealth;
-            actor.Player.TakeDamage(damage,actor.gameObject);
+            actor.HitPlayer(damage);
             if(actor.Player.CurrentHealth<before)
             {
                 ConnectedHits++;actor.View?.Impact(point);

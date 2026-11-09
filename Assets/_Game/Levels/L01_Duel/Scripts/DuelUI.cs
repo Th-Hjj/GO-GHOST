@@ -177,6 +177,12 @@ namespace GoGhost.Duel
                 if (game.Wave == 1) Button("Continue to Mission 2",page,Vector2.zero,new Vector2(420,68),game.ContinueToWaveTwo,style:DuelControlStyle.Primary).name="ContinueToWaveTwo";
                 return;
             }
+            if(game.Phase==DuelPhase.Complete && game.Wave==DuelGame.FinalBossWave)
+            {
+                Image(page,Vector2.zero,new Vector2(4000,4000),NeuralPalette.Background);
+                Text("You've Finished The Game!",page,Vector2.zero,new Vector2(1500,110),64,face:headingFont);
+                return;
+            }
             if(game.Phase==DuelPhase.BonusOffer)
             {
                 BuildBonusOffer();return;

@@ -472,7 +472,7 @@ namespace GoGhost.Duel
                     }
                 if(!hitInWindow&&sweep.IntersectsMotion(previousPlayer,currentPlayer,playerBody.bounds.extents,sweep.StartsAt,sweep.EndsAt))
                 {
-                    hitInWindow=true;int before=actor.Player.CurrentHealth;actor.Player.TakeDamage(damage,actor.gameObject);
+                    hitInWindow=true;int before=actor.Player.CurrentHealth;actor.HitPlayer(damage);
                     if(actor.Player.CurrentHealth<before){ConnectedHits++;actor.View?.Impact(playerBody.ClosestPoint(actor.Position+lead));}
                 }
             }

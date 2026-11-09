@@ -12,8 +12,6 @@ public static partial class BossEncounterSmoke
         game.NewGame();
         PlayMetrics.MarkTestData();
         game.CompleteCharacterCreation();
-        var character = game.Appearance;
-        var rules = JsonUtility.ToJson(game.DraftLoadout);
 
         string path = PlayMetrics.JsonPath;
         string closed = null;
@@ -65,15 +63,11 @@ public static partial class BossEncounterSmoke
             yield return WaitFor(() => game.CutsceneText == line && game.PendingDialogue == line, "Missing kneeling dialogue: " + line, 25);
         yield return WaitFor(() => game.Bosses[0].Axe.PhaseTwo, "Phase two did not start", 30);
         game.Bosses[0].Health.TakeDamage(100000, game.Player.gameObject);
-        yield return WaitFor(() => game.Phase == DuelPhase.BonusOffer, "Missing Bonus offer");
-        yield return WaitFor(() => game.FinalBossChoiceReady, "Missing Bonus choice", 15);
-        game.ChooseBonus(true);
-        Require(game.TrainingPending && game.Wave == DuelGame.BonusWave && game.Appearance == character
-            && JsonUtility.ToJson(game.DraftLoadout) == rules, "Bonus lost identity or rules");
-        Click("StartMission");
-        yield return WaitFor(() => game.Phase == DuelPhase.Prepare, "Bonus entrance did not finish");
-        Require(game.Phase == DuelPhase.Prepare && game.Bosses.Count == 2, "Missing Bonus duo");
-        Require(File.ReadAllText(path) == closed, "Wave 3 or Bonus changed the closed Wave 2 record");
+        yield return WaitFor(() => game.Phase == DuelPhase.Complete, "Missing final completion screen");
+        yield return null;
+        Require(System.Array.Exists(game.GetComponentsInChildren<TMPro.TMP_Text>(), text => text.text == "You've Finished The Game!"),
+            "Missing completion message");
+        Require(File.ReadAllText(path) == closed, "Mission 3 changed the closed Wave 2 record");
         game.MainMenu();
     }
 

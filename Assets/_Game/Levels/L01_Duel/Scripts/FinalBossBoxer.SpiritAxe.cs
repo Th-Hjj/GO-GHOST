@@ -123,7 +123,7 @@ namespace GoGhost.Duel
                 {
                     axeSpent=true;
                     int before=actor.Player.CurrentHealth;
-                    actor.Player.TakeDamage(BossProfile.AttackDamage(Order==AxeOrder.Shoulder?30:23),actor.gameObject);
+                    actor.HitPlayer(BossProfile.AttackDamage(Order==AxeOrder.Shoulder?30:23));
                     if (actor.Player.CurrentHealth<before) AxeHits++;
                     if (!actor.Running || !actor.IsAlive || actor.Player.IsDead) return;
                 }

@@ -294,7 +294,7 @@ namespace GoGhost.Duel
             if (!wave.Intersects(playerBody.bounds)) return;
             impactSpent=true;
             int before=actor.Player.CurrentHealth;
-            actor.Player.TakeDamage(accepted.Damage,actor.gameObject);
+            actor.HitPlayer(accepted.Damage);
             if (actor.Player.CurrentHealth<before) Hits[(int)Punch.Meteor]++;
         }
         void DealPunch()
@@ -302,7 +302,7 @@ namespace GoGhost.Duel
             hit=true;
             var move=Current;
             int before=actor.Player.CurrentHealth;
-            actor.Player.TakeDamage(Cross ? Mathf.RoundToInt(accepted.Damage*1.3f) : accepted.Damage,actor.gameObject);
+            actor.HitPlayer(Cross ? Mathf.RoundToInt(accepted.Damage*1.3f) : accepted.Damage);
             if (actor.Player.CurrentHealth<before) Hits[(int)move]++;
         }
         public void Publish(List<BossThreat> output)

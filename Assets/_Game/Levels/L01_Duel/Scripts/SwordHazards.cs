@@ -151,7 +151,7 @@ namespace GoGhost.Duel
                 if(!trace.Hit&&threat.IntersectsMotion(previousPlayer,player,body.bounds.extents,from,now))
                 {
                     trace.Hit=true;int before=actor.Player.CurrentHealth;
-                    actor.Player.TakeDamage(trace.Damage,actor.gameObject);
+                    actor.HitPlayer(trace.Damage);
                     if(actor.Player.CurrentHealth<before){Hits++;actor.View?.Impact(body.ClosestPoint(trace.A(now)));}
                     if(trace.Wave)trace.Retired=true;
                 }

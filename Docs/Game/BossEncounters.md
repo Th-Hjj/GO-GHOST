@@ -2,7 +2,7 @@
 
 The preparation page offers rule editing and optional **Test Room** practice. Each numbered mission also has a **Target Profile**. Back returns from either visit. **Start Mission** fades the preparation page out and reveals the live arena. Defeat offers direct Retry or Configuration.
 
-Each Boss attack deals 75% of its base damage, rounded half up per hit. Bonus friendly fire uses the same values. A reflected projectile carries its original shot damage.
+Boss attacks first use 75% of base damage, rounded half up. Multiply the resulting attack damage by 0.95 for the Mission 2 Swordsman or by 0.90 for Final Boss phase two, rounding half up per hit. Bonus uses the original 75% values. A reflected projectile carries its original shot damage.
 
 ## Final Boss and optional Bonus
 
@@ -42,7 +42,7 @@ At actual grip contact he reads the latest visible player observation and at mos
 
 The EMP release uses the 3.3 s edit of BigDino1995’s [ScifiCannon](https://freesound.org/people/BigDino1995/sounds/569903/) (CC0), with a stretched low-frequency tail and short fade. The later phase change uses the same sound, a wider white-rimmed front and two trailing violet rings across the platforms.
 
-After Wave 3 victory, the Boss voices the two Bonus offer lines. Yes leads to Bonus preparation, No to the menu. The duo retains its geometry, music, AI and both-dead victory. Wave 3 and Bonus are outside the closed Wave 2 metrics record.
+Mission 3 victory clears the encounter and displays **You've Finished The Game!**. The duo remains available through the editor playtest shortcut. The duo retains its geometry, music, AI and both-dead victory. Wave 3 and Bonus are outside the closed Wave 2 metrics record.
 
 ## Final Boss redesign — approved for trial 2026-11-06
 
@@ -102,7 +102,7 @@ The axe can cut from a wall to the floor, climb from the floor through a platfor
   - **Configuration**, a full restart;
   - a direct phase-two retry, with the player's health at the end of phase one, a full 1000-HP Boss, platforms already moving and no transition replay. The button wording is *trial*.
 - Phase-one defeat keeps Retry and Configuration.
-- Victory keeps the existing Bonus offer, which still passes through configuration and Testing.
+- Victory ends the game on the completion message.
 
 **Implemented (stage 9):**
 - **Defeat page:** the player's health is recorded when the first pool empties. A phase-two defeat then shows **Retry Phase 2** and **Configuration**; a phase-one defeat keeps **Retry** and **Configuration**.

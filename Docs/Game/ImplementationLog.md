@@ -22,6 +22,14 @@ Mission 1 now plays Achilles and Bonus Challenge plays Open Warfare. Each record
 
 The five battle themes already matched at -13.6 LUFS integrated before the music master. Smooth per-track opening trims follow playback position and end at 33 seconds. In FFmpeg EBU R128 scans, the spread of median short-term loudness from 3 to 10 seconds fell from 8.1 to 2.6 LU. Full recordings with the new curves measured -13.7 to -13.3 LUFS. Unity compiled and all five clips started through PlayWave in Play Mode. Human listening with combat effects and standalone builds were not checked.
 
+## 2026-11-08 — Mission 2 and Final Boss damage
+
+Mission 2 sword attacks use a 0.95 multiplier. Final Boss phase two now uses 0.90 in place of 0.95, applied after per-hit modifiers. Compilation and Play Mode were not run.
+
+## 2026-11-08 — Final Boss ending
+
+Mission 3 victory clears the encounter and displays only **You've Finished The Game!**. The Bonus invitation and duo preparation are disconnected from campaign progression. Verification was skipped at Thomas's request.
+
 ## 2026-11-08 — Phase-two axe trail and notch removal
 
 Removed the detached axe’s flight strokes and persistent surface notches. Its brief contact sweep still plays when it strikes a wall or the floor. Static diff check only. Thomas will test in game.

@@ -179,7 +179,7 @@ namespace GoGhost.Duel
         {
             var player=actor.Player;if(player==null||player.IsDead)return false;
             var move=Current;int before=player.CurrentHealth;
-            player.TakeDamage(damage,actor.gameObject);
+            actor.HitPlayer(damage);
             if(player.CurrentHealth<before)Hits[(int)move]++;
             return true;
         }

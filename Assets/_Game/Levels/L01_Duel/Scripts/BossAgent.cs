@@ -51,6 +51,17 @@ namespace GoGhost.Duel
             if(BossPerception.CanSee(player.transform.position,Body.bounds))PublishContact(true);
             if(PlayerRuleBodyVisible())lastPlayerRuleContact=CreateContact(true);
         }
+        internal bool ReduceMissionAttackDamage { get; set; }
+
+        internal void HitPlayer(int damage)
+        {
+            if (Axe?.PhaseTwo == true)
+                damage = Mathf.FloorToInt(damage * .9f + .5f);
+            else if (ReduceMissionAttackDamage)
+                damage = Mathf.FloorToInt(damage * .95f + .5f);
+            Player.TakeDamage(damage, gameObject);
+        }
+
         public void StartCombat() {Running=true;Motor.SetCombatEnabled(true);}
         public void SetPaused(bool paused) {View?.SetPaused(paused);}
         public void StopCombat()

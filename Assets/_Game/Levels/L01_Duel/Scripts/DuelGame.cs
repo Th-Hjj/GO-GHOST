@@ -264,6 +264,7 @@ namespace GoGhost.Duel
         {
             var instance = Instantiate(prefab, (Vector3)spawn, Quaternion.identity, encounter.transform);
             var actor = instance.GetComponent<BossAgent>();
+            actor.ReduceMissionAttackDamage = Wave == 2 && actor.Profile.Kind == BossKind.Swordsman;
             actor.Configure(Player, navigation, coordinator, actorId, diagnostics);
             return actor;
         }
@@ -451,13 +452,15 @@ namespace GoGhost.Duel
                 });
                 return;
             }
-            StopCombat();
-            sounds?.Play(defeat ? Sfx.Defeat : Sfx.Victory);
             if (!defeat && Wave == FinalBossWave)
             {
-                StartBonusOffer();
+                ClearEncounter();
+                SetPhase(DuelPhase.Complete);
+                sounds?.Play(Sfx.Victory);
                 return;
             }
+            StopCombat();
+            sounds?.Play(defeat ? Sfx.Defeat : Sfx.Victory);
             SetPhase(defeat ? DuelPhase.Failed : Wave == BonusWave ? DuelPhase.Complete : DuelPhase.Between);
             if (!defeat)
                 handler.WaveCleared(Wave);

@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-08 — Final Boss phase-two boxer and detached axe
+
+The former close-range Chop and Spin loop now opens with a throw and continues with an independently commanded violet axe. Every order fixes its endpoint for a one-second delay. The body can pursue, jump and box between the hand gesture and the release. The trial has a stepping jab/cross, rising uppercut, turning backfist, jumping overhand and diving Meteor Fist. A future-platform trajectory selects jumps for the existing motor. It accounts for rising and falling surfaces, current carrying motion and the first physical landing. Punches use swept fist contacts and rainbow trails. Wall and floor insertions share the actual cutting corner with the flight trace.
+
+Unity 6000.6.0f1 compiled. In Play Mode, Mission 3 Start Mission ran both gated invasions, the three dialogue pages and the EMP into the new opening throw. A controlled defeat and direct retry retained player health and reset the second pool and weapon order. The paused order clock and target stayed fixed. F8's Backfist preview executed, and depleting the second pool reached the Bonus offer with the flying axe retired. A controlled landing on the player's head regained terrain footing. Across the gameplay recordings all five punches executed. In the final 25 fps recording, four orders launched on the first sampled frame at or after one second (1.00–1.04 s), three planted at their locked endpoints, and defeat ended the fourth flight. The preview uses scripted keyboard and mouse input and actual game audio. [Full Game View recording](../../Logs/PhaseTwoCombat/Phase-2-Gameplay.mp4) · [Meteor Fist close-up](../../Logs/PhaseTwoCombat/Meteor-Closeup.mp4). **Not tested:** standalone build and encounter balance.
+
 ## 2026-11-08 — Second EMP front hits the player
 
 The passing second front flashes a thin violet outline around the player's body. Following Thomas's revision, the player health bar, nickname and HP digits use their ordinary presentation throughout phase two, including direct retry. Compilation and Play Mode review are left for Thomas.

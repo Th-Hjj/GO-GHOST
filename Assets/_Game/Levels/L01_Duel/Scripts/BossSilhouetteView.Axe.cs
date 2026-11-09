@@ -230,10 +230,6 @@ namespace GoGhost.Duel
         void AxePose(ref Pose p, float wave, float motion)
         {
             var axe = actor.Axe;
-            float t = Ease(axe.PhaseProgress);
-            bool prepare = axe.Phase == FinalBossAxe.Stage.Prepare, locked = axe.Phase == FinalBossAxe.Stage.Locked;
-            bool active = axe.Phase == FinalBossAxe.Stage.Active, recover = axe.Phase == FinalBossAxe.Stage.Recovery;
-            float settle = recover ? 1 - t : 1;
             // Idle: the axe rests upright in the leading hand.
             p.WeaponAngle = 72;
             p.FrontHand = new Vector2(.22f + wave * motion * .06f, .02f);
@@ -294,54 +290,13 @@ namespace GoGhost.Duel
                 PhaseOneAxePose(ref p, axe, wave, motion);
                 return;
             }
-            switch (axe.Current)
-            {
-                case FinalBossAxe.Move.Chop:
-                    p.FrontFoot.x = .34f; p.BackFoot.x = -.38f;
-                    if (prepare || locked)
-                    {
-                        float raise = prepare ? t : 1;
-                        p.WeaponAngle = Mathf.Lerp(72, 158, raise);
-                        p.FrontHand = Vector2.Lerp(p.FrontHand, new Vector2(-.02f, .66f), raise);
-                        p.Chest.x -= .06f * raise; p.Head.x -= .04f * raise;
-                    }
-                    else
-                    {
-                        float cut = active ? t : 1;
-                        p.WeaponAngle = Mathf.Lerp(158, -38, cut);
-                        p.FrontHand = Vector2.Lerp(new Vector2(-.02f, .66f), new Vector2(.40f, .02f), cut);
-                        p.Chest.x += .12f * settle; p.Head.x += .09f * settle; p.Hip.y -= .07f * settle;
-                        if (recover)
-                        {
-                            p.WeaponAngle = Mathf.Lerp(-38, 72, t);
-                        }
-                    }
-                    p.BackHand = p.FrontHand + new Vector2(-.12f, -.06f);
-                    break;
-                case FinalBossAxe.Move.Spin:
-                    p.FrontFoot.x = .36f; p.BackFoot.x = -.36f;
-                    p.Hip.y -= .08f; p.Chest.y -= .05f;
-                    if (active)
-                    {
-                        // The whole axe sweeps a full circle around the body at arm's length.
-                        p.WeaponAngle = axe.AxeSpin;
-                        p.FrontHand = new Vector2(Mathf.Cos(axe.AxeSpin * Mathf.Deg2Rad), Mathf.Sin(axe.AxeSpin * Mathf.Deg2Rad) * .4f + .25f) * .42f;
-                    }
-                    else
-                    {
-                        float out_ = prepare ? t : locked ? 1 : settle;
-                        p.WeaponAngle = Mathf.Lerp(72, 180, out_);
-                        p.FrontHand = Vector2.Lerp(p.FrontHand, new Vector2(-.40f, .22f), out_);
-                    }
-                    p.BackHand = new Vector2(.30f, .20f);
-                    break;
-            }
+            BoxerPose(ref p,axe.Boxer,wave,motion);
         }
 
         // Called after the shared pose placement: the axe replaces the sword geometry.
         void ApplyAxe(Pose p)
         {
-            if (actor.Axe.AxeFlying) { Hide(Part.Weapon); Hide(Part.Sheath); return; }
+            if (actor.Axe.AxeFlying || actor.Axe.Boxer?.Detached==true || actor.Axe.Boxer?.Retired==true) { Hide(Part.Weapon); Hide(Part.Sheath); return; }
             PlaceHeldAxe(p);
         }
 
@@ -436,7 +391,7 @@ namespace GoGhost.Duel
         void AxeTells()
         {
             var axe = actor.Axe;
-            if (axe.PhaseTwo) return;
+            if (axe.PhaseTwo) { DrawBoxer(axe.Boxer); return; }
             if (axe.Invading) { InvasionSignal(axe); return; }
             DrawPhaseOneAttack(axe);
         }

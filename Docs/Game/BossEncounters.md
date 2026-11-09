@@ -48,7 +48,7 @@ After Wave 3 victory, the Boss voices the two Bonus offer lines. Yes leads to Bo
 
 Thomas accepted the original design for trial on 2026-11-06. Its nine stages replaced Walker's prototype. On 2026-11-07 Thomas retired the Boss’s two locomotion rules and right sidebar so players could follow his attacks without monitoring a second list. The description below incorporates that revision.
 
-**Premise.** The Final Boss trusts AI more than the player does. He can write rules into the player's system. After losing the first phase, he disables the arena’s circuitry and fights with the axe in hand.
+**Premise.** The Final Boss trusts AI more than the player does. He can write rules into the player's system. After losing the first phase, he disables the arena’s circuitry and fights with his fists and a remotely controlled axe.
 
 **Entry.** Mission 3 preparation offers Test Room. Start Mission fades into the arena and starts the same three-second countdown as Missions 1 and 2.
 
@@ -57,10 +57,10 @@ Thomas accepted the original design for trial on 2026-11-06. Its nine stages rep
 - **Music.** Efe Inan's `mx_bosstheme3_p1_wip.wav` loops from the Mission 3 countdown. Spending the first Boss health pool fades it out over 0.35 seconds before the kneeling dialogue. A phase-one retry restarts the track. Efe Inan’s `mx_bosstheme3_p2_wip.wav` starts on the phase-two countdown, including direct retry, and loops through combat.
 - **Body:** a player-sized stickman with the same proportions and silhouette as Waves 1 and 2, using the retired Alpha rainbow look. 1000 HP.
 - His combat AI controls movement and commits axe attacks. The poses and attack tells show what he is about to do.
-- **Axe:** The five phase-one moves and tuning are listed above. Phase two retains Chop and Spin.
+- **Axe:** The five phase-one moves and tuning are listed above. The second phase opens by throwing the axe.
 - **Retired:** Walker's 2x Swordsman body, sword specials and platform destruction.
 
-**F8 tuning.** Under Missions, Start Phase 1 and Start Phase 2 start fresh encounters at the selected phase. Tuning → Final Boss exposes the five first-phase moves and the two second-phase axe moves. Each move snapshots wind-up, recovery, cooldown and damage on acceptance. For phase one, Strongest hit scales the other damage values proportionally. Try selected move closes F8 and requests the move at a legal opportunity. Current HP targets the active pool. The HP field and percentage buttons respect the current invasion floor. Tuning applies for the session and Restore defaults resets it.
+**F8 tuning.** Under Missions, Start Phase 1 and Start Phase 2 start fresh encounters at the selected phase. Tuning → Final Boss exposes the five first-phase moves and the five second-phase punches. Each move snapshots wind-up, recovery, cooldown and damage on acceptance. For phase one, Strongest hit scales the other damage values proportionally. Try selected move closes F8 and requests the move at a legal opportunity. Current HP targets the active pool. The HP field and percentage buttons respect the current invasion floor. Tuning applies for the session and Restore defaults resets it.
 
 **Invasions.** At 66% and 33% phase-one health, the Boss stops, becomes invulnerable and plays an invasion animation. Each invasion appends one random legal Condition → Action rule to the end of the player's fight rules, even beyond the 5-rule cap. The equipped loadout is never modified, so Retry and Configuration discard invaded rules. Invasions are Boss abilities, not Boss rules.
 
@@ -91,7 +91,11 @@ The separate transition recording is pending. The current sequence gives it abou
 
 ### Phase 2 — flowing rainbow
 
-The Boss starts with 1000 HP. He uses Chop and Spin in melee range, pursues a raised player and can jump. Light and deep violet flow along the phase-two axe from grip to blade throughout both attacks and on direct retry. The player has full manual control and the same gray-blue revolver with its ice-blue cylinder.
+The Boss starts with 1000 HP. The player has full manual control and keeps the same electromagnetic revolver. After the countdown the Boss throws his violet axe toward a side wall. Every remote order starts with a short one-handed gesture and a shrinking violet palm ring. He chooses the destination on that beat. The planted axe waits one full second before starting its straight flight. The Boss can advance, jump or box in the meantime. The spinning blade can strike once on the way, passes through the five platforms, and stops at the floor or a side wall. Its next flight starts there.
+
+The trial has five punch entries. Jab can become a stepping rear cross after a fresh sighting. Uppercut drives the fist from low on the body past the head. Backfist turns through the rear shoulder. Overhand jumps toward a reachable landing and commits its punch during the flight. Meteor Fist climbs or uses an existing jump, takes another sighting for a fast diving punch, and sends a short rainbow shock across the surface it strikes. The body's attack damage follows the moving fist and the Meteor impact. Fist trails appear during the strike. The axe keeps its violet gradient, flight trail and impact sparks.
+
+The axe can cut from a wall to the floor, climb from the floor through a platform, or cross from behind the boxer for an over-the-shoulder attack. Choices use delayed visible motion, the line crossed by the blade, the position left for the next order and the time available to move the body. The boxer compares running, a short burst, jumping and punching. He can commit for position without predicting a hit. Jump planning uses the future heights of each platform, including its start-up ramp, and checks which surface the body will meet first. The motor accepts the actual landing and the next decision starts from that support.
 
 **Defeat and victory.**
 - Phase-two defeat offers two choices:

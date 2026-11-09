@@ -3,219 +3,319 @@ using UnityEngine;
 
 namespace GoGhost.Duel
 {
-    // Final Boss phase two, the White Boxer (Thomas, 2026-11-06 trial; tuning is provisional).
-    // No AI assistance and no tell lines: each punch is read from its wind-up pose, weight and footwork.
-    // Jab steps in; the low uppercut rises from a crouch; the slip dashes through to the other side
-    // before a hook; the rage haymaker twists far back before lunging. One hit per punch.
-    public sealed class FinalBossBoxer
+    // The body and the axe have independent commitments. Only a finished punch or a
+    // new hand order gets another sighting; a travelling fist or axe can genuinely miss.
+    public sealed partial class FinalBossBoxer
     {
-        public enum Punch { None, Jab, Uppercut, SlipHook, Haymaker }
+        public enum Punch { None, Jab, Uppercut, SlipHook, Haymaker, Meteor, Backfist = SlipHook, Leap = Haymaker }
         public enum Stage { Idle, Windup, Slip, Active, Recovery }
-
-        struct Timing
+        static readonly BossMoveTuning[] tuning =
         {
-            public float Windup, Active, Recovery, Cooldown, Reach, Height, Lift; public int Damage;
-            public Timing(float windup, float active, float recovery, float cooldown, int damage, float reach, float height, float lift)
-            { Windup = windup; Active = active; Recovery = recovery; Cooldown = cooldown; Damage = damage; Reach = reach; Height = height; Lift = lift; }
-        }
-        static readonly Timing[] Timings =
-        {
-            default,
-            new Timing(.22f, .10f, .25f, .8f, 12, 1.35f, .8f, .15f),   // Jab: step in
-            new Timing(.38f, .12f, .45f, 2.2f, 20, 1.1f, 2.4f, .55f),  // Low uppercut: rises from the floor
-            new Timing(.30f, .14f, .40f, 4.0f, 22, 1.6f, 1.1f, .20f),  // Hook after the slip
-            new Timing(.75f, .14f, .80f, 5.0f, 34, 1.8f, 1.2f, .20f),  // Rage haymaker
+            default, Tune(.18f,.23f,.60f,13), Tune(.29f,.40f,1.85f,24),
+            Tune(.26f,.38f,1.75f,23), Tune(.22f,.54f,2.05f,29), Tune(.26f,.74f,3.55f,36)
         };
-        internal static BossMoveTuning DefaultTuning(Punch punch)
-        {
-            var t = Timings[(int)punch];
-            return new BossMoveTuning(t.Windup, t.Recovery, t.Cooldown, t.Damage);
-        }
-        readonly DuelGame game;
-        Timing acceptedTiming;
-        const float SlipSpeed = 16, SlipBeyond = 1.3f, SlipSeconds = .25f, LungeDistance = 1.8f, LungeSpeed = 12, JabStep = .9f;
-        const int AttackIdBase = 200000;
+        static BossMoveTuning Tune(float windup,float recovery,float cooldown,int baseDamage)
+            => new BossMoveTuning(windup,recovery,cooldown,BossProfile.AttackDamage(baseDamage));
+        internal static BossMoveTuning DefaultTuning(Punch punch) => tuning[(int)punch];
 
+        readonly DuelGame game;
         readonly BossAgent actor;
         readonly Collider2D playerBody;
-        readonly float[] readyAt = new float[5];
-        float phaseAt, phaseUntil, nextDecisionAt, activeAt, activeEnds;
-        bool hitDone, slipIgnoring;
-        int attackId = AttackIdBase;
-
+        readonly float[] readyAt = new float[tuning.Length];
+        public readonly int[] Started = new int[tuning.Length], Hits = new int[tuning.Length];
         internal Punch PreviewPunch { get; set; }
         public Punch Current { get; private set; }
         public Stage Phase { get; private set; }
-        public float PhaseProgress => Mathf.Clamp01((Time.time - phaseAt) / Mathf.Max(.001f, phaseUntil - phaseAt));
         public float LockedFacing { get; private set; } = 1;
-        public readonly int[] Started = new int[5], Hits = new int[5];
-        public System.Action<Punch, Vector2> Thrown;   // presentation: gold burst at the fist
-
+        public float PhaseProgress => Mathf.InverseLerp(phaseAt, phaseUntil, Time.time);
+        public System.Action<Punch,Vector2> Thrown;
+        internal bool Cross { get; private set; }
+        internal float ImpactAt { get; private set; } = float.NegativeInfinity;
+        Collider2D impactSupport;
+        float impactX;
+        bool impactSpent;
+        internal Vector2 ImpactPoint => new Vector2(impactX,impactSupport!=null ? impactSupport.bounds.max.y : actor.Position.y);
+        internal float ImpactRadius => 2.5f*Mathf.SmoothStep(0,1,(Time.time-ImpactAt)/.18f);
+        internal Vector2 StrokeStart { get; private set; }
+        internal int Stroke { get; private set; }
+        BossMoveTuning accepted;
+        JumpPlan jump;
+        float phaseAt, phaseUntil, nextThink, punchTime, lastSample, airStart;
+        Vector2 lastFist, lastPlayer, diveTarget, recoveryHand;
+        bool hit, airborne, signatureLeap;
+        int observedSide;
+        float crossedAt = -100;
+        Punch lastPunch;
         public FinalBossBoxer(BossAgent owner, PlayerHealth player)
         {
-            game = owner.GetComponentInParent<DuelGame>();
-            actor = owner;
-            playerBody = player != null ? player.GetComponent<Collider2D>() : null;
-            nextDecisionAt = Time.time + .4f;
+            actor=owner;
+            game=owner.GetComponentInParent<DuelGame>();
+            playerBody=player != null ? player.GetComponent<Collider2D>() : null;
+            ReadPlatforms();
         }
 
-        public bool Ready(Punch punch) => punch != Punch.None && Time.time >= readyAt[(int)punch];
-        public bool CanStart(Punch punch) => Current == Punch.None && actor.Running && actor.IsAlive && actor.Motor.Grounded && Ready(punch);
+        public bool Ready(Punch punch) => punch > Punch.None && (int)punch < readyAt.Length && Time.time >= readyAt[(int)punch];
+        public bool CanStart(Punch punch) => Ready(punch) && Current == Punch.None && actor.Running
+            && actor.IsAlive && (actor.Motor.Grounded || punch != Punch.Leap) && !Gesturing;
 
         public void Tick()
         {
-            if (Current != Punch.None) { TickPunch(); return; }
-            var player = actor.Player;
-            var facts = actor.Perception.Facts;
-            if (player == null || player.IsDead || facts.Confidence <= .1f) { actor.Motor.Brake(); return; }
-            Vector2 target = facts.Position;
-            float dx = target.x - actor.Position.x, dy = target.y - actor.Position.y, distance = Mathf.Abs(dx);
-            actor.Face(new Vector2(dx, 0));
-            if (PreviewPunch != Punch.None && TryStart(PreviewPunch))
+            if (Retired || playerBody == null || actor.Player.IsDead) return;
+            TickWeapon();
+            if (!actor.Running || !actor.IsAlive) return;
+            TickImpact();
+            if (!actor.Running || actor.Player.IsDead) return;
+            var facts=actor.Perception.Facts;
+            if (facts.Visible)
             {
-                PreviewPunch = Punch.None;
+                int side=(int)Mathf.Sign(facts.Position.x-actor.Position.x);
+                if (observedSide != 0 && side != observedSide) crossedAt=Time.time;
+                observedSide=side;
+            }
+            // Only the opening throw still occupies the weapon hand. Subsequent orders
+            // release the body as soon as the summoning gesture finishes.
+            if (!detached && weapon==WeaponState.Armed)
+            {
+                if (facts.Visible && actor.Motor.Grounded)
+                    actor.Motor.PursueOnGround(Mathf.Sign(Destination.x-actor.Position.x),3.5f);
                 return;
             }
-            // Keep pressing: a raised target is chased with a jump once roughly underneath it.
-            if (dy > 1.4f && distance < 2.6f && actor.Motor.Grounded) { actor.Motor.SetMove(Mathf.Sign(dx)); actor.Motor.TryJump(); return; }
-            if (PreviewPunch == Punch.None && Time.time >= nextDecisionAt && Decide(distance, dy)) return;
-            actor.Motor.SetMove(distance > 1.1f ? Mathf.Sign(dx) : 0);
-        }
-
-        bool Decide(float distance, float dy)
-        {
-            if (Mathf.Abs(dy) > 1.6f || distance > 3.2f) return false;
-            if (dy > .7f && distance < 1.8f && TryStart(Punch.Uppercut)) return true;
-            // Weighted choice among the punches in range; the jab is the bread and butter.
-            var choices = new List<(Punch, float)>(4);
-            if (distance < 2.4f && Ready(Punch.Jab)) choices.Add((Punch.Jab, 3));
-            if (distance < 2.6f && Ready(Punch.SlipHook)) choices.Add((Punch.SlipHook, 2));
-            if (distance < 1.8f && Ready(Punch.Uppercut)) choices.Add((Punch.Uppercut, 1.5f));
-            if (distance < 3.0f && Ready(Punch.Haymaker)) choices.Add((Punch.Haymaker, 1));
-            if (choices.Count == 0) return false;
-            float total = 0; foreach (var c in choices) total += c.Item2;
-            float pick = Random.value * total;
-            foreach (var (punch, weight) in choices) { if ((pick -= weight) <= 0) return TryStart(punch); }
-            return TryStart(choices[choices.Count - 1].Item1);
+            if (Current != Punch.None) { TickPunch(facts); return; }
+            if (Time.time < nextThink || Gesturing) return;
+            nextThink=Time.time + actor.Profile.ReactionSeconds;
+            if (facts.Confidence <= .1f) { SeekLastSighting(); return; }
+            if (PreviewPunch != Punch.None && TryStart(PreviewPunch)) { PreviewPunch=Punch.None; return; }
+            Decide(facts);
         }
 
         public bool TryStart(Punch punch)
         {
             if (!CanStart(punch)) return false;
-            var timing = Timings[(int)punch];
-            var tuning = game.GetBossMoveTuning(true, (int)punch);
-            timing.Windup = tuning.Windup;
-            timing.Cooldown = tuning.Cooldown;
-            timing.Recovery = tuning.Recovery;
-            timing.Damage = tuning.Damage;
-            acceptedTiming = timing;
-            Current = punch; attackId++; Started[(int)punch]++; hitDone = false;
-            readyAt[(int)punch] = Time.time + timing.Cooldown;
-            if (actor.Player != null) actor.Face((Vector2)actor.Player.transform.position - actor.Position);
-            LockedFacing = actor.Facing;
-            actor.Motor.HoldHorizontal();
-            if (punch == Punch.SlipHook) BeginSlip();
-            else SetPhase(Stage.Windup, timing.Windup);
+            var facts=actor.Perception.Facts;
+            Vector2 target=OpponentAt(facts,.26f);
+            if (punch == Punch.Leap && !FindJump(target,0,out jump)) return false;
+            if (punch == Punch.Meteor)
+            {
+                if (actor.Motor.Grounded && !FindJump(target,.8f,out jump)) return false;
+                if (!actor.Motor.Grounded && !FindDive(target,out diveTarget)) return false;
+            }
+            Current=punch; Cross=false; signatureLeap=punch==Punch.Leap && ShoulderWindow;
+            LockedFacing=Mathf.Abs(target.x-actor.Position.x) > .12f ? Mathf.Sign(target.x-actor.Position.x) : actor.Facing;
+            actor.Face(Vector2.right*LockedFacing);
+            accepted=game.GetBossMoveTuning(true,(int)punch);
+            Started[(int)punch]++;
+            if (actor.Motor.Grounded || punch==Punch.Meteor) actor.Motor.EndAttackMotion();
+            // An airborne straight or hook keeps the steering of its existing jump.
+            // The first beat can cover ground even when the target is outside fist reach.
+            if (punch==Punch.Jab || punch==Punch.Backfist || punch==Punch.Uppercut)
+                DriveTo(target,accepted.Windup,punch==Punch.Jab ? 18f : 13f);
             actor.Perception.ExpressedPressure(actor.Position);
-            actor.Trace($"boxer {punch} attack={attackId}");
+            SetPhase(Stage.Windup,accepted.Windup);
+            actor.Trace($"boxer {punch} starts");
             return true;
         }
 
-        void SetPhase(Stage stage, float seconds) { Phase = stage; phaseAt = Time.time; phaseUntil = Time.time + Mathf.Max(0, seconds); }
-
-        // Slip through the player to the far side, then turn for the hook.
-        void BeginSlip()
+        void SetPhase(Stage stage,float duration)
         {
-            float dx = actor.Player.transform.position.x - actor.Position.x;
-            float direction = Mathf.Sign(dx == 0 ? LockedFacing : dx);
-            float distance = Mathf.Abs(dx) + SlipBeyond;
-            var arena = actor.Navigation.ArenaBounds;
-            float limit = direction > 0 ? arena.max.x - actor.Motor.Size.x : arena.min.x + actor.Motor.Size.x;
-            distance = Mathf.Clamp(distance, .5f, Mathf.Abs(limit - actor.Position.x));
-            SetIgnorePlayer(true);
-            actor.Motor.StartDash(new Vector2(direction, 0), distance, SlipSpeed);
-            SetPhase(Stage.Slip, Mathf.Max(SlipSeconds, distance / SlipSpeed));
+            Phase=stage; phaseAt=Time.time; phaseUntil=phaseAt+duration;
         }
 
-        void SetIgnorePlayer(bool value)
+        void TickPunch(BossObservation facts)
         {
-            if (playerBody == null || actor.Body == null || slipIgnoring == value) return;
-            Physics2D.IgnoreCollision(actor.Body, playerBody, value);
-            slipIgnoring = value;
-        }
-
-        void TickPunch()
-        {
-            var timing = acceptedTiming;
-            switch (Phase)
+            if (Phase == Stage.Windup && Time.time >= phaseUntil)
             {
-                case Stage.Slip:
-                    if (Time.time < phaseUntil && actor.Motor.DashActive) return;
-                    actor.Motor.EndAttackMotion();
-                    SetIgnorePlayer(false);
-                    if (actor.Player != null) actor.Face((Vector2)actor.Player.transform.position - actor.Position);
-                    LockedFacing = actor.Facing;
-                    SetPhase(Stage.Windup, timing.Windup);
+                if (Current == Punch.Leap)
+                {
+                    if (!LaunchPunchJump(facts)) { Recover(); return; }
+                    airborne=false; airStart=Time.time;
+                    SetPhase(Stage.Slip,Mathf.Max(.04f,jump.StrikeAt));
                     return;
-                case Stage.Windup:
-                    actor.Motor.HoldHorizontal();
-                    if (Time.time < phaseUntil) return;
-                    activeAt = Time.time; activeEnds = activeAt + timing.Active;
-                    SetPhase(Stage.Active, timing.Active);
-                    if (Current == Punch.Jab) { actor.Motor.BeginStep(JabStep); actor.Motor.SetMove(LockedFacing); }
-                    if (Current == Punch.Haymaker) actor.Motor.StartDash(new Vector2(LockedFacing, 0), LungeDistance, LungeSpeed);
-                    actor.Sounds?.Play(Current == Punch.Haymaker || Current == Punch.Uppercut ? Sfx.BladeHeavy : Sfx.BladeLight, actor.ActorId, attackId);
-                    Thrown?.Invoke(Current, Fist());
+                }
+                if (Current == Punch.Meteor)
+                {
+                    if (actor.Motor.Grounded)
+                    {
+                        if (!LaunchPunchJump(facts)) { Recover(); return; }
+                        airborne=false; airStart=Time.time;
+                        SetPhase(Stage.Slip,jump.Motion.JumpSpeed / (Mathf.Abs(Physics2D.gravity.y)*jump.Motion.GravityScale));
+                        return;
+                    }
+                    if (!BeginDive(facts)) { Recover(); return; }
+                }
+                StartStroke();
+            }
+            if (Phase == Stage.Slip)
+            {
+                airborne |= !actor.Motor.Grounded;
+                if (Time.time < phaseUntil && !(airborne && actor.Motor.Grounded)) return;
+                if (Current==Punch.Meteor && !BeginDive(facts)) { Recover(); return; }
+                StartStroke();
+            }
+            if (Phase == Stage.Active)
+            {
+                SampleFist();
+                if (Current == Punch.None) return;
+                if (Current == Punch.Meteor)
+                {
+                    if (actor.Motor.DashActive && !actor.Motor.DashBlocked && Time.time < phaseUntil) return;
+                    // A body may block the dive in midair; only terrain releases the impact.
+                    if (actor.Navigation.TrySupport(actor.Position,actor.Motor.Size,out var support))
+                    {
+                        ImpactAt=Time.time;
+                        impactX=actor.Position.x; impactSupport=support; impactSpent=hit;
+                        TickImpact();
+                        actor.Sounds?.Play(Sfx.Land,actor.ActorId);
+                    }
+                    else if (Time.time<phaseUntil) return;
+                    if (Current != Punch.None) Recover();
                     return;
-                case Stage.Active:
-                    if (!hitDone && PunchArea().Intersects(PlayerBounds())) hitDone = Strike(timing.Damage);
-                    if (Time.time < phaseUntil) return;
-                    actor.Motor.EndAttackMotion();
-                    SetPhase(Stage.Recovery, timing.Recovery);
-                    return;
+                }
+                if (Time.time < phaseUntil) return;
+                if (Current == Punch.Jab && !Cross && facts.Visible)
+                {
+                    var next=OpponentAt(facts,.15f)-actor.Position;
+                    // A second advancing straight needs a useful lane, not a predicted hit.
+                    float laneValue=Vector2.Dot(next.normalized,Vector2.right*LockedFacing);
+                    if (laneValue>.34f || (lastPunch!=Punch.Jab && next.sqrMagnitude<.36f))
+                    {
+                        Cross=true;
+                        DriveTo(actor.Position+next,.16f,16f);
+                        SetPhase(Stage.Windup,.16f);
+                        return;
+                    }
+                }
+                Recover();
+            }
+            if (Phase != Stage.Recovery) return;
+            if (Current==Punch.Leap && !actor.Motor.Grounded && Time.time-airStart<1.8f) return;
+            if (Time.time < phaseUntil) return;
+            readyAt[(int)Current]=Time.time+accepted.Cooldown;
+            lastPunch=Current;
+            Current=Punch.None;
+            Phase=Stage.Idle;
+            nextThink=Time.time;
+        }
+
+        bool LaunchPunchJump(BossObservation facts)
+        {
+            // The takeoff and the deck may both have moved during the wind-up.
+            Vector2 sight=facts.Visible ? OpponentAt(facts,.24f) : jump.Landing;
+            return FindJump(sight,Current==Punch.Meteor ? .8f : 0,out jump) && TakeOff(jump);
+        }
+
+        bool BeginDive(BossObservation facts)
+        {
+            var sight=facts.Visible ? OpponentAt(facts,.20f) : jump.Landing;
+            if (!FindDive(sight,out diveTarget)) return false;
+            var delta=diveTarget-actor.Position;
+            actor.Motor.EndAttackMotion();
+            actor.Face(delta); LockedFacing=actor.Facing;
+            actor.Motor.StartDash(delta,delta.magnitude+.45f,24f);
+            return true;
+        }
+
+        void DriveTo(Vector2 target,float seconds,float speed)
+        {
+            if (!actor.Navigation.TrySupport(actor.Position,actor.Motor.Size,out var support)) return;
+            float x=Mathf.Clamp(target.x-LockedFacing*.82f,
+                support.bounds.min.x+actor.Motor.Size.x*.5f,support.bounds.max.x-actor.Motor.Size.x*.5f);
+            float step=Mathf.Min((x-actor.Position.x)*LockedFacing,seconds*speed);
+            if (step > .12f) actor.Motor.StartDash(Vector2.right*LockedFacing,step,speed);
+        }
+
+        void StartStroke()
+        {
+            hit=false; Stroke++;
+            float active=Current switch { Punch.Uppercut=>.21f, Punch.Backfist=>.22f, Punch.Leap=>.27f,
+                Punch.Meteor=>Mathf.Clamp(Vector2.Distance(diveTarget,actor.Position)/24f+.18f,.20f,.85f), _=>.14f };
+            SetPhase(Stage.Active,active);
+            punchTime=Time.time;
+            lastSample=Time.time; lastFist=StrokeStart=Fist(); lastPlayer=playerBody.bounds.center;
+            actor.Sounds?.Play(Current==Punch.Jab && !Cross ? Sfx.BladeLight : Sfx.BladeHeavy,actor.ActorId,200000+Stroke);
+            Thrown?.Invoke(Current,lastFist);
+        }
+
+        void Recover()
+        {
+            recoveryHand=HandLocal;
+            if (actor.Motor.Grounded || Current==Punch.Meteor) actor.Motor.EndAttackMotion();
+            SetPhase(Stage.Recovery,signatureLeap ? Mathf.Max(.76f,accepted.Recovery) : accepted.Recovery);
+        }
+
+        internal static readonly Vector2 Guard = new Vector2(.29f,.31f);
+        Vector2 Chamber => Current switch
+        {
+            Punch.Uppercut=>new Vector2(.13f,-.36f), Punch.Backfist=>new Vector2(-.44f,.25f),
+            Punch.Leap=>new Vector2(-.21f,.44f), Punch.Meteor=>new Vector2(-.12f,.71f),
+            _=>Cross ? new Vector2(-.25f,.20f) : new Vector2(.17f,.27f)
+        };
+        Vector2 StrokePoint(float t)
+        {
+            float extend=Mathf.SmoothStep(0,1,t);
+            switch(Current)
+            {
+                case Punch.Uppercut:
+                    return Vector2.Lerp(Chamber,new Vector2(.40f,1.02f),extend)+Vector2.right*(.37f*Mathf.Sin(t*Mathf.PI));
+                case Punch.Backfist:
+                    return Vector2.Lerp(Chamber,new Vector2(.89f,.22f),extend)+Vector2.up*(.32f*Mathf.Sin(t*Mathf.PI));
+                case Punch.Meteor:
+                    return Vector2.Lerp(Chamber,new Vector2(.60f,-.70f),Mathf.Clamp01(t*2));
                 default:
-                    actor.Motor.HoldHorizontal();
-                    if (Time.time < phaseUntil) return;
-                    Current = Punch.None; Phase = Stage.Idle;
-                    nextDecisionAt = Time.time + Random.Range(.20f, .40f);
-                    return;
+                    return Vector2.Lerp(Chamber,new Vector2(Current==Punch.Leap || Cross ? 1.04f : .82f,
+                        Current==Punch.Leap ? .45f : .30f),Mathf.Clamp01(t*1.55f));
             }
         }
-
-        public void Cancel()
+        internal Vector2 HandLocal => Phase switch
         {
-            SetIgnorePlayer(false);
-            if (Current != Punch.None) actor.Motor.EndAttackMotion();
-            Current = Punch.None; Phase = Stage.Idle;
-        }
-
-        public Vector2 Fist() => actor.Position + new Vector2(LockedFacing * acceptedTiming.Reach * .7f, .4f);
-        public Bounds PunchArea()
+            Stage.Windup=>Vector2.Lerp(Guard,Chamber,PhaseProgress), Stage.Slip=>Chamber,
+            Stage.Active=>StrokePoint(PhaseProgress), Stage.Recovery=>Vector2.Lerp(recoveryHand,Guard,PhaseProgress),
+            _=>Guard
+        };
+        public Vector2 Fist() { var p=HandLocal; return actor.Position+new Vector2(LockedFacing*p.x,p.y); }
+        public Bounds PunchArea() => new Bounds(Fist(),Vector3.one*.48f);
+        void SampleFist()
         {
-            var timing = acceptedTiming;
-            // The box starts at the chest and reaches forward; the uppercut also rises above the head.
-            return new Bounds(actor.Position + new Vector2(LockedFacing * timing.Reach * .5f, timing.Lift),
-                new Vector3(timing.Reach + .4f, timing.Height, 1));
+            var target=playerBody.bounds;
+            Vector2 point=Fist();
+            if (!hit && SweptContact(lastFist,point,lastPlayer,target,.23f,lastSample,Time.time)) DealPunch();
+            lastSample=Time.time; lastFist=point; lastPlayer=target.center;
         }
-        Bounds PlayerBounds() => playerBody != null ? playerBody.bounds : new Bounds(Vector3.one * 9999, Vector3.zero);
-        bool Strike(int damage)
+        static bool SweptContact(Vector2 a,Vector2 b,Vector2 previousTarget,Bounds target,float radius,float from,float to)
         {
-            var player = actor.Player;
-            if (player == null || player.IsDead) return false;
-            int before = player.CurrentHealth;
-            player.TakeDamage(damage, actor.gameObject);
-            if (player.CurrentHealth < before) Hits[(int)Current]++;
-            return true;
+            var stroke=new BossThreat {Valid=true,Phase=BossThreatPhase.Active,Shape=BossThreatShape.SweptCapsule,
+                Origin=a,End=b,Radius=radius,StartsAt=from,EndsAt=to};
+            return stroke.IntersectsMotion(previousTarget,target.center,target.extents,from,to);
         }
-
-        // Melee boxes for the public threat model; the wind-up itself draws no lines.
+        void TickImpact()
+        {
+            if (impactSpent || impactSupport==null || Time.time-ImpactAt>.28f) return;
+            var wave=new Bounds(ImpactPoint+Vector2.up*.32f,new Vector3(ImpactRadius*2,.9f,1));
+            if (!wave.Intersects(playerBody.bounds)) return;
+            impactSpent=true;
+            int before=actor.Player.CurrentHealth;
+            actor.Player.TakeDamage(accepted.Damage,actor.gameObject);
+            if (actor.Player.CurrentHealth<before) Hits[(int)Punch.Meteor]++;
+        }
+        void DealPunch()
+        {
+            hit=true;
+            var move=Current;
+            int before=actor.Player.CurrentHealth;
+            actor.Player.TakeDamage(Cross ? Mathf.RoundToInt(accepted.Damage*1.3f) : accepted.Damage,actor.gameObject);
+            if (actor.Player.CurrentHealth<before) Hits[(int)move]++;
+        }
         public void Publish(List<BossThreat> output)
         {
-            if (Current == Punch.None || Phase == Stage.Recovery || Phase == Stage.Slip) return;
-            var phase = Phase == Stage.Windup ? BossThreatPhase.Preparation : BossThreatPhase.Active;
-            float starts = Phase == Stage.Windup ? phaseUntil : activeAt, ends = starts + acceptedTiming.Active;
-            output.Add(new BossThreat { ActorId = actor.ActorId, AttackId = attackId, Phase = phase, Shape = BossThreatShape.Box,
-                Origin = actor.Position, Area = PunchArea(), Facing = LockedFacing, Valid = true, StartsAt = starts, EndsAt = ends });
+            if (Phase==Stage.Active)
+                output.Add(new BossThreat {ActorId=actor.ActorId,AttackId=200000+Stroke,Valid=true,Phase=BossThreatPhase.Active,
+                    Shape=BossThreatShape.Box,Area=PunchArea(),Origin=Fist(),StartsAt=punchTime,EndsAt=phaseUntil});
+        }
+        public void Cancel()
+        {
+            if (Current != Punch.None) actor.Motor?.EndAttackMotion();
+            Current=Punch.None; Phase=Stage.Idle; PreviewPunch=Punch.None;
+            weapon=WeaponState.Retired; detached=false; impactSupport=null;
+            ImpactAt=float.NegativeInfinity;
         }
     }
 }

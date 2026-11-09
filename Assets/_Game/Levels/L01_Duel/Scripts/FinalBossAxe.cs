@@ -5,7 +5,7 @@ namespace GoGhost.Duel
 {
     public sealed partial class FinalBossAxe
     {
-        // Chop and Spin remain the independent, untold phase-two axe attacks.
+        // Preserve the original move IDs for session tools and serialized data.
         public enum Move { None, Chop, Spin, TripleCut, LeapingCrosscut, AnchorVault, UnderpassReturn, PalmDeflection }
         public enum Stage { Idle, Prepare, Locked, Active, Recovery }
         const float CastLock=.25f;
@@ -29,7 +29,7 @@ namespace GoGhost.Duel
             var t=Timings[(int)move]; return new BossMoveTuning(t.Prepare,t.Recovery,t.Cooldown,BossProfile.AttackDamage(t.Damage));
         }
         public const float ChopReach=2.3f, ChopHeight=2.1f, SpinRadius=1.65f, AxeRadius=.32f;
-        const float SpinMove=.45f;
+        public FinalBossBoxer Boxer { get; private set; }
         internal static readonly int[] InvasionPercents={66,33};
         internal const float ChargeAt=.90f, PinchAt=3.50f, BurstAt=3.70f;
 
@@ -54,7 +54,7 @@ namespace GoGhost.Duel
         public float PhaseProgress=>Mathf.InverseLerp(phaseAt,phaseUntil,Time.time);
         public float ActiveProgress=>Mathf.InverseLerp(activeAt,activeEnds,Time.time);
         public float ActiveTime=>Mathf.Max(0,Time.time-activeAt);
-        public bool Committed=>Current!=Move.None||Transitioning||Invading;
+        public bool Committed=>Current!=Move.None||Transitioning||Invading||Boxer != null && Boxer.Current != FinalBossBoxer.Punch.None;
         public bool Invading {get;private set;}
         public int Invasions {get;private set;}
         internal float InvasionAge=>Mathf.Max(0,Time.time-invasionAt);
@@ -81,24 +81,17 @@ namespace GoGhost.Duel
         }
         public bool Ready(Move move)=>move>Move.None&&(int)move<readyAt.Length&&Time.time>=readyAt[(int)move];
         public bool CanStart(Move move)=>Ready(move)&&Current==Move.None&&!Invading&&!Transitioning&&
-            (PhaseTwo?(move==Move.Chop||move==Move.Spin):move>=Move.TripleCut)&&actor.Running&&actor.IsAlive&&
+            !PhaseTwo&&move>=Move.TripleCut&&actor.Running&&actor.IsAlive&&
             !actor.Health.AwaitingSecondPhase&&actor.Motor.Grounded;
 
         public void Tick()
         {
             if(TickTransition())return;
             if(TickInvasion())return;
-            if(Current!=Move.None) { TickMove(); return; }
-            if(actor.Player==null||actor.Player.IsDead){actor.Motor.Brake();return;}
-            if(!PhaseTwo) { if(Time.time>=nextDecisionAt)TickPhaseOneTactics(); return; }
-            if(PreviewMove!=Move.None&&TryStart(PreviewMove)){PreviewMove=Move.None;return;}
-            var seen=actor.Perception.Facts;
-            if(seen.Confidence<=.1f){actor.Motor.Brake();return;}
-            Vector2 delta=seen.Position-actor.Position;float gap=Mathf.Abs(delta.x);
-            if(Mathf.Abs(delta.y)<1.4f&&Time.time>=nextDecisionAt&&
-                (gap<2.5f&&TryStart(Move.Chop)||gap<2.2f&&TryStart(Move.Spin)))return;
-            actor.Motor.SetMove(gap>1.1f?Mathf.Sign(delta.x):0);
-            if(delta.y>1.4f&&gap<2.6f&&actor.Motor.Grounded)actor.Motor.TryJump();
+            if (PhaseTwo) { Boxer.Tick(); return; }
+            if (Current != Move.None) { TickMove(); return; }
+            if (actor.Player == null || actor.Player.IsDead) { actor.Motor.Brake(); return; }
+            if (Time.time >= nextDecisionAt) TickPhaseOneTactics();
         }
         bool StartPhaseOne(AxePlan plan)
         {
@@ -116,12 +109,7 @@ namespace GoGhost.Duel
         }
         public bool TryStart(Move move)
         {
-            if(!CanStart(move))return false;
-            if(!PhaseTwo)return TryPlanPhaseOne(move,true,out var plan)&&StartPhaseOne(plan);
-            TrackPhaseTwoTarget();
-            Begin(move);
-            readyAt[(int)move]=Time.time+acceptedTiming.Cooldown;
-            return true;
+            return CanStart(move) && TryPlanPhaseOne(move,true,out var plan) && StartPhaseOne(plan);
         }
         void Begin(Move move)
         {
@@ -140,18 +128,17 @@ namespace GoGhost.Duel
         void SetPhase(Stage stage,float seconds){Phase=stage;phaseAt=Time.time;phaseUntil=phaseAt+Mathf.Max(0,seconds);}
         void TickMove()
         {
-            if(!PhaseTwo)UpdateFlightWarning();
+            UpdateFlightWarning();
             if(Phase==Stage.Prepare)
             {
-                if(PhaseTwo)TrackPhaseTwoTarget();
                 if(!AdvancesDuringWindup(Current))actor.Motor.HoldHorizontal();
                 if(Time.time>=phaseUntil)
                 {
-                    if(!PhaseTwo && !LockPhaseOneAim()){RecoverPhaseOne();return;}
+                    if(!LockPhaseOneAim()){RecoverPhaseOne();return;}
                     SetPhase(Stage.Locked,acceptedTiming.Lock);activeAt=phaseUntil;activeEnds=activeAt+acceptedTiming.Active;
                     if(Current==Move.TripleCut&&!SafeStep(TripleStrides[0]*lockedFacing))actor.Motor.HoldHorizontal();
                     if(Current==Move.LeapingCrosscut)actor.Motor.HoldHorizontal();
-                    if(!PhaseTwo)UpdateFlightWarning();
+                    UpdateFlightWarning();
                     actor.Sounds?.Play(Sfx.ReturnPrepare,actor.ActorId,attackId);
                 }
             }
@@ -162,54 +149,26 @@ namespace GoGhost.Duel
                 {
                     activeAt=Time.time;activeEnds=activeAt+acceptedTiming.Active;
                     SetPhase(Stage.Active,acceptedTiming.Active);
-                    if(!PhaseTwo)ActivatePhaseOne();
+                    ActivatePhaseOne();
                     if(Phase==Stage.Active)
                         actor.Sounds?.Play(Current==Move.Chop?Sfx.BladeHeavy:Sfx.BladeLight,actor.ActorId,attackId);
                 }
             }
             else if(Phase==Stage.Active)
             {
-                if(PhaseTwo)TickPhaseTwoAttack();else TickPhaseOneAttack();
+                TickPhaseOneAttack();
             }
             else
             {
                 actor.Motor.HoldHorizontal();
                 if(Time.time>=phaseUntil)
                 {
-                    if(!PhaseTwo)
-                    {
-                        readyAt[(int)Current]=Time.time+acceptedTiming.Cooldown;
-                        ObserveLastAttack();
-                    }
+                    readyAt[(int)Current]=Time.time+acceptedTiming.Cooldown;
+                    ObserveLastAttack();
                     actor.Trace($"axe finish {Current} attack={attackId}");
                     Current=Move.None;Phase=Stage.Idle;AxeFlying=false;path.Clear();
-                    nextDecisionAt=Time.time+(PhaseTwo?.25f:0);
+                    nextDecisionAt=Time.time;
                 }
-            }
-        }
-        void TrackPhaseTwoTarget()
-        {
-            var facts=actor.Perception.Facts;
-            if(facts.Confidence>.1f)actor.Face(facts.Position-actor.Position);
-            lockedFacing=actor.Facing;
-        }
-        void TickPhaseTwoAttack()
-        {
-            if(Current==Move.Chop)
-            {
-                actor.Motor.HoldHorizontal();
-                if(!hitDone&&ChopArea().Intersects(PlayerBounds()))hitDone=Strike(acceptedTiming.Damage);
-            }
-            else
-            {
-                float toward=actor.Player!=null?Mathf.Sign(actor.Player.transform.position.x-actor.Position.x):0;
-                actor.Motor.SetMove(toward,SpinMove);
-                AxeSpin=ActiveProgress*1080f;
-                if(!hitDone&&PlayerBounds().SqrDistance(actor.Position)<=SpinRadius*SpinRadius)hitDone=Strike(acceptedTiming.Damage);
-            }
-            if(Current!=Move.None&&Time.time>=activeEnds)
-            {
-                AxeSpin=0;actor.Motor.HoldHorizontal();SetPhase(Stage.Recovery,acceptedTiming.Recovery);
             }
         }
         Bounds PlayerBounds()=>playerBody!=null?playerBody.bounds:new Bounds(Vector3.one*9999,Vector3.zero);
@@ -222,23 +181,15 @@ namespace GoGhost.Duel
             return true;
         }
         public Bounds ChopArea()=>new Bounds(actor.Position+new Vector2(lockedFacing*ChopReach*.5f,.05f),new Vector3(ChopReach,ChopHeight,1));
-        Bounds SpinArea()
-        {
-            var area=new Bounds(actor.Position,new Vector3(SpinRadius*2,SpinRadius*2,1));
-            float travel=actor.Motor.Profile.Speed*SpinMove*Timings[(int)Move.Spin].Active;
-            area.Encapsulate(new Bounds(actor.Position+Vector2.right*lockedFacing*travel,area.size));return area;
-        }
         public void Publish(List<BossThreat> output)
         {
-            if(Current==Move.None||Phase==Stage.Recovery||Phase==Stage.Idle)return;
-            if(!PhaseTwo){PublishPhaseOne(output);return;}
-            output.Add(new BossThreat{ActorId=actor.ActorId,AttackId=attackId,Valid=true,Facing=lockedFacing,
-                Phase=ThreatPhase,Shape=BossThreatShape.Box,Area=Current==Move.Chop?ChopArea():SpinArea(),
-                Origin=actor.Position,StartsAt=activeAt,EndsAt=activeEnds});
+            if (PhaseTwo) { Boxer.Publish(output); return; }
+            if (Current != Move.None && Phase != Stage.Recovery && Phase != Stage.Idle) PublishPhaseOne(output);
         }
         BossThreatPhase ThreatPhase=>Phase==Stage.Prepare?BossThreatPhase.Preparation:Phase==Stage.Locked?BossThreatPhase.Locked:BossThreatPhase.Active;
         public void Cancel()
         {
+            Boxer?.Cancel();
             PreviewMove=Move.None;
             ClearAttackPosition();
             pressUntil=0;
@@ -323,6 +274,7 @@ namespace GoGhost.Duel
             actor.Health.BeginSecondPhase();
             Transitioning = false; PhaseTwo = true;
             actor.RestoreSecondPhaseMotion();
+            Boxer = new FinalBossBoxer(actor,actor.Player);
             actor.View?.SetFinalBossPhaseTwo();
             nextDecisionAt = Time.time + .6f;
             return true;
@@ -335,7 +287,8 @@ namespace GoGhost.Duel
         {
             Cancel();
             actor.Health.SkipToSecondPhase();
-            PhaseTwo = true; actor.RestoreSecondPhaseMotion(); Transitioning = false; transitionHeld = false;
+            PhaseTwo = true; actor.RestoreSecondPhaseMotion();
+            Boxer = new FinalBossBoxer(actor,actor.Player); Transitioning = false; transitionHeld = false;
             actor.View?.SetFinalBossPhaseTwo();
         }
 

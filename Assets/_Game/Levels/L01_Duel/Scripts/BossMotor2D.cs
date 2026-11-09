@@ -174,7 +174,7 @@ namespace GoGhost.Duel
         public void SetRoute(ArenaNavigation2D.Route value, BossMotionProfile motion)
         {
             speedScale = Mathf.Min(speedScale, 1f);
-            route = value; routeMotion=motion; stepIndex = 0; launched = leftGround = false;
+            route = value; routeMotion=motion; stepIndex = 0; movingPlatformJump = false; launched = leftGround = false;
             RouteFailed = false; RouteFailure = null; RouteCompleted = value == null || value.Steps.Count == 0;
             routeAge = progressAge = 0; progressPosition = Position;
             if (RouteCompleted) route = null;
@@ -325,14 +325,36 @@ namespace GoGhost.Duel
             body.linearVelocity = new Vector2(horizontal, vertical);
             PreviousPosition = here;
         }
+        bool movingPlatformJump;
+
+        // This trajectory was checked against the moving platforms at their arrival times.
+        // The motor still sweeps every physical step and accepts the first actual landing.
+        internal bool JumpToMovingSupport(ArenaNavigation2D.RouteStep step, BossMotionProfile motion)
+        {
+            if (!enabledCombat || !Grounded || step.Support == null || !step.Support.enabled) return false;
+            EndAttackMotion();
+            var jump = new ArenaNavigation2D.Route { Version = navigation.Version, Duration = step.Duration };
+            jump.Steps.Add(step);
+            SetRoute(jump, motion);
+            movingPlatformJump = launched = jumpRequested = true;
+            JumpStartedAt = -1;
+            return true;
+        }
+
         void FollowRoute(float dt)
         {
-            if (navigation == null || route.Version != navigation.Version || stepIndex >= route.Steps.Count)
+            if (navigation == null || (!movingPlatformJump && route.Version != navigation.Version) || stepIndex >= route.Steps.Count)
             { FailRoute("terrain version or missing step"); return; }
             var step = route.Steps[stepIndex];
             routeAge += dt;
             if (step.Support == null || !step.Support.enabled || !step.Support.gameObject.activeInHierarchy)
             { FailRoute("destination support removed"); return; }
+            if (movingPlatformJump && leftGround && Grounded && !jumpRequested)
+            {
+                RouteCompleted = true;
+                Brake();
+                return;
+            }
             if (!launched)
             {
                 float delta = step.Start.x - Position.x;

@@ -42,7 +42,7 @@ namespace GoGhost.Duel
         GameObject stagePlatforms;
         Collider2D[] stageSupports;
         bool[] authoredPlatformActive;
-        Collider2D[] ActivePlatforms => stageSupports ?? platforms;
+        internal Collider2D[] ActivePlatforms => stageSupports ?? platforms;
 
         void ApplyPlatformLayout(bool training)
         {

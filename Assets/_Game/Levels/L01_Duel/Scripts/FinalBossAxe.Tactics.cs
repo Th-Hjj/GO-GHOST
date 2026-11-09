@@ -195,7 +195,7 @@ namespace GoGhost.Duel
             return true;
         }
 
-        void RecoverFooting()
+        internal void RecoverFooting()
         {
             // An ordinary route owns its airborne steering. This is only the free-body
             // case, e.g. landing on the player's head after collision interrupted a move.
@@ -323,7 +323,7 @@ namespace GoGhost.Duel
             pendingResult = Move.None;
         }
 
-        Vector2 PublicPosition(BossObservation facts, float after)
+        internal Vector2 PublicPosition(BossObservation facts, float after)
         {
             if (trajectoryFrame != Time.frameCount)
             {
@@ -437,7 +437,7 @@ namespace GoGhost.Duel
             return Mathf.Max(0,Mathf.Abs(delta.x)-2f)/actor.Motor.Profile.Speed + Mathf.Abs(delta.y)*.25f;
         }
 
-        BossMotionProfile LeapMotion(float rise)
+        internal BossMotionProfile LeapMotion(float rise)
         {
             if (rise > 2.7f) return twoTierLeap ??= CreateLeapMotion(17.2f);
             if (rise > .6f) return oneTierLeap ??= CreateLeapMotion(14.2f);

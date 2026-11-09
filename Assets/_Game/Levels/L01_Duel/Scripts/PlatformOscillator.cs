@@ -33,6 +33,14 @@ namespace GoGhost.Duel
 
         float Target(float time) => home.y + Amplitude * Mathf.Sin(time / Period * Mathf.PI * 2 + phase);
 
+        // A combatant can see the flight of a moving support, including its EMP start-up ramp.
+        internal float DisplacementAfter(float seconds)
+        {
+            float remaining = Mathf.Max(0, rampRemaining - seconds);
+            float advance = seconds - (rampRemaining*rampRemaining - remaining*remaining) / (2*RampDuration);
+            return Target(clock + advance) - body.position.y;
+        }
+
         void FixedUpdate()
         {
             if (body == null) return;

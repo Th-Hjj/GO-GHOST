@@ -19,17 +19,19 @@ namespace GoGhost.Duel
         readonly List<DeveloperFieldView> developerFields=new List<DeveloperFieldView>();
         int developerTab,developerSection,developerShortcutFrame=-1;
         bool tuningPhaseTwo;
-        static readonly (FinalBossAxe.Move id, string label)[] phaseOneMoves =
+        static readonly (int id, string label)[] phaseOneMoves =
         {
-            (FinalBossAxe.Move.TripleCut, "Triple Cut"),
-            (FinalBossAxe.Move.LeapingCrosscut, "Leaping Crosscut"),
-            (FinalBossAxe.Move.AnchorVault, "Anchor Vault"),
-            (FinalBossAxe.Move.UnderpassReturn, "Underpass Return"),
-            (FinalBossAxe.Move.PalmDeflection, "Palm Deflection")
+            ((int)FinalBossAxe.Move.TripleCut, "Triple Cut"),
+            ((int)FinalBossAxe.Move.LeapingCrosscut, "Leaping Crosscut"),
+            ((int)FinalBossAxe.Move.AnchorVault, "Anchor Vault"),
+            ((int)FinalBossAxe.Move.UnderpassReturn, "Underpass Return"),
+            ((int)FinalBossAxe.Move.PalmDeflection, "Palm Deflection")
         };
-        static readonly (FinalBossAxe.Move id, string label)[] phaseTwoMoves =
+        static readonly (int id, string label)[] phaseTwoMoves =
         {
-            (FinalBossAxe.Move.Chop, "Chop"), (FinalBossAxe.Move.Spin, "Spin")
+            ((int)FinalBossBoxer.Punch.Jab, "Jab / Cross"), ((int)FinalBossBoxer.Punch.Uppercut, "Uppercut"),
+            ((int)FinalBossBoxer.Punch.Backfist, "Backfist"), ((int)FinalBossBoxer.Punch.Leap, "Overhand"),
+            ((int)FinalBossBoxer.Punch.Meteor, "Meteor Fist")
         };
         int tuningMove = (int)FinalBossAxe.Move.TripleCut;
         TMP_Text developerStatus;
@@ -124,7 +126,7 @@ namespace GoGhost.Duel
             for (int phase = 1; phase <= 2; phase++)
             {
                 bool phaseTwo = phase == 2;
-                Button(phaseTwo ? "Phase 2 Axe" : "Phase 1 Axe", page, new Vector2(phaseTwo ? 160 : -160, 150), new Vector2(290,48),
+                Button(phaseTwo ? "Phase 2 Fists" : "Phase 1 Axe", page, new Vector2(phaseTwo ? 160 : -160, 150), new Vector2(290,48),
                     () =>
                     {
                         tuningPhaseTwo = phaseTwo;

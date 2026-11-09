@@ -186,7 +186,8 @@ namespace GoGhost.Duel
         void UpdateFlyingAxe()
         {
             var axe = actor.Axe;
-            if (axe.PhaseTwo || !axe.AxeFlying || defeated)
+            bool spirit = axe.PhaseTwo && axe.Boxer.Detached;
+            if ((!spirit && !axe.AxeFlying) || defeated)
             {
                 ClearPhaseOneFlight(); return;
             }
@@ -202,11 +203,14 @@ namespace GoGhost.Duel
                 flightSprite.sprite = ApprovedAxe();
             }
             flightSprite.enabled = true;
-            flightSprite.flipX = axe.FlightFacing < 0;
-            var forward = Angle(axe.AxeSpin);
-            Vector2 grip = axe.AxePosition - forward * GripToFlightPivot;
-            Vector2 centre = AxeSpriteCentre(grip, forward, axe.FlightFacing);
-            flightSprite.transform.SetPositionAndRotation(centre, Quaternion.Euler(0, 0, axe.AxeSpin - 90));
+            float side=spirit ? axe.Boxer.BladeSide : axe.FlightFacing;
+            float angle=spirit ? axe.Boxer.AxeAngle : axe.AxeSpin;
+            var pivot=spirit ? axe.Boxer.AxePivot : axe.AxePosition;
+            flightSprite.flipX=side<0;
+            flightSprite.sharedMaterial=parts[(int)Part.Weapon].sharedMaterial;
+            var forward=Angle(angle);
+            var centre=AxeSpriteCentre(pivot-forward*GripToFlightPivot,forward,side);
+            flightSprite.transform.SetPositionAndRotation(centre,Quaternion.Euler(0,0,angle-90));
         }
 
         void ClearPhaseOneFlight()
@@ -365,7 +369,7 @@ namespace GoGhost.Duel
             }
         }
 
-        void DrawAxeTrail(Vector2 edge)
+        void DrawAxeTrail(Vector2 edge,bool spirit=false)
         {
             float now = Time.time;
             int expired = 0;
@@ -386,7 +390,7 @@ namespace GoGhost.Duel
             if (trailPoints.Count < 2) return;
             int first=trailPoints.Count-1;
             Vector2 tail=trailPoints[first];
-            float length=1.15f;
+            float length=spirit ? 3.4f : 1.15f;
             while(first>0 && length>0)
             {
                 Vector2 point=trailPoints[--first];
@@ -395,9 +399,9 @@ namespace GoGhost.Duel
                 length-=segment;
             }
             var line = AxeLine(7, "Flying axe trace", trailPoints.Count-first);
-            line.startWidth = .012f; line.endWidth = .065f;
-            line.startColor = NeuralPalette.Alpha(FlightIce, .05f);
-            line.endColor = NeuralPalette.Primary;
+            line.startWidth = .012f; line.endWidth = spirit ? .155f : .065f;
+            line.startColor = NeuralPalette.Alpha(spirit ? NeuralPalette.Emp : FlightIce, .05f);
+            line.endColor = spirit ? NeuralPalette.Emp : NeuralPalette.Primary;
             line.SetPosition(0,ClipTellPoint(tail,.065f));
             for(int i=first+1;i<trailPoints.Count;i++)line.SetPosition(i-first,ClipTellPoint(trailPoints[i],.065f));
         }

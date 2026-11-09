@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-08 — Combat sound balance
+
+The phase-two flight uses 0.71 times the shared axe gain (−2.97 dB) on both the opening throw and later commands. The plant is 1.2 dB softer, Meteor contact is 1.5 dB softer and ordinary Boss landings are 1.6 dB softer. The Rules seal glitch peaked at −4.0 dBFS at combat gain, so it now plays 7.5 dB lower. The three EMP fronts each retain their existing explosion level.
+
+Unity compiled. In a prefab preview scene the combat AudioSource played the flight at 0.2684, compared with 0.3780 for the phase-one throw, and the pan moved from −0.40 to +0.40. Verified the plant, Meteor, landing, glitch, revolver and EMP source gains on the same pool. The stereo A/B uses identical cue timings and a shared playback level. Full encounter listening was not run.
+
 ## 2026-11-08 — GOAT of War combat sound
 
 Integrated the eight approved synthesized mono WAVs. Each committed phase-one stroke plays the heavy axe swing, including individual Triple Cut strokes. Flight follows the blade across the stereo field. In phase two the command comes from the boxer, the flight starts one second later, and the plant comes from the actual contact point. Fists use the two air sounds and Meteor plays its ground impact on contact. The transition plays EmpGather, then the existing EmpBurst once at each terrain, Rules and skyline front (5.1, 8.5 and 11.9 s from the start of the charge). Each phase-one invasion still releases a single front.

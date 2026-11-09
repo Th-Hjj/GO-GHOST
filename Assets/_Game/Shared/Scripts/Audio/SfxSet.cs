@@ -183,6 +183,7 @@ public sealed class SfxSet : MonoBehaviour
             case Sfx.BossBurst: return .38f;
             case Sfx.BulletHit: return .24f;
             case Sfx.PlayerHurt: return .50f;
+            case Sfx.Glitch: return .42f;
             case Sfx.Equip: return .25f;
             case Sfx.Click: return .50f;
             case Sfx.Victory: return .35f;
@@ -193,7 +194,8 @@ public sealed class SfxSet : MonoBehaviour
             case Sfx.EmpBurst: return .65f;
             case Sfx.EmpGather: return .63f;
             case Sfx.AxeFlight: case Sfx.AxeSwing: return .54f;
-            case Sfx.AxePlant: case Sfx.MeteorGround: return .62f;
+            case Sfx.AxePlant: return .54f;
+            case Sfx.MeteorGround: return .52f;
             case Sfx.AxeCommand: return .55f;
             case Sfx.JabAir: case Sfx.HeavyFist: return .58f;
             case Sfx.DrawPrepare: case Sfx.ReturnPrepare: return .56f;
@@ -202,7 +204,7 @@ public sealed class SfxSet : MonoBehaviour
             case Sfx.BladeHeavy: case Sfx.DashCut: return .42f;
             case Sfx.GuardBlock: return .38f;
             case Sfx.Footstep: return .12f;
-            case Sfx.Land: return .18f;
+            case Sfx.Land: return .15f;
             case Sfx.Reload: return .24f;
             case Sfx.BossDefeat: return .36f;
             default: return 1f; // Keep the original menu/legacy cues' existing mix.

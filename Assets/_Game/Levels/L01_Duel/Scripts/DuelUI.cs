@@ -222,7 +222,7 @@ namespace GoGhost.Duel
                 Image(bar,new Vector2(0,y),new Vector2(430,12),NeuralPalette.Border);
                 var color=game.Bosses[i].IsTrainingEnemy?NeuralPalette.Secondary:game.Bosses[i].Profile.Kind==BossKind.Gunner?NeuralPalette.Gunner:NeuralPalette.Swordsman;
                 policeFill[i]=game.Bosses[i].IsFinalBoss
-                    ? Rect("Rainbow health",bar,new Vector2(-215,y),new Vector2(430,12)).gameObject.AddComponent<RainbowHealthFill>()
+                    ? Rect("Rainbow health",bar,new Vector2(-215,y),new Vector2(430,12)).gameObject.AddComponent<FlowingHealthFill>()
                     : Image(bar,new Vector2(-215,y),new Vector2(430,12),color);
                 policeFill[i].rectTransform.pivot=new Vector2(0,.5f);
                 if(game.Bosses[i].IsFinalBoss && !game.Bosses[i].Axe.PhaseTwo) BuildInvasionMarks(bar,y);

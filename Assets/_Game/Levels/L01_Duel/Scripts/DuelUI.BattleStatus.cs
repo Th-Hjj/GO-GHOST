@@ -105,6 +105,8 @@ namespace GoGhost.Duel
                 bossHealthText[i].Update(policeHealth[i], label, actor.Health.CurrentHealth);
                 policeFill[i].rectTransform.sizeDelta =
                     new Vector2(430f * actor.Health.CurrentHealth / actor.Health.MaxHealth, 12);
+                if (policeFill[i] is FlowingHealthFill rainbow && actor.Axe.PhaseTwo && actor.View != null)
+                    rainbow.UpdateFlow(actor.View.RainbowPhase, policeHealth[i]);
             }
             playerFill.rectTransform.sizeDelta =
                 new Vector2(430f * game.Player.CurrentHealth / game.Player.MaxHealth, 12);
@@ -113,24 +115,78 @@ namespace GoGhost.Duel
         }
 
     }
-    // Same hue range and white mix as the Boss silhouette, across the remaining HP.
-    internal sealed class RainbowHealthFill : UnityEngine.UI.Image
+    // A bar and its live label sample the same palette and phase across their widths.
+    internal sealed class FlowingHealthFill : UnityEngine.UI.Image
     {
+        const float HueSpan = .78f;
+        float phase;
+        TMP_Text healthLabel;
+
+        internal void UpdateFlow(float value, TMP_Text label)
+        {
+            bool firstFrame = healthLabel == null;
+            if (firstFrame)
+            {
+                healthLabel = label;
+                // TMP rebuilds the glyph mesh whenever the HP digits change.
+                healthLabel.OnPreRenderText += ColorHealthLabel;
+            }
+            if (!firstFrame && phase == value) return;
+            phase = value;
+            SetVerticesDirty();
+            if (!label.havePropertiesChanged && label.textInfo.characterCount > 0)
+            {
+                ColorHealthLabel(label.textInfo);
+                label.UpdateVertexData(TMP_VertexDataUpdateFlags.Colors32);
+            }
+        }
+
+        void ColorHealthLabel(TMP_TextInfo info)
+        {
+            if (info.characterCount == 0 || info.lineCount == 0) return;
+            var extents = info.lineInfo[0].lineExtents;
+            for (int i = 0; i < info.characterCount; i++)
+            {
+                var glyph = info.characterInfo[i];
+                if (!glyph.isVisible) continue;
+                var mesh = info.meshInfo[glyph.materialReferenceIndex];
+                for (int j = glyph.vertexIndex; j < glyph.vertexIndex + 4; j++)
+                {
+                    float x = Mathf.InverseLerp(extents.min.x, extents.max.x, mesh.vertices[j].x);
+                    Color32 color = ColorAt(x);
+                    color.a = mesh.colors32[j].a;
+                    mesh.colors32[j] = color;
+                }
+            }
+        }
+
+        Color32 ColorAt(float x) => Color.HSVToRGB(Mathf.Repeat(phase + HueSpan * x, 1f), .75f, 1);
+
+        protected override void OnDestroy()
+        {
+            if (healthLabel != null) healthLabel.OnPreRenderText -= ColorHealthLabel;
+            base.OnDestroy();
+        }
+
         protected override void OnPopulateMesh(UnityEngine.UI.VertexHelper mesh)
         {
             mesh.Clear();
             var rect = GetPixelAdjustedRect();
             if (rect.width <= 0 || rect.height <= 0) return;
-            const float lastHue = .78f;
-            for (int i = 0; i <= 5; i++)
+            AddStop(0);
+            // HSV is linear between sixths. Keep each stop as it crosses the bar.
+            for (int sector = Mathf.FloorToInt(phase * 6) + 1; sector / 6f < phase + HueSpan; sector++)
+                AddStop((sector / 6f - phase) / HueSpan);
+            AddStop(1);
+
+            void AddStop(float position)
             {
-                float hue = Mathf.Min(i / 6f, lastHue);
-                float x = Mathf.Lerp(rect.xMin, rect.xMax, hue / lastHue);
-                Color32 tint = Color.HSVToRGB(hue, .75f, 1);
+                float x = Mathf.Lerp(rect.xMin, rect.xMax, position);
+                Color32 tint = ColorAt(position);
+                int n = mesh.currentVertCount;
                 mesh.AddVert(new Vector3(x, rect.yMin), tint, Vector2.zero);
                 mesh.AddVert(new Vector3(x, rect.yMax), tint, Vector2.zero);
-                if (i == 0) continue;
-                int n = i * 2;
+                if (n == 0) return;
                 mesh.AddTriangle(n - 2, n - 1, n);
                 mesh.AddTriangle(n, n - 1, n + 1);
             }

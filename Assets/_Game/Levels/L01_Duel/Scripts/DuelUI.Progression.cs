@@ -31,12 +31,15 @@ namespace GoGhost.Duel
             if (sceneDialogue != null) sceneDialogue.maxVisibleCharacters = game.DialogueVisibleCharacters;
             bool show = game.PendingDialogue != null && !game.Paused && !game.DeveloperToolsOpen
                 && !(game.Phase == DuelPhase.Configure && helpOpen);
+            bool wasShowingStory = DialogueVisible;
             DialogueVisible = show;
             UpdateTutorialFocus();
             bool explainingEditor = VisibleTutorialFocus is TutorialFocus.Condition or TutorialFocus.Action or TutorialFocus.Relation;
             if (pageControls != null) pageControls.interactable = game.StartupProgress < 0
                 && (!show || TutorialChoiceOpen || (!explainingEditor && game.DialogueAllowsPreparationNavigation));
-            if (!show && dialogueOverlay == null) return;
+            bool ruleEditorOpen = game.Phase == DuelPhase.Configure && selectorRow >= 0 && !helpOpen
+                && !game.Paused && !game.DeveloperToolsOpen;
+            if (!show && !ruleEditorOpen && dialogueOverlay == null) return;
             if (dialogueOverlay == null)
             {
                 var blocker = Image(canvas, Vector2.zero, Vector2.zero, Color.clear);
@@ -67,10 +70,10 @@ namespace GoGhost.Duel
                 body.offsetMin = new Vector2(20, 8);
                 body.offsetMax = new Vector2(-20, 68);
             }
-            if (show && !dialogueOverlay.gameObject.activeSelf)
+            if (show && !wasShowingStory)
                 UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
-            dialogueOverlay.gameObject.SetActive(show);
-            if (!show) return;
+            dialogueOverlay.gameObject.SetActive(show || ruleEditorOpen);
+            if (!show && !ruleEditorOpen) return;
             dialogueOverlay.SetAsLastSibling();
             bool ambient = game.Phase != DuelPhase.FinalBoss && game.Phase != DuelPhase.BonusOffer
                 && !game.FinalBossCutscene && !game.InvasionHeld;
@@ -83,14 +86,18 @@ namespace GoGhost.Duel
                 float bottom = game.Phase == DuelPhase.Configure ? dialogueFooterBottomInset : 32;
                 ambientPanel.rectTransform.offsetMin = new Vector2(32, bottom);
                 ambientPanel.rectTransform.offsetMax = new Vector2(-right, bottom + 104);
-                ambientDialogue.text = game.PendingDialogue;
-                ambientSpeaker.text = game.HappySpeakerName;
-                ambientDialogue.maxVisibleCharacters = game.DialogueVisibleCharacters;
+                string description = ruleEditorOpen && hoveredRuleOption != null && hoveredRuleOption.isActiveAndEnabled
+                    ? hoveredRuleOption.Description : null;
+                bool showDescription = !show || (TutorialChoiceOpen && description != null);
+                ambientDialogue.text = showDescription ? description ?? "" : game.PendingDialogue;
+                ambientSpeaker.text = showDescription ? (description == null ? "" : game.HappySpeakerName) : game.HappySpeakerName;
+                ambientDialogue.maxVisibleCharacters = showDescription ? int.MaxValue : game.DialogueVisibleCharacters;
             }
         }
 
         internal bool CaptureDialogueClick(Vector2 point, Camera eventCamera)
         {
+            if (!DialogueVisible) return false;
             if (TutorialChoiceOpen)
                 foreach (var button in tutorialEditorButtons)
                     if (button != null && button.IsInteractable() && RectTransformUtility.RectangleContainsScreenPoint(

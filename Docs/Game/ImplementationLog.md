@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-08 — Happy reads rule editor choices
+
+Body Configuration uses the preparation dialogue box for rule descriptions. Hovering a Condition or Action shows its text, and selecting the card plays the corresponding Happy recording. Leaving the cards clears the preview even when the draft has a selection. The 11 Condition and seven Action takes are available in Voice Studio. Compilation, Play Mode and listening review were skipped at Thomas's request.
+
 ## 2026-11-08 — Efe Inan's Mission 3 phase-one music
 
 Mission 3 previously had no assigned music. The arena now binds Efe Inan's original `mx_bosstheme3_p1_wip.wav` to the existing music player for the first countdown and health pool. The track fades at the start of the kneeling transition. Phase-two retries stay silent. The 137.25-second stereo recording uses the Mission 2 streaming settings and a +2.1 dB trim to match the music reference. The [music manifest](../../Assets/_Game/Levels/L01_Duel/Audio/Music/Licenses/music-manifest.json) records the source and credit. Play Mode, listening review and standalone build were not run.

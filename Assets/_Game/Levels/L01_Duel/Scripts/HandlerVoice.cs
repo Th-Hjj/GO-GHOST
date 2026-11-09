@@ -16,6 +16,7 @@ namespace GoGhost.Duel
         AudioClip generatedGreeting;
         CancellationTokenSource pendingGreeting;
         bool tutorialActive, editorExplained, confirmSpoken;
+        bool readingRuleDescription, confirmAfterDescription;
         internal TutorialFocus Focus { get; private set; }
         internal bool CanOpenRuleEditor => !tutorialActive || Focus == TutorialFocus.AddRule;
         bool suspended;
@@ -163,10 +164,12 @@ namespace GoGhost.Duel
         internal void RuleDraftChanged(bool complete)
         {
             if (Focus != TutorialFocus.Pick && Focus != TutorialFocus.Confirm) return;
+            if (!complete) confirmAfterDescription = false;
             if (complete && !confirmSpoken)
             {
-                confirmSpoken = true;
-                SpeakDialogue("Handler/TutorialConfirm");
+                Focus = TutorialFocus.Confirm;
+                if (readingRuleDescription && Speaking) confirmAfterDescription = true;
+                else GiveConfirmInstruction();
             }
             else
             {
@@ -175,8 +178,40 @@ namespace GoGhost.Duel
             }
         }
 
+        internal void ReadRuleDescription(string key)
+        {
+            // Selecting a card also accepts the free-choice tutorial prompt.
+            if (PendingDialogue != null)
+            {
+                if (Focus is not (TutorialFocus.Pick or TutorialFocus.Confirm)) return;
+                EndTutorialPage();
+            }
+            readingRuleDescription = true;
+            PlayLine(key);
+        }
+
+        void Update()
+        {
+            if (!readingRuleDescription || suspended || Speaking) return;
+            readingRuleDescription = false;
+            if (confirmAfterDescription) GiveConfirmInstruction();
+        }
+
+        void GiveConfirmInstruction()
+        {
+            confirmAfterDescription = false;
+            confirmSpoken = true;
+            SpeakDialogue("Handler/TutorialConfirm");
+        }
+
         internal void RuleEditorClosed(bool installed)
         {
+            confirmAfterDescription = false;
+            if (readingRuleDescription)
+            {
+                readingRuleDescription = false;
+                speaker.Stop();
+            }
             if (Focus is not (TutorialFocus.Condition or TutorialFocus.Action or TutorialFocus.Relation
                 or TutorialFocus.Pick or TutorialFocus.Confirm)) return;
             EndTutorialPage();
@@ -211,7 +246,7 @@ namespace GoGhost.Duel
 
         internal void LeaveConfiguration()
         {
-            if (tutorialActive || suspended || PendingDialogue != null) Stop();
+            if (tutorialActive || suspended || PendingDialogue != null || readingRuleDescription) Stop();
         }
 
         internal void SuspendConfiguration(bool value)
@@ -335,6 +370,7 @@ namespace GoGhost.Duel
 
         public void Stop()
         {
+            readingRuleDescription = confirmAfterDescription = false;
             suspended = false;
             interruptedClip = null;
             dialogueStartsAt = 0;

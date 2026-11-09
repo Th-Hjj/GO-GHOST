@@ -555,6 +555,114 @@
       "profileMission": 3,
       "profileField": "Skills",
       "profileValue": "[placeholder]"
+    },
+    {
+      "key": "Handler/EditorCondition51",
+      "label": "Rule editor - Ground State",
+      "text": "While you're on the ground or in the air.",
+      "locked": false
+    },
+    {
+      "key": "Handler/EditorCondition4",
+      "label": "Rule editor - Player Low Health",
+      "text": "When your health drops to 40% or less.",
+      "locked": false
+    },
+    {
+      "key": "Handler/EditorCondition6",
+      "label": "Rule editor - Took Damage",
+      "text": "When you take damage.",
+      "locked": false
+    },
+    {
+      "key": "Handler/EditorCondition9",
+      "label": "Rule editor - Reloading",
+      "text": "When you're reloading.",
+      "locked": false
+    },
+    {
+      "key": "Handler/EditorCondition17",
+      "label": "Rule editor - Trigger Held",
+      "text": "While you hold the fire button.",
+      "locked": false
+    },
+    {
+      "key": "Handler/EditorCondition18",
+      "label": "Rule editor - Enemy Near Your Aim",
+      "text": "While you're aiming at or close to an enemy.",
+      "locked": false
+    },
+    {
+      "key": "Handler/EditorCondition52",
+      "label": "Rule editor - Horizontal Enemy Distance",
+      "text": "How far apart you and an enemy are from left to right.",
+      "locked": false
+    },
+    {
+      "key": "Handler/EditorCondition45",
+      "label": "Rule editor - Near Wall",
+      "text": "While you're near the left or right wall of the arena.",
+      "locked": false
+    },
+    {
+      "key": "Handler/EditorCondition53",
+      "label": "Rule editor - Incoming Attack",
+      "text": "When an enemy attack is about to hit you.",
+      "locked": false
+    },
+    {
+      "key": "Handler/EditorCondition3",
+      "label": "Rule editor - Landed",
+      "text": "When you touch down after a jump or fall.",
+      "locked": false
+    },
+    {
+      "key": "Handler/EditorCondition13",
+      "label": "Rule editor - Hit Enemy",
+      "text": "When one of your shots damages an enemy.",
+      "locked": false
+    },
+    {
+      "key": "Handler/EditorActionQ01",
+      "label": "Rule editor - Auto Aim",
+      "text": "Your gun aims at the nearest enemy for you.",
+      "locked": false
+    },
+    {
+      "key": "Handler/EditorActionF03",
+      "label": "Rule editor - Fire",
+      "text": "Choose between steady shots and a quick burst.",
+      "locked": false
+    },
+    {
+      "key": "Handler/EditorActionJ01",
+      "label": "Rule editor - Jump",
+      "text": "Jump whenever grounded while the condition holds.",
+      "locked": false
+    },
+    {
+      "key": "Handler/EditorActionJ04",
+      "label": "Rule editor - Change Platform",
+      "text": "Move to a higher or lower platform.",
+      "locked": false
+    },
+    {
+      "key": "Handler/EditorActionM11",
+      "label": "Rule editor - Move",
+      "text": "Move toward an enemy or away from them.",
+      "locked": false
+    },
+    {
+      "key": "Handler/EditorActionM03",
+      "label": "Rule editor - Keep Distance",
+      "text": "Step back if an enemy gets too close. Move closer if they get too far away.",
+      "locked": false
+    },
+    {
+      "key": "Handler/EditorActionD01",
+      "label": "Rule editor - Dodge",
+      "text": "Dodge away from danger or toward an enemy.",
+      "locked": false
     }
   ]
 }

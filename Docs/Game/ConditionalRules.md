@@ -18,7 +18,7 @@ The overview shows the equipped Rules list directly below the header. The Condit
 
 **Rule editor layout — 2026-11-05:** While a rule is open, Condition and Action have side-by-side pickers. Each uses the same width and outer edges as its preview above, with the arrow centered between previews. Either side can be selected first. Options and parameters edit the local draft. Confirm saves a valid combination and Cancel discards the draft. The equipped Rules list appears in the overview.
 
-**Action picker — 2026-11-05:** The action picker uses a scrollable two-column grid under three non-interactive headings. Fixed-height cards keep their positions when parameters appear. Weapon groups Auto Aim and Fire, Movement groups Move, Keep Distance, Jump and Change Platform, and Dodge contains Dodge. Both pickers reserve space for parameters directly below their dividers. Descriptions sit under the pickers above Happy’s footer. Condition and Action headings sit in the summary cards. Hover or keyboard focus shows a description in the shared footer while the summary shows the selected rule. Mode choices use the existing execution IDs.
+**Action picker — 2026-11-05:** The action picker uses a scrollable two-column grid under three non-interactive headings. Fixed-height cards keep their positions when parameters appear. Weapon groups Auto Aim and Fire, Movement groups Move, Keep Distance, Jump and Change Platform, and Dodge contains Dodge. Both pickers reserve space for parameters directly below their dividers. Condition and Action headings sit in the summary cards. The shared Happy dialogue box previews the Condition or Action card under the pointer. Choosing an available card plays its description. Moving to a category, parameter or empty space clears the preview. The summary keeps the selected rule. Mode choices use the existing execution IDs.
 
 **First rule tutorial.** After **Upload**, Happy introduces herself and installs Incoming Attack (Any) → Jump during her example. **+ Add Rule** opens the editor. Three dialogue clicks move the focus from the whole Condition column to the whole Action column to the preview joining them. Happy invites the player to choose freely. A complete legal draft highlights **Confirm** and cues its instruction once. Changing a required parameter can withdraw the highlight. Confirm installs the selected rule and returns to the overview. Happy then highlights Target Profile, Test Room and Start Mission on separate dialogue pages. Both visits are optional. Following a highlighted visit resumes the next line on Back. The face, nickname and loadout persist through Test Room, retries and subsequent missions. [Art Direction](ArtDirection.md)
 
@@ -64,7 +64,7 @@ There are exactly **11 selectable conditions in five categories** and **seven ac
 | Threats | A53 Incoming Attack (Any / Melee / Ranged) |
 | Action Events | A03 Landed; A13 Hit Enemy |
 
-Took Damage, Landed and Hit Enemy are events. The other eight selectable conditions are states. Hovering a parameter previews its description in the footer without editing the draft. Q06 Aim Assist is retired; existing rules using it require reselection. The rows below describe the 11 selectable observations.
+Took Damage, Landed and Hit Enemy are events. The other eight selectable conditions are states. Q06 Aim Assist is retired; existing rules using it require reselection. The rows below describe the 11 selectable observations.
 
 | Condition | Required observation |
 |---|---|

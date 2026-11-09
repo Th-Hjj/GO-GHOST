@@ -1,0 +1,21 @@
+{
+  "mode": "Synthesize",
+  "source": "VoiceAuthoring/media/add576c17b2d0130e65a2a9ae3f950e89b09b437087510e05cd4461cd3f12df5.wav",
+  "reference": "",
+  "text": "Step back if an enemy gets too close. Move closer if they get too far away.",
+  "pronunciations": "gets ɡ ˈ ɛ t s",
+  "speed": 1.0,
+  "pitch": 0.0,
+  "gain": 0.0,
+  "melody": 0.0,
+  "stress": 0.0,
+  "timing": 0.0,
+  "edits": [],
+  "independent": false,
+  "overrideTone": false,
+  "electronic": 0.15,
+  "nearDb": 0.0,
+  "spaceDb": 0.0,
+  "bossSub": 0.42,
+  "bossDrive": 1.9
+}

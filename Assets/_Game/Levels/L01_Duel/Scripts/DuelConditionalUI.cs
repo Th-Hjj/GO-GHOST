@@ -39,7 +39,7 @@ namespace GoGhost.Duel
         CanvasGroup installingCard;
         RectTransform installingCardRect;
         Vector2[] retainedBodyPulses;
-        TMP_Text ruleDescription;
+        RuleOptionHover hoveredRuleOption;
         ConditionalRule completedPreview;
         int completedPreviewRow=-1;
         readonly List<UnityEngine.UI.Button> previewParts=new List<UnityEngine.UI.Button>();
@@ -64,7 +64,7 @@ namespace GoGhost.Duel
             if(page==null||game.Phase!=DuelPhase.Configure||displayedDraft!=game.DraftLoadout)
             {configurationScroll.Clear();return;}
             foreach(var scroll in page.GetComponentsInChildren<UnityEngine.UI.ScrollRect>())
-                if(!IsDetailScroll(scroll))configurationScroll[ScrollKey(scroll.name)]=scroll.verticalNormalizedPosition;
+                configurationScroll[ScrollKey(scroll.name)]=scroll.verticalNormalizedPosition;
             var selected=EventSystem.current!=null?EventSystem.current.currentSelectedGameObject:null;
             if(selected!=null&&selected.transform.IsChildOf(page)&&selected.GetComponent<DuelButtonOutline>() is {KeyboardFocused:true})
             {focusName=selected.name;focusLabel=selected.GetComponentInChildren<TMP_Text>()?.text;}
@@ -78,7 +78,7 @@ namespace GoGhost.Duel
                 if (scroll.name=="EquippedRules" && installingCard!=null &&
                     Time.unscaledTime-installedAt < CardRevealSeconds && scroll.content.rect.height>scroll.viewport.rect.height)
                     scroll.verticalNormalizedPosition=0;
-                else if(!IsDetailScroll(scroll)&&configurationScroll.TryGetValue(ScrollKey(scroll.name),out float position))
+                else if(configurationScroll.TryGetValue(ScrollKey(scroll.name),out float position))
                     scroll.verticalNormalizedPosition=position;
             }
             if(focusName==null||EventSystem.current==null)return;
@@ -93,30 +93,6 @@ namespace GoGhost.Duel
             }
             target=target!=null?target:fallback;
             if(target!=null)EventSystem.current.SetSelectedGameObject(target.gameObject);
-        }
-
-        static bool IsDetailScroll(UnityEngine.UI.ScrollRect scroll)
-            => scroll.name=="RuleDescription";
-
-        void SetDetail(string value)
-        {
-            var text=ruleDescription;
-            if(text==null || text.text==(value??""))return;
-            text.text=value??"";
-            var scroll=text.GetComponentInParent<UnityEngine.UI.ScrollRect>();
-            var layout=text.GetComponent<UnityEngine.UI.LayoutElement>();
-            layout.preferredHeight=Mathf.Max(layout.minHeight,TextHeight(text,scroll.GetComponent<RectTransform>().sizeDelta.x-24));
-            UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(scroll.content);
-            scroll.StopMovement();
-            scroll.verticalNormalizedPosition=1;
-        }
-
-        string SelectedDetail(bool conditionSide)
-        {
-            if(pendingRule==null)return "";
-            if(conditionSide)return ConditionalCatalog.ConditionDescription(pendingRule,selectedConditionIndex);
-            if(string.IsNullOrEmpty(pendingRule.Action))return "";
-            return ActionChoiceReason(pendingRule,pendingRule.Action)??ConditionalCatalog.ResponseDescription(pendingRule);
         }
 
         // Only the configuration page uses a pixel floor. Combat/menu retain their authored scale.
@@ -179,7 +155,7 @@ namespace GoGhost.Duel
             pendingRow=selectorRow=completedPreviewRow=-1;
             selectingCondition=selectingAdditional=false;
             displayedDraft=null;displayedRules.Clear();
-            ruleDescription=null;
+            hoveredRuleOption=null;
             focusName=focusLabel=null;configurationScroll.Clear();
             builtSelector=-1;
             previewRow=installedRow=-1;installedAt=float.NegativeInfinity;
@@ -220,7 +196,7 @@ namespace GoGhost.Duel
                 completedPreview=null;completedPreviewRow=-1;
             }
             previewSystem=NeuralBodySystem.None;previewRow=-1;equippedAccents.Clear();
-            ruleDescription=null;
+            hoveredRuleOption=null;
             SyncRuleRows();
             float scale = canvas.GetComponent<Canvas>().scaleFactor;
             page.sizeDelta = new Vector2(Screen.width / scale, Screen.height / scale);
@@ -261,7 +237,6 @@ namespace GoGhost.Duel
             {
                 BuildRuleSelector(ruleEditor,true);
                 BuildRuleSelector(ruleList,false);
-                BuildSelectionDescription();
             }
             else
             {
@@ -411,7 +386,6 @@ namespace GoGhost.Duel
         void PreviewRule(NeuralBodySystem system,int row=-1){previewSystem=system;previewRow=row;UpdateConfigurationSignals();}
         void RestoreFocusedPreview()
         {
-            SetDetail(SelectedDetail(selectingCondition));
             PreviewRule(NeuralBodySystem.None);
             var selected=EventSystem.current!=null?EventSystem.current.currentSelectedGameObject:null;
             if(selected!=null&&selected.activeInHierarchy&&selected.GetComponent<DuelButtonOutline>() is {KeyboardFocused:true})selected.GetComponent<ConditionalOptionDescription>()?.Inspect?.Invoke();
@@ -853,7 +827,7 @@ namespace GoGhost.Duel
                     if(condition!=selectedCondition)candidate.SetCondition(selectedConditionIndex,new RuleCondition(condition));
                     string reason=ConditionalCatalog.HasAnyCompatibleAction(candidate)?null:"These conditions cannot be true together.";
                     RuleOption(entry.Label,choices,()=>ApplyChoice(condition,false,null),selectedCondition==condition,
-                        ConditionalCatalog.ConditionDescription(condition),reason);
+                        "Handler/EditorCondition"+condition,reason);
                 }
             }
             else
@@ -886,19 +860,9 @@ namespace GoGhost.Duel
                     if(NeuralPalette.System(entry.Operation)!=group.System)continue;
                     string action=entry.Id;
                     RuleOption(entry.Label,cards,()=>ApplyChoice(0,false,action),ConditionalCatalog.PickerAction(rule.Action)==action,
-                        ConditionalCatalog.PickerDescription(action),ActionChoiceReason(rule,action),action);
+                        "Handler/EditorAction"+action,ActionChoiceReason(rule,action),action);
                 }
             }
-        }
-
-        void BuildSelectionDescription()
-        {
-            float w=ruleEditor.sizeDelta.x,bottom=-ruleEditor.sizeDelta.y/2;
-            var content=BuildRuleOptions("RuleDescription",ruleEditor,new Vector2(0,bottom-40),new Vector2(w,64));
-            ruleDescription=Text("",content,Vector2.zero,Vector2.zero,21,TextAlignmentOptions.TopLeft);
-            var layout=ruleDescription.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();
-            layout.minHeight=layout.preferredHeight=60;
-            SetDetail(SelectedDetail(selectingCondition));
         }
 
         void BuildRuleParameters(RectTransform panel,bool conditionSide,string[] options,int condition,float w,float h)
@@ -912,19 +876,16 @@ namespace GoGhost.Duel
             {
                 int index=i;bool allowed;
                 var candidate=pendingRule.Copy();
-                string description;
                 if(conditionSide)
                 {
                     ConditionalCatalog.SetConditionOption(candidate,index,selectedConditionIndex);
                     allowed=ConditionalCatalog.HasAnyCompatibleAction(candidate);
-                    description=ConditionalCatalog.ConditionDescription(candidate,selectedConditionIndex);
                 }
                 else
                 {
                     ConditionalCatalog.SetActionOption(candidate,index);
                     string reason=ActionChoiceReason(candidate,candidate.Action);
                     allowed=reason==null;
-                    description=reason??ConditionalCatalog.ResponseDescription(candidate);
                 }
                 var option=ConfigButton((conditionSide?"ConditionParameter":"ActionParameter")+i,options[i],panel,new Vector2(-w/2+width/2+i*(width+8),-h/2+34),new Vector2(width,56),()=>
                 {
@@ -934,7 +895,6 @@ namespace GoGhost.Duel
                     Show();
                 },selected==i,style:DuelControlStyle.Option);
                 option.interactable=allowed;
-                BindOptionDescription(option,description);
             }
         }
 
@@ -990,25 +950,33 @@ namespace GoGhost.Duel
             return content;
         }
 
-        void RuleOption(string label, RectTransform parent, UnityEngine.Events.UnityAction click, bool selected, string description, string reason = null,string action=null)
+        void RuleOption(string label, RectTransform parent, UnityEngine.Events.UnityAction click, bool selected, string voiceKey, string reason = null,string action=null)
         {
-            var option = ConfigButton("Option", label, parent, Vector2.zero, new Vector2(parent.rect.width, SelectorRowHeight), click, selected, true,DuelControlStyle.Option);
+            var option = ConfigButton("Option", label, parent, Vector2.zero, new Vector2(parent.rect.width, SelectorRowHeight), () =>
+            {
+                game.ConfigurationVoice.ReadRuleDescription(voiceKey);
+                click();
+            }, selected, true,DuelControlStyle.Option);
             option.interactable = reason == null;
             var outline=option.GetComponent<DuelButtonOutline>();
             outline.LabelSystem=action!=null?NeuralPalette.System(ConditionalCatalog.Response(action).Operation):NeuralBodySystem.None;
             outline.Refresh();
-            BindOptionDescription(option,reason??description);
+            var hover = option.gameObject.AddComponent<RuleOptionHover>();
+            hover.Description = reason ?? VoiceStudioCatalog.Current.Find(voiceKey).text;
+            hover.Enter = () => hoveredRuleOption = hover;
+            hover.Leave = () => { if (hoveredRuleOption == hover) hoveredRuleOption = null; };
             var layout = option.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();
             layout.minHeight = layout.preferredHeight = SelectorRowHeight;
         }
 
-        void BindOptionDescription(UnityEngine.UI.Button option,string description)
-        {
-            var inspect=option.gameObject.AddComponent<ConditionalOptionDescription>();
-            inspect.Inspect=()=>{if(option.gameObject.activeInHierarchy)SetDetail(description);};
-            inspect.Leave=RestoreFocusedPreview;
-            inspect.Deselect=()=>SetDetail(SelectedDetail(selectingCondition));
-        }
+    }
+
+    public sealed class RuleOptionHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+    {
+        internal string Description;
+        internal System.Action Enter, Leave;
+        public void OnPointerEnter(PointerEventData data) => Enter?.Invoke();
+        public void OnPointerExit(PointerEventData data) => Leave?.Invoke();
     }
 
     public sealed class RulePreviewPart : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler

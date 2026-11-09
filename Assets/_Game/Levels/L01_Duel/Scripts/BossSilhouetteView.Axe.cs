@@ -19,9 +19,10 @@ namespace GoGhost.Duel
         Collider2D plantedSupport;
         Vector2 plantedPoint;
         float chargeAt = float.PositiveInfinity;
-        internal const float PlantedChargeSeconds = 5.10f, WaveSpacing = .70f;
+        internal const float PlantedChargeSeconds = 5.10f;
         float shockwaveAt = -1;
         public const float ShockwaveSeconds = 2.40f;
+        internal const float WaveSpacing = ShockwaveSeconds + 1f;
         public const float ShockwaveStartRadius = .4f;
         float shockwaveReach, releasedAt = float.NegativeInfinity;
         Vector2 shockwaveOrigin;
@@ -103,6 +104,7 @@ namespace GoGhost.Duel
 
         internal void PlantAxe()
         {
+            knockdownAt = clock;
             actor.Navigation.TrySupport(actor.Position, actor.Motor.Size, out plantedSupport);
             float x = actor.Position.x + actor.Facing * .54f;
             if (plantedSupport == null)
@@ -113,7 +115,6 @@ namespace GoGhost.Duel
             var surface = plantedSupport.bounds;
             x = Mathf.Clamp(x,surface.min.x+.05f,surface.max.x-.05f);
             plantedPoint = plantedSupport.transform.InverseTransformPoint(new Vector2(x,surface.max.y));
-            knockdownAt = clock;
         }
 
         internal void BeginPlantedCharge()
@@ -127,12 +128,32 @@ namespace GoGhost.Duel
         {
             if (chargedWeapon!=null || rainbowMaterial==null) return;
             chargedWeapon = new Material(rainbowMaterial) {name="Charged EMP axe",hideFlags=HideFlags.DontSave};
-            parts[(int)Part.Weapon].sharedMaterial = chargedWeapon;
             chargedWeapon.SetColor("_AxeShadow", NeuralPalette.EmpShadow);
             chargedWeapon.SetColor("_AxeHighlight", NeuralPalette.EmpHighlight);
+            parts[(int)Part.Weapon].sharedMaterial = chargedWeapon;
         }
 
         internal void LiftGaze() => gazeAt = clock;
+        internal float WaveProgress(int front) => (Time.time - releasedAt - front * WaveSpacing) / ShockwaveSeconds;
+        internal float ShockwaveSpeed => (shockwaveReach - ShockwaveStartRadius) / ShockwaveSeconds;
+
+        internal float WaveRadius(int front)
+        {
+            float progress = WaveProgress(front);
+            if (progress < 0) return -1;
+            float reach = shockwaveReach;
+            var camera = Camera.main;
+            // The second ring continues through the HUD to the left of the combat camera.
+            if (front == 1 && camera != null && camera.pixelRect.xMin > 1)
+            {
+                Vector2 lower = camera.ScreenToWorldPoint(Vector3.zero);
+                Vector2 upper = camera.ScreenToWorldPoint(new Vector3(0, Screen.height));
+                reach = Mathf.Max(reach, Mathf.Max(Vector2.Distance(lower, shockwaveOrigin),
+                    Vector2.Distance(upper, shockwaveOrigin)) + 1f);
+            }
+            return Mathf.Lerp(ShockwaveStartRadius, reach, progress);
+        }
+
         internal void Shockwave(Vector2 origin, float reach)
         {
             shockwaveOrigin = origin;
@@ -160,10 +181,10 @@ namespace GoGhost.Duel
             if (waveElapsed >= ShockwaveSeconds + 2 * WaveSpacing) { shockwaveAt = -1; return; }
             for (int i = 0; i < 3; i++)
             {
-                float t = (waveElapsed - i * WaveSpacing) / ShockwaveSeconds;
+                float t = WaveProgress(i);
                 if (t < 0 || t >= 1) continue;
-                float radius = Mathf.Lerp(ShockwaveStartRadius, shockwaveReach, t);
-                float strength = (1 - .16f * i) * (1 - Mathf.SmoothStep(0, 1, (t - .62f) / .38f));
+                float radius = WaveRadius(i);
+                float strength = (1 - .10f * i) * (1 - Mathf.SmoothStep(0, 1, (t - .94f) / .06f));
                 DrawEmpRing(18 + i, shockwaveOrigin, radius, Mathf.Lerp(i==1?.40f:i==2?.13f:.26f, i==1?.20f:.075f, t),
                     NeuralPalette.Alpha(NeuralPalette.Emp, strength));
                 float wakeLength=(i==1?1.25f:.85f)*Mathf.Sin(t*Mathf.PI);
@@ -220,6 +241,22 @@ namespace GoGhost.Duel
             float knockdownElapsed = clock - knockdownAt;
             if (axe.Transitioning && knockdownElapsed >= 0 && (!rising || kneel > 0))
             {
+                if (rising)
+                {
+                    kneel = Mathf.MoveTowards(kneel, 0, Time.deltaTime * 2.4f);
+                    plantedGrip = kneel;
+                }
+                else
+                {
+                    // The blade catches his weight before the back knee reaches the floor.
+                    float recoil = Ease(knockdownElapsed / .25f) * (1 - Ease((knockdownElapsed - .25f) / .55f));
+                    p.Hip += new Vector2(-.08f, -.09f) * recoil;
+                    p.Chest += new Vector2(-.17f, -.07f) * recoil;
+                    p.Head += new Vector2(-.22f, -.09f) * recoil;
+                    p.WeaponAngle += 16 * recoil;
+                    plantedGrip = Ease(Mathf.InverseLerp(.25f, 1.1f, knockdownElapsed));
+                    kneel = Ease(Mathf.InverseLerp(.85f, KneeDownAt, knockdownElapsed));
+                }
                 p.Hip = Vector2.Lerp(p.Hip, new Vector2(-.05f, -.43f), kneel);
                 p.Chest = Vector2.Lerp(p.Chest, new Vector2(.08f, -.04f), kneel);
                 float gaze = Ease((clock-gazeAt)/.24f);
@@ -253,22 +290,6 @@ namespace GoGhost.Duel
                 return;
             }
             if (!axe.PhaseTwo)
-                if (rising)
-                {
-                    kneel = Mathf.MoveTowards(kneel, 0, Time.deltaTime * 2.4f);
-                    plantedGrip = kneel;
-                }
-                else
-                {
-                    // The blade catches his weight before the back knee reaches the floor.
-                    float recoil = Ease(knockdownElapsed / .25f) * (1 - Ease((knockdownElapsed - .25f) / .55f));
-                    p.Hip += new Vector2(-.08f, -.09f) * recoil;
-                    p.Chest += new Vector2(-.17f, -.07f) * recoil;
-                    p.Head += new Vector2(-.22f, -.09f) * recoil;
-                    p.WeaponAngle += 16 * recoil;
-                    plantedGrip = Ease(Mathf.InverseLerp(.25f, 1.1f, knockdownElapsed));
-                    kneel = Ease(Mathf.InverseLerp(.85f, KneeDownAt, knockdownElapsed));
-                }
             {
                 PhaseOneAxePose(ref p, axe, wave, motion);
                 return;

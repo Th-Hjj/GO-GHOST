@@ -9,6 +9,13 @@ namespace GoGhost.Duel
         public enum CutsceneSpeaker { None, FinalBoss, Happy }
 
         Coroutine finalBossTransition;
+        internal FinalBossEmpSweep EmpSweep { get; private set; }
+
+        void CreateEmpSweep(BossSilhouetteView view, Vector2 origin)
+        {
+            EmpSweep = encounter.AddComponent<FinalBossEmpSweep>();
+            EmpSweep.Initialize(platforms[0].transform.parent, Player.GetComponent<OfficerVisual>(), view, origin);
+        }
         // Set before StartCoroutine: its first lines run before the handle is returned.
         public bool FinalBossCutscene { get; private set; }
         public CutsceneSpeaker CutsceneSpeakerId { get; private set; }
@@ -46,6 +53,7 @@ namespace GoGhost.Duel
             resumeFinalBossPhaseTwo = false;
             if (!resume || boss == null || boss.Axe == null) { FinalBossPhaseTwoReached = false; finalBossPhaseTwoHealth = -1; return; }
             boss.Axe.StartInPhaseTwo();
+            CreateEmpSweep(null, Vector2.zero);
             StripPlayerAssistance();
             StartPlatformMotion();
             if (finalBossPhaseTwoHealth > 0) Player.SetRuntimeHealth(Player.MaxHealth, finalBossPhaseTwoHealth);
@@ -86,23 +94,13 @@ namespace GoGhost.Duel
             Vector2 origin = boss.View.PlantedContact;
             Vector2 farCorner = (Vector2)arenaBounds.extents + new Vector2(
                 Mathf.Abs(origin.x - arenaBounds.center.x), Mathf.Abs(origin.y - arenaBounds.center.y));
-            float reach = farCorner.magnitude;
+            // Include the outer thickness of the walls, ceiling and floor.
+            float reach = farCorner.magnitude + 1.5f;
             boss.View.Shockwave(origin, reach);
-            for (int i = 1; i < ActivePlatforms.Length; i++)
-            {
-                var platform = ActivePlatforms[i];
-                if (platform == null) continue;
-                float distance = Vector2.Distance(origin, platform.ClosestPoint(origin));
-                float contact = Mathf.InverseLerp(BossSilhouetteView.ShockwaveStartRadius, reach, distance);
-                platform.gameObject.AddComponent<PlatformOscillator>().PrimeEmp(
-                    Time.time + contact * BossSilhouetteView.ShockwaveSeconds);
-            }
+            CreateEmpSweep(boss.View, origin);
+            ui.ShowEmpOnRuleCards(EmpSweep.Cards);
             encounterSounds?.Play(Sfx.EmpBurst);
-            yield return new WaitForSeconds(BossSilhouetteView.ShockwaveSeconds + 2 * BossSilhouetteView.WaveSpacing);
-
-            StartPlatformMotion(easeIn: true);
-            yield return new WaitForSeconds(1f);
-
+            while (boss.View.WaveProgress(1) < 1) yield return null;
             ui.SealSidebars();
             StripPlayerAssistance();
             encounterSounds?.Play(Sfx.Glitch);

@@ -14,36 +14,13 @@ namespace GoGhost.Duel
         Vector2 home;
         float phase, clock, rampRemaining;
         const float RampDuration = .4f;
-        const float EdgeRestAlpha = .34f;
-        SpriteRenderer empEdge;
-        float contactAt;
-        bool edgeSettled;
 
         public Vector2 Home => home;
         public float Offset => body != null ? body.position.y - home.y : 0;
         public float VerticalSpeed => body != null ? body.linearVelocity.y : 0;
 
-        internal void PrimeEmp(float arrival)
-        {
-            var surface = GetComponent<SpriteRenderer>();
-            empEdge = EmpOutline.Create(surface, surface.sharedMaterial, surface.sortingOrder - 1, .065f);
-            contactAt = arrival;
-            LateUpdate();
-        }
-
-        void LateUpdate()
-        {
-            if (edgeSettled || empEdge == null) return;
-            float age = Time.time - contactAt;
-            float alpha = age < 0 ? 0 : Mathf.Lerp(.86f, EdgeRestAlpha, Mathf.SmoothStep(0, 1, age / .48f));
-            empEdge.color = NeuralPalette.Alpha(NeuralPalette.Emp, alpha);
-            edgeSettled = age >= .48f;
-        }
-
         public void Begin(float phaseOffset, float startClock = 0, bool easeIn = false)
         {
-            // Direct phase-two entry starts at the residual intensity without replaying the wave.
-            if (empEdge == null) PrimeEmp(Time.time - 1f);
             body = GetComponent<Rigidbody2D>();
             if (body == null) body = gameObject.AddComponent<Rigidbody2D>();
             body.bodyType = RigidbodyType2D.Kinematic;

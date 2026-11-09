@@ -216,6 +216,7 @@ namespace GoGhost.Duel
                 for(int edge=0;edge<row.Border.Length;edge++)
                     row.Border[edge]=Image(row.Root,Vector2.zero,Vector2.zero,Color.clear);
                 if(sidebarsSealed)AddSealMark(row);
+                if(game.EmpSweep != null && game.EmpSweep.Cards != null) AddEmpToCard(row, game.EmpSweep.Cards);
         }
 
         // Shared by setup and combat. Text comes from the structured catalog expression;

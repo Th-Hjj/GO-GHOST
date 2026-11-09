@@ -16,6 +16,23 @@ namespace GoGhost.Duel
         CanvasGroup sealedGroup, sealFrame;
 
         public bool SidebarsSealed => sidebarsSealed;
+        internal void ShowEmpOnRuleCards(Material material)
+        {
+            foreach (var row in ruleRows) AddEmpToCard(row, material);
+        }
+
+        static void AddEmpToCard(RuleRowView row, Material material)
+        {
+            var fill = new GameObject("EMP card sweep", typeof(UnityEngine.UI.Image)).GetComponent<UnityEngine.UI.Image>();
+            var rect = fill.rectTransform;
+            rect.SetParent(row.Root, false);
+            rect.anchorMin = rect.offsetMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMax = Vector2.zero;
+            rect.SetAsFirstSibling();
+            fill.material = material;
+            fill.raycastTarget = false;
+        }
         float SidebarFade => sidebarFadeFrom < 0 ? 0 : Reveal(Time.time - sidebarFadeFrom, sidebarFadeSeconds);
 
         public void SealSidebars()

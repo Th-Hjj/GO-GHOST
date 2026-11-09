@@ -16,6 +16,7 @@ namespace GoGhost.Duel
         Transform player;
         Bounds arena;
         RawImage far, near;
+        Material contourMaterial;
 
         public static void Create(Transform attempt, Transform player, Bounds arena, int wave)
         {
@@ -76,11 +77,28 @@ namespace GoGhost.Duel
 
         void LateUpdate() => UpdateParallax();
 
+        internal void AddEmpContours(Material material)
+        {
+            var mask = Resources.Load<Texture2D>("Arena/MegacityContours");
+            if (mask == null)
+            {
+                Debug.LogError("Mission 3 architectural contour texture could not be loaded.");
+                return;
+            }
+            var contours = AddPlate("EMP architectural contours", mask, 1f);
+            contourMaterial = contours.material = material;
+            contourMaterial.SetFloat("_CityContours", 1);
+            UpdateParallax();
+        }
+
         void UpdateParallax()
         {
             float position = Mathf.Clamp((player.position.x - arena.center.x) / arena.extents.x, -1f, 1f);
             SetCrop(far, position * FarTravelPixels);
             SetCrop(near, position * NearTravelPixels);
+            if (contourMaterial != null)
+                contourMaterial.SetVector("_CityCrops", new Vector4(far.uvRect.x, far.uvRect.width,
+                    near.uvRect.x, near.uvRect.width));
         }
 
         static void SetCrop(RawImage plate, float offsetPixels)

@@ -368,6 +368,21 @@ public sealed class OfficerVisual : MonoBehaviour
         LoadoutSlot.LeftLeg => leftLeg, LoadoutSlot.RightLeg => rightLeg,
         LoadoutSlot.Torso => torso, LoadoutSlot.Brain => head, LoadoutSlot.Weapon => weapon, _ => null
     };
+    public System.Collections.Generic.IEnumerable<SpriteRenderer> BodySegments()
+    {
+        yield return head;
+        yield return torso;
+        yield return leftArm;
+        yield return rightArm;
+        yield return leftForearm;
+        yield return rightForearm;
+        yield return triggerPalm;
+        yield return supportPalm;
+        yield return leftLeg;
+        yield return rightLeg;
+        yield return leftCalf;
+        yield return rightCalf;
+    }
 
     public void Apply(DeploymentSnapshot snapshot)
     {

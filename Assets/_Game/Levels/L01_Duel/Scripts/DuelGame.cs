@@ -371,6 +371,7 @@ namespace GoGhost.Duel
             if (Wave == FinalBossWave && Phase == DuelPhase.Fight) handler.Stop();
             ui.ResetEncounterPresentation();
             ResetFinalBossTransition();
+            EmpSweep = null;
             FinishMetrics("abandoned", reason: reason);
             DeveloperToolsOpen = developerResumeOnClose = false;
             StopCombat();

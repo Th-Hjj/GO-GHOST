@@ -40,7 +40,7 @@ namespace GoGhost.Duel
         readonly System.Func<ConditionalRule> onInvasion;
         readonly float[] readyAt=new float[Timings.Length];
         readonly List<Vector2> path=new List<Vector2>(12);
-        int attackId=100000,invasionsDue;
+        int attackId=100000;
         bool waveReleased, waveTouched, transitionHeld,hitDone;
         float invasionRecoverAt;
         internal Vector2 WaveOrigin { get; private set; }
@@ -86,9 +86,7 @@ namespace GoGhost.Duel
 
         public void Tick()
         {
-            if(!PhaseTwo&&!Transitioning)
-                while(invasionsDue<InvasionPercents.Length&&(long)actor.Health.CurrentHealth*100<=(long)actor.Health.MaxHealth*InvasionPercents[invasionsDue]) invasionsDue++;
-            if(Invasions>=invasionsDue&&TickTransition())return;
+            if(TickTransition())return;
             if(TickInvasion())return;
             if(Current!=Move.None) { TickMove(); return; }
             if(actor.Player==null||actor.Player.IsDead){actor.Motor.Brake();return;}
@@ -251,14 +249,20 @@ namespace GoGhost.Duel
             nextDecisionAt=Time.time+.5f;
         }
 
-        // At each threshold the Boss finishes his current move, lands, then stands invulnerable and
-        // writes one random legal rule into the player's fight rules. Thresholds crossed together queue.
+        internal void SetNextInvasionFloor()
+        {
+            actor.Health.DamageFloor = Invasions < InvasionPercents.Length
+                ? actor.Health.MaxHealth * InvasionPercents[Invasions] / 100 : 0;
+        }
+
+        // Damage stops at the mark even while the Boss finishes his move and lands.
         bool TickInvasion()
         {
             if (!Invading)
             {
                 var health = actor.Health;
-                if (Invasions >= invasionsDue || Current != Move.None || PhaseTwo || health.PhaseIndex != 1) return false;
+                if (health.DamageFloor <= 0 || health.CurrentHealth > health.DamageFloor ||
+                    Current != Move.None || PhaseTwo || health.PhaseIndex != 1) return false;
                 if (!actor.Motor.Grounded) { if(!actor.Motor.HasRoute)RecoverFooting(); return true; }
                 ClearAttackPosition();
                 Invading = true; waveReleased = waveTouched = false; invasionAt = Time.time;
@@ -293,6 +297,7 @@ namespace GoGhost.Duel
             if (invasionRecoverAt < 0) invasionRecoverAt = Time.time;
             if (InvasionRecovery < 1) return true;
             Invading = false; Invasions++;
+            SetNextInvasionFloor();
             actor.Health.Invulnerable = false;
             nextDecisionAt = Time.time + .3f;
             return true;

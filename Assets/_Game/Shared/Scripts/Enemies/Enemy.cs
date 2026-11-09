@@ -52,6 +52,8 @@ public class Enemy : MonoBehaviour, IDamageable
     public bool AwaitingSecondPhase { get; private set; }
     /// <summary>Owner-controlled temporary immunity (Final Boss invasions). Damage is rejected while set.</summary>
     public bool Invulnerable { get; set; }
+    /// <summary>The lowest HP a hit can reach before the encounter releases its next gate.</summary>
+    public int DamageFloor { get; set; }
 
     /// <summary>Fired once on death; optional destruction happens afterwards.</summary>
     public event Action<Enemy> OnDied;
@@ -129,8 +131,9 @@ public class Enemy : MonoBehaviour, IDamageable
     {
         if (IsDead || AwaitingSecondPhase || Invulnerable || amount <= 0) return;
 
-        int lost = Mathf.Min(CurrentHealth, amount);
-        CurrentHealth = Mathf.Max(CurrentHealth - amount, 0);
+        int lost = Mathf.Min(amount, CurrentHealth - DamageFloor);
+        if (lost <= 0) return;
+        CurrentHealth -= lost;
         OnDamaged?.Invoke(lost, source);
         if (CurrentHealth > 0) return;
         // The first pool ending is not a death: no OnDied, no victory. Only the last pool kills.
@@ -144,6 +147,7 @@ public class Enemy : MonoBehaviour, IDamageable
         if (IsDead || !AwaitingSecondPhase) return;
         AwaitingSecondPhase = false;
         PhaseIndex = 2;
+        DamageFloor = 0;
         CurrentHealth = secondPhaseMaxHealth;
     }
 
@@ -153,6 +157,7 @@ public class Enemy : MonoBehaviour, IDamageable
         if (IsDead || PhaseIndex != 1 || secondPhaseMaxHealth <= 0) return;
         AwaitingSecondPhase = false;
         PhaseIndex = 2;
+        DamageFloor = 0;
         CurrentHealth = secondPhaseMaxHealth;
     }
 
@@ -176,7 +181,7 @@ public class Enemy : MonoBehaviour, IDamageable
     // Runtime developer tuning preserves the current life, AI state and damage-event history.
     public void SetRuntimeCurrentHealth(int current)
     {
-        if (!IsDead && !AwaitingSecondPhase) CurrentHealth = Mathf.Clamp(current, 1, MaxHealth);
+        if (!IsDead && !AwaitingSecondPhase) CurrentHealth = Mathf.Clamp(current, Mathf.Max(1, DamageFloor), MaxHealth);
     }
 
     public void SetRuntimeHealth(int maximum, int current)

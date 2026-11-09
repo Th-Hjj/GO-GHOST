@@ -176,7 +176,7 @@ namespace GoGhost.Duel
             }
             if (target == null) return;
             PlayMetrics.MarkTestData();
-            target.Health.Invulnerable = false;
+            if (target.Axe == null) target.Health.Invulnerable = false;
             target.Health.TakeDamage(target.Health.CurrentHealth, Player.gameObject);
         }
 

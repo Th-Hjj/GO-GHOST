@@ -42,6 +42,7 @@ namespace GoGhost.Duel
             Axe = new FinalBossAxe(this, player, onPhaseTwo, onInvasion);
             Configure(player, navigation, coordinator, actorId, false);
             Health.EnableSecondPhase(secondHealth);
+            Axe.SetNextInvasionFloor();
         }
     }
 

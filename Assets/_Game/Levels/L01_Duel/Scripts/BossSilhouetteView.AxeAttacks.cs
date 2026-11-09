@@ -206,6 +206,12 @@ namespace GoGhost.Duel
             float side=spirit ? axe.Boxer.BladeSide : axe.FlightFacing;
             float angle=spirit ? axe.Boxer.AxeAngle : axe.AxeSpin;
             var pivot=spirit ? axe.Boxer.AxePivot : axe.AxePosition;
+            if (spirit && !axe.Boxer.InFlight)
+            {
+                float settle=Mathf.Clamp01((Time.time-axe.Boxer.PlantedAt)/.25f);
+                angle+=side*7.5f*Mathf.Sin(settle*2*Mathf.PI)*(1-settle)*(1-settle);
+                pivot=axe.Boxer.AnchorPoint-axe.Boxer.EdgeOffset(angle);
+            }
             flightSprite.flipX=side<0;
             flightSprite.sharedMaterial=parts[(int)Part.Weapon].sharedMaterial;
             var forward=Angle(angle);
@@ -369,7 +375,7 @@ namespace GoGhost.Duel
             }
         }
 
-        void DrawAxeTrail(Vector2 edge,bool spirit=false)
+        void DrawAxeTrail(Vector2 edge)
         {
             float now = Time.time;
             int expired = 0;
@@ -390,7 +396,7 @@ namespace GoGhost.Duel
             if (trailPoints.Count < 2) return;
             int first=trailPoints.Count-1;
             Vector2 tail=trailPoints[first];
-            float length=spirit ? 3.4f : 1.15f;
+            float length=1.15f;
             while(first>0 && length>0)
             {
                 Vector2 point=trailPoints[--first];
@@ -399,9 +405,9 @@ namespace GoGhost.Duel
                 length-=segment;
             }
             var line = AxeLine(7, "Flying axe trace", trailPoints.Count-first);
-            line.startWidth = .012f; line.endWidth = spirit ? .155f : .065f;
-            line.startColor = NeuralPalette.Alpha(spirit ? NeuralPalette.Emp : FlightIce, .05f);
-            line.endColor = spirit ? NeuralPalette.Emp : NeuralPalette.Primary;
+            line.startWidth = .012f; line.endWidth = .065f;
+            line.startColor = NeuralPalette.Alpha(FlightIce, .05f);
+            line.endColor = NeuralPalette.Primary;
             line.SetPosition(0,ClipTellPoint(tail,.065f));
             for(int i=first+1;i<trailPoints.Count;i++)line.SetPosition(i-first,ClipTellPoint(trailPoints[i],.065f));
         }

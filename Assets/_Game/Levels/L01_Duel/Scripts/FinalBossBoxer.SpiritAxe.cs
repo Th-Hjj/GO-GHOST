@@ -6,7 +6,7 @@ namespace GoGhost.Duel
     {
         public enum AxeOrder { Opening, Cutoff, Lift, Shoulder }
         enum WeaponState { Held, Armed, Flying, Planted, Retired }
-        const float GestureSeconds=.20f, LaunchDelay=1f, FlightSpeed=20f;
+        const float GestureSeconds=.20f, LaunchDelay=1f, FlightSpeed=15f;
         WeaponState weapon;
         bool opened, detached, axeSpent, lastAxeMiss;
         float launchAt, arriveAt, nextOrder, startAngle, endAngle, lastAxeSample;
@@ -26,7 +26,10 @@ namespace GoGhost.Duel
         public int Orders { get; private set; }
         public int AxeHits { get; private set; }
         public bool Gesturing => Time.time-CommandAt<GestureSeconds;
-        internal float GestureProgress => Mathf.Clamp01((Time.time-CommandAt)/GestureSeconds);
+        internal Vector2 FlightStart => startEdge;
+        internal Vector2 AnchorPoint => lastAxeTarget;
+        internal Vector2 AnchorNormal => Mathf.Abs(lastAxeTarget.y-floor)<.02f ? Vector2.up
+            : (lastAxeTarget.x<actor.Navigation.ArenaBounds.center.x ? Vector2.right : Vector2.left);
         float ShoulderLead
         {
             get
@@ -94,7 +97,7 @@ namespace GoGhost.Duel
                 float distance=Vector2.Distance(startEdge,Destination);
                 float turns=Mathf.Max(1,Mathf.RoundToInt(distance/6f));
                 endAngle=startAngle+Mathf.DeltaAngle(startAngle,plantAngle)+(direction.x>=0?-1:1)*360f*turns;
-                arriveAt=launchAt+Mathf.Max(.05f,distance/FlightSpeed);
+                arriveAt=launchAt+distance/FlightSpeed;
                 weapon=WeaponState.Flying;
                 lastTip=AxeEdge; lastAxeSample=launchAt; lastAxePlayer=playerBody.bounds.center;
                 actor.Sounds?.Play(Sfx.DashCut,actor.ActorId,300000+Orders);

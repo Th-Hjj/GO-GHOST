@@ -7,7 +7,9 @@ namespace GoGhost.Duel
     {
         Vector2 commandPalm, heldPivot;
         float heldAngle;
+        const float CommandPoseSeconds=.50f;
         int lastStroke;
+        float fistFan;
         readonly List<Vector2> fistTrace = new List<Vector2>(24);
         readonly List<float> fistTimes = new List<float>(24);
         Gradient punchSpectrum;
@@ -18,12 +20,15 @@ namespace GoGhost.Duel
             if (!boxer.Detached)
             {
                 float age=boxer.Orders==0 ? 0 : Time.time-boxer.CommandAt;
-                float lift=Ease(age/.39f), release=Ease((age-.64f)/.36f);
+                float lift=Ease(age/.27f), release=Ease((age-.70f)/.30f);
+                float loaded=lift*(1-release);
                 var aim=LocalDirection(boxer.Destination-actor.Position).normalized;
-                p.FrontHand=Vector2.Lerp(new Vector2(.23f,.08f),new Vector2(-.20f,.55f),lift);
+                p.FrontHand=Vector2.Lerp(new Vector2(.23f,.08f),new Vector2(-.45f,.63f),lift);
                 p.FrontHand=Vector2.Lerp(p.FrontHand,p.Chest+aim*.71f,release);
-                p.WeaponAngle=Mathf.LerpAngle(Mathf.Lerp(72,149,lift),Mathf.Atan2(aim.y,aim.x)*Mathf.Rad2Deg+22,release);
-                p.Hip.x+=.09f*release; p.Chest.x+=.14f*release-.09f*lift; p.Head.x+=.08f*release;
+                p.WeaponAngle=Mathf.LerpAngle(Mathf.Lerp(72,151,lift),Mathf.Atan2(aim.y,aim.x)*Mathf.Rad2Deg+22,release);
+                p.FrontFoot.x+=.19f*loaded; p.BackFoot.x-=.12f*loaded;
+                p.Hip+=new Vector2(.09f*release-.10f*loaded,-.065f*loaded);
+                p.Chest.x+=.14f*release-.15f*loaded; p.Head.x+=.08f*release-.07f*loaded;
                 p.BackHand=new Vector2(.30f,.26f);
             }
             else
@@ -58,12 +63,15 @@ namespace GoGhost.Duel
                     else p.FrontHand=boxer.HandLocal;
                 }
             }
-            if(boxer.Gesturing)
+            float ageSinceOrder=Time.time-boxer.CommandAt;
+            if(ageSinceOrder<CommandPoseSeconds && !boxer.Retired)
             {
                 var direction=LocalDirection(boxer.CommandDirection).normalized;
-                var reach=p.Chest+direction*.66f;
-                float t=boxer.GestureProgress;
-                float extend=Ease(t/.24f)*(1-Ease((t-.70f)/.30f));
+                var reach=p.Chest+direction*.76f;
+                float extend=Ease(ageSinceOrder/.15f)*(1-Ease((ageSinceOrder-.38f)/.12f));
+                // The arm may already be chambering the next punch while the ring is visible.
+                if (boxer.Current!=FinalBossBoxer.Punch.None && (boxer.Cross || boxer.Current==FinalBossBoxer.Punch.Backfist))
+                    extend*=boxer.Phase==FinalBossBoxer.Stage.Windup ? 1-Ease(boxer.PhaseProgress) : 0;
                 p.BackHand=Vector2.Lerp(p.BackHand,reach,extend);
             }
             commandPalm=transform.TransformPoint(p.BackHand);
@@ -75,31 +83,53 @@ namespace GoGhost.Duel
 
         void DrawBoxer(FinalBossBoxer boxer)
         {
-            if (boxer.Gesturing)
-                DrawEmpRing(14,commandPalm,Mathf.Lerp(.52f,.065f,Ease(boxer.GestureProgress)),.058f,NeuralPalette.Emp);
+            float age=Time.time-boxer.CommandAt;
+            if (!boxer.Retired && age<CommandPoseSeconds)
+            {
+                float pinch=Ease((age-.32f)/.18f);
+                DrawEmpRing(14,commandPalm,Mathf.Lerp(.54f,.07f,pinch),.063f,
+                    Color.Lerp(NeuralPalette.EmpHighlight,NeuralPalette.Emp,pinch));
+            }
             if (boxer.InFlight)
-            {
-                DrawAxeTrail(boxer.AxeEdge,true);
-                Vector2 velocity=(boxer.Destination-boxer.AxePivot).normalized;
-                SetLine(AxeLine(8,"Violet axle wake",2),boxer.AxePivot-velocity*.75f,boxer.AxePivot,
-                    .065f,NeuralPalette.Alpha(NeuralPalette.Emp,.70f));
-            }
-            else { trailPoints.Clear(); trailTimes.Clear(); }
-            float plantedAge=Time.time-boxer.PlantedAt;
-            if (plantedAge<.26f)
-            {
-                float t=plantedAge/.26f;
-                Vector2 away=-Angle(boxer.AxeAngle-boxer.BladeSide*22f);
-                for (int i=0;i<5;i++)
-                {
-                    Vector2 ray=Rotate(away, (i-2)*28f);
-                    Vector2 start=boxer.Destination+ray*(.06f+t*.72f);
-                    SetLine(AxeLine(8+i,"Embedded axe sparks",2),start,start+ray*((1-t)*.36f),
-                        .043f,NeuralPalette.Alpha(NeuralPalette.Emp,1-t));
-                }
-            }
+                DrawSpiritFlight(boxer);
+            else if (boxer.Detached)
+                DrawSpiritContact(boxer);
             DrawFistTrace(boxer);
             DrawMeteorImpact(boxer);
+        }
+
+        void DrawSpiritFlight(FinalBossBoxer boxer)
+        {
+            Vector2 tip=boxer.AxeEdge;
+            Vector2 travel=tip-boxer.FlightStart;
+            float length=Mathf.Min(travel.magnitude,1.8f);
+            if (length<.02f) return;
+            Vector2 direction=travel.normalized;
+            Vector2 normal=new Vector2(-direction.y,direction.x);
+            var blade=AxeLine(7,"Violet blade stroke",2);
+            SetLine(blade,tip-direction*length,tip,.068f,NeuralPalette.EmpHighlight);
+            blade.startWidth=.024f;
+            Vector2 inset=normal*.12f;
+            SetLine(AxeLine(8,"Violet blade echo",2),tip-direction*length*.87f+inset,
+                tip-direction*length*.22f+inset,.044f,NeuralPalette.Emp);
+        }
+
+        void DrawSpiritContact(FinalBossBoxer boxer)
+        {
+            Vector2 normal=boxer.AnchorNormal, tangent=new Vector2(-normal.y,normal.x);
+            Vector2 contact=boxer.AnchorPoint+normal*.10f;
+            float t=Mathf.Clamp01((Time.time-boxer.PlantedAt)/.34f);
+            for (int i=0;i<2;i++)
+            {
+                Vector2 along=tangent*(i==0 ? -1 : 1);
+                SetLine(AxeLine(9+i,"Violet blade notch",2),contact+along*.07f,
+                    contact+along*.38f+normal*.17f,.060f,NeuralPalette.EmpHighlight);
+                if (t>=1) continue;
+                float lead=Mathf.Lerp(.16f,1.36f,Ease(t));
+                float tail=Mathf.Lerp(.05f,1.33f,Ease(t*t));
+                SetLine(AxeLine(11+i,"Violet contact sweep",2),contact+along*tail,
+                    contact+along*lead,.07f,NeuralPalette.Alpha(NeuralPalette.EmpHighlight,1-t*t));
+            }
         }
 
         static Color Spectrum(float phase,float alpha=1)
@@ -115,6 +145,7 @@ namespace GoGhost.Duel
                 if (lastStroke!=boxer.Stroke)
                 {
                     fistTimes.Clear(); fistTrace.Clear(); lastStroke=boxer.Stroke;
+                    fistFan=boxer.Current==FinalBossBoxer.Punch.Jab && !boxer.Cross ? .10f : .19f;
                     fistTrace.Add(boxer.StrokeStart); fistTimes.Add(now-.025f);
                 }
                 Vector2 fist=boxer.Fist();
@@ -126,22 +157,29 @@ namespace GoGhost.Duel
             while (fistTimes.Count>0 && (now-fistTimes[0]>.21f || fistTimes.Count>24))
             { fistTimes.RemoveAt(0); fistTrace.RemoveAt(0); }
             if (fistTrace.Count<2) return;
-            var line=AxeLine(0,"Rainbow fist trail",fistTrace.Count);
-            ApplyPunchSpectrum(line);
             float weight=Mathf.Clamp01(1-(now-fistTimes[fistTimes.Count-1])/.21f);
-            line.startWidth=.035f*weight; line.endWidth=(boxer.Current==FinalBossBoxer.Punch.Jab?.19f:.29f)*weight;
-            for(int i=0;i<fistTrace.Count;i++) line.SetPosition(i,ClipTellPoint(fistTrace[i],.04f));
-            var tip=fistTrace[fistTrace.Count-1];
-            var direction=(tip-fistTrace[0]).normalized;
-            var normal=new Vector2(-direction.y,direction.x);
-            // Parallel bands follow only the distance already travelled by the fist.
-            float length=Mathf.Min(Vector2.Distance(tip,fistTrace[0]),1.65f);
-            for(int i=0;i<3;i++)
+            int last=fistTrace.Count-1;
+            for(int strand=-1;strand<=1;strand++)
             {
-                float n=(i-1)*.085f;
-                var end=tip+normal*n;
-                SetLine(AxeLine(i+1,"Fist speed bands",2),end-direction*length+normal*n,end,.03f*weight,
-                    Spectrum(RainbowPhase+i*.29f,weight*.80f));
+                bool main=strand==0;
+                var line=AxeLine(strand+1,"Rainbow fist stroke",fistTrace.Count);
+                if (main) ApplyPunchSpectrum(line);
+                else
+                {
+                    var color=Spectrum(RainbowPhase+strand*.26f);
+                    line.startColor=NeuralPalette.Alpha(color,.20f);
+                    line.endColor=NeuralPalette.Alpha(color,.94f);
+                }
+                line.startWidth=(main ? .039f : .029f)*weight;
+                line.endWidth=(main ? .085f : .046f)*weight;
+                for(int i=0;i<=last;i++)
+                {
+                    Vector2 dir=(fistTrace[Mathf.Min(last,i+1)]-fistTrace[Mathf.Max(0,i-1)]).normalized;
+                    var normal=new Vector2(-dir.y,dir.x);
+                    // Open the traces behind the strike and bring them together at the knuckles.
+                    float spread=fistFan*(1-Ease(i/(float)last));
+                    line.SetPosition(i,ClipTellPoint(fistTrace[i]+normal*(strand*spread),line.endWidth));
+                }
             }
         }
         void ApplyPunchSpectrum(LineRenderer line)

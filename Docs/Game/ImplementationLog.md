@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-08 — Phase-two axe speed and combat strokes
+
+The opening throw and all later orders use 15 world units per second. The opening pose lifts the axe outside the shoulder and holds before release. The command hand and ring are visible for 0.5 s, with the existing 0.2 s body commitment and one-second launch delay. Two slim violet strokes follow the cutting corner. Planting the blade sends lines along the wall or floor, leaves two notches at the contact, and rocks the handle around the embedded edge. Three colored lines trace the actual fist path. Meteor Fist retains its existing ground arc and rays.
+
+Static source and diff checks only. Thomas will review the changes in game. Compilation, Play Mode and capture were not run for this revision.
+
 ## 2026-11-08 — Final Boss phase-two boxer and detached axe
 
 The former close-range Chop and Spin loop now opens with a throw and continues with an independently commanded violet axe. Every order fixes its endpoint for a one-second delay. The body can pursue, jump and box between the hand gesture and the release. The trial has a stepping jab/cross, rising uppercut, turning backfist, jumping overhand and diving Meteor Fist. A future-platform trajectory selects jumps for the existing motor. It accounts for rising and falling surfaces, current carrying motion and the first physical landing. Punches use swept fist contacts and rainbow trails. Wall and floor insertions share the actual cutting corner with the flight trace.

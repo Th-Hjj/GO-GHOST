@@ -52,7 +52,8 @@ namespace GoGhost.Duel
             afterDialogue = advance;
         }
 
-        internal void SpeakDialogue(string key, Action advance = null, bool realtime = false, bool pageEntry = false)
+        internal void SpeakDialogue(string key, Action advance = null, bool realtime = false, bool pageEntry = false,
+            string fallbackText = null)
         {
             if (key == "Handler/TutorialIntro3") SpeakerName = "Happy";
             if (tutorialActive)
@@ -76,7 +77,7 @@ namespace GoGhost.Duel
                 if (Focus == TutorialFocus.Pick) editorExplained = true;
             }
             PlayRecordedLine(key, waitForPage: pageEntry || key.StartsWith("Handler/", StringComparison.Ordinal));
-            WaitForClick(VoiceStudioCatalog.Current.Find(key).text, advance, realtime);
+            WaitForClick(VoiceStudioCatalog.Current.Text(key, fallbackText), advance, realtime);
         }
 
         internal void Acknowledge(bool waitForVoice)
@@ -131,7 +132,8 @@ namespace GoGhost.Duel
                     generatedGreeting = AudioClip.Create("Handler greeting", speech.Samples.Length / 2, 2, speech.Rate, false);
                     if (!generatedGreeting.SetData(speech.Samples, 0)) ReleaseGreeting();
                 }
-                pendingGreeting.Dispose();
+                // Stop() may already have cancelled and released this source.
+                pendingGreeting?.Dispose();
                 pendingGreeting = null;
             }
 #endif

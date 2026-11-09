@@ -65,16 +65,22 @@ namespace GoGhost.Duel
                 edge.color=NeuralPalette.Alpha(NeuralPalette.Emp,Mathf.Lerp(1,.48f,Mathf.Clamp01(invasionPageAge/.45f)));
             if (invasionPageAge < .45f) return;
             if (readingAxe.WriteInvasion() == null) { EndInvasionReading(); ui.Show(); return; }
-            ReadInvasionLine(InvasionBeat.Confirm,"Handler/InvasionWarning");
+            ReadInvasionLine(InvasionBeat.Confirm,"Handler/InvasionWarning","New Rule, Confirmed.");
         }
 
         void AdvanceInvasionReading()
         {
-            var rule = readingAxe.LastInvasion;
-            if (InvasionPage == InvasionBeat.Confirm)
-                ReadInvasionLine(InvasionBeat.Condition,InvasionVoiceKey("Condition",ConditionalCatalog.RuleConditionLabel(rule)));
-            else if (InvasionPage == InvasionBeat.Condition)
-                ReadInvasionLine(InvasionBeat.Action,InvasionVoiceKey("Action",ConditionalCatalog.RuleActionLabel(rule)));
+            var rule = readingAxe != null ? readingAxe.LastInvasion : null;
+            if (rule != null && InvasionPage == InvasionBeat.Confirm)
+            {
+                string label = ConditionalCatalog.RuleConditionLabel(rule);
+                ReadInvasionLine(InvasionBeat.Condition,InvasionVoiceKey("Condition",label),$"Condition, {label}.");
+            }
+            else if (rule != null && InvasionPage == InvasionBeat.Condition)
+            {
+                string label = ConditionalCatalog.RuleActionLabel(rule);
+                ReadInvasionLine(InvasionBeat.Action,InvasionVoiceKey("Action",label),$"Action, {label}.");
+            }
             else
             {
                 EndInvasionReading();
@@ -89,10 +95,16 @@ namespace GoGhost.Duel
             return key.ToString();
         }
 
-        void ReadInvasionLine(InvasionBeat beat,string key)
+        void ReadInvasionLine(InvasionBeat beat,string key,string fallbackText)
         {
             InvasionPage = beat;
-            handler.SpeakDialogue(key,AdvanceInvasionReading,realtime:true);
+            try { handler.SpeakDialogue(key,AdvanceInvasionReading,realtime:true,fallbackText:fallbackText); }
+            catch (System.Exception error)
+            {
+                // Never leave combat frozen at timeScale 0 without a clickable line.
+                Debug.LogException(error);
+                EndInvasionReading();
+            }
             ui.Show();
         }
 

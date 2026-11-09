@@ -55,17 +55,26 @@ namespace GoGhost.Duel
 
         internal void HitPlayer(int damage)
         {
-            if (Axe?.PhaseTwo == true)
-                damage = Mathf.FloorToInt(damage * .9f + .5f);
+            if (Axe != null && Axe.PhaseTwo)
+                damage = BossProfile.ScaleDamage(damage, BossProfile.PhaseTwoFactor);
             else if (ReduceMissionAttackDamage)
-                damage = Mathf.FloorToInt(damage * .95f + .5f);
+                damage = BossProfile.ScaleDamage(damage, BossProfile.MissionTwoSwordFactor);
             Player.TakeDamage(damage, gameObject);
         }
 
         public void StartCombat() {Running=true;Motor.SetCombatEnabled(true);}
-        public void SetPaused(bool paused) {View?.SetPaused(paused);}
+        public void SetPaused(bool paused) {if(View!=null)View.SetPaused(paused);}
+        // Explicit != null: teardown can reach destroyed components, which ?. treats as live.
         public void StopCombat()
-        { Running=false;Axe?.Cancel();Actions?.StopCombat();Motor?.SetCombatEnabled(false);Health?.StopCombat();Sounds?.StopActor(ActorId);View?.ClearTells(); }
+        {
+            Running=false;
+            if(Axe!=null)Axe.Cancel();
+            if(Actions!=null)Actions.StopCombat();
+            if(Motor!=null)Motor.SetCombatEnabled(false);
+            if(Health!=null)Health.StopCombat();
+            if(Sounds!=null)Sounds.StopActor(ActorId);
+            if(View!=null)View.ClearTells();
+        }
         void OnDestroy()
         {
             if (IsTrainingEnemy && profile != null) Destroy(profile);
@@ -77,8 +86,9 @@ namespace GoGhost.Duel
             StopCombat();Body.enabled=false;
             foreach(var c in GetComponentsInChildren<Collider2D>())c.enabled=false;
             GetComponent<Rigidbody2D>().simulated=false;
-            Coordinator?.Release(this);View?.Defeat();
-            Sounds?.Play(Sfx.BossDefeat,ActorId,Actions.AttackId);
+            if(Coordinator!=null)Coordinator.Release(this);
+            if(View!=null)View.Defeat();
+            if(Sounds!=null)Sounds.Play(Sfx.BossDefeat,ActorId,Actions.AttackId);
             Trace("defeated");
         }
         void OnDamaged(int amount,GameObject source)

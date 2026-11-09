@@ -201,7 +201,7 @@ namespace GoGhost.Duel
             if(!ctx.EnemyBound||ctx.Candidates==0)return;
             if(ctx.Source<0||(ctx.Candidates&(1<<ctx.Source))==0)
             {
-                ctx.Source=Choose(ctx.Candidates,"Q01");
+                ctx.Source=Choose(ctx.Candidates,ActionIds.AutoAim);
                 // A public projectile can retain a source whose body is currently concealed.
                 if(ctx.Source<0)for(int i=0;i<actors.Count;i++)if((ctx.Candidates&(1<<i))!=0){ctx.Source=i;break;}
                 ctx.HasPosition=false;
@@ -221,7 +221,7 @@ namespace GoGhost.Duel
         bool StateFact(RuleCondition condition,int op,out TriggerContext ctx)
         {
             int id=condition.Id;
-            int option=id==51?(int)condition.GroundState:id==52?(int)condition.Distance:id==53?(int)condition.IncomingAttack:0;
+            int option=id==ConditionIds.GroundState?(int)condition.GroundState:id==ConditionIds.EnemyDistance?(int)condition.Distance:id==ConditionIds.IncomingAttack?(int)condition.IncomingAttack:0;
             int key=id*32+option*2;
             if(!facts.TryGetValue(key,out var fact))
             {
@@ -235,11 +235,11 @@ namespace GoGhost.Duel
             ctx=EmptyContext();
             switch(id)
             {
-                case 51:return option==(int)GroundStateOption.Grounded?movement.IsGrounded:!movement.IsGrounded;
-                case 4:return lowHealth;
-                case 9:return gun.IsReloading;
+                case ConditionIds.GroundState:return option==(int)GroundStateOption.Grounded?movement.IsGrounded:!movement.IsGrounded;
+                case ConditionIds.LowHealth:return lowHealth;
+                case ConditionIds.Reloading:return gun.IsReloading;
                 case 12:return !gun.IsReloading&&gun.AmmoInMagazine>0&&gun.AmmoInMagazine<=2;
-                case 17:return raw.Fire;
+                case ConditionIds.TriggerHeld:return raw.Fire;
                 case 54:return movement.IsOrdinaryMoving;
                 case 55:return dodge.IsDodging;
                 case 56:return gun.IsFiring;
@@ -247,9 +247,9 @@ namespace GoGhost.Duel
                     bool left=false,right=false;
                     for(int i=0;i<actors.Count;i++)if(visible[i])
                     {left|=contacts[i].Bounds.center.x<shape.bounds.center.x;right|=contacts[i].Bounds.center.x>shape.bounds.center.x;}
-                    if(left&&right){ctx.Source=Choose(ctx.Candidates,"Q01");ctx.HasPosition=true;ctx.Position=contacts[ctx.Source].Bounds.center;}
+                    if(left&&right){ctx.Source=Choose(ctx.Candidates,ActionIds.AutoAim);ctx.HasPosition=true;ctx.Position=contacts[ctx.Source].Bounds.center;}
                     return left&&right;
-                case 53:
+                case ConditionIds.IncomingAttack:
                     ctx.EnemyBound=true;ctx.IsThreat=true;
                     if(option==(int)IncomingAttackOption.Low)return false;
                     ctx.ThreatKind=option==(int)IncomingAttackOption.Ranged?41:option==(int)IncomingAttackOption.Melee?42:0;
@@ -263,10 +263,10 @@ namespace GoGhost.Duel
                         ctx.HasPosition=true;ctx.Position=unknown;return true;
                     }
                     SelectSource(ref ctx);return true;
-                case 45:
+                case ConditionIds.NearWall:
                     float margin=shape.bounds.size.x;
                     return shape.bounds.min.x-arena.min.x<margin||arena.max.x-shape.bounds.max.x<margin;
-                case 18:case 25:case 35:case 40:case 52:
+                case ConditionIds.EnemyNearAim:case 25:case 35:case 40:case ConditionIds.EnemyDistance:
                     ctx.EnemyBound=true;ctx.Candidates=0;
                     for(int i=0;i<contacts.Length;i++)if(visible[i]&&EnemyMatches(id,option,i,op))ctx.Candidates|=1<<i;
                     if(ctx.Candidates==0)return false;
@@ -280,9 +280,9 @@ namespace GoGhost.Duel
             var c=contacts[i];Vector2 delta=(Vector2)c.Bounds.center-(Vector2)shape.bounds.center;
             switch(id)
             {
-                case 18:return cursorNear[i];
+                case ConditionIds.EnemyNearAim:return cursorNear[i];
                 case 25:return c.Preparing;
-                case 52:return option==(int)EnemyDistanceOption.Close?close[i]:option==(int)EnemyDistanceOption.Far?far[i]:!close[i]&&!far[i];
+                case ConditionIds.EnemyDistance:return option==(int)EnemyDistanceOption.Close?close[i]:option==(int)EnemyDistanceOption.Far?far[i]:!close[i]&&!far[i];
                 case 35:return c.VelocityKnown&&delta.sqrMagnitude>=.01f
                     &&Vector2.Dot(c.Velocity-body.linearVelocity,delta.normalized)<-ConditionalDefaults.VelocityDeadzone;
                 case 40:return RayAligned(i,gun.CurrentBarrelDirection,gun.CurrentMuzzlePosition);
@@ -305,27 +305,27 @@ namespace GoGhost.Duel
         }
         int Choose(int mask,string response)
         {
-            if(response=="Q07")return currentTarget>=0&&visible[currentTarget]&&(mask&(1<<currentTarget))!=0?currentTarget:-1;
+            if(response==ActionIds.KeepCurrentTarget)return currentTarget>=0&&visible[currentTarget]&&(mask&(1<<currentTarget))!=0?currentTarget:-1;
             int best=-1;float bestScore=float.PositiveInfinity;
             for(int i=0;i<contacts.Length;i++)
             {
                 if(!visible[i]||(mask&(1<<i))==0)continue;
-                if(response=="Q09"&&MouseAngle(i)>ConditionalDefaults.MouseEnter)continue;
+                if(response==ActionIds.CalibrateAimOnce&&MouseAngle(i)>ConditionalDefaults.MouseEnter)continue;
                 float score=((Vector2)contacts[i].Bounds.center-(Vector2)shape.bounds.center).sqrMagnitude;
-                if(response=="Q09")score=MouseAngle(i);
-                if(response=="Q02"&&best>=0)
+                if(response==ActionIds.CalibrateAimOnce)score=MouseAngle(i);
+                if(response==ActionIds.AutoAimLowestHealth&&best>=0)
                 {
                     if(contacts[i].HealthFraction>contacts[best].HealthFraction)continue;
                     if(contacts[i].HealthFraction<contacts[best].HealthFraction){best=i;bestScore=score;continue;}
                 }
-                if(response=="Q04"&&actors[i].Profile.Kind==BossKind.Gunner||response=="Q05"&&actors[i].Profile.Kind==BossKind.Swordsman)score-=100000;
+                if(response==ActionIds.PrioritizeGunner&&actors[i].Profile.Kind==BossKind.Gunner||response==ActionIds.PrioritizeSwordsman&&actors[i].Profile.Kind==BossKind.Swordsman)score-=100000;
                 if(score<bestScore-.0001f||Mathf.Abs(score-bestScore)<.0001f&&(best<0||actors[i].ActorId<actors[best].ActorId)) {best=i;bestScore=score;}
             }
             return best;
         }
         int AlignedTarget(Vector2 aim,int mask)
         {
-            int target=Choose(mask,"Q01");
+            int target=Choose(mask,ActionIds.AutoAim);
             if(target>=0&&RayAligned(target,aim))return target;
             for(int i=0;i<actors.Count;i++)if(visible[i]&&(mask&(1<<i))!=0&&RayAligned(i,aim))return i;
             return -1;

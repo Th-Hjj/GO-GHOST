@@ -719,15 +719,15 @@ namespace GoGhost.Duel
 
         static void SelectPickerAction(ConditionalRule rule,string action)
         {
-            if(action=="Q01")rule.AutoAim=AutoAimOption.Nearest;
+            if(action==ActionIds.AutoAim)rule.AutoAim=AutoAimOption.Nearest;
             if(ConditionalCatalog.PickerAction(rule.Action)==action)return;
             rule.Action=action;
             switch(action)
             {
-                case "M11":rule.MoveDirection=MoveDirectionOption.Unspecified;break;
-                case "M03":rule.KeepRange=KeepRangeOption.Mid;break;
-                case "J04":rule.PlatformDirection=PlatformDirectionOption.Unspecified;break;
-                case "D01":rule.DodgeDirection=DodgeDirectionOption.AwayFromThreat;break;
+                case ActionIds.Move:rule.MoveDirection=MoveDirectionOption.Unspecified;break;
+                case ActionIds.KeepDistance:rule.KeepRange=KeepRangeOption.Mid;break;
+                case ActionIds.ChangePlatform:rule.PlatformDirection=PlatformDirectionOption.Unspecified;break;
+                case ActionIds.Dodge:rule.DodgeDirection=DodgeDirectionOption.AwayFromThreat;break;
             }
         }
 
@@ -962,7 +962,7 @@ namespace GoGhost.Duel
             outline.LabelSystem=action!=null?NeuralPalette.System(ConditionalCatalog.Response(action).Operation):NeuralBodySystem.None;
             outline.Refresh();
             var hover = option.gameObject.AddComponent<RuleOptionHover>();
-            hover.Description = reason ?? VoiceStudioCatalog.Current.Find(voiceKey).text;
+            hover.Description = reason ?? VoiceStudioCatalog.Current.Text(voiceKey, label);
             hover.Enter = () => hoveredRuleOption = hover;
             hover.Leave = () => { if (hoveredRuleOption == hover) hoveredRuleOption = null; };
             var layout = option.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();

@@ -29,7 +29,7 @@ namespace GoGhost.Duel
             {
                 r.ResponseStarted=true;r.Started=Time.time;
                 var rule=loadout.Operations[op].Rules[r.Row];
-                if(rule.HasEvents&&!ConditionalCatalog.IsFinite(rule)&&rule.Action!="M11")
+                if(rule.HasEvents&&!ConditionalCatalog.IsFinite(rule)&&rule.Action!=ActionIds.Move)
                     r.Deadline=Time.time+ConditionalDefaults.ResponseWindow;
             }
             if(!r.Accepted){acceptedAt[op,r.Row]=Time.time;acceptedFrame[op,r.Row]=Time.frameCount;}
@@ -40,14 +40,14 @@ namespace GoGhost.Duel
             // Final-shot completion is recorded before the gun begins its automatic reload.
             // An unfinished burst must never resume from a later magazine, even after a fast reload.
             var r=running[(int)ControlOperation.Fire];
-            if(r.Row>=0&&!r.Completed&&loadout.Operations[(int)ControlOperation.Fire].Rules[r.Row].Action=="F02")r.Row=-1;
+            if(r.Row>=0&&!r.Completed&&loadout.Operations[(int)ControlOperation.Fire].Rules[r.Row].Action==ActionIds.ShortBurst)r.Row=-1;
         }
         void ReloadFinished()=>Record(11);
         void BurstFinished()
         {
             Record(60);
             var r=running[(int)ControlOperation.Fire];
-            if(r.Row>=0&&r.Accepted&&loadout.Operations[3].Rules[r.Row].Action=="F02")r.Completed=true;
+            if(r.Row>=0&&r.Accepted&&loadout.Operations[3].Rules[r.Row].Action==ActionIds.ShortBurst)r.Completed=true;
         }
         void DodgeFinished()=>Record(7);
         void JumpStarted()=>Record(57);
@@ -60,7 +60,7 @@ namespace GoGhost.Duel
             if(disposed||gun.LastShotActor!=ProjectileActor.InnerAI||r.Row<0)return;
             string action=loadout.Operations[3].Rules[r.Row].Action;
             if(action!=gun.LastShotActionId||r.Completed)return;
-            if(action=="F02"&&!r.Accepted)
+            if(action==ActionIds.ShortBurst&&!r.Accepted)
             {
                 // ShotFired follows the real ammo spend: capture this magazine at actual acceptance.
                 r.ShotLimit=gun.BurstBudget;
@@ -93,19 +93,19 @@ namespace GoGhost.Duel
         bool Start(int op,ConditionalRule rule,Running r)
         {
             string action=ConditionalCatalog.ExecutionAction(rule);
-            bool targetAction=op==2||action=="M01"||action=="M02"||action=="M03"||action=="D02";
+            bool targetAction=op==2||action==ActionIds.ApproachEnemy||action==ActionIds.RetreatFromEnemy||action==ActionIds.KeepDistance||action==ActionIds.DodgeTowardEnemy;
             // Explicit Auto Aim/Aim Assist strategies retain their own visible target policy.
             r.Target=targetAction?Choose(op==2||!r.Context.EnemyBound?allVisible:r.Context.Candidates,action):-1;
-            if(action=="Q03")r.Target=r.Context.Source>=0&&visible[r.Context.Source]?r.Context.Source:-1;
+            if(action==ActionIds.AimAtDetectedEnemy)r.Target=r.Context.Source>=0&&visible[r.Context.Source]?r.Context.Source:-1;
             r.Aim=raw.CommittedAim;
             switch((ControlOperation)op)
             {
                 case ControlOperation.Movement:
-                    if((action=="M01"||action=="M02"||action=="M03")&&r.Target<0)return false;
-                    if(action=="M11")r.Direction=rule.MoveDirection==MoveDirectionOption.Left?-1:1;
+                    if((action==ActionIds.ApproachEnemy||action==ActionIds.RetreatFromEnemy||action==ActionIds.KeepDistance)&&r.Target<0)return false;
+                    if(action==ActionIds.Move)r.Direction=rule.MoveDirection==MoveDirectionOption.Left?-1:1;
                     return WriteMovement(action,r);
                 case ControlOperation.Jump:
-                    if(action=="J04")return StartPlatform(rule,r);
+                    if(action==ActionIds.ChangePlatform)return StartPlatform(rule,r);
                     if(!CanJump())return false;
                     output.JumpOwned=true;output.Jump=true;return true;
                 case ControlOperation.Aim:
@@ -116,22 +116,22 @@ namespace GoGhost.Duel
                     if(!gun.CanFireNow)
                     {
                         var state=states[op,r.Row];
-                        if((action=="F01"||action=="F02")&&rule.HasEvents
+                        if((action==ActionIds.FireOneShot||action==ActionIds.ShortBurst)&&rule.HasEvents
                             &&!state.CadencePending&&Time.time<=r.Context.ExpiresAt
                             &&gun.NextShotReadyAt<=r.Context.ExpiresAt+.0001f)
                         {state.CadencePending=true;state.CadenceContext=r.Context;}
                         return false;
                     }
                     r.Shots=0;
-                    r.ShotLimit=action=="F01"?1:action=="F02"?gun.AmmoInMagazine:int.MaxValue;
-                    if(action!="F03")r.Deadline=Time.time+r.ShotLimit*gun.FireInterval+.5f;
+                    r.ShotLimit=action==ActionIds.FireOneShot?1:action==ActionIds.ShortBurst?gun.AmmoInMagazine:int.MaxValue;
+                    if(action!=ActionIds.Fire)r.Deadline=Time.time+r.ShotLimit*gun.FireInterval+.5f;
                     WriteFireRequest(rule);return true;
                 case ControlOperation.Dodge:
                     if(!dodge.CanDodge)return false;
-                    if(action=="D01") {if(!SourcePoint(r,out var source))return false;r.Direction=Away(source.x);}
-                    else if(action=="D02") {if(r.Target<0)return false;r.Direction=-Away(contacts[r.Target].Bounds.center.x);}
-                    else if(action=="D03")r.Direction=Mathf.Abs(output.Move)>.01f?Mathf.Sign(output.Move):movement.MovementFacingDirection;
-                    else if(action=="D04") {if(Mathf.Abs(raw.Cursor.x-body.position.x)<.01f)return false;r.Direction=Mathf.Sign(raw.Cursor.x-body.position.x);}
+                    if(action==ActionIds.Dodge) {if(!SourcePoint(r,out var source))return false;r.Direction=Away(source.x);}
+                    else if(action==ActionIds.DodgeTowardEnemy) {if(r.Target<0)return false;r.Direction=-Away(contacts[r.Target].Bounds.center.x);}
+                    else if(action==ActionIds.DodgeMoveDirection)r.Direction=Mathf.Abs(output.Move)>.01f?Mathf.Sign(output.Move):movement.MovementFacingDirection;
+                    else if(action==ActionIds.DodgeTowardAim) {if(Mathf.Abs(raw.Cursor.x-body.position.x)<.01f)return false;r.Direction=Mathf.Sign(raw.Cursor.x-body.position.x);}
                     else throw new InvalidOperationException("Unknown Dodge response");
                     if(dodge.AvailableTravel(r.Direction,dodge.Distance)<.08f)return false;
                     output.DodgeOwned=true;output.Dodge=true;output.DodgeDirection=r.Direction;return true;
@@ -141,20 +141,20 @@ namespace GoGhost.Duel
         bool Continue(int op,ConditionalRule rule,Running r)
         {
             string action=ConditionalCatalog.ExecutionAction(rule);
-            if(action=="J04")return ContinuePlatform(rule,r);
+            if(action==ActionIds.ChangePlatform)return ContinuePlatform(rule,r);
             if(r.Completed||op==1&&r.Accepted)return false;
             if(op!=1&&Time.time>=r.Deadline)return false;
             if(r.Target>=0&&(!visible[r.Target]||!actors[r.Target].IsAlive)
-                &&action!="Q09")return false;
+                &&action!=ActionIds.CalibrateAimOnce)return false;
             switch((ControlOperation)op)
             {
                 case ControlOperation.Movement:return WriteMovement(action,r);
                 case ControlOperation.Aim:return WriteAim(action,r);
                 case ControlOperation.Fire:
-                    if(action=="F02"&&r.Accepted)return false; // Only the weapon may continue a burst.
+                    if(action==ActionIds.ShortBurst&&r.Accepted)return false; // Only the weapon may continue a burst.
                     if(!gun.isActiveAndEnabled||gun.IsReloading||gun.AmmoInMagazine<=0)return false;
                     if(!r.Accepted&&!gun.CanFireNow)return false;
-                    if(action!="F03"&&r.Shots>=r.ShotLimit)return false;
+                    if(action!=ActionIds.Fire&&r.Shots>=r.ShotLimit)return false;
                     WriteFireRequest(rule);return true;
                 case ControlOperation.Jump:
                     if(!CanJump())return false;
@@ -166,8 +166,8 @@ namespace GoGhost.Duel
         void WriteFireRequest(ConditionalRule rule)
         {
             output.FireOwned=true;output.Fire=true;output.FireActionId=rule.Action;
-            output.FireRequest=rule.Action=="F02"?WeaponFireRequest.Burst
-                :rule.Action=="F03"?WeaponFireRequest.Continuous:WeaponFireRequest.Single;
+            output.FireRequest=rule.Action==ActionIds.ShortBurst?WeaponFireRequest.Burst
+                :rule.Action==ActionIds.Fire?WeaponFireRequest.Continuous:WeaponFireRequest.Single;
         }
         bool CanJump()=>movement.IsGrounded&&input.GameplayInputEnabled&&movement.isActiveAndEnabled;
         bool SourcePoint(Running r,out Vector2 point)
@@ -186,12 +186,12 @@ namespace GoGhost.Duel
             float toward=r.Target>=0?-Away(contacts[r.Target].Bounds.center.x):0;
             switch(action)
             {
-                case "M01":
+                case ActionIds.ApproachEnemy:
                     // Own a stable zero near horizontal alignment, even across platform heights.
                     r.ApproachStopped=distance<=(r.ApproachStopped?.30f:.15f);
                     move=r.ApproachStopped?0:toward;break;
-                case "M02":move=-toward;break;
-                case "M03":
+                case ActionIds.RetreatFromEnemy:move=-toward;break;
+                case ActionIds.KeepDistance:
                     var state=states[0,r.Row];
                     var range=loadout.Operations[0].Rules[r.Row].KeepRange;
                     float near=range==KeepRangeOption.Short?ConditionalDefaults.ShortRangeMin:range==KeepRangeOption.Long?ConditionalDefaults.Far:ConditionalDefaults.Close;
@@ -201,8 +201,8 @@ namespace GoGhost.Duel
                     if(state.RangeMode==0)state.RangeMode=distance<near?-1:distance>far?1:0;
                     if(state.RangeMode==0)return false;
                     move=state.RangeMode*toward;break;
-                case "M11":move=r.Direction;break;
-                case "M09":if(Mathf.Abs(arena.center.x-x)<=.15f)return false;move=Mathf.Sign(arena.center.x-x);break;
+                case ActionIds.Move:move=r.Direction;break;
+                case ActionIds.MoveTowardCenter:if(Mathf.Abs(arena.center.x-x)<=.15f)return false;move=Mathf.Sign(arena.center.x-x);break;
                 default:throw new InvalidOperationException("Unknown movement response");
             }
             if(Mathf.Abs(move)>.01f)
@@ -217,20 +217,20 @@ namespace GoGhost.Duel
         bool WriteAim(string action,Running r)
         {
             // A current public candidate set, never a hidden target lock.
-            if(action=="Q01"||action=="Q02")
+            if(action==ActionIds.AutoAim||action==ActionIds.AutoAimLowestHealth)
             {r.Target=Choose(allVisible,action);if(r.Target<0)return false;}
-            if(action=="Q09")
+            if(action==ActionIds.CalibrateAimOnce)
             {
                 int best=Choose(allVisible,action);
                 bool valid=r.Target>=0&&visible[r.Target]&&MouseAngle(r.Target)<=ConditionalDefaults.MouseExit;
                 if(!valid||best>=0&&MouseAngle(best)+2f<MouseAngle(r.Target))r.Target=best;
                 if(r.Target<0)return false;
             }
-            output.AimOwned=true;output.Aim=action=="Q08"?r.Aim:AimAt(r.Target);
-            if(action=="Q09")
+            output.AimOwned=true;output.Aim=action==ActionIds.HoldAimDirection?r.Aim:AimAt(r.Target);
+            if(action==ActionIds.CalibrateAimOnce)
                 output.Aim=((Vector2)Vector3.RotateTowards(raw.Aim.normalized,output.Aim,
                     ConditionalDefaults.MouseEnter*Mathf.Deg2Rad,0)).normalized;
-            currentTarget=action=="Q08"?AlignedTarget(r.Aim,allVisible):r.Target;return true;
+            currentTarget=action==ActionIds.HoldAimDirection?AlignedTarget(r.Aim,allVisible):r.Target;return true;
         }
         float Travel(float direction,float distance)
         {

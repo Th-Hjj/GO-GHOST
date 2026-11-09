@@ -230,7 +230,7 @@ namespace GoGhost.Duel
             foreach (var entry in priorityRows)
             {
                 var rule = loadout.Operations[entry.Op].Rules[entry.Row];
-                if (entry.Op == (int)ControlOperation.Jump && rule.Action != "J04") continue;
+                if (entry.Op == (int)ControlOperation.Jump && rule.Action != ActionIds.ChangePlatform) continue;
                 int request = OperationClaims(entry.Op, rule);
                 if ((claimed & request) == 0 && TryResolveRule(entry.Op, entry.Row, rule))
                     claimed |= request;
@@ -253,7 +253,7 @@ namespace GoGhost.Duel
             {
                 if (entry.Op != (int)ControlOperation.Jump) continue;
                 var rule = loadout.Operations[entry.Op].Rules[entry.Row];
-                if (rule.Action != "J04" && TryResolveRule(entry.Op, entry.Row, rule)) return true;
+                if (rule.Action != ActionIds.ChangePlatform && TryResolveRule(entry.Op, entry.Row, rule)) return true;
             }
             return false;
         }
@@ -273,7 +273,7 @@ namespace GoGhost.Duel
         static int OperationClaims(int op, ConditionalRule rule = null)
         {
             int claims = 1 << op;
-            if ((ControlOperation)op == ControlOperation.Dodge || rule?.Action == "J04")
+            if ((ControlOperation)op == ControlOperation.Dodge || rule?.Action == ActionIds.ChangePlatform)
                 claims |= (1 << (int)ControlOperation.Movement) | (1 << (int)ControlOperation.Jump);
             return claims;
         }
@@ -357,8 +357,8 @@ namespace GoGhost.Duel
             {
                 // Manual RMB and F02 share the weapon's single committed process.
                 output.FireOwned = true;
-                if (active.Row >= 0 && active.Accepted && rules[active.Row].Action == "F02")
-                { output.FireActionId = "F02"; Executed(op, active); }
+                if (active.Row >= 0 && active.Accepted && rules[active.Row].Action == ActionIds.ShortBurst)
+                { output.FireActionId = ActionIds.ShortBurst; Executed(op, active); }
                 return true;
             }
 
@@ -397,7 +397,7 @@ namespace GoGhost.Duel
                 // still satisfy all states; Move also ends with its event conditions.
                 bool retainsContext = finite && active.Accepted;
                 context = retainsContext ? active.Context : active.EventContext;
-                eligible = rule.Action=="M11" ? Time.time <= context.ExpiresAt : active.Accepted || Time.time <= context.ExpiresAt;
+                eligible = rule.Action==ActionIds.Move ? Time.time <= context.ExpiresAt : active.Accepted || Time.time <= context.ExpiresAt;
                 if (!retainsContext)
                     eligible &= MatchStates(rule, op, ref context);
             }
@@ -407,7 +407,7 @@ namespace GoGhost.Duel
             }
 
             // A selected platform transition includes its physical landing.
-            if (rule.Action == "J04" && active.Platform != null
+            if (rule.Action == ActionIds.ChangePlatform && active.Platform != null
                 && (active.Accepted || active.Platform.LeftGround))
             {
                 eligible = true;

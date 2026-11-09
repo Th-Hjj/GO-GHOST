@@ -61,9 +61,15 @@ namespace GoGhost.Duel
         readonly List<Node> nodes = new List<Node>();
         readonly List<Surface> surfaces = new List<Surface>();
         readonly HashSet<Type> warnedTypes = new HashSet<Type>();
+        // Rescan scratch, reused every .5 s; Final Boss phase two moves five platforms continuously.
+        readonly HashSet<int> scanPresent = new HashSet<int>(), scanValidIds = new HashSet<int>();
+        readonly List<Bounds> scanDirty = new List<Bounds>();
+        readonly List<int> scanRemoved = new List<int>();
+        readonly List<Key> scanStale = new List<Key>();
         // List overloads grow when needed, so dense geometry is never silently truncated.
         readonly List<RaycastHit2D> supportHits = new List<RaycastHit2D>(16);
         readonly List<RaycastHit2D> traversalHits = new List<RaycastHit2D>(16);
+        readonly List<RaycastHit2D> edgeHits = new List<RaycastHit2D>(8);
         readonly List<Collider2D> standingHits = new List<Collider2D>(16);
         readonly List<Node> routeNodes = new List<Node>(128);
         readonly List<RouteStep> reversedSteps = new List<RouteStep>(16);
@@ -86,7 +92,7 @@ namespace GoGhost.Duel
         }
         Bounds arena;
         float nextScan;
-        int nextId = 1, groundMask;
+        int nextId = 1, groundMask, groundLayer;
         bool initialized;
         public int Version { get; private set; }
         public IReadOnlyList<Node> Nodes => nodes;
@@ -97,7 +103,7 @@ namespace GoGhost.Duel
 
         public void Initialize(Bounds legalBounds)
         {
-            arena = legalBounds; groundMask = LayerMask.GetMask("Ground"); initialized = true;
+            arena = legalBounds; groundLayer = LayerMask.NameToLayer("Ground"); groundMask = LayerMask.GetMask("Ground"); initialized = true;
             geometry.Clear(); links.Clear(); blocked.Clear(); nodes.Clear(); surfaces.Clear();
             routeStartReady = false; routeBatchDepth = 0; routeNodes.Clear(); reversedSteps.Clear();
             trajectorySamples.Clear();
@@ -112,12 +118,12 @@ namespace GoGhost.Duel
         {
             nextScan = Time.time + .5f;
             Physics2D.SyncTransforms(); // Static edits may precede the next FixedUpdate; sample their actual new shapes.
-            var present = new HashSet<int>();
-            var dirty = new List<Bounds>();
+            var present = scanPresent; present.Clear();
+            var dirty = scanDirty; dirty.Clear();
             var all = UnityEngine.Object.FindObjectsByType<Collider2D>(FindObjectsInactive.Include);
             foreach (var collider in all)
             {
-                if (collider.gameObject.scene != gameObject.scene || collider.gameObject.layer != LayerMask.NameToLayer("Ground")
+                if (collider.gameObject.scene != gameObject.scene || collider.gameObject.layer != groundLayer
                     || collider.isTrigger || !collider.enabled || !collider.gameObject.activeInHierarchy) continue;
                 int id = collider.GetEntityId().GetHashCode(); present.Add(id);
                 int fingerprint = Fingerprint(collider);
@@ -127,13 +133,13 @@ namespace GoGhost.Duel
                 ReadSurfaces(item);
                 geometry[id] = item; dirty.Add(item.Bounds);
             }
-            var removed = new List<int>();
+            var removed = scanRemoved; removed.Clear();
             foreach (var pair in geometry) if (!present.Contains(pair.Key)) { removed.Add(pair.Key); dirty.Add(pair.Value.Bounds); }
             foreach (int id in removed) geometry.Remove(id);
             if (dirty.Count == 0) return;
             Version++;
             nodes.Clear(); surfaces.Clear();
-            var validIds = new HashSet<int>();
+            var validIds = scanValidIds; validIds.Clear();
             foreach (var item in geometry.Values)
                 foreach (var surface in item.Surfaces)
                 {
@@ -143,7 +149,7 @@ namespace GoGhost.Duel
             nodes.Sort((a, b) => a.Id.CompareTo(b.Id));
             ReadCombatScale();
             // Unchanged geometry keeps its nodes and link cache. Only corridors near changed geometry are rejected.
-            var stale = new List<Key>();
+            var stale = scanStale; stale.Clear();
             foreach (var pair in links)
             {
                 if (!validIds.Contains(pair.Key.From) || !validIds.Contains(pair.Key.To)) { stale.Add(pair.Key); continue; }
@@ -264,7 +270,8 @@ namespace GoGhost.Duel
                 if (middle.y < arena.min.y - .1f || middle.y >= arena.max.y - .1f) continue;
                 // A real ray, above the actual edge, rejects undersides, holes and hidden interior edges.
                 bool upward = false;
-                foreach (var hit in Physics2D.RaycastAll(middle + Vector2.up * .06f, Vector2.down, .12f, groundMask))
+                Physics2D.Raycast(middle + Vector2.up * .06f, Vector2.down, GroundFilter(), edgeHits, .12f);
+                foreach (var hit in edgeHits)
                     if (hit.collider == collider && hit.distance > .01f && hit.normal.y > .7f) { upward = true; break; }
                 if (!upward) continue;
                 var surface = new Surface { Id = nextId++, Collider = collider, A = a, B = b };

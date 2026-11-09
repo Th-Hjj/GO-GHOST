@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace GoGhost.Duel
@@ -239,7 +240,8 @@ namespace GoGhost.Duel
             if (dropping && !dropRequested && body.linearVelocity.y > -.2f)
             {
                 DropBlocked=false;
-                foreach (var contact in Physics2D.BoxCastAll(here, Size-Vector2.one*.025f, 0, Vector2.down, .065f, LayerMask.GetMask("Player","Enemy")))
+                Physics2D.BoxCast(here, Size-Vector2.one*.025f, 0, Vector2.down, ActorFilter(), bodyHits, .065f);
+                foreach (var contact in bodyHits)
                     if (contact.collider != null && !contact.collider.isTrigger && contact.collider.attachedRigidbody != body
                         && contact.normal.y > .5f) { DropBlocked=true; break; }
             }
@@ -404,13 +406,24 @@ namespace GoGhost.Duel
                 speed=Mathf.Min(speed,Mathf.Sqrt(2*motion.Acceleration*motion.AirControl*Mathf.Max(0,Mathf.Abs(delta)-.04f)));
             return Mathf.Sign(delta)*speed;
         }
+        // Reused actor-body cast scratch for the per-step drop and sweep checks.
+        readonly List<RaycastHit2D> bodyHits = new List<RaycastHit2D>(8);
+        static readonly Comparison<RaycastHit2D> ByDistance = (a, b) => a.distance.CompareTo(b.distance);
+        static ContactFilter2D ActorFilter()
+        {
+            var filter = new ContactFilter2D().NoFilter();
+            filter.SetLayerMask(LayerMask.GetMask("Player", "Enemy"));
+            filter.useTriggers = Physics2D.queriesHitTriggers;
+            return filter;
+        }
         bool SweepBodies(Vector2 from, Vector2 to, out Vector2 safeEnd)
         {
             safeEnd = to;
             Vector2 delta = to - from;
             if (delta.sqrMagnitude < .000001f) return true;
-            int actors = LayerMask.GetMask("Player", "Enemy");
-            foreach (var hit in Physics2D.BoxCastAll(from, Size - Vector2.one * .035f, 0, delta.normalized, delta.magnitude, actors))
+            Physics2D.BoxCast(from, Size - Vector2.one * .035f, 0, delta.normalized, ActorFilter(), bodyHits, delta.magnitude);
+            bodyHits.Sort(ByDistance); // Nearest blocker first, as BoxCastAll returned them.
+            foreach (var hit in bodyHits)
             {
                 var other = hit.collider;
                 if (other == null || other.isTrigger || other.attachedRigidbody == body

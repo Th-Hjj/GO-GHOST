@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 
 namespace GoGhost.Duel
 {
+    // BonusOffer and FinalBoss are retired (the Bonus is reached from F8 Waves); they keep their slots so later values do not shift.
     public enum DuelPhase { Menu, Configure, Prepare, Fight, Between, Failed, Complete, Training, CharacterCreation, BonusOffer, FinalBoss, TargetProfile, MissionEntry }
 
     // Encounter progression; the legacy components own every physical action and hit.
@@ -71,7 +72,9 @@ namespace GoGhost.Duel
             if(platforms!=null&&platforms.Length>0&&platforms[0]!=null)
                 foreach(var surface in platforms[0].transform.parent.GetComponentsInChildren<SpriteRenderer>())
                     surface.color=Color.Lerp(NeuralPalette.Panel,NeuralPalette.Secondary,.70f);
-            InitializeDeveloperTuning();
+            // Developer tuning reads the prefabs; without them New Game reports the missing reference on screen.
+            if (combatPrefab != null && gunnerPrefab != null && swordsmanPrefab != null) InitializeDeveloperTuning();
+            else Debug.LogError("DuelGame is missing an encounter prefab reference.", this);
             handler = gameObject.AddComponent<HandlerVoice>();
             preparationVoice = gameObject.AddComponent<HandlerVoice>();
             ResetCharacterAppearance();
@@ -83,21 +86,23 @@ namespace GoGhost.Duel
         void Start() { if (sounds != null) sounds.BeginScope(); }
         void OnDestroy()
         {
+            // Global engine state first: a failure below must never leave the next scene frozen or muted.
+            Time.timeScale = 1;
+            AudioListener.pause = false;
             FinishMetrics("abandoned", reason: "scene_closed");
             PlayMetrics.EndRun("scene_closed");
             ClearPlatformLayout();
             playerRespawnAt = enemyRespawnAt = 0;
-            Player?.GetComponent<OfficerVisual>()?.ClearConditionalGlow();
+            // Scene teardown may already have destroyed children; ?. would bypass that check.
+            ClearPlayerGlow();
             Rules?.Dispose();Rules=null;
-            music?.StopMusic(true);
-            Time.timeScale = 1;
-            AudioListener.pause = false;
+            if (music != null) music.StopMusic(true);
             Appearance?.Dispose();
         }
         void OnApplicationFocus(bool focus)
         {
             if (!focus) developerResumeOnClose = false;
-            if (!focus && (Phase == DuelPhase.Fight || Phase == DuelPhase.Prepare || Phase == DuelPhase.Training || Phase == DuelPhase.FinalBoss)) SetPause(true);
+            if (!focus && (Phase == DuelPhase.Fight || Phase == DuelPhase.Prepare || Phase == DuelPhase.Training)) SetPause(true);
         }
         public void NewGame()
         {
@@ -292,7 +297,7 @@ namespace GoGhost.Duel
         }
         public void Reconfigure()
         {
-            bool pausedEncounter = Paused && (Phase == DuelPhase.Training || Phase == DuelPhase.Prepare || Phase == DuelPhase.Fight || Phase == DuelPhase.FinalBoss);
+            bool pausedEncounter = Paused && (Phase == DuelPhase.Training || Phase == DuelPhase.Prepare || Phase == DuelPhase.Fight);
             if (Phase != DuelPhase.Failed && !pausedEncounter) return;
             ClearEncounter("configuration");
             SetPhase(DuelPhase.Configure);
@@ -305,7 +310,7 @@ namespace GoGhost.Duel
         }
         public void SetPause(bool value)
         {
-            if (Phase != DuelPhase.Fight && Phase != DuelPhase.Prepare && Phase != DuelPhase.Training && Phase != DuelPhase.FinalBoss) return;
+            if (Phase != DuelPhase.Fight && Phase != DuelPhase.Prepare && Phase != DuelPhase.Training) return;
             if (DeveloperToolsOpen && !value) return;
             if (Paused == value) return;
             ApplyPause(value);
@@ -342,8 +347,8 @@ namespace GoGhost.Duel
             }
             StartupProgress = -1f;
             StartupFailed = false;
-            if (value == DuelPhase.Menu || value == DuelPhase.CharacterCreation || value == DuelPhase.FinalBoss
-                || Phase == DuelPhase.FinalBoss || Phase == DuelPhase.BonusOffer || Phase == DuelPhase.Between || value == DuelPhase.Failed)
+            if (value == DuelPhase.Menu || value == DuelPhase.CharacterCreation
+                || Phase == DuelPhase.Between || value == DuelPhase.Failed)
                 handler.Stop();
             Phase = value;
             MetricsStage();
@@ -356,16 +361,23 @@ namespace GoGhost.Duel
         {
             EndInvasionReading();
             Rules?.Dispose();Rules=null;
-            Player?.GetComponent<OfficerVisual>()?.ClearConditionalGlow();
-            music?.StopMusic();
+            ClearPlayerGlow();
+            if (music != null) music.StopMusic();
             if (encounter == null) return;
             // All contacts from this rendered frame finish before this LateUpdate boundary.
             foreach (var projectile in encounter.GetComponentsInChildren<Projectile>()) projectile.Retire();
-            coordinator?.StopCombat();
+            // Explicit != null: ?. skips Unity's destroyed-object check during teardown.
+            if (coordinator != null) coordinator.StopCombat();
             foreach (var actor in actors) if (actor != null) actor.StopCombat();
-            Player?.StopCombat();
-            effects?.EndAttempt();
-            encounterSounds?.EndScope();
+            if (Player != null) Player.StopCombat();
+            if (effects != null) effects.EndAttempt();
+            if (encounterSounds != null) encounterSounds.EndScope();
+        }
+        void ClearPlayerGlow()
+        {
+            if (Player == null) return;
+            var visual = Player.GetComponent<OfficerVisual>();
+            if (visual != null) visual.ClearConditionalGlow();
         }
         void ClearEncounter(string reason = "encounter_changed")
         {
@@ -376,7 +388,7 @@ namespace GoGhost.Duel
             FinishMetrics("abandoned", reason: reason);
             DeveloperToolsOpen = developerResumeOnClose = false;
             StopCombat();
-            music?.StopMusic(true);
+            if (music != null) music.StopMusic(true);
             Paused = false;
             Time.timeScale = 1;
             AudioListener.pause = false;

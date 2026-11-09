@@ -25,9 +25,8 @@ namespace GoGhost.Duel
         public VoiceStudioLine[] lines;
         [NonSerialized] VoiceStudioLine[] visit;
         public VoiceStudioLine[] Visit => visit ?? (visit = Array.FindAll(lines, x => x.key.StartsWith("FinalBossVoice/", StringComparison.Ordinal)));
-        [NonSerialized] VoiceStudioLine[] phaseChange, offer;
+        [NonSerialized] VoiceStudioLine[] phaseChange;
         public VoiceStudioLine[] BossTransition => phaseChange ?? (phaseChange = Array.FindAll(Visit, line => line.transition));
-        public VoiceStudioLine[] BonusOffer => offer ?? (offer = Array.FindAll(Visit, line => line.bonusOffer));
         static VoiceStudioCatalog current;
         public static VoiceStudioCatalog Current => current ?? (current = JsonUtility.FromJson<VoiceStudioCatalog>(
             Resources.Load<TextAsset>("VoiceStudioCatalog").text));
@@ -36,6 +35,14 @@ namespace GoGhost.Duel
         public static void Reload() => current = null;
 
         public VoiceStudioLine Find(string key) => Array.Find(lines, line => line.key == key);
+        // A missing or renamed key shows the fallback caption instead of throwing mid-dialogue.
+        public string Text(string key, string fallback)
+        {
+            var line = Find(key);
+            if (line != null) return line.text;
+            Debug.LogWarning($"Voice catalog has no line '{key}'; showing the fallback caption.");
+            return fallback ?? "";
+        }
         public float Volume(bool boss) => Mathf.Pow(10, (masterDb + (boss ? bossDb : happyDb)) / 20f);
 
 #if UNITY_EDITOR

@@ -248,7 +248,7 @@ public static class PlayMetrics
         bool automatic = !string.IsNullOrEmpty(automaticAction);
         if (hold) { if (automatic) op.automaticHoldSeconds += seconds; }
         else if (drop) { if (automatic) op.automaticDrops += count; else op.manualDrops += count; }
-        else if (operation == ControlOperation.Aim && automaticAction == "Q06") op.assistedSeconds += seconds;
+        else if (operation == ControlOperation.Aim && automaticAction == ActionIds.AimAssist) op.assistedSeconds += seconds;
         else if (automatic) { op.automaticCount += count; op.automaticSeconds += seconds; }
         else { op.manualCount += count; op.manualSeconds += seconds; }
         string key = automatic ? automaticAction : "Manual";

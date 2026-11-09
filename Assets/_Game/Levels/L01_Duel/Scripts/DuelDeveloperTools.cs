@@ -238,7 +238,7 @@ namespace GoGhost.Duel
             }
             DeveloperToolsOpen=true;
             MetricsStage();
-            developerResumeOnClose=!Paused&&(Phase==DuelPhase.Prepare||Phase==DuelPhase.Fight||Phase==DuelPhase.Training||Phase==DuelPhase.FinalBoss);
+            developerResumeOnClose=!Paused&&(Phase==DuelPhase.Prepare||Phase==DuelPhase.Fight||Phase==DuelPhase.Training);
             if(developerResumeOnClose)SetPause(true);else ui.Show();
         }
     }

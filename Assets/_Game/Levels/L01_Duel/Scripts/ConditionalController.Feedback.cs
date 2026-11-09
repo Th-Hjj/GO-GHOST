@@ -23,7 +23,7 @@ namespace GoGhost.Duel
             if(op==0)active&=input.ConditionalFrame.MovementOwned&&!dodge.IsDodging&&!movement.HitPushActive&&Time.time-executedAt[op,row]<.1f;
             else if(op==2)active&=input.ConditionalFrame.AimOwned&&executedFrame[op,row]==Time.frameCount;
             else if(op==3)active&=input.ConditionalFrame.FireOwned&&gun.isActiveAndEnabled
-                &&(loadout.Operations[op].Rules[row].Action=="F06"||!gun.IsReloading&&gun.IsFiring);
+                &&(loadout.Operations[op].Rules[row].Action==ActionIds.HoldFire||!gun.IsReloading&&gun.IsFiring);
             else if(op==4)active&=dodge.IsDodging;
             else if(op==1)active&=r.Platform!=null&&platformOwnsMovement&&!dodge.IsDodging&&!movement.HitPushActive;
             else active=false;

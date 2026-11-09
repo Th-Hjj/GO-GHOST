@@ -1,5 +1,20 @@
 # GO GHOST slice implementation
 
+## 2026-11-08 — Code review fixes
+
+Thomas asked for the review's findings 2–8; F9 stays available in release builds.
+
+- **Invasion voice fallback:** `VoiceStudioCatalog.Text` returns a fallback caption and logs a warning when a key is missing. Invasion lines pass their own caption ("Condition, X." / "Action, X."), and a failed line ends the reading, so combat cannot stay frozen at timeScale 0. The rule-option hover uses the same lookup.
+- **Navigation rescan:** the graph still rebuilds from the moving platforms' actual positions every .5 s in phase two. The rescan now reuses its collections and caches the Ground layer.
+- **Physics queries:** projectile sweeps, Boss body sweeps/drop checks and navigation edge rays use reusable result lists with explicit distance ordering. The projectile caches its circle collider and the Ground layer.
+- **Teardown:** `DuelGame.OnDestroy` resets timeScale and audio pause first. Teardown paths in `DuelGame` and `BossAgent` use explicit `!= null` checks for Unity objects.
+- **Rule IDs:** `ActionIds` and `ConditionIds` (in `ConditionalLoadout.cs`) name the serialized action strings and the 11 selectable condition IDs. Values are unchanged; retired condition IDs stay literal in the catalog descriptions.
+- **Damage:** all Boss multipliers round through `BossProfile.ScaleDamage` (whole HP, halves up), including Cross ×1.3 and per-part axe damage. The F8 phase-two field reads "Damage (lands x0.9)".
+- **Cleanup:** removed the unreachable Bonus offer (StartBonusOffer, ChooseBonus, its page and the `BonusOffer` catalog view) and dead `DuelPhase.FinalBoss` checks; both enum values keep their slots. Awake skips developer tuning when an encounter prefab is missing, so New Game can report it. Renamed `Duelui.metrics.cs` → `DuelUI.Metrics.cs` and `Playmetrics.cs` → `PlayMetrics.cs` with their meta files while Unity was closed; GUIDs are unchanged. `HandlerVoice` null-checks the greeting token source.
+- **Game Flow check:** it now keeps damaging the Final Boss between the 660/330 invasion gates and requires both invasions. Before this update it timed out at the kneeling dialogue.
+
+Unity 6000.6.0f1 compiled the runtime and Editor assemblies. Check Game Flow passed through all three missions, both invasion readings, the kneeling lines, phase two and the ending. A missing invasion key returned its fallback caption with one warning. In Mission 1, Gunner bullets took an idle player to defeat. In a direct phase-two entry, the navigation version reached 40 within about 16 s as it tracked the moving platforms. The boxer then closed in and defeated the idle player. Projectile allocation and frame time were not profiled. Standalone build was not run.
+
 ## 2026-11-08 — Combat sound balance
 
 Follow-up: the phase-two flight multiplier is now 0.60, another 1.46 dB below the first mix.

@@ -34,7 +34,7 @@ namespace GoGhost.Duel
                         var rule = new ConditionalRule { Condition = condition, Action = action };
                         if (ConditionalCatalog.ConditionOptions(condition).Length > 0) ConditionalCatalog.SetConditionOption(rule, c);
                         if (ConditionalCatalog.ActionOptions(action).Length > 0) ConditionalCatalog.SetActionOption(rule, a);
-                        if (rule.Action == "Q01") rule.AutoAim = AutoAimOption.Nearest;
+                        if (rule.Action == ActionIds.AutoAim) rule.AutoAim = AutoAimOption.Nearest;
                         int operation = (int)ConditionalCatalog.Response(rule.Action).Operation;
                         if (!ConditionalCatalog.IsAllowed(operation, rule)) continue;
                         var probe = new ConditionalLoadout();

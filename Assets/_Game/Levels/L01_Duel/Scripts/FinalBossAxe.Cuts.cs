@@ -387,7 +387,7 @@ namespace GoGhost.Duel
             consumed|=1<<group;
             int partDamage = BossProfile.AttackDamage(damage);
             int defaultPeak = BossProfile.AttackDamage(Timings[(int)Current].Damage);
-            Strike(Mathf.Max(1,Mathf.RoundToInt(partDamage * acceptedTiming.Damage / (float)defaultPeak)));
+            Strike(Mathf.Max(1,BossProfile.ScaleDamage(partDamage, acceptedTiming.Damage / (float)defaultPeak)));
             return true;
         }
         void PublishPhaseOne(List<BossThreat> output)

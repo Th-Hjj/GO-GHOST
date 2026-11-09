@@ -183,10 +183,6 @@ namespace GoGhost.Duel
                 Text("You've Finished The Game!",page,Vector2.zero,new Vector2(1500,110),64,face:headingFont);
                 return;
             }
-            if(game.Phase==DuelPhase.BonusOffer)
-            {
-                BuildBonusOffer();return;
-            }
             if(game.Phase==DuelPhase.Failed || game.Phase==DuelPhase.Complete)
             {
                 Image(page,Vector2.zero,new Vector2(4000,4000),new Color(0,0,0,.86f));

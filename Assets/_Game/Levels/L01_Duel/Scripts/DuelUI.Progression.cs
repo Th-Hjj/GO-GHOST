@@ -75,8 +75,7 @@ namespace GoGhost.Duel
             dialogueOverlay.gameObject.SetActive(show || ruleEditorOpen);
             if (!show && !ruleEditorOpen) return;
             dialogueOverlay.SetAsLastSibling();
-            bool ambient = game.Phase != DuelPhase.FinalBoss && game.Phase != DuelPhase.BonusOffer
-                && !game.FinalBossCutscene && !game.InvasionHeld;
+            bool ambient = !game.FinalBossCutscene && !game.InvasionHeld;
             ambientPanel.gameObject.SetActive(ambient && !game.CurrentVoice.WaitingForPageSpeech);
             if (ambient)
             {
@@ -122,19 +121,8 @@ namespace GoGhost.Duel
                 Text(speaker,box,new Vector2(0,42),new Vector2(width-2*padding,26),18,TMPro.TextAlignmentOptions.MidlineLeft,headingFont).color=NeuralPalette.Secondary;
             sceneDialogue=Text(line,box,new Vector2(0,string.IsNullOrEmpty(speaker)?14:-12),new Vector2(width-2*padding,76),26,TMPro.TextAlignmentOptions.TopLeft,DialogueFont());
             sceneDialogue.name="CutsceneText";
-            sceneDialogue.maxVisibleCharacters=game.FinalBossChoiceReady?int.MaxValue:game.DialogueVisibleCharacters;
+            sceneDialogue.maxVisibleCharacters=game.DialogueVisibleCharacters;
             return box;
-        }
-
-        void BuildBonusOffer()
-        {
-            Text("MISSION 3 CLEARED",page,new Vector2(0,400),new Vector2(600,60),36,face:headingFont);
-            BuildSceneCaption(page,new Vector2(0,110),null,game.FinalBossDialogue);
-            if (game.FinalBossChoiceReady)
-            {
-                Button("Yes",page,new Vector2(-110,-35),new Vector2(190,60),()=>game.ChooseBonus(true)).name="BonusYes";
-                Button("No",page,new Vector2(110,-35),new Vector2(190,60),()=>game.ChooseBonus(false)).name="BonusNo";
-            }
         }
     }
 

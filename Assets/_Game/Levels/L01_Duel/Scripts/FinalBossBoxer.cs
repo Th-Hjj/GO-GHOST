@@ -302,7 +302,7 @@ namespace GoGhost.Duel
             hit=true;
             var move=Current;
             int before=actor.Player.CurrentHealth;
-            actor.HitPlayer(Cross ? Mathf.RoundToInt(accepted.Damage*1.3f) : accepted.Damage);
+            actor.HitPlayer(Cross ? BossProfile.ScaleDamage(accepted.Damage,1.3f) : accepted.Damage);
             if (actor.Player.CurrentHealth<before) Hits[(int)move]++;
         }
         public void Publish(List<BossThreat> output)

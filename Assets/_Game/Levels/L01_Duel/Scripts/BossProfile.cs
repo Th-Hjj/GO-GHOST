@@ -19,7 +19,11 @@ namespace GoGhost.Duel
     public sealed class BossProfile : ScriptableObject
     {
         // Profiles store base damage. A Boss attack spends whole HP, rounded half up.
-        internal static int AttackDamage(int baseDamage) => Mathf.FloorToInt(baseDamage * .75f + .5f);
+        internal static int AttackDamage(int baseDamage) => ScaleDamage(baseDamage, .75f);
+        // Every Boss damage multiplier rounds the same way: whole HP, halves up (RoundToInt would round .5 to even).
+        internal static int ScaleDamage(int damage, float factor) => Mathf.FloorToInt(damage * factor + .5f);
+        // Mission 2 Swordsman and Final Boss phase two hit for a fraction of their tuned damage.
+        internal const float MissionTwoSwordFactor = .95f, PhaseTwoFactor = .9f;
 
         public BossKind Kind;
         public int Health=720;

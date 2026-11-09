@@ -24,6 +24,12 @@ public class Projectile : MonoBehaviour
     public GameObject Owner => owner;
     private static readonly List<Projectile> active = new List<Projectile>();
     private static readonly List<RaycastHit2D> terrainHits = new List<RaycastHit2D>(16);
+    // Per-bullet sweep scratch: a receiver may launch or deflect other bullets while this list is iterated.
+    private readonly List<RaycastHit2D> sweepHits = new List<RaycastHit2D>(8);
+    private static readonly System.Comparison<RaycastHit2D> ByDistance = (a, b) => a.distance.CompareTo(b.distance);
+    private static int groundLayer = -2;
+    private static int GroundLayer => groundLayer != -2 ? groundLayer : groundLayer = LayerMask.NameToLayer("Ground");
+    private CircleCollider2D circle;
     public static IReadOnlyList<Projectile> Active => active;
     public int Damage => damage;
     public ProjectileActor Actor { get; private set; }
@@ -51,7 +57,7 @@ public class Projectile : MonoBehaviour
     {
         get
         {
-            var circle = GetComponent<CircleCollider2D>();
+            if (circle == null) circle = GetComponent<CircleCollider2D>();
             return circle != null ? circle.radius * Mathf.Max(Mathf.Abs(transform.lossyScale.x), Mathf.Abs(transform.lossyScale.y)) : .125f;
         }
     }
@@ -64,7 +70,7 @@ public class Projectile : MonoBehaviour
     {
         Vector2 delta = to - from;
         var filter = new ContactFilter2D().NoFilter();
-        filter.SetLayerMask(1 << LayerMask.NameToLayer("Ground"));
+        filter.SetLayerMask(1 << GroundLayer);
         filter.useTriggers = Physics2D.queriesHitTriggers;
         Physics2D.CircleCast(from, radius, delta.normalized, filter, terrainHits, delta.magnitude);
         foreach (var hit in terrainHits)
@@ -86,7 +92,7 @@ public class Projectile : MonoBehaviour
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetRegistry() { active.Clear(); terrainHits.Clear(); }
+    private static void ResetRegistry() { active.Clear(); terrainHits.Clear(); groundLayer = -2; }
     private void OnDestroy() => active.Remove(this);
 
     public void Launch(Vector2 direction, float speed, int dmg, GameObject shooter, PlayerTimeSlow hostileClock = null, bool counterable = false, PlayerShooting accuracyOwner = null,
@@ -165,8 +171,14 @@ public class Projectile : MonoBehaviour
             reachesBoundary = edge <= distance;
             distance = Mathf.Min(distance, edge);
         }
-        foreach (var hit in Physics2D.CircleCastAll(rb.position, Radius, travel.normalized, distance))
+        var sweep = new ContactFilter2D().NoFilter();
+        sweep.SetLayerMask(Physics2D.DefaultRaycastLayers);
+        sweep.useTriggers = Physics2D.queriesHitTriggers;
+        Physics2D.CircleCast(rb.position, Radius, travel.normalized, sweep, sweepHits, distance);
+        sweepHits.Sort(ByDistance); // Same contact order as CircleCastAll.
+        for (int i = 0; i < sweepHits.Count; i++)
         {
+            var hit = sweepHits[i];
             if (hit.collider == null || hit.collider.gameObject == gameObject) continue;
             var ownerBefore = owner;
             OnTriggerEnter2D(hit.collider);
@@ -201,7 +213,7 @@ public class Projectile : MonoBehaviour
         }
 
         if (!other.isTrigger && (((1 << other.gameObject.layer) & blockingLayers.value) != 0
-            || other.gameObject.layer == LayerMask.NameToLayer("Ground")))
+            || other.gameObject.layer == GroundLayer))
         {
             // All bullets cross walls/platforms; keep the serialized layer field for existing assets.
             return;

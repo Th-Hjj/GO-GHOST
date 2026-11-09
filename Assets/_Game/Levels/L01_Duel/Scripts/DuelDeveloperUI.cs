@@ -153,7 +153,8 @@ namespace GoGhost.Duel
                 v=>{var t=Read(); t.Recovery=v; Write(t);},()=>true);
             AddDeveloperField("BossCooldown","Cooldown (s)",-97,.1f,15,.1f,()=>Read().Cooldown,
                 v=>{var t=Read(); t.Cooldown=v; Write(t);},()=>true);
-            AddDeveloperField("BossDamage",tuningPhaseTwo ? "Damage" : "Strongest hit",-155,1,500,1,()=>Read().Damage,
+            // Phase-two hits land at PhaseTwoFactor of this value; Cross adds its own x1.3 first.
+            AddDeveloperField("BossDamage",tuningPhaseTwo ? "Damage (lands x"+BossProfile.PhaseTwoFactor.ToString("0.##",CultureInfo.InvariantCulture)+")" : "Strongest hit",-155,1,500,1,()=>Read().Damage,
                 v=>{var t=Read(); t.Damage=Mathf.RoundToInt(v); Write(t);},()=>true);
             AddDeveloperField("FinalBossHP","Final Boss current HP",-217,1,10000,10,
                 ()=>game.GetDeveloperHealth(2,out int hp,out _)?hp:0, v=>game.SetDeveloperHealth(2,Mathf.RoundToInt(v)),

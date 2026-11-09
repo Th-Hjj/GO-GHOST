@@ -59,6 +59,15 @@ public static partial class BossEncounterSmoke
             }
         }
 
+        // Phase one stops at 660 and 330 HP until each invasion is read; keep spending the pool between them.
+        var finalBoss = game.Bosses[0];
+        yield return WaitFor(() =>
+        {
+            if (!game.FinalBossCutscene && finalBoss.Health.CurrentHealth > 0)
+                finalBoss.Health.TakeDamage(100000, game.Player.gameObject);
+            return game.FinalBossCutscene;
+        }, "Phase one did not reach the kneeling transition", 60);
+        Require(game.InvadedRuleCount == 2, "Expected both phase-one invasions, saw " + game.InvadedRuleCount);
         foreach (var line in new[] { "You're strong.", "But it's not over yet.", "Let’s see what you can do on your own." })
             yield return WaitFor(() => game.CutsceneText == line && game.PendingDialogue == line, "Missing kneeling dialogue: " + line, 25);
         yield return WaitFor(() => game.Bosses[0].Axe.PhaseTwo, "Phase two did not start", 30);

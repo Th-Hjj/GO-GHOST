@@ -30,7 +30,7 @@ public static partial class BossEncounterSmoke
         batch = batchMode;
         previousPlayScene = EditorSceneManager.playModeStartScene;
         EditorSceneManager.playModeStartScene = scene;
-        deadline = EditorApplication.timeSinceStartup + 100;
+        deadline = EditorApplication.timeSinceStartup + 180; // Mission 3 now reads two clicked invasions.
         lastFrame = -1;
         steps.Push(GameFlow());
         EditorApplication.update += Tick;

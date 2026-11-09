@@ -43,7 +43,7 @@ namespace GoGhost.Duel
             SpeakBossPage();
         }
 
-        void SpeakBossPage() => handler.SpeakDialogue(DialogueLines[FinalBossLine].key, FinishBossPage);
+        void SpeakBossPage() => handler.SpeakDialogue(DialogueLines[FinalBossLine].key, FinishBossPage, pageEntry: FinalBossLine == 0);
 
         void FinishBossPage()
         {

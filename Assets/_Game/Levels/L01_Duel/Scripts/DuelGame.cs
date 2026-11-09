@@ -102,7 +102,6 @@ namespace GoGhost.Duel
         public void NewGame()
         {
             handler.ResetSpeakerName();
-            double questionAt = AudioSettings.dspTime + VoiceStudioCatalog.Current.openingDelay;
             ClearEncounter("new_game");
             PlayMetrics.ResetRun();
             metricsWaveJumpPending = false;
@@ -113,7 +112,7 @@ namespace GoGhost.Duel
             FirstConfiguration = true;
             ResetCharacterAppearance();
             SetPhase(DuelPhase.CharacterCreation);
-            creationQuestionAt = questionAt;
+            creationQuestionAt = AudioSettings.dspTime + VoiceStudioCatalog.Current.openingDelay;
         }
         void ResetCharacterAppearance()
         {

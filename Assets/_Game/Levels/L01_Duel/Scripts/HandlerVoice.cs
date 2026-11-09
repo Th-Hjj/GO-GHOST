@@ -31,7 +31,7 @@ namespace GoGhost.Duel
         float revealStart, revealDuration;
         bool revealed;
         bool realtimeReveal;
-        const double PageSpeechDelay = .3;
+        const double PageSpeechDelay = .8;
         double pageSpeechAt, dialogueStartsAt;
         internal void PageEntered() => pageSpeechAt = AudioSettings.dspTime + PageSpeechDelay;
         float RemainingSpeechDelay => (float)Math.Max(0, dialogueStartsAt - AudioSettings.dspTime);
@@ -52,7 +52,7 @@ namespace GoGhost.Duel
             afterDialogue = advance;
         }
 
-        internal void SpeakDialogue(string key, Action advance = null, bool realtime = false)
+        internal void SpeakDialogue(string key, Action advance = null, bool realtime = false, bool pageEntry = false)
         {
             if (key == "Handler/TutorialIntro3") SpeakerName = "Happy";
             if (tutorialActive)
@@ -75,7 +75,7 @@ namespace GoGhost.Duel
                 };
                 if (Focus == TutorialFocus.Pick) editorExplained = true;
             }
-            PlayRecordedLine(key, waitForPage: key.StartsWith("Handler/", StringComparison.Ordinal));
+            PlayRecordedLine(key, waitForPage: pageEntry || key.StartsWith("Handler/", StringComparison.Ordinal));
             WaitForClick(VoiceStudioCatalog.Current.Find(key).text, advance, realtime);
         }
 

@@ -17,7 +17,7 @@
   "bossSub": 0.42,
   "bossDrive": 1.9,
   "greetingTemplate": "Nice to meet you, {name}.",
-  "openingDelay": 0.3,
+  "openingDelay": 0.8,
   "lines": [
     {
       "key": "Handler/InvasionWarning",

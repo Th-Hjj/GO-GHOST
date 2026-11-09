@@ -19,6 +19,15 @@ namespace GoGhost.Duel
         AudioClip finalBossPhaseTwoTrack;
         const float FinalBossPhaseTwoGain = .977237f; // -0.2 dB relative to the music reference
 
+        // Short-term loudness trims (dB) at 3, 9, 15, 21, 27 and 33 seconds.
+        // Keep a softer countdown, then converge on the existing full-track mix.
+        static readonly float[] gunnerIntro = { 1.5f, 3.3f, 3.1f, 3.2f, 0f, 0f };
+        static readonly float[] swordsmanIntro = { 0f, -1.6f, -.6f, 0f, 0f, 0f };
+        static readonly float[] axeIntro = { 0f, .9f, -.8f, -.6f, -1.8f, 0f };
+        static readonly float[] boxerIntro = { 7f, -.6f, 0f, 0f, 0f, 0f };
+        static readonly float[] bonusIntro = { 5.7f, 3.4f, 2.6f, .4f, 0f, 0f };
+        float[] introTrim;
+
         public int CurrentWave { get; private set; }
         public float Volume => musicVolume;
         internal void CollectAudioClips(System.Collections.Generic.HashSet<AudioClip> destination)
@@ -70,6 +79,14 @@ namespace GoGhost.Duel
                 : waveTracks != null && index >= 0 && index < waveTracks.Length ? waveTracks[index] : null;
             if (output == null || !isActiveAndEnabled || track == null) return;
             output.clip = track;
+            introTrim = wave switch
+            {
+                1 => gunnerIntro,
+                2 => swordsmanIntro,
+                DuelGame.FinalBossWave => finalBossPhaseTwo ? boxerIntro : axeIntro,
+                DuelGame.BonusWave => bonusIntro,
+                _ => null
+            };
             CurrentWave = wave;
             pending = true;
             targetFade = 1;
@@ -80,7 +97,24 @@ namespace GoGhost.Duel
         public void SetVolume(float value)
         {
             musicVolume = Mathf.Clamp01(value);
-            if (output != null) output.volume = musicVolume * CurrentTrackGain * fade;
+            if (output != null) ApplyVolume();
+        }
+
+        void ApplyVolume()
+        {
+            float gain = CurrentTrackGain;
+            if (output.clip != null && introTrim != null)
+            {
+                float seconds = (float)output.timeSamples / output.clip.frequency;
+                float point = Mathf.Max(0f, (seconds - 3f) / 6f);
+                int index = Mathf.FloorToInt(point);
+                if (index < introTrim.Length - 1)
+                {
+                    float db = Mathf.Lerp(introTrim[index], introTrim[index + 1], point - index);
+                    gain *= Mathf.Pow(10f, db / 20f);
+                }
+            }
+            output.volume = musicVolume * gain * fade;
         }
 
         public void StopMusic(bool immediate = false)
@@ -124,7 +158,7 @@ namespace GoGhost.Duel
                 }
             }
             fade = fadeSeconds > 0 ? Mathf.MoveTowards(fade, targetFade, Time.unscaledDeltaTime / fadeSeconds) : targetFade;
-            output.volume = musicVolume * CurrentTrackGain * fade;
+            ApplyVolume();
             if (targetFade == 0 && fade == 0 && output.clip != null) StopMusic(true);
         }
 

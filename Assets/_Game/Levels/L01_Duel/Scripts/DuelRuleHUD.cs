@@ -14,6 +14,7 @@ namespace GoGhost.Duel
         static float Reveal(float age, float duration) => Mathf.SmoothStep(0, 1, age / duration);
         internal void ResetEncounterPresentation()
         {
+            if (hurtFlash != null) hurtFlash.enabled = false;
             firstInvadedSidebarAt = invadedAt = bossPoolSpentAt = secondPoolAt = float.NegativeInfinity;
             invadedOrder = -1;
             injectedOrders.Clear();

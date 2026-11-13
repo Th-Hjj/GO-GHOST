@@ -116,7 +116,14 @@ namespace GoGhost.Duel
             var actor = instance.GetComponent<BossAgent>();
             // Actor id 2 on purpose: the player's rules already understand a solo second opponent.
             actor.ConfigureFinal(Player, navigation, coordinator, 2, FinalBossFirstHealth, FinalBossSecondHealth, BeginFinalBossPhaseTwo, InvadePlayerRules);
+            actor.Health.OnDied += ProtectPlayerOnFinalVictory;
             return actor;
+        }
+
+        void ProtectPlayerOnFinalVictory(Enemy boss)
+        {
+            // Other projectiles may still resolve during this physics step.
+            if (Player != null && !Player.IsDead) Player.IsInvulnerable = true;
         }
 
         // Appends one random legal rule after the player's last rule, beyond the five-rule cap, and rebinds.

@@ -539,14 +539,22 @@ namespace GoGhost.Duel
         }
         public void EndCamoRoute()
         {
-            if(PlatformBlinkActive){EndPlatformBlink();return;}
             if(!camoTravelling)return;
             bool arrived=!CamoRouteInvalid&&actor.Motor.RouteCompleted&&actor.Motor.Grounded
                 &&Vector2.Distance(actor.Position,camoPlan.Destination)<.45f;
             camoTravelling=false;
             actor.Trace(arrived?"camo arrived; prepare follow-up":$"camo route ended without attack setup pos={actor.Position} failure={actor.Motor.RouteFailure} completed={actor.Motor.RouteCompleted}");
-            if(arrived)camoFollowupUntil=Time.time+actor.Profile.Camo.Recovery+.45f;
-            else {if(plan==camoPlan)plan=null;camoPlan=null;}
+            if(arrived)
+            {
+                camoFollowupUntil=Time.time+actor.Profile.Camo.Recovery+.45f;
+                if (blinkSupport != null)
+                {
+                    PlatformBlinks++; lastBlinkSupport = blinkSupport;
+                    TrackGunSupport(); nextPlatformMove = Time.time + PlatformMoveGap;
+                }
+            }
+            else {actor.Motor.ClearRoute(); if(plan==camoPlan)plan=null;camoPlan=null;}
+            blinkSupport = null;
         }
         bool TickCamoFollowup(BossObservation facts)
         {

@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 namespace GoGhost.Duel
 {
     // BonusOffer and FinalBoss are retired (the Bonus is reached from F8 Waves); they keep their slots so later values do not shift.
-    public enum DuelPhase { Menu, Configure, Prepare, Fight, Between, Failed, Complete, Training, CharacterCreation, BonusOffer, FinalBoss, TargetProfile, MissionEntry }
+    public enum DuelPhase { Menu, Configure, Prepare, Fight, Between, Failed, Complete, Training, CharacterCreation, BonusOffer, FinalBoss, TargetProfile, MissionEntry, FinalVictoryHold }
 
     // Encounter progression; the legacy components own every physical action and hit.
     public sealed partial class DuelGame : MonoBehaviour
@@ -169,6 +169,8 @@ namespace GoGhost.Duel
             encounter.name = "CombatAttempt";
             encounter.AddComponent<ArenaBoundary2D>().Initialize(ArenaBounds);
             Player = encounter.GetComponentInChildren<PlayerHealth>();
+            Player.ResultSounds = sounds;
+            Player.DamageTaken += ui.ShowHurtFlash;
             input = Player.GetComponent<PlayerInputReader>();
             input.SetGameplayInputEnabled(false);
             Rifle = Player.GetComponent<PlayerShooting>();
@@ -381,6 +383,7 @@ namespace GoGhost.Duel
         }
         void ClearEncounter(string reason = "encounter_changed")
         {
+            if (Player != null) Player.DamageTaken -= ui.ShowHurtFlash;
             if (Wave == FinalBossWave && Phase == DuelPhase.Fight) handler.Stop();
             ui.ResetEncounterPresentation();
             ResetFinalBossTransition();
@@ -417,7 +420,17 @@ namespace GoGhost.Duel
             if(Phase==DuelPhase.Fight&&Wave==BonusWave&&Player!=null&&!Player.IsDead
                 &&Keyboard.current!=null&&Keyboard.current.pKey.wasPressedThisFrame)coordinator?.RequestNextDebugCombo();
 #endif
-            if (Phase == DuelPhase.Prepare)
+            if (Phase == DuelPhase.FinalVictoryHold)
+            {
+                phaseTime += Time.deltaTime;
+                if (phaseTime >= .85f)
+                {
+                    ClearEncounter();
+                    SetPhase(DuelPhase.Complete);
+                    sounds?.Play(Sfx.Victory);
+                }
+            }
+            else if (Phase == DuelPhase.Prepare)
             {
                 phaseTime += Time.deltaTime;
                 if (phaseTime >= PreparationSeconds) BeginCombat();
@@ -466,9 +479,9 @@ namespace GoGhost.Duel
             }
             if (!defeat && Wave == FinalBossWave)
             {
-                ClearEncounter();
-                SetPhase(DuelPhase.Complete);
-                sounds?.Play(Sfx.Victory);
+                StopCombat();
+                Player.IsInvulnerable = true;
+                SetPhase(DuelPhase.FinalVictoryHold);
                 return;
             }
             StopCombat();

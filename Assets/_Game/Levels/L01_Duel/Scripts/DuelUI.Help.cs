@@ -69,6 +69,7 @@ namespace GoGhost.Duel
                 HelpControl(content,width,"Left Shift","Dodge");
                 HelpControl(content,width,"Left mouse","Fire");
                 HelpControl(content,width,"Right mouse","Rapidly fire");
+                HelpControl(content,width,"R","Reload");
                 HelpControl(content,width,"Esc","Pause / resume");
             }
             else

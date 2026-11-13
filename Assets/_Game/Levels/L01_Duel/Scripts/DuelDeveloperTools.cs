@@ -225,7 +225,7 @@ namespace GoGhost.Duel
 
         public void ToggleDeveloperTools()
         {
-            if (startup != null || Phase == DuelPhase.MissionEntry) return;
+            if (startup != null || Phase == DuelPhase.MissionEntry || Phase == DuelPhase.FinalVictoryHold) return;
             if(DeveloperToolsOpen)
             {
                 DeveloperToolsOpen=false;

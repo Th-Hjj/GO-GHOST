@@ -29,7 +29,7 @@ Each preparation page keeps the body and Rules list beside + Add Rule. Edit a ru
 
 Help provides **What're the controls?** and **What is configuration?**, preserving the current draft on return. Its pages contain brief controls and the Condition/Action definitions only. Presets and death-based unlocks are removed. Each New Game saves one independent JSON record with the character nickname; see [Gameplay Analytics](GameplayAnalytics.md).
 
-Mission 2 victory closes the playtest record. Mission 3 phase one opens with the same three-second countdown as Missions 1 and 2. The Boss’s combat AI controls his movement and axe attacks. At 66% and 33% health he adds a rule to the player’s left sidebar for that fight. The EMP seals the player’s rules for phase two. Phase-two defeat offers **Retry Phase 2**. Victory ends on **You've Finished The Game!**. [Progression and dialogue](BossEncounters.md#final-boss-and-optional-bonus)
+Mission 2 victory closes the playtest record. Mission 3 phase one opens with the same three-second countdown as Missions 1 and 2. The Boss’s combat AI controls his movement and axe attacks. At 66% and 33% health he adds a rule to the player’s left sidebar for that fight. The EMP seals the player’s rules for phase two. Phase-two defeat offers **Retry Phase 2**. Victory holds the Boss defeat pose before **You've Finished The Game!** and its **Main Menu** button. [Progression and dialogue](BossEncounters.md#final-boss-and-optional-bonus)
 
 ## Builds and Editor checks
 

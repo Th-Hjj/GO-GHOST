@@ -4,7 +4,7 @@ The current rule editor pairs **one condition with one action**. The player can 
 
 **Jump priority — Thomas, 2026-10-26:** legal manual and automatic Jump takes priority over Dodge. A new Jump immediately interrupts an active Dodge; same-frame Jump/Dodge requests execute only Jump, regardless of the Dodge rule's DisplayOrder. Interruption ends remaining Dodge movement and immunity, preserves the original cooldown deadline and does not emit Dodge Finished. Ignored Boss body pairs restore after safe separation if the interruption occurs inside a Boss. Invalid airborne requests do not cancel Dodge or grant another jump. Ordinary Jump rules retain DisplayOrder among themselves; Move/Aim/Fire remain parallel and accepted platform routes retain their existing commitment. Pause, focus, F8 and lifecycle input gates still apply.
 
-**Fire** offers **Keep Firing** and **Short Burst**. Short Burst (F02) commits the remaining magazine with reduced accuracy and damage, just like manual RMB.
+**Fire** offers **Keep Firing** and **Short Burst**. Short Burst (F02) commits the remaining magazine with reduced accuracy and damage, just like manual RMB. In combat and the Test Room, R starts a normal reload when the magazine is partially spent. Any unfinished burst ends immediately. Its remaining shots are discarded.
 
 ## Help
 
@@ -108,7 +108,7 @@ The internal weapon firing process (no longer a selectable condition) starts onl
 
 **Move** (M11) uses **Toward Enemy** or **Away from Enemy**, based on a visible target. Toward Enemy holds zero input within the horizontal alignment tolerance and resumes when the target moves outside it. Move releases to a lower rule or manual input as soon as the condition or event window expires. Terrain still blocks movement.
 
-**Keep Distance**, M03, retains the original bands and .35-unit hysteresis: Close 2.1–5.3, Mid 5.3–8.5 and Far 8.5–11.7 units. Too close retreats; too far approaches; reaching the band releases Move. Serialized `KeepRangeOption.Short/Mid/Long` values remain 1/0/2 and display Close/Mid/Far; omitted data remains Mid. Invalid values fail normal validation.
+**Keep Distance**, M03, retains the original bands and .35-unit hysteresis: Close 2.1–5.3, Mid 5.3–8.5 and Far 8.5–11.7 units. The player retreats when too close, approaches when too far and holds still inside the band. The row owns movement until its condition or event window ends, its target becomes invalid or a higher-priority action takes over. Serialized `KeepRangeOption.Short/Mid/Long` values remain 1/0/2 and display Close/Mid/Far; omitted data remains Mid. Invalid values fail normal validation.
 
 Hold Position / Stop Moving and Hold Fire are removed without substitute actions. Their old rules remain invalid until edited.
 

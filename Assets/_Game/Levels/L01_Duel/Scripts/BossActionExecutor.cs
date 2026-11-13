@@ -69,7 +69,7 @@ namespace GoGhost.Duel
         bool burstStep;
         float dropBodyWaitUntil;
         Vector2 targetPoint,dashStart,sweepFrom,sweepTo;
-        float cutFacing=1,previousCutProgress,camoMovingSeconds;
+        float cutFacing=1,previousCutProgress;
         Vector2 previousBladeOrigin;
         public Vector2 DropTarget => targetPoint;
         public Vector2 SweepFrom => sweepFrom;
@@ -138,7 +138,7 @@ namespace GoGhost.Duel
             Aim=(hypothesis-actor.Position).normalized;if(Aim.sqrMagnitude<.1f)Aim=Vector2.right*actor.Facing;
             actor.Face(Aim);SetPhase(BossActionPhase.Prepare,ability==BossAbility.Burst?settings.Prepare-p.BurstShotLock:settings.Prepare);
             cutFacing=actor.Facing;
-            if(ability==BossAbility.Camo){dashStart=actor.Position;camoMovingSeconds=0;actor.BeginCamo();}
+            if(ability==BossAbility.Camo)actor.BeginCamo();
             if(ability!=BossAbility.Camo&&!actor.IsTrainingEnemy)actor.Motor.Brake();
             if(ability==BossAbility.Guard)actor.Motor.HoldHorizontal();
             if(ability==BossAbility.Rhythm)actor.Motor.BeginStep(p.RhythmStep[0]);
@@ -295,20 +295,10 @@ namespace GoGhost.Duel
             }
             else if (Ability == BossAbility.Camo)
             {
-                if (actor.Tactics.PlatformBlinkActive)
-                {
-                    if (actor.Tactics.TickPlatformBlink(Time.time - phaseAt))
-                        Recover();
-                }
-                else
-                {
-                    if (actor.Velocity.sqrMagnitude > .1f)
-                        camoMovingSeconds += Time.deltaTime;
-                    if (actor.Tactics.CamoRouteInvalid || Time.time >= phaseUntil
-                        || camoMovingSeconds >= p.CamoMinimumMove
-                        && Vector2.Distance(actor.Position, dashStart) > .4f && actor.Motor.RouteCompleted)
-                        Recover();
-                }
+                // The motor already bounds each physical step and reports blocked routes.
+                if (actor.Tactics.CamoRouteInvalid || actor.Motor.RouteCompleted && actor.Motor.Grounded
+                    || !actor.Motor.HasRoute && Time.time >= phaseUntil)
+                    Recover();
             }
             else if (Ability == BossAbility.Guard)
             {

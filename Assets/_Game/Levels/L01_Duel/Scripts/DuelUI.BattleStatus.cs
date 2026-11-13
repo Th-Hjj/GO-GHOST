@@ -24,6 +24,32 @@ namespace GoGhost.Duel
         HealthTextState[] bossHealthText = System.Array.Empty<HealthTextState>();
         const float WaveTitleFadeSeconds = .6f;
         TMP_Text waveTitle;
+        UnityEngine.UI.Image hurtFlash;
+        float hurtAt;
+        internal void ShowHurtFlash(int damage, GameObject source)
+        {
+            if (damage <= 0) return;
+            if (hurtFlash == null)
+            {
+                hurtFlash = Image(canvas, Vector2.zero, Vector2.zero, Color.clear);
+                hurtFlash.name = "Damage flash";
+                hurtFlash.raycastTarget = false;
+                hurtFlash.rectTransform.anchorMin = Vector2.zero;
+                hurtFlash.rectTransform.anchorMax = Vector2.one;
+            }
+            hurtFlash.transform.SetAsLastSibling();
+            hurtAt = Time.unscaledTime;
+            hurtFlash.enabled = true;
+            UpdateHurtFlash();
+        }
+
+        void UpdateHurtFlash()
+        {
+            if (hurtFlash == null || !hurtFlash.enabled) return;
+            float intensity = Mathf.Clamp01(1 - (Time.unscaledTime - hurtAt) / .16f);
+            hurtFlash.color = new Color(.95f, .08f, .10f, .18f * intensity * intensity);
+            hurtFlash.enabled = intensity > 0;
+        }
         CanvasGroup[] bossHealthGroups;
         readonly TMP_Text[] invasionThresholdMarks = new TMP_Text[2];
 

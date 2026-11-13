@@ -1,5 +1,17 @@
 # GO GHOST slice implementation
 
+## 2026-11-12 — Beta 66% combat and ending
+
+Real HP loss drives a .16-second red flash and the existing hurt cue at higher gain. A lethal hit uses the result audio scope so encounter teardown can finish without clipping that cue. The Dodge foot bar flashes once when an accepted cooldown elapses. Six gun-mounted bars read the magazine. R uses the normal reload, discards the rest of a burst and is listed in Controls. Keep Distance now holds the movement channel in its band, including during finite event responses.
+
+The active sword edge, tip arc and draw stroke follow their attack geometry. Phase-two rainbow fist trails use the same swept samples and radius as contact. Platform Camo used to assign the destination straight to the Gunner's rigidbody. It now hands a reachable destination to the existing walking and jump motor and uses its reveal fade on completion or interruption. Final Boss victory stops damage, holds the existing defeat pose for .85 seconds and opens the ending with Main Menu.
+
+In Play Mode, a partial magazine displayed five bars while a manual reload interrupted the first paid burst round. Repeated R during reload did nothing, six bars returned together and no queued shot followed. Checked holstering and the alternate weapon, Dodge recovery and immunity, hurt cue counts including a lethal hit, distance-band control, loss of the health condition and expiry of a damage event. During one concealed Gunner trip, 26 movement samples covered 4.35 units. The body accepted damage while concealed and revealed after a separate interrupted route. Observed the active Swordsman edge and GOAT punch rim during their attacks.
+
+Check Game Flow ran through the three missions, both invasions and the phase change. A damage attempt during the final defeat hold left player HP intact. The ending button returned to the menu with no player, normal time scale and resumed audio. Unity 6000.6.0f1 produced the Windows x64 player in Builds/Beta66/Windows.
+
+On the pre-change Windows x64 build, a clean named New Game reached the Mission 1 tutorial. Alt+F4 on Retry exited normally with code 0 in 1.72 seconds. Thomas deferred these two issues after the baseline run. The tutorial and voice shutdown paths were left as found.
+
 ## 2026-11-08 — Code review fixes
 
 Thomas asked for the review's findings 2–8; F9 stays available in release builds.

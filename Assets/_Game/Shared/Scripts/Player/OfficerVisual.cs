@@ -75,7 +75,7 @@ public sealed class OfficerVisual : MonoBehaviour
         {
             float strength=i<4?legs:i<8||i>10?arms:i<10?Mathf.Max(fire.Signal*.7f,Mathf.Max(fire.Pulse,fire.Afterglow*.22f)):dodgeSignal;
             // Keep the gun's reload signal red while arm feedback continues independently.
-            if(reloading&&(i==8||i==9))strength=0;
+            if(i==8 || reloading&&i==9)strength=0;
             var renderer=glowParts[i];if(renderer==null)continue;
             renderer.GetPropertyBlock(glowBlock);glowBlock.SetFloat(GlowStrength,Mathf.Clamp01(strength));
             glowBlock.SetColor(GlowColor,i<4?NeuralPalette.Legs:i==10?NeuralPalette.Spine:NeuralPalette.Arms);renderer.SetPropertyBlock(glowBlock);
@@ -140,13 +140,11 @@ public sealed class OfficerVisual : MonoBehaviour
         }
         weapon.sprite = RevolverPresentationGeometry.Body;
         weaponGrip.enabled = false; // The connected silhouette includes the complete grip.
-        cylinder.sprite = RevolverPresentationGeometry.Core;
         cylinder.sortingOrder = weapon.sortingOrder + 2;
         if (cylinderHalo == null) {
             cylinderHalo = AddSegment(cylinder, "RevolverCoreHalo");
             cylinderHalo.sortingOrder = weapon.sortingOrder + 1;
         }
-        cylinderHalo.sprite = RevolverPresentationGeometry.Halo;
         foreach (var arm in new[] { leftArm, leftForearm, rightArm, rightForearm })
             arm.sprite = RevolverPresentationGeometry.ArmSegment;
         leftArm.flipX = rightArm.flipX = false;
@@ -255,7 +253,7 @@ public sealed class OfficerVisual : MonoBehaviour
         cylinderHalo.transform.localPosition = cylinder.transform.localPosition;
         cylinderHalo.transform.localRotation = Quaternion.identity;
         cylinderHalo.transform.localScale = Vector3.one;
-        cylinderHalo.enabled = isActiveAndEnabled && (health == null || !health.IsDead);
+        UpdateCylinder();
         var anchor = weapon.transform.parent;
         Vector2 grip = RevolverPresentationGeometry.GripPosition;
         Vector2 support = RevolverPresentationGeometry.SupportPosition;
@@ -323,11 +321,24 @@ public sealed class OfficerVisual : MonoBehaviour
     // Final Boss phase change: the energy revolver is holstered and an antique one is drawn (look only).
     static readonly Color AntiqueBody = new Color32(176, 132, 82, 255), AntiqueCylinder = new Color32(122, 96, 64, 255);
     public bool AntiqueRevolver { get; private set; }
-    public void SetAntiqueRevolver(bool value) { AntiqueRevolver = value; UpdateReloadVisual(); }
+    public void SetAntiqueRevolver(bool value) { AntiqueRevolver = value; UpdateReloadVisual(); UpdateCylinder(); }
     public void SetWeaponHidden(bool hidden)
     {
-        foreach (var part in new[] { weapon, weaponGrip, cylinder, cylinderHalo })
-            if (part != null) part.enabled = !hidden && !(part == cylinderHalo && AntiqueRevolver);
+        if (weapon != null) weapon.enabled = !hidden;
+        if (weaponGrip != null) weaponGrip.enabled = !hidden && !animate;
+        UpdateCylinder();
+    }
+
+    void UpdateCylinder()
+    {
+        if (cylinder == null || cylinderHalo == null || shooting == null) return;
+        int bars = RevolverPresentationGeometry.ChargeBars;
+        // A nonstandard F8 magazine still displays its actual fill proportion.
+        int lit = Mathf.CeilToInt((float)bars * shooting.AmmoInMagazine / Mathf.Max(1, shooting.MagazineSize));
+        cylinder.sprite = AntiqueRevolver ? RevolverPresentationGeometry.Core : RevolverPresentationGeometry.ChargeMask(lit);
+        cylinder.enabled = weapon.enabled;
+        cylinderHalo.sprite = RevolverPresentationGeometry.ChargeMask(bars);
+        cylinderHalo.enabled = weapon.enabled && !AntiqueRevolver;
     }
 
     private void UpdateReloadVisual()
@@ -337,13 +348,8 @@ public sealed class OfficerVisual : MonoBehaviour
         Color tint = Color.Lerp(body, NeuralPalette.Danger, pulse);
         if (weapon != null) weapon.color = tint;
         if (weaponGrip != null) weaponGrip.color = tint;
-        if (cylinder != null) cylinder.color = Color.Lerp(AntiqueRevolver ? AntiqueCylinder : RevolverPresentationGeometry.CoreColor, NeuralPalette.Danger, pulse);
-        if (cylinderHalo != null)
-        {
-            // The antique revolver has no luminous cylinder.
-            if (AntiqueRevolver) cylinderHalo.enabled = false;
-            else cylinderHalo.color = Color.Lerp(new Color(.35f,.78f,1f,1f), NeuralPalette.Danger, pulse);
-        }
+        if (cylinder != null) cylinder.color = AntiqueRevolver ? Color.Lerp(AntiqueCylinder, NeuralPalette.Danger, pulse) : new Color32(98, 202, 255, 255);
+        if (cylinderHalo != null) cylinderHalo.color = new Color32(58, 66, 75, 255);
     }
     // The UI and actor share this palette. Brightened indigo stays readable against black.
     public static Color SlotColor(LoadoutSlot slot) => slot switch

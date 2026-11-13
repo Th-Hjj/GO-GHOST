@@ -38,6 +38,7 @@ namespace GoGhost.Duel
         internal float ImpactRadius => 2.5f*Mathf.SmoothStep(0,1,(Time.time-ImpactAt)/.18f);
         internal Vector2 StrokeStart { get; private set; }
         internal int Stroke { get; private set; }
+        internal const float FistRadius = .23f;
         BossMoveTuning accepted;
         JumpPlan jump;
         float phaseAt, phaseUntil, nextThink, punchTime, lastSample, airStart;
@@ -278,7 +279,8 @@ namespace GoGhost.Duel
         {
             var target=playerBody.bounds;
             Vector2 point=Fist();
-            if (!hit && SweptContact(lastFist,point,lastPlayer,target,.23f,lastSample,Time.time)) DealPunch();
+            actor.View?.RecordFistSweep(this, point);
+            if (!hit && SweptContact(lastFist,point,lastPlayer,target,FistRadius,lastSample,Time.time)) DealPunch();
             lastSample=Time.time; lastFist=point; lastPlayer=target.center;
         }
         static bool SweptContact(Vector2 a,Vector2 b,Vector2 previousTarget,Bounds target,float radius,float from,float to)

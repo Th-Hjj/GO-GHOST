@@ -6,7 +6,7 @@ namespace GoGhost.Duel
     // Perches come from the active layout; solo and duo use the same physical route solver.
     public sealed partial class BossTactics
     {
-        const float PlatformDwell = 3.2f, PlatformMoveGap = 1.2f, BlinkHiddenSeconds = .45f;
+        const float PlatformDwell = 3.2f, PlatformMoveGap = 1.2f;
         static readonly BossAbility[] PlatformAttackChoices = { BossAbility.Burst, BossAbility.Piercing, BossAbility.Sweep };
         readonly List<Collider2D> gunPlatforms = new List<Collider2D>(7);
         readonly Dictionary<Collider2D, float> platformVisits = new Dictionary<Collider2D, float>();
@@ -14,10 +14,9 @@ namespace GoGhost.Duel
         Collider2D gunSupport, previousGunSupport, blinkSupport, lastBlinkSupport;
         float supportSince, nextPlatformMove;
         int supportAttacks, platformFinishedAttacks;
-        bool blinkMoved;
         BossMotionProfile platformJumpMotion;
         public bool PlatformPressureEnabled => gunPlatforms.Count > 0;
-        public bool PlatformBlinkActive { get; private set; }
+        public bool PlatformBlinkActive => blinkSupport != null && camoTravelling;
         public int PlatformMoves { get; private set; }
         public int PlatformBlinks { get; private set; }
         public int PlatformAttacks { get; private set; }
@@ -60,7 +59,7 @@ namespace GoGhost.Duel
         public void CancelPlatformPressure()
         {
             if (!PlatformPressureEnabled) return;
-            PlatformBlinkActive = blinkMoved = false; blinkSupport = null;
+            camoTravelling = false; blinkSupport = null;
             plan = camoPlan = null; camoFollowupUntil = 0;
         }
 
@@ -281,11 +280,12 @@ namespace GoGhost.Duel
                 if (support == gunSupport || support == lastBlinkSupport) continue;
                 Vector2 point = PlatformPoint(support);
                 if (!PlatformPointValid(support, point, facts) || Vector2.Distance(point, facts.Position) < 3.2f
-                    || !BossPerception.CanSee(point + Vector2.up * .35f, facts.Body)) continue;
+                    || !BossPerception.CanSee(point + Vector2.up * .35f, facts.Body)
+                    || !TryPlatformRoute(point, out var route, out _)) continue;
                 float weight = Mathf.Max(.15f, PlatformScore(support, point, facts));
                 if ((point.x - centre) * (actor.Position.x - centre) < 0) weight *= 2.5f;
                 if (Mathf.Abs(point.y - actor.Position.y) > .6f) weight *= 1.3f;
-                platformOptions.Add(new BossPlan { Destination = point, Score = weight }); total += weight;
+                platformOptions.Add(new BossPlan { Destination = point, Score = weight, Route = route }); total += weight;
             }
             if (platformOptions.Count == 0) return false;
             float pick = Random.value * total; var chosen = platformOptions[platformOptions.Count - 1];
@@ -295,41 +295,12 @@ namespace GoGhost.Duel
             if (chosen.Ability == BossAbility.None) chosen.Ability = BossAbility.Burst;
             chosen.TargetHypothesis = facts.Position; chosen.TerrainVersion = actor.Navigation.Version;
             if (!actor.Actions.TryStart(BossAbility.Camo, chosen.TargetHypothesis)) return false;
-            actor.Motor.HoldHorizontal(); plan = null; camoPlan = chosen;
-            blinkSupport = supportAtTarget; blinkMoved = false; PlatformBlinkActive = true;
+            plan = null; camoPlan = chosen; camoTravelling = true;
+            blinkSupport = supportAtTarget;
+            actor.Motor.SetRoute(chosen.Route, platformJumpMotion);
             actor.Trace("platform camo committed to=" + chosen.Destination);
             return true;
         }
 
-        // Called only by Camo's real Active phase. Exactly one fixed destination, with no mid-hide retargeting.
-        public bool TickPlatformBlink(float hiddenSeconds)
-        {
-            if (!PlatformBlinkActive) return false;
-            if (hiddenSeconds < BlinkHiddenSeconds) return false;
-            if (camoPlan != null && camoPlan.TerrainVersion == actor.Navigation.Version
-                && blinkSupport != null && blinkSupport.enabled && blinkSupport.gameObject.activeInHierarchy
-                && Vector2.Distance(PlatformPoint(blinkSupport), camoPlan.Destination) < .05f
-                && (actor.Coordinator == null || !actor.Coordinator.Occupied(actor, camoPlan.Destination))
-                && actor.Motor.TryCamoRelocate(camoPlan.Destination))
-            {
-                blinkMoved = true; PlatformBlinks++; lastBlinkSupport = blinkSupport;
-                TrackGunSupport(); actor.PublishCue(.12f);
-                actor.Trace("platform camo relocated=" + actor.Position);
-            }
-            else actor.Trace("platform camo destination invalid; reveal at current position");
-            return true;
-        }
-
-        void EndPlatformBlink()
-        {
-            PlatformBlinkActive = false;
-            if (blinkMoved)
-            {
-                camoFollowupUntil = Time.time + actor.Profile.Camo.Recovery + .45f;
-                nextPlatformMove = Time.time + PlatformMoveGap;
-            }
-            else camoPlan = null;
-            blinkSupport = null; blinkMoved = false;
-        }
     }
 }

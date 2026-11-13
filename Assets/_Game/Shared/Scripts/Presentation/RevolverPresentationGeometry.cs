@@ -13,6 +13,21 @@ public static class RevolverPresentationGeometry
     public static readonly Vector2 GripPosition = new Vector2(-.495f, -.164f);
     public static readonly Vector2 SupportPosition = new Vector2(-.476f, -.188f);
     static Sprite body, core, halo, armSegment;
+    public const int ChargeBars = 6;
+    static readonly Sprite[] chargeMasks = new Sprite[ChargeBars + 1];
+    public static Sprite ChargeMask(int lit)
+    {
+        lit = Mathf.Clamp(lit, 0, ChargeBars);
+        if (lit == 0 || chargeMasks[lit] != null) return chargeMasks[lit];
+        const int pitch = 54, width = 30, height = 82;
+        const int span = pitch * (ChargeBars - 1) + width;
+        var pixels = new Color32[span * height];
+        for (int y = 0; y < height; y++)
+            for (int x = 0; x < span; x++)
+                if (x / pitch < lit && x % pitch < width)
+                    pixels[y * span + x] = new Color32(255, 255, 255, 255);
+        return chargeMasks[lit] = MakeSprite("Cylinder bars " + lit, pixels, span, height, Vector2.one * .5f);
+    }
     public static Sprite Body { get { Ensure(); return body; } }
     public static Sprite Core { get { Ensure(); return core; } }
     public static Sprite Halo { get { Ensure(); return halo; } }
@@ -22,6 +37,7 @@ public static class RevolverPresentationGeometry
     static void Reset()
     {
         Release(ref body); Release(ref core); Release(ref halo); Release(ref armSegment);
+        for (int i = 1; i <= ChargeBars; i++) Release(ref chargeMasks[i]);
     }
 
     static void Release(ref Sprite sprite)

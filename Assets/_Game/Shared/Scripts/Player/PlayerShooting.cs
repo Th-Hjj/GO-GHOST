@@ -219,6 +219,12 @@ public partial class PlayerShooting : MonoBehaviour, IAttemptAugmentation
             ReloadFinished?.Invoke();
         }
         if (!input.GameplayInputEnabled) { CancelBurst(); IsFiring=false; return; }
+        if (!IsReloading && AmmoInMagazine < MagazineSize && input.ReloadPressedThisFrame)
+        {
+            CancelBurst();
+            BeginReload();
+            return;
+        }
         var request = input.FireRequest;
         if (IsBursting)
         {

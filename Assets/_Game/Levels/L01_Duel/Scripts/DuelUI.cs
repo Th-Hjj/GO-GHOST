@@ -135,6 +135,7 @@ namespace GoGhost.Duel
                 Image(page,Vector2.zero,new Vector2(4000,4000),NeuralPalette.Background);
             if(game.Phase==DuelPhase.TargetProfile){BuildTargetProfile();return;}
             if(game.Phase==DuelPhase.MissionEntry)return;
+            if(game.Phase==DuelPhase.FinalVictoryHold)return;
             if(game.Paused)
             {
                 Image(page,Vector2.zero,new Vector2(4000,4000),new Color(0,0,0,.88f));
@@ -180,7 +181,8 @@ namespace GoGhost.Duel
             if(game.Phase==DuelPhase.Complete && game.Wave==DuelGame.FinalBossWave)
             {
                 Image(page,Vector2.zero,new Vector2(4000,4000),NeuralPalette.Background);
-                Text("You've Finished The Game!",page,Vector2.zero,new Vector2(1500,110),64,face:headingFont);
+                Text("You've Finished The Game!",page,new Vector2(0,60),new Vector2(1500,110),64,face:headingFont);
+                Button("Main Menu",page,new Vector2(0,-65),new Vector2(300,62),game.MainMenu,style:DuelControlStyle.Primary);
                 return;
             }
             if(game.Phase==DuelPhase.Failed || game.Phase==DuelPhase.Complete)
@@ -263,6 +265,7 @@ namespace GoGhost.Duel
         {
             if (game == null) return;
             UpdateDialogueOverlay();
+            UpdateHurtFlash();
             if (game.DeveloperToolsOpen) return;
             if (game.Phase==DuelPhase.TargetProfile && profileResolution != new Vector2Int(Screen.width,Screen.height)) {Show();return;}
             if (RefreshConfigurationLayout()) return;

@@ -60,6 +60,8 @@ public class PlayerHealth : MonoBehaviour, IDamageable
 
     private PlayerDodge dodge;
     private SfxSet sfx;
+    // The duel's result audio survives combat teardown on the frame of a lethal hit.
+    public SfxSet ResultSounds { private get; set; }
 
     private void Awake()
     {
@@ -83,7 +85,8 @@ public class PlayerHealth : MonoBehaviour, IDamageable
 
         int actualDamage=CurrentHealth-Mathf.Max(projectedHealth,0);
         CurrentHealth = Mathf.Max(projectedHealth, 0);
-        if (sfx != null) sfx.Play(Sfx.PlayerHurt); // real HP loss only; invulnerable/dodged hits returned above
+        var hitSounds = CurrentHealth == 0 && ResultSounds != null ? ResultSounds : sfx;
+        if (hitSounds != null) hitSounds.Play(Sfx.PlayerHurt);
         OnHealthChanged?.Invoke(CurrentHealth, MaxHealth);
 
         DamageTaken?.Invoke(actualDamage,source);

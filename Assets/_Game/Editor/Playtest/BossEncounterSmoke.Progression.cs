@@ -72,12 +72,18 @@ public static partial class BossEncounterSmoke
             yield return WaitFor(() => game.CutsceneText == line && game.PendingDialogue == line, "Missing kneeling dialogue: " + line, 25);
         yield return WaitFor(() => game.Bosses[0].Axe.PhaseTwo, "Phase two did not start", 30);
         game.Bosses[0].Health.TakeDamage(100000, game.Player.gameObject);
+        yield return WaitFor(() => game.Phase == DuelPhase.FinalVictoryHold, "Missing Boss defeat pause");
+        int finalHealth = game.Player.CurrentHealth;
+        game.Player.TakeDamage(100000, finalBoss.gameObject);
+        Require(game.Player.CurrentHealth == finalHealth && !finalBoss.Running, "Damage continued during victory");
         yield return WaitFor(() => game.Phase == DuelPhase.Complete, "Missing final completion screen");
         yield return null;
         Require(System.Array.Exists(game.GetComponentsInChildren<TMPro.TMP_Text>(), text => text.text == "You've Finished The Game!"),
             "Missing completion message");
         Require(File.ReadAllText(path) == closed, "Mission 3 changed the closed Wave 2 record");
-        game.MainMenu();
+        Click("Main Menu");
+        Require(game.Phase == DuelPhase.Menu && game.Player == null && !game.Paused && !AudioListener.pause
+            && Time.timeScale == 1, "Main Menu did not clear combat");
     }
 
     static void Click(string name)

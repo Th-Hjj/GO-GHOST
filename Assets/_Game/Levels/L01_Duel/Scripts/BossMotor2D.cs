@@ -190,26 +190,6 @@ namespace GoGhost.Duel
             Brake();
             if (body != null) body.linearVelocity = Vector2.zero;
         }
-        readonly System.Collections.Generic.List<Collider2D> camoOccupants = new System.Collections.Generic.List<Collider2D>(16);
-        // W1's authored Camo relocation is the sole exception to physical route traversal.
-        internal bool TryCamoRelocate(Vector2 destination)
-        {
-            var owner = GetComponent<BossAgent>();
-            if (!enabledCombat || !owner.IsAlive || !owner.IsCamo || !owner.Tactics.PlatformBlinkActive
-                || !navigation.CanStand(destination, Size)) return false;
-            var filter = new ContactFilter2D().NoFilter(); filter.useTriggers = false;
-            Physics2D.OverlapBox(destination, Size + Vector2.one * .02f, 0, filter, camoOccupants);
-            foreach (var other in camoOccupants)
-                if (other.attachedRigidbody != body && (other.GetComponentInParent<PlayerHealth>() != null
-                    || other.GetComponentInParent<BossAgent>() != null)) return false;
-            Stop();
-            var interpolation = body.interpolation; body.interpolation = RigidbodyInterpolation2D.None;
-            body.position = destination - centreOffset;
-            transform.position = new Vector3(body.position.x, body.position.y, transform.position.z);
-            PreviousPosition = progressPosition = destination; Grounded = true;
-            Physics2D.SyncTransforms(); body.interpolation = interpolation;
-            return true;
-        }
         void FixedUpdate()
         {
             if (body == null || Profile == null || !enabledCombat) return;

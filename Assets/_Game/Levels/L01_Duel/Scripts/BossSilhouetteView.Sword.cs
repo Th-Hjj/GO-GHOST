@@ -76,6 +76,7 @@ namespace GoGhost.Duel
                     else if(action.Phase==BossActionPhase.Prepare)continue;
                 }
                 bool active=threat.Phase==BossThreatPhase.Active,locked=threat.Phase==BossThreatPhase.Locked;
+                if (active && action.CurrentSwordBeat==SwordBeat.JumpCut && !action.JumpCutCanDamage) continue;
                 Color color=SwordTellColor(active,locked);
                 if(tells[slot]==null)tells[slot]=NewLine("SwordCommitment",false,2);
                 var line=tells[slot++];
@@ -92,7 +93,23 @@ namespace GoGhost.Duel
                         if(Projectile.TerrainHit(root,tip,threat.Radius,out var wall))tip=root+(tip-root).normalized*wall.distance;
                         line.SetPosition(i,ClipTellPoint(tip,SwordTellWidth(active,locked)));
                     }
-                    line.startWidth=line.endWidth=SwordTellWidth(active,locked);line.startColor=line.endColor=color;
+                    line.startWidth=active ? .04f : SwordTellWidth(false,locked);
+                    line.endWidth=active ? threat.Radius : line.startWidth;
+                    line.startColor=active ? NeuralPalette.Alpha(bodyColor,.35f) : color; line.endColor=color;
+                    if (active)
+                    {
+                        Vector2 root=action.SwordBladeRoot, tip=action.SwordBladeTip;
+                        if (Projectile.TerrainHit(root,tip,threat.Radius,out var wall)) tip=root+(tip-root).normalized*wall.distance;
+                        if(tells[4]==null)tells[4]=NewLine("Active sword edge",false,2);
+                        SetLine(tells[4],root,tip,threat.Radius*1.6f,NeuralPalette.Alpha(bodyColor,.75f));
+                        if(tells[5]==null)tells[5]=NewLine("Sword edge highlight",false,2);
+                        SetLine(tells[5],root,tip,threat.Radius*.52f,NeuralPalette.Primary);
+                    }
+                }
+                else if(active && action.CurrentSwordBeat==SwordBeat.Draw)
+                {
+                    line.numCapVertices=8;
+                    SetLine(line,action.PreviousSwordDrawContact,action.SwordDrawContact,2*threat.Radius,color);
                 }
                 else SetLine(line,threat.Origin,threat.End,SwordTellWidth(active,locked),color);
             }

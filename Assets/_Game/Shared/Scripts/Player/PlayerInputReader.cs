@@ -62,6 +62,8 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     public bool AttackPressedThisFrame { get; private set; }
     public bool BurstHeld { get; private set; }
     public bool BurstPressedThisFrame { get; private set; }
+    public bool ReloadPressedThisFrame => IsReady && GameplayInputEnabled && hasFocus && !NarrativePaused
+        && Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame;
     public WeaponFireRequest FireRequest => ConditionalControlsActive && ConditionalFrame.FireOwned
         ? ConditionalFrame.FireRequest
         : LegacyArmsAI ? (AttackHeld ? WeaponFireRequest.Continuous : WeaponFireRequest.None)

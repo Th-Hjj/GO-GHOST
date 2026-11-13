@@ -62,6 +62,10 @@ namespace GoGhost.Duel
         // The held blade leads the body's solid contact face. Its expressed and damaging capsule
         // includes that real forward reach, including the final step against a moving opponent.
         Vector2 SwordDrawLead=>Aim*(DashBladeLead(Aim,actor.Motor.Size,.48f)+.25f);
+        internal Vector2 SwordDrawContact => actor.Position + SwordDrawLead;
+        internal Vector2 PreviousSwordDrawContact => actor.Motor.PreviousPosition + SwordDrawLead;
+        internal bool JumpCutCanDamage => swordJumpLaunch >= 0 && Time.time >= swordStrikeAt
+            && Time.time <= swordStrikeAt + p.Sword.JumpCutActive && (actor.Motor.Grounded || actor.Velocity.y < 0);
         public bool HasLivingPartner
         {
             get {if(actor.Coordinator!=null)foreach(var other in actor.Coordinator.Actors)if(other!=actor&&other.IsAlive)return true;return false;}
@@ -452,28 +456,27 @@ namespace GoGhost.Duel
             var playerBody=actor.Player.GetComponent<Collider2D>();
             Vector2 currentPlayer=playerBody.bounds.center,previousPlayer=swordPreviousPlayer;swordPreviousPlayer=currentPlayer;
             if(Phase!=BossActionPhase.Active)return;
-            if(CurrentSwordBeat==SwordBeat.JumpCut&&(swordJumpLaunch<0||Time.time<swordStrikeAt||Time.time>swordStrikeAt+p.Sword.JumpCutActive
-                ||!actor.Motor.Grounded&&actor.Velocity.y>=0))return;
+            if(CurrentSwordBeat==SwordBeat.JumpCut && !JumpCutCanDamage)return;
             if(CurrentSwordBeat==SwordBeat.Draw)
             {
                 int damage = BossProfile.AttackDamage(p.Sword.DrawDamage);
-                Vector2 lead=SwordDrawLead;
+                Vector2 contact = SwordDrawContact;
                 // Both bodies moved during the completed physics step. Testing only the player's
                 // final centre misses a retreating body which the solid motor just stopped behind.
                 var sweep=new BossThreat {Valid=true,Phase=BossThreatPhase.Active,Shape=BossThreatShape.SweptCapsule,
-                    Origin=actor.Motor.PreviousPosition+lead,End=actor.Position+lead,Radius=.48f,TerrainBlocked=true,
+                    Origin=PreviousSwordDrawContact,End=contact,Radius=.48f,TerrainBlocked=true,
                     StartsAt=Time.time-Time.fixedDeltaTime,EndsAt=Time.time};
                 if(actor.Coordinator!=null)
                     foreach(var other in actor.Coordinator.Actors)
                     {
                         if(other==actor||!other.IsAlive||!other.Body.enabled||bossesHitInWindow.Contains(other))continue;
                         if(sweep.IntersectsMotion(other.Motor.PreviousPosition,other.Position,other.Body.bounds.extents,sweep.StartsAt,sweep.EndsAt))
-                            HitBoss(other,damage,other.Body.ClosestPoint(actor.Position+lead));
+                            HitBoss(other,damage,other.Body.ClosestPoint(contact));
                     }
                 if(!hitInWindow&&sweep.IntersectsMotion(previousPlayer,currentPlayer,playerBody.bounds.extents,sweep.StartsAt,sweep.EndsAt))
                 {
                     hitInWindow=true;int before=actor.Player.CurrentHealth;actor.HitPlayer(damage);
-                    if(actor.Player.CurrentHealth<before){ConnectedHits++;actor.View?.Impact(playerBody.ClosestPoint(actor.Position+lead));}
+                    if(actor.Player.CurrentHealth<before){ConnectedHits++;actor.View?.Impact(playerBody.ClosestPoint(contact));}
                 }
             }
             else if(CurrentSwordBeat==SwordBeat.LowCut||CurrentSwordBeat==SwordBeat.RisingCut||CurrentSwordBeat==SwordBeat.DownCut||CurrentSwordBeat==SwordBeat.JumpCut)

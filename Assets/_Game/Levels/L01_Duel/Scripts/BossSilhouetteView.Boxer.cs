@@ -9,7 +9,6 @@ namespace GoGhost.Duel
         float heldAngle;
         const float CommandPoseSeconds=.50f;
         int lastStroke;
-        float fistFan;
         readonly List<Vector2> fistTrace = new List<Vector2>(24);
         readonly List<float> fistTimes = new List<float>(24);
         Gradient punchSpectrum;
@@ -117,27 +116,33 @@ namespace GoGhost.Duel
             Color c=Color.HSVToRGB(Mathf.Repeat(phase,1),.80f,1);
             c.a=alpha; return c;
         }
+        internal void RecordFistSweep(FinalBossBoxer boxer, Vector2 point)
+        {
+            if (lastStroke != boxer.Stroke)
+            {
+                fistTimes.Clear(); fistTrace.Clear(); lastStroke = boxer.Stroke;
+                fistTrace.Add(boxer.StrokeStart); fistTimes.Add(Time.time);
+            }
+            if (fistTrace.Count > 0 && (fistTrace[fistTrace.Count-1]-point).sqrMagnitude < .0001f) return;
+            fistTrace.Add(point); fistTimes.Add(Time.time);
+        }
+
         void DrawFistTrace(FinalBossBoxer boxer)
         {
             float now=Time.time;
-            if (boxer.Phase==FinalBossBoxer.Stage.Active)
-            {
-                if (lastStroke!=boxer.Stroke)
-                {
-                    fistTimes.Clear(); fistTrace.Clear(); lastStroke=boxer.Stroke;
-                    fistFan=boxer.Current==FinalBossBoxer.Punch.Jab && !boxer.Cross ? .10f : .19f;
-                    fistTrace.Add(boxer.StrokeStart); fistTimes.Add(now-.025f);
-                }
-                Vector2 fist=boxer.Fist();
-                if (fistTrace.Count==0 || (fistTrace[fistTrace.Count-1]-fist).sqrMagnitude>.0004f)
-                {
-                    fistTrace.Add(fist); fistTimes.Add(now);
-                }
-            }
-            while (fistTimes.Count>0 && (now-fistTimes[0]>.21f || fistTimes.Count>24))
+            if (boxer.Phase != FinalBossBoxer.Stage.Active || boxer.Stroke != lastStroke) return;
+            while (fistTimes.Count>1 && (now-fistTimes[0]>.14f || fistTimes.Count>24))
             { fistTimes.RemoveAt(0); fistTrace.RemoveAt(0); }
+            if (fistTrace.Count == 0) return;
+            // The contact rim also reads when a diving fist is held at full extension.
+            var rim = AxeLine(3,"Fist contact",25);
+            float radius = FinalBossBoxer.FistRadius;
+            rim.startWidth = rim.endWidth = .048f;
+            rim.startColor = rim.endColor = Color.Lerp(Spectrum(RainbowPhase), Color.white, .60f);
+            Vector2 tip = fistTrace[fistTrace.Count-1];
+            for (int i=0;i<25;i++)
+                rim.SetPosition(i,ClipTellPoint(tip+Angle(i*15f)*(radius-.024f),.048f));
             if (fistTrace.Count<2) return;
-            float weight=Mathf.Clamp01(1-(now-fistTimes[fistTimes.Count-1])/.21f);
             int last=fistTrace.Count-1;
             for(int strand=-1;strand<=1;strand++)
             {
@@ -150,14 +155,14 @@ namespace GoGhost.Duel
                     line.startColor=NeuralPalette.Alpha(color,.20f);
                     line.endColor=NeuralPalette.Alpha(color,.94f);
                 }
-                line.startWidth=(main ? .039f : .029f)*weight;
-                line.endWidth=(main ? .085f : .046f)*weight;
+                line.startWidth=main ? .08f : .045f;
+                line.endWidth=main ? radius*1.22f : .075f;
                 for(int i=0;i<=last;i++)
                 {
                     Vector2 dir=(fistTrace[Mathf.Min(last,i+1)]-fistTrace[Mathf.Max(0,i-1)]).normalized;
                     var normal=new Vector2(-dir.y,dir.x);
                     // Open the traces behind the strike and bring them together at the knuckles.
-                    float spread=fistFan*(1-Ease(i/(float)last));
+                    float spread=radius*Mathf.Lerp(.78f,.45f,Ease(i/(float)last));
                     line.SetPosition(i,ClipTellPoint(fistTrace[i]+normal*(strand*spread),line.endWidth));
                 }
             }

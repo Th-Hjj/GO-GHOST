@@ -199,8 +199,11 @@ namespace GoGhost.Duel
                     if(state.RangeMode<0&&distance>=near+ConditionalDefaults.Hysteresis
                         ||state.RangeMode>0&&distance<=far-ConditionalDefaults.Hysteresis)state.RangeMode=0;
                     if(state.RangeMode==0)state.RangeMode=distance<near?-1:distance>far?1:0;
-                    if(state.RangeMode==0)return false;
-                    move=state.RangeMode*toward;break;
+                    move=state.RangeMode*toward;
+                    // Keep the channel even when the spacing band or a solid obstacle stops us.
+                    if (move != 0 && Travel(move,.18f)<.04f) move=0;
+                    output.MovementOwned=true;output.Move=move;
+                    return true;
                 case ActionIds.Move:move=r.Direction;break;
                 case ActionIds.MoveTowardCenter:if(Mathf.Abs(arena.center.x-x)<=.15f)return false;move=Mathf.Sign(arena.center.x-x);break;
                 default:throw new InvalidOperationException("Unknown movement response");

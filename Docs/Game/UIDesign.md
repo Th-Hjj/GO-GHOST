@@ -120,7 +120,25 @@ Menus use unscaled UI time. Combat HUD feedback keeps the combat clock, pause fr
 
 **Combat HUD (D3).** Positions are unchanged: Rules on the left, Boss top centre, player bottom centre. Boss name left and HP right in the Boss colour over a 22-high slab bar. Lost Boss health stays as a Text segment for 0.35 s, then shrinks over 0.6 s. Rule cards are 248 wide. Health-only HUD, the Dodge foot bar, reload feedback and the existing match hold and fade are unchanged.
 
-**Results (D7).** The arena dims to 32% and loses colour. The result word slams in with the glitch treatment over a hazard band. Primary button first (Retry), secondary below (Configuration).
+**Results (D7, D13, D14).** The arena dims to about 30% and loses colour. The result word slams in with the glitch treatment over a hazard band. Primary button first, secondary below.
+
+- **Defeat (D7):** Retry, then Configuration. Phase-two defeat uses Retry Phase 2.
+- **Mission cleared (D13):** the mission name on a slab in that mission's colour, CLEARED as the result word, Continue to Mission 2 as the only button.
+- **Finished (D14):** YOU'VE, FINISHED and THE GAME! stack and slam in the way WHO ARE YOU did, with the last line in Signal. The character stands beside them entirely white. Main Menu is the only button. The Bonus result (COMPLETE, Restart, Main Menu) follows D7.
+
+**Countdown (D8).** The mission name enters as a Text slab at the top of the arena over a thin hazard line. 3, 2 and 1 slam in at 330 in the arena centre; 1 is Signal. The HUD is already in place. Everything leaves when combat starts.
+
+**Pause (D9).** Combat stays visible at about 26% without colour. A hazard band, then Resume (primary), Configuration (secondary) and Main Menu (tertiary), entering from the left 40 ms apart. No title word is added.
+
+**Rule injected (D10).** Combat is frozen. The new card slams into the sidebar with an EMP fill (#1D1730), pulses, and carries RULE INJECTED on an EMP chip. Happy's box sits at the top of the arena and reads the lines. The Boss bar is the rainbow with the two threshold marks beneath it; the reached mark is filled.
+
+**Final Boss speaks (D11).** Same box and position as Happy's, but the left block is the flowing rainbow with no bars. The bars belong to Happy alone.
+
+**Sealed (D12).** Card text and the Rules heading drop to Disabled, arrows break apart in EMP, the stripe under the heading turns EMP, and SEALED slams across the list on an EMP slab tilted 8°. The player is entirely white. Platforms and the arena frame keep their EMP outlines.
+
+**Help (D15).** Back, the two existing pages as slabs on the left (the open one filled), a vertical hazard divider, the page name as the heading and each control as a Text key slab with its action beside it. The configuration page shows the Condition and Action cards from the editor with their one-line definitions.
+
+**Test Room (D16).** The combat HUD with Back above the sidebar, TEST ROOM on a tertiary slab inside the arena's top-left corner, and the Dummy Robot name, HP and bar in Text dim.
 
 ## Changes to earlier decisions
 
@@ -143,9 +161,33 @@ Thomas accepted these with the mockups on 2026-11-12.
 - **Voice loudness.** A per-frame level from the playing voice clip for the seven bars.
 - **Fonts.** SDF assets for the four weights, with their OFL texts, under `Assets/_Game/Shared/Fonts/`.
 
+## Proposed new pages
+
+**Proposed, not confirmed.** The game has no settings, credits or confirmation step today. These pages are mocked up as N1–N5 on the canvas. Each introduces copy the game does not have yet, so the wording needs Thomas's approval.
+
+| Page | Why | Content |
+|---|---|---|
+| Settings (N2) | No volume, display or accessibility control exists | Audio: Master, Music, Effects, Voice, ten steps each. Display: Fullscreen, Resolution, VSync. Accessibility: Reduce Flashing. Changes apply at once; Back returns. Reached from the title and from Pause |
+| Credits (N3) | Collaborator music and two OFL fonts need crediting | Role and name rows in the Target Profile layout. Names are placeholders on the canvas |
+| Leave-run confirmation (N4) | Main Menu discards the character and rules with one click, and there is no save | "Leave this run?", "Your character and rules will be lost.", Stay (primary) and Leave. Shown for Main Menu from Pause and from results |
+| Flashing-lights notice (N5) | The style uses flashes, glitches and a red damage flash | One static screen on first launch with Continue and Settings. No animation on this screen |
+| Title menu (N1) | Entry points for the above | New Game stays the only primary. Settings, Credits and Quit sit in one row of tertiary slabs under it |
+
+Pause gains a Settings entry between Configuration and Main Menu if Settings is approved (shown on D9).
+
+**Reduce Flashing** removes glitch bursts, the scanline overlay, the red damage flash and stripe scrolling, and softens slam-ins to a fade.
+
+**Work they need.** Stored preferences, which the game does not have. Volume control per group; voices already route through a mixer group, music and effects need checking. Resolution and fullscreen switching.
+
+**Also missing, not mocked.**
+
+- **Continue.** Closing the game loses the run. A Continue entry needs a save of the character, rules and mission reached. This is a feature decision, not a page.
+- **Key rebinding.** Help lists fixed keys.
+- **Language.** All copy is English.
+
 ## Not designed yet
 
-Pause, mission-cleared and final-victory results, countdown and mission title, combat dialogue, RULE INJECTED and SEALED states, the EMP sweep over the cards, Help, Test Room chrome, Bonus choice. They use the components above; each still needs a mockup. F8 developer tools keep their current plain look.
+The second Help page, the Bonus result and the frame-by-frame EMP sweep across the cards. F8 developer tools keep their current plain look.
 
 ## Proposed implementation stages
 
@@ -153,7 +195,8 @@ Proposed, not confirmed. Each stage compiles, is exercised from its normal entry
 
 1. Fonts, palette constants, slab and stripe graphics, button states; title (without the fight), pause and results.
 2. Happy's box with live bars; Who Are You and Uploading.
-3. Mission overview with the side-view character; Target Profile.
+3. Mission overview with the side-view character; Target Profile; Help.
 4. Two-step rule editor and page transitions.
-5. Combat HUD, rule cards, injected and sealed states.
+5. Combat HUD, countdown, rule cards, injected and sealed states, Test Room.
 6. Attract fight and preview vignettes.
+7. The proposed new pages, once approved.

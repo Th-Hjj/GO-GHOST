@@ -4,6 +4,8 @@
 
 Thomas chose the Override direction from four mocked style options and approved its refined screens: title with the attract fight, Who Are You and Uploading, mission overview, the two-step rule editor, Target Profile, combat HUD and Defeat. The specification is `Docs/Game/UIDesign.md`; the mockups are on Thomas's design canvas linked there. Documentation only. No scene, script or asset changed. The mockups were authored as HTML and reviewed by Thomas on the canvas; nothing was built or run in Unity. NOT TESTED: every screen in the engine, the two fonts as TMP assets, and all motion timings.
 
+Later the same day the remaining existing screens were mocked up and added to the specification: countdown, pause, mission cleared, finished, rule injected, Final Boss dialogue, sealed, Help and Test Room. Five pages the game does not have were mocked up as proposals: settings, credits, a leave-run confirmation, a flashing-lights notice and the title menu that reaches them. Thomas has not reviewed these additions yet. Documentation only.
+
 ## 2026-11-12 — Missing damage edge
 
 In the Test Room, HP fell from 20 to 17 while the screen edge stayed black. The runtime damage graphic had no CanvasRenderer. It now declares the renderer as a required component. After the fix, a Dummy Robot shot took HP from 138 to 134 and the Game view capture showed the coral gradient on all four edges. The color, width and timing are unchanged. Capture: `Logs/Beta66/test-room-hurt-edge.png`. The Windows x64 rebuild succeeded with zero errors.

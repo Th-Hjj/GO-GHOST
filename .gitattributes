@@ -154,8 +154,8 @@ Packages/packages-lock.json linguist-generated
 # Compiled Dynamic Library
 *.dll                   lfs
 Assets/Plugins/HandlerVoice/macOS/*.dylib lfs
-Assets/StreamingAssets/HandlerVoice/model.int8.onnx lfs
-Assets/StreamingAssets/HandlerVoice/voices.bin lfs
+Tools/VoiceStudio/HandlerVoice/model.int8.onnx lfs
+Tools/VoiceStudio/HandlerVoice/voices.bin lfs
 Tools/VoiceStudio/author-voices.bin lfs
 *.pdb                   lfs
 *.so                    lfs

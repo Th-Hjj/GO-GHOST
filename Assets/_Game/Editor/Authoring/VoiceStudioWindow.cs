@@ -372,7 +372,7 @@ namespace GoGhost.Duel.EditorTools
             renderAt = 0;
             var cancel=new CancellationTokenSource();
             nameJob=cancel;
-            string root=Path.Combine(Application.streamingAssetsPath,"HandlerVoice");
+            string root=Path.GetFullPath(Path.Combine(Application.dataPath,"../Tools/VoiceStudio/HandlerVoice"));
             try
             {
                 status="正在生成昵称问候…";

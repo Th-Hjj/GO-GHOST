@@ -13,8 +13,6 @@ namespace GoGhost.Duel
     public sealed class HandlerVoice : MonoBehaviour
     {
         AudioSource speaker;
-        AudioClip generatedGreeting;
-        CancellationTokenSource pendingGreeting;
         bool tutorialActive, editorExplained, confirmSpoken;
         bool readingRuleDescription, confirmAfterDescription;
         internal TutorialFocus Focus { get; private set; }
@@ -109,52 +107,14 @@ namespace GoGhost.Duel
             speaker.priority = 32;
         }
 
-        internal IEnumerator PrepareGreeting(string nickname, Action<float> progress)
-        {
-#if UNITY_EDITOR_WIN || UNITY_EDITOR_OSX || UNITY_STANDALONE_WIN || UNITY_STANDALONE_OSX
-            if (!string.IsNullOrWhiteSpace(nickname))
-            {
-                string root = Path.Combine(Application.streamingAssetsPath, "HandlerVoice");
-                pendingGreeting = new CancellationTokenSource();
-                var token = pendingGreeting.Token;
-                int milestone = 0;
-                var settings = VoiceStudioCatalog.Current;
-                var job = Task.Run(() => HandlerSpeech.Synthesize(root, nickname, token,
-                    value => Interlocked.Exchange(ref milestone, value), settings));
-                while (!job.IsCompleted)
-                {
-                    progress(Volatile.Read(ref milestone) / 100f);
-                    yield return null;
-                }
-                if (job.IsFaulted)
-                    Debug.LogWarning("Assistant greeting: " + job.Exception.GetBaseException().Message);
-                else if (!job.IsCanceled && job.Result.Samples != null)
-                {
-                    var speech = job.Result;
-                    generatedGreeting = AudioClip.Create("Handler greeting", speech.Samples.Length / 2, 2, speech.Rate, false);
-                    if (!generatedGreeting.SetData(speech.Samples, 0)) ReleaseGreeting();
-                }
-                // Stop() may already have cancelled and released this source.
-                pendingGreeting?.Dispose();
-                pendingGreeting = null;
-            }
-#endif
-            progress(1f);
-            yield break;
-        }
-
         internal void PlayGreeting(string nickname, Action installExample)
         {
             speaker.volume = VoiceStudioCatalog.Current.Volume(false) * GameSettings.VoiceScale;
             tutorialActive = true;
             editorExplained = confirmSpoken = false;
             Focus = TutorialFocus.None;
-            if (generatedGreeting != null)
-            {
-                Play(generatedGreeting, waitForPage: true);
-                WaitForClick(VoiceStudioCatalog.Current.greetingTemplate.Replace("{name}", nickname));
-            }
-            else SpeakDialogue("Handler/Greeting");
+            // Every player hears the same recorded greeting.
+            SpeakDialogue("Handler/Greeting");
             StartCoroutine(ConfigurationTutorial(installExample));
         }
 
@@ -287,7 +247,6 @@ namespace GoGhost.Duel
         IEnumerator ConfigurationTutorial(Action installExample)
         {
             while (suspended || PendingDialogue != null) yield return null;
-            ReleaseGreeting();
             SpeakSequence("Handler/TutorialIntro", installExample: installExample);
         }
 
@@ -400,17 +359,7 @@ namespace GoGhost.Duel
             PendingDialogue = null;
             afterDialogue = null;
             StopAllCoroutines();
-            pendingGreeting?.Cancel();
-            pendingGreeting?.Dispose();
-            pendingGreeting = null;
             if (speaker != null) { speaker.Stop(); speaker.clip = null; }
-            ReleaseGreeting();
-        }
-
-        void ReleaseGreeting()
-        {
-            if (generatedGreeting != null) Destroy(generatedGreeting);
-            generatedGreeting = null;
         }
 
         void OnDestroy() => Stop();

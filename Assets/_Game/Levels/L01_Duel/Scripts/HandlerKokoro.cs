@@ -1,3 +1,5 @@
+// Voice Studio authoring only; no build contains the synthesis model.
+#if UNITY_EDITOR
 using System;
 using System.Runtime.InteropServices;
 
@@ -150,3 +152,4 @@ namespace GoGhost.Duel
         internal static extern void SherpaOnnxDestroyOfflineTtsGeneratedAudio(IntPtr audio);
     }
 }
+#endif

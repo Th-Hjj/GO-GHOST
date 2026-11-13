@@ -1,3 +1,5 @@
+// Voice Studio authoring only; no build contains the synthesis model.
+#if UNITY_EDITOR
 using System;
 using System.IO;
 using System.Numerics;
@@ -212,3 +214,4 @@ namespace GoGhost.Duel
         }
     }
 }
+#endif

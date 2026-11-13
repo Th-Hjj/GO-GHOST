@@ -54,7 +54,7 @@ namespace GoGhost.Duel
                 }
                 if (voiceLines[i].profileMission > 0) preparationVoice.CacheLine(line, clip);
                 clips.Add(clip);
-                SetStartupProgress(.05f + .2f * (i + 1) / voiceCount);
+                SetStartupProgress(.05f + .45f * (i + 1) / voiceCount);
             }
             int ready = 0;
             foreach (var clip in clips)
@@ -68,9 +68,9 @@ namespace GoGhost.Duel
                     if (clip.loadState != AudioDataLoadState.Loaded)
                     { FailStartup("Could not prepare " + clip.name); yield break; }
                 }
-                SetStartupProgress(.25f + .2f * ++ready / clips.Count);
+                SetStartupProgress(.5f + .5f * ++ready / clips.Count);
             }
-            yield return handler.PrepareGreeting(nickname, fraction => SetStartupProgress(.45f + .55f * fraction));
+            SetStartupProgress(1f);
             yield return null;
             startup = null;
             CompleteCharacterCreation();

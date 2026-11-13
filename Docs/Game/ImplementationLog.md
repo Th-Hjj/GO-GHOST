@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-11-12 — Recorded greeting only, key bindings in combat, web build
+
+- **Implemented:** the generated nickname greeting is removed; every player hears `Handler/Greeting`. The 109 MB model and lexicons moved from `Assets/StreamingAssets/HandlerVoice` to `Tools/VoiceStudio/HandlerVoice` (outside Unity import), `HandlerSpeech`, `HandlerKokoro` and `HappyVoiceMaster` compile in the Editor only, and the native plugins are editor-only. Voice Studio and `Tools/VoiceStudio/audio.py` read the new folder.
+- **Fixed:** rebound Move, Jump, Dodge and Fire keys now reach the combat actor's own copy of the input actions, including a change made from Pause. Pause is refused during Upload, which could not rebuild its page. On the web build the title has no Quit, Settings has no Resolution, and Fullscreen only toggles the browser's fullscreen.
+- **Checked (Editor Play Mode):** compile; New Game, Upload and the recorded greeting on the Mission 1 overview; Pause refused during Upload.
+- **NOT TESTED:** rebound keys by hand in a fight (the automation cannot focus the Game view); Voice Studio name audition from the new folder; Windows build size.
+
 ## 2026-11-12 — Pause on every page
 
 - **Implemented:** the pause key opens Pause in every phase after the title except the two short timed fades (mission entry, final victory hold). Outside a fight or the Test Room the page omits Configuration. In Body Configuration, Esc still closes Help or cancels the rule being edited first. Main Menu from character creation writes no save.

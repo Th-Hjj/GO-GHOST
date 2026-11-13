@@ -18,7 +18,7 @@ RATE = render_happy_voice.RATE
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
-BANK = ROOT / "Assets/StreamingAssets/HandlerVoice"
+BANK = ROOT / "Tools/VoiceStudio/HandlerVoice"
 CACHE = ROOT / "Library/VoiceStudio"
 
 

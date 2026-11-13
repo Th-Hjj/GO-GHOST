@@ -14,6 +14,7 @@ namespace GoGhost.Duel
         readonly List<(RuleRowView Row, CanvasGroup Broken)> sealMarks = new();
         TMP_Text sealLabel;
         CanvasGroup sealedGroup, sealFrame;
+        RectTransform sealStamp;
 
         public bool SidebarsSealed => sidebarsSealed;
         internal void ShowEmpOnRuleCards(Material material)
@@ -64,7 +65,7 @@ namespace GoGhost.Duel
             var broken=Rect("Disconnected arrow",row.Arrow.transform,Vector2.zero,new Vector2(18,18));
             broken.anchorMin=broken.anchorMax=new Vector2(0,1);
             broken.anchoredPosition=new Vector2(9,-15);
-            var ink=NeuralPalette.Secondary;
+            var ink=NeuralPalette.Emp;
             Image(broken,new Vector2(-6,0),new Vector2(5,2),ink);
             Image(broken,new Vector2(4,2),new Vector2(7,2),ink).rectTransform.localRotation=Quaternion.Euler(0,0,-36);
             Image(broken,new Vector2(4,-2),new Vector2(7,2),ink).rectTransform.localRotation=Quaternion.Euler(0,0,36);
@@ -73,7 +74,7 @@ namespace GoGhost.Duel
             sealMarks.Add((row,group));
         }
 
-        void ClearSealMarks() { sealMarks.Clear(); sealLabel=null; sealedGroup=sealFrame=null; }
+        void ClearSealMarks() { sealMarks.Clear(); sealLabel=null; sealedGroup=sealFrame=null; sealStamp=null; }
 
         CanvasGroup EmpFrame(RectTransform parent)
         {
@@ -98,13 +99,17 @@ namespace GoGhost.Duel
             if (sidebar == null || !sidebarsSealed) return;
             sealedGroup = sidebar.gameObject.AddComponent<CanvasGroup>();
             sealedGroup.blocksRaycasts = false;
-            sealFrame = EmpFrame(sidebar);
-            var label=Text("SEALED",sidebar,Vector2.zero,Vector2.zero,16,TextAlignmentOptions.Left,numericFont);
-            label.name="Seal status";
-            label.rectTransform.anchorMin=new Vector2(0,1);label.rectTransform.anchorMax=Vector2.one;
-            label.rectTransform.offsetMin=new Vector2(16,-72);label.rectTransform.offsetMax=new Vector2(-12,-49);
-            label.color=NeuralPalette.Secondary;
-            sealLabel = label;
+            // SEALED slams across the list on an EMP slab.
+            sealStamp = Rect("Seal status", sidebar, Vector2.zero, new Vector2(220, 72));
+            sealStamp.anchorMin = sealStamp.anchorMax = new Vector2(.5f, 1);
+            sealStamp.anchoredPosition = new Vector2(0, -348);
+            sealStamp.localRotation = Quaternion.Euler(0, 0, 8);
+            var stamp = sealStamp.gameObject.AddComponent<SlabGraphic>();
+            stamp.color = NeuralPalette.Emp; stamp.Cut = 16; stamp.raycastTarget = false;
+            OvText("Sealed", sealStamp, new Vector2(0, -1), new Vector2(220, 72), 62, OverridePalette.Ink, TextAlignmentOptions.Capline, true, 2);
+            var slam = sealStamp.gameObject.AddComponent<SlamIn>();
+            slam.From = 1.8f; slam.Seconds = .22f;
+            slam.Trigger(.12f - (Time.time - sealStarted));
         }
 
         void UpdateSealMarks()
@@ -114,8 +119,8 @@ namespace GoGhost.Duel
             float dim=Reveal(age,.22f), disconnect=Reveal(age-.12f,.2f);
             foreach (var (row,broken) in sealMarks)
             {
-                row.Condition.color=Color.Lerp(NeuralPalette.Primary,NeuralPalette.Secondary,dim);
-                row.Action.color=Color.Lerp(NeuralPalette.Operation(row.Operation),NeuralPalette.Secondary,dim);
+                row.Number.color=row.Condition.color=Color.Lerp(QuietCardText,OverridePalette.Disabled,dim);
+                row.Action.color=Color.Lerp(NeuralPalette.Operation(row.Operation),OverridePalette.Disabled,dim);
                 row.Arrow.alpha=1-disconnect;
                 broken.alpha=disconnect;
             }

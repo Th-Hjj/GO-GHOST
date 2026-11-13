@@ -15,16 +15,20 @@ namespace GoGhost.Duel
         TMP_Text preparationCount;
         int lastPreparationCount;
         TMP_Text[] policeHealth = System.Array.Empty<TMP_Text>();
-        UnityEngine.UI.Image[] policeFill = System.Array.Empty<UnityEngine.UI.Image>();
-        UnityEngine.UI.Image playerFill;
+        UnityEngine.UI.Graphic[] policeFill = System.Array.Empty<UnityEngine.UI.Graphic>();
+        UnityEngine.UI.Graphic playerFill;
         RectTransform trainingBack;
 
         void BuildTrainingButtons()
         {
-            var parent = battleUi != null ? battleUi : page;
-            trainingBack = ConfigButton("← Back", "← Back", parent, Vector2.zero, new Vector2(128, 48), game.BackFromTraining, style:DuelControlStyle.Navigation).GetComponent<RectTransform>();
+            // Back sits above the rule sidebar, or in the arena corner when there are no rules.
+            var parent = ruleSidebar != null ? ruleSidebar : battleUi != null ? battleUi : page;
+            var back = OvButton("« Back", parent, Vector2.zero, new Vector2(150, 52), game.BackFromTraining, OverrideButtonKind.Tertiary, 30,
+                align: TextAlignmentOptions.Capline);
+            back.name = "← Back";
+            trainingBack = back.GetComponent<RectTransform>();
             trainingBack.anchorMin = trainingBack.anchorMax = trainingBack.pivot = new Vector2(0, 1);
-            trainingBack.anchoredPosition = new Vector2(32, -32);
+            trainingBack.anchoredPosition = new Vector2(24, -28);
             dialogueExits.Add(trainingBack);
             // Pause's backdrop belongs to Page. Keep the same navigation available above it.
             if (game.Paused) trainingBack.SetParent(page, true);
@@ -126,7 +130,7 @@ namespace GoGhost.Duel
             playerHealth=null; playerFill=null;
             preparationCount=null; waveTitle=null; lastPreparationCount=-1;
             ResetBattleStatus();
-            policeHealth=System.Array.Empty<TMP_Text>(); policeFill=System.Array.Empty<UnityEngine.UI.Image>();
+            policeHealth=System.Array.Empty<TMP_Text>(); policeFill=System.Array.Empty<UnityEngine.UI.Graphic>();
             if(game.DeveloperToolsOpen)
             {
                 if(ruleSidebar!=null)ruleSidebar.gameObject.SetActive(false);
@@ -153,41 +157,7 @@ namespace GoGhost.Duel
             if(game.Phase==DuelPhase.Complete && game.Wave==DuelGame.FinalBossWave){BuildOverrideFinished();return;}
             if(game.Phase==DuelPhase.Failed || game.Phase==DuelPhase.Complete){BuildOverrideOutcome();return;}
             var hud=battleUi!=null?battleUi:page;
-            if(game.Phase==DuelPhase.Training)
-                Text("TEST ROOM",hud,new Vector2(0,400),new Vector2(320,36),24,face:controlFont).color=NeuralPalette.Secondary;
-            else if(game.Phase==DuelPhase.Prepare || game.Phase==DuelPhase.Fight && game.FightClock<WaveTitleFadeSeconds)
-                waveTitle=Text(game.WaveLabel,hud,new Vector2(0,400),new Vector2(320,36),27,face:headingFont);
-            if(waveTitle!=null)waveTitle.color=NeuralPalette.Secondary;
-            policeHealth = new TMP_Text[game.Bosses.Count];
-            policeFill = new UnityEngine.UI.Image[game.Bosses.Count];
-            bossHealthText = new HealthTextState[game.Bosses.Count];
-            bossHealthGroups = new CanvasGroup[game.Bosses.Count];
-            for (int i=0; i<game.Bosses.Count; i++)
-            {
-                float y=330-i*60;
-                var bar = Rect("Boss health",hud,Vector2.zero,Vector2.zero);
-                bossHealthGroups[i] = bar.gameObject.AddComponent<CanvasGroup>();
-                policeHealth[i]=Text("",bar,new Vector2(0,y+27),new Vector2(430,40),24,TextAlignmentOptions.Center,numericFont);
-                Image(bar,new Vector2(0,y),new Vector2(430,12),NeuralPalette.Border);
-                var color=game.Bosses[i].IsTrainingEnemy?NeuralPalette.Secondary:game.Bosses[i].Profile.Kind==BossKind.Gunner?NeuralPalette.Gunner:NeuralPalette.Swordsman;
-                policeFill[i]=game.Bosses[i].IsFinalBoss
-                    ? Rect("Rainbow health",bar,new Vector2(-215,y),new Vector2(430,12)).gameObject.AddComponent<FlowingHealthFill>()
-                    : Image(bar,new Vector2(-215,y),new Vector2(430,12),color);
-                policeFill[i].rectTransform.pivot=new Vector2(0,.5f);
-                if(game.Bosses[i].IsFinalBoss && !game.Bosses[i].Axe.PhaseTwo) BuildInvasionMarks(bar,y);
-            }
-
-            var playerBar = Rect("Player health",hud,Vector2.zero,Vector2.zero);
-            playerHealth=Text("",playerBar,new Vector2(0,-392),new Vector2(430,40),24,TextAlignmentOptions.Center,CharacterNameFont(true));
-            playerHealth.textWrappingMode=TextWrappingModes.NoWrap;
-            playerHealth.enableAutoSizing=true;playerHealth.fontSizeMin=14;playerHealth.fontSizeMax=24;
-            Image(playerBar,new Vector2(0,-360),new Vector2(430,12),NeuralPalette.Border);
-            playerFill=Image(playerBar,new Vector2(-215,-360),new Vector2(430,12),NeuralPalette.Primary);
-            playerFill.rectTransform.pivot=new Vector2(0,.5f);
-            if(game.Phase==DuelPhase.Prepare)
-            {
-                preparationCount=Text("3",hud,Vector2.zero,new Vector2(300,100),72,face:numericFont);
-            }
+            BuildOverrideHud(hud);
             BuildFinalBossCutscene(hud);
             if(game.InvasionHeld)
             {
@@ -196,11 +166,7 @@ namespace GoGhost.Duel
                 dim.SetAsFirstSibling();
                 if(game.PendingDialogue!=null)
                 {
-                    var caption=Image(hud,new Vector2(0,218),new Vector2(720,86),NeuralPalette.Alpha(NeuralPalette.Panel,.96f)).rectTransform;
-                    Text("Happy",caption,new Vector2(0,23),new Vector2(680,25),17,TextAlignmentOptions.MidlineLeft,headingFont).color=NeuralPalette.Secondary;
-                    sceneDialogue=Text(game.PendingDialogue,caption,new Vector2(0,-9),new Vector2(680,44),25,TextAlignmentOptions.MidlineLeft,DialogueFont());
-                    sceneDialogue.name="Invasion caption";
-                    sceneDialogue.maxVisibleCharacters=game.DialogueVisibleCharacters;
+                    OvSceneBox(hud,760,game.HappySpeakerName,game.PendingDialogue,true,"Invasion caption");
                 }
             }
             if(game.Phase==DuelPhase.Training)BuildTrainingButtons();

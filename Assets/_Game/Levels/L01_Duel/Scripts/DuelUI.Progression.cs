@@ -97,15 +97,7 @@ namespace GoGhost.Duel
 
         RectTransform BuildSceneCaption(RectTransform parent,Vector2 position,string speaker,string line)
         {
-            const float width=760, height=134, padding=24;
-            var box=Image(parent,position,new Vector2(width,height),NeuralPalette.Alpha(NeuralPalette.Panel,.96f)).rectTransform;
-            box.name="Scene dialogue";
-            if(!string.IsNullOrEmpty(speaker))
-                Text(speaker,box,new Vector2(0,42),new Vector2(width-2*padding,26),18,TMPro.TextAlignmentOptions.MidlineLeft,headingFont).color=NeuralPalette.Secondary;
-            sceneDialogue=Text(line,box,new Vector2(0,string.IsNullOrEmpty(speaker)?14:-12),new Vector2(width-2*padding,76),26,TMPro.TextAlignmentOptions.TopLeft,DialogueFont());
-            sceneDialogue.name="CutsceneText";
-            sceneDialogue.maxVisibleCharacters=game.DialogueVisibleCharacters;
-            return box;
+            return OvSceneBox(parent,860,speaker,line,speaker==game.HappySpeakerName,"CutsceneText");
         }
     }
 

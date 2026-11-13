@@ -86,6 +86,8 @@ namespace GoGhost.Duel
                 {
                     lastPreparationCount = count;
                     preparationCount.text = count.ToString();
+                    preparationCount.color = count <= 1 ? OverridePalette.Signal : OverridePalette.Text;
+                    if (preparationSlam != null) preparationSlam.Trigger(0);
                 }
             }
 
@@ -93,22 +95,29 @@ namespace GoGhost.Duel
             if (waveTitle != null)
             {
                 // The encounter clock survives pause/F8 page rebuilds and resets for each attempt.
-                waveTitle.alpha = game.Phase == DuelPhase.Prepare
+                float shown = game.Phase == DuelPhase.Prepare
                     ? 1 : Mathf.Clamp01(1 - game.FightClock / WaveTitleFadeSeconds);
-                if (waveTitle.alpha <= 0) waveTitle.gameObject.SetActive(false);
+                if (waveTitleGroup != null)
+                {
+                    waveTitleGroup.alpha = shown;
+                    if (shown <= 0) waveTitleGroup.gameObject.SetActive(false);
+                }
+                else
+                {
+                    waveTitle.alpha = shown;
+                    if (shown <= 0) waveTitle.gameObject.SetActive(false);
+                }
             }
         }
 
         void UpdateHealthStatus()
         {
-            playerHealthText.Update(playerHealth, game.Appearance.DisplayName + "  ", game.Player.CurrentHealth);
+            playerHealthText.Update(playerHealth, "", game.Player.CurrentHealth);
             for (int i = 0; i < policeHealth.Length && i < game.Bosses.Count; i++)
             {
                 var actor = game.Bosses[i];
                 if (actor == null)
                     continue;
-                string label = actor.IsTrainingEnemy ? "DUMMY ROBOT  "
-                    : actor.IsFinalBoss ? BossAgent.FinalBossName + "  " : actor.ActorId == 1 ? "Gunner  " : "Swordsman  ";
                 float opacity = 1;
                 if (actor.IsFinalBoss && !float.IsNegativeInfinity(bossPoolSpentAt))
                 {
@@ -126,17 +135,19 @@ namespace GoGhost.Duel
                         var mark=invasionThresholdMarks[j]; if(mark==null)continue;
                         bool spent=j<game.InvadedRuleCount;
                         bool reached=(long)actor.Health.CurrentHealth*100<=(long)actor.Health.MaxHealth*FinalBossAxe.InvasionPercents[j];
-                        mark.text=spent?"·":"?";
-                        mark.color=spent?NeuralPalette.Secondary:reached?Color.Lerp(NeuralPalette.Emp,NeuralPalette.Primary,.55f):NeuralPalette.Emp;
+                        // The reached mark is filled.
+                        mark.color=spent||reached?OverridePalette.Text:NeuralPalette.Emp;
+                        if(invasionChips[j]!=null)invasionChips[j].color=spent||reached?NeuralPalette.Emp:Color.clear;
                     }
-                bossHealthText[i].Update(policeHealth[i], label, actor.Health.CurrentHealth);
-                policeFill[i].rectTransform.sizeDelta =
-                    new Vector2(430f * actor.Health.CurrentHealth / actor.Health.MaxHealth, 12);
+                bossHealthText[i].Update(policeHealth[i], "", actor.Health.CurrentHealth);
+                float fraction = (float)actor.Health.CurrentHealth / actor.Health.MaxHealth;
+                policeFill[i].rectTransform.sizeDelta = new Vector2(bossBarWidth * fraction, HealthBarHeight);
+                UpdateBossLag(i, fraction);
                 if (policeFill[i] is FlowingHealthFill rainbow && actor.Axe.PhaseTwo && actor.View != null)
                     rainbow.UpdateFlow(actor.View.RainbowPhase, policeHealth[i]);
             }
             playerFill.rectTransform.sizeDelta =
-                new Vector2(430f * game.Player.CurrentHealth / game.Player.MaxHealth, 12);
+                new Vector2(PlayerBarWidth * game.Player.CurrentHealth / game.Player.MaxHealth, HealthBarHeight);
             playerFill.color = game.Rules != null && game.Rules.IsLowHealth
                 ? NeuralPalette.Danger : NeuralPalette.Primary;
         }
@@ -176,6 +187,8 @@ namespace GoGhost.Duel
     internal sealed class FlowingHealthFill : UnityEngine.UI.Image
     {
         const float HueSpan = .78f;
+        // Horizontal lean of the slab-cut bar.
+        internal float Cut;
         float phase;
         TMP_Text healthLabel;
 
@@ -238,11 +251,12 @@ namespace GoGhost.Duel
 
             void AddStop(float position)
             {
-                float x = Mathf.Lerp(rect.xMin, rect.xMax, position);
+                float lean = Mathf.Min(Cut, rect.width);
+                float x = Mathf.Lerp(rect.xMin, rect.xMax - lean, position);
                 Color32 tint = ColorAt(position);
                 int n = mesh.currentVertCount;
                 mesh.AddVert(new Vector3(x, rect.yMin), tint, Vector2.zero);
-                mesh.AddVert(new Vector3(x, rect.yMax), tint, Vector2.zero);
+                mesh.AddVert(new Vector3(x + lean, rect.yMax), tint, Vector2.zero);
                 if (n == 0) return;
                 mesh.AddTriangle(n - 2, n - 1, n);
                 mesh.AddTriangle(n, n - 1, n + 1);

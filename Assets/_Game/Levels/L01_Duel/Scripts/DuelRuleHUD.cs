@@ -39,7 +39,10 @@ namespace GoGhost.Duel
             public ControlOperation Operation;
             public int Row;
             public RectTransform Root;
-            public UnityEngine.UI.Image Background;
+            public UnityEngine.UI.Graphic Background;
+            public Vector2 Home;
+            public bool InjectedCard;
+            public RectTransform Chip;
             public UnityEngine.UI.Image[] Border;
             public TMP_Text Number, Condition, Action, Arrow, Injected;
             public Material[] Signals;
@@ -55,7 +58,8 @@ namespace GoGhost.Duel
         ConditionalController hudRules, hudScrollController;
         RectTransform ruleSidebar, battleUi, ruleScrollRoot, ruleViewport, ruleContent, ruleScrollbarRoot;
         UnityEngine.UI.ScrollRect ruleScroll;
-        TMP_Text ruleHeading;
+        TMP_Text ruleHeading, ruleCount;
+        RectTransform ruleStripe;
         Vector2 ruleHudSize;
         float hudScrollPosition=1;
 #if UNITY_EDITOR
@@ -76,7 +80,7 @@ namespace GoGhost.Duel
                 foreach(var signal in row.Signals)if(signal!=null)Destroy(signal);
             ruleRows.Clear();hudRules=null;ClearSealMarks();
             ruleSidebar=battleUi=ruleScrollRoot=ruleViewport=ruleContent=ruleScrollbarRoot=null;
-            ruleScroll=null;ruleHeading=null;ruleHudSize=Vector2.zero;
+            ruleScroll=null;ruleHeading=ruleCount=null;ruleStripe=null;ruleHudSize=Vector2.zero;
         }
         void OnDestroy()
         {ClearRuleHud();ruleGlowStates.Clear();ruleGlowController=null;DisposeCharacterFonts();if(portraitMaterial!=null)Destroy(portraitMaterial);}
@@ -127,12 +131,16 @@ namespace GoGhost.Duel
             ruleSidebar=Rect("BattleRules",page,Vector2.zero,new Vector2(rulePanelWidth,900));
             SealGroup(ruleSidebar);
             var background=ruleSidebar.gameObject.AddComponent<UnityEngine.UI.Image>();
-            background.color=NeuralPalette.Background;background.raycastTarget=false;
-            var divider=Image(ruleSidebar,Vector2.zero,Vector2.zero,NeuralPalette.Border);
-            divider.rectTransform.anchorMin=new Vector2(1,0);divider.rectTransform.anchorMax=new Vector2(1,1);
-            divider.rectTransform.sizeDelta=new Vector2(1,0);
-            ruleHeading=Text("Rules "+ruleRows.Count,ruleSidebar,Vector2.zero,Vector2.zero,30,TextAlignmentOptions.Left,headingFont);
+            background.color=OverridePalette.Ink;background.raycastTarget=false;
+            ruleHeading=OvText("Rules",ruleSidebar,Vector2.zero,Vector2.zero,46,sidebarsSealed?OverridePalette.Disabled:OverridePalette.Text,TextAlignmentOptions.CaplineLeft);
+            ruleCount=OvText(ruleRows.Count.ToString(),ruleSidebar,Vector2.zero,Vector2.zero,46,sidebarsSealed?OverridePalette.Disabled:OverridePalette.TextDim,TextAlignmentOptions.CaplineRight);
             ruleHeading.rectTransform.anchorMin=ruleHeading.rectTransform.anchorMax=new Vector2(.5f,1);
+            ruleCount.rectTransform.anchorMin=ruleCount.rectTransform.anchorMax=new Vector2(.5f,1);
+            ruleStripe=Rect("Rule stripe",ruleSidebar,Vector2.zero,Vector2.zero);
+            ruleStripe.anchorMin=ruleStripe.anchorMax=new Vector2(.5f,1);
+            var stripes=ruleStripe.gameObject.AddComponent<StripeGraphic>();
+            stripes.Band=7;stripes.SecondsPerPeriod=0;stripes.raycastTarget=false;
+            stripes.color=sidebarsSealed?NeuralPalette.Emp:OverridePalette.Text;stripes.Other=OverridePalette.Ink;
             ruleScrollRoot=Rect("BattleRuleScroll",ruleSidebar,Vector2.zero,Vector2.zero);
             ruleScroll=ruleScrollRoot.gameObject.AddComponent<UnityEngine.UI.ScrollRect>();
             ruleScroll.horizontal=false;ruleScroll.vertical=true;
@@ -146,8 +154,8 @@ namespace GoGhost.Duel
             ruleContent.anchorMin=new Vector2(0,1);ruleContent.anchorMax=new Vector2(1,1);
             ruleContent.pivot=new Vector2(.5f,1);
             ruleScrollbarRoot=Rect("Scrollbar",ruleScrollRoot,Vector2.zero,Vector2.zero);
-            var track=ruleScrollbarRoot.gameObject.AddComponent<UnityEngine.UI.Image>();track.color=NeuralPalette.Border;
-            var handle=Image(ruleScrollbarRoot,Vector2.zero,Vector2.zero,NeuralPalette.Secondary);handle.raycastTarget=true;
+            var track=ruleScrollbarRoot.gameObject.AddComponent<UnityEngine.UI.Image>();track.color=OverridePalette.Neutral;
+            var handle=Image(ruleScrollbarRoot,Vector2.zero,Vector2.zero,OverridePalette.TextDim);handle.raycastTarget=true;
             var bar=ruleScrollbarRoot.gameObject.AddComponent<UnityEngine.UI.Scrollbar>();
             bar.handleRect=handle.rectTransform;bar.targetGraphic=handle;
             bar.direction=UnityEngine.UI.Scrollbar.Direction.BottomToTop;
@@ -172,50 +180,37 @@ namespace GoGhost.Duel
                     row.RevealGroup.alpha = Reveal(Time.unscaledTime - invadedAt, CardRevealSeconds);
                 }
             }
+            if(sealStamp!=null)sealStamp.SetAsLastSibling();
         }
         // One combat rule card: number, condition, arrow and coloured action, with the shared match glow.
         void BuildRuleCard(RuleRowView row,RectTransform parent,int i,string conditions,string action,Color actionColor)
         {
                 row.Root=Rect("RuleFeedback_"+row.Operation+"_"+row.Row+"_"+i,parent,Vector2.zero,Vector2.zero);
                 row.Root.anchorMin=row.Root.anchorMax=new Vector2(.5f,1);
-                row.Background=row.Root.gameObject.AddComponent<UnityEngine.UI.Image>();
-                row.Background.raycastTarget=false;row.Background.color=NeuralPalette.Panel;
-                row.Number=Text((i+1).ToString(),row.Root,Vector2.zero,Vector2.zero,20,TextAlignmentOptions.TopLeft,numericFont);
-                row.Number.name="RuleNumber";row.Number.color=NeuralPalette.Secondary;
-                if(injectedOrders.Contains(row.Rule.DisplayOrder))
+                var slab=row.Root.gameObject.AddComponent<SlabGraphic>();
+                slab.Cut=12;slab.raycastTarget=false;slab.color=OverridePalette.Surface;
+                row.Background=slab;
+                row.InjectedCard=injectedOrders.Contains(row.Rule.DisplayOrder);
+                if(row.InjectedCard)
                 {
-                    row.Injected=Text("RULE INJECTED",row.Root,Vector2.zero,Vector2.zero,15,TextAlignmentOptions.TopLeft,controlFont);
-                    row.Injected.color=sidebarsSealed?NeuralPalette.Secondary:NeuralPalette.Emp;
+                    row.Chip=Rect("Injected chip",row.Root,Vector2.zero,Vector2.zero);
+                    var chip=row.Chip.gameObject.AddComponent<SlabGraphic>();
+                    chip.Cut=5;chip.raycastTarget=false;chip.color=sidebarsSealed?OverridePalette.Neutral:NeuralPalette.Emp;
+                    row.Injected=OvText("Rule Injected",row.Chip,new Vector2(0,-1),Vector2.zero,17,OverridePalette.Ink,TextAlignmentOptions.Capline,false,1);
                 }
-                row.Condition=Text(conditions,row.Root,Vector2.zero,Vector2.zero,22,TextAlignmentOptions.TopLeft);
+                row.Number=OvBodyAt((i+1)+" ·",row.Root,Vector2.zero,Vector2.zero,15,QuietCardText,TextAlignmentOptions.TopLeft);
+                row.Number.name="RuleNumber";row.Number.textWrappingMode=TextWrappingModes.NoWrap;
+                row.Condition=OvBodyAt(conditions,row.Root,Vector2.zero,Vector2.zero,15,QuietCardText,TextAlignmentOptions.TopLeft);
                 row.Condition.name="ConditionText";
-                row.Arrow=Text("→",row.Root,Vector2.zero,Vector2.zero,22,TextAlignmentOptions.TopLeft,controlFont);
+                row.Arrow=OvText("»",row.Root,Vector2.zero,Vector2.zero,25,actionColor,TextAlignmentOptions.TopLeft,false);
                 row.Arrow.name="ActionArrow";
-                row.Action=Text(action,row.Root,Vector2.zero,Vector2.zero,22,TextAlignmentOptions.TopLeft,controlFont);
-                row.Action.name="ActionText";
-                row.Action.color=actionColor;
+                row.Action=OvText(action,row.Root,Vector2.zero,Vector2.zero,25,actionColor,TextAlignmentOptions.TopLeft,false,.4f);
+                row.Action.name="ActionText";row.Action.textWrappingMode=TextWrappingModes.Normal;
                 if(game.InvasionHeld && row.Injected!=null && row.Rule.DisplayOrder==invadedOrder)
                 {
                     if(game.InvasionPage==DuelGame.InvasionBeat.Condition)row.Condition.fontStyle=FontStyles.Bold;
-                    if(game.InvasionPage==DuelGame.InvasionBeat.Action)row.Action.fontStyle=FontStyles.Bold;
+                    if(game.InvasionPage==DuelGame.InvasionBeat.Action)row.Action.fontStyle=FontStyles.Bold|FontStyles.UpperCase;
                 }
-                // Preserve each font atlas and fixed geometry; the entire card shares one match signal.
-                var texts=new[]{row.Number,row.Condition,row.Arrow,row.Action};
-                row.Signals=new Material[texts.Length];
-                for(int t=0;t<texts.Length;t++)
-                {
-                    var signal=new Material(texts[t].fontSharedMaterial){name="Rule match signal",hideFlags=HideFlags.DontSave};
-                    signal.EnableKeyword("GLOW_ON");
-                    signal.SetFloat(ShaderUtilities.ID_GlowOffset,0);
-                    signal.SetFloat(ShaderUtilities.ID_GlowOuter,.12f);
-                    signal.SetFloat(ShaderUtilities.ID_GlowInner,.02f);
-                    signal.SetColor(ShaderUtilities.ID_GlowColor,Color.clear);
-                    texts[t].fontSharedMaterial=row.Signals[t]=signal;
-                }
-                // Three concentric, non-overlapping rings form the same narrow glow on every edge.
-                row.Border=new UnityEngine.UI.Image[12];
-                for(int edge=0;edge<row.Border.Length;edge++)
-                    row.Border[edge]=Image(row.Root,Vector2.zero,Vector2.zero,Color.clear);
                 if(sidebarsSealed)AddSealMark(row);
                 if(game.EmpSweep != null && game.EmpSweep.Cards != null) AddEmpToCard(row, game.EmpSweep.Cards);
         }
@@ -257,20 +252,53 @@ namespace GoGhost.Duel
         void LayoutRuleHud(float width,float height)
         {
             float position=ruleScroll!=null&&ruleHudSize!=Vector2.zero?ruleScroll.verticalNormalizedPosition:hudScrollPosition;
-            rulePanelWidth=MeasureRulePanelWidth(width);
-            float scrollWidth=rulePanelWidth-12,viewportWidth=scrollWidth-10,viewportHeight=Mathf.Max(80,height-92);
-            ruleHeading.rectTransform.sizeDelta=new Vector2(rulePanelWidth-32,44);
-            ruleHeading.rectTransform.anchoredPosition=new Vector2(0,-34);
-            ruleScrollRoot.sizeDelta=new Vector2(scrollWidth,viewportHeight);
-            ruleScrollRoot.anchoredPosition=new Vector2(0,-28);
-            ruleViewport.sizeDelta=new Vector2(viewportWidth,viewportHeight);ruleViewport.anchoredPosition=new Vector2(-5,0);
-            ruleScrollbarRoot.sizeDelta=new Vector2(6,viewportHeight);ruleScrollbarRoot.anchoredPosition=new Vector2(scrollWidth/2-3,0);
-            float y=2;
+            // Cards are 248 wide with a 24 margin; the viewport leaves room for the match shift.
+            rulePanelWidth=296;
+            const float card=248,viewportWidth=272;
+            float offset=game.Phase==DuelPhase.Training?62:0;
+            float listTop=126+offset,viewportHeight=Mathf.Max(80,height-listTop-20);
+            ruleHeading.rectTransform.sizeDelta=new Vector2(150,50);
+            ruleHeading.rectTransform.anchoredPosition=new Vector2(-card/2+75,-73-offset);
+            ruleCount.rectTransform.sizeDelta=new Vector2(90,50);
+            ruleCount.rectTransform.anchoredPosition=new Vector2(card/2-45,-73-offset);
+            ruleStripe.sizeDelta=new Vector2(card,6);
+            ruleStripe.anchoredPosition=new Vector2(0,-109-offset);
+            ruleScrollRoot.sizeDelta=new Vector2(viewportWidth,viewportHeight);
+            ruleScrollRoot.anchoredPosition=new Vector2(0,height/2-listTop-viewportHeight/2);
+            ruleViewport.sizeDelta=new Vector2(viewportWidth,viewportHeight);ruleViewport.anchoredPosition=Vector2.zero;
+            ruleScrollbarRoot.sizeDelta=new Vector2(4,viewportHeight);ruleScrollbarRoot.anchoredPosition=new Vector2(viewportWidth/2+6,0);
+            float y=0;
             foreach(var row in ruleRows)
             {
-                float cardWidth=viewportWidth-4;
-                float cardHeight=LayoutRuleCard(row.Root,row.Number,row.Condition,row.Arrow,row.Action,cardWidth,compact:true,injected:row.Injected);
-                row.Root.anchoredPosition=new Vector2(0,-y-cardHeight/2);
+                const float left=24,inner=card-44;
+                float top=10;
+                if(row.Chip!=null)
+                {
+                    float chipWidth=row.Injected.GetPreferredValues().x+24;
+                    row.Chip.sizeDelta=new Vector2(chipWidth,22);
+                    row.Injected.rectTransform.sizeDelta=new Vector2(chipWidth,22);
+                    row.Chip.gameObject.name="Injected chip";
+                    top+=27;
+                }
+                float numberWidth=Mathf.Ceil(row.Number.GetPreferredValues().x)+9;
+                float conditionWidth=inner-numberWidth,conditionTop=top;
+                float conditionHeight=Mathf.Max(20,TextHeight(row.Condition,conditionWidth));
+                top+=conditionHeight+4;
+                float actionTop=top,actionWidth=inner-22;
+                float actionHeight=Mathf.Max(27,TextHeight(row.Action,actionWidth));
+                float cardHeight=top+actionHeight+9;
+                row.Root.sizeDelta=new Vector2(card,cardHeight);
+                if(row.Chip!=null)
+                {
+                    var chip=row.Chip;chip.anchorMin=chip.anchorMax=chip.pivot=new Vector2(.5f,.5f);
+                    chip.anchoredPosition=new Vector2(-card/2+left+chip.sizeDelta.x/2,cardHeight/2-10-11);
+                }
+                SetCardTextRect(row.Number,left,conditionTop,numberWidth,conditionHeight,card,cardHeight);
+                SetCardTextRect(row.Condition,left+numberWidth,conditionTop,conditionWidth,conditionHeight,card,cardHeight);
+                SetCardTextRect(row.Arrow,left,actionTop,22,actionHeight,card,cardHeight);
+                SetCardTextRect(row.Action,left+22,actionTop,actionWidth,actionHeight,card,cardHeight);
+                row.Home=new Vector2(0,-y-cardHeight/2);
+                row.Root.anchoredPosition=row.Home;
                 y+=cardHeight+8;
             }
             ruleContent.sizeDelta=new Vector2(0,Mathf.Max(0,y-6));
@@ -336,22 +364,24 @@ namespace GoGhost.Duel
             float scale=canvas!=null?Mathf.Max(.01f,canvas.GetComponent<Canvas>().scaleFactor):1;
             foreach(var row in ruleRows)
             {
+                float arrived=1;
                 if (row.RevealGroup != null)
-                    row.RevealGroup.alpha = Reveal(Time.unscaledTime - invadedAt, CardRevealSeconds);
-                AlignRuleGlow(row,scale);
+                    row.RevealGroup.alpha = arrived = Reveal(Time.unscaledTime - invadedAt, CardRevealSeconds);
                 bool live=(game.Phase==DuelPhase.Fight||game.Phase==DuelPhase.Training)&&row.Controller!=null&&row.Controller==game.Rules;
                 var f=live
                     ?row.Controller.Feedback(row.Operation,row.Row).Visual:default;
                 var color=NeuralPalette.Operation(row.Operation);
                 if(live&&!game.Paused)row.Glow.Update(f.Matched,Time.time);
                 float intrusion = InvasionFlash(row);
-                ApplyRuleGlow(row,Color.Lerp(color,NeuralPalette.Emp,intrusion),
-                    sidebarsSealed?0:Mathf.Max(live?row.Glow.Strength:0,intrusion));
+                float match=sidebarsSealed||!live?0:row.Glow.Strength;
+                ApplyRuleGlow(row,color,match,intrusion);
+                // A matched card shifts right; an injected card slams in from the left.
+                row.Root.anchoredPosition=row.Home+Vector2.right*(8*match-120*(1-arrived));
                 if(game.InvasionHeld && row.Rule.DisplayOrder==invadedOrder && row.Injected!=null)
                 {
                     var beat=game.InvasionPage;
-                    row.Action.color=beat==DuelGame.InvasionBeat.Condition?Color.Lerp(color,NeuralPalette.Panel,.48f):color;
-                    row.Condition.color=beat==DuelGame.InvasionBeat.Action?NeuralPalette.Secondary:NeuralPalette.Primary;
+                    row.Action.color=row.Arrow.color=beat==DuelGame.InvasionBeat.Condition?Color.Lerp(color,EmpCard,.55f):color;
+                    row.Condition.color=row.Number.color=beat==DuelGame.InvasionBeat.Action?OverridePalette.TextDim:OverridePalette.Text;
                 }
             }
             UpdateSealMarks();
@@ -375,24 +405,15 @@ namespace GoGhost.Duel
             if(age<0||age>=InvadedFlashSeconds)return 0;
             return 1-Mathf.SmoothStep(0,1,age/InvadedFlashSeconds);
         }
-        void ApplyRuleGlow(RuleRowView row,Color color,float strength)
+        // A full match fills the whole card with the action's system colour and turns the text to ink.
+        void ApplyRuleGlow(RuleRowView row,Color color,float strength,float intrusion)
         {
-            {
-                row.Action.color=color;
-                row.Condition.color=row.Arrow.color=Color.Lerp(NeuralPalette.Primary,color,strength);
-                row.Number.color=Color.Lerp(NeuralPalette.Secondary,color,strength);
-                row.Background.color=Color.Lerp(NeuralPalette.Panel,color,.08f*strength);
-                if(row.RenderedGlow!=strength)
-                {
-                    row.RenderedGlow=strength;
-                    foreach(var signal in row.Signals)
-                        signal.SetColor(ShaderUtilities.ID_GlowColor,NeuralPalette.Alpha(color,.28f*strength));
-                }
-                // The full AND/source match drives a presentation-only minimum hold and fade.
-                // Feedback never reorders, scrolls, remeasures, or changes typography.
-                for(int i=0;i<row.Border.Length;i++)row.Border[i].color=NeuralPalette.Alpha(color,
-                    strength*(i/4==0?.65f:i/4==1?.16f:.05f));
-            }
+            Color fill=sidebarsSealed?SealedCard:row.InjectedCard?EmpCard:OverridePalette.Surface;
+            if(intrusion>0&&!sidebarsSealed)
+                fill=Color.Lerp(EmpCard,EmpCardBright,intrusion*(.5f+.5f*Mathf.Sin(Time.unscaledTime*Mathf.PI*2/1.2f)));
+            row.Background.color=Color.Lerp(fill,color,strength);
+            row.Number.color=row.Condition.color=Color.Lerp(QuietCardText,OverridePalette.Ink,strength);
+            row.Arrow.color=row.Action.color=Color.Lerp(color,OverridePalette.Ink,strength);
         }
     }
 }

@@ -252,6 +252,33 @@ namespace GoGhost.Duel
         }
     }
 
+    // The Final Boss's mark: a flowing vertical rainbow on a slab-cut block.
+    [RequireComponent(typeof(CanvasRenderer))]
+    public sealed class RainbowBlock : MaskableGraphic
+    {
+        public float Cut = 22, Seconds = 4;
+        void Update() => SetVerticesDirty();
+
+        protected override void OnPopulateMesh(VertexHelper vh)
+        {
+            vh.Clear();
+            var r = GetPixelAdjustedRect();
+            const int steps = 12;
+            float phase = (float)(Time.unscaledTimeAsDouble / Seconds % 1.0);
+            for (int i = 0; i <= steps; i++)
+            {
+                float t = i / (float)steps, y = Mathf.Lerp(r.yMin, r.yMax, t), shift = Cut * t;
+                Color32 tint = Color.HSVToRGB(Mathf.Repeat(phase + t, 1), .75f, 1);
+                vh.AddVert(new Vector3(r.xMin + shift, y), tint, Vector2.zero);
+                vh.AddVert(new Vector3(r.xMax - Cut + shift, y), tint, Vector2.zero);
+                if (i == 0) continue;
+                int n = i * 2;
+                vh.AddTriangle(n - 2, n, n + 1);
+                vh.AddTriangle(n - 2, n + 1, n - 1);
+            }
+        }
+    }
+
     // The rule arrow keeps pushing toward the action once the condition is complete.
     public sealed class Drift : MonoBehaviour
     {

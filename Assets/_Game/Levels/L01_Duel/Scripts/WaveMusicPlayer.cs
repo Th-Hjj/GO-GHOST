@@ -114,7 +114,7 @@ namespace GoGhost.Duel
                     gain *= Mathf.Pow(10f, db / 20f);
                 }
             }
-            output.volume = musicVolume * gain * fade;
+            output.volume = musicVolume * gain * fade * GameSettings.MusicScale;
         }
 
         public void StopMusic(bool immediate = false)

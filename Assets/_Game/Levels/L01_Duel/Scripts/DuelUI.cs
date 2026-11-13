@@ -136,6 +136,10 @@ namespace GoGhost.Duel
                 if(ruleSidebar!=null)ruleSidebar.gameObject.SetActive(false);
                 BuildDeveloperTools();return;
             }
+            // Settings and its pages open over the title and over Pause only.
+            if(overlay!=OverlayPage.None&&game.Phase!=DuelPhase.Menu&&!game.Paused)overlay=OverlayPage.None;
+            if(game.Phase==DuelPhase.Menu&&overlay==OverlayPage.None&&!GameSettings.NoticeSeen)overlay=OverlayPage.Notice;
+            if(overlay!=OverlayPage.None){BuildOverrideOverlay();return;}
             if(game.Phase==DuelPhase.Menu||game.Phase==DuelPhase.Configure||game.Phase==DuelPhase.CharacterCreation||game.Phase==DuelPhase.TargetProfile)
                 Image(page,Vector2.zero,new Vector2(4000,4000),NeuralPalette.Background);
             if(game.Phase==DuelPhase.TargetProfile){BuildTargetProfile();return;}
@@ -178,6 +182,7 @@ namespace GoGhost.Duel
             UpdateDialogueOverlay();
             UpdateCreationWords();
             UpdateHurtFlash();
+            UpdateOverlayInput();
             if (game.DeveloperToolsOpen) return;
             if (game.Phase==DuelPhase.TargetProfile && profileResolution != new Vector2Int(Screen.width,Screen.height)) {Show();return;}
             if (RefreshConfigurationLayout()) return;

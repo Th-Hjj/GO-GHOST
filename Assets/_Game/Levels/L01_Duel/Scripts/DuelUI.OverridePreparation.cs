@@ -418,8 +418,10 @@ namespace GoGhost.Duel
             {
                 (string key, string action)[] controls =
                 {
-                    ("A / D", "Move left / right"), ("Mouse", "Aim"), ("Space", "Jump"), ("Left Shift", "Dodge"),
-                    ("Left mouse", "Fire"), ("Right mouse", "Rapidly fire"), ("R", "Reload"), ("Esc", "Pause / resume")
+                    (GameSettings.BindingLabel(GameSettings.MoveLeft) + " / " + GameSettings.BindingLabel(GameSettings.MoveRight), "Move left / right"),
+                    ("Mouse", "Aim"), (GameSettings.BindingLabel(GameSettings.Jump), "Jump"), (GameSettings.BindingLabel(GameSettings.Dodge), "Dodge"),
+                    (GameSettings.BindingLabel(GameSettings.Fire), "Fire"), (GameSettings.BindingLabel(GameSettings.RapidFire), "Rapidly fire"),
+                    (GameSettings.BindingLabel(GameSettings.Reload), "Reload"), (GameSettings.BindingLabel(GameSettings.Pause), "Pause / resume")
                 };
                 for (int i = 0; i < controls.Length; i++)
                 {

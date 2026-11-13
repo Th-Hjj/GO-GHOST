@@ -134,6 +134,32 @@ public static class PlayMetrics
         lastClock = lastSave = Time.realtimeSinceStartupAsDouble;
         Save();
     }
+    // Continue extends the saved run's record. A record that already ended at Mission 2 stays closed.
+    public static void ResumeRun(string runId)
+    {
+        if (Current != null) Finish("abandoned", false);
+        EndRun("continue");
+        run = null; Current = null; counting = false; LastSaveError = null;
+        History.Clear(); Array.Clear(DeathsByWave, 0, DeathsByWave.Length);
+        if (string.IsNullOrEmpty(runId)) return;
+        try
+        {
+            string path = Path.Combine(DirectoryPath, runId + ".json");
+            if (!File.Exists(path)) return;
+            var saved = JsonUtility.FromJson<RunData>(File.ReadAllText(path));
+            if (saved == null || saved.endReason == "complete" || saved.levelCleared) return;
+            if (saved.attempts != null) History.AddRange(saved.attempts);
+            if (saved.deathsByWave != null) Array.Copy(saved.deathsByWave, DeathsByWave, Math.Min(saved.deathsByWave.Length, DeathsByWave.Length));
+            saved.attempts = History; saved.deathsByWave = DeathsByWave;
+            saved.finished = false; saved.endReason = null; saved.endedUtc = null;
+            if (string.IsNullOrEmpty(sessionId)) sessionId = Guid.NewGuid().ToString("N");
+            run = saved;
+            stage = DuelPhase.Configure; stagePaused = false;
+            lastClock = lastSave = Time.realtimeSinceStartupAsDouble;
+            Save();
+        }
+        catch (Exception e) { run = null; Debug.LogWarning("Analytics record could not be resumed: " + e.Message); }
+    }
     public static void SetName(string name, bool confirmed = false)
     {
         if (!RunActive) return;

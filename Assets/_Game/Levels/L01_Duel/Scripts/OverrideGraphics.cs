@@ -114,7 +114,7 @@ namespace GoGhost.Duel
             vh.Clear();
             var r = GetPixelAdjustedRect();
             float period = Band * 2, slant = r.height * Lean;
-            float phase = SecondsPerPeriod > 0 ? (float)(Time.unscaledTimeAsDouble / SecondsPerPeriod % 1.0) : 0;
+            float phase = SecondsPerPeriod > 0 && !GameSettings.ReduceFlashing ? (float)(Time.unscaledTimeAsDouble / SecondsPerPeriod % 1.0) : 0;
             if (Other.a > 0) Quad(vh, r.xMin, r.xMax, r.xMin, r.xMax, r, Other);
             for (float x = r.xMin - slant - period + phase * period; x < r.xMax; x += period)
             {
@@ -241,6 +241,13 @@ namespace GoGhost.Duel
 
         void LateUpdate()
         {
+            if (GameSettings.ReduceFlashing)
+            {
+                if (First != null) First.anchoredPosition = Vector2.zero;
+                if (Second != null) Second.anchoredPosition = Vector2.zero;
+                if (Slice != null && Slice.gameObject.activeSelf) Slice.gameObject.SetActive(false);
+                return;
+            }
             float p = (float)(Time.unscaledTimeAsDouble % Period / Period);
             bool burst = p >= .88f, late = p >= .92f;
             if (First != null) First.anchoredPosition = !burst ? new Vector2(-Spread, 0) : late ? new Vector2(Spread * .6f, 2) : new Vector2(-Spread * 3.1f, -3);
@@ -430,7 +437,7 @@ namespace GoGhost.Duel
             if (group == null && !TryGetComponent(out group)) group = gameObject.AddComponent<CanvasGroup>();
             float t = Mathf.Clamp01((float)(Time.unscaledTimeAsDouble - born - Delay) / Seconds);
             float eased = 1 - Mathf.Pow(1 - t, 3);
-            transform.localScale = Vector3.one * Mathf.Lerp(From, 1, eased);
+            transform.localScale = Vector3.one * (GameSettings.ReduceFlashing ? 1 : Mathf.Lerp(From, 1, eased));
             group.alpha = eased;
         }
     }

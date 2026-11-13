@@ -65,6 +65,7 @@ namespace GoGhost.Duel
         {
             Time.timeScale = 1;
             AudioListener.pause = false;
+            GameSettings.Load();
             music?.StopMusic(true);
             Application.runInBackground = true;
             if(Camera.main!=null)Camera.main.backgroundColor=NeuralPalette.Background;
@@ -109,6 +110,7 @@ namespace GoGhost.Duel
             handler.ResetSpeakerName();
             ClearEncounter("new_game");
             PlayMetrics.ResetRun();
+            savingRun = true; faceSaved = greeted = tutorialDone = false; savedRunId = null;
             metricsWaveJumpPending = false;
             Wave = 1;
             System.Array.Clear(profileOpened, 0, profileOpened.Length);
@@ -136,6 +138,7 @@ namespace GoGhost.Duel
             UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
             SetPhase(DuelPhase.Configure);
             handler.PlayGreeting(Appearance.Name, installStarterRule ? ui.InstallTutorialJumpRule : (System.Action)null);
+            greeted = true;
         }
         internal HandlerVoice ConfigurationVoice => handler;
         public void SetDraft(int module, bool automatic)
@@ -148,6 +151,7 @@ namespace GoGhost.Duel
             if(Phase!=DuelPhase.Configure||Paused)return;
             edit(DraftLoadout);
             PlayMetrics.RecordConfiguration(DraftLoadout, change);
+            SaveGame();
             ui.Show();
         }
         public void StartFight()
@@ -306,6 +310,7 @@ namespace GoGhost.Duel
         }
         public void MainMenu()
         {
+            SaveGame();
             ClearEncounter("main_menu");
             PlayMetrics.EndRun("main_menu");
             SetPhase(DuelPhase.Menu);
@@ -353,6 +358,9 @@ namespace GoGhost.Duel
                 || Phase == DuelPhase.Between || value == DuelPhase.Failed)
                 handler.Stop();
             Phase = value;
+            if (value == DuelPhase.Configure || value == DuelPhase.TargetProfile || value == DuelPhase.Between) SaveGame();
+            // Finishing the game removes the save.
+            if (value == DuelPhase.Complete && Wave == FinalBossWave) { GameSave.Delete(); savingRun = false; }
             MetricsStage();
             if (value == DuelPhase.Complete) PlayMetrics.EndRun("complete");
             phaseTime = 0;
@@ -406,7 +414,7 @@ namespace GoGhost.Duel
         void Update()
         {
             TickMetrics();
-            if (!ui.DeveloperShortcutConsumed && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) SetPause(!Paused);
+            if (!ui.DeveloperShortcutConsumed && !ui.OverlayOpen && GameSettings.Pressed(GameSettings.Pause)) SetPause(!Paused);
             if (Paused || DeveloperToolsOpen) return;
             if (InvasionHeld) { TickInvasionReading(); return; }
             if (Keyboard.current != null && Keyboard.current.f9Key.wasPressedThisFrame)
@@ -500,7 +508,7 @@ namespace GoGhost.Duel
         // Entry selects only the normal configuration; no fight-state injection.
         public void ConfigurePlaytestWave(int wave)
         {
-            NewGame(); FinishCharacterCreation(installStarterRule: false); Wave = Mathf.Clamp(wave, 1, BonusWave); metricsWaveJumpPending = true;
+            NewGame(); savingRun = false; FinishCharacterCreation(installStarterRule: false); Wave = Mathf.Clamp(wave, 1, BonusWave); metricsWaveJumpPending = true;
             if (Wave > 2) { PlayMetrics.MarkTestData(); PlayMetrics.EndRun("developer_wave_jump"); }
             ui.Show();
         }

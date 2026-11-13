@@ -85,6 +85,7 @@ namespace GoGhost.Duel
         // One dark pixel row in every four, drawn at screen resolution.
         void OvScanlines(Transform parent, float alpha)
         {
+            if (GameSettings.ReduceFlashing) return;
             if (scanTexture == null)
             {
                 scanTexture = new Texture2D(1, 4, TextureFormat.RGBA32, false)
@@ -163,8 +164,21 @@ namespace GoGhost.Duel
             OvGlitchWord("GO GHOST", frame, new Vector2(84 + 700 - 800, 450 - 353), new Vector2(1400, 292), 340,
                 TextAlignmentOptions.CaplineLeft, 3.4f, 7);
             OvBand(frame, 514);
-            OvButton("New Game", frame, At(92, 600, 440, 96), new Vector2(440, 96), game.NewGame, OverrideButtonKind.Primary, 62, true);
-            OvButton("Quit", frame, At(92, 712, 240, 64), new Vector2(240, 64), Application.Quit, OverrideButtonKind.Secondary, 38);
+            // With a save, Continue leads and New Game asks before replacing it.
+            bool saved = GameSave.Exists;
+            if (saved)
+            {
+                OvButton("Continue", frame, At(92, 580, 494, 96), new Vector2(494, 96), game.ContinueGame, OverrideButtonKind.Primary, 62, true);
+                OvButton("New Game", frame, At(92, 690, 494, 68), new Vector2(494, 68), RequestNewGame, OverrideButtonKind.Secondary, 40);
+            }
+            else OvButton("New Game", frame, At(92, 600, 440, 96), new Vector2(440, 96), RequestNewGame, OverrideButtonKind.Primary, 62, true);
+            float row = saved ? 774 : 714;
+            OvButton("Settings", frame, At(92, row, 196, 56), new Vector2(196, 56), () => OpenOverlay(OverlayPage.Settings), OverrideButtonKind.Tertiary, 32,
+                align: TextAlignmentOptions.Capline);
+            OvButton("Credits", frame, At(298, row, 180, 56), new Vector2(180, 56), () => OpenOverlay(OverlayPage.Credits), OverrideButtonKind.Tertiary, 32,
+                align: TextAlignmentOptions.Capline);
+            OvButton("Quit", frame, At(488, row, 140, 56), new Vector2(140, 56), Application.Quit, OverrideButtonKind.Tertiary, 32,
+                align: TextAlignmentOptions.Capline);
         }
 
         void BuildOverridePause()
@@ -174,7 +188,8 @@ namespace GoGhost.Duel
             OvBand(page, 232);
             OvButton("Resume", page, At(570, 296, 460, 100), new Vector2(460, 100), () => game.SetPause(false), OverrideButtonKind.Primary, 64, true, 0);
             OvButton("Configuration", page, At(570, 410, 460, 72), new Vector2(460, 72), game.Reconfigure, OverrideButtonKind.Secondary, 42, false, .04f);
-            OvButton("Main Menu", page, At(570, 496, 460, 64), new Vector2(460, 64), game.MainMenu, OverrideButtonKind.Tertiary, 38, false, .08f);
+            OvButton("Settings", page, At(570, 496, 460, 64), new Vector2(460, 64), () => OpenOverlay(OverlayPage.Settings), OverrideButtonKind.Tertiary, 38, false, .08f);
+            OvButton("Main Menu", page, At(570, 574, 460, 64), new Vector2(460, 64), game.MainMenu, OverrideButtonKind.Tertiary, 38, false, .12f);
             if (game.Phase == DuelPhase.Training) BuildTrainingButtons();
         }
 

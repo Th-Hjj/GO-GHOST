@@ -26,6 +26,8 @@ namespace GoGhost.Duel
         public string PendingDialogue { get; private set; }
         internal string SpeakerName { get; private set; } = "???";
         internal void ResetSpeakerName() => SpeakerName = "???";
+        internal void RestoreSpeakerName() => SpeakerName = "Happy";
+        internal bool TutorialRunning => tutorialActive;
         Action afterDialogue;
         int dialogueFrame;
         float revealStart, revealDuration;
@@ -143,7 +145,7 @@ namespace GoGhost.Duel
 
         internal void PlayGreeting(string nickname, Action installExample)
         {
-            speaker.volume = VoiceStudioCatalog.Current.Volume(false);
+            speaker.volume = VoiceStudioCatalog.Current.Volume(false) * GameSettings.VoiceScale;
             tutorialActive = true;
             editorExplained = confirmSpoken = false;
             Focus = TutorialFocus.None;
@@ -326,7 +328,7 @@ namespace GoGhost.Duel
             else
 #endif
             if (!TryGetLine(name, out clip)) clip = Resources.Load<AudioClip>(name);
-            speaker.volume = VoiceStudioCatalog.Current.Volume(name.StartsWith("FinalBossVoice/", StringComparison.Ordinal));
+            speaker.volume = VoiceStudioCatalog.Current.Volume(name.StartsWith("FinalBossVoice/", StringComparison.Ordinal)) * GameSettings.VoiceScale;
             Play(clip, waitForPage);
         }
 

@@ -163,7 +163,7 @@ Thomas accepted these with the mockups on 2026-11-12.
 
 ## Proposed new pages
 
-**Proposed, not confirmed.** The game has no settings, credits or confirmation step today. These pages are mocked up as N1–N5 on the canvas. Each introduces copy the game does not have yet, so the wording needs Thomas's approval.
+**Built on 2026-11-12** after Thomas authorized the remaining changes for the Beta 66% build. The pages follow N1–N6 on the canvas. Credits lists Thomas Hong and Walker Grupp, Efe Inan for music, and the two fonts; the Voice, Sound and Special thanks rows are left out until Thomas supplies them. Wording that differs from what Thomas wants should be corrected here and in `DuelUI.OverrideSettings.cs`.
 
 | Page | Why | Content |
 |---|---|---|

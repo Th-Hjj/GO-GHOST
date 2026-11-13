@@ -28,7 +28,7 @@ namespace GoGhost.Duel
         float hurtAt;
         internal void ShowHurtFlash(int damage, GameObject source)
         {
-            if (damage <= 0) return;
+            if (damage <= 0 || GameSettings.ReduceFlashing) return;
             if (hurtFlash == null)
             {
                 var edge = Rect("Damage edge", canvas, Vector2.zero, Vector2.zero);

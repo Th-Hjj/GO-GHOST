@@ -100,6 +100,29 @@ namespace GoGhost.Duel
             Upload();
         }
 
+        public byte[] ExportPng() => Texture.EncodeToPNG();
+
+        // Restores a saved drawing: anything brighter than the blank rim is ink.
+        public void ImportPng(byte[] png)
+        {
+            var loaded = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            try
+            {
+                if (!loaded.LoadImage(png) || loaded.width != Resolution || loaded.height != Resolution) return;
+                var source = loaded.GetPixels32();
+                for (int i = 0; i < source.Length; i++)
+                {
+                    ink[i] = source[i].r > blank[i].r ? source[i].r : (byte)0;
+                    byte value = (byte)Mathf.Max(blank[i].r, ink[i]);
+                    pixels[i] = new Color32(value, value, value, blank[i].a);
+                    byte inverse = (byte)(255 - ink[i]);
+                    combatPixels[i] = new Color32(inverse, inverse, inverse, blank[i].a);
+                }
+                Upload();
+            }
+            finally { Object.Destroy(loaded); }
+        }
+
         void Upload()
         {
             Texture.SetPixels32(pixels); Texture.Apply(false, false);

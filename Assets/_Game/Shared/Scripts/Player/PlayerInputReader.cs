@@ -63,7 +63,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     public bool BurstHeld { get; private set; }
     public bool BurstPressedThisFrame { get; private set; }
     public bool ReloadPressedThisFrame => IsReady && GameplayInputEnabled && hasFocus && !NarrativePaused
-        && Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame;
+        && GameSettings.Pressed(GameSettings.Reload);
     public WeaponFireRequest FireRequest => ConditionalControlsActive && ConditionalFrame.FireOwned
         ? ConditionalFrame.FireRequest
         : LegacyArmsAI ? (AttackHeld ? WeaponFireRequest.Continuous : WeaponFireRequest.None)
@@ -200,8 +200,9 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         nextAction = Find(asset, "Player/Next");
         if (dropAction == null) dropAction = new InputAction("Drop Through", InputActionType.Button, "<Keyboard>/s");
         dropAction.Enable();
-        if (burstAction == null) burstAction = new InputAction("Revolver Burst", InputActionType.Button, "<Mouse>/rightButton");
-        burstAction.Enable();
+        BindBurst();
+        GameSettings.BindingsChanged -= BindBurst;
+        GameSettings.BindingsChanged += BindBurst;
 
         IsReady = moveAction != null && aimAction != null && attackAction != null && jumpAction != null
                   && dodgeAction != null && abilityAction != null && secondaryAbilityAction != null;
@@ -228,8 +229,18 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         aimTargetCollider = null;
     }
 
+    // Rapid fire follows the player's key binding, including a change made from Pause.
+    private void BindBurst()
+    {
+        burstAction?.Disable();
+        burstAction?.Dispose();
+        burstAction = new InputAction("Revolver Burst", InputActionType.Button, GameSettings.BindingPath(GameSettings.RapidFire));
+        if (isActiveAndEnabled) burstAction.Enable();
+    }
+
     private void OnDisable()
     {
+        GameSettings.BindingsChanged -= BindBurst;
         dropAction?.Disable();
         burstAction?.Disable();
         EndAimOverride();

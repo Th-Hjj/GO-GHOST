@@ -83,7 +83,7 @@ public sealed class PresentationOneShot : MonoBehaviour
         var selected = voices[slot];
         selected.Stop();
         selected.clip = clip;
-        selected.volume = sourceVolume * Mathf.Clamp01(gain);
+        selected.volume = sourceVolume * Mathf.Clamp01(gain) * GameSettings.EffectsScale;
         selected.priority = Mathf.Clamp(priority, 0, 256);
         selected.pitch = Mathf.Clamp(pitch, .9f, 1.1f);
         if (coverSeconds>0) selected.pitch=Mathf.Min(selected.pitch,clip.length/coverSeconds);

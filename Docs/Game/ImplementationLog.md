@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-12 — Missing damage edge
+
+In the Test Room, HP fell from 20 to 17 while the screen edge stayed black. The runtime damage graphic had no CanvasRenderer. It now declares the renderer as a required component. After the fix, a Dummy Robot shot took HP from 138 to 134 and the Game view capture showed the coral gradient on all four edges. The color, width and timing are unchanged. Capture: `Logs/Beta66/test-room-hurt-edge.png`. The Windows x64 rebuild succeeded with zero errors.
+
 ## 2026-11-12 — Combat feedback revision
 
 The short, round-capped Swordsman Draw sweep appeared as a circle. Draw now uses its previous thin directional line. The Dodge foot bar again disappears at zero cooldown. Health loss tints the screen edges with the existing coral Danger color over .22 seconds. At 1600×900, the Editor mesh check recorded 22% peak opacity at the rim, fading to zero at 40.5 pixels with the center open. Unity compiled and rebuilt the Windows x64 player with zero build errors. A full encounter playthrough was not run for this revision.

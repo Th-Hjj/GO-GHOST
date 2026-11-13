@@ -143,6 +143,7 @@ namespace GoGhost.Duel
 
     }
     // Four joined strips fade inward. The center has no geometry.
+    [RequireComponent(typeof(CanvasRenderer))]
     internal sealed class DamageEdgeGraphic : UnityEngine.UI.MaskableGraphic
     {
         protected override void OnPopulateMesh(UnityEngine.UI.VertexHelper mesh)

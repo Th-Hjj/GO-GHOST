@@ -190,7 +190,7 @@ Thomas confirmed on 2026-11-12 that the game needs a save. The rules below are p
 - **Continue** opens the preparation page of the mission reached. A fight in progress is never stored, so quitting mid-fight returns to that mission's preparation. Injected rules and phase-two retry state are not stored.
 - **Main Menu** from Pause or a result needs no confirmation, because only the current fight is lost.
 - **Finishing the game** removes the save. The title then shows New Game alone.
-- **Open:** whether a continued run extends the same analytics record or starts a new one.
+- **Analytics (Thomas, 2026-11-12):** Continue extends the same analytics record as the saved run. Only New Game starts a new record. The save therefore stores which record it belongs to.
 
 ### Key rebinding
 

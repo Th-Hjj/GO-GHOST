@@ -69,8 +69,7 @@ namespace GoGhost.Duel
             var stage = Rect("Stage", bodyPreview, new Vector2(0, -221), new Vector2(330, 22)).gameObject.AddComponent<SlabGraphic>();
             stage.color = OverridePalette.Neutral; stage.Cut = 10; stage.raycastTarget = false;
             // 245 canvas units per world unit stands the 1.55-unit player on the stage slab.
-            overviewFigureHome = new Vector2(-34, -210 + .75f * 245);
-            overviewFigureRoot = OvPlayerFigure(bodyPreview, overviewFigureHome, 245);
+            StandFigure(bodyPreview, new Vector2(-34, -210 + .75f * 245));
 
             ruleList = Rect("RuleList", frame, At(416, 150, 724, 560), new Vector2(724, 560));
             var heading = OvText("Rules", ruleList, new Vector2(-362 + 150, 242), new Vector2(300, 64), 58, OverridePalette.Text, TextAlignmentOptions.CaplineLeft);
@@ -136,6 +135,8 @@ namespace GoGhost.Duel
                 start.interactable = false;
             }
 #endif
+            // The character walks back from the editor in front of the rule cards.
+            bodyPreview.SetAsLastSibling();
             UpdateConfigurationSignals();
         }
 
@@ -247,6 +248,11 @@ namespace GoGhost.Duel
             foreach (var part in figureLegs) if (part != null) part.color = legs;
             foreach (var part in figureTorso) if (part != null) part.color = torso;
             foreach (var part in figureArms) if (part != null) part.color = arms;
+            float slide = Mathf.Clamp01((time - figureSlideAt) / FigureSlideSeconds);
+            Vector2 offset = figureSlideFrom * Mathf.Pow(1 - slide, 3);
+            overviewFigureRoot.anchoredPosition = overviewFigureHome + offset;
+            figureFramePosition = figureFrameHome + offset;
+            figureSeenAt = time;
         }
 
         // The player exactly as the fight shows them at rest: OfficerVisual's standing pose, its limb widths,

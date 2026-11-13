@@ -133,6 +133,7 @@ namespace GoGhost.Duel
             {
                 CancelRuleEdit();
             }
+            if(FollowEditorTour())return true;
             UpdateConfigurationSignals();
             return true;
         }
@@ -206,6 +207,7 @@ namespace GoGhost.Duel
             bool editing=selectorRow>=0;
             if(!editing){BuildOverrideOverview();return;}
             overviewFigureRoot=null;
+            if(editing){BuildOverrideEditor();return;}
             float editorTop = top - (editing?176:64);
             float editorBottom = bottom+(editing?120:108);
             if (editing) Text("Body Configuration",page,new Vector2(0,top-22),new Vector2(400,44),30,TextAlignmentOptions.Center,headingFont);
@@ -406,6 +408,9 @@ namespace GoGhost.Duel
             int highlightedRow=previewRow>=0?previewRow:pendingRow<displayedRules.Count?pendingRow:-1;
             var highlightedSystem=previewSystem!=NeuralBodySystem.None?previewSystem:
                 highlightedRow>=0?RuleSystem(displayedRules[highlightedRow]):NeuralBodySystem.None;
+            // In the editor the character shows the part the draft action would own.
+            if(previewSystem==NeuralBodySystem.None&&selectorRow>=0&&pendingRule!=null)
+                highlightedSystem=string.IsNullOrEmpty(pendingRule.Action)?NeuralBodySystem.None:RuleSystem(pendingRule);
             int connectedSystems=0;
             int earlierSystems=0;
             for(int i=0;i<displayedRules.Count;i++)
@@ -696,6 +701,7 @@ namespace GoGhost.Duel
             selectingCondition=true;
             int previous=selectedConditionIndex<pendingRule.ConditionCount?pendingRule.GetCondition(selectedConditionIndex).Id:0;
             if(previous!=condition)pendingRule.SetCondition(selectedConditionIndex,new RuleCondition(condition));
+            AdvanceEditorStep(true);
             Show();
         }
 
@@ -703,6 +709,7 @@ namespace GoGhost.Duel
         {
             selectingCondition=true;
             ConditionalCatalog.SetConditionOption(pendingRule,option,selectedConditionIndex);
+            AdvanceEditorStep(true);
             Show();
         }
 
@@ -713,6 +720,7 @@ namespace GoGhost.Duel
             if(ActionChoiceReason(pendingRule,action)!=null)return;
             selectingCondition=false;
             SelectPickerAction(pendingRule,action);
+            AdvanceEditorStep(false);
             Show();
         }
 

@@ -188,6 +188,10 @@ namespace GoGhost.Duel
         // Waiting colour for a control whose fill carries meaning, such as the target card.
         public Color? Dimmed;
         public float Shift = 12, EnterDelay = -1;
+        // -1 enters from the left, 1 from the right.
+        public float EnterSide = -1;
+        // A parameter group that still needs a choice pulses a Signal inner frame.
+        public bool Waiting;
         const float HoverSeconds = .1f, EnterSeconds = .22f, EnterDistance = 90;
         CanvasGroup group;
         bool hovered, focused;
@@ -211,12 +215,18 @@ namespace GoGhost.Duel
             float eased = 1 - (1 - hover) * (1 - hover);
             float arrived = EnterDelay < 0 ? 1 : Mathf.Clamp01((float)(Time.unscaledTimeAsDouble - born - EnterDelay) / EnterSeconds);
             arrived = 1 - Mathf.Pow(1 - arrived, 3);
-            Face.anchoredPosition = new Vector2(Shift * eased - (1 - arrived) * EnterDistance, 0);
+            Face.anchoredPosition = new Vector2(Shift * eased + EnterSide * (1 - arrived) * EnterDistance, 0);
             group.alpha = arrived;
             var fill = available ? Fill * (1 + .12f * eased) : Dimmed ?? OverridePalette.DisabledFill;
             fill.a = 1;
             Slab.color = fill;
-            Slab.SetFrame(available && focused ? 4 : 0, Fill == OverridePalette.Text ? OverridePalette.Ink : OverridePalette.Text);
+            if (available && Waiting && !focused)
+            {
+                Color pulse = OverridePalette.Signal;
+                pulse.a = .5f + .5f * Mathf.Cos((float)(Time.unscaledTimeAsDouble % 1.2 / 1.2) * Mathf.PI * 2);
+                Slab.SetFrame(3, pulse);
+            }
+            else Slab.SetFrame(available && focused ? 4 : 0, Fill == OverridePalette.Text ? OverridePalette.Ink : OverridePalette.Text);
             var ink = available ? Ink : OverridePalette.Disabled;
             if (Label != null) Label.color = ink;
             if (Icon != null) Icon.color = ink;
@@ -239,6 +249,21 @@ namespace GoGhost.Duel
             bool visible = p >= .86f;
             if (Slice.gameObject.activeSelf != visible) Slice.gameObject.SetActive(visible);
             if (visible) Slice.anchoredPosition = new Vector2(p < .90f ? Spread * 5.4f : p < .94f ? -Spread * 3.7f : Spread * 1.7f, Slice.anchoredPosition.y);
+        }
+    }
+
+    // The rule arrow keeps pushing toward the action once the condition is complete.
+    public sealed class Drift : MonoBehaviour
+    {
+        public float Distance = 10, Period = .9f;
+        RectTransform rect;
+        Vector2 home;
+
+        void OnEnable() { rect = (RectTransform)transform; home = rect.anchoredPosition; }
+        void LateUpdate()
+        {
+            float phase = (float)(Time.unscaledTimeAsDouble % Period / Period);
+            rect.anchoredPosition = home + Vector2.right * (Distance * Mathf.Sin(phase * Mathf.PI * 2));
         }
     }
 

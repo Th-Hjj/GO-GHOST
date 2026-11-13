@@ -137,6 +137,7 @@ namespace GoGhost.Duel
             if(game.Phase==DuelPhase.TargetProfile){BuildTargetProfile();return;}
             if(game.Phase==DuelPhase.MissionEntry)return;
             if(game.Phase==DuelPhase.FinalVictoryHold)return;
+            if(game.Phase!=DuelPhase.CharacterCreation)ForgetCreationWords();
             if(game.Paused){BuildOverridePause();return;}
             if(game.Phase==DuelPhase.Menu){BuildOverrideMenu();return;}
             if(game.Phase==DuelPhase.CharacterCreation)
@@ -209,6 +210,7 @@ namespace GoGhost.Duel
         {
             if (game == null) return;
             UpdateDialogueOverlay();
+            UpdateCreationWords();
             UpdateHurtFlash();
             if (game.DeveloperToolsOpen) return;
             if (game.Phase==DuelPhase.TargetProfile && profileResolution != new Vector2Int(Screen.width,Screen.height)) {Show();return;}

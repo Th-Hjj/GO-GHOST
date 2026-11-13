@@ -237,6 +237,93 @@ namespace GoGhost.Duel
         }
     }
 
+    // Ring that fills clockwise from the top, with feathered edges.
+    [RequireComponent(typeof(CanvasRenderer))]
+    public sealed class RingGraphic : MaskableGraphic
+    {
+        public float Thickness = 16;
+        float fill = 1;
+        public float Fill
+        {
+            get => fill;
+            set { value = Mathf.Clamp01(value); if (Mathf.Approximately(fill, value)) return; fill = value; SetVerticesDirty(); }
+        }
+
+        protected override void OnPopulateMesh(VertexHelper vh)
+        {
+            vh.Clear();
+            if (fill <= 0) return;
+            var r = GetPixelAdjustedRect();
+            float outer = Mathf.Min(r.width, r.height) / 2, inner = outer - Thickness;
+            float pixel = 1f / Mathf.Max(.01f, canvas != null ? canvas.scaleFactor : 1f);
+            Vector2 centre = r.center;
+            Color32 solid = color, clear = color; clear.a = 0;
+            const int steps = 120;
+            int count = Mathf.CeilToInt(steps * fill);
+            for (int i = 0; i <= count; i++)
+            {
+                float angle = Mathf.Min(i / (float)steps, fill) * Mathf.PI * 2;
+                var direction = new Vector2(Mathf.Sin(angle), Mathf.Cos(angle));
+                vh.AddVert(centre + direction * (outer + pixel), clear, Vector2.zero);
+                vh.AddVert(centre + direction * outer, solid, Vector2.zero);
+                vh.AddVert(centre + direction * inner, solid, Vector2.zero);
+                vh.AddVert(centre + direction * (inner - pixel), clear, Vector2.zero);
+                if (i == 0) continue;
+                int k = i * 4;
+                for (int band = 0; band < 3; band++)
+                {
+                    vh.AddTriangle(k - 4 + band, k + band, k + band + 1);
+                    vh.AddTriangle(k - 4 + band, k + band + 1, k - 3 + band);
+                }
+            }
+        }
+    }
+
+    // Leaning bars that follow a loudness value; they rest at a low height when silent.
+    public sealed class VoiceBars : MonoBehaviour
+    {
+        public RectTransform[] Bars;
+        public System.Func<float> Level;
+        public float Idle = .22f, Gain = 7;
+        float[] heights;
+
+        void LateUpdate()
+        {
+            if (Bars == null) return;
+            if (heights == null || heights.Length != Bars.Length)
+            {
+                heights = new float[Bars.Length];
+                for (int i = 0; i < heights.Length; i++) heights[i] = Idle;
+            }
+            float level = Level != null ? Mathf.Clamp01(Level() * Gain) : 0;
+            float time = (float)(Time.unscaledTimeAsDouble % 1000.0);
+            float blend = 1 - Mathf.Exp(-Time.unscaledDeltaTime * 24);
+            for (int i = 0; i < Bars.Length; i++)
+            {
+                float wobble = .55f + .45f * Mathf.Sin(time * (9 + i * 1.7f) + i * 2.1f);
+                float target = level > .02f ? Mathf.Lerp(Idle, 1, Mathf.Clamp01(level * wobble * 1.5f)) : Idle;
+                heights[i] = Mathf.Lerp(heights[i], target, blend);
+                if (Bars[i] != null) Bars[i].localScale = new Vector3(1, heights[i], 1);
+            }
+        }
+    }
+
+    // A line sweeping down a circle, sized to the chord it crosses.
+    public sealed class HeadScan : MonoBehaviour
+    {
+        public RectTransform Line;
+        public float Radius = 200, Seconds = 1.5f;
+
+        void LateUpdate()
+        {
+            if (Line == null) return;
+            float p = (float)(Time.unscaledTimeAsDouble % Seconds / Seconds);
+            float y = Mathf.Lerp(Radius, -Radius, p);
+            Line.anchoredPosition = new Vector2(0, y);
+            Line.sizeDelta = new Vector2(2 * Mathf.Sqrt(Mathf.Max(0, Radius * Radius - y * y)), 3);
+        }
+    }
+
     // Scale-and-fade entrance for words and result titles.
     public sealed class SlamIn : MonoBehaviour
     {
@@ -246,6 +333,9 @@ namespace GoGhost.Duel
 
         void OnEnable() { born = Time.unscaledTimeAsDouble; Apply(); }
         void LateUpdate() => Apply();
+
+        // Restart the entrance so it begins this many seconds from now; a negative value is already under way.
+        public void Trigger(float delay) { born = Time.unscaledTimeAsDouble; Delay = delay; Apply(); }
 
         void Apply()
         {

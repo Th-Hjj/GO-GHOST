@@ -370,6 +370,23 @@ namespace GoGhost.Duel
         public bool Speaking => speaker != null && speaker.clip != null
             && (RemainingSpeechDelay > 0 || speaker.isPlaying || AudioListener.pause);
 
+        // True only while sound is actually coming out; Speaking also covers the scheduled lead-in.
+        public bool Audible => speaker != null && speaker.clip != null && speaker.isPlaying && RemainingSpeechDelay <= 0;
+
+        static readonly float[] levelSamples = new float[256];
+        // Short-term loudness of the playing line, for the voice bars.
+        public float Level
+        {
+            get
+            {
+                if (!Audible) return 0;
+                speaker.GetOutputData(levelSamples, 0);
+                float sum = 0;
+                foreach (float sample in levelSamples) sum += sample * sample;
+                return Mathf.Sqrt(sum / levelSamples.Length);
+            }
+        }
+
         public void Stop()
         {
             readingRuleDescription = confirmAfterDescription = false;

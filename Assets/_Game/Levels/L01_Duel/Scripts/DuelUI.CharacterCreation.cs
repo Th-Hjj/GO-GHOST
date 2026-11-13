@@ -57,6 +57,7 @@ namespace GoGhost.Duel
         void DisposeCharacterFonts()
         {
             DestroyNameFontCopy(dialogueFont);
+            DestroyNameFontCopy(monoDialogue);
             DestroyNameFontCopy(characterControlFont);
             DestroyNameFontCopy(characterNumericFont);
             if (characterFallback == null) return;
@@ -73,79 +74,8 @@ namespace GoGhost.Duel
             Destroy(copy);
         }
 
-        void BuildCharacterCreation()
-        {
-            page.sizeDelta=canvas.rect.size;
-            startupFill = null;
-            startupError = null;
-            Text("Who Are You", page, new Vector2(0, 350), new Vector2(640, 60), 30, face:headingFont);
-            var face = Rect("CharacterFace", page, new Vector2(0, 65), new Vector2(390, 390));
-            var image = face.gameObject.AddComponent<Image>();
-            image.sprite = game.Appearance.Sprite;
-            image.color = CharacterAppearance.Tint;
-            image.raycastTarget = true;
-            face.gameObject.AddComponent<CharacterFaceCanvas>().Initialize(game.Appearance);
-            ConfigButton("ClearFace", "Clear", page, new Vector2(250, 65), new Vector2(96, 52), game.Appearance.Clear, style:DuelControlStyle.Tool);
+        void BuildCharacterCreation() => BuildOverrideCreation();
 
-            var box = Rect("CharacterName", page, new Vector2(0, -230), new Vector2(440, 60));
-            var background = box.gameObject.AddComponent<Image>(); background.color = NeuralPalette.Panel;
-            for (int i = 0; i < 4; i++)
-            {
-                var edge = Image(box, Vector2.zero, Vector2.zero, NeuralPalette.ControlBorder).rectTransform;
-                edge.anchorMin = i < 2 ? new Vector2(0, i) : new Vector2(i - 2, 0);
-                edge.anchorMax = i < 2 ? new Vector2(1, i) : new Vector2(i - 2, 1);
-                edge.pivot = i < 2 ? new Vector2(.5f, i) : new Vector2(i - 2, .5f);
-                edge.sizeDelta = i < 2 ? new Vector2(0, 2) : new Vector2(2, 0);
-            }
-            var input = box.gameObject.AddComponent<TMP_InputField>();
-            input.targetGraphic = background;
-            input.lineType = TMP_InputField.LineType.SingleLine;
-            input.characterLimit = CharacterAppearance.NameLimit;
-            input.richText = false;
-            input.customCaretColor = true; input.caretColor = NeuralPalette.Primary;
-            input.selectionColor = new Color(.2f, .3f, .4f, .3f);
-            var viewport = Rect("TextArea", box, Vector2.zero, new Vector2(404, 54));
-            viewport.gameObject.AddComponent<RectMask2D>();
-            var text = Text("", viewport, Vector2.zero, new Vector2(404, 54), 26, TextAlignmentOptions.Left, CharacterNameFont());
-            text.color = NeuralPalette.Primary; text.textWrappingMode = TextWrappingModes.NoWrap;
-            var placeholder = Text("Enter Your Name", viewport, Vector2.zero, new Vector2(404, 54), 26, TextAlignmentOptions.Left, controlFont);
-            placeholder.color = NeuralPalette.Secondary;
-            input.textViewport = viewport;
-            input.textComponent = (TextMeshProUGUI)text; input.placeholder = placeholder;
-            input.text = game.Appearance.Name;
-            input.onValueChanged.AddListener(value => { game.Appearance.Name = value; PlayMetrics.SetName(value); });
-            characterStart = ConfigButton("CreateCharacterContinue", "Upload", page, new Vector2(0, -310), new Vector2(240, 60), game.StartGame, style:DuelControlStyle.Primary);
-            ConfigButton("CreateCharacterBack", "← Back", page, new Vector2(-page.rect.width/2+96,page.rect.height/2-56), new Vector2(128, 48), game.MainMenu, style:DuelControlStyle.Navigation);
-            if (game.StartupFailed)
-                startupError = Text("Couldn't load the game. Please try again.", page, new Vector2(0, -398), new Vector2(680, 40), 22);
-            if (game.StartupProgress >= 0) ShowStartupProgress(game.StartupProgress);
-        }
-
-        internal void ShowStartupProgress(float progress)
-        {
-            if (startupFill == null)
-            {
-                UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
-                var group = pageControls;
-                group.interactable = false;
-                group.blocksRaycasts = false;
-                page.GetComponentInChildren<CharacterFaceCanvas>().enabled = false;
-                var buttonRect = (RectTransform)characterStart.transform;
-                var bar = Rect("StartGameProgress", page, buttonRect.anchoredPosition, buttonRect.sizeDelta);
-                characterStart.gameObject.SetActive(false);
-                if (startupError != null) startupError.gameObject.SetActive(false);
-                Image(bar, Vector2.zero, bar.sizeDelta, NeuralPalette.Panel);
-                var track = Image(bar, new Vector2(0, -23), new Vector2(bar.sizeDelta.x, 8), NeuralPalette.ControlBorder);
-                startupFill = Image(track.transform, Vector2.zero, Vector2.zero, NeuralPalette.Primary).rectTransform;
-                startupFill.anchorMin = Vector2.zero;
-                startupLabel = Text("", bar, new Vector2(0, 4), bar.sizeDelta, 22, face:numericFont);
-                displayedPercent = -1;
-            }
-            int percent = Mathf.FloorToInt(Mathf.Clamp01(progress) * 100f);
-            if (percent == displayedPercent) return;
-            displayedPercent = percent;
-            startupFill.anchorMax = new Vector2(percent / 100f, 1);
-            startupLabel.text = "Uploading " + percent + "%";
-        }
+        internal void ShowStartupProgress(float progress) => ShowOverrideStartupProgress(progress);
     }
 }

@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-12 — Override UI, stage 2
+
+Happy's box is the Override slab with the Signal voice block. Its seven bars follow `HandlerVoice.Level`, a short-term loudness read from the playing clip. The same box serves preparation, the rule editor descriptions, Target Profile and the Test Room. Who Are You and Uploading are rebuilt: WHO, ARE and YOU slam in when the recording becomes audible, with a two-second fallback if it never does. The progress ring fills over the head's rim, a scan line sweeps the face and Upload turns into the Uploading bar. The dialogue sentence and speaker are 22 so two lines fit the 108-high box; the specification had 25.
+
+Unity compiled. One Play Mode pass at 2560×1440 captured Who Are You, Uploading at 5% and Happy's first line on the Mission 1 page (`Logs/Override/creation.png`, `uploading.png`, `happy.png`). That pass showed the progress ring sitting outside the head's rim, because the face sprite keeps a margin. The head rectangle and ring were resized afterwards; the code compiled but the corrected ring was NOT OBSERVED. NOT TESTED: bars moving against a loud line, a name with Chinese characters, the failed-upload message, other resolutions.
+
 ## 2026-11-12 — Override UI, stage 1
 
 Barlow Condensed Italic (ExtraBold, Black) and JetBrains Mono (Medium, Bold) were added with their OFL texts under `Assets/_Game/Shared/Fonts`. Five static TextMesh Pro assets sit in `Shared/Fonts/Resources/Fonts`, including a capitals-and-digits atlas sampled at 136 pt for the logo and result words. `OverrideGraphics.cs` adds the palette, the slab, stripe and fade graphics, the slab button, the glitch word and the slam-in. `DuelUI.Override.cs` rebuilds the title, pause, Defeat, mission-cleared and finished pages. Other pages still use the previous look.

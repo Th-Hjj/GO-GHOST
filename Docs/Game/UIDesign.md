@@ -55,7 +55,7 @@ Text on Signal or on any body-system or Boss colour is Ink.
 | Rule action | Display 900 | 32 (HUD 25) |
 | Option / parameter | Display 800 | 27 / 24 |
 | Group label, speaker | Display 800 | 20–22 / 26 |
-| Dialogue | Text 500 | 25 |
+| Dialogue | Text 500 | 22, so two lines fit the box |
 | Rule condition | Text 500 | 18 (HUD 15) |
 
 Match state never changes font, size, weight, spacing or wrapping (existing rule).

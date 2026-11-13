@@ -50,25 +50,7 @@ namespace GoGhost.Duel
                 dialogueOverlay.anchorMax = Vector2.one;
                 blocker.gameObject.AddComponent<DialogueClickTarget>().Owner = this;
                 dialogueOverlay.gameObject.SetActive(false);
-                ambientPanel = Image(dialogueOverlay, Vector2.zero, Vector2.zero, NeuralPalette.Panel);
-                ambientPanel.raycastTarget = true;
-                var panel = ambientPanel.rectTransform;
-                panel.name = "Happy dialogue";
-                panel.anchorMin = Vector2.zero;
-                panel.anchorMax = Vector2.right;
-                ambientSpeaker = Text("", panel, Vector2.zero, Vector2.zero, 18, TMPro.TextAlignmentOptions.MidlineLeft, headingFont);
-                ambientSpeaker.color = NeuralPalette.Secondary;
-                var label = ambientSpeaker.rectTransform;
-                label.anchorMin = Vector2.up;
-                label.anchorMax = Vector2.one;
-                label.offsetMin = new Vector2(20, -32);
-                label.offsetMax = new Vector2(-20, -8);
-                ambientDialogue = Text("", panel, Vector2.zero, Vector2.zero, 22, TMPro.TextAlignmentOptions.TopLeft, DialogueFont());
-                var body = ambientDialogue.rectTransform;
-                body.anchorMin = Vector2.zero;
-                body.anchorMax = Vector2.right;
-                body.offsetMin = new Vector2(20, 8);
-                body.offsetMax = new Vector2(-20, 68);
+                BuildOverrideAmbientPanel();
             }
             if (show && !wasShowingStory)
                 UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
@@ -84,7 +66,7 @@ namespace GoGhost.Duel
                     game.Phase == DuelPhase.TargetProfile ? width*.5f+32 : game.Phase == DuelPhase.Training ? width*.42f : 32;
                 float bottom = game.Phase == DuelPhase.Configure ? dialogueFooterBottomInset : 32;
                 ambientPanel.rectTransform.offsetMin = new Vector2(32, bottom);
-                ambientPanel.rectTransform.offsetMax = new Vector2(-right, bottom + 104);
+                ambientPanel.rectTransform.offsetMax = new Vector2(-right, bottom + 108);
                 string description = ruleEditorOpen && hoveredRuleOption != null && hoveredRuleOption.isActiveAndEnabled
                     ? hoveredRuleOption.Description : null;
                 bool showDescription = !show || (TutorialChoiceOpen && description != null);

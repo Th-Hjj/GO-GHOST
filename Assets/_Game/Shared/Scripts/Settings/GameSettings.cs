@@ -69,6 +69,8 @@ public static class GameSettings
         AudioListener.volume = Mathf.Clamp01(Master / (float)Steps);
         QualitySettings.vSyncCount = VSync ? 1 : 0;
         if (!display || Application.isEditor) return;
+        // The browser page owns the canvas size; only fullscreen can change there.
+        if (Application.platform == RuntimePlatform.WebGLPlayer) { Screen.fullScreen = Fullscreen; return; }
         int width = Width > 0 ? Width : Screen.currentResolution.width, height = Height > 0 ? Height : Screen.currentResolution.height;
         Screen.SetResolution(width, height, Fullscreen ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed);
     }
@@ -112,16 +114,19 @@ public static class GameSettings
 
     public static void ApplyBindings()
     {
-        var asset = InputSystem.actions;
-        if (asset != null)
-        {
-            Override(asset, "Player/Move", "<Keyboard>/a", paths[MoveLeft]);
-            Override(asset, "Player/Move", "<Keyboard>/d", paths[MoveRight]);
-            Override(asset, "Player/Jump", "<Keyboard>/space", paths[Jump]);
-            Override(asset, "Player/Dodge", "<Keyboard>/leftShift", paths[Dodge]);
-            Override(asset, "Player/Attack", "<Mouse>/leftButton", paths[Fire]);
-        }
+        ApplyTo(InputSystem.actions);
         BindingsChanged?.Invoke();
+    }
+
+    // The combat actor reads its own copy of the actions, which starts without the player's keys.
+    public static void ApplyTo(InputActionAsset asset)
+    {
+        if (asset == null) return;
+        Override(asset, "Player/Move", "<Keyboard>/a", paths[MoveLeft]);
+        Override(asset, "Player/Move", "<Keyboard>/d", paths[MoveRight]);
+        Override(asset, "Player/Jump", "<Keyboard>/space", paths[Jump]);
+        Override(asset, "Player/Dodge", "<Keyboard>/leftShift", paths[Dodge]);
+        Override(asset, "Player/Attack", "<Mouse>/leftButton", paths[Fire]);
     }
 
     static void Override(InputActionAsset asset, string actionPath, string original, string path)

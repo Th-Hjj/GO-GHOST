@@ -321,6 +321,8 @@ namespace GoGhost.Duel
             // Every page after the title can pause; the two short timed fades cannot.
             if (Phase == DuelPhase.Menu || Phase == DuelPhase.MissionEntry || Phase == DuelPhase.FinalVictoryHold) return;
             if (DeveloperToolsOpen && !value) return;
+            // Upload replaces the creation controls and cannot be rebuilt half way.
+            if (value && startup != null) return;
             if (Paused == value) return;
             ApplyPause(value);
             ui.Show();

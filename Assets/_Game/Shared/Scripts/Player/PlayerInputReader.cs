@@ -132,6 +132,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
         Restrict(legacyActions.FindAction("Player/SecondaryAbility", true));
         Restrict(legacyActions.FindAction("Player/Previous", true));
         Restrict(legacyActions.FindAction("Player/Next", true));
+        GameSettings.ApplyTo(legacyActions);
         OnEnable();
         SetGameplayInputEnabled(false);
     }
@@ -232,6 +233,7 @@ public class PlayerInputReader : MonoBehaviour, IAttemptAugmentation
     // Rapid fire follows the player's key binding, including a change made from Pause.
     private void BindBurst()
     {
+        if (legacyActions != null) GameSettings.ApplyTo(legacyActions);
         burstAction?.Disable();
         burstAction?.Dispose();
         burstAction = new InputAction("Revolver Burst", InputActionType.Button, GameSettings.BindingPath(GameSettings.RapidFire));

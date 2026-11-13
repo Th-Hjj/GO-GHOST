@@ -177,7 +177,8 @@ namespace GoGhost.Duel
                 align: TextAlignmentOptions.Capline);
             OvButton("Credits", frame, At(298, row, 180, 56), new Vector2(180, 56), () => OpenOverlay(OverlayPage.Credits), OverrideButtonKind.Tertiary, 32,
                 align: TextAlignmentOptions.Capline);
-            OvButton("Quit", frame, At(488, row, 140, 56), new Vector2(140, 56), Application.Quit, OverrideButtonKind.Tertiary, 32,
+            // A browser page has nothing to quit.
+            if (Application.platform != RuntimePlatform.WebGLPlayer) OvButton("Quit", frame, At(488, row, 140, 56), new Vector2(140, 56), Application.Quit, OverrideButtonKind.Tertiary, 32,
                 align: TextAlignmentOptions.Capline);
         }
 

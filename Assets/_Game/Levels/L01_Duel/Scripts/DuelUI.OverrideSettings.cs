@@ -90,13 +90,15 @@ namespace GoGhost.Duel
             OvText("Fullscreen", frame, At(right + 4, y, 300, 52), new Vector2(300, 52), 36, OverridePalette.Text, TextAlignmentOptions.CaplineLeft, false, 1);
             OvToggle("FullscreenOn", "On", frame, right + 330, y, 96, GameSettings.Fullscreen, () => SetDisplay(true, GameSettings.VSync, 0));
             OvToggle("FullscreenOff", "Off", frame, right + 434, y, 96, !GameSettings.Fullscreen, () => SetDisplay(false, GameSettings.VSync, 0));
-            y += pitch;
-            OvText("Resolution", frame, At(right + 4, y, 300, 52), new Vector2(300, 52), 36, OverridePalette.Text, TextAlignmentOptions.CaplineLeft, false, 1);
-            OvOption("ResolutionPrevious", "«", frame, At(right + 330, y, 52, 52), new Vector2(52, 52), () => SetDisplay(GameSettings.Fullscreen, GameSettings.VSync, -1),
+            // The browser page sizes the canvas, so Resolution is left out there.
+            bool web = Application.platform == RuntimePlatform.WebGLPlayer;
+            if (!web) y += pitch;
+            if (!web) OvText("Resolution", frame, At(right + 4, y, 300, 52), new Vector2(300, 52), 36, OverridePalette.Text, TextAlignmentOptions.CaplineLeft, false, 1);
+            if (!web) OvOption("ResolutionPrevious", "«", frame, At(right + 330, y, 52, 52), new Vector2(52, 52), () => SetDisplay(GameSettings.Fullscreen, GameSettings.VSync, -1),
                 OverridePalette.Surface, OverridePalette.Text, 30, -1, -1);
             int width = GameSettings.Width > 0 ? GameSettings.Width : Screen.width, height = GameSettings.Height > 0 ? GameSettings.Height : Screen.height;
-            OvText(width + " × " + height, frame, At(right + 390, y, 210, 52), new Vector2(210, 52), 34, OverridePalette.Text);
-            OvOption("ResolutionNext", "»", frame, At(right + 608, y, 52, 52), new Vector2(52, 52), () => SetDisplay(GameSettings.Fullscreen, GameSettings.VSync, 1),
+            if (!web) OvText(width + " × " + height, frame, At(right + 390, y, 210, 52), new Vector2(210, 52), 34, OverridePalette.Text);
+            if (!web) OvOption("ResolutionNext", "»", frame, At(right + 608, y, 52, 52), new Vector2(52, 52), () => SetDisplay(GameSettings.Fullscreen, GameSettings.VSync, 1),
                 OverridePalette.Surface, OverridePalette.Text, 30, -1, -1);
             y += pitch;
             OvText("VSync", frame, At(right + 4, y, 300, 52), new Vector2(300, 52), 36, OverridePalette.Text, TextAlignmentOptions.CaplineLeft, false, 1);

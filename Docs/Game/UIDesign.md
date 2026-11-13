@@ -169,21 +169,41 @@ Thomas accepted these with the mockups on 2026-11-12.
 |---|---|---|
 | Settings (N2) | No volume, display or accessibility control exists | Audio: Master, Music, Effects, Voice, ten steps each. Display: Fullscreen, Resolution, VSync. Accessibility: Reduce Flashing. Changes apply at once; Back returns. Reached from the title and from Pause |
 | Credits (N3) | Collaborator music and two OFL fonts need crediting | Role and name rows in the Target Profile layout. Names are placeholders on the canvas |
-| Leave-run confirmation (N4) | Main Menu discards the character and rules with one click, and there is no save | "Leave this run?", "Your character and rules will be lost.", Stay (primary) and Leave. Shown for Main Menu from Pause and from results |
+| New Game confirmation (N4) | New Game would replace a saved run with one click | "Start a new game?", "Your saved run will be replaced.", Cancel (primary) and New Game. Shown only when a save exists |
+| Key bindings (N6) | Thomas asked for rebinding on 2026-11-12 | Opened from Settings › Controls. One row per action with its key on a Text slab; Reset to Defaults below |
 | Flashing-lights notice (N5) | The style uses flashes, glitches and a red damage flash | One static screen on first launch with Continue and Settings. No animation on this screen |
-| Title menu (N1) | Entry points for the above | New Game stays the only primary. Settings, Credits and Quit sit in one row of tertiary slabs under it |
+| Title menu (N1) | Entry points for the above | With a save: Continue is the primary and New Game the secondary. Without one: New Game is the primary and Continue is absent. Settings, Credits and Quit sit in one row of tertiary slabs underneath |
 
 Pause gains a Settings entry between Configuration and Main Menu if Settings is approved (shown on D9).
 
 **Reduce Flashing** removes glitch bursts, the scanline overlay, the red damage flash and stripe scrolling, and softens slam-ins to a fade.
 
-**Work they need.** Stored preferences, which the game does not have. Volume control per group; voices already route through a mixer group, music and effects need checking. Resolution and fullscreen switching.
+**Work they need.** A save file and stored preferences, neither of which the game has. Binding overrides for the existing input actions. Volume control per group; voices already route through a mixer group, music and effects need checking. Resolution and fullscreen switching.
 
-**Also missing, not mocked.**
+### Save and Continue
 
-- **Continue.** Closing the game loses the run. A Continue entry needs a save of the character, rules and mission reached. This is a feature decision, not a page.
-- **Key rebinding.** Help lists fixed keys.
-- **Language.** All copy is English.
+Thomas confirmed on 2026-11-12 that the game needs a save. The rules below are proposed.
+
+- **One slot, saved automatically.** There is no Save button and no slot screen.
+- **What is stored:** the drawn face, the name, the equipped rules in order, the mission reached, and which tutorial lines and dossier briefings have already played.
+- **When it is written:** after Upload, whenever a rule is confirmed, removed or reordered, and when a mission is cleared.
+- **Continue** opens the preparation page of the mission reached. A fight in progress is never stored, so quitting mid-fight returns to that mission's preparation. Injected rules and phase-two retry state are not stored.
+- **Main Menu** from Pause or a result needs no confirmation, because only the current fight is lost.
+- **Finishing the game** removes the save. The title then shows New Game alone.
+- **Open:** whether a continued run extends the same analytics record or starts a new one.
+
+### Key rebinding
+
+Thomas confirmed on 2026-11-12 that keys must be rebindable. The rules below are proposed.
+
+- **Rebindable:** Move left, Move right, Jump, Dodge, Fire, Rapidly fire, Reload, Pause / resume. Aim stays on the mouse.
+- **Flow:** click a row; its key slab turns Signal, pulses and reads "Press a key"; the next key or mouse button is bound. Esc cancels listening. To rebind Pause itself, the first Esc cancels and any other key binds.
+- **Conflicts:** binding a key that another action uses swaps the two, so no action is ever left without a key.
+- **Reset to Defaults** restores the list in Help.
+- Help's controls page and any key named in dialogue read the current bindings.
+- Bindings are stored with the settings, separately from the save, and survive New Game.
+
+**Language.** All copy stays English; Thomas does not need other languages.
 
 ## Not designed yet
 

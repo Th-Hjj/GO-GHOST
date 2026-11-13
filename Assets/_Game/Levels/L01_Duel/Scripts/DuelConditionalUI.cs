@@ -204,6 +204,8 @@ namespace GoGhost.Duel
             float left = -width / 2 + 32, right = width / 2 - 32;
             float top = height / 2 - 32, bottom = -height / 2 + 32;
             bool editing=selectorRow>=0;
+            if(!editing){BuildOverrideOverview();return;}
+            overviewFigureRoot=null;
             float editorTop = top - (editing?176:64);
             float editorBottom = bottom+(editing?120:108);
             if (editing) Text("Body Configuration",page,new Vector2(0,top-22),new Vector2(400,44),30,TextAlignmentOptions.Center,headingFont);
@@ -430,6 +432,7 @@ namespace GoGhost.Duel
                 if(!Mathf.Approximately(region.NeuralSignal,signal)||!Mathf.Approximately(region.NeuralFlow,flow))
                 {region.NeuralSignal=signal;region.NeuralFlow=flow;region.SetVerticesDirty();}
             }
+            UpdateOverrideFigure(connectedSystems,highlightedSystem,age);
             for(int i=0;i<equippedAccents.Count;i++)if(equippedAccents[i]!=null)
             {
                 float strength=i==highlightedRow?1:i==installedRow&&age<BodyInstallSeconds?Mathf.Lerp(1,.45f,age/BodyInstallSeconds):.45f;
@@ -517,6 +520,7 @@ namespace GoGhost.Duel
             const float gap = 16;
             float buttonWidth=Mathf.Min(256,(w-gap)/2);
             dialogueFooterBottomInset = 32;
+            dialogueFooterLeftInset = 32;
             dialogueFooterRightInset = Mathf.Max(page.sizeDelta.x*.39f,32+2*buttonWidth+gap*2);
             bool editingRule=pendingRule!=null;
             float addX=w/2-buttonWidth/2;

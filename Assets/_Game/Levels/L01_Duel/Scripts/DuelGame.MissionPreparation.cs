@@ -10,6 +10,8 @@ namespace GoGhost.Duel
         VoiceStudioLine[] profileLines = Array.Empty<VoiceStudioLine>();
         internal VoiceStudioLine[] ProfileLines => profileLines;
         internal int ProfilePage { get; private set; }
+        // Source of the real player parts for the preparation figure; never instantiated there.
+        internal OfficerVisual PlayerVisualPrefab => combatPrefab != null ? combatPrefab.GetComponentInChildren<OfficerVisual>(true) : null;
         internal BossSilhouetteView ProfileSilhouette =>
             (Wave == 1 ? gunnerPrefab : swordsmanPrefab).GetComponentInChildren<BossSilhouetteView>();
 

@@ -66,7 +66,7 @@ namespace GoGhost.Duel
                 icon = OvText("»", face, new Vector2(size.x / 2 - pad - 22, 0), new Vector2(60, size.y), points, ink, TextAlignmentOptions.Capline);
 
             var behaviour = root.gameObject.AddComponent<SlabButton>();
-            behaviour.Button = button; behaviour.Face = face; behaviour.Slab = slab; behaviour.Label = label; behaviour.Icon = icon;
+            behaviour.Owner = this; behaviour.Button = button; behaviour.Face = face; behaviour.Slab = slab; behaviour.Label = label; behaviour.Icon = icon;
             behaviour.Fill = fill; behaviour.Ink = ink;
             behaviour.Shift = kind == OverrideButtonKind.Primary ? 14 : 10;
             behaviour.EnterDelay = enterDelay;

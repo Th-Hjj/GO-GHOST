@@ -102,7 +102,7 @@ Menus use unscaled UI time. Combat HUD feedback keeps the combat clock, pause fr
 
 **Uploading (D4b).** The head ring becomes the progress ring. A Signal scan line sweeps the drawn face. Upload turns into the Uploading bar with its percentage. Back and Clear dim.
 
-**Mission overview (D2).** Left: the actual side-view combat character, facing right, on a stage slab, idling. Centre: Rules and its count, the rule cards, then **+ Add Rule occupying the first empty slot**, then the remaining empty slots; five slots are always visible. Right: Target Profile card in the mission colour with the target facing left, Test Room, and Start Mission bottom right. Happy's box bottom left. Hovering a rule shows its controls and makes the character demonstrate the action.
+**Mission overview (D2).** Left: the actual side-view combat character, facing right, on a stage slab. It is assembled from the player's own parts, sizes and resting pose, never redrawn (Thomas, 2026-11-12). Centre: Rules and its count, the rule cards, then **+ Add Rule occupying the first empty slot**, then the remaining empty slots; five slots are always visible. Right: Target Profile card in the mission colour with the target facing left, Test Room, and Start Mission bottom right. Happy's box bottom left. Hovering a rule shows its controls and makes the character demonstrate the action.
 
 **Rule editor (D5a, D5b).** Title Body Configuration. Two cards at the top form the sentence: Condition on the left, Action on the right, an arrow between them above the character, who stands centre stage. Only the active side shows its choices:
 

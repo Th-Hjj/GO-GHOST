@@ -63,9 +63,10 @@ namespace GoGhost.Duel
             {
                 float width = canvas.rect.width;
                 float right = game.Phase == DuelPhase.Configure ? dialogueFooterRightInset :
-                    game.Phase == DuelPhase.TargetProfile ? width*.5f+32 : game.Phase == DuelPhase.Training ? width*.42f : 32;
-                float bottom = game.Phase == DuelPhase.Configure ? dialogueFooterBottomInset : 32;
-                ambientPanel.rectTransform.offsetMin = new Vector2(32, bottom);
+                    game.Phase == DuelPhase.TargetProfile ? width*.5f+24 : game.Phase == DuelPhase.Training ? width*.42f : 32;
+                float bottom = game.Phase == DuelPhase.Configure ? dialogueFooterBottomInset : game.Phase == DuelPhase.TargetProfile ? 48 : 32;
+                float left = game.Phase == DuelPhase.Configure ? dialogueFooterLeftInset : game.Phase == DuelPhase.TargetProfile ? 56 : 32;
+                ambientPanel.rectTransform.offsetMin = new Vector2(left, bottom);
                 ambientPanel.rectTransform.offsetMax = new Vector2(-right, bottom + 108);
                 string description = ruleEditorOpen && hoveredRuleOption != null && hoveredRuleOption.isActiveAndEnabled
                     ? hoveredRuleOption.Description : null;

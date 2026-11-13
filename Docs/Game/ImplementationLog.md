@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-12 — Override UI, stage 3
+
+The mission overview, Target Profile and Help use the Override look. The overview shows the player as the fight shows them at rest. `OvPlayerFigure` rebuilds OfficerVisual's standing pose from the same numbers: limb widths, head size, knee and elbow solutions, the weapon anchor read from the combat prefab and the real revolver, charge and arm sprites. A first version used a hand-drawn approximation; Thomas rejected it and it was removed. White parts are manual, a part takes its system colour once a rule owns it, and a hovered rule pulses its part. Rule cards carry the number block, condition and action; reorder and remove appear on hover or focus. + Add Rule fills the first empty slot and the remaining slots are visible. The target card and Target Profile draw the real Boss pose in ink on the mission colour. The rule editor is unchanged and still opens in the previous look. Slab buttons now follow the tutorial: the control Happy points at stays lit while the others wait.
+
+Unity compiled. One Play Mode pass at 2560×1440 captured the overview with two rules, Target Profile on its first line and the controls page of Help (`Logs/Override/overview.png`, `profile.png`, `help.png`). A second pass captured the rebuilt figure and the dimmed target card, and the figure was compared with a crop of the player from a combat capture (`Logs/Override/figure-crop.png`, `ingame-player-crop.png`). NOT TESTED: card hover and the tools, adding, reordering and removing rules, the install reveal, the guided first-rule tutorial on the new overview, the Help configuration page, Missions 2 and 3, Bonus, other resolutions.
+
 ## 2026-11-12 — Override UI, stage 2
 
 Happy's box is the Override slab with the Signal voice block. Its seven bars follow `HandlerVoice.Level`, a short-term loudness read from the playing clip. The same box serves preparation, the rule editor descriptions, Target Profile and the Test Room. Who Are You and Uploading are rebuilt: WHO, ARE and YOU slam in when the recording becomes audible, with a two-second fallback if it never does. The progress ring fills over the head's rim, a scan line sweeps the face and Upload turns into the Uploading bar. The dialogue sentence and speaker are 22 so two lines fit the 108-high box; the specification had 25.

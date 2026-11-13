@@ -179,11 +179,14 @@ namespace GoGhost.Duel
     // Slab button behaviour: hover shift, focus frame, disabled colours and the slide-in.
     public sealed class SlabButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, ISelectHandler, IDeselectHandler
     {
+        internal DuelUI Owner;
         public Button Button;
         public RectTransform Face;
         public SlabGraphic Slab;
         public TMP_Text Label, Icon;
         public Color Fill, Ink;
+        // Waiting colour for a control whose fill carries meaning, such as the target card.
+        public Color? Dimmed;
         public float Shift = 12, EnterDelay = -1;
         const float HoverSeconds = .1f, EnterSeconds = .22f, EnterDistance = 90;
         CanvasGroup group;
@@ -201,14 +204,16 @@ namespace GoGhost.Duel
         {
             if (Button == null || Face == null) return;
             if (group == null) group = Face.gameObject.AddComponent<CanvasGroup>();
-            bool available = Button.IsInteractable();
+            // A control the tutorial points at stays lit while the rest wait for the spoken line.
+            bool available = Owner != null && Owner.TutorialHighlightsControl(Button)
+                ? Button.interactable : Button.IsInteractable() && !(Owner != null && Owner.DialogueVisible);
             hover = Mathf.MoveTowards(hover, available && (hovered || focused) ? 1 : 0, Time.unscaledDeltaTime / HoverSeconds);
             float eased = 1 - (1 - hover) * (1 - hover);
             float arrived = EnterDelay < 0 ? 1 : Mathf.Clamp01((float)(Time.unscaledTimeAsDouble - born - EnterDelay) / EnterSeconds);
             arrived = 1 - Mathf.Pow(1 - arrived, 3);
             Face.anchoredPosition = new Vector2(Shift * eased - (1 - arrived) * EnterDistance, 0);
             group.alpha = arrived;
-            var fill = available ? Fill * (1 + .12f * eased) : OverridePalette.DisabledFill;
+            var fill = available ? Fill * (1 + .12f * eased) : Dimmed ?? OverridePalette.DisabledFill;
             fill.a = 1;
             Slab.color = fill;
             Slab.SetFrame(available && focused ? 4 : 0, Fill == OverridePalette.Text ? OverridePalette.Ink : OverridePalette.Text);
@@ -234,6 +239,37 @@ namespace GoGhost.Duel
             bool visible = p >= .86f;
             if (Slice.gameObject.activeSelf != visible) Slice.gameObject.SetActive(visible);
             if (visible) Slice.anchoredPosition = new Vector2(p < .90f ? Spread * 5.4f : p < .94f ? -Spread * 3.7f : Spread * 1.7f, Slice.anchoredPosition.y);
+        }
+    }
+
+    // Rule card hover: a small shift, a lighter slab and the reorder and remove tools.
+    public sealed class CardHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+    {
+        public SlabGraphic Slab;
+        public CanvasGroup Tools;
+        public RectTransform Move;
+        public System.Func<bool> Busy;
+        bool inside;
+        float amount;
+
+        void OnEnable() { inside = false; amount = 0; Apply(); }
+        public void OnPointerEnter(PointerEventData data) => inside = true;
+        public void OnPointerExit(PointerEventData data) => inside = false;
+
+        void LateUpdate()
+        {
+            var selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+            bool focused = selected != null && Tools != null && selected.transform.IsChildOf(Tools.transform);
+            amount = Mathf.MoveTowards(amount, inside || focused ? 1 : 0, Time.unscaledDeltaTime / .1f);
+            Apply();
+        }
+
+        void Apply()
+        {
+            float eased = 1 - (1 - amount) * (1 - amount);
+            if (Tools != null) { Tools.alpha = eased; Tools.blocksRaycasts = amount > .5f; }
+            if (Slab != null) Slab.color = Color.Lerp(OverridePalette.Surface, new Color32(30, 30, 37, 255), eased);
+            if (Move != null && (Busy == null || !Busy())) Move.anchoredPosition = new Vector2(12 * eased, 0);
         }
     }
 

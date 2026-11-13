@@ -1,5 +1,7 @@
 # Cold-Light Neural Circuit
 
+**UI redesign pending — Thomas, 2026-11-12:** the interface will be rebuilt in the Override style described in [UIDesign.md](UIDesign.md). This document describes the source until each stage of that work lands. The mission backgrounds, body-system colours, Boss colours and combat silhouettes carry over unchanged.
+
 Confirmed by Thomas, 2026-10-16. This direction supersedes earlier monochrome configuration art, uniform green execution feedback, blue Gunner, green player HP and green/gold weapons. Verification belongs in Implementation_Log; this document records the approved direction.
 
 ## Palette and identity

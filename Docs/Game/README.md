@@ -8,6 +8,7 @@ Start with the current assignment in [AGENTS.md](../../AGENTS.md) / [CLAUDE.md](
 | [Conditional Rules](ConditionalRules.md) | Current player controls, condition/action catalog, configuration, arbitration and feedback |
 | [Boss Encounters](BossEncounters.md) | Progression, arena, Boss combat, public observations and Bonus duo coordination |
 | [Art Direction](ArtDirection.md) | Current visual language, typography, body diagram and combat readability |
+| [UI Design: Override](UIDesign.md) | Approved UI redesign: tokens, components, screens and open items; not implemented yet |
 | [Voice Direction](VoiceDirection.md) | Speaker references, rendering and pause rules, and progression cues |
 | [Voice Studio](VoiceStudio.md#录入新台词) | Registering fixed dialogue, connecting its gameplay cue, auditioning edits and saving to game |
 | [Gameplay Analytics](GameplayAnalytics.md) | Named New Game records, play/configuration time, combat outcomes and local JSON exports |

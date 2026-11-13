@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-12 — Combat feedback revision
+
+The short, round-capped Swordsman Draw sweep appeared as a circle. Draw now uses its previous thin directional line. The Dodge foot bar again disappears at zero cooldown. Health loss tints the screen edges with the existing coral Danger color over .22 seconds. At 1600×900, the Editor mesh check recorded 22% peak opacity at the rim, fading to zero at 40.5 pixels with the center open. Unity compiled and rebuilt the Windows x64 player with zero build errors. A full encounter playthrough was not run for this revision.
+
 ## 2026-11-12 — Beta 66% combat and ending
 
 Real HP loss drives a .16-second red flash and the existing hurt cue at higher gain. A lethal hit uses the result audio scope so encounter teardown can finish without clipping that cue. The Dodge foot bar flashes once when an accepted cooldown elapses. Six gun-mounted bars read the magazine. R uses the normal reload, discards the rest of a burst and is listed in Controls. Keep Distance now holds the movement channel in its band, including during finite event responses.

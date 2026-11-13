@@ -24,18 +24,18 @@ namespace GoGhost.Duel
         HealthTextState[] bossHealthText = System.Array.Empty<HealthTextState>();
         const float WaveTitleFadeSeconds = .6f;
         TMP_Text waveTitle;
-        UnityEngine.UI.Image hurtFlash;
+        DamageEdgeGraphic hurtFlash;
         float hurtAt;
         internal void ShowHurtFlash(int damage, GameObject source)
         {
             if (damage <= 0) return;
             if (hurtFlash == null)
             {
-                hurtFlash = Image(canvas, Vector2.zero, Vector2.zero, Color.clear);
-                hurtFlash.name = "Damage flash";
+                var edge = Rect("Damage edge", canvas, Vector2.zero, Vector2.zero);
+                edge.anchorMin = Vector2.zero;
+                edge.anchorMax = Vector2.one;
+                hurtFlash = edge.gameObject.AddComponent<DamageEdgeGraphic>();
                 hurtFlash.raycastTarget = false;
-                hurtFlash.rectTransform.anchorMin = Vector2.zero;
-                hurtFlash.rectTransform.anchorMax = Vector2.one;
             }
             hurtFlash.transform.SetAsLastSibling();
             hurtAt = Time.unscaledTime;
@@ -46,9 +46,10 @@ namespace GoGhost.Duel
         void UpdateHurtFlash()
         {
             if (hurtFlash == null || !hurtFlash.enabled) return;
-            float intensity = Mathf.Clamp01(1 - (Time.unscaledTime - hurtAt) / .16f);
-            hurtFlash.color = new Color(.95f, .08f, .10f, .18f * intensity * intensity);
-            hurtFlash.enabled = intensity > 0;
+            float age = Time.unscaledTime - hurtAt;
+            float intensity = Mathf.SmoothStep(0, 1, age / .04f) * (1 - Mathf.SmoothStep(0, 1, (age - .04f) / .18f));
+            hurtFlash.color = NeuralPalette.Alpha(NeuralPalette.Danger, .22f * intensity);
+            hurtFlash.enabled = age < .22f;
         }
         CanvasGroup[] bossHealthGroups;
         readonly TMP_Text[] invasionThresholdMarks = new TMP_Text[2];
@@ -141,6 +142,35 @@ namespace GoGhost.Duel
         }
 
     }
+    // Four joined strips fade inward. The center has no geometry.
+    internal sealed class DamageEdgeGraphic : UnityEngine.UI.MaskableGraphic
+    {
+        protected override void OnPopulateMesh(UnityEngine.UI.VertexHelper mesh)
+        {
+            mesh.Clear();
+            Rect rect = GetPixelAdjustedRect();
+            float inset = Mathf.Min(rect.width, rect.height) * .045f;
+            if (inset <= 0) return;
+
+            AddCorners(0, color);
+            AddCorners(inset, NeuralPalette.Alpha(color, 0));
+            for (int corner = 0; corner < 4; corner++)
+            {
+                int next = (corner + 1) % 4;
+                mesh.AddTriangle(corner, next, next + 4);
+                mesh.AddTriangle(corner, next + 4, corner + 4);
+            }
+
+            void AddCorners(float margin, Color32 tint)
+            {
+                mesh.AddVert(new Vector2(rect.xMin + margin, rect.yMin + margin), tint, Vector2.zero);
+                mesh.AddVert(new Vector2(rect.xMin + margin, rect.yMax - margin), tint, Vector2.zero);
+                mesh.AddVert(new Vector2(rect.xMax - margin, rect.yMax - margin), tint, Vector2.zero);
+                mesh.AddVert(new Vector2(rect.xMax - margin, rect.yMin + margin), tint, Vector2.zero);
+            }
+        }
+    }
+
     // A bar and its live label sample the same palette and phase across their widths.
     internal sealed class FlowingHealthFill : UnityEngine.UI.Image
     {

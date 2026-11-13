@@ -106,11 +106,6 @@ namespace GoGhost.Duel
                         SetLine(tells[5],root,tip,threat.Radius*.52f,NeuralPalette.Primary);
                     }
                 }
-                else if(active && action.CurrentSwordBeat==SwordBeat.Draw)
-                {
-                    line.numCapVertices=8;
-                    SetLine(line,action.PreviousSwordDrawContact,action.SwordDrawContact,2*threat.Radius,color);
-                }
                 else SetLine(line,threat.Origin,threat.End,SwordTellWidth(active,locked),color);
             }
             slot=6;

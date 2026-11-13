@@ -45,6 +45,7 @@ namespace GoGhost.Duel
             this.controlFont=controlFont!=null?controlFont:font;
             this.headingFont=headingFont!=null?headingFont:font;
             this.numericFont=numericFont!=null?numericFont:font;
+            LoadOverrideFonts();
             var go = new GameObject("DuelCanvas",typeof(RectTransform),typeof(Canvas),typeof(UnityEngine.UI.CanvasScaler),typeof(UnityEngine.UI.GraphicRaycaster));
             go.transform.SetParent(transform,false); canvas = go.GetComponent<RectTransform>();
             go.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
@@ -136,32 +137,8 @@ namespace GoGhost.Duel
             if(game.Phase==DuelPhase.TargetProfile){BuildTargetProfile();return;}
             if(game.Phase==DuelPhase.MissionEntry)return;
             if(game.Phase==DuelPhase.FinalVictoryHold)return;
-            if(game.Paused)
-            {
-                Image(page,Vector2.zero,new Vector2(4000,4000),new Color(0,0,0,.88f));
-                Image(page,new Vector2(0,-90),new Vector2(360,65),NeuralPalette.Background);
-                Button("Resume",page,new Vector2(0,90),new Vector2(360,65),()=>game.SetPause(false),style:DuelControlStyle.Primary);
-                Button("Configuration",page,Vector2.zero,new Vector2(360,65),game.Reconfigure);
-                Button("Main Menu",page,new Vector2(0,-90),new Vector2(360,65),game.MainMenu,style:DuelControlStyle.Navigation);
-                if(game.Phase==DuelPhase.Training)BuildTrainingButtons();
-                return;
-            }
-            if(game.Phase==DuelPhase.Menu)
-            {
-                page.anchorMin=Vector2.zero;
-                page.anchorMax=Vector2.one;
-                page.sizeDelta=Vector2.zero;
-
-                var title=Text("GO GHOST",page,Vector2.zero,new Vector2(1120,174),132,face:headingFont);
-                title.characterSpacing=4;
-                title.rectTransform.anchorMin=title.rectTransform.anchorMax=new Vector2(.5f,.65f);
-
-                var actions=Rect("Main menu actions",page,Vector2.zero,new Vector2(232,0));
-                actions.anchorMin=actions.anchorMax=new Vector2(.5f,.35f);
-                Button("New Game",actions,Vector2.zero,new Vector2(232,58),game.NewGame,style:DuelControlStyle.Primary);
-                Button("Quit",actions,new Vector2(0,-66),new Vector2(232,50),Application.Quit,style:DuelControlStyle.Navigation);
-                return;
-            }
+            if(game.Paused){BuildOverridePause();return;}
+            if(game.Phase==DuelPhase.Menu){BuildOverrideMenu();return;}
             if(game.Phase==DuelPhase.CharacterCreation)
             {
                 BuildCharacterCreation();return;
@@ -171,42 +148,9 @@ namespace GoGhost.Duel
                 if(helpOpen){BuildHelp();return;}
                 BuildConditionalLoadout();RestoreConfigurationView();return;
             }
-            if(game.Phase==DuelPhase.Between)
-            {
-                Image(page,Vector2.zero,new Vector2(4000,4000),NeuralPalette.Background);
-                Text(game.WaveLabel+" CLEARED",page,new Vector2(0,112),new Vector2(800,90),64,face:headingFont);
-                if (game.Wave == 1) Button("Continue to Mission 2",page,Vector2.zero,new Vector2(420,68),game.ContinueToWaveTwo,style:DuelControlStyle.Primary).name="ContinueToWaveTwo";
-                return;
-            }
-            if(game.Phase==DuelPhase.Complete && game.Wave==DuelGame.FinalBossWave)
-            {
-                Image(page,Vector2.zero,new Vector2(4000,4000),NeuralPalette.Background);
-                Text("You've Finished The Game!",page,new Vector2(0,60),new Vector2(1500,110),64,face:headingFont);
-                Button("Main Menu",page,new Vector2(0,-65),new Vector2(300,62),game.MainMenu,style:DuelControlStyle.Primary);
-                return;
-            }
-            if(game.Phase==DuelPhase.Failed || game.Phase==DuelPhase.Complete)
-            {
-                Image(page,Vector2.zero,new Vector2(4000,4000),new Color(0,0,0,.86f));
-                Text(game.Phase==DuelPhase.Failed?"DEFEAT":"COMPLETE",page,new Vector2(0,112),new Vector2(800,90),64,face:headingFont);
-                if(game.CanRetryFinalBossPhaseTwo)
-                {
-                    // Phase-two defeat: retry phase two directly, or restart from configuration.
-                    Button("Retry Phase 2",page,Vector2.zero,new Vector2(360,65),game.RetryFinalBossPhaseTwo,style:DuelControlStyle.Primary).name="RetryPhaseTwo";
-                    Button("Configuration",page,new Vector2(0,-90),new Vector2(360,65),game.Reconfigure).name="Reconfigure";
-                }
-                else if(game.Phase==DuelPhase.Failed)
-                {
-                    Button("Retry",page,Vector2.zero,new Vector2(360,65),game.RetryFight,style:DuelControlStyle.Primary);
-                    Button("Configuration",page,new Vector2(0,-90),new Vector2(360,65),game.Reconfigure).name="Reconfigure";
-                }
-                else
-                {
-                    Button("Restart",page,Vector2.zero,new Vector2(360,65),game.NewGame,style:DuelControlStyle.Primary);
-                    Button("Main Menu",page,new Vector2(0,-90),new Vector2(360,65),game.MainMenu,style:DuelControlStyle.Navigation);
-                }
-                return;
-            }
+            if(game.Phase==DuelPhase.Between){BuildOverrideCleared();return;}
+            if(game.Phase==DuelPhase.Complete && game.Wave==DuelGame.FinalBossWave){BuildOverrideFinished();return;}
+            if(game.Phase==DuelPhase.Failed || game.Phase==DuelPhase.Complete){BuildOverrideOutcome();return;}
             var hud=battleUi!=null?battleUi:page;
             if(game.Phase==DuelPhase.Training)
                 Text("TEST ROOM",hud,new Vector2(0,400),new Vector2(320,36),24,face:controlFont).color=NeuralPalette.Secondary;

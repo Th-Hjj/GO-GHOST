@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-12 — Override UI, stage 1
+
+Barlow Condensed Italic (ExtraBold, Black) and JetBrains Mono (Medium, Bold) were added with their OFL texts under `Assets/_Game/Shared/Fonts`. Five static TextMesh Pro assets sit in `Shared/Fonts/Resources/Fonts`, including a capitals-and-digits atlas sampled at 136 pt for the logo and result words. `OverrideGraphics.cs` adds the palette, the slab, stripe and fade graphics, the slab button, the glitch word and the slam-in. `DuelUI.Override.cs` rebuilds the title, pause, Defeat, mission-cleared and finished pages. Other pages still use the previous look.
+
+Unity compiled. In Play Mode at 2560×1440 the title, pause, Defeat, Mission 1 cleared and finished pages were captured to `Logs/Override/`, and Main Menu on the finished page returned to the title. Check Game Flow then ran through all three missions to the finished page and stopped on its check for the old single-line ending text; that check now looks for the three stacked lines and was not rerun. NOT TESTED: other resolutions, keyboard focus frames, the Bonus result, Retry Phase 2, and a Windows build. Not built yet from the specification: the fighters on the logo, the character on the finished page, and the Settings entry on Pause.
+
 ## 2026-11-12 — Override UI design
 
 Thomas chose the Override direction from four mocked style options and approved its refined screens: title with the attract fight, Who Are You and Uploading, mission overview, the two-step rule editor, Target Profile, combat HUD and Defeat. The specification is `Docs/Game/UIDesign.md`; the mockups are on Thomas's design canvas linked there. Documentation only. No scene, script or asset changed. The mockups were authored as HTML and reviewed by Thomas on the canvas; nothing was built or run in Unity. NOT TESTED: every screen in the engine, the two fonts as TMP assets, and all motion timings.

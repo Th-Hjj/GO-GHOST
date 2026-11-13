@@ -78,8 +78,10 @@ public static partial class BossEncounterSmoke
         Require(game.Player.CurrentHealth == finalHealth && !finalBoss.Running, "Damage continued during victory");
         yield return WaitFor(() => game.Phase == DuelPhase.Complete, "Missing final completion screen");
         yield return null;
-        Require(System.Array.Exists(game.GetComponentsInChildren<TMPro.TMP_Text>(), text => text.text == "You've Finished The Game!"),
-            "Missing completion message");
+        // The Override ending stacks the sentence on three lines.
+        var endingLines = game.GetComponentsInChildren<TMPro.TMP_Text>();
+        foreach (var line in new[] { "You've", "Finished", "The Game!" })
+            Require(System.Array.Exists(endingLines, text => text.text == line), "Missing completion message");
         Require(File.ReadAllText(path) == closed, "Mission 3 changed the closed Wave 2 record");
         Click("Main Menu");
         Require(game.Phase == DuelPhase.Menu && game.Player == null && !game.Paused && !AudioListener.pause

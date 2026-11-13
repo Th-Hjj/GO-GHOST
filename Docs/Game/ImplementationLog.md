@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-11-12 — Pause on every page
+
+- **Implemented:** the pause key opens Pause in every phase after the title except the two short timed fades (mission entry, final victory hold). Outside a fight or the Test Room the page omits Configuration. In Body Configuration, Esc still closes Help or cancels the rule being edited first. Main Menu from character creation writes no save.
+- **Files:** `DuelGame.cs`, `DuelUI.cs`, `DuelUI.Override.cs`, `DuelUI.OverrideSettings.cs`, `DuelConditionalUI.cs`.
+- **Checked (Editor Play Mode):** compile; Pause and Resume on the Mission 1 overview through `SetPause`; Main Menu from that pause.
+- **NOT TESTED:** the real Esc key on these pages; Pause in character creation, Upload, Target Profile and result pages; Settings from these pauses; Happy's voice and tutorial across a pause; the built player. The Beta 66% release zip does not contain this change.
+
 ## 2026-11-12 — Beta 66% release
 
 Windows x64 player built twice from the Editor (`Builds/Beta66-Override/`, both Succeeded with 0 errors): first from a12d2bb with the Override HUD, then from 3b4093a with settings, key bindings and the save. Each build was launched once for about ten seconds; the player stayed up and `Player.log` showed no exception. The zip `CTIN-489 - Week 12 Beta Build - Thomas Walker - Windows.zip` holds the player, a controls README and `README - Thomas Hong.txt`. It is published as GitHub release Beta 66% (tag `beta-66`); the second zip replaced the first. The tag still points at a12d2bb. NOT TESTED in the built player: any play beyond launch.

@@ -142,6 +142,7 @@ namespace GoGhost.Duel
             if(overlay!=OverlayPage.None){BuildOverrideOverlay();return;}
             if(game.Phase==DuelPhase.Menu||game.Phase==DuelPhase.Configure||game.Phase==DuelPhase.CharacterCreation||game.Phase==DuelPhase.TargetProfile)
                 Image(page,Vector2.zero,new Vector2(4000,4000),NeuralPalette.Background);
+            if(game.Paused&&game.Phase!=DuelPhase.Fight&&game.Phase!=DuelPhase.Prepare&&game.Phase!=DuelPhase.Training){BuildOverridePause();return;}
             if(game.Phase==DuelPhase.TargetProfile){BuildTargetProfile();return;}
             if(game.Phase==DuelPhase.MissionEntry)return;
             if(game.Phase==DuelPhase.FinalVictoryHold)return;

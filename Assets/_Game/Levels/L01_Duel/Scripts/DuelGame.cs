@@ -310,14 +310,16 @@ namespace GoGhost.Duel
         }
         public void MainMenu()
         {
-            SaveGame();
+            // An unfinished character is not worth a save.
+            if (Phase != DuelPhase.CharacterCreation) SaveGame();
             ClearEncounter("main_menu");
             PlayMetrics.EndRun("main_menu");
             SetPhase(DuelPhase.Menu);
         }
         public void SetPause(bool value)
         {
-            if (Phase != DuelPhase.Fight && Phase != DuelPhase.Prepare && Phase != DuelPhase.Training) return;
+            // Every page after the title can pause; the two short timed fades cannot.
+            if (Phase == DuelPhase.Menu || Phase == DuelPhase.MissionEntry || Phase == DuelPhase.FinalVictoryHold) return;
             if (DeveloperToolsOpen && !value) return;
             if (Paused == value) return;
             ApplyPause(value);
@@ -414,7 +416,7 @@ namespace GoGhost.Duel
         void Update()
         {
             TickMetrics();
-            if (!ui.DeveloperShortcutConsumed && !ui.OverlayOpen && GameSettings.Pressed(GameSettings.Pause)) SetPause(!Paused);
+            if (!ui.DeveloperShortcutConsumed && !ui.OverlayOpen && !ui.EscapeClaimed && GameSettings.Pressed(GameSettings.Pause)) SetPause(!Paused);
             if (Paused || DeveloperToolsOpen) return;
             if (InvasionHeld) { TickInvasionReading(); return; }
             if (Keyboard.current != null && Keyboard.current.f9Key.wasPressedThisFrame)

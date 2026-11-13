@@ -128,7 +128,7 @@ Menus use unscaled UI time. Combat HUD feedback keeps the combat clock, pause fr
 
 **Countdown (D8).** The mission name enters as a Text slab at the top of the arena over a thin hazard line. 3, 2 and 1 slam in at 330 in the arena centre; 1 is Signal. The HUD is already in place. Everything leaves when combat starts.
 
-**Pause (D9).** Combat stays visible at about 26% without colour. A hazard band, then Resume (primary), Configuration (secondary) and Main Menu (tertiary), entering from the left 40 ms apart. No title word is added.
+**Pause (D9).** Combat stays visible at about 26% without colour. A hazard band, then Resume (primary), Configuration (secondary) and Main Menu (tertiary), entering from the left 40 ms apart. No title word is added. Pause opens on every page after the title; outside a fight or the Test Room it sits on black and omits Configuration. In Body Configuration, Esc first closes Help or the rule being edited.
 
 **Rule injected (D10).** Combat is frozen. The new card slams into the sidebar with an EMP fill (#1D1730), pulses, and carries RULE INJECTED on an EMP chip. Happy's box sits at the top of the arena and reads the lines. The Boss bar is the rainbow with the two threshold marks beneath it; the reached mark is filled.
 

@@ -187,9 +187,16 @@ namespace GoGhost.Duel
             OvScanlines(page, .3f);
             OvBand(page, 232);
             OvButton("Resume", page, At(570, 296, 460, 100), new Vector2(460, 100), () => game.SetPause(false), OverrideButtonKind.Primary, 64, true, 0);
-            OvButton("Configuration", page, At(570, 410, 460, 72), new Vector2(460, 72), game.Reconfigure, OverrideButtonKind.Secondary, 42, false, .04f);
-            OvButton("Settings", page, At(570, 496, 460, 64), new Vector2(460, 64), () => OpenOverlay(OverlayPage.Settings), OverrideButtonKind.Tertiary, 38, false, .08f);
-            OvButton("Main Menu", page, At(570, 574, 460, 64), new Vector2(460, 64), game.MainMenu, OverrideButtonKind.Tertiary, 38, false, .12f);
+            // Configuration is only an exit from a fight or the Test Room.
+            bool encounter = game.Phase == DuelPhase.Fight || game.Phase == DuelPhase.Prepare || game.Phase == DuelPhase.Training;
+            int y = 410;
+            if (encounter)
+            {
+                OvButton("Configuration", page, At(570, y, 460, 72), new Vector2(460, 72), game.Reconfigure, OverrideButtonKind.Secondary, 42, false, .04f);
+                y += 86;
+            }
+            OvButton("Settings", page, At(570, y, 460, 64), new Vector2(460, 64), () => OpenOverlay(OverlayPage.Settings), OverrideButtonKind.Tertiary, 38, false, .08f);
+            OvButton("Main Menu", page, At(570, y + 78, 460, 64), new Vector2(460, 64), game.MainMenu, OverrideButtonKind.Tertiary, 38, false, .12f);
             if (game.Phase == DuelPhase.Training) BuildTrainingButtons();
         }
 

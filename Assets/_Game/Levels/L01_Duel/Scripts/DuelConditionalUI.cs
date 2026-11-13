@@ -119,6 +119,7 @@ namespace GoGhost.Duel
         bool RefreshConfigurationLayout()
         {
             if (game == null || game.Phase != DuelPhase.Configure) return false;
+            if (game.Paused || OverlayOpen) return true;
             if (configurationScreen.x != Screen.width || configurationScreen.y != Screen.height)
             {
                 Show();

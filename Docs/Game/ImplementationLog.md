@@ -6,6 +6,7 @@
 - **Fixed:** rebound Move, Jump, Dodge and Fire keys now reach the combat actor's own copy of the input actions, including a change made from Pause. Pause is refused during Upload, which could not rebuild its page. On the web build the title has no Quit, Settings has no Resolution, and Fullscreen only toggles the browser's fullscreen.
 - **Checked (Editor Play Mode):** compile; New Game, Upload and the recorded greeting on the Mission 1 overview; Pause refused during Upload.
 - **NOT TESTED:** rebound keys by hand in a fight (the automation cannot focus the Game view); Voice Studio name audition from the new folder; Windows build size.
+- **Web build:** WebGL player built from 00386f0 in the project copy under `Builds/WebPlaytest-fcaeed1` (data 30,206,885 bytes, wasm 11,324,152). It replaced the build in `Th-Hjj/thhong-games` (`public/games/go-ghost/Build`, three data parts, commit cfb2578) with the Barlow Condensed and JetBrains Mono licences added. Served locally, it loaded to the flashing-lights notice and the title with no console errors and no Quit. NOT TESTED in the browser: New Game onward, saving, audio, fullscreen. The Beta 66% Windows zip is unchanged.
 
 ## 2026-11-12 — Pause on every page
 

@@ -115,7 +115,7 @@ namespace GoGhost.Duel
             if (creationBuiltAt < 0) creationBuiltAt = Time.unscaledTime;
             ApplyCreationWordTiming();
 
-            var divider = Rect("Divider", frame, new Vector2(773 - 800, 0), new Vector2(1200, 26));
+            var divider = Rect("Divider", frame, new Vector2(773 - 800, 0), new Vector2(ScreenSpan, 26));
             divider.localRotation = Quaternion.Euler(0, 0, 82);
             var stripes = divider.gameObject.AddComponent<StripeGraphic>();
             stripes.color = OverridePalette.Signal; stripes.Other = OverridePalette.Ink; stripes.raycastTarget = false;

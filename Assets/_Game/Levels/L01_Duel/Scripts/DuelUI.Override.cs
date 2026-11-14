@@ -73,10 +73,13 @@ namespace GoGhost.Duel
             return button;
         }
 
+        // Longer than any supported screen is wide or tall, so a band that should cross the screen always reaches its edges.
+        const float ScreenSpan = 4000;
+
         // Tilted full-width hazard band.
         void OvBand(Transform parent, float top, float height = 26)
         {
-            var r = Rect("Hazard band", parent, new Vector2(0, 450 - top - height / 2), new Vector2(2600, height));
+            var r = Rect("Hazard band", parent, new Vector2(0, 450 - top - height / 2), new Vector2(ScreenSpan, height));
             r.localRotation = Quaternion.Euler(0, 0, 1.2f);
             var stripes = r.gameObject.AddComponent<StripeGraphic>();
             stripes.color = OverridePalette.Signal; stripes.Other = OverridePalette.Ink; stripes.raycastTarget = false;
@@ -272,7 +275,7 @@ namespace GoGhost.Duel
                 var slam = line.gameObject.AddComponent<SlamIn>();
                 slam.From = 1.35f; slam.Seconds = .1f; slam.Delay = .3f + i * .35f;
             }
-            var divider = Rect("Divider", frame, new Vector2(913 - 800, 0), new Vector2(1200, 26));
+            var divider = Rect("Divider", frame, new Vector2(913 - 800, 0), new Vector2(ScreenSpan, 26));
             divider.localRotation = Quaternion.Euler(0, 0, 82);
             var stripes = divider.gameObject.AddComponent<StripeGraphic>();
             stripes.color = OverridePalette.Signal; stripes.Other = OverridePalette.Ink; stripes.raycastTarget = false;

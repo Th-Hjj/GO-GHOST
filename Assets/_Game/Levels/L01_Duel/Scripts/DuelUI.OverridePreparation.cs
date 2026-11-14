@@ -39,7 +39,7 @@ namespace GoGhost.Duel
 
         void OvDivider(Transform parent, float x)
         {
-            var divider = Rect("Divider", parent, new Vector2(x - 800, 0), new Vector2(1200, 26));
+            var divider = Rect("Divider", parent, new Vector2(x - 800, 0), new Vector2(ScreenSpan, 26));
             divider.localRotation = Quaternion.Euler(0, 0, 82);
             var stripes = divider.gameObject.AddComponent<StripeGraphic>();
             stripes.color = OverridePalette.Signal; stripes.Other = OverridePalette.Ink; stripes.raycastTarget = false;
@@ -356,9 +356,10 @@ namespace GoGhost.Duel
             bool final = game.Wave == DuelGame.FinalBossWave;
             Color mission = MissionColor;
 
-            var field = Rect("Target field", frame, new Vector2(820 + 700 - 800, 0), new Vector2(1400, 900)).gameObject.AddComponent<SlabGraphic>();
-            field.color = final ? OverridePalette.Surface : mission; field.Cut = 120; field.raycastTarget = false;
-            var edge = Rect("Edge", frame, new Vector2(863 - 800, 0), new Vector2(980, 34));
+            // The field keeps its 120-in-900 slant and runs past the top, bottom and right of any screen.
+            var field = Rect("Target field", frame, new Vector2(1450, 0), new Vector2(3100, 2700)).gameObject.AddComponent<SlabGraphic>();
+            field.color = final ? OverridePalette.Surface : mission; field.Cut = 360; field.raycastTarget = false;
+            var edge = Rect("Edge", frame, new Vector2(863 - 800, 0), new Vector2(ScreenSpan, 34));
             edge.localRotation = Quaternion.Euler(0, 0, 82.4f);
             var stripes = edge.gameObject.AddComponent<StripeGraphic>();
             stripes.color = OverridePalette.Ink; stripes.Other = final ? OverridePalette.Signal : mission; stripes.SecondsPerPeriod = 0; stripes.raycastTarget = false;

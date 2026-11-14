@@ -89,11 +89,11 @@ namespace GoGhost.Duel
             }
             else if (game.Phase == DuelPhase.Prepare || game.Phase == DuelPhase.Fight && game.FightClock < WaveTitleFadeSeconds)
             {
-                // Mission name on a Text slab at the top of the arena, over a thin hazard line.
+                // Mission name on a Text slab at the top of the arena, over a thin hazard line that crosses the whole screen.
                 var root = Rect("Mission title", hud, Vector2.zero, Vector2.zero);
                 waveTitleGroup = root.gameObject.AddComponent<CanvasGroup>();
                 waveTitleGroup.blocksRaycasts = false;
-                var line = Rect("Hazard line", root, new Vector2(arena.center.x, arena.yMax - 156), new Vector2(arena.width, 12)).gameObject.AddComponent<StripeGraphic>();
+                var line = Rect("Hazard line", root, new Vector2(arena.center.x, arena.yMax - 156), new Vector2(ScreenSpan, 12)).gameObject.AddComponent<StripeGraphic>();
                 line.Band = 14; line.color = OverridePalette.Signal; line.raycastTarget = false;
                 var slab = Rect("Title slab", root, new Vector2(arena.center.x, arena.yMax - 84), new Vector2(400, 100)).gameObject.AddComponent<SlabGraphic>();
                 slab.color = OverridePalette.Text; slab.Cut = 22; slab.raycastTarget = false;

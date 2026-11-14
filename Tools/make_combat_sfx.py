@@ -2,7 +2,7 @@
 
     python Tools/make_combat_sfx.py
 
-EnemyHit    a player's bullet removed enemy health: a short, bright, crisp snap with no low end,
+EnemyHit    a player's bullet removed enemy health: a hard crack over a short mid-range knock, with no low end,
             so it never reads as the player's own hurt cue.
 RuleTrigger a rule's action takes over: a rising intake, a drop, then a falling tone
             that smears into two echoes. Original synthesis, standard library only.
@@ -56,23 +56,22 @@ def save(name, samples):
 
 def enemy_hit():
     rng = random.Random(7)
-    n = int(.10 * RATE)
-    noise = high_pass(high_pass([rng.uniform(-1, 1) for _ in range(n)], 5200), 5200)
+    n = int(.13 * RATE)
+    noise = high_pass([rng.uniform(-1, 1) for _ in range(n)], 1800)
     out = []
-    partials = [0.0, 0.0, 0.0]
+    body = 0.0
     for i in range(n):
         t = i / RATE
-        # The partials start a little sharp and settle, which gives the snap its edge.
-        bend = 1 + .05 * math.exp(-t / .004)
-        for k, pitch in enumerate((2950, 4420, 6180)):
-            partials[k] += TAU * pitch * bend / RATE
-        snap = noise[i] * math.exp(-t / .0028) * .85
-        tink = (math.sin(partials[0]) * math.exp(-t / .016) * .50
-                + math.sin(partials[1]) * math.exp(-t / .011) * .32
-                + math.sin(partials[2]) * math.exp(-t / .007) * .18)
-        body = math.sin(TAU * 1150 * t) * math.exp(-t / .008) * .16
-        out.append(snap + tink + body)
-    save('EnemyHit', finish(high_pass(out, 700), .90, fade=.008))
+        # A hard broadband crack carries the crispness; pure high tones alone sound like a toy.
+        crack = noise[i] * math.exp(-t / .006) * .95
+        # A short mid-range knock gives the hit weight, well above the player's low hurt thud.
+        body += TAU * (170 + 260 * math.exp(-t / .010)) / RATE
+        knock = math.sin(body) * math.exp(-t / .022) * .75
+        metal = (math.sin(TAU * 1730 * t) * math.exp(-t / .020) * .07
+                 + math.sin(TAU * 2610 * t) * math.exp(-t / .015) * .05
+                 + math.sin(TAU * 3890 * t) * math.exp(-t / .010) * .04)
+        out.append(math.tanh(1.8 * (crack + knock + metal)))
+    save('EnemyHit', finish(high_pass(out, 140), .92, fade=.010))
 
 
 def rule_trigger():

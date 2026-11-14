@@ -116,7 +116,7 @@ Menus use unscaled UI time. Combat HUD feedback keeps the combat clock, pause fr
 - Happy's box reads the hovered or selected description. Cancel and Confirm sit bottom right; Confirm is disabled until the rule is complete.
 - Entering the editor slides the character from the left to the centre; Confirm and Cancel reverse it.
 
-**Target Profile (D6).** Right side is a field of the mission colour cut on the slab angle with a hazard edge and a large Ink silhouette of the target. Left: Back, Mission N in the mission colour, the title, and the five fields. The field being read has a Signal marker and underline.
+**Target Profile (D6).** Right side is a field of the mission colour cut on the slab angle with a hazard edge and a large Ink silhouette of the target. Left: Back, Mission N in the mission colour, the title, and the five fields. All five fields are shown from the start and arrive in a short cascade. On a first opening Happy reads the file aloud without waiting for clicks; the field being read has a Signal marker and underline. Back works at any moment.
 
 **Combat HUD (D3).** Positions are unchanged: Rules on the left, Boss top centre, player bottom centre. Boss name left and HP right in the Boss colour over a 22-high slab bar. Lost Boss health stays as a Text segment for 0.35 s, then shrinks over 0.6 s. Rule cards are 248 wide. Health-only HUD, the Dodge foot bar, reload feedback and the existing match hold and fade are unchanged.
 

@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-11-13 — Target Profile shows everything at once
+
+- **Implemented:** `OpenTargetProfile` always shows the full dossier. A first opening starts `ReadProfile`, which plays each line in turn with no pending dialogue; `ProfileReading` drives the Signal marker on the row being read. Back no longer waits for the voice and leaving stops the reading. Rows fade in over a short cascade on every opening.
+- **Checked:** compiles with Unity's bundled compiler outside the Editor. NOT TESTED in play: the reading order and pauses, the marker, Back during a line, Pause during a line, and Mission 3's two Codename lines.
+
 ## 2026-11-13 — Final Boss phase-two warnings and the continue mark
 
 - **Implemented:** `DrawBoxerWarnings` in `BossSilhouetteView.Boxer.cs`: the ordered axe's flight line (violet, strengthening over the launch delay), the stroke of the punch being wound up (the phase-one tell colour and widths), and the Meteor's dive line with its landing wave outline. Damage, timing and AI are unchanged. Dialogue boxes (Happy's footer box and the in-arena box) show a drifting `»` when `DialogueCanAdvance` is true; it stays hidden while Happy waits for a choice or for + Add Rule.

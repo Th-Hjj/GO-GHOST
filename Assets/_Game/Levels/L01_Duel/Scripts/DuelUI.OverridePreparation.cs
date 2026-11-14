@@ -379,21 +379,48 @@ namespace GoGhost.Duel
             const float rowTop = 300, rowHeight = 76, rowWidth = 700;
             for (int i = 0; i <= fields.Length; i++)
                 Image(frame, new Vector2(56 + rowWidth / 2 - 800, 450 - (rowTop + i * rowHeight)), new Vector2(rowWidth, 2), OverridePalette.Neutral);
+            // Every field is on the page from the start; the rows arrive in a short cascade.
+            profileFields = fields;
+            profileLabels = new TMP_Text[fields.Length];
+            profileMarks = new GameObject[fields.Length];
             for (int i = 0; i < fields.Length; i++)
             {
                 float y = 450 - (rowTop + i * rowHeight + rowHeight / 2);
                 string value = "";
                 for (int j = 0; j <= last; j++)
                     if (game.ProfileLines[j].profileField == fields[i]) value = game.ProfileLines[j].profileValue;
-                bool current = game.ProfilePage < game.ProfileLines.Length && game.ProfileLines[game.ProfilePage].profileField == fields[i];
-                OvText(fields[i], frame, new Vector2(84 + 105 - 800, y), new Vector2(210, 60), 28,
-                    current ? OverridePalette.Text : OverridePalette.TextDim, TextAlignmentOptions.CaplineLeft, false, 1);
-                var text = OvText(value, frame, new Vector2(288 + 234 - 800, y), new Vector2(468, 60), 40, OverridePalette.Text, TextAlignmentOptions.CaplineLeft);
+                var row = Rect("Row " + fields[i], frame, new Vector2(56 + rowWidth / 2 - 800, y), new Vector2(rowWidth, rowHeight));
+                var arrive = row.gameObject.AddComponent<SlamIn>();
+                arrive.From = 1.04f; arrive.Seconds = .16f; arrive.Delay = .08f + i * .07f;
+                profileLabels[i] = OvText(fields[i], row, new Vector2(84 + 105 - 56 - rowWidth / 2, 0), new Vector2(210, 60), 28,
+                    OverridePalette.TextDim, TextAlignmentOptions.CaplineLeft, false, 1);
+                var text = OvText(value, row, new Vector2(288 + 234 - 56 - rowWidth / 2, 0), new Vector2(468, 60), 40, OverridePalette.Text, TextAlignmentOptions.CaplineLeft);
                 text.enableAutoSizing = true; text.fontSizeMin = 22; text.fontSizeMax = 40;
-                if (!current) continue;
-                var marker = Image(frame, new Vector2(62 - 800, y), new Vector2(12, 46), OverridePalette.Signal).rectTransform;
+                // The row Happy is reading carries a Signal marker and underline.
+                var mark = Rect("Reading", row, Vector2.zero, Vector2.zero);
+                var marker = Image(mark, new Vector2(62 - 56 - rowWidth / 2, 0), new Vector2(12, 46), OverridePalette.Signal).rectTransform;
                 marker.localRotation = Quaternion.Euler(0, 0, -12);
-                Image(frame, new Vector2(56 + rowWidth / 2 - 800, 450 - (rowTop + (i + 1) * rowHeight)), new Vector2(rowWidth, 2), OverridePalette.Signal);
+                Image(mark, new Vector2(0, -rowHeight / 2), new Vector2(rowWidth, 2), OverridePalette.Signal);
+                profileMarks[i] = mark.gameObject;
+            }
+            UpdateProfileReading();
+        }
+
+        string[] profileFields;
+        TMP_Text[] profileLabels;
+        GameObject[] profileMarks;
+
+        void UpdateProfileReading()
+        {
+            if (profileMarks == null || game.Phase != DuelPhase.TargetProfile) return;
+            int reading = game.ProfileReading;
+            string field = reading >= 0 && reading < game.ProfileLines.Length ? game.ProfileLines[reading].profileField : null;
+            for (int i = 0; i < profileMarks.Length; i++)
+            {
+                if (profileMarks[i] == null) return;
+                bool current = field == profileFields[i];
+                if (profileMarks[i].activeSelf != current) profileMarks[i].SetActive(current);
+                profileLabels[i].color = current ? OverridePalette.Text : OverridePalette.TextDim;
             }
         }
 

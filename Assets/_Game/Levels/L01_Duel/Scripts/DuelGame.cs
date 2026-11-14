@@ -362,6 +362,7 @@ namespace GoGhost.Duel
             if (Phase == DuelPhase.Configure && visiting) handler.SuspendConfiguration(true);
             else if (!returning && !visiting && (Phase == DuelPhase.Configure || wasVisiting)) handler.LeaveConfiguration();
             if (wasVisiting) preparationVoice.Stop();
+            if (previousPhase == DuelPhase.TargetProfile) StopProfileReading();
             if (Phase == DuelPhase.MissionEntry) ui.EndPreparationFade();
             if (startup != null)
             {

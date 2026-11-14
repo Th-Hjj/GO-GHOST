@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Title searchlights and haze bands
+
+- **Asked:** continue the Living title order with the searchlights and the haze bands that replace clouds.
+- **Changed:** `DuelUI.Title.cs` adds two drifting haze bands and three swinging searchlight wedges on the sky layer, between the stars and the city lights, with a lit patch wherever a beam crosses a band. Both shapes are small textures generated once at run time. A first pass drew the bands 3.4 units thick at 8.5%, which read as drawn lines; they are now thicker, fainter and narrower.
+- **Checked:** Unity compiled. Play Mode captures at 2560x1440 before and after the band change: beams start at the rooftops, clear the spire and the menu and pass behind the hazard band and logo; the bands light where the beams cross. The swing and drift over time, other resolutions and packaged builds NOT TESTED.
+
 ## 2026-11-14 — Title stars
 
 - **Asked:** continue the Living title order with the stars.

@@ -30,6 +30,7 @@ namespace GoGhost.Duel
             }
             var sky = Layer("OutskirtsSky");
             BuildTitleStars(sky);
+            BuildTitleBeams(sky);
             BuildTitleCity(sky);
             titleLayers = new[] { Layer("OutskirtsHills"), Layer("OutskirtsSlope"), Layer("OutskirtsRoof") };
             titleLook = TitlePointer();
@@ -58,7 +59,103 @@ namespace GoGhost.Duel
             for (int i = 0; i < titleLayers.Length; i++)
                 titleLayers[i].anchoredPosition = -Vector2.Scale(titleLook, TitleTravel[i]);
             UpdateTitleStars();
+            UpdateTitleBeams();
             UpdateTitleCity();
+        }
+
+        static Sprite titleBeamSprite, titleBandSprite;
+        static Sprite TitleSprite(string name, int width, int height, Vector2 pivot, System.Func<float, float, float> alpha)
+        {
+            var texture = new Texture2D(width, height, TextureFormat.RGBA32, false)
+                { name = name, wrapMode = TextureWrapMode.Clamp, hideFlags = HideFlags.HideAndDontSave };
+            var pixels = new Color32[width * height];
+            for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
+                    pixels[y * width + x] = new Color32(255, 255, 255,
+                        (byte)(255 * Mathf.Clamp01(alpha((x + .5f) / width, (y + .5f) / height))));
+            texture.SetPixels32(pixels); texture.Apply();
+            return Sprite.Create(texture, new Rect(0, 0, width, height), pivot, 100);
+        }
+
+        // Rooftops on the plate, the resting lean in degrees, the swing and its period in seconds.
+        static readonly float[] TitleBeamSetup =
+        {
+            790, 755, 9, 13, 11.5f,
+            903, 763, -7, 15, 15.5f,
+            963, 770, -15, 9, 9.25f,
+        };
+        // Plate row, width in units, plate column at rest, drift in units and its period in seconds.
+        static readonly float[] TitleBandSetup = { 745, 420, 850, 40, 96, 725, 280, 915, -30, 71 };
+        const float TitleBeamLength = 280;
+        static readonly Color TitleBeamColour = new Color(.62f, .86f, 1f);
+        RectTransform[] titleBeams, titleBands;
+        Image[] titleBeamPools;
+
+        void BuildTitleBeams(RectTransform sky)
+        {
+            // A beam is a flat wedge with straight edges that thins out along its length.
+            if (titleBeamSprite == null)
+                titleBeamSprite = TitleSprite("Title beam", 64, 256, new Vector2(.5f, 0), (u, v) =>
+                    Mathf.Clamp01((Mathf.Lerp(.09f, .5f, v) - Mathf.Abs(u - .5f)) * 64 + .5f) * Mathf.Pow(1 - v, 1.4f));
+            // Haze is a thin level slab that fades only toward its ends.
+            if (titleBandSprite == null)
+                titleBandSprite = TitleSprite("Title haze band", 128, 2, new Vector2(.5f, .5f), (u, v) =>
+                    Mathf.Pow(Mathf.Sin(u * Mathf.PI), 1.5f));
+            Image Shape(string name, Sprite sprite, Vector2 point, Vector2 size, float alpha)
+            {
+                var image = Rect(name, sky, point, size).gameObject.AddComponent<Image>();
+                image.sprite = sprite; image.color = NeuralPalette.Alpha(TitleBeamColour, alpha); image.raycastTarget = false;
+                return image;
+            }
+            int bands = TitleBandSetup.Length / 5, beams = TitleBeamSetup.Length / 5;
+            titleBands = new RectTransform[bands];
+            for (int i = 0; i < bands; i++)
+                titleBands[i] = Shape("Haze band", titleBandSprite, TitlePlatePoint(TitleBandSetup[i * 5 + 2], TitleBandSetup[i * 5]),
+                    new Vector2(TitleBandSetup[i * 5 + 1], 6), .05f).rectTransform;
+            titleBeams = new RectTransform[beams];
+            titleBeamPools = new Image[beams * bands];
+            for (int i = 0; i < beams; i++)
+            {
+                var beam = Shape("Searchlight", titleBeamSprite, TitlePlatePoint(TitleBeamSetup[i * 5], TitleBeamSetup[i * 5 + 1]),
+                    new Vector2(13, TitleBeamLength), .15f);
+                beam.rectTransform.pivot = new Vector2(.5f, 0);
+                titleBeams[i] = beam.rectTransform;
+                // Where a beam crosses a band, the haze it reaches lights up.
+                for (int b = 0; b < bands; b++)
+                    titleBeamPools[i * bands + b] = Shape("Lit haze", titleBandSprite, Vector2.zero, new Vector2(44, 6), 0);
+            }
+        }
+
+        void UpdateTitleBeams()
+        {
+            float now = Time.unscaledTime;
+            int bands = titleBands.Length;
+            for (int b = 0; b < bands; b++)
+            {
+                Vector2 rest = TitlePlatePoint(TitleBandSetup[b * 5 + 2], TitleBandSetup[b * 5]);
+                rest.x += TitleBandSetup[b * 5 + 3] * Mathf.Sin(now * Mathf.PI * 2 / TitleBandSetup[b * 5 + 4]);
+                titleBands[b].anchoredPosition = rest;
+            }
+            for (int i = 0; i < titleBeams.Length; i++)
+            {
+                // A moving head turns smoothly; the periods never line up.
+                float lean = TitleBeamSetup[i * 5 + 2] + TitleBeamSetup[i * 5 + 3]
+                    * Mathf.Sin(now * Mathf.PI * 2 / TitleBeamSetup[i * 5 + 4] + i * 2.1f);
+                titleBeams[i].localRotation = Quaternion.Euler(0, 0, lean);
+                Vector2 foot = titleBeams[i].anchoredPosition;
+                float slope = Mathf.Tan(lean * Mathf.Deg2Rad);
+                for (int b = 0; b < bands; b++)
+                {
+                    var pool = titleBeamPools[i * bands + b];
+                    Vector2 band = titleBands[b].anchoredPosition;
+                    float rise = band.y - foot.y, x = foot.x - slope * rise;
+                    float along = rise / Mathf.Cos(lean * Mathf.Deg2Rad) / TitleBeamLength;
+                    float inside = 1 - Mathf.Abs(x - band.x) / (TitleBandSetup[b * 5 + 1] * .5f);
+                    pool.rectTransform.anchoredPosition = new Vector2(x, band.y);
+                    pool.color = NeuralPalette.Alpha(TitleBeamColour,
+                        rise > 0 && along < 1 ? .16f * Mathf.Clamp01(inside * 3) * (1 - along) : 0);
+                }
+            }
         }
 
         Image[] titleTwinklers;

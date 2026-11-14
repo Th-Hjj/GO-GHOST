@@ -52,8 +52,57 @@ namespace GoGhost.Duel
             transform.localScale = new Vector3(owner.Facing >= 0 ? 1 : -1, 1, 1);
             ClearTells(); ApplyPose(BuildPose());
         }
+        // The four slots the stickman never used (hair, coat, feet) carry the round elbows and knees.
+        static readonly (Part joint, Part limb)[] Joints =
+        {
+            (Part.Hair, Part.BackForearm), (Part.Coat, Part.FrontForearm),
+            (Part.BackFoot, Part.BackCalf), (Part.FrontFoot, Part.FrontCalf)
+        };
+        static readonly Part[] Limbs = { Part.Torso, Part.BackThigh, Part.BackCalf, Part.FrontThigh, Part.FrontCalf,
+            Part.BackUpperArm, Part.BackForearm, Part.FrontUpperArm, Part.FrontForearm };
+        // A standing calf runs this far past the sole so the mask can cut it flat on the ground.
+        const float FootCutReach = .10f;
+        SpriteMask footCut;
+        SpriteRenderer footLight;
+        bool cleanRig;
+
+        // Same proportions as before: soft-edged limbs, a smooth head, round joints, flat feet and a foot light.
+        void InstallCleanRig()
+        {
+            if (cleanRig || parts == null || parts.Length != 16 || parts[(int)Part.Torso] == null) return;
+            cleanRig = true;
+            foreach (var limb in Limbs) if (parts[(int)limb] != null) parts[(int)limb].sprite = StickmanSprites.Limb;
+            if (parts[(int)Part.Head] != null) parts[(int)Part.Head].sprite = StickmanSprites.Disc;
+            foreach (var (joint, limb) in Joints)
+            {
+                var disc = parts[(int)joint]; var source = parts[(int)limb];
+                if (disc == null || source == null) continue;
+                disc.sprite = StickmanSprites.Disc;
+                disc.sharedMaterial = source.sharedMaterial;
+                disc.sortingLayerID = source.sortingLayerID;
+                disc.sortingOrder = source.sortingOrder;
+            }
+            foreach (var calf in new[] { Part.BackCalf, Part.FrontCalf })
+                if (parts[(int)calf] != null) parts[(int)calf].maskInteraction = SpriteMaskInteraction.VisibleOutsideMask;
+            footCut = new GameObject("FootCut").AddComponent<SpriteMask>();
+            footCut.transform.SetParent(transform, false);
+            footCut.sprite = StickmanSprites.Block;
+            footCut.enabled = false;
+            var torso = parts[(int)Part.Torso];
+            footLight = new GameObject("FootLight").AddComponent<SpriteRenderer>();
+            footLight.transform.SetParent(transform, false);
+            footLight.sprite = StickmanSprites.Pool;
+            footLight.sharedMaterial = torso.sharedMaterial;
+            footLight.sortingLayerID = torso.sortingLayerID;
+            int order = torso.sortingOrder;
+            foreach (var limb in Limbs) if (parts[(int)limb] != null) order = Mathf.Min(order, parts[(int)limb].sortingOrder);
+            footLight.sortingOrder = order - 1;
+            footLight.enabled = false;
+        }
+
         void SetColors()
         {
+            InstallCleanRig();
             bool gunner = visualKind == BossKind.Gunner;
             bodyColor = actor != null && actor.IsTrainingEnemy ? NeuralPalette.Secondary : gunner ? NeuralPalette.Gunner : NeuralPalette.Swordsman;
             weaponColor = NeuralPalette.Primary;
@@ -285,11 +334,26 @@ namespace GoGhost.Duel
             // Same base head/torso/limb dimensions as OfficerVisual; attacks retain their own poses.
             Segment(Part.Torso,p.Hip,p.Chest+Vector2.up*.035f,.17f);
             Place(Part.Head,p.Head,new Vector2(.46f,.46f),0);
-            Hide(Part.Hair);Hide(Part.Coat);Hide(Part.BackFoot);Hide(Part.FrontFoot);
-            Leg(Part.BackThigh,Part.BackCalf,Part.BackFoot,p.Hip+new Vector2(-.075f,0),p.BackFoot,.12f,p);
-            Leg(Part.FrontThigh,Part.FrontCalf,Part.FrontFoot,p.Hip+new Vector2(.075f,0),p.FrontFoot,.18f,p);
-            Arm(Part.BackUpperArm,Part.BackForearm,p.Chest+new Vector2(-.10f,-.04f),p.BackHand,-.08f);
-            Arm(Part.FrontUpperArm,Part.FrontForearm,p.Chest+new Vector2(.08f,-.04f),p.FrontHand,.06f);
+            // Only a live, standing fighter has its feet cut on the support surface. Portraits and poses on the ground do not.
+            bool standing=actor!=null&&actor.Motor.Grounded&&!defeated&&!(FinalAxe&&kneel>0);
+            float support=actor==null?0:-actor.Motor.Size.y*.5f;
+            if(footCut!=null)
+            {
+                footCut.enabled=standing;
+                footCut.transform.localPosition=new Vector3(0,support-.2f,0);
+                footCut.transform.localScale=new Vector3(1.6f,.4f,1);
+            }
+            if(footLight!=null)
+            {
+                footLight.enabled=standing;
+                footLight.transform.localPosition=new Vector3(0,support,0);
+                footLight.transform.localScale=new Vector3(1.0f,.52f,1);
+                footLight.color=NeuralPalette.Alpha(FinalAxe?NeuralPalette.Emp:bodyColor,.30f*alpha);
+            }
+            Leg(Part.BackThigh,Part.BackCalf,Part.BackFoot,p.Hip+new Vector2(-.075f,0),p.BackFoot,.12f,p,standing);
+            Leg(Part.FrontThigh,Part.FrontCalf,Part.FrontFoot,p.Hip+new Vector2(.075f,0),p.FrontFoot,.18f,p,standing);
+            Arm(Part.BackUpperArm,Part.BackForearm,Part.Hair,p.Chest+new Vector2(-.10f,-.04f),p.BackHand,-.08f);
+            Arm(Part.FrontUpperArm,Part.FrontForearm,Part.Coat,p.Chest+new Vector2(.08f,-.04f),p.FrontHand,.06f);
             if (FinalAxe) { ApplyAxe(p); return; }
             bool gunner=visualKind==BossKind.Gunner;
             float bladeLength=SwordBladeLength;
@@ -298,17 +362,24 @@ namespace GoGhost.Duel
             if(gunner)Place(Part.Sheath,p.Weapon+Rotate(new Vector2(-.15f,-.09f),p.WeaponAngle),new Vector2(.075f,.18f),p.WeaponAngle);
             else Place(Part.Sheath,p.Weapon-Angle(p.WeaponAngle)*(bladeLength*.5f-.12f),new Vector2(.14f,.12f),p.WeaponAngle);
         }
-        void Leg(Part thigh,Part calf,Part foot,Vector2 hip,Vector2 toe,float offset,Pose pose)
+        void Leg(Part thigh,Part calf,Part kneeJoint,Vector2 hip,Vector2 toe,float offset,Pose pose,bool cutFoot)
         {
             Vector2 knee=JumpLandingPose.Knee(hip,toe,new Vector2(offset,0),1,thigh==Part.BackThigh,pose.Compression,pose.Extension);
             if (FinalAxe && kneel > 0)
                 knee = Vector2.Lerp(knee, thigh == Part.BackThigh ? new Vector2(-.06f, toe.y + .02f) : new Vector2(.44f, hip.y), kneel);
-            Segment(thigh,hip,knee,.17f);Segment(calf,knee,toe,.17f);
+            Segment(thigh,hip,knee,.17f);
+            if(cutFoot)toe+=(toe-knee).normalized*FootCutReach;
+            Segment(calf,knee,toe,.17f);
+            Place(kneeJoint,knee,Vector2.one*(.17f/StickmanSprites.DiscFill),0);
         }
-        void Arm(Part upper,Part lower,Vector2 shoulder,Vector2 hand,float bend)
-        {Vector2 elbow=(shoulder+hand)*.5f+new Vector2(bend,-.12f);Segment(upper,shoulder,elbow,.16f);Segment(lower,elbow,hand,.16f);}
+        void Arm(Part upper,Part lower,Part elbowJoint,Vector2 shoulder,Vector2 hand,float bend)
+        {
+            Vector2 elbow=(shoulder+hand)*.5f+new Vector2(bend,-.12f);Segment(upper,shoulder,elbow,.16f);Segment(lower,elbow,hand,.16f);
+            Place(elbowJoint,elbow,Vector2.one*(.16f/StickmanSprites.DiscFill),0);
+        }
+        // The soft-edged limb sprite keeps one transparent texel all round.
         void Segment(Part part,Vector2 from,Vector2 to,float width)
-        {Vector2 d=to-from;Place(part,(from+to)*.5f,new Vector2(width,d.magnitude+.025f),Mathf.Atan2(d.y,d.x)*Mathf.Rad2Deg-90);}
+        {Vector2 d=to-from;Place(part,(from+to)*.5f,new Vector2(width,d.magnitude+.025f)*StickmanSprites.LimbPadding,Mathf.Atan2(d.y,d.x)*Mathf.Rad2Deg-90);}
         void Hide(Part part)
         {if(parts[(int)part]!=null)parts[(int)part].enabled=false;}
         void Place(Part part,Vector2 point,Vector2 scale,float angle)

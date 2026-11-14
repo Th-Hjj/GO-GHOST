@@ -1,5 +1,14 @@
 # GO GHOST slice implementation
 
+## 2026-11-13 — Backlit world art, stage 2: stickman cleanup
+
+Thomas approved four of the five proposed changes and declined the darker rear limbs.
+
+- **Implemented:** new `Shared/Scripts/Presentation/StickmanSprites.cs`. `OfficerVisual`: soft-edged legs and torso, two knee discs (added to the rule glow as legs and to `BodySegments`), a foot mask and a foot light. `BossSilhouetteView`: soft-edged limbs, a smooth head, elbow and knee discs in the unused Hair, Coat, BackFoot and FrontFoot slots (also added to the Final Boss's rainbow body parts), a foot mask and a foot light. Poses, proportions, colliders and gameplay are unchanged.
+- **Checked in the Editor (Play Mode, 2560x1440):** compiles; Mission 1 and Mission 3 phase one entered from preparation and captured in the fight (`Logs/ArtRedesign/s2_*.png`): round knees, smooth edges, flat feet and the foot light on the player, the Gunner and the rainbow Final Boss. No console errors.
+- **NOT TESTED:** the Swordsman, the Test Room robot, Final Boss phase two, the kneel and defeat poses, Camo, jumps and Dodge in motion, the rule glow on the knees, the Target Profile portraits and the EMP outlines on the new joints.
+- **Known limits:** dash and Dodge afterimages copy the lengthened calves without the mask, so a faint sliver can show below the floor line. The mission overview's UI figure is a separate copy and keeps its old knees.
+
 ## 2026-11-13 — Platform rims follow moving platforms
 
 - **Fixed:** Thomas saw the phase-two rim lights stay on one line while the platforms moved. The rims read each collider's bounds, which did not follow the oscillating platforms. They now read the platform's own sprite bounds (`ArenaSilhouetteDressing.Follow`).

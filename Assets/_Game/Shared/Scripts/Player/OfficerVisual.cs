@@ -22,6 +22,10 @@ public sealed class OfficerVisual : MonoBehaviour
     private Rigidbody2D body;
     private Collider2D bodyCollider;
     private SpriteRenderer leftForearm, rightForearm, leftCalf, rightCalf;
+    private SpriteRenderer leftKnee, rightKnee, footLight;
+    private SpriteMask footCut;
+    // A standing calf runs this far past the sole so the mask can cut it flat on the ground.
+    private const float FootCutReach = .10f;
     private SpriteRenderer cylinder, cylinderHalo, triggerPalm, supportPalm;
     private float clock, gait, stride, recoil;
     private int lastShots;
@@ -43,7 +47,7 @@ public sealed class OfficerVisual : MonoBehaviour
             Mathf.Max(leftForearm.sortingOrder,rightForearm.sortingOrder))+1;
         head.sortingOrder=Mathf.Max(head.sortingOrder,torso.sortingOrder+1);
         // Keep the approved gun silhouette gray-blue; weapon signals live only in its core.
-        glowParts=new[]{leftLeg,rightLeg,leftCalf,rightCalf,leftArm,rightArm,leftForearm,rightForearm,cylinderHalo,cylinder,torso,supportPalm,triggerPalm};
+        glowParts=new[]{leftLeg,rightLeg,leftCalf,rightCalf,leftArm,rightArm,leftForearm,rightForearm,cylinderHalo,cylinder,torso,supportPalm,triggerPalm,leftKnee,rightKnee};
         originalMaterials=new Material[glowParts.Length];glowBlock=new MaterialPropertyBlock();
         for(int i=0;i<glowParts.Length;i++)if(glowParts[i]!=null){originalMaterials[i]=glowParts[i].sharedMaterial;glowParts[i].sharedMaterial=material;}
         feedback=source;health.OnDeath+=ClearConditionalGlow;glowBound=true;
@@ -73,12 +77,13 @@ public sealed class OfficerVisual : MonoBehaviour
         float dodgeSignal=Mathf.Max(spine.Matched?.2f:0,Mathf.Max(spine.Pulse,spine.Afterglow*.22f));
         for(int i=0;i<glowParts.Length;i++)
         {
-            float strength=i<4?legs:i<8||i>10?arms:i<10?Mathf.Max(fire.Signal*.7f,Mathf.Max(fire.Pulse,fire.Afterglow*.22f)):dodgeSignal;
+            bool leg=i<4||i>=13; // The knee joints follow their legs.
+            float strength=leg?legs:i<8||i>10?arms:i<10?Mathf.Max(fire.Signal*.7f,Mathf.Max(fire.Pulse,fire.Afterglow*.22f)):dodgeSignal;
             // Keep the gun's reload signal red while arm feedback continues independently.
             if(i==8 || reloading&&i==9)strength=0;
             var renderer=glowParts[i];if(renderer==null)continue;
             renderer.GetPropertyBlock(glowBlock);glowBlock.SetFloat(GlowStrength,Mathf.Clamp01(strength));
-            glowBlock.SetColor(GlowColor,i<4?NeuralPalette.Legs:i==10?NeuralPalette.Spine:NeuralPalette.Arms);renderer.SetPropertyBlock(glowBlock);
+            glowBlock.SetColor(GlowColor,leg?NeuralPalette.Legs:i==10?NeuralPalette.Spine:NeuralPalette.Arms);renderer.SetPropertyBlock(glowBlock);
         }
     }
     public bool ReloadVisible => reloading && weapon != null && weapon.enabled && weapon.gameObject.activeInHierarchy;
@@ -132,6 +137,26 @@ public sealed class OfficerVisual : MonoBehaviour
         if (rightForearm == null) rightForearm = AddSegment(rightArm, "RightForearm");
         if (leftCalf == null) leftCalf = AddSegment(leftLeg, "LeftCalf");
         if (rightCalf == null) rightCalf = AddSegment(rightLeg, "RightCalf");
+        // Same proportions; soft-edged limbs, round knees and feet cut flat on the ground.
+        foreach (var limb in new[] { leftLeg, rightLeg, leftCalf, rightCalf, torso })
+            limb.sprite = StickmanSprites.Limb;
+        if (leftKnee == null) leftKnee = AddSegment(leftLeg, "LeftKnee");
+        if (rightKnee == null) rightKnee = AddSegment(rightLeg, "RightKnee");
+        leftKnee.sprite = rightKnee.sprite = StickmanSprites.Disc;
+        leftCalf.maskInteraction = rightCalf.maskInteraction = SpriteMaskInteraction.VisibleOutsideMask;
+        if (footCut == null)
+        {
+            footCut = new GameObject("FootCut").AddComponent<SpriteMask>();
+            footCut.transform.SetParent(transform, false);
+            footCut.sprite = StickmanSprites.Block;
+        }
+        if (footLight == null)
+        {
+            footLight = AddSegment(torso, "FootLight");
+            footLight.sprite = StickmanSprites.Pool;
+            footLight.sortingOrder = Mathf.Min(leftLeg.sortingOrder, rightLeg.sortingOrder) - 1;
+            footLight.color = NeuralPalette.Alpha(NeuralPalette.Primary, .30f);
+        }
         if (cylinder == null)
         {
             cylinder = AddSegment(head, "RevolverCylinder");
@@ -175,6 +200,7 @@ public sealed class OfficerVisual : MonoBehaviour
     {
         if (animate)
         {
+            if (footLight != null && health != null && health.IsDead) footLight.enabled = false;
             if (Time.deltaTime <= 0 || input.NarrativePaused || (health != null && health.IsDead)) return;
             if (!movement.isActiveAndEnabled) return;
             // Preparation has frozen physics, but the weapon anchor still updates before this view.
@@ -239,8 +265,15 @@ public sealed class OfficerVisual : MonoBehaviour
         }
         Segment(torso, hip, chest + Vector2.up * .035f, .17f);
         Place(head, headPoint, new Vector2(.46f, .46f), 0);
-        Limb(leftLeg, leftCalf, hip + Vector2.left * (.075f * facing), back, new Vector2(.12f * facing, 0), true, compression, extension);
-        Limb(rightLeg, rightCalf, hip + Vector2.right * (.075f * facing), front, new Vector2(.18f * facing, 0), false, compression, extension);
+        Limb(leftLeg, leftCalf, leftKnee, hip + Vector2.left * (.075f * facing), back, new Vector2(.12f * facing, 0), true, compression, extension, grounded);
+        Limb(rightLeg, rightCalf, rightKnee, hip + Vector2.right * (.075f * facing), front, new Vector2(.18f * facing, 0), false, compression, extension, grounded);
+        // The support surface is the collider's lower edge; everything of the calves below it is masked away.
+        float supportY = floor - (grounded ? .025f : .075f);
+        footCut.enabled = grounded;
+        footCut.transform.localPosition = new Vector3(0, supportY - .2f, 0);
+        footCut.transform.localScale = new Vector3(1.4f, .4f, 1);
+        footLight.enabled = grounded;
+        Place(footLight, new Vector2(0, supportY), new Vector2(1.0f, .26f), 0);
 
         // FirePoint remains entirely owned by PlayerShooting. The barrel ends at its real muzzle.
         weapon.transform.localPosition = Vector3.zero;
@@ -297,17 +330,21 @@ public sealed class OfficerVisual : MonoBehaviour
             Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
     }
 
-    private void Limb(SpriteRenderer upper, SpriteRenderer lower, Vector2 start, Vector2 end, Vector2 bend, bool rear, float compression, float extension)
+    private void Limb(SpriteRenderer upper, SpriteRenderer lower, SpriteRenderer knee, Vector2 start, Vector2 end, Vector2 bend, bool rear, float compression, float extension, bool cutFoot)
     {
         Vector2 joint = JumpLandingPose.Knee(start, end, bend, movement.FacingDirection, rear, compression, extension);
         Segment(upper, start, joint, .17f);
+        if (cutFoot) end += (end - joint).normalized * FootCutReach;
         Segment(lower, joint, end, .17f);
+        Place(knee, joint, Vector2.one * (.17f / StickmanSprites.DiscFill), 0);
     }
 
     private void Segment(SpriteRenderer part, Vector2 start, Vector2 end, float width)
     {
         Vector2 delta = end - start;
-        Place(part, (start + end) * .5f, new Vector2(delta.magnitude + .025f, width), Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
+        // The soft-edged limb sprite keeps one transparent texel all round.
+        Place(part, (start + end) * .5f, new Vector2(delta.magnitude + .025f, width) * StickmanSprites.LimbPadding,
+            Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
     }
 
     private void Place(SpriteRenderer part, Vector2 point, Vector2 size, float angle)
@@ -388,6 +425,8 @@ public sealed class OfficerVisual : MonoBehaviour
         yield return rightLeg;
         yield return leftCalf;
         yield return rightCalf;
+        yield return leftKnee;
+        yield return rightKnee;
     }
 
     public System.Collections.Generic.IEnumerable<SpriteRenderer> WeaponSegments()

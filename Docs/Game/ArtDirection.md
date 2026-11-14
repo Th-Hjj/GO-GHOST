@@ -16,7 +16,7 @@ Thomas chose this direction for everything inside the arena. Mockups: <https://c
 
 **Decided per item**
 
-- **Stickman:** keep the current structure (head on the torso, even-width square-ended limbs, both knees forward). Change only: round knee and elbow joints, edges drawn at screen resolution, feet cut flat on the ground, rear limbs tinted by the haze, a small pool of the fighter's own light under the feet. No Boss head marks.
+- **Stickman:** keep the current structure (head on the torso, even-width square-ended limbs, both knees forward). Change only: round knee and elbow joints, soft-edged limbs and a smooth head, feet cut flat on the ground, a small pool of the fighter's own light under the feet. No rear-limb tint (Thomas declined it) and no Boss head marks.
 - **Revolver:** the outline in `RevolverPresentationGeometry` stays exactly as it is. Add a rim highlight on the top edge and the cylinder halo.
 - **Gunner rifle:** twin rails with charge cells that fill with the existing warning. **Swordsman blade:** neutral blade, slanted tip, one coral edge line; the idle pose stays one-handed at -28 degrees.
 - **Axe:** keep the approved outline. Add an edge bevel, a channel along the handle and blade (dark in phase one, lit in phase two) and three grip wraps.
@@ -28,7 +28,7 @@ Thomas chose this direction for everything inside the arena. Mockups: <https://c
 | Stage | Content | Status |
 |---|---|---|
 | 1 | Arena structure, rim lights and haze | Built 2026-11-13, revised the same day |
-| 2 | Stickman cleanup for the player and all Bosses | Not started |
+| 2 | Stickman cleanup for the player and all Bosses | Built 2026-11-13 |
 | 3 | Weapons: revolver highlight, rifle, blade, axe | Not started |
 | 4 | Effects | Not started |
 | 5 | Animation accents | Not started |
@@ -41,6 +41,15 @@ Thomas chose this direction for everything inside the arena. Mockups: <https://c
 - Mission 3: `FinalBossEmpSweep` calls `SetEmpHaze` with the progress of the third front, cross-fading the cold-white haze to violet copies. A direct phase-two start sets it fully violet.
 - `ArenaSilhouetteDressing` draws the rim lights on the floor and platforms and hairlines on the walls and ceiling. It follows the platform colliders every frame and owns no collider.
 - Strengths were tuned by eye in the Editor and are playtest values.
+
+**Stage 2 as built**
+
+- `StickmanSprites` (Shared) generates the shared sprites once per Play session: a limb square with a one-texel soft border, a smooth disc for heads and joints, the foot light and the mask block.
+- Limbs and torsos use the soft limb sprite; their quads are drawn `LimbPadding` larger so the visible limb keeps its size. Boss heads use the disc at the old Knob's visible size. The project has no anti-aliasing, so this is what smooths rotated edges.
+- Joints are discs at the knee and elbow. The player gets two knee renderers (its elbows were already round). Bosses reuse the four part slots the stickman never showed: Hair and Coat are the elbows, BackFoot and FrontFoot the knees.
+- Feet: a standing calf runs .10 past the sole and a `SpriteMask` below the support surface cuts it flat. The mask is off in the air, on defeat, while kneeling and in UI portraits.
+- Foot light: a soft ellipse on the support surface while grounded, in the fighter's colour (EMP violet for the Final Boss), following Camo alpha.
+- Not done: the mission overview's UI copy of the player still has the old knees. Dash and Dodge afterimages copy the lengthened calves without the mask.
 
 Confirmed by Thomas, 2026-10-16. This direction supersedes earlier monochrome configuration art, uniform green execution feedback, blue Gunner, green player HP and green/gold weapons. Verification belongs in Implementation_Log; this document records the approved direction.
 

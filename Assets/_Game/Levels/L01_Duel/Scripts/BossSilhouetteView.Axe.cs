@@ -6,7 +6,8 @@ namespace GoGhost.Duel
     public sealed partial class BossSilhouetteView
     {
         static readonly Part[] AxeBodyParts = { Part.Torso, Part.Head, Part.BackThigh, Part.BackCalf, Part.FrontThigh,
-            Part.FrontCalf, Part.BackUpperArm, Part.BackForearm, Part.FrontUpperArm, Part.FrontForearm };
+            Part.FrontCalf, Part.BackUpperArm, Part.BackForearm, Part.FrontUpperArm, Part.FrontForearm,
+            Part.Hair, Part.Coat, Part.BackFoot, Part.FrontFoot }; // the last four are the round joints
         Material rainbowMaterial;
         Material[] axeBodyMaterials;
         float gazeAt = float.PositiveInfinity;

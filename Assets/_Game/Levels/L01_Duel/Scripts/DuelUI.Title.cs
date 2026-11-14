@@ -40,6 +40,7 @@ namespace GoGhost.Duel
             var sky = Layer("OutskirtsSky").rectTransform;
             BuildTitleStars(sky);
             BuildTitleBeams(sky);
+            BuildTitleAircraft(sky);
             BuildTitleCity(sky);
             titleLayers = new[]
             {
@@ -74,6 +75,7 @@ namespace GoGhost.Duel
                 titleLayers[i].anchoredPosition = -Vector2.Scale(titleLook, TitleTravel[i]);
             UpdateTitleStars();
             UpdateTitleBeams();
+            UpdateTitleAircraft();
             UpdateTitleCity();
         }
 
@@ -152,6 +154,66 @@ namespace GoGhost.Duel
             for (int i = 0; i < titleBeams.Length; i++)
                 titleBeams[i].localRotation = Quaternion.Euler(0, 0, TitleBeamSetup[i * 6 + 2] + TitleBeamSetup[i * 6 + 3]
                     * Mathf.Sin(now * Mathf.PI * 2 / TitleBeamSetup[i * 6 + 4] + i * 2.1f));
+        }
+
+        // Routes on the plate: from, to, seconds in flight and strength. In to the city from the right, out of it
+        // climbing to the right, and a higher, fainter crossing that ends behind the logo.
+        static readonly float[] TitleRoutes =
+        {
+            1700, 610, 905, 748, 40, 1,
+            818, 752, 1700, 470, 46, 1,
+            1700, 372, 1080, 438, 58, .6f,
+        };
+        Image titleCraft, titleStrobe, titleStrobeGlow;
+        int titleRoute;
+        float titleFlightFrom, titleFlightNext;
+
+        void BuildTitleAircraft(RectTransform sky)
+        {
+            Image Light(string name, Sprite sprite, Vector2 size)
+            {
+                var image = Rect(name, sky, Vector2.zero, size).gameObject.AddComponent<Image>();
+                image.sprite = sprite; image.color = Color.clear; image.raycastTarget = false;
+                return image;
+            }
+            titleStrobeGlow = Light("Aircraft glow", StickmanSprites.Pool, new Vector2(12, 12));
+            titleCraft = Light("Aircraft", StickmanSprites.Block, Vector2.one * 1.5f);
+            titleStrobe = Light("Aircraft strobe", StickmanSprites.Block, Vector2.one * 2.3f);
+            titleRoute = -1;
+            // The first one comes soon, so the sky is seen to be travelled; after that they are rare.
+            titleFlightNext = Time.unscaledTime + Random.Range(7f, 14f);
+        }
+
+        void UpdateTitleAircraft()
+        {
+            float now = Time.unscaledTime;
+            if (titleRoute < 0)
+            {
+                if (now < titleFlightNext) return;
+                titleRoute = Random.Range(0, TitleRoutes.Length / 6);
+                titleFlightFrom = now;
+            }
+            int r = titleRoute * 6;
+            float along = (now - titleFlightFrom) / TitleRoutes[r + 4];
+            if (along >= 1)
+            {
+                titleRoute = -1;
+                titleFlightNext = now + Random.Range(40f, 90f);
+                titleCraft.color = titleStrobe.color = titleStrobeGlow.color = Color.clear;
+                return;
+            }
+            Vector2 point = Vector2.Lerp(TitlePlatePoint(TitleRoutes[r], TitleRoutes[r + 1]),
+                TitlePlatePoint(TitleRoutes[r + 2], TitleRoutes[r + 3]), along);
+            titleCraft.rectTransform.anchoredPosition = titleStrobe.rectTransform.anchoredPosition
+                = titleStrobeGlow.rectTransform.anchoredPosition = point;
+            // It comes out of and goes into the distance rather than appearing.
+            float strength = TitleRoutes[r + 5] * Mathf.Clamp01(Mathf.Min(along, 1 - along) * 12);
+            // A steady running light and a double strobe every 1.4 s. Reduce Flashing keeps only the steady light.
+            float beat = (now - titleFlightFrom) % 1.4f;
+            bool flash = !GameSettings.ReduceFlashing && (beat < .07f || beat > .19f && beat < .26f);
+            titleCraft.color = new Color(.80f, .90f, 1, .5f * strength);
+            titleStrobe.color = new Color(.94f, .98f, 1, flash ? strength : 0);
+            titleStrobeGlow.color = new Color(.62f, .86f, 1, flash ? .3f * strength : 0);
         }
 
         Image[] titleTwinklers;

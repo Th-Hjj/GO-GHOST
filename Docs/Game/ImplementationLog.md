@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Title aircraft
+
+- **Asked:** continue the Living title order with the aircraft.
+- **Changed:** `DuelUI.Title.cs` flies one strobing point at a time along one of three routes on the sky layer, rarely, with the first soon after the title opens. Its sound waits for the ambience step.
+- **Checked:** compiled outside the editor while Thomas was in Play Mode, then in Unity. Two Play Mode captures at 2560x1440 during the inbound route: a small point with its strobe glow, moving along the route and passing behind the player. The other two routes, the interval between flights, Reduce Flashing and packaged builds NOT TESTED.
+
 ## 2026-11-14 — Title searchlights and mist reworked
 
 - **Asked:** Thomas was not satisfied with the searchlights and haze bands and asked how other works handle them. Findings (Batman: The Animated Series' light airbrushed onto black, the standard searchlight wedge faded and blurred, edge falloff and additive light in game beams, Firewatch's fog as depth between layers) pointed to four faults: hard uniform wedges, no lamp, too much spread, and haze drawn as objects with ends. He approved the rework.

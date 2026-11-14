@@ -166,25 +166,29 @@ namespace GoGhost.Duel
             OvBand(frame, 514);
             // With a save, Continue leads and New Game asks before replacing it.
             bool saved = GameSave.Exists;
+            // The stack shares one slant: every row's left and right ends lie on the same two leaning lines as the first button.
+            float firstTop = saved ? 580 : 600;
+            const float lean = .21f, firstLeft = 92, firstWidth = 494, firstHeight = 96;
+            float Left(float top, float height) => firstLeft - (top + height - firstTop - firstHeight) * lean;
+            float Right(float top) => firstLeft + firstWidth - (top - firstTop) * lean;
             if (saved)
             {
-                OvButton("Continue", frame, At(92, 580, 494, 96), new Vector2(494, 96), game.ContinueGame, OverrideButtonKind.Primary, 62, true);
-                OvButton("New Game", frame, At(92, 690, 494, 68), new Vector2(494, 68), RequestNewGame, OverrideButtonKind.Secondary, 40);
+                OvButton("Continue", frame, At(firstLeft, 580, firstWidth, 96), new Vector2(firstWidth, 96), game.ContinueGame, OverrideButtonKind.Primary, 62, true);
+                float left = Left(690, 68), width = Right(690) - left;
+                OvButton("New Game", frame, At(left, 690, width, 68), new Vector2(width, 68), RequestNewGame, OverrideButtonKind.Secondary, 40);
             }
-            else OvButton("New Game", frame, At(92, 600, 494, 96), new Vector2(494, 96), RequestNewGame, OverrideButtonKind.Primary, 62, true);
-            // The small row spans exactly the width of the buttons above it. A browser page has nothing to quit.
+            else OvButton("New Game", frame, At(firstLeft, 600, firstWidth, 96), new Vector2(firstWidth, 96), RequestNewGame, OverrideButtonKind.Primary, 62, true);
+            // A browser page has nothing to quit.
             float row = saved ? 774 : 714;
             bool quit = Application.platform != RuntimePlatform.WebGLPlayer;
-            // The button above ends on a slant; the row stops where that slant reaches its bottom edge.
-            float span = 494 - Mathf.Round((saved ? 68 : 96) * .21f) - 3;
             const float gap = 10;
             string[] titles = quit ? new[] { "Settings", "Credits", "Quit" } : new[] { "Settings", "Credits" };
-            float[] shares = quit ? new[] { 172f, 160f, 0f } : new[] { 244f, 0f };
+            float[] shares = quit ? new[] { .365f, .34f, 0f } : new[] { .51f, 0f };
             UnityEngine.Events.UnityAction[] clicks = { () => OpenOverlay(OverlayPage.Settings), () => OpenOverlay(OverlayPage.Credits), Application.Quit };
-            float x = 92;
+            float x = Left(row, 56), end = Right(row), span = end - x;
             for (int i = 0; i < titles.Length; i++)
             {
-                float w = i == titles.Length - 1 ? 92 + span - x : shares[i];
+                float w = i == titles.Length - 1 ? end - x : Mathf.Round(span * shares[i]);
                 OvButton(titles[i], frame, At(x, row, w, 56), new Vector2(w, 56), clicks[i], OverrideButtonKind.Tertiary, 32, align: TextAlignmentOptions.Capline);
                 x += w + gap;
             }

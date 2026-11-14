@@ -10,7 +10,8 @@ namespace GoGhost.Duel
     [DefaultExecutionOrder(110)]
     public sealed class PlayerFeedbackView : MonoBehaviour
     {
-        const float HurtSeconds = .22f, HurtTint = .9f;
+        // One step of pure white on the 12-per-second effect clock, then Danger fading back.
+        const float WhiteSeconds = 1f / 12f, HurtSeconds = .15f, HurtTint = .9f;
         const float GhostAlpha = .72f, EchoAlpha = .11f, EchoSeconds = .14f, EchoInterval = .07f;
         PlayerHealth health;
         PlayerDodge dodge;
@@ -47,13 +48,15 @@ namespace GoGhost.Duel
             Vector2 center = body.bounds.center;
             Vector2 toward = source != null ? (Vector2)source.transform.position - center : Vector2.up;
             if (toward.sqrMagnitude < .0001f) toward = Vector2.up;
-            effects.PlayerHit(source != null ? body.ClosestPoint(source.transform.position) : center, toward.normalized);
+            effects.PlayerHit(source != null ? body.ClosestPoint(source.transform.position) : center, -toward.normalized);
         }
 
         void LateUpdate()
         {
             if (health == null) return;
-            float hurt = Mathf.Clamp01(1 - (Time.time - hurtAt) / HurtSeconds);
+            float sinceHit = Time.time - hurtAt;
+            bool white = sinceHit < WhiteSeconds && !GameSettings.ReduceFlashing;
+            float hurt = Mathf.Clamp01(1 - (sinceHit - WhiteSeconds) / HurtSeconds);
             bool ghost = dodge != null && dodge.ImmunityActive && !health.IsDead;
             if (ghost && effects != null && Time.time >= nextEcho)
             {
@@ -63,7 +66,7 @@ namespace GoGhost.Duel
             if (!shown && hurt <= 0 && !ghost) return;
             shown = hurt > 0 || ghost;
             // The neutral body is Primary everywhere; rule colours are added by its shader, on top of this tint.
-            Color color = Color.Lerp(NeuralPalette.Primary, NeuralPalette.Danger, hurt * HurtTint);
+            Color color = white ? Color.white : Color.Lerp(NeuralPalette.Primary, NeuralPalette.Danger, hurt * HurtTint);
             color.a = ghost ? GhostAlpha : 1;
             foreach (var part in bodyParts) if (part != null) part.color = color;
             foreach (var part in weaponParts)

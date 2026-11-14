@@ -20,6 +20,11 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
         public float born, life, alpha;
         public bool echo;
         public Vector3 velocity;
+        // Slab chips: held, moved once at half life, then removed. No fade.
+        public Transform[] chips;
+        public Vector3[] chipSteps;
+        public Mesh[] meshes;
+        public bool stepped;
     }
 
     private readonly List<Flash> flashes = new List<Flash>();
@@ -60,6 +65,8 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
         slowAnchor = null;
         slowRoot = null;
         slowLines = null;
+        foreach (var flash in flashes)
+            if (flash.meshes != null) foreach (var mesh in flash.meshes) if (mesh != null) Destroy(mesh);
         flashes.Clear();
         if (owned != null)
         {
@@ -151,11 +158,50 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
 
     // A contact that actually removed enemy health: the same lines, longer, wider and held longer.
     public void EnemyHit(Vector3 contact, Vector2 outward)
-        => Rays(contact, outward, 5, .36f, .15f, .04f, NeuralPalette.Primary, 1.05f);
+        => Rays(contact, outward, 5, .28f, .15f, .035f, NeuralPalette.Primary, 1.05f);
 
-    // The player lost health: Danger lines leave the contact toward the attacker.
-    public void PlayerHit(Vector3 contact, Vector2 outward)
-        => Rays(contact, outward, 5, .40f, .20f, .045f, NeuralPalette.Danger, 1.2f);
+    // The player lost health: three small Danger slabs are knocked out of the contact, away from the attacker.
+    public void PlayerHit(Vector3 contact, Vector2 away) => Chips(contact, away, NeuralPalette.Danger, .20f);
+
+    // Slanted slabs in the UI's cut. They show for two steps of the 12-per-second effect clock and never fade.
+    private void Chips(Vector3 point, Vector2 direction, Color color, float reach)
+    {
+        if (!CanDraw || lineMaterial == null || direction.sqrMagnitude < .0001f) return;
+        var go = Child("ImpactChips");
+        float facing = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        float[] turns = { -30f, 3f, 32f }, lengths = { .085f, .11f, .075f }, widths = { .04f, .05f, .035f };
+        var chips = new Transform[turns.Length];
+        var steps = new Vector3[turns.Length];
+        var meshes = new Mesh[turns.Length];
+        for (int i = 0; i < turns.Length; i++)
+        {
+            float angle = (facing + turns[i]) * Mathf.Deg2Rad;
+            var along = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0);
+            float half = lengths[i] * .5f, thick = widths[i] * .5f, slant = widths[i] * .21f;
+            var mesh = new Mesh { name = "Impact chip", hideFlags = HideFlags.DontSave };
+            mesh.vertices = new[] { new Vector3(-half - slant, -thick), new Vector3(half - slant, -thick),
+                new Vector3(half + slant, thick), new Vector3(-half + slant, thick) };
+            mesh.colors = new[] { color, color, color, color };
+            mesh.triangles = new[] { 0, 2, 1, 0, 3, 2 };
+            var chip = new GameObject("Chip");
+            chip.layer = go.layer;
+            chip.transform.SetParent(go.transform, false);
+            // First step just off the contact; the second step ends exactly at the reach.
+            chip.transform.SetPositionAndRotation(point + along * (reach * .30f + half),
+                Quaternion.Euler(0, 0, (facing + turns[i])));
+            chip.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var renderer = chip.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = lineMaterial;
+            renderer.sortingLayerID = SortingLayer.NameToID(sortingLayer);
+            renderer.sortingOrder = sortingOrder;
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            chips[i] = chip.transform; meshes[i] = mesh;
+            steps[i] = along * (reach * .70f - lengths[i]);
+        }
+        flashes.Add(new Flash { root = go, chips = chips, chipSteps = steps, meshes = meshes,
+            born = PresentationClock, life = 2f / 12f, alpha = color.a });
+    }
 
     // Stationary silhouette copies left behind a moving body. The caller owns the cadence.
     public void Echo(IEnumerable<SpriteRenderer> parts, Color color, float life)
@@ -324,6 +370,15 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
             var f = flashes[i];
             float age = now - f.born;
             if (f.root == null || age >= f.life) { RemoveFlash(i); continue; }
+            if (f.chips != null)
+            {
+                if (!f.stepped && age >= f.life * .5f)
+                {
+                    f.stepped = true;
+                    for (int j = 0; j < f.chips.Length; j++) if (f.chips[j] != null) f.chips[j].position += f.chipSteps[j];
+                }
+                continue;
+            }
             float alpha = f.alpha * (1f - age / f.life);
             if (f.lines != null) foreach (var line in f.lines)
             {
@@ -349,6 +404,7 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
     private void RemoveFlash(int index)
     {
         var go = flashes[index].root;
+        if (flashes[index].meshes != null) foreach (var mesh in flashes[index].meshes) if (mesh != null) Destroy(mesh);
         if (go != null) { go.SetActive(false); Destroy(go); }
         flashes.RemoveAt(index);
     }

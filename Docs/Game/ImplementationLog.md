@@ -1,5 +1,14 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Player hit effect redesigned; enemy hit lines smaller
+
+Thomas found the player hit effect too large and approved two of the three proposed changes. The screen-edge tint is unchanged.
+
+- **Player hit point:** the five .40 Danger lines are replaced by three small slanted slabs (`AttemptPresentationVfx.Chips`), knocked out of the contact away from the attacker, reaching at most .20 world units. They hold one step, jump once and vanish after two steps of the 12-per-second effect clock, with no fade.
+- **Player body:** one step of pure white, then Danger fading back over .15 s (`PlayerFeedbackView`). Reduce Flashing skips the white step. No time is frozen.
+- **Enemy hit:** the lines are .28 long and .035 wide (were .36 and .04).
+- **NOT COMPILED, NOT TESTED:** Thomas was in Play Mode. The slabs are small meshes drawn with the line material; whether they render and sort correctly has not been seen.
+
 ## 2026-11-14 — Floor haze weaker
 
 - **Changed:** `HazeStrength` .20 to .13 at Thomas's request. One constant.

@@ -2,7 +2,7 @@
 
 ## 2026-11-13 — Target Profile shows everything at once
 
-- **Implemented:** `OpenTargetProfile` always shows the full dossier. A first opening starts `ReadProfile`, which plays each line in turn with no pending dialogue; `ProfileReading` drives the Signal marker on the row being read. Back no longer waits for the voice and leaving stops the reading. Rows fade in over a short cascade on every opening.
+- **Implemented:** `OpenTargetProfile` always shows the full dossier. A first opening starts `ReadProfile`, which plays each line in turn with no pending dialogue; `ProfileReading` drives the Signal marker on the row being read. Happy's lower-left box shows the line being read and never blocks a click. Back no longer waits for the voice and leaving stops the reading. Rows fade in over a short cascade on every opening.
 - **Checked:** compiles with Unity's bundled compiler outside the Editor. NOT TESTED in play: the reading order and pauses, the marker, Back during a line, Pause during a line, and Mission 3's two Codename lines.
 
 ## 2026-11-13 — Final Boss phase-two warnings and the continue mark

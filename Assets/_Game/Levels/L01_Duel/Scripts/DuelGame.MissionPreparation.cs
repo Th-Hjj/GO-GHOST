@@ -15,6 +15,7 @@ namespace GoGhost.Duel
         // The line Happy is reading on a first visit, or -1. The page shows every field from the start.
         internal int ProfileReading { get; private set; } = -1;
         Coroutine profileReading;
+        internal string ProfileReadingText => ProfileReading >= 0 && ProfileReading < profileLines.Length ? profileLines[ProfileReading].text : null;
         // Source of the real player parts for the preparation figure; never instantiated there.
         internal OfficerVisual PlayerVisualPrefab => combatPrefab != null ? combatPrefab.GetComponentInChildren<OfficerVisual>(true) : null;
         internal BossSilhouetteView ProfileSilhouette =>

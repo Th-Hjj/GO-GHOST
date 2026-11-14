@@ -40,7 +40,11 @@ namespace GoGhost.Duel
                 && (!show || TutorialChoiceOpen || (!explainingEditor && game.DialogueAllowsPreparationNavigation));
             bool ruleEditorOpen = game.Phase == DuelPhase.Configure && selectorRow >= 0 && !helpOpen
                 && !game.Paused && !game.DeveloperToolsOpen;
-            if (!show && !ruleEditorOpen && dialogueOverlay == null) return;
+            // On a first Target Profile visit Happy's box follows her reading, without waiting for clicks.
+            string readingLine = !show && game.Phase == DuelPhase.TargetProfile && !game.Paused && !game.DeveloperToolsOpen
+                ? game.ProfileReadingText : null;
+            bool reading = readingLine != null;
+            if (!show && !ruleEditorOpen && !reading && dialogueOverlay == null) return;
             if (dialogueOverlay == null)
             {
                 var blocker = Image(canvas, Vector2.zero, Vector2.zero, Color.clear);
@@ -55,8 +59,8 @@ namespace GoGhost.Duel
             }
             if (show && !wasShowingStory)
                 UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
-            dialogueOverlay.gameObject.SetActive(show || ruleEditorOpen);
-            if (!show && !ruleEditorOpen) return;
+            dialogueOverlay.gameObject.SetActive(show || ruleEditorOpen || reading);
+            if (!show && !ruleEditorOpen && !reading) return;
             dialogueOverlay.SetAsLastSibling();
             bool ambient = !game.FinalBossCutscene && !game.InvasionHeld;
             ambientPanel.gameObject.SetActive(ambient && !game.CurrentVoice.WaitingForPageSpeech);
@@ -78,6 +82,12 @@ namespace GoGhost.Duel
                 // No mark while Happy waits for a choice or a button instead of a click.
                 bool awaitsAction = TutorialChoiceOpen || VisibleTutorialFocus == TutorialFocus.AddRule;
                 ambientContinue.alpha = show && !showDescription && !awaitsAction && game.DialogueCanAdvance ? 1 : 0;
+                if (reading)
+                {
+                    ambientDialogue.text = readingLine;
+                    ambientSpeaker.text = game.HappySpeakerName;
+                    ambientDialogue.maxVisibleCharacters = int.MaxValue;
+                }
             }
         }
 

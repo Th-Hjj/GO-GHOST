@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Player hit point back to lines, smaller
+
+- **Changed:** Thomas withdrew the slab redesign of the hit point before seeing it. The original five Danger lines toward the attacker are back, .30 long and .035 wide (were .40 and .045). The slab code is removed. The white step on the body and the smaller enemy hit lines stay.
+- **NOT COMPILED, NOT TESTED:** Thomas was in Play Mode.
+
 ## 2026-11-14 — Player hit effect redesigned; enemy hit lines smaller
 
 Thomas found the player hit effect too large and approved two of the three proposed changes. The screen-edge tint is unchanged.

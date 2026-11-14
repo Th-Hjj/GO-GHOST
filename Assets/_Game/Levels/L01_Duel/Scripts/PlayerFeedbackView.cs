@@ -48,7 +48,7 @@ namespace GoGhost.Duel
             Vector2 center = body.bounds.center;
             Vector2 toward = source != null ? (Vector2)source.transform.position - center : Vector2.up;
             if (toward.sqrMagnitude < .0001f) toward = Vector2.up;
-            effects.PlayerHit(source != null ? body.ClosestPoint(source.transform.position) : center, -toward.normalized);
+            effects.PlayerHit(source != null ? body.ClosestPoint(source.transform.position) : center, toward.normalized);
         }
 
         void LateUpdate()

@@ -28,7 +28,9 @@ namespace GoGhost.Duel
                 image.raycastTarget = false;
                 return layer;
             }
-            BuildTitleCity(Layer("OutskirtsSky"));
+            var sky = Layer("OutskirtsSky");
+            BuildTitleStars(sky);
+            BuildTitleCity(sky);
             titleLayers = new[] { Layer("OutskirtsHills"), Layer("OutskirtsSlope"), Layer("OutskirtsRoof") };
             titleLook = TitlePointer();
             // Stand inside the back rim on the roof surface, not directly on its bright edge.
@@ -55,7 +57,57 @@ namespace GoGhost.Duel
             titleLook = Vector2.Lerp(titleLook, TitlePointer(), 1 - Mathf.Exp(-4 * Time.unscaledDeltaTime));
             for (int i = 0; i < titleLayers.Length; i++)
                 titleLayers[i].anchoredPosition = -Vector2.Scale(titleLook, TitleTravel[i]);
+            UpdateTitleStars();
             UpdateTitleCity();
+        }
+
+        Image[] titleTwinklers;
+        float[] titleTwinkleLevel, titleTwinkleTurn;
+
+        void BuildTitleStars(RectTransform sky)
+        {
+            // The same sky every launch. Out here the stars show; the city's glow puts them out toward the horizon.
+            var dice = new System.Random(11);
+            float Roll() => (float)dice.NextDouble();
+            var twinklers = new System.Collections.Generic.List<Image>();
+            var levels = new System.Collections.Generic.List<float>();
+            for (int tries = 0, made = 0; tries < 4000 && made < 150; tries++)
+            {
+                float x = Roll() * 1672, y = Roll() * 640;
+                float chance = Mathf.Pow(Mathf.Clamp01((640 - y) / 420), 1.3f);
+                chance *= Mathf.Clamp01((new Vector2(x - 858, (y - 760) * 1.4f).magnitude - 90) / 330);
+                Vector2 point = TitlePlatePoint(x, y);
+                // Few behind the logo, where they would only show between the letters.
+                if (point.x > -730 && point.x < 330 && point.y > 50 && point.y < 365) chance *= .3f;
+                if (Roll() > chance) continue;
+                made++;
+                float bright = Roll(); bright *= bright;
+                bool large = bright > .55f;
+                float level = Mathf.Lerp(.22f, .9f, bright) * Mathf.Lerp(.55f, 1, chance);
+                var star = Rect("Star", sky, point, Vector2.one * (large ? 2.2f : 1.35f)).gameObject.AddComponent<Image>();
+                star.sprite = StickmanSprites.Block; star.raycastTarget = false;
+                star.color = new Color(.80f + .12f * Roll(), .90f, 1, level);
+                if (large && twinklers.Count < 14) { twinklers.Add(star); levels.Add(level); }
+            }
+            titleTwinklers = twinklers.ToArray(); titleTwinkleLevel = levels.ToArray();
+            titleTwinkleTurn = new float[titleTwinklers.Length];
+            for (int i = 0; i < titleTwinkleTurn.Length; i++) titleTwinkleTurn[i] = Time.unscaledTime + Random.Range(1f, 8f);
+        }
+
+        void UpdateTitleStars()
+        {
+            if (GameSettings.ReduceFlashing) return;
+            // A few of the brighter stars dip one or two steps for a moment, then hold for seconds.
+            float now = Time.unscaledTime;
+            for (int i = 0; i < titleTwinklers.Length; i++)
+            {
+                if (now < titleTwinkleTurn[i]) continue;
+                var colour = titleTwinklers[i].color;
+                bool dipped = colour.a < titleTwinkleLevel[i] - .01f;
+                colour.a = titleTwinkleLevel[i] * (dipped ? 1 : Random.value < .5f ? .55f : .25f);
+                titleTwinklers[i].color = colour;
+                titleTwinkleTurn[i] = now + (dipped ? Random.Range(2.5f, 9f) : Random.Range(.12f, .32f));
+            }
         }
 
         // Dark facade spots on the plate, in its own pixels, picked once offline from the building silhouettes;

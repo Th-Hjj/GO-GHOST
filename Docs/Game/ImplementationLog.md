@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Title stars
+
+- **Asked:** continue the Living title order with the stars.
+- **Changed:** `DuelUI.Title.cs` places 150 hard-edged stars on the sky layer from a fixed seed, weighted toward the top of the sky and away from the city and the logo, and lets 14 of the larger ones twinkle in steps.
+- **Checked:** Unity compiled. One Play Mode capture at 2560x1440: 150 stars, dense overhead, none near the horizon or the city, small beside the logo. The twinkle over time, Reduce Flashing, other resolutions and packaged builds NOT TESTED.
+
 ## 2026-11-14 — Title city lights
 
 - **Asked:** continue the Living title order with the city: window lights, a spire beacon and a breathing horizon glow.

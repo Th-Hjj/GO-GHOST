@@ -9,7 +9,7 @@ namespace GoGhost.Duel
     {
         const float RimHeight = .045f, Hairline = .022f;
 
-        readonly List<(Collider2D support, SpriteRenderer rim)> platforms = new();
+        readonly List<(Collider2D support, SpriteRenderer surface, SpriteRenderer rim)> platforms = new();
         readonly List<Object> owned = new();
         Material material;
         int sortingLayer;
@@ -45,21 +45,23 @@ namespace GoGhost.Duel
                 new Vector2(right + Hairline * .5f, arena.center.y), new Vector2(Hairline, arena.size.y));
 
             for (int i = 1; i < supports.Length; i++)
-                if (supports[i] != null) platforms.Add((supports[i], Quad("Platform rim", pixel, look.Rim)));
+                if (supports[i] != null)
+                    platforms.Add((supports[i], supports[i].GetComponent<SpriteRenderer>(), Quad("Platform rim", pixel, look.Rim)));
             Follow();
         }
 
         void LateUpdate() => Follow();
 
-        // Final Boss phase two moves the platforms; each rim keeps to its collider.
+        // Final Boss phase two moves the platforms. A collider's bounds only refresh on a physics step,
+        // which does not run during the countdown, so each rim follows the platform's drawn sprite.
         void Follow()
         {
-            foreach (var (support, rim) in platforms)
+            foreach (var (support, surface, rim) in platforms)
             {
                 bool shown = support != null && support.gameObject.activeInHierarchy && support.enabled;
                 rim.enabled = shown;
                 if (!shown) continue;
-                Bounds bounds = support.bounds;
+                Bounds bounds = surface != null ? surface.bounds : support.bounds;
                 Place(rim, new Vector2(bounds.center.x, bounds.max.y - RimHeight * .5f), new Vector2(bounds.size.x, RimHeight));
             }
         }

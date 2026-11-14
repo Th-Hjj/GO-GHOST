@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-11-13 — Platform rims follow moving platforms
+
+- **Fixed:** Thomas saw the phase-two rim lights stay on one line while the platforms moved. The rims read each collider's bounds, which did not follow the oscillating platforms. They now read the platform's own sprite bounds (`ArenaSilhouetteDressing.Follow`).
+- **NOT COMPILED, NOT TESTED:** Thomas was in Play Mode. Why the collider bounds were stale was not established.
+
 ## 2026-11-13 — Plates and haze more transparent
 
 - **Changed:** Thomas asked for both to be more transparent. `PlateOpacity` .60 to .48 and `HazeStrength` .75 to .55 in `IndustrialArenaBackdrop`. Two constants only.

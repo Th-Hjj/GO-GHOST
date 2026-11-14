@@ -79,9 +79,10 @@ namespace GoGhost.Duel
             Limb("Right leg", new Vector2(.075f, -.115f), new Vector2(.185f, -.78f), .17f, far);
             Limb("Left leg", new Vector2(-.065f, -.115f), new Vector2(-.175f, -.78f), .17f, white);
 
-            // The torso is a regular rectangle too. Its upper end sits inside the head,
-            // leaving a direct, clean join without a separate neck or raised side-plane corners.
-            Limb("Back", new Vector2(0, -.16f), new Vector2(0, .46f), .22f, white);
+            // Keep the approved torso and neck proportions; only flatten the torso edges.
+            // No raised side-plane corners beside the neck.
+            Limb("Back", new Vector2(0, -.16f), new Vector2(0, .35f), .22f, white);
+            Limb("Neck", new Vector2(-.02f, .32f), new Vector2(-.035f, .46f), .125f, white);
             // No player-drawn face on the back of the head. The slight left turn faces the distant city.
             Part("Head back", StickmanSprites.Disc, Project(new Vector2(-.045f, .59f)), new Vector2(.46f, .46f), white);
             Limb("Left arm", new Vector2(-.135f, .31f), leftHand, .16f, white);

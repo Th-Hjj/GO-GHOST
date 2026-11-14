@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-11-13 — Casino near plate more opaque
+
+- **Changed:** Thomas found the casino's foreground, mainly the palms, too transparent. `ArenaLook` gained `NearOpacity`; the casino's near plate is .70 while every other plate stays at `PlateOpacity` .40.
+- **NOT COMPILED, NOT TESTED:** Thomas was in Play Mode.
+
 ## 2026-11-13 — Haze and plates lighter again; stray frame line in phase two
 
 - **Changed:** `PlateOpacity` .48 to .40 and `HazeStrength` .55 to .38 at Thomas's request. The wall and ceiling hairlines are hidden once the EMP sweep exists (`ArenaSilhouetteDressing.HideFrameHairlines`), because they showed as a second line inside the violet EMP outline in phase two.

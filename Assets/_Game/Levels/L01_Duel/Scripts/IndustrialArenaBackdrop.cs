@@ -10,14 +10,20 @@ namespace GoGhost.Duel
         public static readonly Color Structure = new Color32(5, 5, 6, 255);
         public readonly string Artwork, FarLabel, NearLabel;
         public readonly Color Haze, Rim;
+        // Near-plate opacity. The casino's entrance and palms need more than the shared value to read.
+        public readonly float NearOpacity;
         // An opaque far plate would hide the sky haze, so that haze is added in front of it.
         public readonly bool OpaqueSky;
 
-        ArenaLook(string artwork, string farLabel, string nearLabel, Color haze, Color rim, bool opaqueSky)
+        ArenaLook(string artwork, string farLabel, string nearLabel, Color haze, Color rim, bool opaqueSky,
+            float nearOpacity = PlateOpacity)
         {
             Artwork = artwork; FarLabel = farLabel; NearLabel = nearLabel; Haze = haze; Rim = rim;
-            OpaqueSky = opaqueSky;
+            OpaqueSky = opaqueSky; NearOpacity = nearOpacity;
         }
+
+        // Thomas, 2026-11-13: lowered twice at his request (.60, then .48).
+        public const float PlateOpacity = .40f;
 
         // Mission 3 starts cold white; the EMP dyes its haze violet. The Test Room and the Bonus have no plates.
         public static ArenaLook For(int wave) => wave switch
@@ -25,7 +31,7 @@ namespace GoGhost.Duel
             1 => new ArenaLook("Industrial", "Distant Works", "Steel Columns", NeuralPalette.Gunner,
                 new Color32(255, 233, 219, 255), false),
             2 => new ArenaLook("Casino", "Resort Hotels", "Casino Entrance", NeuralPalette.Swordsman,
-                new Color32(255, 226, 230, 255), false),
+                new Color32(255, 226, 230, 255), false, .70f),
             DuelGame.FinalBossWave => new ArenaLook("Megacity", "Distant Skyline", "Corporate Towers", NeuralPalette.Primary,
                 NeuralPalette.Primary, true),
             _ => new ArenaLook(null, null, null, NeuralPalette.Secondary, NeuralPalette.Primary, false)
@@ -39,8 +45,7 @@ namespace GoGhost.Duel
         const float VisibleWidthPixels = 966f;
         const float FarTravelPixels = 7f;
         const float NearTravelPixels = 36f;
-        // Thomas, 2026-11-13: both lowered twice at his request (plates .60, .48; haze .75, .55).
-        const float PlateOpacity = .40f;
+        // Thomas, 2026-11-13: lowered twice at his request (.75, then .55).
         const float HazeStrength = .38f;
 
         Transform player;
@@ -88,13 +93,13 @@ namespace GoGhost.Duel
             backdrop.hazeMaterial = new Material(hazeShader) { name = "Arena haze", hideFlags = HideFlags.DontSave };
             bool plates = farTexture != null;
             if (!look.OpaqueSky) backdrop.haze[0] = backdrop.AddHaze("Sky haze", backdrop.SkyHaze(look.Haze));
-            if (plates) backdrop.far = backdrop.AddPlate(look.FarLabel, farTexture, PlateOpacity);
+            if (plates) backdrop.far = backdrop.AddPlate(look.FarLabel, farTexture, ArenaLook.PlateOpacity);
             if (look.OpaqueSky) backdrop.haze[0] = backdrop.AddHaze("Sky haze", backdrop.SkyHaze(look.Haze));
             // Only the factory has this layer: the two stack beacons.
             var lights = plates ? Resources.Load<Texture2D>($"Arena/{look.Artwork}FarLights") : null;
             if (lights != null) backdrop.farLights = backdrop.AddPlate("Beacons", lights, 1f);
             backdrop.haze[1] = backdrop.AddHaze("Mid haze", backdrop.MidHaze(look.Haze));
-            if (plates) backdrop.near = backdrop.AddPlate(look.NearLabel, nearTexture, PlateOpacity);
+            if (plates) backdrop.near = backdrop.AddPlate(look.NearLabel, nearTexture, look.NearOpacity);
             backdrop.haze[2] = backdrop.AddHaze("Floor haze", backdrop.FloorHaze(look.Haze));
             backdrop.UpdateParallax();
         }

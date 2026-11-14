@@ -40,6 +40,8 @@ namespace GoGhost.Duel
         const float FarTravelPixels = 7f;
         const float NearTravelPixels = 36f;
         // Thomas, 2026-11-14: only a layer that hugs the floor; the glow in mid-air looked like a stain.
+        // Thomas, 2026-11-14: no floor haze at all. The layers stay in place, hidden, so the EMP cross-fade still has its targets.
+        const bool FloorHazeShown = false;
         const float HazeHeight = .24f, HazeStrength = .08f; // .20, then .13; Thomas asked for weaker each time
 
         Transform player;
@@ -90,6 +92,7 @@ namespace GoGhost.Duel
             var lights = plates ? Resources.Load<Texture2D>($"Arena/{look.Artwork}FarLights") : null;
             if (lights != null) backdrop.farLights = backdrop.AddPlate("Beacons", lights, 1f);
             backdrop.haze = backdrop.AddHaze("Floor haze", backdrop.FloorHaze(look.Haze));
+            backdrop.haze.enabled = FloorHazeShown;
             if (plates) backdrop.near = backdrop.AddPlate(look.NearLabel, nearTexture, look.NearOpacity);
             backdrop.AddLitHaze();
             backdrop.UpdateParallax();
@@ -290,6 +293,7 @@ namespace GoGhost.Duel
             // A violet copy of the haze sits directly above the cold-white layer, hidden until the sweep dyes it.
             empHaze = AddHaze("EMP floor haze", FloorHaze(NeuralPalette.Emp));
             empHaze.transform.SetSiblingIndex(haze.transform.GetSiblingIndex() + 1);
+            empHaze.enabled = FloorHazeShown;
             SetEmpHaze(0);
             UpdateParallax();
         }

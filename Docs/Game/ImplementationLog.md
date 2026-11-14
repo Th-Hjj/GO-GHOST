@@ -1,5 +1,14 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Lit haze replaces the floor haze
+
+Thomas asked for haze that weapons light, then reduced it over several rounds in play.
+
+- **Implemented:** `ArenaLitHaze.shader` and the light collection in `IndustrialArenaBackdrop` (see ArtDirection.md, "Stage 1 as built"). Lights: revolver cylinder, muzzle flash, bullets, sword waves, the Final Boss axe's energy. Blade, rifle and axe-cut lights were built and removed at his request. Floor haze hidden. Player bullet drawn at 85% with the same hit radius. Most of this was pushed earlier in 9d5ea06 from his other window; this entry describes it.
+- **Checked:** compiles. Mission 1 captured in Play Mode at the first two sizes (bullet and muzzle lights visible). Thomas judged the later, fainter values himself in play.
+- **NOT TESTED by me:** the final brightness, the hidden floor haze, sword-wave lights in Mission 2, axe lights in Mission 3, the Bonus with many bullets against the 16-light cap, and `LitHazeSteps`.
+- **Known change:** Mission 3 no longer shows the EMP dyeing the haze violet.
+
 ## 2026-11-14 — Backlit world art, stage 5: three stepped moments
 
 Thomas asked for the three remaining animation accents. Poses and movement are untouched.

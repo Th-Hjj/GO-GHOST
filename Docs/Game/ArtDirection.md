@@ -10,9 +10,9 @@ Thomas chose this direction for everything inside the arena. Mockups: <https://c
 
 1. Fighters are flat and hard-edged. The world gets its depth from haze and backlight.
 2. Structure (floor, walls, ceiling, platforms) is a black silhouette, #050506. Landing edges carry a thin rim light and the other sides a dim outline in the same colour. Nothing hangs under the platforms and nothing marks the walls (Thomas, 2026-11-13).
-3. Only things that matter to play give off light: landing edges, weapons and attacks.
-4. Each mission has one haze colour: Gunner orange, Swordsman coral, and cold white for Mission 3 until the EMP front that traces the skyline dyes it violet. It stays violet in phase two and on direct retry. The Test Room and the Bonus use neutral grey-blue.
-5. Backgrounds: the plate art is not altered (Thomas, 2026-11-13). Both plates keep their authored look at the opacities Thomas chose per mission. Only a thin haze along the floor is laid over them. The factory keeps two small beacons on its stacks.
+3. Only things that matter to play give off light: landing edges and the sources in rule 4.
+4. Haze fills the arena and is dark until a light reaches it (Thomas, 2026-11-14). The lights are the revolver's cylinder and muzzle flash, every bullet, sword waves and the Final Boss axe's energy. The Swordsman's blade, the Gunner's rifle and axe cuts give off none. The lights are small and faint; Thomas reduced them four times in play. There is no floor haze and no haze colour per mission.
+5. Backgrounds: the plate art is not altered (Thomas, 2026-11-13). Both plates keep their authored look at the opacities Thomas chose per mission. Only the lit haze is added over them. The factory keeps two small beacons on its stacks.
 
 **Decided per item**
 
@@ -20,7 +20,7 @@ Thomas chose this direction for everything inside the arena. Mockups: <https://c
 - **Revolver:** the outline in `RevolverPresentationGeometry` stays exactly as it is. Add a rim highlight on the top edge and the cylinder halo.
 - **Gunner rifle:** twin rails with charge cells that fill with the existing warning. **Swordsman blade:** neutral blade, slanted tip, one coral edge line; the idle pose stays one-handed at -28 degrees.
 - **Axe:** keep the approved outline. Add an edge bevel, a channel along the handle and blade (dark in phase one, lit in phase two) and three grip wraps.
-- **Effects:** built from limb-width square-ended lines, the UI's slanted slab and haze glow. A locked warning line uses the UI hazard stripe. Keep the existing sizes (muzzle lines .20, bullet .25, enemy hit .36 world units).
+- **Effects:** built from limb-width square-ended lines, the UI's slanted slab and haze glow. A locked warning line uses the UI hazard stripe. Keep the existing sizes (muzzle lines .20, bullet .25, enemy hit .36 world units); the player's bullet is drawn at 85% (Thomas, 2026-11-14).
 - **Animation:** keep every current pose and transition. Add only a two-step muzzle flash, afterimages that vanish in steps, a short hit-stop with the body in the Danger colour, and a one-step white flash when a rule takes a limb. Effects step at 12 per second; bodies update every frame. No overshoot, head lag, stretch or easing curves.
 
 **Stages**
@@ -36,9 +36,12 @@ Thomas chose this direction for everything inside the arena. Mockups: <https://c
 **Stage 1 as built**
 
 - `ArenaLook.For(wave)` holds each mission's haze colour, rim colour and plate opacities: Mission 1 .65 for both plates, Mission 2 .50 far and .70 near, Mission 3 .50. These are Thomas's choices.
-- `IndustrialArenaBackdrop` draws, back to front: far plate, the factory's beacons, floor haze, near plate. The haze is one generated layer that is even across the arena, strongest at the floor and gone a quarter of the way up, drawn with `Resources/ArenaHaze.shader`. There is no glow in mid-air. The Test Room and the Bonus get the haze without plates.
+- `IndustrialArenaBackdrop` draws, back to front: far plate, the factory's beacons, near plate, lit haze. The Test Room and the Bonus get the lit haze without plates.
+- Lit haze (2026-11-14): one full-arena layer drawn with `Resources/ArenaLitHaze.shader`, added to what is behind. Each frame the backdrop collects up to 16 lights (world position, radius, colour) from what the fight already exposes and passes them to the shader, which multiplies them by two slow layers of drifting noise. It reads positions only and changes no combat. `Light()` scales every radius by .72 and every strength by .35; the per-source values sit beside each source. `LitHaze = false` turns the layer off. `LitHazeSteps` above zero cuts each light into flat bands; this was never looked at.
+- Light sources: revolver cylinder (ice blue, constant), muzzle flash (.14 s), bullets (ice blue for the player, Gunner orange, coral once reflected, grey-blue for the Test Room robot), sword waves and afterblades (coral, dimmer while charging), the phase-one axe socket through a throw's wind-up and in flight (ice blue), the phase-two axe (violet; dim planted, swelling through the one-second order, brightest in flight).
+- Floor haze is hidden (`FloorHazeShown = false`). Its layers and `Resources/ArenaHaze.shader` remain, so `SetEmpHaze` still runs, but Mission 3 no longer shows the haze turning violet.
+- The player's bullet is drawn at 85% of its sprite size; `Projectile.Launch` shrinks the transform and enlarges the collider radius by the same factor, so the hit radius is unchanged.
 - `Resources/Arena/IndustrialFarLights.png` holds only the two stack beacons, shares the far plate's crop and fades slowly in and out.
-- Mission 3: `FinalBossEmpSweep` calls `SetEmpHaze` with the progress of the third front, cross-fading the cold-white haze to a violet copy. A direct phase-two start sets it fully violet.
 - `ArenaSilhouetteDressing` outlines the structure: full strength on the floor and platform tops, .14 on the ceiling, the wall faces and each platform's underside and ends. The dim sides hide once the EMP outline exists. It follows the platforms' sprites every frame and owns no collider.
 
 **Stage 2 as built**

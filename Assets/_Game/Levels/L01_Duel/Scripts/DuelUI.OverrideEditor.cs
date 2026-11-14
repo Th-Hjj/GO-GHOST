@@ -250,21 +250,30 @@ namespace GoGhost.Duel
                 if (parameters.Length > 0) listBottom = top + 48;
             }
             if (openRow < 0 || index == 0) return;
-            // A Signal bracket ties the open category to the choices that belong to it.
+            // A Signal frame ties the open category to the choices that belong to it. It leans like the slabs inside it.
             const float line = 3, margin = 8;
-            float frameLeft = optionLeft - margin, frameRight = w + 14, frameTop = -margin, frameBottom = listBottom + margin;
+            float frameTop = -margin, frameBottom = listBottom + margin, height = frameBottom - frameTop;
+            float cut = Mathf.Min(20, Mathf.Round(height * .21f)), slope = cut / height;
+            // Wide enough that the top row's lower corner and the bottom row's upper corner stay inside.
+            float frameLeft = optionLeft - 3 - slope * (height - margin - row);
+            float frameRight = w + 3 + cut - slope * (margin + row);
             float link = openRow * pitch + row / 2;
-            Image Line(float left, float y, float width, float height)
+            var frame = Rect("Choice frame", panel, Slot(frameLeft, frameTop, frameRight - frameLeft, height), new Vector2(frameRight - frameLeft, height))
+                .gameObject.AddComponent<SlabGraphic>();
+            frame.color = Color.clear; frame.Cut = cut; frame.raycastTarget = false; frame.SetFrame(line, OverridePalette.Signal);
+            frame.transform.SetAsFirstSibling();
+            // The frame's left edge at the height of the open category; below the frame the edge carries on down its own slant.
+            float edge = frameLeft + slope * (frameBottom - link);
+            if (link > frameBottom)
             {
-                var image = Image(panel, Slot(left, y, width, height), new Vector2(width, height), OverridePalette.Signal);
-                image.raycastTarget = false; image.transform.SetAsFirstSibling();
-                return image;
+                Vector2 from = Slot(frameLeft, frameBottom, 0, 0), to = Slot(edge, link, 0, 0);
+                var tail = Image(panel, (from + to) / 2, new Vector2((to - from).magnitude + line, line), OverridePalette.Signal);
+                tail.rectTransform.localRotation = Quaternion.Euler(0, 0, Mathf.Atan2(to.y - from.y, to.x - from.x) * Mathf.Rad2Deg);
+                tail.raycastTarget = false; tail.transform.SetAsFirstSibling();
             }
-            Line(frameLeft, frameTop, frameRight - frameLeft, line);
-            Line(frameLeft, frameBottom - line, frameRight - frameLeft, line);
-            Line(frameRight - line, frameTop, line, frameBottom - frameTop);
-            Line(frameLeft, frameTop, line, Mathf.Max(frameBottom, link + line / 2) - frameTop);
-            var connector = Line(categoryWidth - 4, link - line / 2, frameLeft - categoryWidth + 4 + line, line);
+            float joinLeft = categoryWidth - 4;
+            var connector = Image(panel, Slot(joinLeft, link - line / 2, edge - joinLeft + line, line), new Vector2(edge - joinLeft + line, line), OverridePalette.Signal);
+            connector.raycastTarget = false; connector.transform.SetAsFirstSibling();
             if (switched && !float.IsNaN(bracketLink) && !Mathf.Approximately(bracketLink, link))
             {
                 var travel = connector.gameObject.AddComponent<Arrive>();

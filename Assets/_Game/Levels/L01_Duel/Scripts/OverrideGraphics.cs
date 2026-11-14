@@ -257,11 +257,11 @@ namespace GoGhost.Duel
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             vh.Clear();
-            // The opening leans like every slab and is widened so it still contains what it frames.
-            float cut = Mathf.Min(28, size.y * .21f);
+            // The opening leans like every slab. The lean is shared between both ends, so it never reaches far past what it frames.
+            float half = Mathf.Min(20, size.y * .21f) / 2;
             float left = centre.x - size.x / 2, right = centre.x + size.x / 2, bottom = centre.y - size.y / 2, top = centre.y + size.y / 2;
-            hole[0] = new Vector2(left - cut, bottom); hole[1] = new Vector2(left, top);
-            hole[2] = new Vector2(right + cut, top); hole[3] = new Vector2(right, bottom);
+            hole[0] = new Vector2(left - half, bottom); hole[1] = new Vector2(left + half, top);
+            hole[2] = new Vector2(right + half, top); hole[3] = new Vector2(right - half, bottom);
             if (shade > 0)
             {
                 const float far = 6000;

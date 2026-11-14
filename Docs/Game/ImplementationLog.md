@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Slanted choice frame, narrower pointer
+
+- **Asked:** Thomas saw the rule editor's inner Signal frame still upright, and the tutorial pointer touching the Rules heading on the overview.
+- **Changed:** the frame around a category's choices is a slab-cut outline (lean up to 20), wide enough to hold the corners of the rows inside it; its link to the category meets the slanted edge. The pointer's lean is capped at 20 and shared between both ends, so it reaches 10 past its target instead of 28.
+- **Checked:** compiles. **NOT TESTED:** not seen in play.
+
 ## 2026-11-14 — Tutorial pacing and pointer
 
 - **Asked:** Thomas found the highlight and the voice out of step and approved all four parts of the proposal.

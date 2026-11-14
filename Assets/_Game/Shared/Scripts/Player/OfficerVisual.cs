@@ -387,12 +387,10 @@ public sealed class OfficerVisual : MonoBehaviour
     void UpdateCylinder()
     {
         if (cylinder == null || cylinderHalo == null || shooting == null) return;
-        int bars = RevolverPresentationGeometry.ChargeBars;
-        // A nonstandard F8 magazine still displays its actual fill proportion.
-        int lit = Mathf.CeilToInt((float)bars * shooting.AmmoInMagazine / Mathf.Max(1, shooting.MagazineSize));
-        cylinder.sprite = AntiqueRevolver ? RevolverPresentationGeometry.Core : RevolverPresentationGeometry.ChargeMask(lit);
+        // Thomas, 2026-11-14: back to the single luminous core block and its halo; the six bars looked scattered and dull.
+        cylinder.sprite = RevolverPresentationGeometry.Core;
         cylinder.enabled = weapon.enabled;
-        cylinderHalo.sprite = RevolverPresentationGeometry.ChargeMask(bars);
+        cylinderHalo.sprite = RevolverPresentationGeometry.Halo;
         cylinderHalo.enabled = weapon.enabled && !AntiqueRevolver;
     }
 
@@ -403,8 +401,8 @@ public sealed class OfficerVisual : MonoBehaviour
         Color tint = Color.Lerp(body, NeuralPalette.Danger, pulse);
         if (weapon != null) weapon.color = tint;
         if (weaponGrip != null) weaponGrip.color = tint;
-        if (cylinder != null) cylinder.color = AntiqueRevolver ? Color.Lerp(AntiqueCylinder, NeuralPalette.Danger, pulse) : new Color32(98, 202, 255, 255);
-        if (cylinderHalo != null) cylinderHalo.color = new Color32(58, 66, 75, 255);
+        if (cylinder != null) cylinder.color = Color.Lerp(AntiqueRevolver ? AntiqueCylinder : RevolverPresentationGeometry.CoreColor, NeuralPalette.Danger, pulse);
+        if (cylinderHalo != null) cylinderHalo.color = Color.Lerp(new Color(.35f, .78f, 1f, 1f), NeuralPalette.Danger, pulse);
     }
     // The UI and actor share this palette. Brightened indigo stays readable against black.
     public static Color SlotColor(LoadoutSlot slot) => slot switch

@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Revolver core block restored
+
+- **Changed:** Thomas found the six separate bars scattered and dull and prefers the earlier design. The cylinder is again the single ice-blue core block with its halo (`RevolverPresentationGeometry.Core` and `Halo`), in combat and on the mission overview figure. Reload still pulses the gun red. The gun no longer shows how many rounds are left; `ChargeMask` remains in the code, unused.
+- **NOT COMPILED, NOT TESTED:** Thomas was in Play Mode.
+
 ## 2026-11-14 — Phase-change fronts leave from the socket
 
 - **Changed:** the three EMP fronts, their sweep over the terrain, cards and skyline, and the release sparks now start at the axe's socket (`InvasionChargePoint`) instead of the planted blade's contact with the floor. The planted pose still uses the contact point. Timings are unchanged; the fronts reach each place a moment earlier or later only by the distance between the two points.

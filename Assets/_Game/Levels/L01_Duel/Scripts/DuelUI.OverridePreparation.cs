@@ -336,9 +336,9 @@ namespace GoGhost.Duel
             Bar(figureTorso, hip, chest + Vector2.up * .035f, .17f);
             Part(game.Appearance.CombatSprite, headPoint, new Vector2(.46f, .46f), 0, NeuralPalette.Primary);
             Mounted(RevolverPresentationGeometry.Body, anchor, RevolverPresentationGeometry.BodyColor);
-            var charge = RevolverPresentationGeometry.ChargeMask(RevolverPresentationGeometry.ChargeBars);
-            Mounted(charge, anchor + RevolverPresentationGeometry.CorePosition, new Color32(58, 66, 75, 255));
-            Mounted(charge, anchor + RevolverPresentationGeometry.CorePosition, new Color32(98, 202, 255, 255));
+            // The same luminous core block and halo the fight draws.
+            Mounted(RevolverPresentationGeometry.Halo, anchor + RevolverPresentationGeometry.CorePosition, new Color(.35f, .78f, 1f, 1f));
+            Mounted(RevolverPresentationGeometry.Core, anchor + RevolverPresentationGeometry.CorePosition, RevolverPresentationGeometry.CoreColor);
             var palm = prefab != null && prefab.Part(LoadoutSlot.Brain) != null ? prefab.Part(LoadoutSlot.Brain).sprite : null;
             if (palm != null)
             {

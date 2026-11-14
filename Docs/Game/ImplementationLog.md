@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Phase-change fronts leave from the socket
+
+- **Changed:** the three EMP fronts, their sweep over the terrain, cards and skyline, and the release sparks now start at the axe's socket (`InvasionChargePoint`) instead of the planted blade's contact with the floor. The planted pose still uses the contact point. Timings are unchanged; the fronts reach each place a moment earlier or later only by the distance between the two points.
+- **NOT COMPILED, NOT TESTED.**
+
 ## 2026-11-14 — Axe details, currents gather into the socket, lit haze restrained
 
 - **Axe (stage 3, Thomas chose all three details):** a paler bevel along the cutting edge, a channel from the socket down the handle and across to the edge, and three grip wraps are painted into `FinalBossAxeSilhouette.png`. The alpha outline is untouched. New `Resources/FinalBossAxeDetail.png` marks the channel (R) and bevel (G); `FinalBossRainbow.shader` lights both over the unchanged violet flow in phase two through `_AxeDetail`, set in `UseChargedWeapon`.

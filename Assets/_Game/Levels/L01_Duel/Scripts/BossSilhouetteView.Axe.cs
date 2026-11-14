@@ -345,7 +345,7 @@ namespace GoGhost.Duel
         {
             float age=Time.time-chargeAt;
             float charge=Ease(age/4.8f),pinch=Ease((age-4.8f)/.30f);
-            // The phase change gathers into the same socket; the fronts still leave from the planted blade.
+            // The phase change gathers into the same socket, and its fronts leave from it too.
             DrawAbsorption(phaseOneSocket,age,charge,pinch,true);
         }
 

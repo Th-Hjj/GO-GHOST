@@ -92,7 +92,8 @@ namespace GoGhost.Duel
             boss.View.BeginPlantedCharge();
             encounterSounds?.Play(Sfx.EmpGather);
             yield return new WaitForSeconds(BossSilhouetteView.PlantedChargeSeconds);
-            Vector2 origin = boss.View.PlantedContact;
+            // Thomas, 2026-11-14: the fronts leave from the axe's socket, where the currents gathered.
+            Vector2 origin = boss.View.InvasionChargePoint;
             Vector2 farCorner = (Vector2)arenaBounds.extents + new Vector2(
                 Mathf.Abs(origin.x - arenaBounds.center.x), Mathf.Abs(origin.y - arenaBounds.center.y));
             // Include the outer thickness of the walls, ceiling and floor.

@@ -318,6 +318,8 @@ namespace GoGhost.Duel
                 Vector2 knee = JumpLandingPose.Knee(start, end, bend, 1, rear, 0, 0);
                 Bar(figureLegs, start, knee, .17f);
                 Bar(figureLegs, knee, end, .17f);
+                // The same round knee the fight draws, so the bent leg does not split.
+                figureLegs.Add(Part(StickmanSprites.Disc, knee, Vector2.one * (.17f / StickmanSprites.DiscFill), 0, NeuralPalette.Primary));
             }
             Image Mounted(Sprite sprite, Vector2 point, Color colour)
             {

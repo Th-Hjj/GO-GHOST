@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Afterimage feet and the overview figure's knees
+
+- **Fixed:** dash and Dodge afterimages copied the lengthened standing calves without the mask that cuts them flat. `StickmanSprites.CarryFootCut` gives each afterimage its own copy of that mask (`AttemptPresentationVfx.Echo`, `BossSilhouetteView.CaptureEcho`). The mission overview's UI copy of the player gets the same round knee disc as the fight.
+- **NOT COMPILED, NOT TESTED:** Thomas was in Play Mode.
+- **Also pushed at Thomas's request:** his other window's uncommitted work (bullets lighting the floor haze in `IndustrialArenaBackdrop` with `ArenaLitHaze.shader`, a smaller drawn player bullet in `Projectile`). That work is not described or checked here.
+
 ## 2026-11-14 — Backlit world art, stage 3 (part): Gunner rifle and Swordsman blade
 
 Thomas chose to do only these two weapons first; the revolver highlight and the axe details wait.

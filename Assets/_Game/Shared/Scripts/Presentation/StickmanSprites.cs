@@ -33,6 +33,24 @@ public static class StickmanSprites
     // Opaque square for the mask that cuts a standing foot flat.
     public static Sprite Block => block != null ? block : block = Make("Stickman block", 4, 4, (x, y) => 1);
 
+    // An afterimage of a standing calf is longer than the leg looks: the live body hides the excess with a mask
+    // that moves on with it. The afterimage therefore gets its own copy of that mask, left where the foot stood.
+    public static void CarryFootCut(SpriteRenderer source, SpriteRenderer copy, Transform group)
+    {
+        if (source.maskInteraction == SpriteMaskInteraction.None) return;
+        copy.maskInteraction = source.maskInteraction;
+        if (group.Find("FootCut") != null) return;
+        SpriteMask mask = null;
+        for (var owner = source.transform.parent; owner != null && mask == null; owner = owner.parent)
+            mask = owner.GetComponentInChildren<SpriteMask>();
+        if (mask == null || !mask.enabled) return;
+        var cut = new GameObject("FootCut").AddComponent<SpriteMask>();
+        cut.sprite = mask.sprite;
+        cut.transform.SetPositionAndRotation(mask.transform.position, mask.transform.rotation);
+        cut.transform.localScale = mask.transform.lossyScale;
+        cut.transform.SetParent(group, true);
+    }
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void Reset()
     {

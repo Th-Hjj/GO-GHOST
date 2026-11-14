@@ -591,6 +591,7 @@ namespace GoGhost.Duel
                 go.transform.localScale=source.transform.lossyScale;go.transform.SetParent(root.transform,true);
                 var copy=go.AddComponent<SpriteRenderer>();copy.sprite=source.sprite;copy.sharedMaterial=source.sharedMaterial;
                 copy.sortingOrder=source.sortingOrder-1;Color color=source.color;color.a=.16f;copy.color=color;sprites.Add(copy);
+                StickmanSprites.CarryFootCut(source,copy,root.transform);
             }
             echoes++;flashes.Add(new Flash{Root=root,Sprites=sprites.ToArray(),Born=clock,Life=.14f,Alpha=.16f,Echo=true});
         }

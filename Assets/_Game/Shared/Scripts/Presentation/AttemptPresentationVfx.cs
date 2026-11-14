@@ -181,6 +181,7 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
             copy.flipY = source.flipY;
             copy.sortingLayerID = source.sortingLayerID;
             copy.color = color;
+            StickmanSprites.CarryFootCut(source, copy, group.transform);
             copies.Add(copy);
         }
         foreach (var copy in copies) copy.sortingOrder = behind;

@@ -27,7 +27,8 @@ namespace GoGhost.Duel
         RectTransform OvOverlayFrame(string title, bool back = true)
         {
             page.sizeDelta = canvas.rect.size;
-            OvFill(page, game.Paused ? NeuralPalette.Alpha(OverridePalette.Ink, .94f) : OverridePalette.Ink);
+            // Opaque over a paused fight too: the arena must not show through the rows.
+            OvFill(page, OverridePalette.Ink);
             var frame = Rect("Frame", page, Vector2.zero, new Vector2(1600, 900));
             if (back)
                 OvButton("« Back", frame, At(56, 44, 170, 52), new Vector2(170, 52), CloseOverlay, OverrideButtonKind.Tertiary, 30,

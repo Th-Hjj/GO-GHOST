@@ -11,7 +11,7 @@ namespace GoGhost.Duel
         TMP_FontAsset monoDialogue;
         SlamIn[] creationWords;
         float creationSpeechAt = -1, creationBuiltAt = -1;
-        RingGraphic startupRing;
+        HeadScan startupScan;
 
         // JetBrains Mono for every existing glyph; the OS font only for name glyphs it lacks.
         TMP_FontAsset OvDialogueFont()
@@ -81,7 +81,7 @@ namespace GoGhost.Duel
         void BuildOverrideCreation()
         {
             page.sizeDelta = canvas.rect.size;
-            startupFill = null; startupError = null; startupRing = null;
+            startupFill = null; startupError = null; startupScan = null;
             OvFill(page, OverridePalette.Ink);
             var frame = Rect("Frame", page, Vector2.zero, new Vector2(1600, 900));
 
@@ -119,6 +119,10 @@ namespace GoGhost.Duel
             image.sprite = game.Appearance.Sprite;
             image.color = OverridePalette.Text;
             image.raycastTarget = true;
+            // Until the first mark, a ghost face is drawn inside the head to show that it is a canvas.
+            var guide = Rect("DrawGuide", face, Vector2.zero, new Vector2(490, 490)).gameObject.AddComponent<DrawGuide>();
+            guide.Appearance = game.Appearance; guide.raycastTarget = false;
+            guide.color = Color.Lerp(Color.black, OverridePalette.Text, .42f); guide.Brush = OverridePalette.Text;
             face.gameObject.AddComponent<CharacterFaceCanvas>().Initialize(game.Appearance);
             OvButton("Clear", frame, At(1384, 270, 130, 52), new Vector2(130, 52), game.Appearance.Clear, OverrideButtonKind.Tertiary, 30,
                 align: TextAlignmentOptions.Capline).name = "ClearFace";
@@ -150,9 +154,12 @@ namespace GoGhost.Duel
             if (game.StartupFailed)
             {
                 startupError = OvBody("Couldn't load the game. Please try again.", frame, 20, OverridePalette.Text);
-                startupError.rectTransform.anchoredPosition = At(920, 764, 560, 60);
-                startupError.rectTransform.sizeDelta = new Vector2(560, 60);
+                startupError.rectTransform.anchoredPosition = At(920, 756, 560, 32);
+                startupError.rectTransform.sizeDelta = new Vector2(560, 32);
             }
+            OvText("Tutorial", frame, At(1180, 808, 150, 52), new Vector2(150, 52), 36, OverridePalette.Text, TextAlignmentOptions.CaplineRight, false, 1);
+            OvToggle("TutorialOn", "On", frame, 1344, 808, 96, game.TutorialWanted, () => { game.TutorialWanted = true; Show(); });
+            OvToggle("TutorialOff", "Off", frame, 1448, 808, 96, !game.TutorialWanted, () => { game.TutorialWanted = false; Show(); });
             if (game.StartupProgress >= 0) ShowStartupProgress(game.StartupProgress);
         }
 
@@ -204,11 +211,10 @@ namespace GoGhost.Duel
                 startupFill.anchorMin = Vector2.zero;
 
                 var face = (RectTransform)canvasFace.transform;
-                startupRing = Rect("Upload ring", face, Vector2.zero, new Vector2(442, 442)).gameObject.AddComponent<RingGraphic>();
-                startupRing.color = OverridePalette.Signal; startupRing.Thickness = 15; startupRing.Fill = 0; startupRing.raycastTarget = false;
-                var line = Image(face, Vector2.zero, new Vector2(10, 3), OverridePalette.Signal).rectTransform;
-                var scan = face.gameObject.AddComponent<HeadScan>();
-                scan.Line = line; scan.Radius = 204;
+                var guide = face.GetComponentInChildren<DrawGuide>();
+                if (guide != null) guide.gameObject.SetActive(false);
+                startupScan = Rect("Upload scan", face, Vector2.zero, new Vector2(490, 490)).gameObject.AddComponent<HeadScan>();
+                startupScan.color = OverridePalette.Signal; startupScan.Radius = 206; startupScan.raycastTarget = false;
                 displayedPercent = -1;
             }
             int percent = Mathf.FloorToInt(Mathf.Clamp01(progress) * 100f);
@@ -216,7 +222,7 @@ namespace GoGhost.Duel
             displayedPercent = percent;
             startupFill.anchorMax = new Vector2(percent / 100f, 1);
             startupLabel.text = percent + "%";
-            if (startupRing != null) startupRing.Fill = percent / 100f;
+            if (percent >= 100 && startupScan != null) startupScan.Finish();
         }
     }
 }

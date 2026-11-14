@@ -171,15 +171,21 @@ namespace GoGhost.Duel
                 OvButton("Continue", frame, At(92, 580, 494, 96), new Vector2(494, 96), game.ContinueGame, OverrideButtonKind.Primary, 62, true);
                 OvButton("New Game", frame, At(92, 690, 494, 68), new Vector2(494, 68), RequestNewGame, OverrideButtonKind.Secondary, 40);
             }
-            else OvButton("New Game", frame, At(92, 600, 440, 96), new Vector2(440, 96), RequestNewGame, OverrideButtonKind.Primary, 62, true);
+            else OvButton("New Game", frame, At(92, 600, 494, 96), new Vector2(494, 96), RequestNewGame, OverrideButtonKind.Primary, 62, true);
+            // The small row spans exactly the width of the buttons above it. A browser page has nothing to quit.
             float row = saved ? 774 : 714;
-            OvButton("Settings", frame, At(92, row, 196, 56), new Vector2(196, 56), () => OpenOverlay(OverlayPage.Settings), OverrideButtonKind.Tertiary, 32,
-                align: TextAlignmentOptions.Capline);
-            OvButton("Credits", frame, At(298, row, 180, 56), new Vector2(180, 56), () => OpenOverlay(OverlayPage.Credits), OverrideButtonKind.Tertiary, 32,
-                align: TextAlignmentOptions.Capline);
-            // A browser page has nothing to quit.
-            if (Application.platform != RuntimePlatform.WebGLPlayer) OvButton("Quit", frame, At(488, row, 140, 56), new Vector2(140, 56), Application.Quit, OverrideButtonKind.Tertiary, 32,
-                align: TextAlignmentOptions.Capline);
+            bool quit = Application.platform != RuntimePlatform.WebGLPlayer;
+            const float span = 494, gap = 10;
+            string[] titles = quit ? new[] { "Settings", "Credits", "Quit" } : new[] { "Settings", "Credits" };
+            float[] shares = quit ? new[] { 178f, 166f, 130f } : new[] { 252f, 232f };
+            UnityEngine.Events.UnityAction[] clicks = { () => OpenOverlay(OverlayPage.Settings), () => OpenOverlay(OverlayPage.Credits), Application.Quit };
+            float x = 92;
+            for (int i = 0; i < titles.Length; i++)
+            {
+                float w = i == titles.Length - 1 ? 92 + span - x : shares[i];
+                OvButton(titles[i], frame, At(x, row, w, 56), new Vector2(w, 56), clicks[i], OverrideButtonKind.Tertiary, 32, align: TextAlignmentOptions.Capline);
+                x += w + gap;
+            }
         }
 
         void BuildOverridePause()

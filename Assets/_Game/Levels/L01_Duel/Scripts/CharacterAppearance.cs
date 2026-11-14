@@ -18,6 +18,8 @@ namespace GoGhost.Duel
         public Sprite Sprite { get; private set; }
         public Texture2D CombatTexture { get; private set; }
         public Sprite CombatSprite { get; private set; }
+        // False until the player has made a mark; the drawing demonstration watches this.
+        public bool HasInk { get; private set; }
         readonly Color32[] blank, pixels, combatPixels;
         readonly byte[] ink;
         const float DrawingRadius = .86f;
@@ -66,6 +68,7 @@ namespace GoGhost.Duel
         {
             System.Array.Copy(blank, pixels, blank.Length);
             System.Array.Clear(ink, 0, ink.Length);
+            HasInk = false;
             for (int i = 0; i < combatPixels.Length; i++)
                 combatPixels[i] = new Color32(255, 255, 255, blank[i].a);
             Upload();
@@ -75,6 +78,7 @@ namespace GoGhost.Duel
         {
             // Each event paints a continuous antialiased capsule, even on a fast pointer move.
             if (!Contains(from) || !Contains(to)) return;
+            HasInk = true;
             Vector2 a = from * Resolution - Vector2.one * .5f, b = to * Resolution - Vector2.one * .5f;
             Vector2 delta = b - a;
             float lengthSquared = delta.sqrMagnitude;
@@ -113,6 +117,7 @@ namespace GoGhost.Duel
                 for (int i = 0; i < source.Length; i++)
                 {
                     ink[i] = source[i].r > blank[i].r ? source[i].r : (byte)0;
+                    if (ink[i] > 0) HasInk = true;
                     byte value = (byte)Mathf.Max(blank[i].r, ink[i]);
                     pixels[i] = new Color32(value, value, value, blank[i].a);
                     byte inverse = (byte)(255 - ink[i]);

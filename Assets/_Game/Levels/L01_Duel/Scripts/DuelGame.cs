@@ -31,6 +31,8 @@ namespace GoGhost.Duel
         public int Wave { get; private set; } = 1;
         public bool Paused { get; private set; }
         public bool FirstConfiguration { get; private set; }
+        // Chosen on the creation page; a New Game starts with the tutorial on.
+        public bool TutorialWanted { get; set; } = true;
         public PlayerHealth Player { get; private set; }
         public Enemy Police { get; private set; }
         public IReadOnlyList<BossAgent> Bosses => actors;
@@ -117,8 +119,10 @@ namespace GoGhost.Duel
             DraftLegs = DraftArms = DraftSpine = false;
             DraftLoadout=new ConditionalLoadout();
             FirstConfiguration = true;
+            TutorialWanted = true;
             ResetCharacterAppearance();
             SetPhase(DuelPhase.CharacterCreation);
+            BeginPreload();
             creationQuestionAt = AudioSettings.dspTime + VoiceStudioCatalog.Current.openingDelay;
         }
         void ResetCharacterAppearance()
@@ -136,6 +140,15 @@ namespace GoGhost.Duel
             PlayMetrics.SetName(Appearance.DisplayName, true);
             PlayMetrics.RecordConfiguration(DraftLoadout);
             UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
+            // Without the tutorial Happy neither greets the player nor guides the first rule.
+            if (installStarterRule && !TutorialWanted)
+            {
+                tutorialDone = true;
+                FirstConfiguration = false;
+                handler.RestoreSpeakerName();
+                SetPhase(DuelPhase.Configure);
+                return;
+            }
             SetPhase(DuelPhase.Configure);
             handler.PlayGreeting(Appearance.Name, installStarterRule ? ui.InstallTutorialJumpRule : (System.Action)null);
             greeted = true;
@@ -356,6 +369,7 @@ namespace GoGhost.Duel
                 startup = null;
                 handler.Stop();
             }
+            if (preload != null && value != DuelPhase.CharacterCreation) { StopCoroutine(preload); preload = null; }
             StartupProgress = -1f;
             StartupFailed = false;
             if (value == DuelPhase.Menu || value == DuelPhase.CharacterCreation

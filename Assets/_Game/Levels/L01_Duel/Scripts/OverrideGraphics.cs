@@ -403,19 +403,211 @@ namespace GoGhost.Duel
         }
     }
 
-    // A line sweeping down a circle, sized to the chord it crosses.
-    public sealed class HeadScan : MonoBehaviour
+    // The Upload scan: a bright line with a fading wake sweeps down and back up the head, then the head flashes once.
+    [RequireComponent(typeof(CanvasRenderer))]
+    public sealed class HeadScan : MaskableGraphic
     {
-        public RectTransform Line;
-        public float Radius = 200, Seconds = 1.5f;
+        public float Radius = 200, PassSeconds = 1.05f, Wake = 150, Line = 5;
+        const float FlashSeconds = .3f;
+        float clock, flashAt = -1;
 
-        void LateUpdate()
+        // Called when the upload is complete.
+        public void Finish() { if (flashAt < 0) flashAt = clock; }
+
+        void Update()
         {
-            if (Line == null) return;
-            float p = (float)(Time.unscaledTimeAsDouble % Seconds / Seconds);
-            float y = Mathf.Lerp(Radius, -Radius, p);
-            Line.anchoredPosition = new Vector2(0, y);
-            Line.sizeDelta = new Vector2(2 * Mathf.Sqrt(Mathf.Max(0, Radius * Radius - y * y)), 3);
+            // A slow frame holds the line where it is instead of letting it jump.
+            clock += Mathf.Min(Time.unscaledDeltaTime, 1f / 30f);
+            SetVerticesDirty();
+        }
+
+        float Chord(float y) => Mathf.Sqrt(Mathf.Max(0, Radius * Radius - y * y));
+
+        void Band(VertexHelper vh, float y0, float y1, Color32 c0, Color32 c1)
+        {
+            y0 = Mathf.Clamp(y0, -Radius, Radius); y1 = Mathf.Clamp(y1, -Radius, Radius);
+            if (Mathf.Approximately(y0, y1)) return;
+            float w0 = Chord(y0), w1 = Chord(y1);
+            int i = vh.currentVertCount;
+            vh.AddVert(new Vector3(-w0, y0), c0, Vector2.zero); vh.AddVert(new Vector3(w0, y0), c0, Vector2.zero);
+            vh.AddVert(new Vector3(w1, y1), c1, Vector2.zero); vh.AddVert(new Vector3(-w1, y1), c1, Vector2.zero);
+            vh.AddTriangle(i, i + 1, i + 2); vh.AddTriangle(i, i + 2, i + 3);
+        }
+
+        protected override void OnPopulateMesh(VertexHelper vh)
+        {
+            vh.Clear();
+            Color tint = color;
+            if (flashAt >= 0)
+            {
+                if (GameSettings.ReduceFlashing) return;
+                float fade = 1 - Mathf.Clamp01((clock - flashAt) / FlashSeconds);
+                tint.a = .55f * fade * fade;
+                // Slices follow the angle so the top and bottom of the disc stay round.
+                const int slices = 48;
+                for (int s = 0; s < slices; s++)
+                    Band(vh, -Radius * Mathf.Cos(Mathf.PI * s / slices), -Radius * Mathf.Cos(Mathf.PI * (s + 1) / slices), tint, tint);
+                return;
+            }
+            float pass = clock / PassSeconds;
+            bool down = Mathf.FloorToInt(pass) % 2 == 0;
+            float p = Mathf.SmoothStep(0, 1, pass - Mathf.Floor(pass));
+            float y = Mathf.Lerp(Radius, -Radius, down ? p : 1 - p);
+            // The wake trails behind the line, strongest beside it.
+            float behind = down ? 1 : -1;
+            const int steps = 10;
+            for (int s = 0; s < steps; s++)
+            {
+                float a0 = 1 - s / (float)steps, a1 = 1 - (s + 1) / (float)steps;
+                Color c0 = tint, c1 = tint;
+                c0.a = .34f * a0 * a0; c1.a = .34f * a1 * a1;
+                Band(vh, y + behind * Wake * s / steps, y + behind * Wake * (s + 1) / steps, c0, c1);
+            }
+            Color core = Color.Lerp(tint, Color.white, .55f);
+            Band(vh, y - Line / 2, y + Line / 2, core, core);
+        }
+    }
+
+    // Shows where to draw: a ghost face is drawn stroke by stroke inside the head until the player makes a mark.
+    [RequireComponent(typeof(CanvasRenderer))]
+    public sealed class DrawGuide : MaskableGraphic
+    {
+        public CharacterAppearance Appearance;
+        public float Thickness = 26;
+        // The brush ring that travels with the strokes.
+        public Color Brush = Color.white;
+        const float Loop = 4.6f, FadeAt = 3.5f, FadeSeconds = .7f, BrushLeaves = 2.75f;
+        static readonly float[] Begin = { .45f, 1.05f, 1.7f }, Seconds = { .32f, .32f, .8f };
+        static readonly Vector2[][] Strokes = BuildStrokes();
+        float clock;
+
+        static Vector2[][] BuildStrokes()
+        {
+            var smile = new Vector2[17];
+            for (int i = 0; i < smile.Length; i++)
+            {
+                float a = Mathf.Lerp(205, 335, i / (float)(smile.Length - 1)) * Mathf.Deg2Rad;
+                smile[i] = new Vector2(Mathf.Cos(a) * 98, -14 + Mathf.Sin(a) * 98);
+            }
+            return new[]
+            {
+                new[] { new Vector2(-62, 70), new Vector2(-62, 18) },
+                new[] { new Vector2(62, 70), new Vector2(62, 18) },
+                smile
+            };
+        }
+
+        protected override void OnEnable() { base.OnEnable(); clock = 0; }
+
+        void Update()
+        {
+            clock += Mathf.Min(Time.unscaledDeltaTime, 1f / 30f);
+            // After a Clear the demonstration starts again from its first stroke.
+            if (Appearance != null && Appearance.HasInk) clock = 0;
+            SetVerticesDirty();
+        }
+
+        static Vector2 Along(Vector2[] path, float part, System.Collections.Generic.List<Vector2> drawn)
+        {
+            float total = 0;
+            for (int i = 1; i < path.Length; i++) total += Vector2.Distance(path[i - 1], path[i]);
+            float left = total * Mathf.Clamp01(part);
+            drawn?.Add(path[0]);
+            for (int i = 1; i < path.Length; i++)
+            {
+                float length = Vector2.Distance(path[i - 1], path[i]);
+                if (left < length)
+                {
+                    var tip = Vector2.Lerp(path[i - 1], path[i], length > 0 ? left / length : 0);
+                    drawn?.Add(tip);
+                    return tip;
+                }
+                left -= length;
+                drawn?.Add(path[i]);
+            }
+            return path[path.Length - 1];
+        }
+
+        void Dot(VertexHelper vh, Vector2 at, float radius, Color32 c)
+        {
+            const int sides = 14;
+            int centre = vh.currentVertCount;
+            vh.AddVert(at, c, Vector2.zero);
+            for (int i = 0; i <= sides; i++)
+            {
+                float a = i * Mathf.PI * 2 / sides;
+                vh.AddVert(at + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * radius, c, Vector2.zero);
+                if (i > 0) vh.AddTriangle(centre, centre + i, centre + i + 1);
+            }
+        }
+
+        void Segment(VertexHelper vh, Vector2 a, Vector2 b, float half, Color32 c)
+        {
+            Vector2 d = b - a;
+            if (d.sqrMagnitude < .0001f) return;
+            Vector2 n = new Vector2(-d.y, d.x).normalized * half;
+            int i = vh.currentVertCount;
+            vh.AddVert(a - n, c, Vector2.zero); vh.AddVert(a + n, c, Vector2.zero);
+            vh.AddVert(b + n, c, Vector2.zero); vh.AddVert(b - n, c, Vector2.zero);
+            vh.AddTriangle(i, i + 1, i + 2); vh.AddTriangle(i, i + 2, i + 3);
+        }
+
+        void Ring(VertexHelper vh, Vector2 at, float radius, float width, Color32 c)
+        {
+            const int sides = 28;
+            int first = vh.currentVertCount;
+            for (int i = 0; i <= sides; i++)
+            {
+                float a = i * Mathf.PI * 2 / sides;
+                var dir = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
+                vh.AddVert(at + dir * (radius - width), c, Vector2.zero);
+                vh.AddVert(at + dir * radius, c, Vector2.zero);
+                if (i == 0) continue;
+                int v = first + i * 2;
+                vh.AddTriangle(v - 2, v - 1, v + 1); vh.AddTriangle(v - 2, v + 1, v);
+            }
+        }
+
+        readonly System.Collections.Generic.List<Vector2> drawn = new System.Collections.Generic.List<Vector2>();
+
+        protected override void OnPopulateMesh(VertexHelper vh)
+        {
+            vh.Clear();
+            if (Appearance == null || Appearance.HasInk) return;
+            float t = clock % Loop;
+            // The head's interior is black, so fading to black is a fade-out without overlapping alpha.
+            float fade = 1 - Mathf.Clamp01((t - FadeAt) / FadeSeconds);
+            Color32 ink = Color.Lerp(Color.black, color, fade);
+            float half = Thickness / 2;
+            Vector2 brush = Strokes[0][0];
+            for (int s = 0; s < Strokes.Length; s++)
+            {
+                float part = (t - Begin[s]) / Seconds[s];
+                if (part <= 0)
+                {
+                    // Between strokes the brush travels to where the next one starts.
+                    if (s > 0 && t > Begin[s - 1] + Seconds[s - 1])
+                    {
+                        float travel = Mathf.InverseLerp(Begin[s - 1] + Seconds[s - 1], Begin[s], t);
+                        var from = Strokes[s - 1][Strokes[s - 1].Length - 1];
+                        brush = Vector2.Lerp(from, Strokes[s][0], Mathf.SmoothStep(0, 1, travel));
+                    }
+                    break;
+                }
+                drawn.Clear();
+                brush = Along(Strokes[s], part, drawn);
+                for (int i = 0; i < drawn.Count; i++)
+                {
+                    Dot(vh, drawn[i], half, ink);
+                    if (i > 0) Segment(vh, drawn[i - 1], drawn[i], half, ink);
+                }
+            }
+            if (t < BrushLeaves)
+            {
+                Color ring = Brush;
+                ring.a = Mathf.Clamp01(t / .25f) * Mathf.Clamp01((BrushLeaves - t) / .2f);
+                Ring(vh, brush, half + 5, 3, ring);
+            }
         }
     }
 

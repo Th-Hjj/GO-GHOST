@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-11-13 — Plates and haze more transparent
+
+- **Changed:** Thomas asked for both to be more transparent. `PlateOpacity` .60 to .48 and `HazeStrength` .75 to .55 in `IndustrialArenaBackdrop`. Two constants only.
+- **NOT COMPILED, NOT TESTED:** Thomas was in Play Mode, so the Editor was not refreshed and nothing was captured. The values are a first guess for him to judge.
+
 ## 2026-11-13 — Backgrounds restored; emitters and wall marks removed; Mission 3 haze
 
 Thomas played stage 1: the backgrounds looked jagged, Missions 2 and 3 were worse than before and the background drew the eye. I first misread "mirror back" as "roll back" and began editing; those uncommitted edits were restored before this change, which follows his confirmed list.

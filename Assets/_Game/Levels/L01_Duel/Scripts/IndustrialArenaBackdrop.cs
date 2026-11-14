@@ -39,10 +39,9 @@ namespace GoGhost.Duel
         const float VisibleWidthPixels = 966f;
         const float FarTravelPixels = 7f;
         const float NearTravelPixels = 36f;
-        // Thomas's approved plate strength for all three missions.
-        const float PlateOpacity = .60f;
-        // Thomas, 2026-11-13: slightly lighter than the first pass.
-        const float HazeStrength = .75f;
+        // Thomas, 2026-11-13: both the plates and the haze more transparent (plates were .60, haze .75).
+        const float PlateOpacity = .48f;
+        const float HazeStrength = .55f;
 
         Transform player;
         Bounds arena;

@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Title stance follows the rooftop perspective
+
+- **Asked:** inspect standing references and bring the legs only slightly closer; Thomas then identified the mismatch between a square-on back view and the roof's receding angle.
+- **References inspected:** [Steve rear model](https://media.sketchfab.com/models/9e66eef1455a4ebeb460364b73e945bf/thumbnails/e577be377e11427c8f4655e0b41d4c7d/c4a3fb762ed44566809ae12818b7b32c.jpeg) and [Minecraft sunset view](https://x.com/MinecraftMarket/status/1734283876426506315). No reference assets imported into the game.
+- **Changed:** each knee moves inward .015 and each ankle .025 in figure coordinates. Complete rectangular blocks share a rear-perspective projection: horizontal axes rise toward screen-right with the roof while the torso stays upright. The farther right arm/leg draw behind the nearer left side, a narrow torso side plane establishes depth, and the gun stays attached to its projected hand. The player remains inside the rim; foot ends remain uncut.
+- **Checked:** Unity compiled and a fresh Play Mode title at 2560x1440 showed the updated figure with no console errors. Inspected shoulders, hip plane, foot heights and roof contact in `Logs/TitleMenuConcept/title-roof-perspective.png` (local, ignored). Other aspect ratios, full gameplay and packaged builds NOT TESTED.
+
 ## 2026-11-14 — Uncut title limbs, feet inside the rooftop
 
 - **Asked:** use complete rectangular blocks, especially at the feet, and stand inside the roof edge.

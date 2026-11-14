@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-13 — Beacons blink; plates at 50%
+
+- **Changed:** the factory's two stack beacons fade between a quarter and full strength every 3.2 s. `PlateOpacity` .40 to .50 at Thomas's request; the casino's near plate stays .70.
+- **NOT COMPILED, NOT TESTED:** Thomas was in Play Mode.
+- **Open:** Thomas says the haze does not look good regardless of strength. Options were put to him; nothing is built.
+
 ## 2026-11-13 — Casino near plate more opaque
 
 - **Changed:** Thomas found the casino's foreground, mainly the palms, too transparent. `ArenaLook` gained `NearOpacity`; the casino's near plate is .70 while every other plate stays at `PlateOpacity` .40.

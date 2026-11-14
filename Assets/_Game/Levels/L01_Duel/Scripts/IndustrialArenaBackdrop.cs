@@ -22,8 +22,8 @@ namespace GoGhost.Duel
             OpaqueSky = opaqueSky; NearOpacity = nearOpacity;
         }
 
-        // Thomas, 2026-11-13: lowered twice at his request (.60, then .48).
-        public const float PlateOpacity = .40f;
+        // Thomas, 2026-11-13: .60, .48, .40, then settled at .50.
+        public const float PlateOpacity = .50f;
 
         // Mission 3 starts cold white; the EMP dyes its haze violet. The Test Room and the Bonus have no plates.
         public static ArenaLook For(int wave) => wave switch
@@ -172,7 +172,18 @@ namespace GoGhost.Duel
             return Linear(colour * amount, 1f - Mathf.Pow(1f - amount, 2.2f));
         });
 
-        void LateUpdate() => UpdateParallax();
+        // Slow beacon cycle in seconds; the lights dim to a quarter and return.
+        const float BeaconPeriod = 3.2f;
+
+        void LateUpdate()
+        {
+            UpdateParallax();
+            if (farLights != null)
+            {
+                float glow = .5f + .5f * Mathf.Sin(Time.time * 2f * Mathf.PI / BeaconPeriod);
+                farLights.color = new Color(1f, 1f, 1f, Mathf.Lerp(.25f, 1f, glow));
+            }
+        }
 
         internal void AddEmpContours(Material material)
         {

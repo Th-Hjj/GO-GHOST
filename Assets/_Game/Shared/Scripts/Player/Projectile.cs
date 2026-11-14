@@ -100,7 +100,14 @@ public class Projectile : MonoBehaviour
     {
         FriendlyFire = friendlyFire;
         Actor = actor;
-        if((actor==ProjectileActor.Player||actor==ProjectileActor.InnerAI)&&TryGetComponent<SpriteRenderer>(out var sprite))sprite.color=NeuralPalette.Primary;
+        if((actor==ProjectileActor.Player||actor==ProjectileActor.InnerAI)&&TryGetComponent<SpriteRenderer>(out var sprite))
+        {
+            sprite.color=NeuralPalette.Primary;
+            // Thomas, 2026-11-14: the player's bullet looked too big. Draw it smaller and keep the same hit radius.
+            const float drawn=.85f;
+            if(circle==null)circle=GetComponent<CircleCollider2D>();
+            if(circle!=null){transform.localScale*=drawn;circle.radius/=drawn;}
+        }
         PermissionTier = permissionTier;
         damage = dmg;
         this.accuracyOwner = accuracyOwner;

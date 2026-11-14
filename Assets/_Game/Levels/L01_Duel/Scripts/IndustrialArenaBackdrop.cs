@@ -40,7 +40,7 @@ namespace GoGhost.Duel
         const float FarTravelPixels = 7f;
         const float NearTravelPixels = 36f;
         // Thomas, 2026-11-14: only a layer that hugs the floor; the glow in mid-air looked like a stain.
-        const float HazeHeight = .24f, HazeStrength = .13f; // .20 at first; Thomas asked for weaker
+        const float HazeHeight = .24f, HazeStrength = .08f; // .20, then .13; Thomas asked for weaker each time
 
         Transform player;
         Bounds arena;
@@ -91,7 +91,123 @@ namespace GoGhost.Duel
             if (lights != null) backdrop.farLights = backdrop.AddPlate("Beacons", lights, 1f);
             backdrop.haze = backdrop.AddHaze("Floor haze", backdrop.FloorHaze(look.Haze));
             if (plates) backdrop.near = backdrop.AddPlate(look.NearLabel, nearTexture, look.NearOpacity);
+            backdrop.AddLitHaze();
             backdrop.UpdateParallax();
+        }
+
+        // Trial (Thomas, 2026-11-14): haze across the whole arena that only shows where a weapon or attack lights it.
+        // Turn LitHaze off to get the floor-only look back. Steps above zero cuts each light into flat bands.
+        internal static bool LitHaze = true;
+        internal static int LitHazeSteps = 0;
+        const int MaxLights = 16;
+        const float MuzzleSeconds = .14f;
+        static readonly Color CylinderLight = new Color32(98, 202, 255, 255);
+        static readonly int LightsId = Shader.PropertyToID("_Lights"), LightColoursId = Shader.PropertyToID("_LightColours"),
+            LightCountId = Shader.PropertyToID("_LightCount"), StepsId = Shader.PropertyToID("_Steps");
+        readonly Vector4[] lights = new Vector4[MaxLights], lightColours = new Vector4[MaxLights];
+        int lightCount;
+        Material litMaterial;
+        RawImage litHaze;
+        DuelGame game;
+        PlayerShooting rifle;
+        SpriteRenderer cylinder;
+        Vector2 muzzle;
+        float muzzleAt = float.NegativeInfinity;
+
+        void AddLitHaze()
+        {
+            var shader = Resources.Load<Shader>("ArenaLitHaze");
+            if (shader == null) { Debug.LogError("Arena lit haze shader could not be loaded."); return; }
+            litMaterial = new Material(shader) { name = "Arena lit haze", hideFlags = HideFlags.DontSave };
+            litHaze = AddPlate("Lit haze", Texture2D.whiteTexture, 1f);
+            litHaze.material = litMaterial;
+            game = GetComponentInParent<DuelGame>();
+            rifle = player.GetComponent<PlayerShooting>();
+            if (rifle != null) rifle.ShotFired += OnShotFired;
+            foreach (var part in player.GetComponentsInChildren<SpriteRenderer>(true))
+                if (part.name == "RevolverCylinder") { cylinder = part; break; }
+        }
+
+        void OnShotFired(Vector2 origin, Vector2 direction)
+        {
+            muzzle = origin + direction.normalized * .3f;
+            muzzleAt = Time.time;
+        }
+
+        void Light(Vector2 at, Color colour, float radius, float strength)
+        {
+            if (lightCount >= MaxLights || strength <= 0) return;
+            // Thomas, 2026-11-14: restrained. One scale for every light, over the per-source values below.
+            lights[lightCount] = new Vector4(at.x, at.y, radius * .72f, 0);
+            var linear = colour.linear * (strength * .35f);
+            lightColours[lightCount++] = new Vector4(linear.r, linear.g, linear.b, 0);
+        }
+
+        // Thomas, 2026-11-14: the rifle and the blade give off no light. Sword waves travel like bullets and keep theirs.
+        void SwordWaveLights(BossAgent boss)
+        {
+            var traces = boss.Actions.SwordTraces;
+            if (traces == null) return;
+            foreach (var trace in traces)
+            {
+                if (trace == null || trace.Retired) continue;
+                Light((trace.A(Time.time) + trace.B(Time.time)) * .5f, NeuralPalette.Swordsman, 1.4f,
+                    Time.time < trace.Threat.StartsAt ? .2f : .4f);
+            }
+        }
+
+        // Only the axe's energy gives off light (Thomas, 2026-11-14), not its cuts.
+        // Phase one: the ice-blue socket charges through a throw's wind-up and the flying axe carries it.
+        // Phase two: the violet axe is dim where it stands, swells through the one-second order and is brightest in flight.
+        void AxeLights(BossAgent boss)
+        {
+            var axe = boss.Axe;
+            var boxer = axe.Boxer;
+            if (boxer != null)
+            {
+                if (!boxer.Detached || boxer.Retired) return;
+                if (boxer.InFlight) Light(boxer.AxeEdge, NeuralPalette.Emp, 1.9f, .5f);
+                else if (boxer.AxeOrdered) Light(boxer.AxeEdge, NeuralPalette.Emp, 1.4f, Mathf.Lerp(.22f, .5f, boxer.LaunchProgress));
+                else Light(boxer.AxeEdge, NeuralPalette.Emp, 1.3f, .2f);
+                return;
+            }
+            if (axe.AxeFlying) Light(axe.FlyingEdge, CylinderLight, 1.6f, .4f);
+            else if (axe.WindingCast)
+                Light(boss.Position + new Vector2(axe.LockedFacing * .35f, .35f), CylinderLight, 1.2f, .35f * axe.CastProgress);
+        }
+
+        // Read from what the fight already exposes; nothing here changes combat.
+        void UpdateLights()
+        {
+            if (litMaterial == null) return;
+            litHaze.enabled = LitHaze;
+            if (!LitHaze) return;
+            lightCount = 0;
+            if (cylinder != null && cylinder.enabled && cylinder.gameObject.activeInHierarchy)
+                Light(cylinder.transform.position, CylinderLight, 1.0f, .15f);
+            float flash = 1f - (Time.time - muzzleAt) / MuzzleSeconds;
+            if (flash > 0) Light(muzzle, CylinderLight, 1.8f, .5f * flash);
+            var bosses = game != null ? game.Bosses : null;
+            if (bosses != null)
+                foreach (var boss in bosses)
+                {
+                    if (boss == null || !boss.IsAlive) continue;
+                    if (boss.Axe != null) AxeLights(boss);
+                    else if (!boss.IsTrainingEnemy && boss.Profile.Kind == BossKind.Swordsman) SwordWaveLights(boss);
+                }
+            foreach (var shot in Projectile.Active)
+            {
+                if (shot == null) continue;
+                Color colour = shot.Actor == ProjectileActor.Player || shot.Actor == ProjectileActor.InnerAI ? CylinderLight
+                    : shot.Deflected ? NeuralPalette.Swordsman
+                    : shot.Owner != null && shot.Owner.TryGetComponent<BossAgent>(out var owner) && owner.IsTrainingEnemy
+                        ? NeuralPalette.Secondary : NeuralPalette.Gunner;
+                Light(shot.transform.position, colour, .9f, .3f);
+            }
+            litMaterial.SetVectorArray(LightsId, lights);
+            litMaterial.SetVectorArray(LightColoursId, lightColours);
+            litMaterial.SetFloat(LightCountId, lightCount);
+            litMaterial.SetFloat(StepsId, LitHazeSteps);
         }
 
         RawImage AddPlate(string label, Texture texture, float opacity)
@@ -151,6 +267,7 @@ namespace GoGhost.Duel
         void LateUpdate()
         {
             UpdateParallax();
+            UpdateLights();
             if (farLights != null)
             {
                 float glow = .5f + .5f * Mathf.Sin(Time.time * 2f * Mathf.PI / BeaconPeriod);
@@ -217,6 +334,8 @@ namespace GoGhost.Duel
         {
             foreach (var texture in hazeTextures) if (texture != null) Destroy(texture);
             if (hazeMaterial != null) Destroy(hazeMaterial);
+            if (litMaterial != null) Destroy(litMaterial);
+            if (rifle != null) rifle.ShotFired -= OnShotFired;
         }
     }
 }

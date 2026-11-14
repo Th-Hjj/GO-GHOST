@@ -1,6 +1,8 @@
-"""Cut Resources/Title/Outskirts.png into the title's parallax layers.
+"""Cut the title plate, Art/Title/Outskirts.png, into the parallax layers in Resources/Title.
 
-    python Tools/cut_title_layers.py <Outskirts.png> <output folder>
+    python Tools/cut_title_layers.py Assets/_Game/Levels/L01_Duel/Art/Title/Outskirts.png <output folder>
+
+Check the output, then copy the Outskirts*.png layers into Assets/_Game/Levels/L01_Duel/Resources/Title.
 
 Writes OutskirtsSky (opaque), OutskirtsHills, OutskirtsSlope and OutskirtsRoof. Each layer keeps the
 original pixels where it is visible and continues its own colour behind the layers in front, so the

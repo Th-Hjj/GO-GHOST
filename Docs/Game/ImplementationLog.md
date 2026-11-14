@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Title source plate moved out of Resources
+
+- **Asked:** wrap up the day's title work.
+- **Changed:** `Outskirts.png` moved through Unity from `Resources/Title` to `Art/Title` with its GUID kept. The game stopped loading it when the plate was cut into layers; outside `Resources` it is no longer built into the player. The cutting script's usage and the notes that name the plate follow.
+- **Checked:** `AssetDatabase.MoveAsset` reported no error and the same GUID; Unity compiled. No code loads the old path. Play Mode after the move and packaged builds NOT TESTED.
+
 ## 2026-11-14 — Title sound
 
 - **Asked:** the last Living title step: ambience and the opening's cues. Thomas then removed the core's ignition tone as too strange, tried the opening without the logo's impact, and kept only the broken tail of that cue, darkened because it was too sharp.

@@ -18,7 +18,7 @@ namespace GoGhost.Duel
             // Environment and figure share one frame so the feet stay on the roof at every aspect ratio.
             titleBackdrop = Rect("Title landscape", page, Vector2.zero, new Vector2(1600, 900));
             titleBackdrop.anchorMin = titleBackdrop.anchorMax = titleBackdrop.pivot = new Vector2(.5f, 0);
-            // Tools/cut_title_layers.py cuts Outskirts.png into these; stacked at rest they are that plate.
+            // Tools/cut_title_layers.py cuts Art/Title/Outskirts.png into these; stacked at rest they are that plate.
             RawImage Layer(string name)
             {
                 // The clamped margin keeps a shifted layer from uncovering the screen edge.

@@ -31,6 +31,34 @@ namespace GoGhost.Duel
                 (bounds.max.x - centre.x) * unit, (bounds.max.y - centre.y) * unit);
         }
 
+        // The Test Room lists the controls in the arena's top right corner, with the player's own keys.
+        void BuildTestRoomControls(RectTransform hud, UnityEngine.Rect arena)
+        {
+            (string key, string action)[] controls =
+            {
+                (GameSettings.BindingLabel(GameSettings.MoveLeft) + " / " + GameSettings.BindingLabel(GameSettings.MoveRight), "Move left / right"),
+                (GameSettings.BindingLabel(GameSettings.Jump), "Jump"),
+                (GameSettings.BindingLabel(GameSettings.Dodge), "Dodge"),
+                (GameSettings.BindingLabel(GameSettings.Reload), "Reload"),
+                ("Mouse", "Aim"),
+                (GameSettings.BindingLabel(GameSettings.Fire), "Fire"),
+                (GameSettings.BindingLabel(GameSettings.RapidFire), "Rapidly fire"),
+                (GameSettings.BindingLabel(GameSettings.Pause), "Pause / resume")
+            };
+            const float keyWidth = 150, labelWidth = 190, rowPitch = 40, columnWidth = keyWidth + 12 + labelWidth;
+            for (int i = 0; i < controls.Length; i++)
+            {
+                int column = i / 4, line = i % 4;
+                float left = arena.xMax - 18 - (2 - column) * columnWidth + (column == 0 ? -16 : 0);
+                float y = arena.yMax - 16 - 17 - line * rowPitch;
+                var key = Rect("Control key", hud, new Vector2(left + keyWidth / 2, y), new Vector2(keyWidth, 34)).gameObject.AddComponent<SlabGraphic>();
+                key.color = OverridePalette.SurfaceHover; key.Cut = 8; key.raycastTarget = false;
+                var keyText = OvText(controls[i].key, key.transform, Vector2.zero, new Vector2(keyWidth - 20, 34), 22, OverridePalette.Text, TextAlignmentOptions.Capline, false, .5f);
+                keyText.enableAutoSizing = true; keyText.fontSizeMax = 22; keyText.fontSizeMin = 14;
+                OvBodyAt(controls[i].action, hud, new Vector2(left + keyWidth + 12 + labelWidth / 2, y), new Vector2(labelWidth, 34), 18, OverridePalette.TextDim);
+            }
+        }
+
         SlabGraphic OvBar(Transform parent, Vector2 centre, float width, Color color)
         {
             var bar = Rect("Bar", parent, centre, new Vector2(width, HealthBarHeight)).gameObject.AddComponent<SlabGraphic>();
@@ -57,6 +85,7 @@ namespace GoGhost.Duel
                     .gameObject.AddComponent<SlabGraphic>();
                 slab.color = OverridePalette.SurfaceHover; slab.Cut = 10; slab.raycastTarget = false;
                 chip.rectTransform.SetParent(slab.transform, false);
+                BuildTestRoomControls(hud, arena);
             }
             else if (game.Phase == DuelPhase.Prepare || game.Phase == DuelPhase.Fight && game.FightClock < WaveTitleFadeSeconds)
             {

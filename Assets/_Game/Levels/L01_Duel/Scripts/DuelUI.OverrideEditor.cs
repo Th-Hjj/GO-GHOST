@@ -211,12 +211,13 @@ namespace GoGhost.Duel
             int selected = selectedConditionIndex < rule.ConditionCount ? rule.GetCondition(selectedConditionIndex).Id : 0;
             const float categoryWidth = 208, gap = 16, row = 56, pitch = 64;
             float optionLeft = categoryWidth + gap, optionWidth = w - optionLeft;
-            int shown = 0;
+            int shown = 0, openRow = -1;
             for (int i = 0; i < ConditionalCatalog.Categories.Length; i++)
             {
                 int category = i;
                 if (!CategoryHasSelectableCondition(category)) continue;
                 bool open = conditionCategory == i;
+                if (open) openRow = shown;
                 OvOption("ConditionCategory" + i, ConditionalCatalog.Categories[i], panel, Slot(0, shown * pitch, categoryWidth, row),
                     new Vector2(categoryWidth, row), () => { selectingCondition = true; conditionCategory = category; Show(); },
                     open ? OverridePalette.Text : OverridePalette.Surface, open ? OverridePalette.Ink : OverridePalette.Text, 26,
@@ -238,10 +239,13 @@ namespace GoGhost.Duel
                     chosen ? OverridePalette.Ink : OverridePalette.Text, "Handler/EditorCondition" + condition, reason, NeuralBodySystem.None,
                     enter ? .06f + index * .03f : -1, -1);
                 top += pitch; index++;
-                if (!chosen) continue;
-                // Parameters open directly under the chosen option.
+            }
+            // Parameters sit under the whole list, so choosing an option never moves the others.
+            float listBottom = top - (pitch - row);
+            if (selected != 0 && ConditionalCatalog.Condition(selected).Category == conditionCategory)
+            {
+                int condition = selected;
                 string[] parameters = ConditionalCatalog.ConditionOptions(condition);
-                if (parameters.Length == 0) continue;
                 int current = ConditionalCatalog.ConditionOption(rule, selectedConditionIndex);
                 float chip = (optionWidth - (parameters.Length - 1) * 8) / parameters.Length;
                 for (int p = 0; p < parameters.Length; p++)
@@ -255,8 +259,23 @@ namespace GoGhost.Duel
                     button.interactable = ConditionalCatalog.HasAnyCompatibleAction(draft);
                     button.GetComponent<SlabButton>().Waiting = current < 0;
                 }
-                top += 56;
+                if (parameters.Length > 0) listBottom = top + 48;
             }
+            if (openRow < 0 || index == 0) return;
+            // A Signal bracket ties the open category to the choices that belong to it.
+            const float line = 3, margin = 8;
+            float frameLeft = optionLeft - margin, frameRight = w + 14, frameTop = -margin, frameBottom = listBottom + margin;
+            float link = openRow * pitch + row / 2;
+            void Line(float left, float y, float width, float height)
+            {
+                var image = Image(panel, Slot(left, y, width, height), new Vector2(width, height), OverridePalette.Signal);
+                image.raycastTarget = false; image.transform.SetAsFirstSibling();
+            }
+            Line(frameLeft, frameTop, frameRight - frameLeft, line);
+            Line(frameLeft, frameBottom - line, frameRight - frameLeft, line);
+            Line(frameRight - line, frameTop, line, frameBottom - frameTop);
+            Line(frameLeft, frameTop, line, Mathf.Max(frameBottom, link + line / 2) - frameTop);
+            Line(categoryWidth - 4, link - line / 2, frameLeft - categoryWidth + 4 + line, line);
         }
 
         void OvActionStep(RectTransform panel, ConditionalRule rule, bool enter)
@@ -268,10 +287,11 @@ namespace GoGhost.Duel
             string picked = ConditionalCatalog.PickerAction(rule.Action);
             int index = 0;
 
-            float Chips(float y)
+            // Parameters sit in one row under the groups, so choosing an action never moves the others.
+            void Chips(float y)
             {
                 string[] parameters = ConditionalCatalog.ActionOptions(rule.Action);
-                if (parameters.Length == 0) return y;
+                if (parameters.Length == 0) return;
                 int current = ConditionalCatalog.ActionOption(rule);
                 Color colour = NeuralPalette.Body(RuleSystem(rule));
                 // Two chips sit under the two option columns.
@@ -288,7 +308,6 @@ namespace GoGhost.Duel
                     button.interactable = ActionChoiceReason(draft, draft.Action) == null;
                     button.GetComponent<SlabButton>().Waiting = current < 0;
                 }
-                return y + 56;
             }
 
             foreach (var group in ActionGroups)
@@ -298,7 +317,6 @@ namespace GoGhost.Duel
                 top += 30;
                 Color colour = NeuralPalette.Body(group.System);
                 int columnIndex = 0;
-                bool parametersDue = false;
                 foreach (var entry in ConditionalCatalog.Responses)
                 {
                     if (NeuralPalette.System(entry.Operation) != group.System) continue;
@@ -308,18 +326,13 @@ namespace GoGhost.Duel
                         () => ApplyChoice(0, false, action), chosen ? colour : OverridePalette.Surface, chosen ? OverridePalette.Ink : colour,
                         "Handler/EditorAction" + action, ActionChoiceReason(rule, action), group.System, enter ? index * .03f : -1, 1);
                     index++;
-                    parametersDue |= chosen;
                     if (++columnIndex < 2) continue;
                     columnIndex = 0; top += row + 8;
-                    if (parametersDue) { top = Chips(top); parametersDue = false; }
                 }
-                if (columnIndex != 0)
-                {
-                    top += row + 8;
-                    if (parametersDue) top = Chips(top);
-                }
+                if (columnIndex != 0) top += row + 8;
                 top += 6;
             }
+            if (!string.IsNullOrEmpty(rule.Action)) Chips(Mathf.Min(top, h - 48));
         }
     }
 }

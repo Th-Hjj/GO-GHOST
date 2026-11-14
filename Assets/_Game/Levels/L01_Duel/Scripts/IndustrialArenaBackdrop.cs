@@ -91,9 +91,17 @@ namespace GoGhost.Duel
             UpdateParallax();
         }
 
+        // The layers ease toward the player's side of the arena, so a Dodge or a hit does not jerk the scenery.
+        const float ParallaxSeconds = .35f;
+        float shownPosition, parallaxVelocity;
+        bool parallaxPlaced;
+
         void UpdateParallax()
         {
-            float position = Mathf.Clamp((player.position.x - arena.center.x) / arena.extents.x, -1f, 1f);
+            float target = Mathf.Clamp((player.position.x - arena.center.x) / arena.extents.x, -1f, 1f);
+            if (!parallaxPlaced) { shownPosition = target; parallaxPlaced = true; }
+            else if (Time.deltaTime > 0) shownPosition = Mathf.SmoothDamp(shownPosition, target, ref parallaxVelocity, ParallaxSeconds);
+            float position = shownPosition;
             SetCrop(far, position * FarTravelPixels);
             SetCrop(near, position * NearTravelPixels);
             if (contourMaterial != null)

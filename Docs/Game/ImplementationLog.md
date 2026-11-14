@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-11-13 — Playtest feedback, group A
+
+- **Implemented:** in the rule editor, parameters sit in one row under the option list (Condition) or under the groups (Action), so choosing an option no longer moves the others. A Signal bracket frames the open category's options and links them to the category. The Test Room lists the controls, with the player's own keys, in the arena's top right corner. The background layers ease toward the player's side over about .35 s, so a Dodge no longer jerks the scenery.
+- **Not found:** the Gunner reported stuck after revealing itself. Reading the concealed-route code (changed 2026-11-12) showed no state that fails to clear; it needs the mission and what "stuck" looked like.
+- **Not changed:** the tutorial highlight is a rectangle around slanted slabs, which is the likely meaning of "highlighted areas mismatch the shape". Thomas does not see a problem, so it stays.
+- **Checked:** compile only. NOT TESTED: every item above in Play Mode, including the bracket's position and the Test Room list's size.
+
 ## 2026-11-13 — Character creation, Upload scan and cleanup
 
 - **Implemented:** Tutorial On / Off on the creation page; Off skips Happy's greeting and the guided first rule. A drawing demonstration (`DrawGuide`) inside the head until the first mark. Upload is a fixed scan (`HeadScan`: line with wake down and up, then one flash) and the head-ring progress is gone. Voice and sound now preload from New Game at a few milliseconds a frame, so Upload normally waits on nothing. Settings is opaque when opened from a paused fight. The title's small row spans the width of the buttons above it.

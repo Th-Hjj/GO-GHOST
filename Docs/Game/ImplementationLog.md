@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Wider title core breath
+
+- **Asked:** the breath was too inconspicuous; make its dimmest state greyer.
+- **Changed:** at the low point the core block itself now turns cool grey, the halo falls to 12% and the light beside the gun goes out. The bright point and the period are unchanged.
+- **Checked:** compiled outside the editor while Thomas was in Play Mode. Thomas viewed it in Play Mode and accepted it. No capture taken by Claude; packaged builds NOT TESTED.
+
 ## 2026-11-14 — Title revolver core breath
 
 - **Asked:** continue the Living title order with the revolver core.

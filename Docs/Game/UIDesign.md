@@ -131,7 +131,7 @@ Two searchlights rise from rooftops in the city. Each is a nearly parallel shaft
 
 One aircraft at a time crosses behind the landscape and the player: a steady cold-white point 1.5 units square with a double strobe every 1.4 s. It takes one of three straight routes: in to the city from the right (40 s), out of the city climbing to the right (46 s), or a higher, fainter crossing that ends behind the logo (58 s). The first appears 7 to 14 s after the title opens and later ones 40 to 90 s apart; each fades in and out at the ends of its route. Reduce Flashing keeps only the steady point. It makes no sound: it is too far away (Thomas, 2026-11-14). The values are trial tuning.
 
-The revolver's core is the one thing on the player that moves. Over about 4.2 s its halo swells from half to full strength and from 0.92 to 1.22 of its size, and a faint ice-blue light on the air beside the gun rises from 4% to 13%. The body stays still. The values are trial tuning.
+The revolver's core is the one thing on the player that moves. Over about 4.2 s the core block goes from a cool grey, as if nearly out, to its full ice blue; its halo swells from 12% to full strength and from 0.92 to 1.22 of its size; and a faint ice-blue light on the air beside the gun rises from nothing to 13%. Thomas asked for the grey low point after the first, narrower swing was too easy to miss. The body stays still. The values are trial tuning.
 
 Approved and not yet built, in order: the opening light-up; ambience (wind and the city's low hum; the aircraft stays silent). Nothing carries text or passes in front of the logo and menu.
 

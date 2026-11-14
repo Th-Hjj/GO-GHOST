@@ -164,20 +164,24 @@ namespace GoGhost.Duel
         {
             StretchPage();
             OvFill(page, OverridePalette.Ink);
+            // On launch the landscape opens first; the logo lands on it and the menu follows.
+            float hold = BeginTitleOpening(), late = hold / OvMotion.Stagger;
             BuildTitleBackdrop();
             OvScanlines(page, .28f);
             var frame = Rect("Frame", page, Vector2.zero, new Vector2(1600, 900));
-            OvArrive(OvGlitchWord("GO GHOST", frame, new Vector2(84 + 700 - 800, 450 - 353), new Vector2(1400, 292), 340,
-                TextAlignmentOptions.CaplineLeft, 3.4f, 7), new Vector2(-120, 0), 0);
-            OvArrive(OvBand(frame, 514), new Vector2(-200, 0), 1);
+            var logo = OvGlitchWord("GO GHOST", frame, new Vector2(84 + 700 - 800, 450 - 353), new Vector2(1400, 292), 340,
+                TextAlignmentOptions.CaplineLeft, 3.4f, 7);
+            if (hold > 0) { var slam = logo.gameObject.AddComponent<SlamIn>(); slam.From = 1.35f; slam.Seconds = .1f; slam.Delay = hold; }
+            else OvArrive(logo, new Vector2(-120, 0), 0);
+            OvArrive(OvBand(frame, 514), new Vector2(-200, 0), 1 + late);
             // With a save, Continue leads and New Game asks before replacing it.
             bool saved = GameSave.Exists;
             if (saved)
             {
-                OvButton("Continue", frame, At(92, 580, 494, 96), new Vector2(494, 96), game.ContinueGame, OverrideButtonKind.Primary, 62, true, Enter(2));
-                OvButton("New Game", frame, At(92, 690, 494, 68), new Vector2(494, 68), RequestNewGame, OverrideButtonKind.Secondary, 40, false, Enter(3));
+                OvButton("Continue", frame, At(92, 580, 494, 96), new Vector2(494, 96), game.ContinueGame, OverrideButtonKind.Primary, 62, true, Enter(2 + late));
+                OvButton("New Game", frame, At(92, 690, 494, 68), new Vector2(494, 68), RequestNewGame, OverrideButtonKind.Secondary, 40, false, Enter(3 + late));
             }
-            else OvButton("New Game", frame, At(92, 600, 494, 96), new Vector2(494, 96), RequestNewGame, OverrideButtonKind.Primary, 62, true, Enter(2));
+            else OvButton("New Game", frame, At(92, 600, 494, 96), new Vector2(494, 96), RequestNewGame, OverrideButtonKind.Primary, 62, true, Enter(2 + late));
             // The small row sits under the buttons above on the same left edge. Its right end stops a little short:
             // a short dark slab level with a tall bright one reads as sticking out. A browser page has nothing to quit.
             float row = saved ? 774 : 714;
@@ -190,10 +194,11 @@ namespace GoGhost.Duel
             for (int i = 0; i < titles.Length; i++)
             {
                 float w = i == titles.Length - 1 ? 92 + span - x : shares[i];
-                OvButton(titles[i], frame, At(x, row, w, 56), new Vector2(w, 56), clicks[i], OverrideButtonKind.Tertiary, 32, false, Enter(4 + i),
+                OvButton(titles[i], frame, At(x, row, w, 56), new Vector2(w, 56), clicks[i], OverrideButtonKind.Tertiary, 32, false, Enter(4 + i + late),
                     TextAlignmentOptions.Capline).GetComponent<SlabButton>().EnterDistance = 40;
                 x += w + gap;
             }
+            if (hold > 0) BuildTitleBlocker();
         }
 
         void BuildOverridePause()

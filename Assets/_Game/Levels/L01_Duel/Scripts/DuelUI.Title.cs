@@ -37,7 +37,9 @@ namespace GoGhost.Duel
                 image.material = TitleLight(true); image.color = colour;
                 return image.rectTransform;
             }
-            var sky = Layer("OutskirtsSky").rectTransform;
+            var skyImage = Layer("OutskirtsSky");
+            var sky = skyImage.rectTransform;
+            BuildTitleUnlitCity(sky);
             BuildTitleStars(sky);
             BuildTitleBeams(sky);
             BuildTitleAircraft(sky);
@@ -48,7 +50,11 @@ namespace GoGhost.Duel
                 Mist("OutskirtsMistNear", new Color(.22f, .46f, .68f, .11f)), Layer("OutskirtsSlope").rectTransform,
                 Layer("OutskirtsRoof").rectTransform,
             };
-            titleLook = TitlePointer();
+            titleTint = new RawImage[6];
+            titleTint[0] = skyImage;
+            for (int i = 0; i < 5; i++) titleTint[i + 1] = titleLayers[i].GetComponent<RawImage>();
+            titleTintBase = System.Array.ConvertAll(titleTint, image => image.color);
+            titleLook = TitleOpening ? Vector2.zero : TitlePointer();
             // Stand inside the back rim on the roof surface, not directly on its bright edge.
             BuildTitlePlayer(titleLayers[4], new Vector2(443, -281), 105);
             UpdateTitleBackdrop();
@@ -70,7 +76,7 @@ namespace GoGhost.Duel
             // Bottom alignment keeps the roof; wide screens crop empty sky first.
             titleBackdrop.localScale = Vector3.one * Mathf.Max(extent.x / 1600f, extent.y / 900f);
             // Nearer layers slide further, away from the pointer; the sky and the city stay.
-            titleLook = Vector2.Lerp(titleLook, TitlePointer(), 1 - Mathf.Exp(-4 * Time.unscaledDeltaTime));
+            titleLook = Vector2.Lerp(titleLook, TitleOpening ? Vector2.zero : TitlePointer(), 1 - Mathf.Exp(-4 * Time.unscaledDeltaTime));
             for (int i = 0; i < titleLayers.Length; i++)
                 titleLayers[i].anchoredPosition = -Vector2.Scale(titleLook, TitleTravel[i]);
             UpdateTitleStars();
@@ -78,12 +84,198 @@ namespace GoGhost.Duel
             UpdateTitleAircraft();
             UpdateTitleCity();
             // A slow breath, about four seconds: light, so it swells smoothly while the body stays still.
-            float breath = .5f + .5f * Mathf.Sin(Time.unscaledTime * Mathf.PI * 2 / 4.2f);
+            // The opening lights the core in steps and hands over to the breath at its brightest.
+            float lit = TitleIgnition();
+            float breath = lit >= 0 ? lit : .5f + .5f * Mathf.Cos((float)((Time.unscaledTimeAsDouble - titleBreathFrom) * Mathf.PI * 2 / 4.2));
             // At its lowest the core itself goes grey, as if nearly out; the swing has to read from across the roof.
-            titleCore.color = Color.Lerp(TitleCoreSpent, RevolverPresentationGeometry.CoreColor, breath);
-            titleCoreHalo.color = NeuralPalette.Alpha(TitleCoreColour, Mathf.Lerp(.12f, 1, breath));
+            titleCore.color = lit == 0 ? Color.black : Color.Lerp(TitleCoreSpent, RevolverPresentationGeometry.CoreColor, breath);
+            titleCoreHalo.color = NeuralPalette.Alpha(TitleCoreColour, lit == 0 ? 0 : Mathf.Lerp(.12f, 1, breath));
             titleCoreHalo.rectTransform.localScale = new Vector3(.80f, 1, 1) * Mathf.Lerp(.92f, 1.22f, breath);
             titleCoreLight.color = NeuralPalette.Alpha(TitleCoreColour, Mathf.Lerp(0, .13f, breath));
+            ApplyTitleOpening();
+        }
+
+        // ---- the opening: one light, a figure, the night, the city, the name ----
+
+        // Once per launch. Statics outlive Play Mode here, so the flag is cleared when play starts.
+        static bool titleOpened;
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetTitleOpening() => titleOpened = false;
+
+        // Seconds from the start: the logo lands, the opening is over, and the plain fade under Reduce Flashing.
+        const float TitleLogoBeat = 4.2f, TitleOpeningEnd = 5f, TitlePlainBeat = 1f;
+        // Plate columns bounding the building groups, and when each lights: the ends first, the tower last.
+        static readonly float[] TitleCityGroups = { 716, 765, 851, 890, 949, 992 };
+        static readonly float[] TitleCityLit = { 2.6f, 2.9f, 3.6f, 3.05f, 2.75f };
+        double titleOpenFrom = -1, titleBreathFrom, titleBeaconFrom;
+        bool titleOpenPlain;
+        // A launch's first frames are long. The opening waits in the dark until they run evenly.
+        int titleOpenSteady;
+        float titleOpenWaited;
+        GameObject titleBlocker;
+        RawImage[] titleTint, titleUnlit;
+        Color[] titleTintBase, titleBodyBase;
+        Image[] titleBody, titleStars, titleLamps;
+        float[] titleStarAt;
+        readonly System.Collections.Generic.List<Image> titleBodyParts = new System.Collections.Generic.List<Image>();
+
+        bool TitleOpening => titleOpenFrom >= 0;
+        float TitleOpenAt => (float)(Time.unscaledTimeAsDouble - titleOpenFrom);
+        float TitleOpenBeat => titleOpenPlain ? TitlePlainBeat : TitleLogoBeat;
+
+        // Called before the title is built. Returns how long the logo and menu wait, or zero for no opening.
+        float BeginTitleOpening()
+        {
+            double now = Time.unscaledTimeAsDouble;
+            if (TitleOpening)
+            {
+                // Rebuilt part-way: carry on while the page's entrance still counts, otherwise finish at once.
+                if (pageEntering && TitleOpenAt < TitleOpenBeat) return TitleOpenBeat;
+                double done = now - TitleOpeningEnd - titleOpenFrom;
+                titleOpenFrom = -1; titleBreathFrom += done; titleBeaconFrom += done;
+                return 0;
+            }
+            if (titleOpened || overlay != OverlayPage.None || !pageEntering || game.Phase != DuelPhase.Menu) return 0;
+            titleOpened = true;
+            titleOpenPlain = GameSettings.ReduceFlashing;
+            titleOpenFrom = System.Math.Max(now, OvMotion.EntranceStart);
+            titleBreathFrom = titleOpenFrom + TitleOpeningEnd; titleBeaconFrom = titleOpenFrom + 3.75;
+            titleOpenSteady = 0; titleOpenWaited = 0;
+            return TitleOpenBeat;
+        }
+
+        // Nothing under the dark can be pressed; any key or click jumps to the logo instead.
+        void BuildTitleBlocker()
+        {
+            var cover = Rect("Opening hold", page, Vector2.zero, Vector2.zero);
+            cover.anchorMin = Vector2.zero; cover.anchorMax = Vector2.one;
+            cover.gameObject.AddComponent<Image>().color = Color.clear;
+            titleBlocker = cover.gameObject;
+        }
+
+        void BuildTitleUnlitCity(RectTransform sky)
+        {
+            titleUnlit = null;
+            if (!TitleOpening || titleOpenPlain) return;
+            // The plate paints the city already lit. These cover it with its dark skyline, one building group each.
+            var dark = Resources.Load<Texture2D>("Title/OutskirtsCityDark");
+            titleUnlit = new RawImage[TitleCityLit.Length];
+            for (int i = 0; i < titleUnlit.Length; i++)
+            {
+                float from = TitleCityGroups[i], to = TitleCityGroups[i + 1];
+                var strip = Rect("Unlit city", sky, TitlePlatePoint((from + to) * .5f, 758),
+                    new Vector2((to - from) * 1600 / 1672, 116 * 900f / 941)).gameObject.AddComponent<RawImage>();
+                strip.texture = dark; strip.uvRect = new Rect((from - 716) / 276, 0, (to - from) / 276, 1); strip.raycastTarget = false;
+                titleUnlit[i] = strip;
+            }
+        }
+
+        // The core's level while the opening holds it, 0 to 1 in steps, or -1 when it breathes by itself.
+        float TitleIgnition()
+        {
+            if (!TitleOpening || titleOpenPlain) return -1;
+            float t = TitleOpenAt;
+            return t < .4f ? 0 : t < .6f ? .33f : t < .8f ? .66f : 1;
+        }
+
+        static bool TitleSkipPressed()
+        {
+            var mouse = UnityEngine.InputSystem.Mouse.current;
+            var keyboard = UnityEngine.InputSystem.Keyboard.current;
+            return mouse != null && mouse.leftButton.wasPressedThisFrame || keyboard != null && keyboard.anyKey.wasPressedThisFrame;
+        }
+
+        // Moves the opening and everything waiting on it forward by this many seconds, or back when negative.
+        void JumpTitleOpening(float jump)
+        {
+            titleOpenFrom -= jump; titleBreathFrom -= jump; titleBeaconFrom -= jump; titleFlightNext -= jump;
+            foreach (var arrive in page.GetComponentsInChildren<Arrive>()) arrive.Delay -= jump;
+            foreach (var slam in page.GetComponentsInChildren<SlamIn>()) slam.Delay -= jump;
+            foreach (var slab in page.GetComponentsInChildren<SlabButton>())
+                if (slab.EnterDelay >= 0) slab.EnterDelay = Mathf.Max(0, slab.EnterDelay - jump);
+        }
+
+        // Runs after the title's own updates and holds back whatever the opening has not reached yet.
+        void ApplyTitleOpening()
+        {
+            if (!TitleOpening) return;
+            if (titleOpenSteady < 3)
+            {
+                float frame = Time.unscaledDeltaTime;
+                titleOpenSteady = frame < .05f ? titleOpenSteady + 1 : 0;
+                titleOpenWaited += frame;
+                if (titleOpenWaited > 4) titleOpenSteady = 3;
+                if (TitleOpenAt > 0) JumpTitleOpening(-TitleOpenAt);
+            }
+            float t = TitleOpenAt;
+            if (t > 0 && t < TitleOpenBeat && TitleSkipPressed())
+            {
+                JumpTitleOpening(TitleOpenBeat - t);
+                t = TitleOpenBeat;
+            }
+            if (titleBlocker != null && t >= TitleOpenBeat) { Destroy(titleBlocker); titleBlocker = null; }
+            bool over = t >= TitleOpeningEnd;
+            if (over) t = 1000;
+            float Rise(float from, float to) => Mathf.SmoothStep(0, 1, Mathf.InverseLerp(from, to, t));
+
+            float world, roof, body, city;
+            if (titleOpenPlain) { world = roof = body = Rise(0, TitlePlainBeat); city = 1; }
+            else
+            {
+                // The core alone shows the gun, the arm and the edge of the roof; then the figure, then the night.
+                float core = TitleIgnition(), lift = Rise(1, 1.6f);
+                if (core < 0) core = 1;
+                roof = Mathf.Lerp(core * .25f, 1, lift); body = Mathf.Lerp(core * .45f, 1, lift);
+                world = Rise(1.6f, 2.6f); city = Rise(2.6f, 3.8f);
+            }
+            for (int i = 0; i < titleTint.Length; i++)
+            {
+                Color colour = titleTintBase[i];
+                // The mists are light: they fade by strength. The far one is lit by the city.
+                if (i == 1) colour.a *= world * city;
+                else if (i == 3) colour.a *= world;
+                else { float level = i == 5 ? roof : world; colour.r *= level; colour.g *= level; colour.b *= level; }
+                titleTint[i].color = colour;
+            }
+            for (int i = 0; i < titleBody.Length; i++)
+            {
+                Color colour = titleBodyBase[i];
+                colour.r *= body; colour.g *= body; colour.b *= body;
+                titleBody[i].color = colour;
+            }
+            if (!titleOpenPlain)
+            {
+                // Stars come out in three bands from the top; each building group lights outright.
+                for (int i = 0; i < titleStars.Length; i++) titleStars[i].enabled = t >= titleStarAt[i];
+                for (int i = 0; i < titleUnlit.Length; i++)
+                {
+                    if (titleUnlit[i] == null) continue;
+                    titleUnlit[i].enabled = t < TitleCityLit[i];
+                    titleUnlit[i].color = new Color(world, world, world);
+                }
+                for (int i = 0; i < titleWindows.Length; i++)
+                {
+                    Color colour = titleWindows[i].color;
+                    colour.a = t >= 3.05f + i * 37 % 26 / 26f * .9f ? .85f : 0;
+                    titleWindows[i].color = colour;
+                }
+                Color glow = titleGlow.color; glow.a *= city; titleGlow.color = glow;
+                if (t < 3.75f) titleBeacon.color = titleBeaconHalo.color = Color.clear;
+                // The lamps come on and the shafts climb out of them.
+                foreach (var lamp in titleLamps) lamp.enabled = t >= 3.7f;
+                for (int i = 0; i < titleBeams.Length; i++)
+                    titleBeams[i].sizeDelta = new Vector2(20, TitleBeamSetup[i * 6 + 5] * Rise(3.7f, 4.4f));
+                // A slow pull back from the gun's light to the whole view; nearer layers settle from lower down.
+                float back = 1 - OvMotion.Glide(t / 4.7f);
+                titleBackdrop.localScale *= 1 + .08f * back;
+                for (int i = 0; i < titleLayers.Length; i++)
+                    titleLayers[i].anchoredPosition += Vector2.down * (TitleTravel[i].x * 2.2f * back);
+            }
+            if (over)
+            {
+                titleOpenFrom = -1;
+                if (titleUnlit != null) foreach (var strip in titleUnlit) if (strip != null) Destroy(strip.gameObject);
+            }
         }
 
         static readonly Color TitleCoreColour = new Color(.35f, .78f, 1f), TitleCoreSpent = new Color(.47f, .54f, .60f);
@@ -143,6 +335,7 @@ namespace GoGhost.Duel
                 return image;
             }
             titleBeams = new RectTransform[TitleBeamSetup.Length / 6];
+            var lamps = new Image[titleBeams.Length * 2];
             for (int i = 0; i < titleBeams.Length; i++)
             {
                 Vector2 lamp = TitlePlatePoint(TitleBeamSetup[i * 6], TitleBeamSetup[i * 6 + 1]);
@@ -151,9 +344,10 @@ namespace GoGhost.Duel
                 beam.rectTransform.pivot = new Vector2(.5f, 0);
                 titleBeams[i] = beam.rectTransform;
                 // The lamp itself: a small glow and a hard point on the roof.
-                Shape("Lamp glow", StickmanSprites.Pool, lamp, new Vector2(11, 6), .32f);
-                Shape("Lamp", StickmanSprites.Block, lamp, Vector2.one * 1.5f, .95f);
+                lamps[i * 2] = Shape("Lamp glow", StickmanSprites.Pool, lamp, new Vector2(11, 6), .32f);
+                lamps[i * 2 + 1] = Shape("Lamp", StickmanSprites.Block, lamp, Vector2.one * 1.5f, .95f);
             }
+            titleLamps = lamps;
         }
 
         void UpdateTitleBeams()
@@ -191,7 +385,7 @@ namespace GoGhost.Duel
             titleStrobe = Light("Aircraft strobe", StickmanSprites.Block, Vector2.one * 2.3f);
             titleRoute = -1;
             // The first one comes soon, so the sky is seen to be travelled; after that they are rare.
-            titleFlightNext = Time.unscaledTime + Random.Range(7f, 14f);
+            titleFlightNext = Time.unscaledTime + Random.Range(7f, 14f) + (TitleOpening ? Mathf.Max(0, TitleOpeningEnd - TitleOpenAt) : 0);
         }
 
         void UpdateTitleAircraft()
@@ -236,6 +430,8 @@ namespace GoGhost.Duel
             float Roll() => (float)dice.NextDouble();
             var twinklers = new System.Collections.Generic.List<Image>();
             var levels = new System.Collections.Generic.List<float>();
+            var all = new System.Collections.Generic.List<Image>();
+            var when = new System.Collections.Generic.List<float>();
             for (int tries = 0, made = 0; tries < 4000 && made < 150; tries++)
             {
                 float x = Roll() * 1672, y = Roll() * 640;
@@ -252,9 +448,11 @@ namespace GoGhost.Duel
                 var star = Rect("Star", sky, point, Vector2.one * (large ? 2.2f : 1.35f)).gameObject.AddComponent<Image>();
                 star.sprite = StickmanSprites.Block; star.raycastTarget = false;
                 star.color = new Color(.80f + .12f * Roll(), .90f, 1, level);
+                all.Add(star); when.Add(1.75f + Mathf.Floor(y / 640 * 3) * .28f);
                 if (large && twinklers.Count < 14) { twinklers.Add(star); levels.Add(level); }
             }
             titleTwinklers = twinklers.ToArray(); titleTwinkleLevel = levels.ToArray();
+            titleStars = all.ToArray(); titleStarAt = when.ToArray();
             titleTwinkleTurn = new float[titleTwinklers.Length];
             for (int i = 0; i < titleTwinkleTurn.Length; i++) titleTwinkleTurn[i] = Time.unscaledTime + Random.Range(1f, 8f);
         }
@@ -327,7 +525,7 @@ namespace GoGhost.Duel
                 titleWindowTurn[i] = now + (lit ? Random.Range(15f, 60f) : Random.Range(10f, 40f));
             }
             // The spire beacon steps on, half and off every three seconds. Reduce Flashing holds it steady.
-            float beat = now % 3;
+            float beat = (float)((Time.unscaledTimeAsDouble - titleBeaconFrom) % 3);
             float beacon = GameSettings.ReduceFlashing ? .7f : beat < .9f ? 1 : beat < 1.05f ? .4f : 0;
             titleBeacon.color = NeuralPalette.Alpha(NeuralPalette.Danger, beacon);
             titleBeaconHalo.color = NeuralPalette.Alpha(NeuralPalette.Danger, beacon * .22f);
@@ -340,6 +538,7 @@ namespace GoGhost.Duel
             // The cover looks at the player's back. Combat's side-on, bent-knee skeleton does not fit
             // this camera: keep its visual identity, but construct the shoulder/hip plane and limbs here.
             var root = Rect("Player back", parent, origin, Vector2.one * (3 * k));
+            titleBodyParts.Clear();
             Color white = NeuralPalette.Primary;
             Color far = Color.Lerp(white, new Color(.35f, .44f, .50f), .16f);
             // The roof recedes up to screen-right. Project horizontal body axes along that same
@@ -351,6 +550,7 @@ namespace GoGhost.Duel
                 var image = Rect(name, root, point * k, size * k).gameObject.AddComponent<Image>();
                 image.sprite = sprite; image.color = colour; image.raycastTarget = false;
                 image.rectTransform.localRotation = Quaternion.Euler(0, 0, angle);
+                titleBodyParts.Add(image);
                 return image;
             }
             void Limb(string name, Vector2 a, Vector2 b, float width, Color colour)
@@ -398,6 +598,10 @@ namespace GoGhost.Duel
             // No player-drawn face on the back of the head. The slight left turn faces the distant city.
             Part("Head back", StickmanSprites.Disc, Project(new Vector2(-.045f, .59f)), new Vector2(.46f, .46f), white);
             Limb("Left arm", new Vector2(-.135f, .31f), leftHand, .16f, white);
+            // The core, its halo and its light follow the breath; everything else can be held in the dark.
+            titleBodyParts.RemoveAll(part => part == titleCore || part == titleCoreHalo || part == titleCoreLight);
+            titleBody = titleBodyParts.ToArray();
+            titleBodyBase = System.Array.ConvertAll(titleBody, part => part.color);
         }
     }
 }

@@ -133,7 +133,24 @@ One aircraft at a time crosses behind the landscape and the player: a steady col
 
 The revolver's core is the one thing on the player that moves. Over about 4.2 s the core block goes from a cool grey, as if nearly out, to its full ice blue; its halo swells from 12% to full strength and from 0.92 to 1.22 of its size; and a faint ice-blue light on the air beside the gun rises from nothing to 13%. Thomas asked for the grey low point after the first, narrower swing was too easy to miss. The body stays still. The values are trial tuning.
 
-Approved and not yet built, in order: the opening light-up; ambience (wind and the city's low hum; the aircraft stays silent). Nothing carries text or passes in front of the logo and menu.
+**Opening (Thomas, 2026-11-14).** Once per launch the title opens from its smallest light outward; returning from a mission uses the wipe and does not replay it. It waits in the dark until the launch's first frames run evenly, and after the flashing-lights notice on a first install.
+
+| Seconds | What happens |
+|---|---|
+| 0 to 0.4 | Black, scanlines only |
+| 0.4 to 0.8 | The core lights in three steps; the figure and the roof rim show dimly |
+| 1.0 to 1.6 | The roof and the figure rise to full |
+| 1.6 to 2.6 | The sky, hills and near mist rise; the stars come out in three bands from the top; the city is a dark skyline |
+| 2.6 to 3.05 | Four building groups light outright, the ends first |
+| 3.05 on | Windows appear one by one; the horizon glow and the far mist rise until 3.8 |
+| 3.6 | The tower lights last |
+| 3.7 to 4.4 | The lamps come on and the shafts climb; the beacon first shows at 3.75 |
+| 4.2 | The logo slams in (1.35 to 1 in 100 ms); the hazard band and the menu follow in their usual order |
+| 5.0 | The opening ends: the parallax answers the pointer and the core takes up its breath from the bright point |
+
+Throughout, the view pulls back from 108% to full size and the nearer layers settle from lower down. Until the logo lands nothing on the menu can be pressed; any key or click jumps to the logo beat. No aircraft flies before the end. Under Reduce Flashing the whole picture fades in over one second with no steps, pull-back or slam. `OutskirtsCityDark` is the unlit skyline the cutting script bakes from the plate; it covers the painted city until each group lights. The values are trial tuning.
+
+Approved and not yet built: the opening's sounds and the ambience (wind and the city's low hum; the aircraft stays silent). Nothing carries text or passes in front of the logo and menu.
 
 One player stands on the right roof with their back to the camera, looking toward the city. Preserve the round head, cold-white simple body and electromagnetic revolver's silhouette and ice-blue core. Build the shoulders, straight planted legs, relaxed arms and weapon perspective for this rear view; do not reuse the side-on combat pose or show the drawn face on the back of the head. Thomas accepted the rear pose but requested the game's blocky limbs: use straight-sided, constant-width segments and a straight torso, without prominent round joint discs or an anatomical waist. Each arm and leg is one complete rigid rectangular block, with no elbow/knee segmentation or separate hand/finger shapes. Perspective moves the attachment points; it must not shear the limb rectangles or their end caps. Keep every end perpendicular to its long sides, with no foot clipping or ground-alignment treatment. Draw the title body blocks as opaque rectangles without a stretched transparent border, keeping their edges crisp at the approved dimensions. The arm end directly overlaps the revolver grip. The torso is also one regular rectangle with flat edges and no raised side-plane corners. Preserve the approved short neck, head proportions and stance; only flatten the torso edges. Both feet stand on the roof surface inside the rear rim, not on its bright edge. Bring the legs only slightly inward. Shoulder and hip axes and foot placement follow the roof rising toward screen-right; the torso remains upright. Use near/far limb overlap and attachment placement to establish the oblique rear view. The city, roof and player share a bottom-aligned frame that scales uniformly to fill the display. `Resources/Title/Outskirts.png` contains only the environment and is the source plate; `DuelUI.Title.cs` builds the cover figure separately. This supersedes the unbuilt fight on the logo and leaves mission backgrounds unchanged.
 

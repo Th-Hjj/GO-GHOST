@@ -5,7 +5,8 @@
 Writes OutskirtsSky (opaque), OutskirtsHills, OutskirtsSlope and OutskirtsRoof. Each layer keeps the
 original pixels where it is visible and continues its own colour behind the layers in front, so the
 four stacked at rest reproduce the plate exactly. Also writes OutskirtsMistFar and OutskirtsMistNear, quarter-size strength maps for the mist that lies
-behind the middle hills and behind the near slope, and shiftL/shiftR/dbg previews.
+behind the middle hills and behind the near slope, OutskirtsCityDark, the city before its lights come on (printing the plate rectangle it covers and the
+column where each building group starts), and shiftL/shiftR/dbg previews.
 """
 import sys
 from PIL import Image
@@ -128,3 +129,21 @@ farLine = np.where(midTop < H, midTop, nearTop)
 nearLine = nearTop.copy(); nearLine[xWall:] = nearTop[xWall - 1]
 mist(farLine, 46, 330, .35).save(f"{out}/OutskirtsMistFar.png")
 mist(nearLine, 60, 520, .5).save(f"{out}/OutskirtsMistNear.png")
+
+# --- the unlit city: silhouettes against the sky with the painted glow taken out
+cx0, cx1, cy0, cy1 = 716, 992, 700, 816
+left = a[cy0:cy1, cx0 - 4:cx0].mean(1); right = a[cy0:cy1, cx1:cx1 + 4].mean(1)
+t = (np.arange(cx1 - cx0) / (cx1 - cx0 - 1))[None, :, None]
+ground = left[:, None, :] * (1 - t) + right[:, None, :] * t
+city = a[cy0:cy1, cx0:cx1]
+differs = np.abs(city - ground).sum(2) > 34
+differs &= np.roll(differs, -1, 0)                   # two rows together, so stray haze does not count
+solid = np.zeros(differs.shape)
+tops = [int(np.argmax(differs[:, x])) if differs[:, x].any() else cy1 - cy0 for x in range(cx1 - cx0)]
+tops = [int(np.median(tops[max(0, x - 1):x + 2])) for x in range(len(tops))]
+for x, top in enumerate(tops): solid[top:, x] = 1     # a building is solid from its roofline down
+dark = ground * (1 - solid[..., None]) + ground * .42 * solid[..., None]
+Image.fromarray(dark.clip(0, 255).astype(np.uint8), "RGB").save(f"{out}/OutskirtsCityDark.png")
+occupied = (solid[:95] > .5).sum(0) > 2
+starts = [cx0] + [cx0 + x for x in range(1, len(occupied)) if occupied[x] and not occupied[x - 5:x].any()]
+print("city rect", cx0, cy0, cx1, cy1, "groups", starts)

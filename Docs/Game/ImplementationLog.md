@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Title opening
+
+- **Asked:** design the opening from the elements already built; Thomas approved the beat sheet (one light, a figure, the night, the city, the name).
+- **Changed:** `DuelUI.Title.cs` runs the opening as a pass after the title's own updates, holding back whatever it has not reached; `DuelUI.Override.cs` delays the logo, band and menu by the same clock and slams the logo. The cutting script bakes `OutskirtsCityDark`. A first run showed the launch's long first frames eating the start and the unlit city showing as a lighter rectangle; the opening now waits for even frames and the skyline dims with the sky. Sounds are left for the ambience step.
+- **Checked:** Unity compiled. Fifteen Play Mode captures at 2560x1440 across the opening show each beat in order and the usual title at the end. Skipping with a key or click, Reduce Flashing, the first-install notice path, returning from a mission, other resolutions and packaged builds NOT TESTED.
+
 ## 2026-11-14 — Wider title core breath
 
 - **Asked:** the breath was too inconspicuous; make its dimmest state greyer.

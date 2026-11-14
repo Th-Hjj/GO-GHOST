@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Structure outline, floor-only haze, Mission 1 plates at 65%
+
+- **Outline (Thomas approved the proposal):** `ArenaSilhouetteDressing` now outlines the whole structure. Landing edges keep full strength; the ceiling, the wall faces and each platform's underside and ends carry the same colour at `SideStrength` .14. The dim sides hide once the EMP sweep exists, leaving the violet EMP outline and the landing edges.
+- **Haze:** Thomas said the haze looked wrong regardless of strength and chose a single layer that hugs the floor. The sky glow and mid haze are gone. `IndustrialArenaBackdrop` draws one even floor layer (`HazeHeight` .24 of the arena, `HazeStrength` .20) between the far and near plates; Mission 3's violet copy still cross-fades in with the EMP.
+- **Plates:** opacities are per mission in `ArenaLook`: Mission 1 .65 for both, Mission 2 .50 far and .70 near, Mission 3 .50.
+- **Checked in the Editor (Play Mode, 2560x1440):** compiles, which also covers the four pushes made while Thomas was playing. Mission 2 captured with the outline; Mission 1 captured with the outline, the floor haze and the 65% plates (`Logs/ArtRedesign/s3_*.png`).
+- **NOT TESTED:** Mission 3 in either phase after these changes, including the haze cross-fade and the hidden sides; the beacon fade over time; the Test Room and the Bonus.
+
 ## 2026-11-13 — Beacons blink; plates at 50%
 
 - **Changed:** the factory's two stack beacons fade between a quarter and full strength every 3.2 s. `PlateOpacity` .40 to .50 at Thomas's request; the casino's near plate stays .70.

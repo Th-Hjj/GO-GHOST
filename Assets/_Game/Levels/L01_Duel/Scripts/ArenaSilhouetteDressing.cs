@@ -3,13 +3,21 @@ using UnityEngine;
 
 namespace GoGhost.Duel
 {
-    // Rim light on every landing edge and hairlines on the walls and ceiling of the black arena structure.
+    // A thin outline round the black arena structure: full strength on every landing edge, dim on the other sides.
     // Visual only: it reads the supports' bounds each frame and owns no collider.
     sealed class ArenaSilhouetteDressing : MonoBehaviour
     {
-        const float RimHeight = .045f, Hairline = .022f;
+        const float RimHeight = .045f;
+        // Sides that nobody lands on carry the same colour at this strength (Thomas, 2026-11-13).
+        const float SideStrength = .14f;
 
-        readonly List<(Collider2D support, SpriteRenderer surface, SpriteRenderer rim)> platforms = new();
+        sealed class PlatformOutline
+        {
+            public Collider2D Support;
+            public SpriteRenderer Surface, Top, Bottom, Left, Right;
+        }
+
+        readonly List<PlatformOutline> platforms = new();
         readonly List<Object> owned = new();
         Material material;
         int sortingLayer;
@@ -38,22 +46,35 @@ namespace GoGhost.Duel
             float floor = arena.min.y, left = arena.min.x, right = arena.max.x, ceiling = arena.max.y;
             Place(Quad("Floor rim", ramp, look.Rim), new Vector2(arena.center.x, floor - RimHeight * .5f),
                 new Vector2(arena.size.x, RimHeight));
-            frameHairlines.Add(Quad("Ceiling rim", pixel, NeuralPalette.Alpha(look.Rim, .06f)));
-            Place(frameHairlines[0], new Vector2(arena.center.x, ceiling + Hairline * .5f), new Vector2(arena.size.x, Hairline));
-            frameHairlines.Add(Quad("Left wall rim", pixel, NeuralPalette.Alpha(look.Rim, .08f)));
-            Place(frameHairlines[1], new Vector2(left - Hairline * .5f, arena.center.y), new Vector2(Hairline, arena.size.y));
-            frameHairlines.Add(Quad("Right wall rim", pixel, NeuralPalette.Alpha(look.Rim, .08f)));
-            Place(frameHairlines[2], new Vector2(right + Hairline * .5f, arena.center.y), new Vector2(Hairline, arena.size.y));
+            Color side = NeuralPalette.Alpha(look.Rim, SideStrength);
+            frameHairlines.Add(Quad("Ceiling edge", pixel, side));
+            Place(frameHairlines[0], new Vector2(arena.center.x, ceiling + RimHeight * .5f), new Vector2(arena.size.x, RimHeight));
+            frameHairlines.Add(Quad("Left wall edge", pixel, side));
+            Place(frameHairlines[1], new Vector2(left - RimHeight * .5f, arena.center.y), new Vector2(RimHeight, arena.size.y));
+            frameHairlines.Add(Quad("Right wall edge", pixel, side));
+            Place(frameHairlines[2], new Vector2(right + RimHeight * .5f, arena.center.y), new Vector2(RimHeight, arena.size.y));
 
             for (int i = 1; i < supports.Length; i++)
-                if (supports[i] != null)
-                    platforms.Add((supports[i], supports[i].GetComponent<SpriteRenderer>(), Quad("Platform rim", pixel, look.Rim)));
+            {
+                if (supports[i] == null) continue;
+                var outline = new PlatformOutline
+                {
+                    Support = supports[i], Surface = supports[i].GetComponent<SpriteRenderer>(),
+                    Top = Quad("Platform rim", pixel, look.Rim), Bottom = Quad("Platform underside", pixel, side),
+                    Left = Quad("Platform end", pixel, side), Right = Quad("Platform end", pixel, side)
+                };
+                frameHairlines.Add(outline.Bottom); frameHairlines.Add(outline.Left); frameHairlines.Add(outline.Right);
+                platforms.Add(outline);
+            }
             Follow();
         }
 
-        // The EMP draws its own violet outline round the walls and ceiling; a second line inside it reads as a mistake.
+        // The EMP draws its own violet outline round the structure; a second line inside it reads as a mistake.
+        // The dim sides give way to it. The landing edges stay.
+        bool sidesHidden;
         internal void HideFrameHairlines()
         {
+            sidesHidden = true;
             foreach (var line in frameHairlines) if (line != null) line.enabled = false;
         }
 
@@ -63,13 +84,19 @@ namespace GoGhost.Duel
         // which does not run during the countdown, so each rim follows the platform's drawn sprite.
         void Follow()
         {
-            foreach (var (support, surface, rim) in platforms)
+            foreach (var outline in platforms)
             {
+                var support = outline.Support;
                 bool shown = support != null && support.gameObject.activeInHierarchy && support.enabled;
-                rim.enabled = shown;
+                outline.Top.enabled = shown;
+                outline.Bottom.enabled = outline.Left.enabled = outline.Right.enabled = shown && !sidesHidden;
                 if (!shown) continue;
-                Bounds bounds = surface != null ? surface.bounds : support.bounds;
-                Place(rim, new Vector2(bounds.center.x, bounds.max.y - RimHeight * .5f), new Vector2(bounds.size.x, RimHeight));
+                Bounds bounds = outline.Surface != null ? outline.Surface.bounds : support.bounds;
+                float sideHeight = Mathf.Max(0, bounds.size.y - RimHeight);
+                Place(outline.Top, new Vector2(bounds.center.x, bounds.max.y - RimHeight * .5f), new Vector2(bounds.size.x, RimHeight));
+                Place(outline.Bottom, new Vector2(bounds.center.x, bounds.min.y + RimHeight * .5f), new Vector2(bounds.size.x, RimHeight));
+                Place(outline.Left, new Vector2(bounds.min.x + RimHeight * .5f, bounds.min.y + sideHeight * .5f), new Vector2(RimHeight, sideHeight));
+                Place(outline.Right, new Vector2(bounds.max.x - RimHeight * .5f, bounds.min.y + sideHeight * .5f), new Vector2(RimHeight, sideHeight));
             }
         }
 

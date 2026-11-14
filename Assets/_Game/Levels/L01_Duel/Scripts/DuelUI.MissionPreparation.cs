@@ -27,7 +27,7 @@ namespace GoGhost.Duel
             figure.localScale=new Vector3(-size,size,1);
             if (portraitMaterial==null)
                 portraitMaterial=new Material(Resources.Load<Shader>("FinalBossRainbow")) {hideFlags=HideFlags.HideAndDontSave};
-            portraitMaterial.SetFloat("_RainbowAmount",final?1:0);
+            portraitMaterial.SetFloat("_RainbowAmount",final&&body==null?1:0);
             portraitMaterial.SetColor("_BaseColor",body ?? (game.Wave==1?NeuralPalette.Gunner:NeuralPalette.Swordsman));
             float bodyHeight=BossMotor2D.DefaultBodySize.y;
             // Overlay Canvas batches sprite vertices in its own centred coordinate space.

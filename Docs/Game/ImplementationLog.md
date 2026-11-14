@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-11-13 — Empty bar, name caret, final target card
+
+- **Fixed:** an emptied Boss bar clears its lost-health segment at once instead of holding a sliver. The name field is re-enabled after setup so its caret exists. The Mission 3 target card is an Ink silhouette on a flowing rainbow, matching the other missions' silhouette on the Boss colour.
+- **Checked:** NOT COMPILED in Unity (Thomas was in Play Mode) and NOT TESTED.
+
 ## 2026-11-13 — Playtest feedback, group A
 
 - **Implemented:** in the rule editor, parameters sit in one row under the option list (Condition) or under the groups (Action), so choosing an option no longer moves the others. A Signal bracket frames the open category's options and links them to the category. The Test Room lists the controls, with the player's own keys, in the arena's top right corner. The background layers ease toward the player's side over about .35 s, so a Dodge no longer jerks the scenery.

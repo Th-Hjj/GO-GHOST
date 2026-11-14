@@ -201,6 +201,8 @@ namespace GoGhost.Duel
             if (fraction < lagSeen[i] - .0001f) lagAt[i] = Time.time;
             lagSeen[i] = fraction;
             if (fraction >= lagValue[i]) lagValue[i] = fraction;
+            // An emptied bar clears at once; a lingering sliver reads as health that is still there.
+            else if (fraction <= 0) lagValue[i] = Mathf.MoveTowards(lagValue[i], 0, Time.unscaledDeltaTime * 5);
             else if (Time.time - lagAt[i] > .35f)
                 lagValue[i] = Mathf.MoveTowards(lagValue[i], fraction, Time.deltaTime * (lagValue[i] - fraction + .04f) / .3f);
             bossLag[i].rectTransform.sizeDelta = new Vector2(bossBarWidth * lagValue[i], HealthBarHeight);

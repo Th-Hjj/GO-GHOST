@@ -214,10 +214,16 @@ namespace GoGhost.Duel
             var slab = face.gameObject.AddComponent<SlabGraphic>();
             Color fill = final ? OverridePalette.SurfaceHover : MissionColor;
             slab.color = fill; slab.Cut = 22; slab.raycastTarget = false;
+            // Every target is an Ink silhouette on its own colour; the GOAT of War's colour is the rainbow.
+            if (final)
+            {
+                var rainbow = Rect("Rainbow", face, Vector2.zero, size).gameObject.AddComponent<RainbowBlock>();
+                rainbow.Cut = 22; rainbow.raycastTarget = false;
+            }
             if (game.ProfileSilhouette != null)
             {
                 var panel = Rect("Target", face, new Vector2(0, 30), new Vector2(240, 230));
-                DrawProfileSilhouette(panel, final, false, final ? (Color?)null : OverridePalette.Ink);
+                DrawProfileSilhouette(panel, final, false, OverridePalette.Ink);
             }
             var strip = Rect("Label", face, new Vector2(-17, -size.y / 2 + 34), new Vector2(306, 52)).gameObject.AddComponent<SlabGraphic>();
             strip.color = OverridePalette.Ink; strip.Cut = 11; strip.raycastTarget = false;

@@ -147,6 +147,8 @@ namespace GoGhost.Duel
             input.textViewport = viewport;
             input.textComponent = (TextMeshProUGUI)text; input.placeholder = placeholder;
             input.text = game.Appearance.Name;
+            // The field built its caret before it had a text component; enabling it again creates the caret.
+            input.enabled = false; input.enabled = true;
             input.onValueChanged.AddListener(value => { game.Appearance.Name = value; PlayMetrics.SetName(value); });
 
             characterStart = OvButton("Upload", frame, At(920, 652, 440, 96), new Vector2(440, 96), game.StartGame, OverrideButtonKind.Primary, 62, true);

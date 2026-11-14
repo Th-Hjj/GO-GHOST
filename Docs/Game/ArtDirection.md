@@ -31,7 +31,7 @@ Thomas chose this direction for everything inside the arena. Mockups: <https://c
 | 2 | Stickman cleanup for the player and all Bosses | Built 2026-11-13 |
 | 3 | Weapons: revolver highlight, rifle, blade, axe | Rifle and blade built 2026-11-14 (`BossWeaponSprites`); revolver and axe not started |
 | 4 | Effects | Not started |
-| 5 | Animation accents | Not started |
+| 5 | Animation accents | Built 2026-11-14: stepped muzzle flash, stepped Dodge afterimages, takeover flash, white step on a hit |
 
 **Stage 1 as built**
 

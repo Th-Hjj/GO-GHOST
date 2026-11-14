@@ -20,6 +20,8 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
         public float born, life, alpha;
         public bool echo;
         public Vector3 velocity;
+        // Two held steps instead of a fade: full, then half (half length for lines, half alpha for sprites), then gone.
+        public bool stepped, halved;
     }
 
     private readonly List<Flash> flashes = new List<Flash>();
@@ -140,12 +142,20 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
         flashes.Add(new Flash { root = go, lines = lines, born = PresentationClock, life = life, alpha = color.a });
     }
 
+    // Each of the two steps a stepped effect is held for (Thomas, 2026-11-14).
+    const float StepSeconds = .05f;
+
     // A/B: after successful Launch, never from the warning/input state.
-    public void Muzzle(Vector3 origin, Vector2 direction) => Rays(origin, direction, 3, .20f, .06f);
+    public void Muzzle(Vector3 origin, Vector2 direction) => Muzzle(origin, direction, 1f);
 
     // One accepted discharge, never one call per pellet. Only the visual length changes.
+    // The flash holds at full size for one step, at half length for a second, and is gone.
     public void Muzzle(Vector3 origin, Vector2 direction, float visualScale)
-        => Rays(origin, direction, 3, .20f * Mathf.Clamp(visualScale, 1f, 1.25f), .06f);
+    {
+        int before = flashes.Count;
+        Rays(origin, direction, 3, .20f * Mathf.Clamp(visualScale, 1f, 1.25f), StepSeconds * 2);
+        if (flashes.Count > before) flashes[flashes.Count - 1].stepped = true;
+    }
     // A: actual contact only; direction points away from the impacted surface.
     public void BulletHit(Vector3 contact, Vector2 outward) => Rays(contact, outward, 3, .17f, .10f);
 
@@ -185,8 +195,9 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
             copies.Add(copy);
         }
         foreach (var copy in copies) copy.sortingOrder = behind;
+        // The silhouette holds, drops to half strength for a second step and is gone; it never fades.
         if (group != null)
-            flashes.Add(new Flash { root = group, sprites = copies.ToArray(), born = PresentationClock, life = life, alpha = color.a });
+            flashes.Add(new Flash { root = group, sprites = copies.ToArray(), born = PresentationClock, life = life, alpha = color.a, stepped = true });
     }
 
     // E: accepted counter contact only.
@@ -325,7 +336,15 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
             var f = flashes[i];
             float age = now - f.born;
             if (f.root == null || age >= f.life) { RemoveFlash(i); continue; }
-            float alpha = f.alpha * (1f - age / f.life);
+            bool secondStep = f.stepped && age >= f.life * .5f;
+            float alpha = f.stepped ? f.alpha * (secondStep && f.sprites != null ? .5f : 1f) : f.alpha * (1f - age / f.life);
+            if (secondStep && !f.halved)
+            {
+                f.halved = true;
+                if (f.lines != null) foreach (var line in f.lines)
+                    if (line != null && line.positionCount == 2)
+                        line.SetPosition(1, Vector3.Lerp(line.GetPosition(0), line.GetPosition(1), .5f));
+            }
             if (f.lines != null) foreach (var line in f.lines)
             {
                 if (line == null) continue;

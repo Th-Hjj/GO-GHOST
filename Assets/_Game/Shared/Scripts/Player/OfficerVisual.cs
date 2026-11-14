@@ -35,6 +35,19 @@ public sealed class OfficerVisual : MonoBehaviour
     private MaterialPropertyBlock glowBlock;
     private System.Func<ControlOperation, ConditionalVisualFeedback> feedback;
     private bool glowBound;
+    // A rule taking a body system flashes it for one step before it settles into its colour.
+    private const float TakeoverFlashSeconds=1f/12f;
+    private readonly float[] takeoverAt={float.NegativeInfinity,float.NegativeInfinity,float.NegativeInfinity};
+    private readonly bool[] takenOver=new bool[3];
+    private bool TakeoverFlash(int system,float strength)
+    {
+        // Only an action actually being carried out counts; a rule that merely matches stays quiet.
+        bool taken=strength>=.5f;
+        if(taken&&!takenOver[system])takeoverAt[system]=Time.time;
+        // Released once the signal has clearly dropped, so a held action does not flash again and again.
+        if(taken||strength<.3f)takenOver[system]=taken;
+        return !GameSettings.ReduceFlashing&&Time.time-takeoverAt[system]<TakeoverFlashSeconds;
+    }
     private static readonly int GlowStrength=Shader.PropertyToID("_AIStrength");
     private static readonly int GlowColor=Shader.PropertyToID("_AIColor");
     public void ConfigureConditionalGlow(Material material, System.Func<ControlOperation, ConditionalVisualFeedback> source = null)
@@ -75,6 +88,7 @@ public sealed class OfficerVisual : MonoBehaviour
         float legs=Mathf.Max(Mathf.Max(move.Signal,jump.Matched?.2f:0),Mathf.Max(move.Afterglow*.22f,Mathf.Max(jump.Pulse*.95f,jump.Afterglow*.22f)));
         float arms=Mathf.Max(Mathf.Max(aim.Signal,fire.Signal),Mathf.Max(aim.Afterglow*.22f,fire.Afterglow*.22f));
         float dodgeSignal=Mathf.Max(spine.Matched?.2f:0,Mathf.Max(spine.Pulse,spine.Afterglow*.22f));
+        bool legsFlash=TakeoverFlash(0,legs),armsFlash=TakeoverFlash(1,arms),spineFlash=TakeoverFlash(2,dodgeSignal);
         for(int i=0;i<glowParts.Length;i++)
         {
             bool leg=i<4||i>=13; // The knee joints follow their legs.
@@ -83,7 +97,11 @@ public sealed class OfficerVisual : MonoBehaviour
             if(i==8 || reloading&&i==9)strength=0;
             var renderer=glowParts[i];if(renderer==null)continue;
             renderer.GetPropertyBlock(glowBlock);glowBlock.SetFloat(GlowStrength,Mathf.Clamp01(strength));
-            glowBlock.SetColor(GlowColor,leg?NeuralPalette.Legs:i==10?NeuralPalette.Spine:NeuralPalette.Arms);renderer.SetPropertyBlock(glowBlock);
+            Color signal=leg?NeuralPalette.Legs:i==10?NeuralPalette.Spine:NeuralPalette.Arms;
+            // The flash is the system colour pushed most of the way to white at full strength.
+            bool flash=strength>0&&(leg?legsFlash:i==10?spineFlash:armsFlash);
+            if(flash){glowBlock.SetFloat(GlowStrength,1);signal=Color.Lerp(signal,Color.white,.75f);}
+            glowBlock.SetColor(GlowColor,signal);renderer.SetPropertyBlock(glowBlock);
         }
     }
     public bool ReloadVisible => reloading && weapon != null && weapon.enabled && weapon.gameObject.activeInHierarchy;

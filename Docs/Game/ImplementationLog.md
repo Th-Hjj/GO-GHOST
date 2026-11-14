@@ -1,5 +1,14 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Backlit world art, stage 5: three stepped moments
+
+Thomas asked for the three remaining animation accents. Poses and movement are untouched.
+
+- **Muzzle flash:** the player's flash holds at full size for .05 s, at half length for another .05 s, then is gone (`AttemptPresentationVfx.Muzzle`). It no longer fades.
+- **Dodge afterimages:** each silhouette holds, drops to half strength for its second half and is gone (`AttemptPresentationVfx.Echo`). Their starting alpha is .16 (was .11, fading).
+- **Rule takeover:** when a body system's signal rises to an executing action, that system shows its colour pushed three quarters of the way to white at full strength for one twelfth of a second, then settles (`OfficerVisual.TakeoverFlash`). A rule that only matches does not flash. Off under Reduce Flashing. The neutral limb is already near white, so the flash is a pale version of the system colour, not pure white.
+- **NOT COMPILED, NOT TESTED:** Thomas was in Play Mode.
+
 ## 2026-11-14 — Afterimage feet and the overview figure's knees
 
 - **Fixed:** dash and Dodge afterimages copied the lengthened standing calves without the mask that cuts them flat. `StickmanSprites.CarryFootCut` gives each afterimage its own copy of that mask (`AttemptPresentationVfx.Echo`, `BossSilhouetteView.CaptureEcho`). The mission overview's UI copy of the player gets the same round knee disc as the fight.

@@ -12,7 +12,7 @@ namespace GoGhost.Duel
     {
         // One step of pure white on the 12-per-second effect clock, then Danger fading back.
         const float WhiteSeconds = 1f / 12f, HurtSeconds = .15f, HurtTint = .9f;
-        const float GhostAlpha = .72f, EchoAlpha = .11f, EchoSeconds = .14f, EchoInterval = .07f;
+        const float GhostAlpha = .72f, EchoAlpha = .16f, EchoSeconds = .14f, EchoInterval = .07f;
         PlayerHealth health;
         PlayerDodge dodge;
         Collider2D body;

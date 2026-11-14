@@ -9,10 +9,10 @@ Thomas chose this direction for everything inside the arena. Mockups: <https://c
 **Rules**
 
 1. Fighters are flat and hard-edged. The world gets its depth from haze and backlight.
-2. Structure (floor, walls, ceiling, platforms) is a black silhouette, #050506. Landing edges carry a thin rim light. Platforms hover on two lift emitters.
+2. Structure (floor, walls, ceiling, platforms) is a black silhouette, #050506. Landing edges carry a thin rim light. Nothing hangs under the platforms and nothing marks the walls (Thomas, 2026-11-13).
 3. Only things that matter to play give off light: landing edges, weapons and attacks.
-4. Each mission has one haze colour, its Boss colour: Gunner orange, Swordsman coral, EMP violet. The Test Room and the Bonus use neutral grey-blue.
-5. Backgrounds: silhouettes only; flat, hard-edged lights in one colour per mission; one haze between the layers; detail at the skyline and a dark centre.
+4. Each mission has one haze colour: Gunner orange, Swordsman coral, and cold white for Mission 3 until the EMP front that traces the skyline dyes it violet. It stays violet in phase two and on direct retry. The Test Room and the Bonus use neutral grey-blue.
+5. Backgrounds: the plate art is not altered (Thomas, 2026-11-13). Both plates keep their authored look at 60% opacity. Only haze is laid over them, kept light so the background does not compete with the fight. The factory keeps two small beacons on its stacks.
 
 **Decided per item**
 
@@ -27,19 +27,19 @@ Thomas chose this direction for everything inside the arena. Mockups: <https://c
 
 | Stage | Content | Status |
 |---|---|---|
-| 1 | Arena structure, platform dressing, haze, plate treatment, light layers | Built 2026-11-13 |
+| 1 | Arena structure, rim lights and haze | Built 2026-11-13, revised the same day |
 | 2 | Stickman cleanup for the player and all Bosses | Not started |
 | 3 | Weapons: revolver highlight, rifle, blade, axe | Not started |
 | 4 | Effects | Not started |
 | 5 | Animation accents | Not started |
-| 6 | Redraw the casino and megacity near plates and all light layers to the five rules | Not started |
 
 **Stage 1 as built**
 
-- `ArenaLook.For(wave)` holds each mission's haze colour, rim colour, plate tints and light strengths.
-- `IndustrialArenaBackdrop` draws, back to front: sky haze, far plate, far lights, mid haze, near plate, near lights, floor haze with a vignette. Haze textures are generated at load and drawn with `Resources/ArenaHaze.shader` (premultiplied). Megacity's far plate has an opaque sky, so its sky haze is added in front of that plate. The plates are opaque and darkened by tint; the old 60% opacity is gone. The Test Room and the Bonus get haze without plates.
-- `ArenaSilhouetteDressing` draws the rim lights, lift emitters and glows, and one tier mark per platform height on each wall. It follows the platform colliders every frame and owns no collider.
-- `Resources/Arena/*Lights.png` are the light layers. Casino and megacity lights were cut from the existing plates by brightness; the factory's three windows and two stack beacons are new. They share their plate's parallax crop.
+- `ArenaLook.For(wave)` holds each mission's haze and rim colour.
+- `IndustrialArenaBackdrop` draws, back to front: sky haze, far plate, mid haze, near plate, floor haze. Both plates are drawn as before at 60% opacity. Haze textures are generated at load and drawn with `Resources/ArenaHaze.shader` (premultiplied); `HazeStrength` is .75 of the first pass. Megacity's far plate has an opaque sky, so its sky haze is added in front of that plate. The Test Room and the Bonus get haze without plates.
+- `Resources/Arena/IndustrialFarLights.png` holds only the two stack beacons and shares the far plate's crop.
+- Mission 3: `FinalBossEmpSweep` calls `SetEmpHaze` with the progress of the third front, cross-fading the cold-white haze to violet copies. A direct phase-two start sets it fully violet.
+- `ArenaSilhouetteDressing` draws the rim lights on the floor and platforms and hairlines on the walls and ceiling. It follows the platform colliders every frame and owns no collider.
 - Strengths were tuned by eye in the Editor and are playtest values.
 
 Confirmed by Thomas, 2026-10-16. This direction supersedes earlier monochrome configuration art, uniform green execution feedback, blue Gunner, green player HP and green/gold weapons. Verification belongs in Implementation_Log; this document records the approved direction.

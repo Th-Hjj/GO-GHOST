@@ -10,43 +10,48 @@ namespace GoGhost.Duel
         public static readonly Color Structure = new Color32(5, 5, 6, 255);
         public readonly string Artwork, FarLabel, NearLabel;
         public readonly Color Haze, Rim;
-        public readonly float FarTint, NearTint, FarLights, NearLights;
         // An opaque far plate would hide the sky haze, so that haze is added in front of it.
         public readonly bool OpaqueSky;
 
-        ArenaLook(string artwork, string farLabel, string nearLabel, Color haze, Color rim,
-            float farTint, float nearTint, float farLights, float nearLights, bool opaqueSky)
+        ArenaLook(string artwork, string farLabel, string nearLabel, Color haze, Color rim, bool opaqueSky)
         {
             Artwork = artwork; FarLabel = farLabel; NearLabel = nearLabel; Haze = haze; Rim = rim;
-            FarTint = farTint; NearTint = nearTint; FarLights = farLights; NearLights = nearLights;
             OpaqueSky = opaqueSky;
         }
 
-        // The Test Room and the Bonus have no plates: neutral haze only.
+        // Mission 3 starts cold white; the EMP dyes its haze violet. The Test Room and the Bonus have no plates.
         public static ArenaLook For(int wave) => wave switch
         {
             1 => new ArenaLook("Industrial", "Distant Works", "Steel Columns", NeuralPalette.Gunner,
-                new Color32(255, 233, 219, 255), .85f, .38f, .50f, 0, false),
+                new Color32(255, 233, 219, 255), false),
             2 => new ArenaLook("Casino", "Resort Hotels", "Casino Entrance", NeuralPalette.Swordsman,
-                new Color32(255, 226, 230, 255), .50f, .34f, .70f, .80f, false),
-            DuelGame.FinalBossWave => new ArenaLook("Megacity", "Distant Skyline", "Corporate Towers", NeuralPalette.Emp,
-                new Color32(234, 224, 255, 255), .55f, .30f, .60f, .50f, true),
-            _ => new ArenaLook(null, null, null, NeuralPalette.Secondary, NeuralPalette.Primary, 0, 0, 0, 0, false)
+                new Color32(255, 226, 230, 255), false),
+            DuelGame.FinalBossWave => new ArenaLook("Megacity", "Distant Skyline", "Corporate Towers", NeuralPalette.Primary,
+                NeuralPalette.Primary, true),
+            _ => new ArenaLook(null, null, null, NeuralPalette.Secondary, NeuralPalette.Primary, false)
         };
     }
 
-    // Plates, their light layers and three haze layers fill the fixed arena. Only the sampled region of the art moves.
+    // The two authored plates fill the fixed arena as authored; only their sampled region moves.
+    // Three generated haze layers sit behind, between and in front of them. The art itself is never altered.
     sealed class IndustrialArenaBackdrop : MonoBehaviour
     {
         const float VisibleWidthPixels = 966f;
         const float FarTravelPixels = 7f;
         const float NearTravelPixels = 36f;
+        // Thomas's approved plate strength for all three missions.
+        const float PlateOpacity = .60f;
+        // Thomas, 2026-11-13: slightly lighter than the first pass.
+        const float HazeStrength = .75f;
 
         Transform player;
         Bounds arena;
-        RawImage far, near, farLights, nearLights;
+        RawImage far, near, farLights;
         Material contourMaterial, hazeMaterial;
         readonly List<Texture2D> hazeTextures = new();
+        // Sky, mid and floor haze in the mission colour, and the same three in EMP violet once the sweep exists.
+        readonly RawImage[] haze = new RawImage[3];
+        RawImage[] empHaze;
 
         public static void Create(Transform attempt, Transform player, Bounds arena, int wave)
         {
@@ -83,19 +88,19 @@ namespace GoGhost.Duel
             backdrop.arena = arena;
             backdrop.hazeMaterial = new Material(hazeShader) { name = "Arena haze", hideFlags = HideFlags.DontSave };
             bool plates = farTexture != null;
-            if (!look.OpaqueSky) backdrop.AddHaze("Sky haze", backdrop.SkyHaze(look.Haze));
-            if (plates) backdrop.far = backdrop.AddPlate(look.FarLabel, farTexture, look.FarTint);
-            if (look.OpaqueSky) backdrop.AddHaze("Sky haze", backdrop.SkyHaze(look.Haze));
-            if (plates) backdrop.farLights = backdrop.AddLights(look.Artwork + "FarLights", look.FarLights);
-            backdrop.AddHaze("Mid haze", backdrop.MidHaze(look.Haze));
-            if (plates) backdrop.near = backdrop.AddPlate(look.NearLabel, nearTexture, look.NearTint);
-            if (plates) backdrop.nearLights = backdrop.AddLights(look.Artwork + "NearLights", look.NearLights);
-            backdrop.AddHaze("Floor haze", backdrop.FrontHaze(look.Haze));
+            if (!look.OpaqueSky) backdrop.haze[0] = backdrop.AddHaze("Sky haze", backdrop.SkyHaze(look.Haze));
+            if (plates) backdrop.far = backdrop.AddPlate(look.FarLabel, farTexture, PlateOpacity);
+            if (look.OpaqueSky) backdrop.haze[0] = backdrop.AddHaze("Sky haze", backdrop.SkyHaze(look.Haze));
+            // Only the factory has this layer: the two stack beacons.
+            var lights = plates ? Resources.Load<Texture2D>($"Arena/{look.Artwork}FarLights") : null;
+            if (lights != null) backdrop.farLights = backdrop.AddPlate("Beacons", lights, 1f);
+            backdrop.haze[1] = backdrop.AddHaze("Mid haze", backdrop.MidHaze(look.Haze));
+            if (plates) backdrop.near = backdrop.AddPlate(look.NearLabel, nearTexture, PlateOpacity);
+            backdrop.haze[2] = backdrop.AddHaze("Floor haze", backdrop.FloorHaze(look.Haze));
             backdrop.UpdateParallax();
         }
 
-        // Tint darkens the plate into a silhouette; it stays opaque so the haze sits between the layers.
-        RawImage AddPlate(string label, Texture texture, float tint)
+        RawImage AddPlate(string label, Texture texture, float opacity)
         {
             var plate = new GameObject(label, typeof(RawImage)).GetComponent<RawImage>();
             var rect = plate.rectTransform;
@@ -104,29 +109,19 @@ namespace GoGhost.Duel
             rect.anchorMax = Vector2.one;
             rect.offsetMin = rect.offsetMax = Vector2.zero;
             plate.texture = texture;
-            plate.color = new Color(tint, tint, tint, 1f);
+            plate.color = new Color(1f, 1f, 1f, opacity);
             plate.raycastTarget = false;
             return plate;
         }
 
-        // Flat lights share their plate's crop and keep full brightness above the darkened plate.
-        RawImage AddLights(string resource, float opacity)
+        RawImage AddHaze(string label, Texture2D texture)
         {
-            if (opacity <= 0) return null;
-            var texture = Resources.Load<Texture2D>("Arena/" + resource);
-            if (texture == null) return null;
-            var lights = AddPlate(resource, texture, 1f);
-            lights.color = new Color(1f, 1f, 1f, opacity);
-            return lights;
+            var layer = AddPlate(label, texture, 1f);
+            layer.material = hazeMaterial;
+            return layer;
         }
 
-        void AddHaze(string label, Texture2D texture)
-        {
-            var haze = AddPlate(label, texture, 1f);
-            haze.material = hazeMaterial;
-        }
-
-        // Authored like the approved mockup in display space, then stored linear and premultiplied.
+        // Authored in display space, then stored linear and premultiplied.
         Texture2D HazeTexture(int width, int height, System.Func<float, float, Color> pixel)
         {
             var texture = new Texture2D(width, height, TextureFormat.RGBAHalf, false, true)
@@ -149,35 +144,28 @@ namespace GoGhost.Duel
             => new Color(Mathf.GammaToLinearSpace(display.r), Mathf.GammaToLinearSpace(display.g),
                 Mathf.GammaToLinearSpace(display.b), occlusion);
 
-        // Dark sky that warms toward the floor, plus a glow rising from the horizon. Added as light.
-        Texture2D SkyHaze(Color haze) => HazeTexture(256, 128, (u, depth) =>
+        // Colour that gathers toward the floor, plus a glow rising from the horizon. Added as light.
+        Texture2D SkyHaze(Color colour) => HazeTexture(256, 128, (u, depth) =>
         {
-            Color top = new Color32(7, 7, 10, 255), upper = new Color32(10, 11, 16, 255);
             float low = Mathf.Clamp01((depth - .36f) / .64f);
-            Color sky = depth < .36f ? Color.Lerp(top, upper, depth / .36f)
-                : Color.Lerp(upper, Color.black, low) + haze * (.21f * Mathf.Pow(low, 1.5f));
+            Color sky = colour * (.21f * HazeStrength * Mathf.Pow(low, 1.5f));
             float dx = (u - .5f) / .58f, dy = (1f - depth) / .48f;
-            float glow = .32f * Mathf.Clamp01(1f - Mathf.Sqrt(dx * dx + dy * dy));
-            return Linear(Color.Lerp(sky, haze, glow), 0);
+            float glow = .32f * HazeStrength * Mathf.Clamp01(1f - Mathf.Sqrt(dx * dx + dy * dy));
+            return Linear(Color.Lerp(sky, colour, glow), 0);
         });
 
         // Thin haze between the far and near plates.
-        Texture2D MidHaze(Color haze) => HazeTexture(4, 128, (u, depth) =>
+        Texture2D MidHaze(Color colour) => HazeTexture(4, 128, (u, depth) =>
         {
-            float amount = .11f * Mathf.Clamp01((depth - .42f) / .58f);
-            return Linear(haze * amount, 1f - Mathf.Pow(1f - amount, 2.2f));
+            float amount = .11f * HazeStrength * Mathf.Clamp01((depth - .42f) / .58f);
+            return Linear(colour * amount, 1f - Mathf.Pow(1f - amount, 2.2f));
         });
 
-        // Haze over the floor in front of the near plate, and a vignette that keeps the corners quiet.
-        Texture2D FrontHaze(Color haze) => HazeTexture(256, 128, (u, depth) =>
+        // Haze over the floor in front of the near plate.
+        Texture2D FloorHaze(Color colour) => HazeTexture(4, 128, (u, depth) =>
         {
-            float floor = .16f * Mathf.Clamp01((depth - .724f) / .276f);
-            float dx = (u - .5f) / .75f, dy = (depth - .62f) / .85f;
-            float vignette = .42f * Mathf.Clamp01((Mathf.Sqrt(dx * dx + dy * dy) - .55f) / .45f);
-            float kept = Mathf.Pow(1f - vignette, 2.2f);
-            Color light = Linear(haze * floor, 0) * kept;
-            light.a = 1f - Mathf.Pow(1f - floor, 2.2f) * kept;
-            return light;
+            float amount = .16f * HazeStrength * Mathf.Clamp01((depth - .724f) / .276f);
+            return Linear(colour * amount, 1f - Mathf.Pow(1f - amount, 2.2f));
         });
 
         void LateUpdate() => UpdateParallax();
@@ -194,7 +182,29 @@ namespace GoGhost.Duel
             var contours = AddPlate("EMP architectural contours", mask, 1f);
             contourMaterial = contours.material = material;
             contourMaterial.SetFloat("_CityContours", 1);
+            // Violet copies of the haze sit directly above their cold-white layers, hidden until the sweep dyes them.
+            empHaze = new[]
+            {
+                AddHaze("EMP sky haze", SkyHaze(NeuralPalette.Emp)),
+                AddHaze("EMP mid haze", MidHaze(NeuralPalette.Emp)),
+                AddHaze("EMP floor haze", FloorHaze(NeuralPalette.Emp))
+            };
+            for (int i = 0; i < empHaze.Length; i++)
+                empHaze[i].transform.SetSiblingIndex(haze[i].transform.GetSiblingIndex() + 1);
+            SetEmpHaze(0);
             UpdateParallax();
+        }
+
+        // 0 keeps the mission's own haze; 1 is fully EMP violet. Driven by the front that traces the skyline.
+        internal void SetEmpHaze(float amount)
+        {
+            if (empHaze == null) return;
+            amount = Mathf.Clamp01(amount);
+            for (int i = 0; i < empHaze.Length; i++)
+            {
+                haze[i].color = new Color(1f, 1f, 1f, 1f - amount);
+                empHaze[i].color = new Color(1f, 1f, 1f, amount);
+            }
         }
 
         // The layers ease toward the player's side of the arena, so a Dodge or a hit does not jerk the scenery.
@@ -212,7 +222,6 @@ namespace GoGhost.Duel
             SetCrop(far, position * FarTravelPixels);
             SetCrop(near, position * NearTravelPixels);
             if (farLights != null) farLights.uvRect = far.uvRect;
-            if (nearLights != null) nearLights.uvRect = near.uvRect;
             if (contourMaterial != null)
                 contourMaterial.SetVector("_CityCrops", new Vector4(far.uvRect.x, far.uvRect.width,
                     near.uvRect.x, near.uvRect.width));

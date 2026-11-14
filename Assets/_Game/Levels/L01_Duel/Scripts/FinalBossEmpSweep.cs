@@ -11,6 +11,7 @@ namespace GoGhost.Duel
         Material terrain, player, city;
         internal Material Cards { get; private set; }
         BossSilhouetteView boss;
+        IndustrialArenaBackdrop backdrop;
         Vector2 origin;
         bool sweeping;
 
@@ -26,7 +27,8 @@ namespace GoGhost.Duel
             city.SetColor("_FrontColor", NeuralPalette.Alpha(NeuralPalette.Emp, .72f));
             foreach (var surface in arena.GetComponentsInChildren<SpriteRenderer>())
                 if (surface.enabled) AddOverlay(surface, terrain, -1, .065f);
-            GetComponentInChildren<IndustrialArenaBackdrop>()?.AddEmpContours(city);
+            backdrop = GetComponentInChildren<IndustrialArenaBackdrop>();
+            if (backdrop != null) backdrop.AddEmpContours(city);
 
             if (view == null)
             {
@@ -85,6 +87,8 @@ namespace GoGhost.Duel
                 Cards.SetFloat("_Radius", second);
             }
             city.SetFloat("_Radius", boss.WaveRadius(2));
+            // The haze turns violet with the front that traces the skyline.
+            if (backdrop != null) backdrop.SetEmpHaze(boss.WaveProgress(2));
             if (boss.WaveProgress(2) >= 1) Finish();
         }
 
@@ -93,6 +97,7 @@ namespace GoGhost.Duel
             sweeping = false;
             terrain.SetFloat("_Radius", FinishedRadius);
             city.SetFloat("_Radius", FinishedRadius);
+            if (backdrop != null) backdrop.SetEmpHaze(1);
             if (Cards != null) Cards.SetFloat("_Radius", FinishedRadius);
             if (player != null) player.SetFloat("_Radius", -1);
         }

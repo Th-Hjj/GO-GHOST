@@ -1,5 +1,14 @@
 # GO GHOST slice implementation
 
+## 2026-11-13 — Backgrounds restored; emitters and wall marks removed; Mission 3 haze
+
+Thomas played stage 1: the backgrounds looked jagged, Missions 2 and 3 were worse than before and the background drew the eye. I first misread "mirror back" as "roll back" and began editing; those uncommitted edits were restored before this change, which follows his confirmed list.
+
+- **Implemented:** both plates are drawn as before the redesign at 60% opacity, with no darkening. The four casino and megacity light layers are deleted; the factory layer keeps only its two stack beacons. The vignette is gone. Haze is .75 of the first pass (`HazeStrength`). `ArenaSilhouetteDressing` no longer draws lift emitters, their glows or wall tier marks. Mission 3 uses cold-white haze and rim; `FinalBossEmpSweep` cross-fades the haze to violet with the third front and sets it violet at once on a direct phase-two start.
+- **Checked in the Editor (Play Mode, 2560x1440):** compiles; Mission 1, Mission 2 and Mission 3 phase one entered from preparation and captured in the fight; Mission 3 phase two entered through the developer wave jump and captured with violet haze and the EMP outlines (`Logs/ArtRedesign/s1b_*.png`). No console errors.
+- **NOT TESTED:** the live cross-fade during the real phase change (only the start and end states were seen); the Test Room and the Bonus after this change; other resolutions; a built player.
+- **Seen, not changed:** entering phase two logs nine "Sprite Tiling ... Full Rect" warnings from the EMP outline copies of the arena surfaces. That code is untouched; whether they predate today was not checked.
+
 ## 2026-11-13 — Backlit world art, stage 1: arena, platforms, haze and backgrounds
 
 Thomas chose the Backlit direction for the in-arena art and asked for implementation to start. The direction and the stage list are in `ArtDirection.md`.

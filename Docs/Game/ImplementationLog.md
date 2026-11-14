@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Title searchlights and mist reworked
+
+- **Asked:** Thomas was not satisfied with the searchlights and haze bands and asked how other works handle them. Findings (Batman: The Animated Series' light airbrushed onto black, the standard searchlight wedge faded and blurred, edge falloff and additive light in game beams, Firewatch's fog as depth between layers) pointed to four faults: hard uniform wedges, no lamp, too much spread, and haze drawn as objects with ends. He approved the rework.
+- **Changed:** two soft, nearly parallel shafts with lamps replace the three wedges. The haze bands and their lit patches are removed; mist now lies behind the hills and behind the near slope, from strength maps the cutting script bakes against each ridge line, with noise drifting through it. New `Resources/TitleLight.shader` adds light and mist to the picture. The mist exposed a ten-pixel block in the hills layer beside the roof corner; the ridge detection now uses a wider median and the layers were recut, still identical to the plate at rest.
+- **Checked:** Unity compiled. Play Mode captures at 2560x1440: shafts leave the lamps, fade out below the hazard band and clear the menu; mist glows around the city base; the block is gone after the recut. Motion over time, other resolutions and packaged builds NOT TESTED; the shader has only been seen in the editor.
+
 ## 2026-11-14 — Title searchlights and haze bands
 
 - **Asked:** continue the Living title order with the searchlights and the haze bands that replace clouds.

@@ -4,7 +4,8 @@
 
 Writes OutskirtsSky (opaque), OutskirtsHills, OutskirtsSlope and OutskirtsRoof. Each layer keeps the
 original pixels where it is visible and continues its own colour behind the layers in front, so the
-four stacked at rest reproduce the plate exactly. Also writes shiftL/shiftR/dbg previews.
+four stacked at rest reproduce the plate exactly. Also writes OutskirtsMistFar and OutskirtsMistNear, quarter-size strength maps for the mist that lies
+behind the middle hills and behind the near slope, and shiftL/shiftR/dbg previews.
 """
 import sys
 from PIL import Image
@@ -50,7 +51,7 @@ ok = (midTop > 0) & ~city
 xs = np.arange(W)
 mt = np.interp(xs, xs[ok], midTop[ok])
 has = (midTop > 0) | city
-mt = np.array([np.median(mt[max(0, x - 6):x + 7]) for x in range(W)])
+mt = np.array([np.median(mt[max(0, x - 24):x + 25]) for x in range(W)])   # wide: drops stray steps in the ridge
 midTop = np.where(has, np.round(mt), H).astype(int)
 midTop = np.where((nearTop - midTop < 5) & (xs < x0), H, midTop)
 np.save(out + "/curves.npy", np.stack([roofTop, nearTop, midTop]))
@@ -115,3 +116,15 @@ for x in range(W):
     for arr, col in [(midTop, (255, 0, 255)), (nearTop, (0, 255, 0)), (roofTop, (255, 255, 0))]:
         if arr[x] < H: dbg[arr[x], x] = col
 Image.fromarray(dbg.astype(np.uint8)).crop((0, 640, W, H)).save(f"{out}/dbg.png")
+
+# --- mist: strength rising to each ridge line from above, strongest toward the city
+def mist(line, reach, spread, floor):
+    line = np.convolve(np.pad(line.astype(float), 12, mode="edge"), np.ones(25) / 25, mode="valid")
+    yy = np.arange(H)[:, None]
+    up = np.clip(1 - (line[None, :] - yy) / reach, 0, 1) ** 1.6
+    across = floor + (1 - floor) * np.exp(-((np.arange(W) - 858) / spread) ** 2)
+    return Image.fromarray((up * across[None, :] * 255).astype(np.uint8), "L").resize((W // 4, H // 4), Image.LANCZOS)
+farLine = np.where(midTop < H, midTop, nearTop)
+nearLine = nearTop.copy(); nearLine[xWall:] = nearTop[xWall - 1]
+mist(farLine, 46, 330, .35).save(f"{out}/OutskirtsMistFar.png")
+mist(nearLine, 60, 520, .5).save(f"{out}/OutskirtsMistNear.png")

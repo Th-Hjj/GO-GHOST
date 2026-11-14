@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Backlit world art, stage 3 (part): Gunner rifle and Swordsman blade
+
+Thomas chose to do only these two weapons first; the revolver highlight and the axe details wait.
+
+- **Implemented:** new `BossWeaponSprites` generates a twin-rail rifle and a blade once per Play session: neutral grey-blue structure with accents in the owner's colour. `BossSilhouetteView` draws them at their own size in the existing Weapon slot; the rifle's pivot is the centre of the old .54 bar, so the muzzle, bullets and warning line are where they were, and the blade is still 1.5 long from the hand. The Sheath slot now shows the rifle's five charge cells, which fill while a Piercing or Sweep is prepared and stay full until it has fired. The Test Room robot keeps the plain bar.
+- **Checked:** compiles and is loaded in the Editor. Thomas looked at both weapons in play and accepted them ("可以了").
+- **NOT TESTED by me:** no capture was taken. Unseen by me: the charge cells filling, Camo with the new sprites, the Target Profile portraits, and every sword pose.
+
 ## 2026-11-14 — Player hit point back to lines, smaller
 
 - **Changed:** Thomas withdrew the slab redesign of the hit point before seeing it. The original five Danger lines toward the attacker are back, .30 long and .035 wide (were .40 and .045). The slab code is removed. The white step on the body and the smaller enemy hit lines stay.

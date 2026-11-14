@@ -100,17 +100,28 @@ namespace GoGhost.Duel
             footLight.enabled = false;
         }
 
+        Sprite plainWeapon;
+        bool drawnWeapon;
+
         void SetColors()
         {
             InstallCleanRig();
             bool gunner = visualKind == BossKind.Gunner;
             bodyColor = actor != null && actor.IsTrainingEnemy ? NeuralPalette.Secondary : gunner ? NeuralPalette.Gunner : NeuralPalette.Swordsman;
             weaponColor = NeuralPalette.Primary;
-            // Reuse the existing empty sword grip slot; keep it under the same camo/pose alpha path.
-            if(!gunner&&parts[(int)Part.Sheath]!=null&&parts[(int)Part.Weapon]!=null)
+            var weapon=parts[(int)Part.Weapon];var extra=parts[(int)Part.Sheath];
+            if(weapon==null)return;
+            if(plainWeapon==null)plainWeapon=weapon.sprite;
+            // The Test Room robot keeps the plain bar; its body has no owner colour for the accents.
+            drawnWeapon=!(actor!=null&&actor.IsTrainingEnemy);
+            weapon.sprite=!drawnWeapon?plainWeapon:gunner?BossWeaponSprites.Rifle:BossWeaponSprites.Blade;
+            // The drawn weapons carry their own colours; alpha still follows Camo.
+            if(drawnWeapon)weaponColor=Color.white;
+            // The second slot is the rifle's lit charge cells, or the plain weapons' grip.
+            if(extra!=null)
             {
-                parts[(int)Part.Sheath].sprite=parts[(int)Part.Weapon].sprite;
-                parts[(int)Part.Sheath].sharedMaterial=parts[(int)Part.Weapon].sharedMaterial;
+                extra.sharedMaterial=weapon.sharedMaterial;
+                if(!drawnWeapon)extra.sprite=plainWeapon;
             }
         }
         public void SetPaused(bool value) => paused = value;
@@ -357,10 +368,33 @@ namespace GoGhost.Duel
             if (FinalAxe) { ApplyAxe(p); return; }
             bool gunner=visualKind==BossKind.Gunner;
             float bladeLength=SwordBladeLength;
+            if(drawnWeapon)
+            {
+                // Drawn at their own size. The rifle's pivot and the blade's centre sit where the plain bars did.
+                var weapon=parts[(int)Part.Weapon];
+                if(weapon!=null&&weapon.sprite!=null)Place(Part.Weapon,p.Weapon,weapon.sprite.bounds.size,p.WeaponAngle);
+                var cells=gunner?BossWeaponSprites.Cells(RifleCharge()):null;
+                var slot=parts[(int)Part.Sheath];
+                if(cells==null||slot==null)Hide(Part.Sheath);
+                else
+                {
+                    slot.sprite=cells;
+                    Place(Part.Sheath,p.Weapon+Rotate(BossWeaponSprites.CellsCentre,p.WeaponAngle),cells.bounds.size,p.WeaponAngle);
+                }
+                return;
+            }
             Place(Part.Weapon,p.Weapon,gunner?new Vector2(.54f,.14f):new Vector2(bladeLength,.075f),p.WeaponAngle);
             // Retain the serialized slot as the gun's simple grip; the blade needs no extra outline.
             if(gunner)Place(Part.Sheath,p.Weapon+Rotate(new Vector2(-.15f,-.09f),p.WeaponAngle),new Vector2(.075f,.18f),p.WeaponAngle);
             else Place(Part.Sheath,p.Weapon-Angle(p.WeaponAngle)*(bladeLength*.5f-.12f),new Vector2(.14f,.12f),p.WeaponAngle);
+        }
+        // The rail cells fill while a Piercing or Sweep is being prepared and stay full until it has fired.
+        int RifleCharge()
+        {
+            var a=actor==null?null:actor.Actions;
+            if(a==null||(a.Ability!=BossAbility.Piercing&&a.Ability!=BossAbility.Sweep))return 0;
+            if(a.Phase==BossActionPhase.Prepare)return Mathf.Clamp(Mathf.CeilToInt(a.PhaseProgress*BossWeaponSprites.ChargeCells),1,BossWeaponSprites.ChargeCells);
+            return a.Phase==BossActionPhase.Locked||a.Phase==BossActionPhase.Active?BossWeaponSprites.ChargeCells:0;
         }
         void Leg(Part thigh,Part calf,Part kneeJoint,Vector2 hip,Vector2 toe,float offset,Pose pose,bool cutFoot)
         {

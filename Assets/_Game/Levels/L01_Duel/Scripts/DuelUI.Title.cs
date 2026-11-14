@@ -52,8 +52,9 @@ namespace GoGhost.Duel
                 // so its end caps stay perpendicular to its long sides, including at the floor.
                 a = Project(a); b = Project(b);
                 Vector2 delta = b - a;
-                Part(name, StickmanSprites.Limb, (a + b) * .5f,
-                    new Vector2(delta.magnitude, width) * StickmanSprites.LimbPadding,
+                // Opaque geometry keeps edges sharp; a stretched transparent border blurs the end caps.
+                Part(name, StickmanSprites.Block, (a + b) * .5f,
+                    new Vector2(delta.magnitude, width),
                     colour, Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
             }
 

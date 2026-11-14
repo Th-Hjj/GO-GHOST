@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Crisp title body edges
+
+- **Asked:** remove the blurred limb edges while keeping the approved proportions and pose.
+- **Changed:** the title's limb helper now uses the existing fully opaque block sprite at its intended dimensions, instead of stretching the shared limb sprite's transparent border and padding. This also keeps the torso and neck edges consistent. Attachment points, angles, colours, head and revolver are unchanged; shared combat sprites are untouched.
+- **Checked:** Unity compiled without errors. Inspected the Play Mode title at 2560x1440 and confirmed all six rectangular body parts use the opaque block. The enlarged capture shows crisp end caps; no console errors. Capture: `Logs/TitleMenuConcept/title-crisp-blocks.png` and its detail crop (local, ignored). Packaged builds and full gameplay NOT TESTED.
+
 ## 2026-11-14 — Single-block title body and plain grip
 
 - **Asked:** each arm and leg should be one regular rectangular block, with no adjusted foot end angles, and no fingers or separate hand detail; align the gun with the simplified arm. Make the torso edges flat too, preserving the neck proportions and stance of the supplied reference.

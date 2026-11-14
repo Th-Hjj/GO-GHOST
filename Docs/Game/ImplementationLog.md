@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Title city lights
+
+- **Asked:** continue the Living title order with the city: window lights, a spire beacon and a breathing horizon glow.
+- **Changed:** `DuelUI.Title.cs` adds, on the sky layer, 26 independently switching windows at facade spots picked offline from the building silhouettes, a stepped Danger beacon with a faint halo at the spire tip, and a slow faint swell over the painted glow. The plate is unchanged; its own lit windows stay as painted. The beacon's red is Claude's choice, pending Thomas's view.
+- **Checked:** compiled outside the editor while Thomas was in Play Mode, then in Unity. Two Play Mode captures at 2560x1440: windows sit on the facades, 11 of 26 lit, and the beacon sits on the spire tip. Window switching over time, Reduce Flashing and packaged builds NOT TESTED.
+
 ## 2026-11-14 — Title layers and pointer parallax
 
 - **Asked:** bring the title to life. Thomas approved the element list and order in the Living title decision, and asked for the plate to be cut without layered source, with parallax kept only if it looked right.

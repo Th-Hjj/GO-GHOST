@@ -28,7 +28,7 @@ namespace GoGhost.Duel
                 image.raycastTarget = false;
                 return layer;
             }
-            Layer("OutskirtsSky");
+            BuildTitleCity(Layer("OutskirtsSky"));
             titleLayers = new[] { Layer("OutskirtsHills"), Layer("OutskirtsSlope"), Layer("OutskirtsRoof") };
             titleLook = TitlePointer();
             // Stand inside the back rim on the roof surface, not directly on its bright edge.
@@ -55,6 +55,67 @@ namespace GoGhost.Duel
             titleLook = Vector2.Lerp(titleLook, TitlePointer(), 1 - Mathf.Exp(-4 * Time.unscaledDeltaTime));
             for (int i = 0; i < titleLayers.Length; i++)
                 titleLayers[i].anchoredPosition = -Vector2.Scale(titleLook, TitleTravel[i]);
+            UpdateTitleCity();
+        }
+
+        // Dark facade spots on the plate, in its own pixels, picked once offline from the building silhouettes;
+        // the spire tip follows. A window is two plate pixels square.
+        static readonly short[] TitleWindowSpots =
+        {
+            747,799, 791,780, 903,780, 931,802, 857,745, 810,783, 824,780, 804,799, 768,769, 923,801, 821,766, 789,791, 768,797,
+            796,800, 825,799, 838,795, 857,769, 783,761, 777,776, 741,792, 954,796, 776,801, 827,789, 972,790, 815,804, 855,782,
+        };
+        static readonly Vector2 TitleSpireTip = new Vector2(861.5f, 714);
+        static readonly Color TitleWindowCold = new Color(.78f, .92f, 1f, .85f), TitleWindowWarm = new Color(.93f, .58f, .38f, .85f);
+        Image[] titleWindows;
+        float[] titleWindowTurn;
+        Image titleGlow, titleBeacon, titleBeaconHalo;
+
+        // Plate pixels, measured from its top left, to the 1600 x 900 frame the layers share.
+        static Vector2 TitlePlatePoint(float x, float y) => new Vector2((x - 836) * 1600 / 1672, (470.5f - y) * 900 / 941);
+
+        void BuildTitleCity(RectTransform sky)
+        {
+            Image Light(string name, Sprite sprite, Vector2 point, Vector2 size, Color colour)
+            {
+                var image = Rect(name, sky, point, size).gameObject.AddComponent<Image>();
+                image.sprite = sprite; image.color = colour; image.raycastTarget = false;
+                return image;
+            }
+            // The plate already paints the glow behind the city; this only lets it breathe.
+            titleGlow = Light("Horizon glow", StickmanSprites.Pool, TitlePlatePoint(858, 790), new Vector2(620, 150), Color.clear);
+            int count = TitleWindowSpots.Length / 2;
+            titleWindows = new Image[count]; titleWindowTurn = new float[count];
+            for (int i = 0; i < count; i++)
+            {
+                titleWindows[i] = Light("Window", StickmanSprites.Block,
+                    TitlePlatePoint(TitleWindowSpots[i * 2] + 1, TitleWindowSpots[i * 2 + 1] + 1), Vector2.one * 1.92f,
+                    i % 6 == 4 ? TitleWindowWarm : TitleWindowCold);
+                titleWindows[i].enabled = Random.value < .5f;
+                titleWindowTurn[i] = Time.unscaledTime + Random.Range(2f, 40f);
+            }
+            Vector2 tip = TitlePlatePoint(TitleSpireTip.x, TitleSpireTip.y);
+            titleBeaconHalo = Light("Beacon halo", StickmanSprites.Pool, tip, new Vector2(15, 15), Color.clear);
+            titleBeacon = Light("Beacon", StickmanSprites.Block, tip, Vector2.one * 2.4f, Color.clear);
+        }
+
+        void UpdateTitleCity()
+        {
+            float now = Time.unscaledTime;
+            // Windows switch outright, one at a time and rarely: lit 15 to 60 s, dark 10 to 40 s.
+            for (int i = 0; i < titleWindows.Length; i++)
+            {
+                if (now < titleWindowTurn[i]) continue;
+                bool lit = titleWindows[i].enabled = !titleWindows[i].enabled;
+                titleWindowTurn[i] = now + (lit ? Random.Range(15f, 60f) : Random.Range(10f, 40f));
+            }
+            // The spire beacon steps on, half and off every three seconds. Reduce Flashing holds it steady.
+            float beat = now % 3;
+            float beacon = GameSettings.ReduceFlashing ? .7f : beat < .9f ? 1 : beat < 1.05f ? .4f : 0;
+            titleBeacon.color = NeuralPalette.Alpha(NeuralPalette.Danger, beacon);
+            titleBeaconHalo.color = NeuralPalette.Alpha(NeuralPalette.Danger, beacon * .22f);
+            // Too slow and too faint to step: about a ten-second swell.
+            titleGlow.color = new Color(.36f, .72f, .95f, .035f + .03f * Mathf.Sin(now * Mathf.PI * 2 / 10.5f));
         }
 
         void BuildTitlePlayer(RectTransform parent, Vector2 origin, float k)

@@ -191,6 +191,9 @@ namespace GoGhost.Duel
                 named ? TextAlignmentOptions.TopLeft : TextAlignmentOptions.MidlineLeft);
             sceneDialogue.name = name;
             sceneDialogue.maxVisibleCharacters = game.DialogueVisibleCharacters;
+            sceneContinue = OvText("»", box, new Vector2(width / 2 - 62, -height / 2 + 30), new Vector2(40, 40), 34, OverridePalette.Signal);
+            sceneContinue.alpha = game.DialogueCanAdvance ? 1 : 0;
+            sceneContinue.gameObject.AddComponent<Drift>().Distance = 5;
             return box;
         }
 

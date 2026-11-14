@@ -76,6 +76,13 @@ namespace GoGhost.Duel
             var body = ambientDialogue.rectTransform;
             body.anchorMin = Vector2.zero; body.anchorMax = Vector2.one;
             body.offsetMin = new Vector2(198, 8); body.offsetMax = new Vector2(-36, -42);
+            // The continue mark: a drifting chevron at the lower right, shown when a click moves on.
+            ambientContinue = OvText("»", panel, Vector2.zero, new Vector2(40, 40), 34, OverridePalette.Signal);
+            var mark2 = ambientContinue.rectTransform;
+            mark2.anchorMin = mark2.anchorMax = Vector2.right;
+            mark2.anchoredPosition = new Vector2(-62, 30);
+            ambientContinue.alpha = 0;
+            ambientContinue.gameObject.AddComponent<Drift>().Distance = 5;
         }
 
         void BuildOverrideCreation()

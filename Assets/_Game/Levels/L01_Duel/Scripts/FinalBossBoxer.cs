@@ -274,6 +274,10 @@ namespace GoGhost.Duel
             _=>Guard
         };
         public Vector2 Fist() { var p=HandLocal; return actor.Position+new Vector2(LockedFacing*p.x,p.y); }
+        // Read by the view to warn of the punch being wound up and of the Meteor's landing.
+        internal Vector2 StrokeWorld(float t) { var p=StrokePoint(t); return actor.Position+new Vector2(LockedFacing*p.x,p.y); }
+        internal bool Diving => Current==Punch.Meteor && Phase==Stage.Active && Time.time>=ImpactAt+.5f;
+        internal Vector2 DiveLanding => diveTarget-Vector2.up*(actor.Motor.Size.y*.5f);
         public Bounds PunchArea() => new Bounds(Fist(),Vector3.one*.48f);
         void SampleFist()
         {

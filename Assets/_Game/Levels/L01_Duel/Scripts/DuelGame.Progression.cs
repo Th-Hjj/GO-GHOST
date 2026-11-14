@@ -15,6 +15,9 @@ namespace GoGhost.Duel
         // A finished sentence can remain on screen while a fresh click takes a preparation exit.
         internal bool DialogueAllowsPreparationNavigation => OnPreparationPage && !DialogueSpeaking;
         internal int DialogueVisibleCharacters => CurrentVoice.VisibleCharacters;
+        // True when a click would move on to the next line; the dialogue box shows its continue mark.
+        internal bool DialogueCanAdvance => PendingDialogue != null && !Paused && DialogueReady
+            && !(Phase == DuelPhase.Training && DialogueSpeaking);
         public void AcknowledgeDialogue()
         {
             if (Paused || DeveloperToolsOpen || PendingDialogue == null) return;

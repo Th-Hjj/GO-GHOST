@@ -93,6 +93,52 @@ namespace GoGhost.Duel
                 DrawSpiritContact(boxer);
             DrawFistTrace(boxer);
             DrawMeteorImpact(boxer);
+            DrawBoxerWarnings(boxer);
+        }
+
+        // Phase two warns as phase one does: the ordered axe's flight line, the stroke of the punch being
+        // wound up, and the Meteor's dive with its landing wave.
+        void DrawBoxerWarnings(FinalBossBoxer boxer)
+        {
+            if (boxer.Retired) return;
+            if (boxer.AxeOrdered)
+            {
+                float t=boxer.LaunchProgress;
+                Vector2 from=boxer.Detached ? boxer.AxeEdge : heldPivot;
+                var line=AxeLine(6,"Axe order warning",2);
+                float width=Mathf.Lerp(.02f,.05f,t);
+                line.startWidth=width; line.endWidth=width*.6f;
+                line.startColor=NeuralPalette.Alpha(NeuralPalette.EmpHighlight,.25f+.65f*t);
+                line.endColor=NeuralPalette.Alpha(NeuralPalette.Emp,.20f+.55f*t);
+                line.SetPosition(0,ClipTellPoint(from,width));
+                line.SetPosition(1,ClipTellPoint(boxer.Destination,width));
+            }
+            bool winding=boxer.Phase==FinalBossBoxer.Stage.Windup || boxer.Phase==FinalBossBoxer.Stage.Slip;
+            if (boxer.Current!=FinalBossBoxer.Punch.None && winding)
+            {
+                bool locked=boxer.Phase==FinalBossBoxer.Stage.Slip || boxer.PhaseProgress>.6f;
+                const int samples=9;
+                var line=AxeLine(4,"Punch warning",samples);
+                float width=SwordTellWidth(false,locked);
+                line.startWidth=line.endWidth=width;
+                line.startColor=line.endColor=AxeTellColor(false,locked);
+                for(int i=0;i<samples;i++)
+                    line.SetPosition(i,ClipTellPoint(boxer.StrokeWorld(i/(samples-1f)),width));
+            }
+            if (boxer.Diving)
+            {
+                Vector2 landing=boxer.DiveLanding;
+                Color color=AxeTellColor(false,true);
+                SetLine(AxeLine(8,"Meteor dive warning",2),boxer.Fist(),landing,SwordTellWidth(false,true),color);
+                var rim=AxeLine(9,"Meteor landing warning",29);
+                rim.startWidth=rim.endWidth=.03f;
+                rim.startColor=rim.endColor=color;
+                for(int i=0;i<29;i++)
+                {
+                    float a=i*Mathf.PI/28;
+                    rim.SetPosition(i,ClipTellPoint(landing+new Vector2(Mathf.Cos(a)*2.5f,Mathf.Sin(a)*2.5f*.21f),.03f));
+                }
+            }
         }
 
         void DrawSpiritContact(FinalBossBoxer boxer)

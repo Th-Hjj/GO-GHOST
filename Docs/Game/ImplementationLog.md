@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-13 — Final Boss phase-two warnings and the continue mark
+
+- **Implemented:** `DrawBoxerWarnings` in `BossSilhouetteView.Boxer.cs`: the ordered axe's flight line (violet, strengthening over the launch delay), the stroke of the punch being wound up (the phase-one tell colour and widths), and the Meteor's dive line with its landing wave outline. Damage, timing and AI are unchanged. Dialogue boxes (Happy's footer box and the in-arena box) show a drifting `»` when `DialogueCanAdvance` is true; it stays hidden while Happy waits for a choice or for + Add Rule.
+- **Also since the last entry:** the title's small row ends 8 short of the buttons above (an optical correction, after a shared-slant layout was tried and reverted); the Tutorial choice is smaller; the Upload bar has no track.
+- **Checked:** the game assembly compiles with Unity's bundled compiler from the newest player response file (Thomas was in Play Mode, so not through the Editor). NOT TESTED in play: every warning, the mark's position and timing, and the title, Tutorial and Upload adjustments.
+
 ## 2026-11-13 — Empty bar, name caret, final target card
 
 - **Fixed:** an emptied Boss bar clears its lost-health segment at once instead of holding a sliver. The name field is re-enabled after setup so its caret exists. The Mission 3 target card is an Ink silhouette on a flowing rainbow, matching the other missions' silhouette on the Boss colour.

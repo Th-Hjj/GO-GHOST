@@ -10,7 +10,7 @@ namespace GoGhost.Duel
         readonly List<RectTransform> dialogueExits = new List<RectTransform>(3);
         CanvasGroup pageControls;
         internal bool DialogueVisible { get; private set; }
-        TMPro.TMP_Text ambientSpeaker, ambientDialogue, sceneDialogue;
+        TMPro.TMP_Text ambientSpeaker, ambientDialogue, sceneDialogue, ambientContinue, sceneContinue;
         UnityEngine.UI.Image ambientPanel;
         const float FooterButtonHeight = 48;
         float dialogueFooterRightInset, dialogueFooterBottomInset;
@@ -29,6 +29,7 @@ namespace GoGhost.Duel
         void UpdateDialogueOverlay()
         {
             if (sceneDialogue != null) sceneDialogue.maxVisibleCharacters = game.DialogueVisibleCharacters;
+            if (sceneContinue != null) sceneContinue.alpha = game.DialogueCanAdvance ? 1 : 0;
             bool show = game.PendingDialogue != null && !game.Paused && !game.DeveloperToolsOpen
                 && !(game.Phase == DuelPhase.Configure && helpOpen);
             bool wasShowingStory = DialogueVisible;
@@ -74,6 +75,9 @@ namespace GoGhost.Duel
                 ambientDialogue.text = showDescription ? description ?? "" : game.PendingDialogue;
                 ambientSpeaker.text = showDescription ? (description == null ? "" : game.HappySpeakerName) : game.HappySpeakerName;
                 ambientDialogue.maxVisibleCharacters = showDescription ? int.MaxValue : game.DialogueVisibleCharacters;
+                // No mark while Happy waits for a choice or a button instead of a click.
+                bool awaitsAction = TutorialChoiceOpen || VisibleTutorialFocus == TutorialFocus.AddRule;
+                ambientContinue.alpha = show && !showDescription && !awaitsAction && game.DialogueCanAdvance ? 1 : 0;
             }
         }
 

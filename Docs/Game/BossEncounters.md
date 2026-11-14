@@ -97,6 +97,8 @@ The trial has five punch entries. Jab can become a stepping rear cross after a f
 
 The axe can cut from a wall to the floor, climb from the floor through a platform, or cross from behind the boxer for an over-the-shoulder attack. Choices use delayed visible motion, the line crossed by the blade, the position left for the next order and the time available to move the body. The boxer compares running, a short burst, jumping and punching. He can commit for position without predicting a hit. Jump planning uses the future heights of each platform, including its start-up ramp, and checks which surface the body will meet first. The motor accepts the actual landing and the next decision starts from that support.
 
+**Warnings (2026-11-13).** During the one-second delay a violet line runs from the blade to the ordered destination and strengthens until launch. While a punch winds up, a thin line shows the stroke its fist will follow, brightening before the swing. A Meteor dive shows its line and the outline of its landing wave. None of these change damage, timing or the Boss's choices.
+
 **Defeat and victory.**
 - Phase-two defeat offers two choices:
   - **Configuration**, a full restart;

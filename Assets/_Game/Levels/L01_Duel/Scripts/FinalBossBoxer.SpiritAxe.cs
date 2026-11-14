@@ -15,6 +15,9 @@ namespace GoGhost.Duel
         internal bool Retired => weapon==WeaponState.Retired;
         public bool Detached => detached;
         public bool InFlight => weapon==WeaponState.Flying;
+        // Ordered and waiting out the one-second delay; the destination is already fixed.
+        internal bool AxeOrdered => weapon==WeaponState.Armed;
+        internal float LaunchProgress => Mathf.InverseLerp(CommandAt,launchAt,Time.time);
         public AxeOrder Order { get; private set; }
         public Vector2 AxePivot { get; private set; }
         public Vector2 Destination { get; private set; }

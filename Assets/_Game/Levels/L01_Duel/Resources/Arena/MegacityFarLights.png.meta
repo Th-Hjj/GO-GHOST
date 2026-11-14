@@ -1,0 +1,1510 @@
+fileFormatVersion: 2
+guid: b1322378bbadb7a4cb4a40f88ac556fd
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -7664505152523021979
+    second: MegacityFarLights_0
+  - first:
+      213: -7960197435652975994
+    second: MegacityFarLights_1
+  - first:
+      213: 7975042603683205704
+    second: MegacityFarLights_2
+  - first:
+      213: 809223547606978479
+    second: MegacityFarLights_3
+  - first:
+      213: -537539297645744318
+    second: MegacityFarLights_4
+  - first:
+      213: -4676120173488992930
+    second: MegacityFarLights_5
+  - first:
+      213: 6330199726829670932
+    second: MegacityFarLights_6
+  - first:
+      213: -5071717205197408037
+    second: MegacityFarLights_7
+  - first:
+      213: 962146871024917623
+    second: MegacityFarLights_8
+  - first:
+      213: 7387878211855250703
+    second: MegacityFarLights_9
+  - first:
+      213: -571939129971270253
+    second: MegacityFarLights_10
+  - first:
+      213: -6461597973640332556
+    second: MegacityFarLights_11
+  - first:
+      213: -5935905046722516345
+    second: MegacityFarLights_12
+  - first:
+      213: -2615061496953773243
+    second: MegacityFarLights_13
+  - first:
+      213: -1782928809628325603
+    second: MegacityFarLights_14
+  - first:
+      213: 4793645712598436103
+    second: MegacityFarLights_15
+  - first:
+      213: 7036344212471938553
+    second: MegacityFarLights_16
+  - first:
+      213: 7241446939311064304
+    second: MegacityFarLights_17
+  - first:
+      213: -4711220139932532898
+    second: MegacityFarLights_18
+  - first:
+      213: -4101271605748279046
+    second: MegacityFarLights_19
+  - first:
+      213: 8551500981902552300
+    second: MegacityFarLights_20
+  - first:
+      213: -8033674065080463393
+    second: MegacityFarLights_21
+  - first:
+      213: 2274378817039806181
+    second: MegacityFarLights_22
+  - first:
+      213: -4846083305065442025
+    second: MegacityFarLights_23
+  - first:
+      213: 5267013245647209600
+    second: MegacityFarLights_24
+  - first:
+      213: -2598965236598769012
+    second: MegacityFarLights_25
+  - first:
+      213: 4198054603553434992
+    second: MegacityFarLights_26
+  - first:
+      213: -7335579770748234767
+    second: MegacityFarLights_27
+  - first:
+      213: -6331133585947133236
+    second: MegacityFarLights_28
+  - first:
+      213: -3591071431493132596
+    second: MegacityFarLights_29
+  - first:
+      213: 5421665445586332491
+    second: MegacityFarLights_30
+  - first:
+      213: -7231241090886992295
+    second: MegacityFarLights_31
+  - first:
+      213: -6723482639658113922
+    second: MegacityFarLights_32
+  - first:
+      213: -6514804942146743910
+    second: MegacityFarLights_33
+  - first:
+      213: -4057887352677635235
+    second: MegacityFarLights_34
+  - first:
+      213: 8549499250996011734
+    second: MegacityFarLights_35
+  - first:
+      213: 983485177297380183
+    second: MegacityFarLights_36
+  - first:
+      213: -3390482372275934147
+    second: MegacityFarLights_37
+  - first:
+      213: 8347748682996307203
+    second: MegacityFarLights_38
+  - first:
+      213: 4647290130873563814
+    second: MegacityFarLights_39
+  - first:
+      213: -7118296059664192761
+    second: MegacityFarLights_40
+  - first:
+      213: -5362027157973621776
+    second: MegacityFarLights_41
+  - first:
+      213: 4889313787985493202
+    second: MegacityFarLights_42
+  - first:
+      213: -3843273841753110124
+    second: MegacityFarLights_43
+  - first:
+      213: 5204763623294529959
+    second: MegacityFarLights_44
+  - first:
+      213: -8887636973494865374
+    second: MegacityFarLights_45
+  - first:
+      213: 3880555217821894959
+    second: MegacityFarLights_46
+  - first:
+      213: -2323623047718217958
+    second: MegacityFarLights_47
+  - first:
+      213: -8719607306615405909
+    second: MegacityFarLights_48
+  - first:
+      213: 3447636804833010316
+    second: MegacityFarLights_49
+  - first:
+      213: 8941318969817031490
+    second: MegacityFarLights_50
+  - first:
+      213: 8882474429399739363
+    second: MegacityFarLights_51
+  - first:
+      213: 7758621602137338280
+    second: MegacityFarLights_52
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationMethod: 0
+  spriteTessellationDetail: -1
+  spriteGeometrySubdivision: -1
+  textureType: 0
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: MegacityFarLights_0
+      rect:
+        serializedVersion: 2
+        x: 282
+        y: 207
+        width: 39
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 561d6bc0c2532a590800000000000000
+      internalID: -7664505152523021979
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_1
+      rect:
+        serializedVersion: 2
+        x: 320
+        y: 204
+        width: 10
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 682dde17b92b78190800000000000000
+      internalID: -7960197435652975994
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_2
+      rect:
+        serializedVersion: 2
+        x: 226
+        y: 105
+        width: 65
+        height: 97
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 842d4259efa0dae60800000000000000
+      internalID: 7975042603683205704
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_3
+      rect:
+        serializedVersion: 2
+        x: 282
+        y: 195
+        width: 38
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fafcef27780fa3b00800000000000000
+      internalID: 809223547606978479
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_4
+      rect:
+        serializedVersion: 2
+        x: 320
+        y: 192
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 24f23075bd64a88f0800000000000000
+      internalID: -537539297645744318
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_5
+      rect:
+        serializedVersion: 2
+        x: 11
+        y: 135
+        width: 21
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e5d86243a751b1fb0800000000000000
+      internalID: -4676120173488992930
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_6
+      rect:
+        serializedVersion: 2
+        x: 85
+        y: 135
+        width: 132
+        height: 42
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 41215fadc1369d750800000000000000
+      internalID: 6330199726829670932
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_7
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 166
+        width: 24
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bd8b8fea214ad99b0800000000000000
+      internalID: -5071717205197408037
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_8
+      rect:
+        serializedVersion: 2
+        x: 279
+        y: 173
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 77c91354b7b3a5d00800000000000000
+      internalID: 962146871024917623
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_9
+      rect:
+        serializedVersion: 2
+        x: 280
+        y: 159
+        width: 23
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f05fa7d4714078660800000000000000
+      internalID: 7387878211855250703
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_10
+      rect:
+        serializedVersion: 2
+        x: 285
+        y: 173
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 39d9aec34601018f0800000000000000
+      internalID: -571939129971270253
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_11
+      rect:
+        serializedVersion: 2
+        x: 292
+        y: 173
+        width: 30
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4fab8c3c0eac356a0800000000000000
+      internalID: -6461597973640332556
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_12
+      rect:
+        serializedVersion: 2
+        x: 292
+        y: 72
+        width: 120
+        height: 93
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 78ae7ad4fcd6f9da0800000000000000
+      internalID: -5935905046722516345
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_13
+      rect:
+        serializedVersion: 2
+        x: 694
+        y: 174
+        width: 11
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 543e4487c6f65bbd0800000000000000
+      internalID: -2615061496953773243
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_14
+      rect:
+        serializedVersion: 2
+        x: 703
+        y: 146
+        width: 42
+        height: 41
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d192b4aa1b3c147e0800000000000000
+      internalID: -1782928809628325603
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_15
+      rect:
+        serializedVersion: 2
+        x: 783
+        y: 149
+        width: 25
+        height: 37
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7090186b063768240800000000000000
+      internalID: 4793645712598436103
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_16
+      rect:
+        serializedVersion: 2
+        x: 785
+        y: 179
+        width: 14
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9fdf3c5f7cd16a160800000000000000
+      internalID: 7036344212471938553
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_17
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 135
+        width: 12
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0f4c97ddf99ce7460800000000000000
+      internalID: 7241446939311064304
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_18
+      rect:
+        serializedVersion: 2
+        x: 61
+        y: 135
+        width: 20
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e5fb7ac6e326e9eb0800000000000000
+      internalID: -4711220139932532898
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_19
+      rect:
+        serializedVersion: 2
+        x: 80
+        y: 135
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: af85afb343b5517c0800000000000000
+      internalID: -4101271605748279046
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_20
+      rect:
+        serializedVersion: 2
+        x: 651
+        y: 96
+        width: 83
+        height: 39
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ceca4b2d5d80da670800000000000000
+      internalID: 8551500981902552300
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_21
+      rect:
+        serializedVersion: 2
+        x: 739
+        y: 119
+        width: 9
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fdf4c958008a28090800000000000000
+      internalID: -8033674065080463393
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_22
+      rect:
+        serializedVersion: 2
+        x: 747
+        y: 128
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5eea452eb77309f10800000000000000
+      internalID: 2274378817039806181
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_23
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 123
+        width: 17
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7159f91e8e04fbcb0800000000000000
+      internalID: -4846083305065442025
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_24
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 96
+        width: 31
+        height: 33
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 084441e14a0381940800000000000000
+      internalID: 5267013245647209600
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_25
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 96
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c8af0f023ee9eebd0800000000000000
+      internalID: -2598965236598769012
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_26
+      rect:
+        serializedVersion: 2
+        x: 11
+        y: 59
+        width: 20
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 07dee707b6c724a30800000000000000
+      internalID: 4198054603553434992
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_27
+      rect:
+        serializedVersion: 2
+        x: 11
+        y: 71
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1f392076019c23a90800000000000000
+      internalID: -7335579770748234767
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_28
+      rect:
+        serializedVersion: 2
+        x: 61
+        y: 123
+        width: 53
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cca73102c8b4328a0800000000000000
+      internalID: -6331133585947133236
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_29
+      rect:
+        serializedVersion: 2
+        x: 61
+        y: 96
+        width: 128
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cce5cc23f83f92ec0800000000000000
+      internalID: -3591071431493132596
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_30
+      rect:
+        serializedVersion: 2
+        x: 61
+        y: 71
+        width: 19
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b4bee2f5fff9d3b40800000000000000
+      internalID: 5421665445586332491
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_31
+      rect:
+        serializedVersion: 2
+        x: 65
+        y: 59
+        width: 15
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 95ef8746a8875ab90800000000000000
+      internalID: -7231241090886992295
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_32
+      rect:
+        serializedVersion: 2
+        x: 128
+        y: 73
+        width: 88
+        height: 44
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e742ca9692461b2a0800000000000000
+      internalID: -6723482639658113922
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_33
+      rect:
+        serializedVersion: 2
+        x: 188
+        y: 105
+        width: 11
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a91526a0c63c695a0800000000000000
+      internalID: -6514804942146743910
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_34
+      rect:
+        serializedVersion: 2
+        x: 198
+        y: 105
+        width: 7
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d5b691dc3fc7fa7c0800000000000000
+      internalID: -4057887352677635235
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_35
+      rect:
+        serializedVersion: 2
+        x: 204
+        y: 105
+        width: 6
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6d2e517854ce5a670800000000000000
+      internalID: 8549499250996011734
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_36
+      rect:
+        serializedVersion: 2
+        x: 246
+        y: 105
+        width: 7
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7532caade8a06ad00800000000000000
+      internalID: 983485177297380183
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_37
+      rect:
+        serializedVersion: 2
+        x: 246
+        y: 72
+        width: 12
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d3ce447fe3692f0d0800000000000000
+      internalID: -3390482372275934147
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_38
+      rect:
+        serializedVersion: 2
+        x: 252
+        y: 105
+        width: 6
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 305da3ce23929d370800000000000000
+      internalID: 8347748682996307203
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_39
+      rect:
+        serializedVersion: 2
+        x: 257
+        y: 105
+        width: 7
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6aab5ea60cd7e7040800000000000000
+      internalID: 4647290130873563814
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_40
+      rect:
+        serializedVersion: 2
+        x: 257
+        y: 72
+        width: 10
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 70b27a5b27bb63d90800000000000000
+      internalID: -7118296059664192761
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_41
+      rect:
+        serializedVersion: 2
+        x: 266
+        y: 105
+        width: 8
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0f32cf485b04695b0800000000000000
+      internalID: -5362027157973621776
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_42
+      rect:
+        serializedVersion: 2
+        x: 266
+        y: 72
+        width: 21
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2dc7b484cf45ad340800000000000000
+      internalID: 4889313787985493202
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_43
+      rect:
+        serializedVersion: 2
+        x: 273
+        y: 105
+        width: 7
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 49941cfadc2f9aac0800000000000000
+      internalID: -3843273841753110124
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_44
+      rect:
+        serializedVersion: 2
+        x: 279
+        y: 105
+        width: 8
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7a1785a70f80b3840800000000000000
+      internalID: 5204763623294529959
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_45
+      rect:
+        serializedVersion: 2
+        x: 693
+        y: 58
+        width: 8
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 222f536e245c8a480800000000000000
+      internalID: -8887636973494865374
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_46
+      rect:
+        serializedVersion: 2
+        x: 703
+        y: 58
+        width: 341
+        height: 76
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f29009919608ad530800000000000000
+      internalID: 3880555217821894959
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_47
+      rect:
+        serializedVersion: 2
+        x: 733
+        y: 128
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a1758d03625d0cfd0800000000000000
+      internalID: -2323623047718217958
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_48
+      rect:
+        serializedVersion: 2
+        x: 753
+        y: 128
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ba2c9446a5bbdf680800000000000000
+      internalID: -8719607306615405909
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_49
+      rect:
+        serializedVersion: 2
+        x: 759
+        y: 128
+        width: 15
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c8262aa586778df20800000000000000
+      internalID: 3447636804833010316
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_50
+      rect:
+        serializedVersion: 2
+        x: 773
+        y: 128
+        width: 11
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 243e76bda32f51c70800000000000000
+      internalID: 8941318969817031490
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_51
+      rect:
+        serializedVersion: 2
+        x: 783
+        y: 128
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3ebacd2ae63e44b70800000000000000
+      internalID: 8882474429399739363
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MegacityFarLights_52
+      rect:
+        serializedVersion: 2
+        x: 788
+        y: 128
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8a1711e7d392cab60800000000000000
+      internalID: 7758621602137338280
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      MegacityFarLights_0: -7664505152523021979
+      MegacityFarLights_1: -7960197435652975994
+      MegacityFarLights_10: -571939129971270253
+      MegacityFarLights_11: -6461597973640332556
+      MegacityFarLights_12: -5935905046722516345
+      MegacityFarLights_13: -2615061496953773243
+      MegacityFarLights_14: -1782928809628325603
+      MegacityFarLights_15: 4793645712598436103
+      MegacityFarLights_16: 7036344212471938553
+      MegacityFarLights_17: 7241446939311064304
+      MegacityFarLights_18: -4711220139932532898
+      MegacityFarLights_19: -4101271605748279046
+      MegacityFarLights_2: 7975042603683205704
+      MegacityFarLights_20: 8551500981902552300
+      MegacityFarLights_21: -8033674065080463393
+      MegacityFarLights_22: 2274378817039806181
+      MegacityFarLights_23: -4846083305065442025
+      MegacityFarLights_24: 5267013245647209600
+      MegacityFarLights_25: -2598965236598769012
+      MegacityFarLights_26: 4198054603553434992
+      MegacityFarLights_27: -7335579770748234767
+      MegacityFarLights_28: -6331133585947133236
+      MegacityFarLights_29: -3591071431493132596
+      MegacityFarLights_3: 809223547606978479
+      MegacityFarLights_30: 5421665445586332491
+      MegacityFarLights_31: -7231241090886992295
+      MegacityFarLights_32: -6723482639658113922
+      MegacityFarLights_33: -6514804942146743910
+      MegacityFarLights_34: -4057887352677635235
+      MegacityFarLights_35: 8549499250996011734
+      MegacityFarLights_36: 983485177297380183
+      MegacityFarLights_37: -3390482372275934147
+      MegacityFarLights_38: 8347748682996307203
+      MegacityFarLights_39: 4647290130873563814
+      MegacityFarLights_4: -537539297645744318
+      MegacityFarLights_40: -7118296059664192761
+      MegacityFarLights_41: -5362027157973621776
+      MegacityFarLights_42: 4889313787985493202
+      MegacityFarLights_43: -3843273841753110124
+      MegacityFarLights_44: 5204763623294529959
+      MegacityFarLights_45: -8887636973494865374
+      MegacityFarLights_46: 3880555217821894959
+      MegacityFarLights_47: -2323623047718217958
+      MegacityFarLights_48: -8719607306615405909
+      MegacityFarLights_49: 3447636804833010316
+      MegacityFarLights_5: -4676120173488992930
+      MegacityFarLights_50: 8941318969817031490
+      MegacityFarLights_51: 8882474429399739363
+      MegacityFarLights_52: 7758621602137338280
+      MegacityFarLights_6: 6330199726829670932
+      MegacityFarLights_7: -5071717205197408037
+      MegacityFarLights_8: 962146871024917623
+      MegacityFarLights_9: 7387878211855250703
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

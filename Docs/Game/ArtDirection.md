@@ -2,6 +2,46 @@
 
 **UI redesign pending — Thomas, 2026-11-12:** the interface will be rebuilt in the Override style described in [UIDesign.md](UIDesign.md). This document describes the source until each stage of that work lands. The mission backgrounds, body-system colours, Boss colours and combat silhouettes carry over unchanged.
 
+## Backlit world art — Thomas, 2026-11-13
+
+Thomas chose this direction for everything inside the arena. Mockups: <https://claude.ai/artifact/BMYBKmCL2MAsq7HCshfRxg>, rows "W3" and "第二轮". Where this section and older sections below disagree, this one applies.
+
+**Rules**
+
+1. Fighters are flat and hard-edged. The world gets its depth from haze and backlight.
+2. Structure (floor, walls, ceiling, platforms) is a black silhouette, #050506. Landing edges carry a thin rim light. Platforms hover on two lift emitters.
+3. Only things that matter to play give off light: landing edges, weapons and attacks.
+4. Each mission has one haze colour, its Boss colour: Gunner orange, Swordsman coral, EMP violet. The Test Room and the Bonus use neutral grey-blue.
+5. Backgrounds: silhouettes only; flat, hard-edged lights in one colour per mission; one haze between the layers; detail at the skyline and a dark centre.
+
+**Decided per item**
+
+- **Stickman:** keep the current structure (head on the torso, even-width square-ended limbs, both knees forward). Change only: round knee and elbow joints, edges drawn at screen resolution, feet cut flat on the ground, rear limbs tinted by the haze, a small pool of the fighter's own light under the feet. No Boss head marks.
+- **Revolver:** the outline in `RevolverPresentationGeometry` stays exactly as it is. Add a rim highlight on the top edge and the cylinder halo.
+- **Gunner rifle:** twin rails with charge cells that fill with the existing warning. **Swordsman blade:** neutral blade, slanted tip, one coral edge line; the idle pose stays one-handed at -28 degrees.
+- **Axe:** keep the approved outline. Add an edge bevel, a channel along the handle and blade (dark in phase one, lit in phase two) and three grip wraps.
+- **Effects:** built from limb-width square-ended lines, the UI's slanted slab and haze glow. A locked warning line uses the UI hazard stripe. Keep the existing sizes (muzzle lines .20, bullet .25, enemy hit .36 world units).
+- **Animation:** keep every current pose and transition. Add only a two-step muzzle flash, afterimages that vanish in steps, a short hit-stop with the body in the Danger colour, and a one-step white flash when a rule takes a limb. Effects step at 12 per second; bodies update every frame. No overshoot, head lag, stretch or easing curves.
+
+**Stages**
+
+| Stage | Content | Status |
+|---|---|---|
+| 1 | Arena structure, platform dressing, haze, plate treatment, light layers | Built 2026-11-13 |
+| 2 | Stickman cleanup for the player and all Bosses | Not started |
+| 3 | Weapons: revolver highlight, rifle, blade, axe | Not started |
+| 4 | Effects | Not started |
+| 5 | Animation accents | Not started |
+| 6 | Redraw the casino and megacity near plates and all light layers to the five rules | Not started |
+
+**Stage 1 as built**
+
+- `ArenaLook.For(wave)` holds each mission's haze colour, rim colour, plate tints and light strengths.
+- `IndustrialArenaBackdrop` draws, back to front: sky haze, far plate, far lights, mid haze, near plate, near lights, floor haze with a vignette. Haze textures are generated at load and drawn with `Resources/ArenaHaze.shader` (premultiplied). Megacity's far plate has an opaque sky, so its sky haze is added in front of that plate. The plates are opaque and darkened by tint; the old 60% opacity is gone. The Test Room and the Bonus get haze without plates.
+- `ArenaSilhouetteDressing` draws the rim lights, lift emitters and glows, and one tier mark per platform height on each wall. It follows the platform colliders every frame and owns no collider.
+- `Resources/Arena/*Lights.png` are the light layers. Casino and megacity lights were cut from the existing plates by brightness; the factory's three windows and two stack beacons are new. They share their plate's parallax crop.
+- Strengths were tuned by eye in the Editor and are playtest values.
+
 Confirmed by Thomas, 2026-10-16. This direction supersedes earlier monochrome configuration art, uniform green execution feedback, blue Gunner, green player HP and green/gold weapons. Verification belongs in Implementation_Log; this document records the approved direction.
 
 ## Palette and identity

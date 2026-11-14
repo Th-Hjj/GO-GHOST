@@ -1,5 +1,15 @@
 # GO GHOST slice implementation
 
+## 2026-11-13 — Backlit world art, stage 1: arena, platforms, haze and backgrounds
+
+Thomas chose the Backlit direction for the in-arena art and asked for implementation to start. The direction and the stage list are in `ArtDirection.md`.
+
+- **Implemented:** arena structure is a black silhouette (`ArenaLook.Structure`, set in `DuelGame.Awake`). New `ArenaSilhouetteDressing` adds rim lights on the floor and platforms, hairlines on the walls and ceiling, lift emitters with pulsing glows under each platform, and tier marks on the walls. `IndustrialArenaBackdrop` now layers sky haze, far plate, far lights, mid haze, near plate, near lights and floor haze, with one haze colour per mission from `ArenaLook.For`. New `Resources/ArenaHaze.shader` and five `Resources/Arena/*Lights.png` layers. The Test Room and the Bonus get neutral haze; they had no background before.
+- **Unchanged:** colliders, platform layout, camera, parallax travel, the EMP outline path and all gameplay.
+- **Checked in the Editor (Play Mode, 2560x1440):** compiles; Mission 1 in the fight, Mission 2 at the countdown, Mission 3 at the start of phase one and the Test Room were each entered from preparation and captured (`Logs/ArtRedesign/s1_*.png`). No console errors or warnings.
+- **NOT TESTED:** the Mission 3 EMP sweep, its violet outlines over the black structure and the moving platforms of phase two; the Bonus; other resolutions and aspect ratios; a built player. The last light-strength change (casino .70 / .80, megacity near .50) was compiled but not captured again.
+- **Known limits:** the casino and megacity light layers are thresholded from the existing plates and look rough up close; stage 6 redraws them. Platform ends are still the rounded rectangle of the existing sprite.
+
 ## 2026-11-13 — Reviewer feedback: hit, hurt, Dodge and rule feedback
 
 Two professional reviews of Beta 33% (one pasted, one in `FeedbackForJiaJun.pdf`). Thomas chose five items.

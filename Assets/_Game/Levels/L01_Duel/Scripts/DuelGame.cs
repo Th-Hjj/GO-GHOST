@@ -74,7 +74,7 @@ namespace GoGhost.Duel
             // Existing authored arena renderers only; no collider, platform or camera geometry changes.
             if(platforms!=null&&platforms.Length>0&&platforms[0]!=null)
                 foreach(var surface in platforms[0].transform.parent.GetComponentsInChildren<SpriteRenderer>())
-                    surface.color=Color.Lerp(NeuralPalette.Panel,NeuralPalette.Secondary,.70f);
+                    surface.color=ArenaLook.Structure; // Backlit silhouette; ArenaSilhouetteDressing adds the landing edges.
             // Developer tuning reads the prefabs; without them New Game reports the missing reference on screen.
             if (combatPrefab != null && gunnerPrefab != null && swordsmanPrefab != null) InitializeDeveloperTuning();
             else Debug.LogError("DuelGame is missing an encounter prefab reference.", this);
@@ -195,8 +195,9 @@ namespace GoGhost.Duel
             navigation = encounter.AddComponent<ArenaNavigation2D>();
             navigation.Initialize(ArenaBounds);
             AlignPlayerOpeningSupport();
-            if (!training)
-                IndustrialArenaBackdrop.Create(encounter.transform, Player.transform, arenaBounds, Wave);
+            // The Test Room keeps the same lighting with neutral haze and no plates.
+            IndustrialArenaBackdrop.Create(encounter.transform, Player.transform, arenaBounds, training ? 0 : Wave);
+            ArenaSilhouetteDressing.Create(encounter.transform, arenaBounds, ActivePlatforms, ArenaLook.For(training ? 0 : Wave));
             Player.GetComponent<PlayerMovement>().ConfigureLegacyCombat();
             Rifle.ConfigureLegacyCombat();
             Dodge.ConfigureLegacyCombat();

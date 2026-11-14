@@ -159,9 +159,15 @@ namespace GoGhost.Duel
                 startupError.rectTransform.anchoredPosition = At(920, 756, 560, 32);
                 startupError.rectTransform.sizeDelta = new Vector2(560, 32);
             }
-            OvText("Tutorial", frame, At(1180, 808, 150, 52), new Vector2(150, 52), 36, OverridePalette.Text, TextAlignmentOptions.CaplineRight, false, 1);
-            OvToggle("TutorialOn", "On", frame, 1344, 808, 96, game.TutorialWanted, () => { game.TutorialWanted = true; Show(); });
-            OvToggle("TutorialOff", "Off", frame, 1448, 808, 96, !game.TutorialWanted, () => { game.TutorialWanted = false; Show(); });
+            // A small choice at the bottom right; it must not compete with Upload.
+            OvText("Tutorial", frame, At(1254, 822, 130, 38), new Vector2(130, 38), 24, OverridePalette.TextDim, TextAlignmentOptions.CaplineRight, false, 1);
+            for (int i = 0; i < 2; i++)
+            {
+                bool on = i == 0, selected = game.TutorialWanted == on;
+                OvOption(on ? "TutorialOn" : "TutorialOff", on ? "On" : "Off", frame, At(1396 + i * 76, 822, 70, 38), new Vector2(70, 38),
+                    () => { game.TutorialWanted = on; Show(); }, selected ? OverridePalette.Text : OverridePalette.Surface,
+                    selected ? OverridePalette.Ink : OverridePalette.Text, 22, -1, -1);
+            }
             if (game.StartupProgress >= 0) ShowStartupProgress(game.StartupProgress);
         }
 
@@ -208,7 +214,7 @@ namespace GoGhost.Duel
                 slab.color = OverridePalette.Surface; slab.raycastTarget = false;
                 OvText("Uploading", bar, new Vector2(-40, 8), new Vector2(size.x - 170, 80), 52, OverridePalette.Text, TextAlignmentOptions.CaplineLeft, true, 1);
                 startupLabel = OvText("", bar, new Vector2(size.x / 2 - 110, 8), new Vector2(130, 80), 52, OverridePalette.Signal, TextAlignmentOptions.CaplineRight);
-                var track = Image(bar, new Vector2(-9, -size.y / 2 + 8), new Vector2(size.x - 26, 16), OverridePalette.Neutral);
+                var track = Image(bar, new Vector2(-9, -size.y / 2 + 8), new Vector2(size.x - 26, 16), Color.clear);
                 startupFill = Image(track.transform, Vector2.zero, Vector2.zero, OverridePalette.Signal).rectTransform;
                 startupFill.anchorMin = Vector2.zero;
 

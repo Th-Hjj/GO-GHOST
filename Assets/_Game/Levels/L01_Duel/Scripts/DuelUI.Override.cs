@@ -175,9 +175,11 @@ namespace GoGhost.Duel
             // The small row spans exactly the width of the buttons above it. A browser page has nothing to quit.
             float row = saved ? 774 : 714;
             bool quit = Application.platform != RuntimePlatform.WebGLPlayer;
-            const float span = 494, gap = 10;
+            // The button above ends on a slant; the row stops where that slant reaches its bottom edge.
+            float span = 494 - Mathf.Round((saved ? 68 : 96) * .21f) - 3;
+            const float gap = 10;
             string[] titles = quit ? new[] { "Settings", "Credits", "Quit" } : new[] { "Settings", "Credits" };
-            float[] shares = quit ? new[] { 178f, 166f, 130f } : new[] { 252f, 232f };
+            float[] shares = quit ? new[] { 172f, 160f, 0f } : new[] { 244f, 0f };
             UnityEngine.Events.UnityAction[] clicks = { () => OpenOverlay(OverlayPage.Settings), () => OpenOverlay(OverlayPage.Credits), Application.Quit };
             float x = 92;
             for (int i = 0; i < titles.Length; i++)

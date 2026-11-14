@@ -6,6 +6,9 @@ namespace GoGhost.Duel
     // Action requests and real executor callbacks; rule consumption follows actual acceptance.
     public sealed partial class ConditionalController
     {
+        const float TriggerQuietSeconds=.6f;
+        /// <summary>A rule's action was accepted after at least TriggerQuietSeconds without executing. Presentation only.</summary>
+        public event Action<ControlOperation,int> RuleTriggered;
         void Executed(int op,Running r)
         {
             executedAt[op,r.Row]=Time.time;executedFrame[op,r.Row]=Time.frameCount;
@@ -32,7 +35,12 @@ namespace GoGhost.Duel
                 if(rule.HasEvents&&!ConditionalCatalog.IsFinite(rule)&&rule.Action!=ActionIds.Move)
                     r.Deadline=Time.time+ConditionalDefaults.ResponseWindow;
             }
-            if(!r.Accepted){acceptedAt[op,r.Row]=Time.time;acceptedFrame[op,r.Row]=Time.frameCount;}
+            if(!r.Accepted)
+            {
+                acceptedAt[op,r.Row]=Time.time;acceptedFrame[op,r.Row]=Time.frameCount;
+                // A held action re-accepts every frame; only a start after a quiet spell is a trigger.
+                if(Time.time-executedAt[op,r.Row]>TriggerQuietSeconds)RuleTriggered?.Invoke((ControlOperation)op,r.Row);
+            }
             Executed(op,r);Consume(op,r);
         }
         void ReloadStarted()

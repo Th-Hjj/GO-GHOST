@@ -123,6 +123,9 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
     }
 
     private void Rays(Vector3 point, Vector2 direction, int count, float length, float life)
+        => Rays(point, direction, count, length, life, .025f, NeuralPalette.Primary, .85f);
+
+    private void Rays(Vector3 point, Vector2 direction, int count, float length, float life, float width, Color color, float spread)
     {
         if (!CanDraw || lineMaterial == null || direction.sqrMagnitude < .0001f) return;
         var go = Child("ImpactLines");
@@ -130,11 +133,11 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
         float facing = Mathf.Atan2(direction.y, direction.x);
         for (int i = 0; i < count; i++)
         {
-            float angle = facing + Mathf.Lerp(-.85f, .85f, i / (float)(count - 1));
+            float angle = facing + Mathf.Lerp(-spread, spread, i / (float)(count - 1));
             var ray = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0);
-            lines[i] = Line(go, new[] { point + ray * .035f, point + ray * length }, .025f, NeuralPalette.Primary);
+            lines[i] = Line(go, new[] { point + ray * .035f, point + ray * length }, width, color);
         }
-        flashes.Add(new Flash { root = go, lines = lines, born = PresentationClock, life = life, alpha = 1f });
+        flashes.Add(new Flash { root = go, lines = lines, born = PresentationClock, life = life, alpha = color.a });
     }
 
     // A/B: after successful Launch, never from the warning/input state.
@@ -145,6 +148,45 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
         => Rays(origin, direction, 3, .20f * Mathf.Clamp(visualScale, 1f, 1.25f), .06f);
     // A: actual contact only; direction points away from the impacted surface.
     public void BulletHit(Vector3 contact, Vector2 outward) => Rays(contact, outward, 3, .17f, .10f);
+
+    // A contact that actually removed enemy health: the same lines, longer, wider and held longer.
+    public void EnemyHit(Vector3 contact, Vector2 outward)
+        => Rays(contact, outward, 5, .36f, .15f, .04f, NeuralPalette.Primary, 1.05f);
+
+    // The player lost health: Danger lines leave the contact toward the attacker.
+    public void PlayerHit(Vector3 contact, Vector2 outward)
+        => Rays(contact, outward, 5, .40f, .20f, .045f, NeuralPalette.Danger, 1.2f);
+
+    // Stationary silhouette copies left behind a moving body. The caller owns the cadence.
+    public void Echo(IEnumerable<SpriteRenderer> parts, Color color, float life)
+    {
+        if (!CanDraw || parts == null) return;
+        var copies = new List<SpriteRenderer>();
+        GameObject group = null;
+        int behind = int.MaxValue;
+        foreach (var source in parts)
+        {
+            if (source == null || !source.enabled || !source.gameObject.activeInHierarchy || source.sprite == null) continue;
+            behind = Mathf.Min(behind, source.sortingOrder - 1);
+            if (group == null) group = Child("BodyEcho");
+            var go = new GameObject("Part");
+            go.layer = group.layer;
+            go.transform.SetPositionAndRotation(source.transform.position, source.transform.rotation);
+            go.transform.localScale = source.transform.lossyScale;
+            go.transform.SetParent(group.transform, true);
+            var copy = go.AddComponent<SpriteRenderer>();
+            copy.sprite = source.sprite;
+            copy.sharedMaterial = source.sharedMaterial;
+            copy.flipX = source.flipX;
+            copy.flipY = source.flipY;
+            copy.sortingLayerID = source.sortingLayerID;
+            copy.color = color;
+            copies.Add(copy);
+        }
+        foreach (var copy in copies) copy.sortingOrder = behind;
+        if (group != null)
+            flashes.Add(new Flash { root = group, sprites = copies.ToArray(), born = PresentationClock, life = life, alpha = color.a });
+    }
 
     // E: accepted counter contact only.
     public void CounterSuccess(Vector3 contact, Vector2 outward) => Rays(contact, outward, 4, .23f, .12f);
@@ -294,7 +336,7 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
                 ClipToArena(line);
             }
             if (f.sprites != null) foreach (var sprite in f.sprites)
-                if (sprite != null) sprite.color = new Color(.75f, .75f, .75f, alpha);
+                if (sprite != null) { Color color = sprite.color; color.a = alpha; sprite.color = color; }
         }
         if (ghosting && now >= nextEcho)
         {

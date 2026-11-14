@@ -11,14 +11,15 @@ public enum Sfx
     CamoEnter = 14, CamoExit = 15, BladeLight = 16, BladeHeavy = 17,
     DrawPrepare = 18, DashCut = 19, ReturnPrepare = 20, GuardBlock = 21,
     Footstep = 22, Land = 23, Reload = 24, BossDefeat = 25, EmpBurst = 26,
-    AxeFlight = 27, AxePlant, JabAir, HeavyFist, AxeSwing, MeteorGround, AxeCommand, EmpGather
+    AxeFlight = 27, AxePlant, JabAir, HeavyFist, AxeSwing, MeteorGround, AxeCommand, EmpGather,
+    EnemyHit, RuleTrigger
 }
 
 /// <summary>One existing attempt/menu sound scope; only accepted public events request cues.</summary>
 [RequireComponent(typeof(PresentationOneShot))]
 public sealed class SfxSet : MonoBehaviour
 {
-    public const int CueCount = (int)Sfx.EmpGather + 1;
+    public const int CueCount = (int)Sfx.RuleTrigger + 1;
     [Tooltip("Indexed by Sfx. Original ten indices are unchanged; Boss cues are appended.")]
     [SerializeField] private AudioClip[] clips = new AudioClip[CueCount];
     [SerializeField] private float gain = 1f;
@@ -96,7 +97,7 @@ public sealed class SfxSet : MonoBehaviour
         }
         requested[index]++;
         // No gameplay Random consumption: sound variation must not change tactics or combat outcomes.
-        if (id == Sfx.BossBurst || id == Sfx.Footstep)
+        if (id == Sfx.BossBurst || id == Sfx.Footstep || id == Sfx.EnemyHit)
         {
             uint variation = unchecked((uint)(actorId * 397 ^ attackId * 31 ^ phase * 17 ^ requested[index]));
             pitch += ((variation % 7) - 3f) * .01f;
@@ -117,7 +118,7 @@ public sealed class SfxSet : MonoBehaviour
         {
             int slot=index-(int)Sfx.AxeFlight;
             return finalBossClips[slot]!=null ? finalBossClips[slot] :
-                finalBossClips[slot]=Resources.Load<AudioClip>("FinalBossSfx/"+id);
+                finalBossClips[slot]=Resources.Load<AudioClip>((index>(int)Sfx.EmpGather ? "CombatSfx/" : "FinalBossSfx/")+id);
         }
         return clips != null && index >= 0 && index < clips.Length ? clips[index] : null;
     }
@@ -167,7 +168,8 @@ public sealed class SfxSet : MonoBehaviour
             case Sfx.AxeSwing: case Sfx.HeavyFist: case Sfx.JabAir: return 64;
             case Sfx.DrawPrepare: case Sfx.ReturnPrepare: return 32;
             case Sfx.BeamCharge: case Sfx.BeamFire: case Sfx.DashCut: return 48;
-            case Sfx.PlayerHurt: case Sfx.Victory: case Sfx.Defeat: return 64;
+            case Sfx.PlayerHurt: case Sfx.Victory: case Sfx.Defeat: case Sfx.RuleTrigger: return 64;
+            case Sfx.EnemyHit: return 96;
             case Sfx.Footstep: return 224;
             case Sfx.BulletHit: case Sfx.Land: return 192;
             default: return 128;
@@ -182,6 +184,8 @@ public sealed class SfxSet : MonoBehaviour
             case Sfx.Shot: return .38f;
             case Sfx.BossBurst: return .38f;
             case Sfx.BulletHit: return .24f;
+            case Sfx.EnemyHit: return .44f;
+            case Sfx.RuleTrigger: return .40f;
             case Sfx.PlayerHurt: return .72f;
             case Sfx.Glitch: return .42f;
             case Sfx.Equip: return .25f;

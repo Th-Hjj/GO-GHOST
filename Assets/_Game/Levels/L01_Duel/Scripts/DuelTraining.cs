@@ -33,8 +33,19 @@ namespace GoGhost.Duel
             Player.GetComponent<OfficerVisual>()?.ClearConditionalGlow();
             Rules?.Dispose();
             Rules = new ConditionalController(Player, actors, ActivePlatforms, ArenaBounds, DraftLoadout);
+            ruleCueAt = float.NegativeInfinity;
+            Rules.RuleTriggered += PlayRuleCue;
             if (!input.ConditionalControlsActive) input.ConfigureConditionalControls(raw => Rules.Resolve(raw));
             Player.GetComponent<OfficerVisual>()?.ConfigureConditionalGlow(conditionalGlow, Rules.VisualFeedback);
+        }
+
+        float ruleCueAt;
+        // One cue as a rule takes over, spaced so several rules starting together read as one.
+        void PlayRuleCue(ControlOperation operation, int row)
+        {
+            if (encounterSounds == null || Time.time - ruleCueAt < .25f) return;
+            ruleCueAt = Time.time;
+            encounterSounds.Play(Sfx.RuleTrigger);
         }
 
         BossAgent CreateTrainingEnemy(bool respawning = false)

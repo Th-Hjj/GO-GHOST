@@ -12,6 +12,7 @@ Shader "GO GHOST/Final Boss Rainbow"
         _RainbowPhase ("Rainbow flow phase", Float) = 0
         _RainbowAmount ("Rainbow amount", Range(0, 1)) = 1
         _BaseColor ("Drained colour", Color) = (1, 1, 1, 1)
+        _HitFlash ("Lost-health flash", Range(0, 1)) = 0
     }
     SubShader
     {
@@ -35,6 +36,7 @@ Shader "GO GHOST/Final Boss Rainbow"
                 float _RainbowPhase;
                 float _AxeCharge;
                 float _AxeFlowPhase;
+                float _HitFlash;
                 half4 _BaseColor;
                 half4 _AxeShadow;
                 half4 _AxeHighlight;
@@ -76,6 +78,7 @@ Shader "GO GHOST/Final Boss Rainbow"
                 rgb = lerp(half3(1,1,1), rgb, .75);
                 // Non-rainbow dossier silhouettes use their ordinary body colour.
                 rgb = lerp(_BaseColor.rgb, rgb, _RainbowAmount);
+                rgb = lerp(rgb, half3(1,1,1), _HitFlash);
                 return half4(rgb, SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv).a * i.color.a);
             }
             ENDHLSL

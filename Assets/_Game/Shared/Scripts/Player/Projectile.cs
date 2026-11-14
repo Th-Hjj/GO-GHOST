@@ -248,14 +248,21 @@ public class Projectile : MonoBehaviour
             }
             else
             {
-                if (vfx != null) vfx.BulletHit(contact, -fullVelocity.normalized);
                 // Only player-fired bullets opt in; Drone and hostile shots never affect accuracy.
                 var hitEnemy=damageable as Enemy;
                 int healthBefore=hitEnemy!=null?hitEnemy.CurrentHealth:0;
-                // Feedback at a real contact with a living enemy body; timeouts and cleanup stay silent.
-                if (sfx != null && damage > 0 && damageable is Enemy struck && !struck.IsDead) sfx.Play(Sfx.BulletHit);
+                bool livingEnemy=hitEnemy!=null&&!hitEnemy.IsDead;
                 damageable.TakeDamage(damage, owner);
-                if(accuracyOwner!=null && hitEnemy!=null && hitEnemy.CurrentHealth<healthBefore)
+                // Feedback follows the result: lost health reads as a hit, a refused contact stays quiet.
+                bool hurt=hitEnemy!=null&&hitEnemy.CurrentHealth<healthBefore;
+                if (vfx != null)
+                {
+                    if (hurt) vfx.EnemyHit(contact, -fullVelocity.normalized);
+                    else vfx.BulletHit(contact, -fullVelocity.normalized);
+                }
+                // A real contact with a living enemy body; timeouts and cleanup stay silent.
+                if (sfx != null && damage > 0 && livingEnemy) sfx.Play(hurt ? Sfx.EnemyHit : Sfx.BulletHit);
+                if(accuracyOwner!=null && hurt)
                     accuracyOwner.RegisterHit(hitEnemy,hitEnemy.IsDead);
             }
             Retire();

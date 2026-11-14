@@ -84,6 +84,7 @@ namespace GoGhost.Duel
             UpdateFlyingAxe();
             if (rainbowMaterial == null) return;
             float height = actor.Motor.Size.y;
+            rainbowMaterial.SetFloat("_HitFlash", HitFlash * .85f);
             rainbowMaterial.SetFloat("_RainbowBottom", actor.Position.y - height * .5f);
             rainbowMaterial.SetFloat("_RainbowHeight", height + .1f);
             if (flowStart >= 0)

@@ -1,0 +1,83 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace GoGhost.Duel
+{
+    /// <summary>
+    /// What the player's own body shows: lost health and the Dodge immunity window.
+    /// Colours and alpha only; PlayerHealth and PlayerDodge remain the gameplay authority.
+    /// </summary>
+    [DefaultExecutionOrder(110)]
+    public sealed class PlayerFeedbackView : MonoBehaviour
+    {
+        const float HurtSeconds = .22f, HurtTint = .9f;
+        const float GhostAlpha = .72f, EchoAlpha = .11f, EchoSeconds = .14f, EchoInterval = .07f;
+        PlayerHealth health;
+        PlayerDodge dodge;
+        Collider2D body;
+        AttemptPresentationVfx effects;
+        readonly List<SpriteRenderer> bodyParts = new List<SpriteRenderer>(12), weaponParts = new List<SpriteRenderer>(3),
+            allParts = new List<SpriteRenderer>(15);
+        float hurtAt = float.NegativeInfinity, nextEcho;
+        bool shown;
+
+        public void Initialize(PlayerHealth player)
+        {
+            health = player;
+            dodge = player.GetComponent<PlayerDodge>();
+            body = player.GetComponent<Collider2D>();
+            effects = player.GetComponentInParent<AttemptPresentationVfx>();
+            var visual = player.GetComponent<OfficerVisual>();
+            if (visual != null)
+            {
+                foreach (var part in visual.BodySegments()) if (part != null) bodyParts.Add(part);
+                foreach (var part in visual.WeaponSegments()) if (part != null) weaponParts.Add(part);
+            }
+            allParts.AddRange(bodyParts);
+            allParts.AddRange(weaponParts);
+            health.DamageTaken += OnDamageTaken;
+        }
+
+        void OnDamageTaken(int damage, GameObject source)
+        {
+            if (damage <= 0) return;
+            hurtAt = Time.time;
+            if (effects == null || body == null) return;
+            // The attacker's side of the body: bullets, blades and waves all name their owner.
+            Vector2 center = body.bounds.center;
+            Vector2 toward = source != null ? (Vector2)source.transform.position - center : Vector2.up;
+            if (toward.sqrMagnitude < .0001f) toward = Vector2.up;
+            effects.PlayerHit(source != null ? body.ClosestPoint(source.transform.position) : center, toward.normalized);
+        }
+
+        void LateUpdate()
+        {
+            if (health == null) return;
+            float hurt = Mathf.Clamp01(1 - (Time.time - hurtAt) / HurtSeconds);
+            bool ghost = dodge != null && dodge.ImmunityActive && !health.IsDead;
+            if (ghost && effects != null && Time.time >= nextEcho)
+            {
+                nextEcho = Time.time + EchoInterval;
+                effects.Echo(allParts, NeuralPalette.Alpha(NeuralPalette.Primary, EchoAlpha), EchoSeconds);
+            }
+            if (!shown && hurt <= 0 && !ghost) return;
+            shown = hurt > 0 || ghost;
+            // The neutral body is Primary everywhere; rule colours are added by its shader, on top of this tint.
+            Color color = Color.Lerp(NeuralPalette.Primary, NeuralPalette.Danger, hurt * HurtTint);
+            color.a = ghost ? GhostAlpha : 1;
+            foreach (var part in bodyParts) if (part != null) part.color = color;
+            foreach (var part in weaponParts)
+            {
+                if (part == null) continue;
+                Color weapon = part.color;
+                weapon.a = color.a;
+                part.color = weapon;
+            }
+        }
+
+        void OnDestroy()
+        {
+            if (health != null) health.DamageTaken -= OnDamageTaken;
+        }
+    }
+}

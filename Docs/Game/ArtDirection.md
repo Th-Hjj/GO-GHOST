@@ -60,6 +60,12 @@ The 2026-10-27 drawn-face flow supersedes this 2026-10-16 presentation. The reta
 
 ## Combat feedback
 
+**Hit, hurt and Dodge feedback — Thomas, 2026-11-13 (trial values):**
+- **Enemy loses health:** five cold-white lines leave the contact (.36 units, .04 wide, .15 s) and the Boss's body turns cold white for .09 s, then leans back for .14 s. The flash keeps the body's current alpha, so a concealed Gunner shows the lines only. The Final Boss flashes through his rainbow. Reduce Flashing removes the body flash. A contact that removes no health keeps the three short lines.
+- **Player loses health:** the whole body, head included, tints Danger and fades back over .22 s. Five Danger lines (.40 units, .045 wide, .20 s) leave the contact toward the attacker. The screen-edge tint and the hurt cue remain.
+- **Dodge immunity:** while the Dodge's own immunity is open the body and weapon draw at 72% alpha. A faint cold-white silhouette (11% alpha) is left every .07 s and fades over .14 s. Thomas found the first trial (40% body, stronger and denser silhouettes) too prominent. The body returns to full opacity the moment immunity ends. Manual and rule Dodges look the same; the torso's rule colour still marks a rule Dodge.
+- These reuse the attempt's line material and the body's own sprites and material. No particles, textures or screen effects.
+
 **Final Boss presentation, updated 2026-11-07**
 - The player’s Rules occupy the left edge in every wave. The combat camera fills the remaining width and uses the full screen when the sidebar is hidden.
 - **Phase one:** the player-sized rainbow stickman wields the approved flat gray-blue (#6F8191) bearded axe with an ice-blue (#C5EDFF) socket. The first beat of every throw lights the socket and starts a contracting ring attached to the posed weapon. Underpass lowers the axe behind the hip, Vault raises it above the shoulder, and Palm extends the empty hand while loading the axe on the other side. The final .25 seconds show a short tapered cue along the committed direction. The cold-white edge trail appears on release and clears at the brake. Anchor Vault closes two ticks on the embedded axe, draws the thin gray tether taut, then turns the body and raises the weapon at the grip before the second leap. Palm Deflection flashes at the actual redirect. Each committed grounded stroke uses the Swordsman's local lock arc. Airborne slashes light the raised socket and show the live edge.

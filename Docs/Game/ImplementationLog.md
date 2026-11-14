@@ -1,5 +1,22 @@
 # GO GHOST slice implementation
 
+## 2026-11-13 — Reviewer feedback: hit, hurt, Dodge and rule feedback
+
+Two professional reviews of Beta 33% (one pasted, one in `FeedbackForJiaJun.pdf`). Thomas chose five items.
+
+- **Enemy hit:** `Projectile` now gives feedback after `TakeDamage`. Lost health plays `Sfx.EnemyHit` with `AttemptPresentationVfx.EnemyHit`; a refused contact keeps `Sfx.BulletHit` and the short lines. `BossSilhouetteView` flashes cold white (`HitFlash`, off under Reduce Flashing) and leans further; `FinalBossRainbow.shader` has `_HitFlash` for the Final Boss.
+- **Player hurt and Dodge immunity:** new `PlayerFeedbackView` on the player. `PlayerDodge.ImmunityActive` marks the Dodge's own window. `AttemptPresentationVfx` gained `PlayerHit` and `Echo`; `OfficerVisual.WeaponSegments()` lists the gun's renderers.
+- **Rule cue:** `ConditionalController.RuleTriggered` fires when an action is accepted after .6 s without executing, so a held action and each shot of a burst stay silent. `DuelGame.PlayRuleCue` plays `Sfx.RuleTrigger`, at most once per .25 s.
+- **Sounds:** `Tools/make_combat_sfx.py` writes `Resources/CombatSfx/EnemyHit.wav` and `RuleTrigger.wav`. `SfxSet` loads cues after `EmpGather` from that folder.
+- **Thomas's first listen and look, same day:** the Dodge effect was too prominent, so the body is now 72% alpha with fewer, fainter silhouettes. The first enemy hit cue (a low thud under a crack) was wrong for a Boss and should be crisper. It is now a .10 s bright snap with nothing below 700 Hz. He liked the player's existing hurt cue, which is unchanged.
+- **Reported bugs, no code change:**
+  - Gunner hit while hidden: since 2026-11-12 he walks a route while concealed instead of relocating, so a hit is a real hit; it now gets the full hit cue and lines.
+  - Tutorial missing on first launch: the current flow has no first-launch state. Beta 33% prepared a synthesized greeting during Upload, removed 2026-11-12. Cause not established.
+  - Alt+F4 on the Retry page leaving the process running: not reproduced. Beta 33% shipped the synthesis libraries, removed from players 2026-11-12. Cause not established.
+  - Ending: the finish page already has Main Menu. No credits or defeat sequence were added.
+- **Checked:** the game assembly compiles with Unity's bundled compiler outside the Editor (Thomas was in Play Mode).
+- **NOT TESTED by me:** everything in play; Thomas was playing and reported the two points above. The revised enemy hit cue and the rule cue have not been heard. Unseen: the Boss flash and lean, the Final Boss shader flash, both sets of lines, the hurt tint, the translucent body (overlapping limbs may show brighter joints) and its echoes. Unknown: how often the rule cue fires with aim rules that match on and off, and both bug reports in a built player.
+
 ## 2026-11-13 — Target Profile shows everything at once
 
 - **Implemented:** `OpenTargetProfile` always shows the full dossier. A first opening starts `ReadProfile`, which plays each line in turn with no pending dialogue; `ProfileReading` drives the Signal marker on the row being read. Happy's lower-left box shows the line being read and never blocks a click. Back no longer waits for the voice and leaving stops the reading. Rows fade in over a short cascade on every opening.

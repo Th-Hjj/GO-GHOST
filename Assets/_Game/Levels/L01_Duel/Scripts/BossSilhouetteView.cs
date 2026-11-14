@@ -91,6 +91,8 @@ namespace GoGhost.Duel
         }
         public void Defeat() { defeated = true; defeatAt = clock; ClearTells(); }
         public void Hit() { hitAt = clock; }
+        // Lost health turns the silhouette cold white for a moment. Alpha keeps following Camo.
+        float HitFlash => GameSettings.ReduceFlashing ? 0 : Mathf.Clamp01(1-(clock-hitAt)/.09f);
         public void ClearTells()
         {
             foreach (var line in tells) if (line != null) line.enabled = false;
@@ -216,8 +218,8 @@ namespace GoGhost.Duel
                 p.Chest += new Vector2(.13f * p.Compression, -p.Compression);
                 p.Head += new Vector2(.20f * p.Compression, -p.Compression);
             }
-            float hit = Mathf.Max(0,1-(clock-hitAt)/.10f);
-            p.Chest.x -= hit*.035f; p.Head.x -= hit*.045f;
+            float hit = Mathf.Max(0,1-(clock-hitAt)/.14f);
+            p.Chest.x -= hit*.07f; p.Head.x -= hit*.10f;
             if (defeated)
             {
                 float sink = Ease(Mathf.Clamp01((clock-defeatAt)/.45f));
@@ -277,8 +279,9 @@ namespace GoGhost.Duel
         void ApplyPose(Pose p)
         {
             if (parts == null || parts.Length != 16) return;
+            float flash=HitFlash*.85f;
             for (int i=0;i<parts.Length;i++) if(parts[i]!=null)
-            { Color color=i==(int)Part.Weapon?weaponColor:bodyColor;color.a=alpha;parts[i].color=color; }
+            { Color color=i==(int)Part.Weapon?weaponColor:Color.Lerp(bodyColor,Color.white,flash);color.a=alpha;parts[i].color=color; }
             // Same base head/torso/limb dimensions as OfficerVisual; attacks retain their own poses.
             Segment(Part.Torso,p.Hip,p.Chest+Vector2.up*.035f,.17f);
             Place(Part.Head,p.Head,new Vector2(.46f,.46f),0);

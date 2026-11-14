@@ -210,6 +210,7 @@ namespace GoGhost.Duel
                 cooldownView.transform.SetParent(Player.transform, false);
                 cooldownView.Initialize(this, playerTorso.sharedMaterial, playerTorso.sortingLayerID);
             }
+            Player.gameObject.AddComponent<PlayerFeedbackView>().Initialize(Player);
             if (!training) coordinator = encounter.AddComponent<DuoCoordinator>();
             var activeActors = new List<BossAgent>(2);
             // Solo opponents mirror the actual player opening across the arena centre.

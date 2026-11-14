@@ -51,6 +51,8 @@ public class PlayerDodge : MonoBehaviour
     public float DodgeStartInterval => legacyCombat ? (runtimeCooldown >= 0 ? runtimeCooldown : LegacyCooldown) : officer != null && officer.Deployment != null ? officer.Deployment.DodgeStartInterval : stats.dodgeCooldown;
     public float CooldownRemaining => Mathf.Max(0f, nextDodgeTime - Time.time);
     public float LastDodgeStartedAt { get; private set; } = float.NegativeInfinity;
+    /// <summary>True only while this Dodge's own immunity window is open. Presentation reads it.</summary>
+    public bool ImmunityActive { get; private set; }
     public float Distance => legacyCombat && runtimeDistance > 0 ? runtimeDistance : stats.dodgeDistance;
     public float Duration => Mathf.Max(.02f, legacyCombat && runtimeDuration > 0 ? runtimeDuration : stats.dodgeDuration);
     public float InvulnerabilityDuration => legacyCombat ? (runtimeImmunity >= 0 ? runtimeImmunity : LegacyImmunity) : stats.iFrameDuration;
@@ -215,6 +217,7 @@ public class PlayerDodge : MonoBehaviour
         committedMovementEndsAt = 0;
         // Jumping from inside a Boss keeps only the overlapping pair ignored until separation.
         RestoreBodyCollisions(forceBodyCollisions);
+        ImmunityActive = false;
         if (health != null) health.IsInvulnerable = false;
         if (rb != null) rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
     }
@@ -244,7 +247,7 @@ public class PlayerDodge : MonoBehaviour
         float duration = Duration;
         float immunity = InvulnerabilityDuration;
         float speed = distance / duration;
-        health.IsInvulnerable = immunity > 0;
+        health.IsInvulnerable = ImmunityActive = immunity > 0;
         CommittedHorizontalSpeed = direction.x * speed;
         committedMovementEndsAt = Time.time + duration;
 
@@ -263,7 +266,7 @@ public class PlayerDodge : MonoBehaviour
 
             yield return new WaitForFixedUpdate();
             elapsed += Time.fixedDeltaTime;
-            if (elapsed >= immunity) health.IsInvulnerable = false;
+            if (elapsed >= immunity) health.IsInvulnerable = ImmunityActive = false;
         }
 
         rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
@@ -277,7 +280,7 @@ public class PlayerDodge : MonoBehaviour
         if (remainingIFrames > 0f)
             yield return new WaitForSeconds(remainingIFrames);
 
-        health.IsInvulnerable = false;
+        health.IsInvulnerable = ImmunityActive = false;
         IsDodging = false;
 
         // Cooldown deadline was set at dodge START; dash/i-frames do not add another wait.

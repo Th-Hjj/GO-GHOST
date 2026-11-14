@@ -390,6 +390,13 @@ public sealed class OfficerVisual : MonoBehaviour
         yield return rightCalf;
     }
 
+    public System.Collections.Generic.IEnumerable<SpriteRenderer> WeaponSegments()
+    {
+        yield return weapon;
+        yield return cylinder;
+        yield return cylinderHalo;
+    }
+
     public void Apply(DeploymentSnapshot snapshot)
     {
         for (int i = 0; i < LoadoutRules.SlotCount; i++)

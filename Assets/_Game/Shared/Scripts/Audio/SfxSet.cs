@@ -184,7 +184,7 @@ public sealed class SfxSet : MonoBehaviour
             case Sfx.Shot: return .38f;
             case Sfx.BossBurst: return .38f;
             case Sfx.BulletHit: return .24f;
-            case Sfx.EnemyHit: return .44f;
+            case Sfx.EnemyHit: return .38f;
             case Sfx.RuleTrigger: return .40f;
             case Sfx.PlayerHurt: return .72f;
             case Sfx.Glitch: return .42f;

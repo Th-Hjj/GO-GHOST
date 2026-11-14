@@ -7,6 +7,7 @@ Shader "GO GHOST/Final Boss Rainbow"
         _AxeFlowPhase ("Phase two axe flow", Float) = -1
         _AxeShadow ("Axe deep violet", Color) = (0.400, 0.278, 0.647, 1)
         _AxeHighlight ("Axe pale violet", Color) = (0.773, 0.655, 0.973, 1)
+        _AxeDetail ("Axe channel (R) and bevel (G)", 2D) = "black" {}
         _RainbowBottom ("World bottom", Float) = 0
         _RainbowHeight ("Body height", Float) = 1.6
         _RainbowPhase ("Rainbow flow phase", Float) = 0
@@ -29,6 +30,8 @@ Shader "GO GHOST/Final Boss Rainbow"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             TEXTURE2D(_MainTex);
             SAMPLER(sampler_MainTex);
+            TEXTURE2D(_AxeDetail);
+            SAMPLER(sampler_AxeDetail);
             CBUFFER_START(UnityPerMaterial)
                 float _RainbowBottom;
                 float _RainbowHeight;
@@ -67,7 +70,12 @@ Shader "GO GHOST/Final Boss Rainbow"
                         half3 violet = lerp(_BaseColor.rgb, _AxeShadow.rgb, smoothstep(0, 1, -wave));
                         violet = lerp(violet, _AxeHighlight.rgb, smoothstep(.10, 1, wave));
                         half relief = lerp(.82, 1, max(tex.r, max(tex.g, tex.b)));
-                        return half4(violet * relief, tex.a * i.color.a);
+                        violet *= relief;
+                        // Phase two lights the inlaid channel and the cutting bevel over the unchanged flow.
+                        half2 detail = SAMPLE_TEXTURE2D(_AxeDetail, sampler_AxeDetail, i.uv).rg;
+                        half3 lit = lerp(_AxeHighlight.rgb, half3(1, 1, 1), .55);
+                        violet = lerp(violet, lit, max(detail.r, detail.g * .85));
+                        return half4(violet, tex.a * i.color.a);
                     }
                     float front = 1 - smoothstep(_AxeCharge - .055, _AxeCharge + .055, i.uv.y);
                     half shade = lerp(.62, 1, max(tex.r, max(tex.g, tex.b)));

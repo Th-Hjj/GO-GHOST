@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Axe details, currents gather into the socket, lit haze restrained
+
+- **Axe (stage 3, Thomas chose all three details):** a paler bevel along the cutting edge, a channel from the socket down the handle and across to the edge, and three grip wraps are painted into `FinalBossAxeSilhouette.png`. The alpha outline is untouched. New `Resources/FinalBossAxeDetail.png` marks the channel (R) and bevel (G); `FinalBossRainbow.shader` lights both over the unchanged violet flow in phase two through `_AxeDetail`, set in `UseChargedWeapon`.
+- **Currents:** `InvasionChargePoint` is now the socket itself (it was .23 above it), so the invasion's gathering lines, its core square and the ring's origin sit on the blue socket. The phase change's gathering lines also converge on the socket; its three fronts still leave from the planted blade.
+- **Lit haze:** the shared scale in `IndustrialArenaBackdrop.Light` is radius .62 and strength .26 (were .72 and .35).
+- **NOT COMPILED, NOT TESTED by me:** Thomas was in Play Mode throughout. The detail mask has Unity's default import settings; the intended ones (linear, no mip maps, no resize, uncompressed) are not applied. Phase two's lit channel has only been seen in a scripted mock-up.
+
 ## 2026-11-14 — Lit haze replaces the floor haze
 
 Thomas asked for haze that weapons light, then reduced it over several rounds in play.

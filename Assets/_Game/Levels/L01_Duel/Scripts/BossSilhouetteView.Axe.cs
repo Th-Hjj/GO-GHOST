@@ -132,6 +132,9 @@ namespace GoGhost.Duel
             chargedWeapon = new Material(rainbowMaterial) {name="Charged EMP axe",hideFlags=HideFlags.DontSave};
             chargedWeapon.SetColor("_AxeShadow", NeuralPalette.EmpShadow);
             chargedWeapon.SetColor("_AxeHighlight", NeuralPalette.EmpHighlight);
+            // The channel and bevel baked dark and pale into the phase-one art light up once the violet flows.
+            var detail = Resources.Load<Texture2D>("FinalBossAxeDetail");
+            if (detail != null) chargedWeapon.SetTexture("_AxeDetail", detail);
             parts[(int)Part.Weapon].sharedMaterial = chargedWeapon;
         }
 
@@ -302,7 +305,8 @@ namespace GoGhost.Duel
             PlaceHeldAxe(p);
         }
 
-        internal Vector2 InvasionChargePoint => phaseOneSocket + Vector2.up * .23f;
+        // Thomas, 2026-11-14: the currents gather into the axe's blue socket, not a point above the blade.
+        internal Vector2 InvasionChargePoint => phaseOneSocket;
 
         void InvasionSignal(FinalBossAxe axe)
         {
@@ -341,7 +345,8 @@ namespace GoGhost.Duel
         {
             float age=Time.time-chargeAt;
             float charge=Ease(age/4.8f),pinch=Ease((age-4.8f)/.30f);
-            DrawAbsorption(PlantedContact,age,charge,pinch,true);
+            // The phase change gathers into the same socket; the fronts still leave from the planted blade.
+            DrawAbsorption(phaseOneSocket,age,charge,pinch,true);
         }
 
         static readonly float[] LiftedLanes={25,74,133,172};

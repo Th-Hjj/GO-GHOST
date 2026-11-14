@@ -141,8 +141,9 @@ namespace GoGhost.Duel
         {
             if (lightCount >= MaxLights || strength <= 0) return;
             // Thomas, 2026-11-14: restrained. One scale for every light, over the per-source values below.
-            lights[lightCount] = new Vector4(at.x, at.y, radius * .72f, 0);
-            var linear = colour.linear * (strength * .35f);
+            // Reduced again the same day (radius .72, strength .35 before).
+            lights[lightCount] = new Vector4(at.x, at.y, radius * .62f, 0);
+            var linear = colour.linear * (strength * .26f);
             lightColours[lightCount++] = new Vector4(linear.r, linear.g, linear.b, 0);
         }
 

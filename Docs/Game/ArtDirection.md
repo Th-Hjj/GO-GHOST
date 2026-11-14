@@ -29,7 +29,7 @@ Thomas chose this direction for everything inside the arena. Mockups: <https://c
 |---|---|---|
 | 1 | Arena structure, rim lights and haze | Built 2026-11-13, revised the same day |
 | 2 | Stickman cleanup for the player and all Bosses | Built 2026-11-13 |
-| 3 | Weapons: revolver highlight, rifle, blade, axe | Rifle and blade built 2026-11-14 (`BossWeaponSprites`); revolver and axe not started |
+| 3 | Weapons: revolver highlight, rifle, blade, axe | Rifle and blade (`BossWeaponSprites`) and the axe details built 2026-11-14; the revolver highlight is not planned |
 | 4 | Effects | Not started |
 | 5 | Animation accents | Built 2026-11-14: stepped muzzle flash, stepped Dodge afterimages, takeover flash, white step on a hit |
 

@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Floor haze weaker
+
+- **Changed:** `HazeStrength` .20 to .13 at Thomas's request. One constant.
+- **NOT TESTED in play.** Thomas also dislikes the player hit effect as too large; a redesign was proposed to him and nothing is built.
+
 ## 2026-11-14 — Structure outline, floor-only haze, Mission 1 plates at 65%
 
 - **Outline (Thomas approved the proposal):** `ArenaSilhouetteDressing` now outlines the whole structure. Landing edges keep full strength; the ceiling, the wall faces and each platform's underside and ends carry the same colour at `SideStrength` .14. The dim sides hide once the EMP sweep exists, leaving the violet EMP outline and the landing edges.

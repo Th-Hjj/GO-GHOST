@@ -40,7 +40,7 @@ namespace GoGhost.Duel
         const float FarTravelPixels = 7f;
         const float NearTravelPixels = 36f;
         // Thomas, 2026-11-14: only a layer that hugs the floor; the glow in mid-air looked like a stain.
-        const float HazeHeight = .24f, HazeStrength = .20f;
+        const float HazeHeight = .24f, HazeStrength = .13f; // .20 at first; Thomas asked for weaker
 
         Transform player;
         Bounds arena;

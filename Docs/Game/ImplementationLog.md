@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Title revolver core breath
+
+- **Asked:** continue the Living title order with the revolver core.
+- **Changed:** `DuelUI.Title.cs` keeps the core halo and adds a soft light behind the gun; both follow one slow breath. The body, the gun's outline and the core block are unchanged.
+- **Checked:** Unity compiled. Play Mode captures at 2560x1440 at the brightest and dimmest points of the breath show the halo and the light beside the gun swelling and settling. Packaged builds and other resolutions NOT TESTED.
+
 ## 2026-11-14 — Title aircraft
 
 - **Asked:** continue the Living title order with the aircraft.

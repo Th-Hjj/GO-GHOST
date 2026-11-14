@@ -77,7 +77,15 @@ namespace GoGhost.Duel
             UpdateTitleBeams();
             UpdateTitleAircraft();
             UpdateTitleCity();
+            // A slow breath, about four seconds: light, so it swells smoothly while the body stays still.
+            float breath = .5f + .5f * Mathf.Sin(Time.unscaledTime * Mathf.PI * 2 / 4.2f);
+            titleCoreHalo.color = NeuralPalette.Alpha(TitleCoreColour, Mathf.Lerp(.5f, 1, breath));
+            titleCoreHalo.rectTransform.localScale = new Vector3(.80f, 1, 1) * Mathf.Lerp(.92f, 1.22f, breath);
+            titleCoreLight.color = NeuralPalette.Alpha(TitleCoreColour, Mathf.Lerp(.04f, .13f, breath));
         }
+
+        static readonly Color TitleCoreColour = new Color(.35f, .78f, 1f);
+        Image titleCoreHalo, titleCoreLight;
 
         static Sprite titleBeamSprite;
         static Material titleBeamMaterial, titleMistMaterial;
@@ -362,14 +370,18 @@ namespace GoGhost.Duel
                 * new Vector2(point.x * foreshorten, point.y));
             Vector2 handOnRoof = Project(rightHand);
             Vector2 muzzle = handOnRoof - GunPoint(RevolverPresentationGeometry.GripPosition);
-            void GunPart(string name, Sprite sprite, Vector2 offset, Color colour)
+            Image GunPart(string name, Sprite sprite, Vector2 offset, Color colour)
             {
                 var image = Part(name, sprite, muzzle + GunPoint(offset), sprite.bounds.size, colour, gunAngle);
                 image.rectTransform.pivot = sprite.pivot / sprite.rect.size;
                 image.rectTransform.localScale = new Vector3(foreshorten, 1, 1);
+                return image;
             }
+            // The core is the one thing on the player that moves: its light swells and settles on the air around it.
+            titleCoreLight = Part("Core light", StickmanSprites.Pool, muzzle + GunPoint(RevolverPresentationGeometry.CorePosition),
+                new Vector2(.62f, .46f), Color.clear);
             GunPart("Revolver", RevolverPresentationGeometry.Body, Vector2.zero, RevolverPresentationGeometry.BodyColor);
-            GunPart("Core halo", RevolverPresentationGeometry.Halo, RevolverPresentationGeometry.CorePosition, new Color(.35f, .78f, 1f));
+            titleCoreHalo = GunPart("Core halo", RevolverPresentationGeometry.Halo, RevolverPresentationGeometry.CorePosition, TitleCoreColour);
             GunPart("Core", RevolverPresentationGeometry.Core, RevolverPresentationGeometry.CorePosition, RevolverPresentationGeometry.CoreColor);
 
             // The arm itself overlaps the grip; no separate hand, elbow, knee or calf pieces.

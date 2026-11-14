@@ -27,6 +27,8 @@ namespace GoGhost.Duel
             city.SetColor("_FrontColor", NeuralPalette.Alpha(NeuralPalette.Emp, .72f));
             foreach (var surface in arena.GetComponentsInChildren<SpriteRenderer>())
                 if (surface.enabled) AddOverlay(surface, terrain, -1, .065f);
+            var dressing = GetComponentInChildren<ArenaSilhouetteDressing>();
+            if (dressing != null) dressing.HideFrameHairlines();
             backdrop = GetComponentInChildren<IndustrialArenaBackdrop>();
             if (backdrop != null) backdrop.AddEmpContours(city);
 

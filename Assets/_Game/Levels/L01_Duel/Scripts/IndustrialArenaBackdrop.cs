@@ -39,9 +39,9 @@ namespace GoGhost.Duel
         const float VisibleWidthPixels = 966f;
         const float FarTravelPixels = 7f;
         const float NearTravelPixels = 36f;
-        // Thomas, 2026-11-13: both the plates and the haze more transparent (plates were .60, haze .75).
-        const float PlateOpacity = .48f;
-        const float HazeStrength = .55f;
+        // Thomas, 2026-11-13: both lowered twice at his request (plates .60, .48; haze .75, .55).
+        const float PlateOpacity = .40f;
+        const float HazeStrength = .38f;
 
         Transform player;
         Bounds arena;

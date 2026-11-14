@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-13 — Haze and plates lighter again; stray frame line in phase two
+
+- **Changed:** `PlateOpacity` .48 to .40 and `HazeStrength` .55 to .38 at Thomas's request. The wall and ceiling hairlines are hidden once the EMP sweep exists (`ArenaSilhouetteDressing.HideFrameHairlines`), because they showed as a second line inside the violet EMP outline in phase two.
+- **NOT COMPILED, NOT TESTED:** Thomas was in Play Mode.
+- **Open:** Thomas finds the arena frame and the platforms too inconspicuous and wants them outlined; a proposal was put to him and nothing is built.
+
 ## 2026-11-13 — Backlit world art, stage 2: stickman cleanup
 
 Thomas approved four of the five proposed changes and declined the darker rear limbs.

@@ -12,7 +12,7 @@ Thomas chose this direction for everything inside the arena. Mockups: <https://c
 2. Structure (floor, walls, ceiling, platforms) is a black silhouette, #050506. Landing edges carry a thin rim light. Nothing hangs under the platforms and nothing marks the walls (Thomas, 2026-11-13).
 3. Only things that matter to play give off light: landing edges, weapons and attacks.
 4. Each mission has one haze colour: Gunner orange, Swordsman coral, and cold white for Mission 3 until the EMP front that traces the skyline dyes it violet. It stays violet in phase two and on direct retry. The Test Room and the Bonus use neutral grey-blue.
-5. Backgrounds: the plate art is not altered (Thomas, 2026-11-13). Both plates keep their authored look at 48% opacity. Only haze is laid over them, kept light so the background does not compete with the fight. The factory keeps two small beacons on its stacks.
+5. Backgrounds: the plate art is not altered (Thomas, 2026-11-13). Both plates keep their authored look at 40% opacity. Only haze is laid over them, kept light so the background does not compete with the fight. The factory keeps two small beacons on its stacks.
 
 **Decided per item**
 
@@ -36,7 +36,7 @@ Thomas chose this direction for everything inside the arena. Mockups: <https://c
 **Stage 1 as built**
 
 - `ArenaLook.For(wave)` holds each mission's haze and rim colour.
-- `IndustrialArenaBackdrop` draws, back to front: sky haze, far plate, mid haze, near plate, floor haze. Both plates are drawn as before, at 48% opacity (60% until Thomas asked for more transparency). Haze textures are generated at load and drawn with `Resources/ArenaHaze.shader` (premultiplied); `HazeStrength` is .55 of the first pass. Megacity's far plate has an opaque sky, so its sky haze is added in front of that plate. The Test Room and the Bonus get haze without plates.
+- `IndustrialArenaBackdrop` draws, back to front: sky haze, far plate, mid haze, near plate, floor haze. Both plates are drawn as before, at 40% opacity (60% at first; Thomas asked twice for more transparency). Haze textures are generated at load and drawn with `Resources/ArenaHaze.shader` (premultiplied); `HazeStrength` is .38 of the first pass. Megacity's far plate has an opaque sky, so its sky haze is added in front of that plate. The Test Room and the Bonus get haze without plates.
 - `Resources/Arena/IndustrialFarLights.png` holds only the two stack beacons and shares the far plate's crop.
 - Mission 3: `FinalBossEmpSweep` calls `SetEmpHaze` with the progress of the third front, cross-fading the cold-white haze to violet copies. A direct phase-two start sets it fully violet.
 - `ArenaSilhouetteDressing` draws the rim lights on the floor and platforms and hairlines on the walls and ceiling. It follows the platform colliders every frame and owns no collider.

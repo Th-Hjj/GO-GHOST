@@ -14,6 +14,7 @@ namespace GoGhost.Duel
         Material material;
         int sortingLayer;
         Sprite pixel, ramp;
+        readonly List<SpriteRenderer> frameHairlines = new();
 
         // supports[0] is the floor; the rest are this encounter's one-way platforms.
         public static void Create(Transform attempt, Bounds arena, Collider2D[] supports, ArenaLook look)
@@ -37,17 +38,23 @@ namespace GoGhost.Duel
             float floor = arena.min.y, left = arena.min.x, right = arena.max.x, ceiling = arena.max.y;
             Place(Quad("Floor rim", ramp, look.Rim), new Vector2(arena.center.x, floor - RimHeight * .5f),
                 new Vector2(arena.size.x, RimHeight));
-            Place(Quad("Ceiling rim", pixel, NeuralPalette.Alpha(look.Rim, .06f)),
-                new Vector2(arena.center.x, ceiling + Hairline * .5f), new Vector2(arena.size.x, Hairline));
-            Place(Quad("Left wall rim", pixel, NeuralPalette.Alpha(look.Rim, .08f)),
-                new Vector2(left - Hairline * .5f, arena.center.y), new Vector2(Hairline, arena.size.y));
-            Place(Quad("Right wall rim", pixel, NeuralPalette.Alpha(look.Rim, .08f)),
-                new Vector2(right + Hairline * .5f, arena.center.y), new Vector2(Hairline, arena.size.y));
+            frameHairlines.Add(Quad("Ceiling rim", pixel, NeuralPalette.Alpha(look.Rim, .06f)));
+            Place(frameHairlines[0], new Vector2(arena.center.x, ceiling + Hairline * .5f), new Vector2(arena.size.x, Hairline));
+            frameHairlines.Add(Quad("Left wall rim", pixel, NeuralPalette.Alpha(look.Rim, .08f)));
+            Place(frameHairlines[1], new Vector2(left - Hairline * .5f, arena.center.y), new Vector2(Hairline, arena.size.y));
+            frameHairlines.Add(Quad("Right wall rim", pixel, NeuralPalette.Alpha(look.Rim, .08f)));
+            Place(frameHairlines[2], new Vector2(right + Hairline * .5f, arena.center.y), new Vector2(Hairline, arena.size.y));
 
             for (int i = 1; i < supports.Length; i++)
                 if (supports[i] != null)
                     platforms.Add((supports[i], supports[i].GetComponent<SpriteRenderer>(), Quad("Platform rim", pixel, look.Rim)));
             Follow();
+        }
+
+        // The EMP draws its own violet outline round the walls and ceiling; a second line inside it reads as a mistake.
+        internal void HideFrameHairlines()
+        {
+            foreach (var line in frameHairlines) if (line != null) line.enabled = false;
         }
 
         void LateUpdate() => Follow();

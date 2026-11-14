@@ -138,3 +138,6 @@ Desktop.ini
 /.env.*
 !/.env.example
 !/.env.template
+
+# Python caches from the tools
+__pycache__/

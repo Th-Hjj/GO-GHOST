@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-11-13 — Character creation, Upload scan and cleanup
+
+- **Implemented:** Tutorial On / Off on the creation page; Off skips Happy's greeting and the guided first rule. A drawing demonstration (`DrawGuide`) inside the head until the first mark. Upload is a fixed scan (`HeadScan`: line with wake down and up, then one flash) and the head-ring progress is gone. Voice and sound now preload from New Game at a few milliseconds a frame, so Upload normally waits on nothing. Settings is opaque when opened from a paused fight. The title's small row spans the width of the buttons above it.
+- **Cleanup:** removed about 580 lines of unreferenced UI code (the pre-Override rule editor builders, old HUD card layout, old invasion marks and EMP frame). `__pycache__` is ignored. Voice docs state that named greetings are gone. No recorded line names a rebindable key, so that concern is closed.
+- **Checked (Editor Play Mode):** compile; the demonstration mid-stroke and complete; Tutorial Off; Upload at three moments and its flash; arrival on the Mission 1 overview with no dialogue; Settings from a paused fight.
+- **NOT TESTED:** drawing by hand over the demonstration and Clear bringing it back; Upload within the first 1.5 s of the page; a failed preload; Continue from a save made with Tutorial off; the title row and the cleanup beyond compile and one overview/editor capture; the built players. The Windows zip and the web build do not contain these changes.
+- **Left alone:** the `beta-66` tag still points at a12d2bb (moving it needs a force-push). The four font SDF assets and the Liberation fallback keep showing TextMesh Pro's runtime churn.
+
 ## 2026-11-12 — Recorded greeting only, key bindings in combat, web build
 
 - **Implemented:** the generated nickname greeting is removed; every player hears `Handler/Greeting`. The 109 MB model and lexicons moved from `Assets/StreamingAssets/HandlerVoice` to `Tools/VoiceStudio/HandlerVoice` (outside Unity import), `HandlerSpeech`, `HandlerKokoro` and `HappyVoiceMaster` compile in the Editor only, and the native plugins are editor-only. Voice Studio and `Tools/VoiceStudio/audio.py` read the new folder.

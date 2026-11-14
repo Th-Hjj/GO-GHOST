@@ -76,24 +76,6 @@ namespace GoGhost.Duel
 
         void ClearSealMarks() { sealMarks.Clear(); sealLabel=null; sealedGroup=sealFrame=null; sealStamp=null; }
 
-        CanvasGroup EmpFrame(RectTransform parent)
-        {
-            var frame=Rect("EMP outline",parent,Vector2.zero,Vector2.zero);
-            frame.anchorMin=Vector2.zero; frame.anchorMax=Vector2.one;
-            var group=frame.gameObject.AddComponent<CanvasGroup>();
-            group.blocksRaycasts=false; group.alpha=0;
-            for(int i=0;i<4;i++)
-            {
-                bool horizontal=i<2;
-                var edge=Image(frame,Vector2.zero,Vector2.zero,NeuralPalette.Emp).rectTransform;
-                edge.anchorMin=horizontal?new Vector2(0,i):new Vector2(i-2,0);
-                edge.anchorMax=horizontal?new Vector2(1,i):new Vector2(i-2,1);
-                edge.pivot=horizontal?new Vector2(.5f,i):new Vector2(i-2,.5f);
-                edge.sizeDelta=horizontal?new Vector2(0,2):new Vector2(2,0);
-            }
-            return group;
-        }
-
         void SealGroup(RectTransform sidebar)
         {
             if (sidebar == null || !sidebarsSealed) return;

@@ -40,7 +40,7 @@ python Tools/render_happy_voice.py dry-heart.wav happy-v08.wav
 
 Keep the dry take separately. The [offline renderer](../../Tools/render_happy_voice.py) accepts a mono 24 kHz PCM16 WAV. For a regression check, render the [reference dry take](VoiceReferences/Happy-Inner-Dry.wav) and compare it with the approved stereo WAV. The archived master has SHA-256 `8ee63ce5e50de4a8950217e9eaab4875c0130ad44497bd01135d92e5973d3156`. Review new lines at matched loudness on headphones and in mono.
 
-The seven active Happy WAVs use this master, including the opening question and fallback greeting. Named greetings apply [the corresponding stereo master](../../Assets/_Game/Levels/L01_Duel/Scripts/HappyVoiceMaster.cs) on the synthesis worker before creating the Unity clip. Its four little-endian float32 impulse responses in StreamingAssets are the offline diffuse kernels in order: long mid, long side, near mid, near side. Compare a named greeting with the fixed fallback when checking playback.
+The seven active Happy WAVs use this master, including the opening question and fallback greeting. The game no longer generates named greetings (2026-11-12); every player hears the recorded greeting. Voice Studio can still audition a name through [the corresponding stereo master](../../Assets/_Game/Levels/L01_Duel/Scripts/HappyVoiceMaster.cs), which is editor-only. Its four little-endian float32 impulse responses in `Tools/VoiceStudio/HandlerVoice` are the offline diffuse kernels in order: long mid, long side, near mid, near side.
 
 ### Final Boss production recipe
 

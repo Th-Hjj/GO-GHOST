@@ -215,40 +215,12 @@ namespace GoGhost.Duel
                 if(game.EmpSweep != null && game.EmpSweep.Cards != null) AddEmpToCard(row, game.EmpSweep.Cards);
         }
 
-        // Shared by setup and combat. Text comes from the structured catalog expression;
-        // measurement uses the final fixed fonts, never temporary emphasis or auto-sizing.
-        float LayoutRuleCard(RectTransform root,TMP_Text number,TMP_Text condition,TMP_Text arrow,TMP_Text action,
-            float width,float rightInset=14,float minHeight=0,bool compact=false,TMP_Text injected=null)
-        {
-            float left=compact?23:48, pad=compact?9:16, gap=compact?5:8, arrowWidth=compact?18:24;
-            if(compact)rightInset=7;
-            float available=Mathf.Max(60,width-left-rightInset);
-            condition.lineSpacing=action.lineSpacing=2;
-            // Every rule keeps the same reading order, regardless of label length or view width.
-            float conditionWidth=available;
-            float actionWidth=available-arrowWidth;
-            float conditionHeight=Mathf.Max(28,TextHeight(condition,conditionWidth));
-            float actionHeight=Mathf.Max(28,TextHeight(action,actionWidth));
-            float arrowHeight=Mathf.Max(28,TextHeight(arrow,arrowWidth));
-            float header=injected!=null?22:0;
-            float actionTop=pad+header+conditionHeight+gap;
-            float height=Mathf.Max(minHeight,header+conditionHeight+gap+Mathf.Max(actionHeight,arrowHeight)+pad*2);
-            root.sizeDelta=new Vector2(width,height);
-            if(injected!=null)SetCardTextRect(injected,left,pad,available,header,width,height);
-            SetCardTextRect(condition,left,pad+header,conditionWidth,conditionHeight,width,height);
-            float arrowLeft=left;
-            SetCardTextRect(arrow,arrowLeft,actionTop,arrowWidth,arrowHeight,width,height);
-            SetCardTextRect(action,arrowLeft+arrowWidth,actionTop,actionWidth,actionHeight,width,height);
-            if(number!=null)SetCardTextRect(number,compact?4:16,pad,compact?17:24,28,width,height);
-            return height;
-        }
         static void SetCardTextRect(TMP_Text text,float left,float top,float width,float height,float cardWidth,float cardHeight)
         {
             var rect=text.rectTransform;rect.anchorMin=rect.anchorMax=rect.pivot=new Vector2(.5f,.5f);
             rect.sizeDelta=new Vector2(width,height);
             rect.anchoredPosition=new Vector2(-cardWidth/2+left+width/2,cardHeight/2-top-height/2);
         }
-        float MeasureRulePanelWidth(float availableWidth)=>Mathf.Min(availableWidth * .19f, Mathf.Clamp(availableWidth * .155f, 214, 280));
         void LayoutRuleHud(float width,float height)
         {
             float position=ruleScroll!=null&&ruleHudSize!=Vector2.zero?ruleScroll.verticalNormalizedPosition:hudScrollPosition;
@@ -337,26 +309,6 @@ namespace GoGhost.Duel
             camera.rect=new Rect(left,0,1-left,1);
             float aspect=camera.pixelRect.width/Mathf.Max(1,camera.pixelRect.height);
             camera.orthographicSize=Mathf.Max(10,16.8f/Mathf.Max(.3f,aspect));
-        }
-        static void AlignRuleGlow(RuleRowView row,float scale)
-        {
-            // This HUD uses Screen Space Overlay. Snap only decoration, including after scrolling;
-            // enabling pixelPerfect on the shared Canvas would also change text rendering.
-            var rect=row.Root.rect;
-            var min=row.Root.TransformPoint(rect.min);var max=row.Root.TransformPoint(rect.max);
-            min=row.Root.InverseTransformPoint(new Vector3(Mathf.Round(min.x),Mathf.Round(min.y),min.z));
-            max=row.Root.InverseTransformPoint(new Vector3(Mathf.Round(max.x),Mathf.Round(max.y),max.z));
-            var frameRect=UnityEngine.Rect.MinMaxRect(min.x,min.y,max.x,max.y);
-            float stroke=Mathf.Max(1,Mathf.Round(scale))/scale;
-            for(int i=0;i<row.Border.Length;i++)
-            {
-                var edge=row.Border[i].rectTransform;
-                int side=i%4;float inset=(1+i/4)*stroke;
-                float w=frameRect.width-2*inset,h=frameRect.height-2*inset;
-                edge.sizeDelta=side<2?new Vector2(w,stroke):new Vector2(stroke,h-2*stroke);
-                edge.anchoredPosition=frameRect.center+(side<2?new Vector2(0,(side==0?1:-1)*(h-stroke)/2):
-                    new Vector2((side==2?-1:1)*(w-stroke)/2,0));
-            }
         }
         void UpdateRuleHud()
         {

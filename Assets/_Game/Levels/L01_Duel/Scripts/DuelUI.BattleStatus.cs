@@ -54,16 +54,6 @@ namespace GoGhost.Duel
         CanvasGroup[] bossHealthGroups;
         readonly TMP_Text[] invasionThresholdMarks = new TMP_Text[2];
 
-        void BuildInvasionMarks(RectTransform bar,float y)
-        {
-            for(int i=0;i<FinalBossAxe.InvasionPercents.Length;i++)
-            {
-                float x=430*(FinalBossAxe.InvasionPercents[i]/100f-.5f);
-                Image(bar,new Vector2(x,y-7),new Vector2(2,6),NeuralPalette.Emp);
-                var mark=Text("?",bar,new Vector2(x,y-23),new Vector2(30,28),21,TextAlignmentOptions.Center,controlFont);
-                mark.color=NeuralPalette.Emp; invasionThresholdMarks[i]=mark;
-            }
-        }
         float bossPoolSpentAt = float.NegativeInfinity, secondPoolAt = float.NegativeInfinity;
         internal void FadeSpentBossHealth() => bossPoolSpentAt = Time.time;
 

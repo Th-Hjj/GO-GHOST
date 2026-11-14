@@ -119,7 +119,9 @@ Not built: an exit for the column that closes inside the rule editor, the hazard
 
 ## Screens
 
-**Title (D1).** Skyline plate at 70% under the logo, hazard band, New Game (primary) and Quit (secondary). Two fighters stand on top of the logo letters and fight using random legal rules only. A limb takes its system colour while its rule fires. No rule text is shown. The second fighter's colour is open; the mockup uses Signal.
+**Title (D1, revised by Thomas 2026-11-14).** A dedicated outskirts landscape replaces the Mission 3 plates: one small dense distant city, dark overlapping middle-distance hills, a left foreground slope and a right rooftop. No scattered buildings outside the city cluster. Keep the sky dark and uncluttered, with the city bases partly hidden by terrain. The logo, hazard band and menu remain live UI, including Continue when a save exists.
+
+One player stands on the right roof with their back to the camera, looking toward the city. Preserve the round head, cold-white simple body and electromagnetic revolver's silhouette and ice-blue core. Build the shoulders, straight planted legs, relaxed arms and weapon perspective for this rear view; do not reuse the side-on combat pose or show the drawn face on the back of the head. Thomas accepted the rear pose but requested the game's blocky limbs: use straight-sided, constant-width segments and a straight torso, without prominent round joint discs or an anatomical waist. The city, roof and player share a bottom-aligned frame that scales uniformly to fill the display. `Resources/Title/Outskirts.png` contains only the environment; `DuelUI.Title.cs` builds the cover figure separately. This supersedes the unbuilt fight on the logo and leaves mission backgrounds unchanged.
 
 **Who Are You (D4).** This is the first time the player hears the voice. WHO, ARE and YOU slam in on the spoken words; YOU is Signal with one glitch. The voice slab sits above them with no name. The head ring is 440 across, 16 thick, and pulses Signal once the line ends. The cursor is a ring the size of the brush. Clear sits to the right; the name field and Upload sit under the head. Until the first mark a dim ghost face (two eyes, then a smile) is drawn inside the head with a travelling brush ring, looping, and it returns after Clear. Tutorial On / Off sits at the bottom right.
 
@@ -174,11 +176,11 @@ Thomas accepted these with the mockups on 2026-11-12.
 | Side-by-side Condition and Action pickers, reserved parameter rows | One side at a time; parameters open under the chosen option |
 | Reorder and remove always visible | Shown on the hovered or focused card |
 | Black background, IBM Plex, framed rectangles | Tokens above |
-| Static title | Attract fight on the logo |
+| Static title | The proposed fight on the logo was superseded by the outskirts landscape and rear-view player on 2026-11-14 |
 
 ## New work this needs
 
-- **Attract fight.** Two rule-driven fighters with random legal rule sets on the title screen, with no player input, damage results or analytics.
+- **Title landscape.** Built on 2026-11-14; see Title above. The earlier attract fight is retired.
 - **Preview vignettes.** One stimulus per condition (11) and one response per action (7), played on the editor stage and on rule hover. A first pass may show only the owned-part flash.
 - **Page transitions.** Built on 2026-11-14; see Motion.
 - **Voice loudness.** A per-frame level from the playing voice clip for the seven bars.

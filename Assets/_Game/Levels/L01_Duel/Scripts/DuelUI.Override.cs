@@ -164,7 +164,7 @@ namespace GoGhost.Duel
         {
             StretchPage();
             OvFill(page, OverridePalette.Ink);
-            OvSkyline(page, .7f);
+            BuildTitleBackdrop();
             OvScanlines(page, .28f);
             var frame = Rect("Frame", page, Vector2.zero, new Vector2(1600, 900));
             OvArrive(OvGlitchWord("GO GHOST", frame, new Vector2(84 + 700 - 800, 450 - 353), new Vector2(1400, 292), 340,

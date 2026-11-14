@@ -196,6 +196,7 @@ namespace GoGhost.Duel
             UpdateCreationWords();
             UpdateHurtFlash();
             UpdateOverlayInput();
+            UpdateTitleBackdrop();
             if (game.DeveloperToolsOpen) return;
             if (game.Phase==DuelPhase.TargetProfile && profileResolution != new Vector2Int(Screen.width,Screen.height)) {Show();return;}
             UpdateProfileReading();

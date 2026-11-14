@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Dedicated outskirts title and rear-view player
+
+- **Asked:** implement Thomas's approved cover with a small distant city, layered dark hills and a right rooftop. After the first preview he clarified that the character must face away toward the city; the cover needs its own perspective, not the combat side pose. He accepted the rear pose and asked for squarer limbs.
+- **Changed:** `Resources/Title/Outskirts.png` is the environment-only plate derived from the approved mockup with the built-in image tool. All text, buttons and the placeholder figure were removed. `DuelUI.Title.cs` draws a separate back-view player with straight-sided body segments, a blank rear head and the real revolver silhouette/core, lowered and foreshortened. The plate and figure scale together from the bottom of the screen. The real logo, controls and their motion remain. The preparation figure, combat pose, mission art and ending skyline are unchanged.
+- **Checked:** Unity compilation succeeded; a fresh Play Mode entry reached the title at 2560x1440 with no console errors. Visually checked the landscape, planted feet, rear pose, square limbs and revolver. Opened Settings with its real button and returned with Back; the title rebuilt. Existing save was preserved. Screenshot: `Logs/TitleMenuConcept/title-final.png` (local, ignored).
+- **NOT TESTED:** other display aspect ratios, packaged Windows/macOS/WebGL builds and a full gameplay run. No build or release made.
+
 ## 2026-11-14 — Slanted choice frame, narrower pointer
 
 - **Asked:** Thomas saw the rule editor's inner Signal frame still upright, and the tutorial pointer touching the Rules heading on the overview.

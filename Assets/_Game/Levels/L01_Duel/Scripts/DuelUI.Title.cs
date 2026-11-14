@@ -71,6 +71,7 @@ namespace GoGhost.Duel
 
         void UpdateTitleBackdrop()
         {
+            UpdateTitleAudio();
             if (titleBackdrop == null) return;
             var extent = ((RectTransform)titleBackdrop.parent).rect.size;
             // Bottom alignment keeps the roof; wide screens crop empty sky first.
@@ -95,6 +96,56 @@ namespace GoGhost.Duel
             ApplyTitleOpening();
         }
 
+        // ---- sound: wind on the roof and the city's hum while the title is up, and the opening's cues ----
+
+        AudioSource titleWind, titleHum;
+        float titleWindLevel, titleHumLevel;
+
+        void UpdateTitleAudio()
+        {
+            bool on = game.Phase == DuelPhase.Menu;
+            if (titleWind == null)
+            {
+                if (!on) return;
+                AudioSource Loop(string name)
+                {
+                    var source = gameObject.AddComponent<AudioSource>();
+                    source.clip = Resources.Load<AudioClip>("TitleSfx/" + name);
+                    source.loop = true; source.playOnAwake = false; source.spatialBlend = 0; source.volume = 0;
+                    source.ignoreListenerPause = true;
+                    return source;
+                }
+                titleWind = Loop("TitleWind"); titleHum = Loop("TitleHum");
+            }
+            // In the opening the wind is there first and the hum comes up as the city lights.
+            float wind = on ? 1 : 0, hum = on ? 1 : 0;
+            if (on && TitleOpening && !titleOpenPlain)
+            {
+                float t = TitleOpenAt;
+                wind = Mathf.Clamp01(t / 1.6f); hum = Mathf.SmoothStep(0, 1, Mathf.InverseLerp(2.6f, 3.8f, t));
+                titleWindLevel = Mathf.Min(titleWindLevel, wind); titleHumLevel = Mathf.Min(titleHumLevel, hum);
+            }
+            // A launch's long first frame must not carry the loops straight to full.
+            float step = Mathf.Min(Time.unscaledDeltaTime, .05f) / .7f;
+            titleWindLevel = Mathf.MoveTowards(titleWindLevel, wind, step);
+            titleHumLevel = Mathf.MoveTowards(titleHumLevel, hum, step);
+            Drive(titleWind, titleWindLevel * .30f); Drive(titleHum, titleHumLevel * .22f);
+
+            void Drive(AudioSource source, float level)
+            {
+                source.volume = level * GameSettings.EffectsScale;
+                if (level > 0 && !source.isPlaying) source.Play();
+                else if (level <= 0 && source.isPlaying) source.Stop();
+            }
+        }
+
+        void PlayTitleCue(string name, float level)
+        {
+            LoadUiAudio();
+            var clip = Resources.Load<AudioClip>("TitleSfx/" + name);
+            if (clip != null) uiAudio.PlayOneShot(clip, level * GameSettings.EffectsScale);
+        }
+
         // ---- the opening: one light, a figure, the night, the city, the name ----
 
         // Once per launch. Statics outlive Play Mode here, so the flag is cleared when play starts.
@@ -107,6 +158,9 @@ namespace GoGhost.Duel
         // Plate columns bounding the building groups, and when each lights: the ends first, the tower last.
         static readonly float[] TitleCityGroups = { 716, 765, 851, 890, 949, 992 };
         static readonly float[] TitleCityLit = { 2.6f, 2.9f, 3.6f, 3.05f, 2.75f };
+        // Each group's note, in the order they light: a step higher each time, the tower highest.
+        static readonly int[] TitleCityNote = { 1, 3, 5, 4, 2 };
+        float titleOpenHeard;
         double titleOpenFrom = -1, titleBreathFrom, titleBeaconFrom;
         bool titleOpenPlain;
         // A launch's first frames are long. The opening waits in the dark until they run evenly.
@@ -140,7 +194,7 @@ namespace GoGhost.Duel
             titleOpenPlain = GameSettings.ReduceFlashing;
             titleOpenFrom = System.Math.Max(now, OvMotion.EntranceStart);
             titleBreathFrom = titleOpenFrom + TitleOpeningEnd; titleBeaconFrom = titleOpenFrom + 3.75;
-            titleOpenSteady = 0; titleOpenWaited = 0;
+            titleOpenSteady = 0; titleOpenWaited = 0; titleOpenHeard = 0;
             return TitleOpenBeat;
         }
 
@@ -213,7 +267,17 @@ namespace GoGhost.Duel
             {
                 JumpTitleOpening(TitleOpenBeat - t);
                 t = TitleOpenBeat;
+                // The cues that were jumped over stay silent; only the logo is heard.
+                titleOpenHeard = TitleOpenBeat - .001f;
             }
+            if (!titleOpenPlain)
+            {
+                bool Reached(float at) => titleOpenHeard < at && t >= at;
+                for (int i = 0; i < TitleCityLit.Length; i++)
+                    if (Reached(TitleCityLit[i])) PlayTitleCue("TitleLight" + TitleCityNote[i], .34f);
+                if (Reached(TitleLogoBeat)) PlayTitleCue("TitleLogo", .6f);
+            }
+            titleOpenHeard = t;
             if (titleBlocker != null && t >= TitleOpenBeat) { Destroy(titleBlocker); titleBlocker = null; }
             bool over = t >= TitleOpeningEnd;
             if (over) t = 1000;

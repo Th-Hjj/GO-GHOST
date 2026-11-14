@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Title sound
+
+- **Asked:** the last Living title step: ambience and the opening's cues. Thomas then removed the core's ignition tone as too strange, tried the opening without the logo's impact, and kept only the broken tail of that cue, darkened because it was too sharp.
+- **Changed:** new `Tools/make_title_sfx.py` and eight clips in `Resources/TitleSfx` (two loops, five building notes, the logo glitch). `DuelUI.Title.cs` runs the loops while the phase is Menu and plays the cues from the opening's clock. A launch's long first frame no longer pushes the loops to full level.
+- **Checked:** Unity compiled; both loops were read playing at their set levels in Play Mode. Claude cannot hear: Thomas listened in Play Mode and accepted the result. A log meant to confirm the hum follows the opening did not line up with the opening's start, so that is NOT VERIFIED by measurement. Loop seams, leaving and re-entering the title, Reduce Flashing, skipping and packaged builds NOT TESTED.
+
 ## 2026-11-14 — Smoother start to the title opening
 
 - **Asked:** the first frames of the opening felt very choppy in Play Mode; then, the figure and the roof should appear together, because the roof arriving later looked like a stutter.

@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Smoother start to the title opening
+
+- **Asked:** the first frames of the opening felt very choppy in Play Mode; then, the figure and the roof should appear together, because the roof arriving later looked like a stutter.
+- **Changed:** the core lights in one even rise instead of three steps, and the figure and the roof share one curve from 0.5 to 1.5 s with no pause. Later beats are unchanged.
+- **Checked:** logged every game frame for 10 s from entering Play Mode: after the two loading frames (about 1335 and 78 ms) no frame exceeded 17 ms, so the choppiness was the stepped animation, not frame time. Six captures of the first second show the core first and then the figure and roof at matching brightness. Thomas viewed it and accepted it. Skip, Reduce Flashing, the first-install path, returning from a mission and packaged builds remain NOT TESTED.
+
 ## 2026-11-14 — Title opening
 
 - **Asked:** design the opening from the elements already built; Thomas approved the beat sheet (one light, a figure, the night, the city, the name).

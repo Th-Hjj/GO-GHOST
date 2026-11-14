@@ -138,8 +138,8 @@ The revolver's core is the one thing on the player that moves. Over about 4.2 s 
 | Seconds | What happens |
 |---|---|
 | 0 to 0.4 | Black, scanlines only |
-| 0.4 to 0.8 | The core lights in three steps; the figure and the roof rim show dimly |
-| 1.0 to 1.6 | The roof and the figure rise to full |
+| 0.4 to 1.0 | The core lights in one even rise |
+| 0.5 to 1.5 | The figure and the roof under it rise together, on one curve, to full |
 | 1.6 to 2.6 | The sky, hills and near mist rise; the stars come out in three bands from the top; the city is a dark skyline |
 | 2.6 to 3.05 | Four building groups light outright, the ends first |
 | 3.05 on | Windows appear one by one; the horizon glow and the far mist rise until 3.8 |
@@ -148,7 +148,7 @@ The revolver's core is the one thing on the player that moves. Over about 4.2 s 
 | 4.2 | The logo slams in (1.35 to 1 in 100 ms); the hazard band and the menu follow in their usual order |
 | 5.0 | The opening ends: the parallax answers the pointer and the core takes up its breath from the bright point |
 
-Throughout, the view pulls back from 108% to full size and the nearer layers settle from lower down. Until the logo lands nothing on the menu can be pressed; any key or click jumps to the logo beat. No aircraft flies before the end. Under Reduce Flashing the whole picture fades in over one second with no steps, pull-back or slam. `OutskirtsCityDark` is the unlit skyline the cutting script bakes from the plate; it covers the painted city until each group lights. The values are trial tuning.
+Large things rise smoothly; only small lights (stars, building groups, windows) switch in steps. A stepped core read as dropped frames, and a roof lit later than the figure read as a missed beat (Thomas, 2026-11-14). Throughout, the view pulls back from 108% to full size and the nearer layers settle from lower down. Until the logo lands nothing on the menu can be pressed; any key or click jumps to the logo beat. No aircraft flies before the end. Under Reduce Flashing the whole picture fades in over one second with no steps, pull-back or slam. `OutskirtsCityDark` is the unlit skyline the cutting script bakes from the plate; it covers the painted city until each group lights. The values are trial tuning.
 
 Approved and not yet built: the opening's sounds and the ambience (wind and the city's low hum; the aircraft stays silent). Nothing carries text or passes in front of the logo and menu.
 

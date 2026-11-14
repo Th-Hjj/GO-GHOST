@@ -170,12 +170,13 @@ namespace GoGhost.Duel
             }
         }
 
-        // The core's level while the opening holds it, 0 to 1 in steps, or -1 when it breathes by itself.
+        // The core's level while the opening holds it, 0 to 1, or -1 when it breathes by itself.
         float TitleIgnition()
         {
             if (!TitleOpening || titleOpenPlain) return -1;
             float t = TitleOpenAt;
-            return t < .4f ? 0 : t < .6f ? .33f : t < .8f ? .66f : 1;
+            // One even rise. Three steps were tried first and read as dropped frames, not as a light coming on.
+            return Mathf.SmoothStep(0, 1, Mathf.InverseLerp(.4f, 1, t));
         }
 
         static bool TitleSkipPressed()
@@ -222,10 +223,9 @@ namespace GoGhost.Duel
             if (titleOpenPlain) { world = roof = body = Rise(0, TitlePlainBeat); city = 1; }
             else
             {
-                // The core alone shows the gun, the arm and the edge of the roof; then the figure, then the night.
-                float core = TitleIgnition(), lift = Rise(1, 1.6f);
-                if (core < 0) core = 1;
-                roof = Mathf.Lerp(core * .25f, 1, lift); body = Mathf.Lerp(core * .45f, 1, lift);
+                // The figure and the roof under it come up together, in one rise behind the core's light. Lit apart,
+                // the roof looked like it had missed a beat.
+                roof = body = Rise(.5f, 1.5f);
                 world = Rise(1.6f, 2.6f); city = Rise(2.6f, 3.8f);
             }
             for (int i = 0; i < titleTint.Length; i++)

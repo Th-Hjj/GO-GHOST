@@ -15,7 +15,8 @@ namespace GoGhost.Duel
             var plate = titleBackdrop.gameObject.AddComponent<RawImage>();
             plate.texture = Resources.Load<Texture2D>("Title/Outskirts");
             plate.raycastTarget = false;
-            BuildTitlePlayer(titleBackdrop, new Vector2(443, -257), 105);
+            // Stand inside the back rim on the roof surface, not directly on its bright edge.
+            BuildTitlePlayer(titleBackdrop, new Vector2(443, -281), 105);
             UpdateTitleBackdrop();
         }
 
@@ -32,7 +33,6 @@ namespace GoGhost.Duel
             // The cover looks at the player's back. Combat's side-on, bent-knee skeleton does not fit
             // this camera: keep its visual identity, but construct the shoulder/hip plane and limbs here.
             var root = Rect("Player back", parent, origin, Vector2.one * (3 * k));
-            root.gameObject.AddComponent<RectMask2D>().padding = new Vector4(0, .725f * k, 0, 0);
             Color white = NeuralPalette.Primary;
             Color far = Color.Lerp(white, new Color(.35f, .44f, .50f), .16f);
 
@@ -61,11 +61,8 @@ namespace GoGhost.Duel
             Limb("Right thigh", new Vector2(.075f, -.115f), rightKnee, .17f, white);
             Limb("Right calf", rightKnee, new Vector2(.21f, -.78f), .17f, white);
 
-            // Straight block sides, like the game's body: no anatomical waist or rounded joint discs.
-            var back = Rect("Back", root, Vector2.zero, Vector2.zero).gameObject.AddComponent<QuadMorph>();
-            back.To = new[] { new Vector2(-.105f, -.16f) * k, new Vector2(-.12f, .35f) * k,
-                new Vector2(.10f, .35f) * k, new Vector2(.115f, -.16f) * k };
-            back.Seconds = 0; back.color = white; back.raycastTarget = false;
+            // Every body segment is a complete rectangle, including the uncut ends of both calves.
+            Limb("Back", new Vector2(.005f, -.16f), new Vector2(-.01f, .35f), .22f, white);
             Limb("Neck", new Vector2(-.02f, .32f), new Vector2(-.035f, .46f), .125f, white);
             // No player-drawn face on the back of the head. The slight left turn faces the distant city.
             Part("Head back", StickmanSprites.Disc, new Vector2(-.045f, .59f), new Vector2(.46f, .46f), white);
@@ -88,7 +85,8 @@ namespace GoGhost.Duel
             GunPart("Revolver", RevolverPresentationGeometry.Body, Vector2.zero, RevolverPresentationGeometry.BodyColor);
             GunPart("Core halo", RevolverPresentationGeometry.Halo, RevolverPresentationGeometry.CorePosition, new Color(.35f, .78f, 1f));
             GunPart("Core", RevolverPresentationGeometry.Core, RevolverPresentationGeometry.CorePosition, RevolverPresentationGeometry.CoreColor);
-            Part("Grip hand", StickmanSprites.Disc, rightHand, new Vector2(.105f, .085f), white, gunAngle);
+            Part("Grip hand", StickmanSprites.Limb, rightHand,
+                new Vector2(.105f, .085f) * StickmanSprites.LimbPadding, white, gunAngle);
         }
     }
 }

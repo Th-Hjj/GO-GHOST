@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Uncut title limbs, feet inside the rooftop
+
+- **Asked:** use complete rectangular blocks, especially at the feet, and stand inside the roof edge.
+- **Changed:** removed the title figure's foot clipping mask, replaced the sheared torso and round grip hand with rectangular segments, and moved the whole figure 24 reference-canvas units down onto the roof surface. The accepted rear pose remains.
+- **Checked:** compiled and entered the title in fresh Unity Play Mode at 2560x1440; verified zero clipping masks and visually checked the uncut calf ends and feet inside the rear rim. No console errors. Capture: `Logs/TitleMenuConcept/title-rectangular-inside.png` (local, ignored). No packaged build or full gameplay test.
+
 ## 2026-11-14 — Dedicated outskirts title and rear-view player
 
 - **Asked:** implement Thomas's approved cover with a small distant city, layered dark hills and a right rooftop. After the first preview he clarified that the character must face away toward the city; the cover needs its own perspective, not the combat side pose. He accepted the rear pose and asked for squarer limbs.

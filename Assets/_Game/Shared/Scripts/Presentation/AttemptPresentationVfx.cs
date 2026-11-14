@@ -163,10 +163,6 @@ public sealed class AttemptPresentationVfx : MonoBehaviour
     public void EnemyHit(Vector3 contact, Vector2 outward)
         => Rays(contact, outward, 5, .28f, .15f, .035f, NeuralPalette.Primary, 1.05f);
 
-    // The player lost health: Danger lines leave the contact toward the attacker.
-    public void PlayerHit(Vector3 contact, Vector2 outward)
-        => Rays(contact, outward, 5, .30f, .20f, .035f, NeuralPalette.Danger, 1.2f);
-
     // Stationary silhouette copies left behind a moving body. The caller owns the cadence.
     public void Echo(IEnumerable<SpriteRenderer> parts, Color color, float life)
     {

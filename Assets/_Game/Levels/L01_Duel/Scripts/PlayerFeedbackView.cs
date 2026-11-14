@@ -15,7 +15,6 @@ namespace GoGhost.Duel
         const float GhostAlpha = .72f, EchoAlpha = .16f, EchoSeconds = .14f, EchoInterval = .07f;
         PlayerHealth health;
         PlayerDodge dodge;
-        Collider2D body;
         AttemptPresentationVfx effects;
         readonly List<SpriteRenderer> bodyParts = new List<SpriteRenderer>(12), weaponParts = new List<SpriteRenderer>(3),
             allParts = new List<SpriteRenderer>(15);
@@ -26,7 +25,6 @@ namespace GoGhost.Duel
         {
             health = player;
             dodge = player.GetComponent<PlayerDodge>();
-            body = player.GetComponent<Collider2D>();
             effects = player.GetComponentInParent<AttemptPresentationVfx>();
             var visual = player.GetComponent<OfficerVisual>();
             if (visual != null)
@@ -43,12 +41,6 @@ namespace GoGhost.Duel
         {
             if (damage <= 0) return;
             hurtAt = Time.time;
-            if (effects == null || body == null) return;
-            // The attacker's side of the body: bullets, blades and waves all name their owner.
-            Vector2 center = body.bounds.center;
-            Vector2 toward = source != null ? (Vector2)source.transform.position - center : Vector2.up;
-            if (toward.sqrMagnitude < .0001f) toward = Vector2.up;
-            effects.PlayerHit(source != null ? body.ClosestPoint(source.transform.position) : center, toward.normalized);
         }
 
         void LateUpdate()

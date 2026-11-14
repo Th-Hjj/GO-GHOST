@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — No player hit lines
+
+- **Asked:** remove the Danger lines at the contact when the player loses health (decision recorded in `CLAUDE.md` and `AGENTS.md`).
+- **Changed:** `PlayerFeedbackView` no longer finds a contact point or calls for the lines, and `AttemptPresentationVfx.PlayerHit` is removed. The body's white step and Danger fade, the screen-edge tint and the hurt cue are untouched. `ArtDirection.md` follows.
+- **Checked:** made in another session and left uncommitted; committed here at Thomas's request while closing the day. Unity compiled with it in place. This session did not exercise a hit in Play Mode: NOT TESTED here.
+
 ## 2026-11-14 — Title source plate moved out of Resources
 
 - **Asked:** wrap up the day's title work.

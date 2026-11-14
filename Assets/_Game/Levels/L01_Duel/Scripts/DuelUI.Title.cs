@@ -6,18 +6,43 @@ namespace GoGhost.Duel
     public sealed partial class DuelUI
     {
         RectTransform titleBackdrop;
+        RectTransform[] titleLayers;
+        Vector2 titleLook;
+        // Travel of the hills, the near slope and the roof at the screen edge, in 1600 x 900 units. Trial tuning.
+        static readonly Vector2[] TitleTravel = { new Vector2(3, 1), new Vector2(6, 2), new Vector2(10, 3) };
 
         void BuildTitleBackdrop()
         {
             // Environment and figure share one frame so the feet stay on the roof at every aspect ratio.
             titleBackdrop = Rect("Title landscape", page, Vector2.zero, new Vector2(1600, 900));
             titleBackdrop.anchorMin = titleBackdrop.anchorMax = titleBackdrop.pivot = new Vector2(.5f, 0);
-            var plate = titleBackdrop.gameObject.AddComponent<RawImage>();
-            plate.texture = Resources.Load<Texture2D>("Title/Outskirts");
-            plate.raycastTarget = false;
+            // Tools/cut_title_layers.py cuts Outskirts.png into these; stacked at rest they are that plate.
+            RectTransform Layer(string name)
+            {
+                // The clamped margin keeps a shifted layer from uncovering the screen edge.
+                const float margin = 16;
+                var layer = Rect(name, titleBackdrop, Vector2.zero, new Vector2(1600 + margin * 2, 900 + margin * 2));
+                var image = layer.gameObject.AddComponent<RawImage>();
+                image.texture = Resources.Load<Texture2D>("Title/" + name);
+                image.uvRect = new Rect(-margin / 1600, -margin / 900, 1 + margin * 2 / 1600, 1 + margin * 2 / 900);
+                image.raycastTarget = false;
+                return layer;
+            }
+            Layer("OutskirtsSky");
+            titleLayers = new[] { Layer("OutskirtsHills"), Layer("OutskirtsSlope"), Layer("OutskirtsRoof") };
+            titleLook = TitlePointer();
             // Stand inside the back rim on the roof surface, not directly on its bright edge.
-            BuildTitlePlayer(titleBackdrop, new Vector2(443, -281), 105);
+            BuildTitlePlayer(titleLayers[2], new Vector2(443, -281), 105);
             UpdateTitleBackdrop();
+        }
+
+        static Vector2 TitlePointer()
+        {
+            var mouse = UnityEngine.InputSystem.Mouse.current;
+            if (mouse == null || !Application.isFocused) return Vector2.zero;
+            Vector2 point = mouse.position.ReadValue();
+            return new Vector2(Mathf.Clamp(point.x / Screen.width * 2 - 1, -1, 1),
+                Mathf.Clamp(point.y / Screen.height * 2 - 1, -1, 1));
         }
 
         void UpdateTitleBackdrop()
@@ -26,6 +51,10 @@ namespace GoGhost.Duel
             var extent = ((RectTransform)titleBackdrop.parent).rect.size;
             // Bottom alignment keeps the roof; wide screens crop empty sky first.
             titleBackdrop.localScale = Vector3.one * Mathf.Max(extent.x / 1600f, extent.y / 900f);
+            // Nearer layers slide further, away from the pointer; the sky and the city stay.
+            titleLook = Vector2.Lerp(titleLook, TitlePointer(), 1 - Mathf.Exp(-4 * Time.unscaledDeltaTime));
+            for (int i = 0; i < titleLayers.Length; i++)
+                titleLayers[i].anchoredPosition = -Vector2.Scale(titleLook, TitleTravel[i]);
         }
 
         void BuildTitlePlayer(RectTransform parent, Vector2 origin, float k)

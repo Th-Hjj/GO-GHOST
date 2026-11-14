@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Title layers and pointer parallax
+
+- **Asked:** bring the title to life. Thomas approved the element list and order in the Living title decision, and asked for the plate to be cut without layered source, with parallax kept only if it looked right.
+- **Changed:** `Tools/cut_title_layers.py` finds the roof, near slope and middle hills by column and writes four layers; each keeps the original pixels where visible and continues its own colour behind the layers in front. `DuelUI.Title.cs` stacks them in place of the single plate and slides the three nearer layers with the pointer. The player is parented to the roof layer. `Outskirts.png` stays in `Resources/Title` as the source and is no longer loaded.
+- **Checked:** the four layers composited at rest differ from the plate by 0. Unity compiled; Play Mode title captured at 2560x1440 with clean layer edges and the feet on the roof. Thomas tried it in Play Mode and accepted the parallax. A 10-pixel offline shift shows faint vertical streaks in the hills beside the roof wall; not seen at the built travel. Other resolutions, ultrawide and packaged builds NOT TESTED.
+
 ## 2026-11-14 — Crisp title body edges
 
 - **Asked:** remove the blurred limb edges while keeping the approved proportions and pose.

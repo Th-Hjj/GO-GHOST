@@ -6,26 +6,26 @@ namespace GoGhost.Duel
 {
     public sealed partial class DuelUI
     {
-        RectTransform tutorialFrame, tutorialPreview, tutorialSubmit, tutorialExample;
+        RectTransform tutorialPreview, tutorialSubmit, tutorialExample;
         RectTransform tutorialProfile, tutorialTest, tutorialStart;
         readonly List<Button> tutorialEditorButtons = new List<Button>();
         readonly Vector3[] tutorialCorners = new Vector3[4];
+        // Happy's pointer: one Signal frame that opens on what she is talking about and travels to the next thing.
+        SpotlightGraphic tutorialSpot;
+        Vector2 spotCenter, spotSize;
+        float spotShade, spotOpen;
 
-        TutorialFocus VisibleTutorialFocus => game.Phase == DuelPhase.Configure && !game.Paused
-            && !game.DeveloperToolsOpen && !helpOpen ? game.ConfigurationVoice.Focus : TutorialFocus.None;
-        bool TutorialChoiceOpen => VisibleTutorialFocus is TutorialFocus.Pick or TutorialFocus.Confirm;
-        internal bool TutorialHighlightsControl(Button button) => VisibleTutorialFocus switch
-        {
-            TutorialFocus.None => false,
-            TutorialFocus.TargetProfile => button.transform == tutorialProfile,
-            TutorialFocus.TestLoadout => button.transform == tutorialTest,
-            TutorialFocus.StartMission => button.transform == tutorialStart,
-            _ => true
-        };
+        bool TutorialOnPage => game.Phase == DuelPhase.Configure && !game.Paused && !game.DeveloperToolsOpen && !helpOpen;
+        TutorialFocus VisibleTutorialFocus => TutorialOnPage ? game.ConfigurationVoice.Focus : TutorialFocus.None;
+        // Lines that wait for the player to choose something instead of a click.
+        bool TutorialChoiceOpen => VisibleTutorialFocus is TutorialFocus.Pick or TutorialFocus.Confirm or TutorialFocus.Condition or TutorialFocus.Action;
+        // During the tutorial the shade does the dimming, so controls keep their own colours.
+        internal bool TutorialHighlightsControl(Button button) => TutorialOnPage && game.ConfigurationVoice.TutorialRunning;
 
         void ClearTutorialView()
         {
-            tutorialFrame = tutorialPreview = tutorialSubmit = tutorialExample = null;
+            tutorialSpot = null;
+            tutorialPreview = tutorialSubmit = tutorialExample = null;
             tutorialProfile = tutorialTest = tutorialStart = null;
             tutorialEditorButtons.Clear();
         }
@@ -33,7 +33,10 @@ namespace GoGhost.Duel
         void UpdateTutorialFocus()
         {
             var focus = VisibleTutorialFocus;
-            RectTransform target = focus switch
+            var voice = game.ConfigurationVoice;
+            // Nothing is pointed at until the line is actually heard.
+            bool speaking = TutorialOnPage && voice.TutorialRunning && !voice.WaitingForPageSpeech && !wipePending;
+            RectTransform target = !speaking ? null : focus switch
             {
                 TutorialFocus.Body => bodyPreview,
                 TutorialFocus.Rules => ruleList,
@@ -48,22 +51,35 @@ namespace GoGhost.Duel
                 TutorialFocus.StartMission => tutorialStart,
                 _ => null
             };
-            if (page == null || target == null || !target.IsChildOf(page))
+            if (page == null || (target != null && !target.IsChildOf(page))) target = null;
+            float step = Time.unscaledDeltaTime;
+            if (target != null)
             {
-                if (tutorialFrame != null) tutorialFrame.gameObject.SetActive(false);
+                var bounds = TutorialBounds(target);
+                // Include that column's summary, categories, options and parameters.
+                if ((focus is TutorialFocus.Condition or TutorialFocus.Action) && tutorialPreview != null)
+                    bounds.yMax = TutorialBounds(tutorialPreview).yMax;
+                Vector2 size = bounds.size + Vector2.one * 16;
+                if (spotOpen <= 0) { spotCenter = bounds.center; spotSize = size; }
+                float follow = 1 - Mathf.Exp(-step * 14);
+                spotCenter = Vector2.Lerp(spotCenter, bounds.center, follow);
+                spotSize = Vector2.Lerp(spotSize, size, follow);
+            }
+            spotOpen = Mathf.MoveTowards(spotOpen, target != null ? 1 : 0, step / .18f);
+            spotShade = Mathf.MoveTowards(spotShade, speaking && DialogueVisible ? .48f : 0, step * .48f / .18f);
+            if (page == null || (spotOpen <= 0 && spotShade <= 0))
+            {
+                if (tutorialSpot != null) tutorialSpot.gameObject.SetActive(false);
                 return;
             }
-
-            var bounds = TutorialBounds(target);
-            if (focus is TutorialFocus.Condition or TutorialFocus.Action)
+            if (tutorialSpot == null)
             {
-                // Include that column's summary, categories, options and parameters.
-                bounds.yMax = TutorialBounds(tutorialPreview).yMax;
+                tutorialSpot = Rect("Tutorial focus", page, Vector2.zero, Vector2.zero).gameObject.AddComponent<SpotlightGraphic>();
+                tutorialSpot.raycastTarget = false;
             }
-            if (tutorialFrame == null) BuildTutorialFrame();
-            tutorialFrame.gameObject.SetActive(true);
-            tutorialFrame.anchoredPosition = bounds.center;
-            tutorialFrame.sizeDelta = bounds.size + Vector2.one * 8;
+            tutorialSpot.gameObject.SetActive(true);
+            tutorialSpot.transform.SetAsLastSibling();
+            tutorialSpot.Set(spotCenter, spotSize * OvMotion.Snap(spotOpen), spotShade, spotOpen);
         }
 
         Rect TutorialBounds(RectTransform target)
@@ -72,31 +88,6 @@ namespace GoGhost.Duel
             Vector2 min = page.InverseTransformPoint(tutorialCorners[0]);
             Vector2 max = page.InverseTransformPoint(tutorialCorners[2]);
             return UnityEngine.Rect.MinMaxRect(min.x, min.y, max.x, max.y);
-        }
-
-        void BuildTutorialFrame()
-        {
-            tutorialFrame = Rect("Tutorial focus", page, Vector2.zero, Vector2.zero);
-            var shade = new Color(0, 0, 0, .48f);
-            for (int edge = 0; edge < 4; edge++)
-            {
-                bool horizontal = edge < 2;
-                float side = edge % 2;
-                var min = horizontal ? new Vector2(0, side) : new Vector2(side, 0);
-                var max = horizontal ? new Vector2(1, side) : new Vector2(side, 1);
-                var outside = Image(tutorialFrame, Vector2.zero, Vector2.zero, shade).rectTransform;
-                outside.anchorMin = min;
-                outside.anchorMax = max;
-                outside.pivot = horizontal ? new Vector2(.5f, 1-side) : new Vector2(1-side, .5f);
-                outside.sizeDelta = horizontal ? new Vector2(page.rect.width * 2, page.rect.height)
-                    : new Vector2(page.rect.width, 0);
-
-                var line = Image(tutorialFrame, Vector2.zero, Vector2.zero, NeuralPalette.Primary).rectTransform;
-                line.anchorMin = min;
-                line.anchorMax = max;
-                line.pivot = horizontal ? new Vector2(.5f, side) : new Vector2(side, .5f);
-                line.sizeDelta = horizontal ? new Vector2(0, 2) : new Vector2(2, 0);
-            }
         }
     }
 }

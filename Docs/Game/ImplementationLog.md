@@ -1,5 +1,15 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Tutorial pacing and pointer
+
+- **Asked:** Thomas found the highlight and the voice out of step and approved all four parts of the proposal.
+- **Sync:** the pointer waits for `HandlerVoice.WaitingForPageSpeech` to end, so it no longer leads the voice by the .8 s page delay. After the first rule is installed the overview lines wait 1.4 s (`InstallSpeechDelay`).
+- **Pointer:** `SpotlightGraphic` replaces the white rectangle and its four shade panels. `DuelUI.UpdateTutorialFocus` keeps its position between page rebuilds and eases it to each target. `TutorialHighlightsControl` is true for every control while the tutorial runs, so nothing switches to the disabled grey under the shade.
+- **Editor:** `RuleEditorOpened` speaks only the Condition line. `RuleDraftChanged(condition, action, complete)` queues the Action line when a condition is chosen and the relation line when an action is chosen, each after the picked card's description. `FollowEditorTour` is removed. `Handler/TutorialEditorPick` stays in the catalog, unplayed.
+- **Introduction:** `AutoAdvance` moves on .15 s after a line has been heard and shown, for the greeting and `Handler/TutorialIntro*` except the Add Rule line. Help, Pause and the page delay hold it.
+- **Checked:** compiles in Unity; the title opens in Play Mode with its entrance and no console errors.
+- **NOT TESTED:** the tutorial has not been run, because a save exists and New Game would have replaced it. Unseen: the pointer's position and travel, the shade during the four lines with nothing to point at, the Condition and Action lines following a pick, a pick made while a description is still playing, choosing the action first, Continue into an unfinished tutorial, and the pacing of the continuous introduction.
+
 ## 2026-11-14 — UI motion "C" and interface cues
 
 - **Asked:** Thomas chose proposal C from the motion study (https://claude.ai/artifact/7zGbMhcDLwrPFbZvYhwkbt) and asked for hover and click sounds.

@@ -14,7 +14,12 @@ namespace GoGhost.Duel
     {
         AudioSource speaker;
         bool tutorialActive, editorExplained, confirmSpoken;
-        bool readingRuleDescription, confirmAfterDescription;
+        bool readingRuleDescription, confirmAfterDescription, draftComplete;
+        // A tutorial line that waits for the description of the card the player has just picked.
+        string lineAfterDescription;
+        int dialogueId;
+        // The installed card and the body flash play before Happy speaks about the overview.
+        const double InstallSpeechDelay = 1.4;
         internal TutorialFocus Focus { get; private set; }
         internal bool CanOpenRuleEditor => !tutorialActive || Focus == TutorialFocus.AddRule;
         bool suspended;
@@ -44,6 +49,7 @@ namespace GoGhost.Duel
         internal void WaitForClick(string text, Action advance = null, bool realtime = false)
         {
             PendingDialogue = text;
+            dialogueId++;
             dialogueFrame = Time.frameCount;
             realtimeReveal = realtime;
             revealStart = RevealClock + RemainingSpeechDelay;
@@ -89,11 +95,30 @@ namespace GoGhost.Duel
                 revealed = true;
                 return;
             }
+            Advance();
+        }
+
+        void Advance()
+        {
             speaker.Stop();
             var advance = afterDialogue;
             PendingDialogue = null;
             afterDialogue = null;
             advance?.Invoke();
+        }
+
+        // Happy carries on by herself once a line has been heard; a click still moves on sooner.
+        IEnumerator AutoAdvance(int id)
+        {
+            float quiet = 0;
+            while (quiet < .15f)
+            {
+                yield return null;
+                if (dialogueId != id || PendingDialogue == null) yield break;
+                bool busy = suspended || WaitingForPageSpeech || Speaking || !DialogueReady;
+                quiet = busy ? 0 : quiet + Time.unscaledDeltaTime;
+            }
+            Advance();
         }
         readonly Dictionary<string, AudioClip> lines = new Dictionary<string, AudioClip>();
         internal void CacheLine(string name, AudioClip clip) => lines[name] = clip;
@@ -115,6 +140,7 @@ namespace GoGhost.Duel
             Focus = TutorialFocus.None;
             // Every player hears the same recorded greeting.
             SpeakDialogue("Handler/Greeting");
+            StartCoroutine(AutoAdvance(dialogueId));
             StartCoroutine(ConfigurationTutorial(installExample));
         }
 
@@ -122,11 +148,41 @@ namespace GoGhost.Duel
         {
             if (Focus != TutorialFocus.AddRule) return;
             if (editorExplained) Focus = TutorialFocus.Pick;
-            else SpeakSequence("Handler/TutorialEditor");
+            // The editor is taught by doing: each line waits for the choice it describes.
+            else SpeakDialogue("Handler/TutorialEditorCondition");
         }
 
-        internal void RuleDraftChanged(bool complete)
+        void QueueTutorialLine(string key)
         {
+            if (readingRuleDescription && Speaking) lineAfterDescription = key;
+            else SpeakTutorialLine(key);
+        }
+
+        void SpeakTutorialLine(string key)
+        {
+            lineAfterDescription = null;
+            if (key != "Handler/TutorialEditorRelation") { SpeakDialogue(key); return; }
+            editorExplained = true;
+            SpeakDialogue(key, () =>
+            {
+                Focus = draftComplete ? TutorialFocus.Confirm : TutorialFocus.Pick;
+                if (draftComplete && !confirmSpoken) GiveConfirmInstruction();
+            });
+        }
+
+        internal void RuleDraftChanged(bool condition, bool action, bool complete)
+        {
+            draftComplete = complete;
+            if (Focus == TutorialFocus.Condition)
+            {
+                if (condition) QueueTutorialLine(action ? "Handler/TutorialEditorRelation" : "Handler/TutorialEditorAction");
+                return;
+            }
+            if (Focus == TutorialFocus.Action)
+            {
+                if (action) QueueTutorialLine("Handler/TutorialEditorRelation");
+                return;
+            }
             if (Focus != TutorialFocus.Pick && Focus != TutorialFocus.Confirm) return;
             if (!complete) confirmAfterDescription = false;
             if (complete && !confirmSpoken)
@@ -147,7 +203,7 @@ namespace GoGhost.Duel
             // Selecting a card also accepts the free-choice tutorial prompt.
             if (PendingDialogue != null)
             {
-                if (Focus is not (TutorialFocus.Pick or TutorialFocus.Confirm)) return;
+                if (Focus is not (TutorialFocus.Pick or TutorialFocus.Confirm or TutorialFocus.Condition or TutorialFocus.Action)) return;
                 EndTutorialPage();
             }
             readingRuleDescription = true;
@@ -158,7 +214,8 @@ namespace GoGhost.Duel
         {
             if (!readingRuleDescription || suspended || Speaking) return;
             readingRuleDescription = false;
-            if (confirmAfterDescription) GiveConfirmInstruction();
+            if (lineAfterDescription != null) SpeakTutorialLine(lineAfterDescription);
+            else if (confirmAfterDescription) GiveConfirmInstruction();
         }
 
         void GiveConfirmInstruction()
@@ -171,6 +228,7 @@ namespace GoGhost.Duel
         internal void RuleEditorClosed(bool installed)
         {
             confirmAfterDescription = false;
+            lineAfterDescription = null;
             if (readingRuleDescription)
             {
                 readingRuleDescription = false;
@@ -184,6 +242,7 @@ namespace GoGhost.Duel
                 Focus = TutorialFocus.AddRule;
                 return;
             }
+            pageSpeechAt = Math.Max(pageSpeechAt, AudioSettings.dspTime + InstallSpeechDelay);
             SpeakSequence("Handler/TutorialPreparation", () =>
             {
                 tutorialActive = false;
@@ -247,10 +306,10 @@ namespace GoGhost.Duel
         IEnumerator ConfigurationTutorial(Action installExample)
         {
             while (suspended || PendingDialogue != null) yield return null;
-            SpeakSequence("Handler/TutorialIntro", installExample: installExample);
+            SpeakSequence("Handler/TutorialIntro", installExample: installExample, auto: true);
         }
 
-        void SpeakSequence(string prefix, Action finished = null, Action installExample = null)
+        void SpeakSequence(string prefix, Action finished = null, Action installExample = null, bool auto = false)
         {
             var lines = VoiceStudioCatalog.Current.lines;
             int index = 0;
@@ -261,6 +320,8 @@ namespace GoGhost.Duel
                     var line = lines[index++];
                     if (!line.key.StartsWith(prefix, StringComparison.Ordinal)) continue;
                     SpeakDialogue(line.key, Next);
+                    // The line that asks for a rule waits for the player to add one.
+                    if (auto && Focus != TutorialFocus.AddRule) StartCoroutine(AutoAdvance(dialogueId));
                     if (line.key == "Handler/TutorialIntroJump") installExample?.Invoke();
                     return;
                 }
@@ -351,6 +412,7 @@ namespace GoGhost.Duel
         public void Stop()
         {
             readingRuleDescription = confirmAfterDescription = false;
+            lineAfterDescription = null;
             suspended = false;
             interruptedClip = null;
             dialogueStartsAt = 0;

@@ -113,6 +113,8 @@ Menus use unscaled UI time. Combat HUD feedback keeps the combat clock, pause fr
 
 **Interface cues.** `Tools/make_ui_sfx.py` writes `Resources/UiSfx/UiHover.wav` (a 32 ms dry tick) and `UiClick.wav` (an 85 ms edge over a falling knock with a faint blip). Slab buttons and rule cards play the tick on hover; every button plays the click. They follow the Effects volume and play while the game is paused.
 
+**Tutorial pointer.** While Happy teaches, the page sits under one 48% shade and controls keep their own colours. What she names is framed by a 4-pixel Signal slab-cut opening (`SpotlightGraphic`). It opens in 180 ms when the line is heard, follows its target, travels to the next one and closes when the line ends. A line that waits for a choice keeps the frame without the shade once its text is dismissed.
+
 Not built: an exit for the column that closes inside the rule editor, the hazard-rule draw-in, and motion for a removed rule card itself.
 
 ## Screens

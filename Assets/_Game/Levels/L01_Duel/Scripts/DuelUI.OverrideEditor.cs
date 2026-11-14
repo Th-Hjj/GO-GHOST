@@ -12,7 +12,6 @@ namespace GoGhost.Duel
         Vector2 figureSlideFrom, figureFrameHome, figureFramePosition;
         float figureSlideAt = float.NegativeInfinity, figureSeenAt = float.NegativeInfinity;
         int builtStep = -1, builtCategory = -1;
-        bool editorTour;
 
         bool ConditionChosen()
         {
@@ -44,25 +43,6 @@ namespace GoGhost.Duel
             ConditionalCatalog.SetActionOption(pendingRule, option);
             AdvanceEditorStep(false);
             Show();
-        }
-
-        // While Happy explains the editor, show the side she is talking about, then return to the open choice.
-        bool FollowEditorTour()
-        {
-            if (selectorRow < 0 || pendingRule == null) return false;
-            var focus = VisibleTutorialFocus;
-            bool condition = selectingCondition;
-            if (focus == TutorialFocus.Condition) { condition = true; editorTour = true; }
-            else if (focus == TutorialFocus.Action) { condition = false; editorTour = true; }
-            else if (focus != TutorialFocus.Relation && editorTour)
-            {
-                editorTour = false;
-                if (!ConditionChosen()) condition = true;
-            }
-            if (condition == selectingCondition) return false;
-            selectingCondition = condition; selectedConditionIndex = 0; selectingAdditional = false;
-            Show();
-            return true;
         }
 
         void StandFigure(RectTransform stage, Vector2 home)
@@ -195,7 +175,7 @@ namespace GoGhost.Duel
             tutorialSubmit = (RectTransform)confirm.transform;
             if (game.ConfigurationVoice.Focus != TutorialFocus.None)
             {
-                game.ConfigurationVoice.RuleDraftChanged(confirm.interactable);
+                game.ConfigurationVoice.RuleDraftChanged(ConditionChosen(), ActionChosen(), confirm.interactable);
                 page.GetComponentsInChildren(false, tutorialEditorButtons);
             }
 

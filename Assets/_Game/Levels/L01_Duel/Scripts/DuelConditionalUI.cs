@@ -134,7 +134,6 @@ namespace GoGhost.Duel
             {
                 CancelRuleEdit();
             }
-            if(FollowEditorTour())return true;
             UpdateConfigurationSignals();
             return true;
         }

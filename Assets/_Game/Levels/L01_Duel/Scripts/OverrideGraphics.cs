@@ -239,6 +239,49 @@ namespace GoGhost.Duel
         }
     }
 
+    // The tutorial's pointer: a shade over the page with a slab-cut opening and a Signal frame around it.
+    [RequireComponent(typeof(CanvasRenderer))]
+    public sealed class SpotlightGraphic : MaskableGraphic
+    {
+        Vector2 centre, size;
+        float shade, frame;
+        readonly Vector2[] hole = new Vector2[4];
+
+        public void Set(Vector2 at, Vector2 extent, float shadeAlpha, float frameAlpha)
+        {
+            if (centre == at && size == extent && Mathf.Approximately(shade, shadeAlpha) && Mathf.Approximately(frame, frameAlpha)) return;
+            centre = at; size = extent; shade = shadeAlpha; frame = frameAlpha;
+            SetVerticesDirty();
+        }
+
+        protected override void OnPopulateMesh(VertexHelper vh)
+        {
+            vh.Clear();
+            // The opening leans like every slab and is widened so it still contains what it frames.
+            float cut = Mathf.Min(28, size.y * .21f);
+            float left = centre.x - size.x / 2, right = centre.x + size.x / 2, bottom = centre.y - size.y / 2, top = centre.y + size.y / 2;
+            hole[0] = new Vector2(left - cut, bottom); hole[1] = new Vector2(left, top);
+            hole[2] = new Vector2(right + cut, top); hole[3] = new Vector2(right, bottom);
+            if (shade > 0)
+            {
+                const float far = 6000;
+                Color32 dark = new Color(0, 0, 0, shade);
+                vh.AddVert(new Vector3(-far, -far), dark, Vector2.zero); vh.AddVert(new Vector3(-far, far), dark, Vector2.zero);
+                vh.AddVert(new Vector3(far, far), dark, Vector2.zero); vh.AddVert(new Vector3(far, -far), dark, Vector2.zero);
+                for (int i = 0; i < 4; i++) vh.AddVert(hole[i], dark, Vector2.zero);
+                for (int i = 0; i < 4; i++)
+                {
+                    int next = (i + 1) % 4;
+                    vh.AddTriangle(i, next, 4 + next);
+                    vh.AddTriangle(i, 4 + next, 4 + i);
+                }
+            }
+            if (frame <= 0 || size.x < 12 || size.y < 12) return;
+            Color ring = OverridePalette.Signal; ring.a = frame;
+            OverrideMesh.Ring(vh, hole, 4, ring);
+        }
+    }
+
     // A four-cornered field that grows from one shape into another, such as a card opening into its page.
     [RequireComponent(typeof(CanvasRenderer))]
     public sealed class QuadMorph : MaskableGraphic

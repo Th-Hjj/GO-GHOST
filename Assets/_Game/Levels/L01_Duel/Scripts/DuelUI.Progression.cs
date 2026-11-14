@@ -35,7 +35,7 @@ namespace GoGhost.Duel
             bool wasShowingStory = DialogueVisible;
             DialogueVisible = show;
             UpdateTutorialFocus();
-            bool explainingEditor = VisibleTutorialFocus is TutorialFocus.Condition or TutorialFocus.Action or TutorialFocus.Relation;
+            bool explainingEditor = VisibleTutorialFocus == TutorialFocus.Relation;
             if (pageControls != null) pageControls.interactable = game.StartupProgress < 0
                 && (!show || TutorialChoiceOpen || (!explainingEditor && game.DialogueAllowsPreparationNavigation));
             bool ruleEditorOpen = game.Phase == DuelPhase.Configure && selectorRow >= 0 && !helpOpen

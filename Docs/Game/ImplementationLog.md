@@ -1,5 +1,10 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Player bullet back to its original size
+
+- **Changed:** Thomas withdrew the smaller drawn bullet (60%, 75%, then 85%). `Projectile.Launch` no longer scales the player's bullet; the hit radius was never changed.
+- **Checked:** compiles.
+
 ## 2026-11-14 — Revolver core block restored
 
 - **Changed:** Thomas found the six separate bars scattered and dull and prefers the earlier design. The cylinder is again the single ice-blue core block with its halo (`RevolverPresentationGeometry.Core` and `Halo`), in combat and on the mission overview figure. Reload still pulses the gun red. The gun no longer shows how many rounds are left; `ChargeMask` remains in the code, unused.

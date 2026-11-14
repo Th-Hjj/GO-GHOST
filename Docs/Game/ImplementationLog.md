@@ -1,5 +1,15 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — UI motion "C" and interface cues
+
+- **Asked:** Thomas chose proposal C from the motion study (https://claude.ai/artifact/7zGbMhcDLwrPFbZvYhwkbt) and asked for hover and click sounds.
+- **Page changes:** `DuelUI.BuildPage` now names the page it builds (`CurrentPageKind`) and picks a wipe, a flow, the Target Profile opening or a cut (`PlanPageChange`). A leaving page is kept for 150 ms (`PageLeave`) or until the wipe covers it. `StartMission` uses the same wipe in place of the alpha fade; `DuelGame` timings are unchanged. Retry from a result and Resume are still cuts.
+- **Elements:** `Arrive` (entrance, exit and travel), `WipeOverlay`, `QuadMorph` and `OvMotion` are in `OverrideGraphics.cs`. `SlabButton` gained the press, the click flash, the chosen-option sweep and uneven hover times. The overview and the editor share `OvHeader`. Rule cards and + Add Rule travel to their new rows after a reorder or removal.
+- **Sound:** `Tools/make_ui_sfx.py` synthesizes `UiHover` and `UiClick` into `Resources/UiSfx`. `DuelUI` plays them through its own source, which ignores the pause.
+- **Differs from the proposal:** fight to result keeps the existing slam-in with no wipe, because the arena stays visible behind a result. Inside the rule editor the closing column has no exit, and only the connector of the category bracket travels.
+- **Checked:** compiles in Unity, which imported the script and both sounds; the console showed no errors while Thomas's own Play Mode session was running.
+- **NOT TESTED by me:** I drove nothing, because Thomas was playing. Unseen and unheard: every transition, the wipe at other aspect ratios, the title roll inside its mask, the Target Profile opening when the frame is scaled down, entrances during the tutorial, and both cues.
+
 ## 2026-11-14 — Player bullet back to its original size
 
 - **Changed:** Thomas withdrew the smaller drawn bullet (60%, 75%, then 85%). `Projectile.Launch` no longer scales the player's bullet; the hit radius was never changed.

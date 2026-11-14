@@ -84,15 +84,36 @@ Keyboard focus is a 4-pixel Text frame inside the slab. A parameter group waitin
 
 ## Motion
 
+Built on 2026-11-14 (`DuelUI.Motion.cs`, `OvMotion` in `OverrideGraphics.cs`). The values are trial tuning.
+
+**How a page gives way to the next.** Pages are still destroyed and rebuilt. `BuildPage` names the page it is about to build, compares it with the last one and picks one of four changes.
+
+| Change | Used for | What happens |
+|---|---|---|
+| Wipe | A change of scene: title to and from the game, creation into preparation, a result into preparation or the title, preparation into the fight | An Ink slab with a Signal leading edge and a hazard tail crosses the screen: 190 ms to cover, 30 ms held, 260 ms to open. The old page stays until it is covered. Forward runs left to right, back to the title right to left |
+| Flow | Overview, rule editor and Help; Settings and its pages over the title or Pause | The old page stays 150 ms in front while its elements step aside and fade. The new elements start 90 ms in. Between the overview and the editor the character slides, the rule and Help stay, and the title rolls upward inside a mask |
+| Open | Overview to and from Target Profile | The mission-colour field grows out of the target card's four corners in 340 ms and closes back onto the card in 300 ms |
+| Cut | Everything else, including the combat HUD, Pause over a fight and the results | As before. The page's own entrances still play |
+
+A rebuild of the same page is a refresh: nothing replays, and an entrance that is under way carries on.
+
 | Motion | Timing |
 |---|---|
-| Hover shift | 100 ms ease-out |
+| Entrance | 240 ms, quartic ease-out, 26 ms apart, from the side the element belongs to (120, 70 or 36 by size) |
+| Exit | 120 ms, half the entrance distance at most |
+| Hover shift | 70 ms in, 180 ms out |
+| Press | Face moves back 6 and shrinks to 98.5% in 50 ms; the click brightens the fill once over 180 ms |
+| Chosen option | Its colour enters from the left along the slab's slant in 170 ms |
+| Rule card reorder, remove | Cards travel to their new rows in 210 ms |
 | Slam-in (words, result title) | Scale 1.35 → 1 with fade, 100 ms; result title 1.5 → 1 in 280 ms |
-| Slide-in | 120–350 ms, cubic-bezier(.2,.9,.2,1), from the side the element belongs to |
 | Glitch burst | About 0.3 s every 3.4 s: ±7 px Signal and Arms copies, one horizontal slice displaced |
 | Rule preview flash | Owned part flashes white for about 0.15 s when the action fires |
 
-Menus use unscaled UI time. Combat HUD feedback keeps the combat clock, pause freeze and cleanup rules it has now.
+Menus use unscaled UI time. Combat HUD feedback keeps the combat clock, pause freeze and cleanup rules it has now, and gains no motion from the above. Reduce Flashing turns the wipe into a fade and removes the click brightening.
+
+**Interface cues.** `Tools/make_ui_sfx.py` writes `Resources/UiSfx/UiHover.wav` (a 32 ms dry tick) and `UiClick.wav` (an 85 ms edge over a falling knock with a faint blip). Slab buttons and rule cards play the tick on hover; every button plays the click. They follow the Effects volume and play while the game is paused.
+
+Not built: an exit for the column that closes inside the rule editor, the hazard-rule draw-in, and motion for a removed rule card itself.
 
 ## Screens
 
@@ -157,7 +178,7 @@ Thomas accepted these with the mockups on 2026-11-12.
 
 - **Attract fight.** Two rule-driven fighters with random legal rule sets on the title screen, with no player input, damage results or analytics.
 - **Preview vignettes.** One stimulus per condition (11) and one response per action (7), played on the editor stage and on rule hover. A first pass may show only the owned-part flash.
-- **Page transitions.** Pages are destroyed and rebuilt today. The character's move between overview and editor, and slide-ins generally, need elements that survive a page change.
+- **Page transitions.** Built on 2026-11-14; see Motion.
 - **Voice loudness.** A per-frame level from the playing voice clip for the seven bars.
 - **Fonts.** SDF assets for the four weights, with their OFL texts, under `Assets/_Game/Shared/Fonts/`.
 

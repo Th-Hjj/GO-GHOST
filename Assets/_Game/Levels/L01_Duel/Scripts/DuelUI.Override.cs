@@ -48,7 +48,9 @@ namespace GoGhost.Duel
             var hit = root.gameObject.AddComponent<Image>();
             hit.color = Color.clear; hit.raycastTarget = true;
             var button = root.gameObject.AddComponent<Button>();
-            button.transition = Selectable.Transition.None; button.targetGraphic = hit; button.onClick.AddListener(click);
+            button.transition = Selectable.Transition.None; button.targetGraphic = hit;
+            // The cue and the flash answer the press before the click changes the page.
+            button.onClick.AddListener(() => UiClicked(root.gameObject)); button.onClick.AddListener(click);
 
             var face = Rect("Face", root, Vector2.zero, size);
             var slab = face.gameObject.AddComponent<SlabGraphic>();
@@ -77,12 +79,13 @@ namespace GoGhost.Duel
         const float ScreenSpan = 4000;
 
         // Tilted full-width hazard band.
-        void OvBand(Transform parent, float top, float height = 26)
+        RectTransform OvBand(Transform parent, float top, float height = 26)
         {
             var r = Rect("Hazard band", parent, new Vector2(0, 450 - top - height / 2), new Vector2(ScreenSpan, height));
             r.localRotation = Quaternion.Euler(0, 0, 1.2f);
             var stripes = r.gameObject.AddComponent<StripeGraphic>();
             stripes.color = OverridePalette.Signal; stripes.Other = OverridePalette.Ink; stripes.raycastTarget = false;
+            return r;
         }
 
         // One dark pixel row in every four, drawn at screen resolution.
@@ -164,17 +167,17 @@ namespace GoGhost.Duel
             OvSkyline(page, .7f);
             OvScanlines(page, .28f);
             var frame = Rect("Frame", page, Vector2.zero, new Vector2(1600, 900));
-            OvGlitchWord("GO GHOST", frame, new Vector2(84 + 700 - 800, 450 - 353), new Vector2(1400, 292), 340,
-                TextAlignmentOptions.CaplineLeft, 3.4f, 7);
-            OvBand(frame, 514);
+            OvArrive(OvGlitchWord("GO GHOST", frame, new Vector2(84 + 700 - 800, 450 - 353), new Vector2(1400, 292), 340,
+                TextAlignmentOptions.CaplineLeft, 3.4f, 7), new Vector2(-120, 0), 0);
+            OvArrive(OvBand(frame, 514), new Vector2(-200, 0), 1);
             // With a save, Continue leads and New Game asks before replacing it.
             bool saved = GameSave.Exists;
             if (saved)
             {
-                OvButton("Continue", frame, At(92, 580, 494, 96), new Vector2(494, 96), game.ContinueGame, OverrideButtonKind.Primary, 62, true);
-                OvButton("New Game", frame, At(92, 690, 494, 68), new Vector2(494, 68), RequestNewGame, OverrideButtonKind.Secondary, 40);
+                OvButton("Continue", frame, At(92, 580, 494, 96), new Vector2(494, 96), game.ContinueGame, OverrideButtonKind.Primary, 62, true, Enter(2));
+                OvButton("New Game", frame, At(92, 690, 494, 68), new Vector2(494, 68), RequestNewGame, OverrideButtonKind.Secondary, 40, false, Enter(3));
             }
-            else OvButton("New Game", frame, At(92, 600, 494, 96), new Vector2(494, 96), RequestNewGame, OverrideButtonKind.Primary, 62, true);
+            else OvButton("New Game", frame, At(92, 600, 494, 96), new Vector2(494, 96), RequestNewGame, OverrideButtonKind.Primary, 62, true, Enter(2));
             // The small row sits under the buttons above on the same left edge. Its right end stops a little short:
             // a short dark slab level with a tall bright one reads as sticking out. A browser page has nothing to quit.
             float row = saved ? 774 : 714;
@@ -187,7 +190,8 @@ namespace GoGhost.Duel
             for (int i = 0; i < titles.Length; i++)
             {
                 float w = i == titles.Length - 1 ? 92 + span - x : shares[i];
-                OvButton(titles[i], frame, At(x, row, w, 56), new Vector2(w, 56), clicks[i], OverrideButtonKind.Tertiary, 32, align: TextAlignmentOptions.Capline);
+                OvButton(titles[i], frame, At(x, row, w, 56), new Vector2(w, 56), clicks[i], OverrideButtonKind.Tertiary, 32, false, Enter(4 + i),
+                    TextAlignmentOptions.Capline).GetComponent<SlabButton>().EnterDistance = 40;
                 x += w + gap;
             }
         }
@@ -225,18 +229,18 @@ namespace GoGhost.Duel
             Vector2 firstAt = At(560, 574, 480, 96), secondAt = At(560, 684, 480, 68);
             if (game.CanRetryFinalBossPhaseTwo)
             {
-                OvButton("Retry Phase 2", page, firstAt, first, game.RetryFinalBossPhaseTwo, OverrideButtonKind.Primary, 56, true).name = "RetryPhaseTwo";
-                OvButton("Configuration", page, secondAt, second, game.Reconfigure, OverrideButtonKind.Secondary, 40).name = "Reconfigure";
+                OvButton("Retry Phase 2", page, firstAt, first, game.RetryFinalBossPhaseTwo, OverrideButtonKind.Primary, 56, true, Enter(11)).name = "RetryPhaseTwo";
+                OvButton("Configuration", page, secondAt, second, game.Reconfigure, OverrideButtonKind.Secondary, 40, false, Enter(13)).name = "Reconfigure";
             }
             else if (failed)
             {
-                OvButton("Retry", page, firstAt, first, game.RetryFight, OverrideButtonKind.Primary, 62, true);
-                OvButton("Configuration", page, secondAt, second, game.Reconfigure, OverrideButtonKind.Secondary, 40).name = "Reconfigure";
+                OvButton("Retry", page, firstAt, first, game.RetryFight, OverrideButtonKind.Primary, 62, true, Enter(11));
+                OvButton("Configuration", page, secondAt, second, game.Reconfigure, OverrideButtonKind.Secondary, 40, false, Enter(13)).name = "Reconfigure";
             }
             else
             {
-                OvButton("Restart", page, firstAt, first, game.NewGame, OverrideButtonKind.Primary, 62, true);
-                OvButton("Main Menu", page, secondAt, second, game.MainMenu, OverrideButtonKind.Secondary, 40);
+                OvButton("Restart", page, firstAt, first, game.NewGame, OverrideButtonKind.Primary, 62, true, Enter(11));
+                OvButton("Main Menu", page, secondAt, second, game.MainMenu, OverrideButtonKind.Secondary, 40, false, Enter(13));
             }
         }
 
@@ -254,7 +258,7 @@ namespace GoGhost.Duel
             OvBand(page, 574);
             if (game.Wave == 1)
                 OvButton("Continue to Mission 2", page, At(460, 650, 680, 100), new Vector2(680, 100), game.ContinueToWaveTwo,
-                    OverrideButtonKind.Primary, 60, true).name = "ContinueToWaveTwo";
+                    OverrideButtonKind.Primary, 60, true, Enter(15)).name = "ContinueToWaveTwo";
         }
 
         void BuildOverrideFinished()
@@ -279,7 +283,7 @@ namespace GoGhost.Duel
             divider.localRotation = Quaternion.Euler(0, 0, 82);
             var stripes = divider.gameObject.AddComponent<StripeGraphic>();
             stripes.color = OverridePalette.Signal; stripes.Other = OverridePalette.Ink; stripes.raycastTarget = false;
-            OvButton("Main Menu", frame, At(990, 690, 440, 96), new Vector2(440, 96), game.MainMenu, OverrideButtonKind.Primary, 62, true);
+            OvButton("Main Menu", frame, At(990, 690, 440, 96), new Vector2(440, 96), game.MainMenu, OverrideButtonKind.Primary, 62, true, Enter(50));
         }
     }
 }

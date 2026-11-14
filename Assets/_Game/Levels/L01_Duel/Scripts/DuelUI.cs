@@ -50,6 +50,7 @@ namespace GoGhost.Duel
             this.headingFont=headingFont!=null?headingFont:font;
             this.numericFont=numericFont!=null?numericFont:font;
             LoadOverrideFonts();
+            OvMotion.EntranceStart = 0; OvMotion.Continue = false;
             var go = new GameObject("DuelCanvas",typeof(RectTransform),typeof(Canvas),typeof(UnityEngine.UI.CanvasScaler),typeof(UnityEngine.UI.GraphicRaycaster));
             go.transform.SetParent(transform,false); canvas = go.GetComponent<RectTransform>();
             go.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
@@ -87,7 +88,7 @@ namespace GoGhost.Duel
         {
             var r=Rect(title,parent,pos,size); var image=r.gameObject.AddComponent<UnityEngine.UI.Image>();
             image.color=NeuralPalette.Panel; image.raycastTarget=true;
-            var b=r.gameObject.AddComponent<UnityEngine.UI.Button>(); b.targetGraphic=image; b.onClick.AddListener(click);
+            var b=r.gameObject.AddComponent<UnityEngine.UI.Button>(); b.targetGraphic=image; b.onClick.AddListener(PlayUiClick); b.onClick.AddListener(click);
             var c=b.colors; c.normalColor=Color.white; c.highlightedColor=Color.white; c.selectedColor=Color.white; c.disabledColor=Color.white; c.pressedColor=NeuralPalette.Secondary; b.colors=c;
             var t=Text(title,r,Vector2.zero,size,24,face:controlFont);
             var outline=r.gameObject.AddComponent<DuelButtonOutline>();outline.Owner=this;outline.Persistent=selected;outline.Style=style;outline.Button=b;outline.Label=t;
@@ -117,11 +118,25 @@ namespace GoGhost.Duel
             CaptureConfigurationView();
             CaptureHelpView();
             if(game.Phase!=DuelPhase.Configure||helpDraft!=game.DraftLoadout)helpOpen=false;
+            float oldScale=canvas.GetComponent<Canvas>().scaleFactor;
             ConfigurePageScale();
             sceneDialogue = null; sceneContinue = null;
-            if(page!=null){page.gameObject.SetActive(false);Destroy(page.gameObject);}
+            // Settings and its pages open over the title and over Pause only.
+            if(!game.DeveloperToolsOpen)
+            {
+                if(overlay!=OverlayPage.None&&game.Phase!=DuelPhase.Menu&&!game.Paused)overlay=OverlayPage.None;
+                if(game.Phase==DuelPhase.Menu&&overlay==OverlayPage.None&&!GameSettings.NoticeSeen)overlay=OverlayPage.Notice;
+            }
+            // The old page is destroyed, held under a wipe or left to flow out, depending on where the player is going.
+            BeginPageChange(oldScale);
             page=Rect("Page",canvas,Vector2.zero,new Vector2(1600,900));
             pageControls=page.gameObject.AddComponent<CanvasGroup>();
+            BuildPageBody();
+            EndPageChange();
+        }
+
+        void BuildPageBody()
+        {
             developerFields.Clear();
             dialogueExits.Clear();
             ClearTutorialView();
@@ -136,9 +151,6 @@ namespace GoGhost.Duel
                 if(ruleSidebar!=null)ruleSidebar.gameObject.SetActive(false);
                 BuildDeveloperTools();return;
             }
-            // Settings and its pages open over the title and over Pause only.
-            if(overlay!=OverlayPage.None&&game.Phase!=DuelPhase.Menu&&!game.Paused)overlay=OverlayPage.None;
-            if(game.Phase==DuelPhase.Menu&&overlay==OverlayPage.None&&!GameSettings.NoticeSeen)overlay=OverlayPage.Notice;
             if(overlay!=OverlayPage.None){BuildOverrideOverlay();return;}
             if(game.Phase==DuelPhase.Menu||game.Phase==DuelPhase.Configure||game.Phase==DuelPhase.CharacterCreation||game.Phase==DuelPhase.TargetProfile)
                 Image(page,Vector2.zero,new Vector2(4000,4000),NeuralPalette.Background);

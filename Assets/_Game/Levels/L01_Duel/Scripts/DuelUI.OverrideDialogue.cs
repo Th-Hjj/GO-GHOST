@@ -93,7 +93,7 @@ namespace GoGhost.Duel
             var frame = Rect("Frame", page, Vector2.zero, new Vector2(1600, 900));
 
             OvButton("« Back", frame, At(56, 44, 170, 52), new Vector2(170, 52), game.MainMenu, OverrideButtonKind.Tertiary, 30,
-                align: TextAlignmentOptions.Capline).name = "CreateCharacterBack";
+                enterDelay: Enter(0), align: TextAlignmentOptions.Capline).name = "CreateCharacterBack";
 
             var voice = Rect("Voice", frame, At(80, 136, 168, 60), new Vector2(168, 60));
             var mark = voice.gameObject.AddComponent<SlabGraphic>();
@@ -131,10 +131,12 @@ namespace GoGhost.Duel
             guide.Appearance = game.Appearance; guide.raycastTarget = false;
             guide.color = Color.Lerp(Color.black, OverridePalette.Text, .42f); guide.Brush = OverridePalette.Text;
             face.gameObject.AddComponent<CharacterFaceCanvas>().Initialize(game.Appearance);
+            OvArrive(face, Vector2.zero, 2);
             OvButton("Clear", frame, At(1384, 270, 130, 52), new Vector2(130, 52), game.Appearance.Clear, OverrideButtonKind.Tertiary, 30,
-                align: TextAlignmentOptions.Capline).name = "ClearFace";
+                enterDelay: Enter(4), align: TextAlignmentOptions.Capline).name = "ClearFace";
 
             var box = Rect("CharacterName", frame, At(920, 560, 440, 76), new Vector2(440, 76));
+            OvArrive(box, new Vector2(36, 0), 4);
             var field = Rect("Slab", box, Vector2.zero, new Vector2(440, 76)).gameObject.AddComponent<SlabGraphic>();
             field.color = OverridePalette.Surface; field.raycastTarget = false;
             var background = box.gameObject.AddComponent<Image>(); background.color = Color.clear;
@@ -158,7 +160,8 @@ namespace GoGhost.Duel
             input.enabled = false; input.enabled = true;
             input.onValueChanged.AddListener(value => { game.Appearance.Name = value; PlayMetrics.SetName(value); });
 
-            characterStart = OvButton("Upload", frame, At(920, 652, 440, 96), new Vector2(440, 96), game.StartGame, OverrideButtonKind.Primary, 62, true);
+            characterStart = OvButton("Upload", frame, At(920, 652, 440, 96), new Vector2(440, 96), game.StartGame, OverrideButtonKind.Primary, 62, true, Enter(5));
+            if (pageEntering) characterStart.GetComponent<SlabButton>().EnterSide = 1;
             characterStart.name = "CreateCharacterContinue";
             if (game.StartupFailed)
             {

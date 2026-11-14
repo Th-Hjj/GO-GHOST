@@ -82,6 +82,16 @@ namespace GoGhost.Duel
             frame = thickness; frameColor = color; SetVerticesDirty();
         }
 
+        // A second colour entering from the left along the slab's own slant; a negative amount removes it.
+        float sweep = -1;
+        Color sweepColor;
+        readonly Vector2[] swept = new Vector2[4];
+        public void SetSweep(float amount, Color fill)
+        {
+            if (Mathf.Approximately(sweep, amount) && sweepColor == fill) return;
+            sweep = amount; sweepColor = fill; SetVerticesDirty();
+        }
+
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             vh.Clear();
@@ -93,7 +103,171 @@ namespace GoGhost.Duel
             corners[3] = new Vector2(r.xMax - cut, r.yMin);
             float pixel = 1f / Mathf.Max(.01f, canvas != null ? canvas.scaleFactor : 1f);
             OverrideMesh.Polygon(vh, corners, color, pixel);
+            if (sweep >= 0)
+            {
+                float reach = -cut + sweep * r.width;
+                swept[0] = corners[0];
+                swept[1] = corners[1];
+                swept[2] = new Vector2(Mathf.Clamp(r.xMin + cut + reach, r.xMin + cut, r.xMax), r.yMax);
+                swept[3] = new Vector2(Mathf.Clamp(r.xMin + reach, r.xMin, r.xMax - cut), r.yMin);
+                if (swept[2].x - swept[1].x > .5f) OverrideMesh.Polygon(vh, swept, sweepColor, pixel);
+            }
             if (frame > 0) OverrideMesh.Ring(vh, corners, frame, frameColor);
+        }
+    }
+
+    // Override motion: shared timings and curves. Docs/Game/UIDesign.md lists the values.
+    public static class OvMotion
+    {
+        public const float Stagger = .026f, EnterSeconds = .24f, LeaveSeconds = .12f, SharedSeconds = .32f;
+        public const float WipeClose = .19f, WipeHold = .03f, WipeOpen = .26f;
+        // Entrances created while a page is being built count from here, so they can wait for a wipe or an exit.
+        public static double EntranceStart;
+        // A page rebuilt while its entrance is under way continues that entrance instead of starting it again.
+        public static bool Continue;
+        public static double Born => Continue ? EntranceStart : System.Math.Max(Time.unscaledTimeAsDouble, EntranceStart);
+        public static float Snap(float t) => 1 - Mathf.Pow(1 - Mathf.Clamp01(t), 4);
+        public static float Glide(float t) { t = Mathf.Clamp01(t); return t < .5f ? 4 * t * t * t : 1 - Mathf.Pow(-2 * t + 2, 3) / 2; }
+    }
+
+    // Slide-and-fade entrance for one page element, and its shorter exit. Also carries an element from an old place to a new one.
+    public sealed class Arrive : MonoBehaviour
+    {
+        public Vector2 From;
+        public float Seconds = OvMotion.EnterSeconds, Delay;
+        public bool Fade = true, Glide;
+        RectTransform rect;
+        CanvasGroup group;
+        Vector2 home, leaveTo;
+        double born, leftAt = -1;
+        bool done, leaveFade;
+
+        // The first pose is applied in LateUpdate, after the builder has set From, Delay and Fade.
+        void OnEnable() { rect = (RectTransform)transform; home = rect.anchoredPosition; born = OvMotion.Born; done = false; }
+        void LateUpdate() => Apply();
+
+        public void Leave() => LeaveTo(From.sqrMagnitude < 1 ? Vector2.zero : From.normalized * Mathf.Min(From.magnitude * .5f, 60), true);
+        public void LeaveTo(Vector2 offset, bool fade)
+        {
+            if (leftAt >= 0) return;
+            home = rect.anchoredPosition; leaveTo = offset; leaveFade = fade; leftAt = Time.unscaledTimeAsDouble;
+        }
+
+        void Apply()
+        {
+            double now = Time.unscaledTimeAsDouble;
+            if (leftAt >= 0)
+            {
+                float out01 = Mathf.Clamp01((float)(now - leftAt) / OvMotion.LeaveSeconds);
+                float gone = out01 * out01;
+                rect.anchoredPosition = home + leaveTo * gone;
+                if (leaveFade) Group().alpha = 1 - gone;
+                return;
+            }
+            if (done) return;
+            float t = Mathf.Clamp01((float)(now - born - Delay) / Mathf.Max(.01f, Seconds));
+            float eased = Glide ? OvMotion.Glide(t) : OvMotion.Snap(t);
+            rect.anchoredPosition = home + From * (1 - eased);
+            if (Fade) Group().alpha = eased;
+            done = t >= 1;
+        }
+
+        CanvasGroup Group()
+        {
+            if (group == null && !TryGetComponent(out group)) group = gameObject.AddComponent<CanvasGroup>();
+            return group;
+        }
+    }
+
+    // The page that is leaving: its elements step aside while the whole page fades, then it is destroyed.
+    public sealed class PageLeave : MonoBehaviour
+    {
+        public float Seconds = .15f;
+        // A wipe hides the swap itself, so the page under it stays as it was until it is removed.
+        public bool Hold;
+        CanvasGroup group;
+        double born;
+
+        void OnEnable() { born = Time.unscaledTimeAsDouble; TryGetComponent(out group); }
+        void LateUpdate()
+        {
+            if (Hold) return;
+            float t = Mathf.Clamp01((float)(Time.unscaledTimeAsDouble - born) / Seconds);
+            if (group != null) group.alpha = 1 - t * t;
+            if (t >= 1) Destroy(gameObject);
+        }
+    }
+
+    // A slab that crosses the whole screen. The page changes while the screen is covered.
+    public sealed class WipeOverlay : MonoBehaviour
+    {
+        public RectTransform Body;
+        public GameObject[] Trim;
+        public float Travel;
+        // 1 moves left to right (forward), -1 right to left (back).
+        public float Direction = 1;
+        public System.Action Covered;
+        CanvasGroup group;
+        double born;
+        bool fired;
+
+        void OnEnable() => born = Time.unscaledTimeAsDouble;
+        void LateUpdate() { transform.SetAsLastSibling(); if (Body != null) Apply(); }
+
+        // Finish at once: used when another page change arrives before this one has ended.
+        public void Cut() { Fire(); Destroy(gameObject); }
+        void Fire() { if (fired) return; fired = true; var call = Covered; Covered = null; call?.Invoke(); }
+
+        void Apply()
+        {
+            float t = (float)(Time.unscaledTimeAsDouble - born);
+            float close = Mathf.Clamp01(t / OvMotion.WipeClose), open = Mathf.Clamp01((t - OvMotion.WipeClose - OvMotion.WipeHold) / OvMotion.WipeOpen);
+            if (GameSettings.ReduceFlashing)
+            {
+                if (group == null && !TryGetComponent(out group)) group = gameObject.AddComponent<CanvasGroup>();
+                foreach (var part in Trim) if (part != null && part.activeSelf) part.SetActive(false);
+                Body.anchoredPosition = Vector2.zero;
+                group.alpha = close * (1 - open);
+            }
+            else
+            {
+                float x = open > 0 ? Travel * (1 - Mathf.Pow(1 - open, 3)) : -Travel * (1 - close * close);
+                Body.anchoredPosition = new Vector2(x * Direction, 0);
+            }
+            if (close >= 1) Fire();
+            if (open >= 1) Destroy(gameObject);
+        }
+    }
+
+    // A four-cornered field that grows from one shape into another, such as a card opening into its page.
+    [RequireComponent(typeof(CanvasRenderer))]
+    public sealed class QuadMorph : MaskableGraphic
+    {
+        public Vector2[] From, To;
+        public float Seconds = .34f;
+        public bool RemoveAtEnd;
+        readonly Vector2[] corners = new Vector2[4];
+        double born;
+        bool settled;
+
+        protected override void OnEnable() { base.OnEnable(); born = Time.unscaledTimeAsDouble; settled = false; }
+        void Update()
+        {
+            if (settled) return;
+            SetVerticesDirty();
+            if (Time.unscaledTimeAsDouble - born < Seconds) return;
+            settled = true;
+            if (RemoveAtEnd) Destroy(gameObject);
+        }
+
+        protected override void OnPopulateMesh(VertexHelper vh)
+        {
+            vh.Clear();
+            if (To == null || To.Length != 4) return;
+            float eased = From == null ? 1 : OvMotion.Glide((float)(Time.unscaledTimeAsDouble - born) / Mathf.Max(.01f, Seconds));
+            for (int i = 0; i < 4; i++) corners[i] = From == null ? To[i] : Vector2.LerpUnclamped(From[i], To[i], eased);
+            float pixel = 1f / Mathf.Max(.01f, canvas != null ? canvas.scaleFactor : 1f);
+            OverrideMesh.Polygon(vh, corners, color, pixel);
         }
     }
 
@@ -177,7 +351,8 @@ namespace GoGhost.Duel
     }
 
     // Slab button behaviour: hover shift, focus frame, disabled colours and the slide-in.
-    public sealed class SlabButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, ISelectHandler, IDeselectHandler
+    public sealed class SlabButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler,
+        ISelectHandler, IDeselectHandler
     {
         internal DuelUI Owner;
         public Button Button;
@@ -187,39 +362,62 @@ namespace GoGhost.Duel
         public Color Fill, Ink;
         // Waiting colour for a control whose fill carries meaning, such as the target card.
         public Color? Dimmed;
-        public float Shift = 12, EnterDelay = -1;
+        public float Shift = 12, EnterDelay = -1, EnterDistance = 90;
         // -1 enters from the left, 1 from the right.
         public float EnterSide = -1;
         // A parameter group that still needs a choice pulses a Signal inner frame.
         public bool Waiting;
-        const float HoverSeconds = .1f, EnterSeconds = .22f, EnterDistance = 90;
+        // A leaving page keeps its controls as they looked when the player left.
+        public bool Frozen;
+        // Hover arrives quickly and lets go slowly.
+        const float HoverIn = .07f, HoverOut = .18f, PressSeconds = .05f, FlashSeconds = .18f, SweepSeconds = .17f;
         CanvasGroup group;
-        bool hovered, focused;
-        float hover;
-        double born;
+        bool hovered, focused, pressed, wasAvailable;
+        float hover, press;
+        double born, flashAt = -1, sweepAt = -1;
+        Color sweepFrom, sweepInk;
 
-        void OnEnable() { born = Time.unscaledTimeAsDouble; hovered = focused = false; hover = 0; }
-        public void OnPointerEnter(PointerEventData data) => hovered = true;
-        public void OnPointerExit(PointerEventData data) => hovered = false;
+        void OnEnable() { born = OvMotion.Born; hovered = focused = pressed = false; hover = press = 0; }
+        public void OnPointerEnter(PointerEventData data)
+        {
+            hovered = true;
+            if (wasAvailable && !Frozen && Owner != null) Owner.PlayUiHover();
+        }
+        public void OnPointerExit(PointerEventData data) { hovered = false; pressed = false; }
+        public void OnPointerDown(PointerEventData data) => pressed = data.button == PointerEventData.InputButton.Left;
+        public void OnPointerUp(PointerEventData data) => pressed = false;
         public void OnSelect(BaseEventData data) => focused = !(data is PointerEventData);
         public void OnDeselect(BaseEventData data) => focused = false;
+
+        // The answer to a click: one bright step that falls back to the fill.
+        public void Flash() => flashAt = Time.unscaledTimeAsDouble;
+
+        // A newly chosen option: its colour enters from the left over the colour it had before.
+        public void Sweep(Color from, Color ink) { sweepFrom = from; sweepInk = ink; sweepAt = Time.unscaledTimeAsDouble; }
 
         void LateUpdate()
         {
             if (Button == null || Face == null) return;
             if (group == null) group = Face.gameObject.AddComponent<CanvasGroup>();
             // A control the tutorial points at stays lit while the rest wait for the spoken line.
-            bool available = Owner != null && Owner.TutorialHighlightsControl(Button)
+            bool available = Frozen ? wasAvailable : Owner != null && Owner.TutorialHighlightsControl(Button)
                 ? Button.interactable : Button.IsInteractable() && !(Owner != null && Owner.DialogueVisible);
-            hover = Mathf.MoveTowards(hover, available && (hovered || focused) ? 1 : 0, Time.unscaledDeltaTime / HoverSeconds);
+            wasAvailable = available;
+            float target = available && !Frozen && (hovered || focused) ? 1 : 0;
+            hover = Mathf.MoveTowards(hover, target, Time.unscaledDeltaTime / (target > hover ? HoverIn : HoverOut));
+            press = Mathf.MoveTowards(press, available && !Frozen && pressed ? 1 : 0, Time.unscaledDeltaTime / PressSeconds);
             float eased = 1 - (1 - hover) * (1 - hover);
-            float arrived = EnterDelay < 0 ? 1 : Mathf.Clamp01((float)(Time.unscaledTimeAsDouble - born - EnterDelay) / EnterSeconds);
-            arrived = 1 - Mathf.Pow(1 - arrived, 3);
-            Face.anchoredPosition = new Vector2(Shift * eased + EnterSide * (1 - arrived) * EnterDistance, 0);
+            float arrived = EnterDelay < 0 ? 1 : OvMotion.Snap((float)(Time.unscaledTimeAsDouble - born - EnterDelay) / OvMotion.EnterSeconds);
+            Face.anchoredPosition = new Vector2(Shift * eased - 6 * press + EnterSide * (1 - arrived) * EnterDistance, 0);
+            Face.localScale = Vector3.one * (1 - .015f * press);
             group.alpha = arrived;
             var fill = available ? Fill * (1 + .12f * eased) : Dimmed ?? OverridePalette.DisabledFill;
+            float flash = flashAt < 0 || GameSettings.ReduceFlashing ? 0 : 1 - Mathf.Clamp01((float)(Time.unscaledTimeAsDouble - flashAt) / FlashSeconds);
+            if (available && flash > 0) fill = Color.Lerp(fill, Color.white, .7f * flash * flash);
             fill.a = 1;
-            Slab.color = fill;
+            float swept = sweepAt < 0 ? 1 : OvMotion.Snap((float)(Time.unscaledTimeAsDouble - sweepAt) / SweepSeconds);
+            if (available && swept < 1) { Slab.color = sweepFrom; Slab.SetSweep(swept, fill); }
+            else { Slab.color = fill; Slab.SetSweep(-1, fill); }
             if (available && Waiting && !focused)
             {
                 Color pulse = OverridePalette.Signal;
@@ -227,7 +425,7 @@ namespace GoGhost.Duel
                 Slab.SetFrame(3, pulse);
             }
             else Slab.SetFrame(available && focused ? 4 : 0, Fill == OverridePalette.Text ? OverridePalette.Ink : OverridePalette.Text);
-            var ink = available ? Ink : OverridePalette.Disabled;
+            var ink = !available ? OverridePalette.Disabled : swept < .5f ? sweepInk : Ink;
             if (Label != null) Label.color = ink;
             if (Icon != null) Icon.color = ink;
         }
@@ -308,18 +506,20 @@ namespace GoGhost.Duel
         public CanvasGroup Tools;
         public RectTransform Move;
         public System.Func<bool> Busy;
+        internal DuelUI Owner;
         bool inside;
         float amount;
 
         void OnEnable() { inside = false; amount = 0; Apply(); }
-        public void OnPointerEnter(PointerEventData data) => inside = true;
+        public void OnPointerEnter(PointerEventData data) { inside = true; if (Owner != null) Owner.PlayUiHover(); }
         public void OnPointerExit(PointerEventData data) => inside = false;
 
         void LateUpdate()
         {
             var selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
             bool focused = selected != null && Tools != null && selected.transform.IsChildOf(Tools.transform);
-            amount = Mathf.MoveTowards(amount, inside || focused ? 1 : 0, Time.unscaledDeltaTime / .1f);
+            float target = inside || focused ? 1 : 0;
+            amount = Mathf.MoveTowards(amount, target, Time.unscaledDeltaTime / (target > amount ? .07f : .18f));
             Apply();
         }
 
@@ -618,7 +818,7 @@ namespace GoGhost.Duel
         CanvasGroup group;
         double born;
 
-        void OnEnable() { born = Time.unscaledTimeAsDouble; Apply(); }
+        void OnEnable() { born = OvMotion.Born; Apply(); }
         void LateUpdate() => Apply();
 
         // Restart the entrance so it begins this many seconds from now; a negative value is already under way.

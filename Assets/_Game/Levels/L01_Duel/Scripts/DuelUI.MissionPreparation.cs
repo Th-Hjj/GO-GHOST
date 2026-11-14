@@ -61,13 +61,20 @@ namespace GoGhost.Duel
             page=null;
         }
 
+        // Leaving for the fight is a change of scene: a wipe covers the overview and opens on the arena.
+        bool preparationCovered;
         internal void FadePreparation(float elapsed)
         {
             if(outgoingPreparation==null)return;
+            if(elapsed<=0)
+            {
+                preparationCovered=false;
+                StartWipe(1,OverridePalette.Signal,()=>preparationCovered=true);
+            }
             outgoingPreparation.transform.SetAsLastSibling();
             float scale=outgoingScale/canvas.GetComponent<Canvas>().scaleFactor;
             outgoingPreparation.transform.localScale=new Vector3(scale,scale,1);
-            outgoingPreparation.alpha=1-Mathf.SmoothStep(0,1,elapsed/DuelGame.PreparationFadeSeconds);
+            outgoingPreparation.alpha=preparationCovered?0:1;
         }
 
         internal void EndPreparationFade()

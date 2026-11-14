@@ -30,16 +30,21 @@ namespace GoGhost.Duel
             // Opaque over a paused fight too: the arena must not show through the rows.
             OvFill(page, OverridePalette.Ink);
             var frame = Rect("Frame", page, Vector2.zero, new Vector2(1600, 900));
+            // The flashing-lights notice stays a still screen.
+            bool still = overlay == OverlayPage.Notice;
             if (back)
                 OvButton("« Back", frame, At(56, 44, 170, 52), new Vector2(170, 52), CloseOverlay, OverrideButtonKind.Tertiary, 30,
-                    align: TextAlignmentOptions.Capline).name = "OverlayBack";
+                    enterDelay: Enter(0), align: TextAlignmentOptions.Capline).name = "OverlayBack";
             if (title != null)
             {
-                OvText(title, frame, new Vector2(56 + 600 - 800, 450 - 122 - 56), new Vector2(1200, 112), 112, OverridePalette.Text,
-                    TextAlignmentOptions.CaplineLeft, true, -.5f);
-                OvRule(frame, 56, 244, 1488);
+                OvArrive(OvText(title, frame, new Vector2(56 + 600 - 800, 450 - 122 - 56), new Vector2(1200, 112), 112, OverridePalette.Text,
+                    TextAlignmentOptions.CaplineLeft, true, -.5f), new Vector2(-120, 0), 0);
+                OvArrive(OvRule(frame, 56, 244, 1488), Vector2.zero, 1);
             }
-            return frame;
+            // Everything under the heading arrives as one block.
+            var content = Rect("Content", frame, Vector2.zero, new Vector2(1600, 900));
+            if (!still) OvArrive(content, new Vector2(0, -28), 2);
+            return content;
         }
 
         void BuildOverrideOverlay()

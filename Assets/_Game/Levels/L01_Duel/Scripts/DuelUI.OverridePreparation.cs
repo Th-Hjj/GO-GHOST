@@ -29,12 +29,13 @@ namespace GoGhost.Duel
             return t;
         }
 
-        void OvRule(Transform parent, float left, float top, float width, float height = 8)
+        RectTransform OvRule(Transform parent, float left, float top, float width, float height = 8)
         {
             var r = Rect("Hazard rule", parent, At(left, top, width, height), new Vector2(width, height));
             var stripes = r.gameObject.AddComponent<StripeGraphic>();
             stripes.Band = 10; stripes.SecondsPerPeriod = 1.2f;
             stripes.color = OverridePalette.Signal; stripes.Other = OverridePalette.Ink; stripes.raycastTarget = false;
+            return r;
         }
 
         void OvDivider(Transform parent, float x)
@@ -58,24 +59,22 @@ namespace GoGhost.Duel
             float fit = frame.localScale.x;
             bool final = game.Wave == DuelGame.FinalBossWave, bonus = game.Wave == DuelGame.BonusWave;
 
-            OvText(bonus ? "Bonus" : "Mission " + game.Wave, frame, new Vector2(56 + 400 - 800, 450 - 81.6f), new Vector2(800, 112), 112,
-                OverridePalette.Text, TextAlignmentOptions.CaplineLeft, true, -.5f);
-            OvButton("Help", frame, At(1424, 56, 120, 48), new Vector2(120, 48), OpenHelp, OverrideButtonKind.Tertiary, 28,
-                align: TextAlignmentOptions.Capline).name = "ConfigurationHelp";
-            OvRule(frame, 56, 132, 1488);
+            OvHeader(frame, bonus ? "Bonus" : "Mission " + game.Wave);
 
             // You, as you will appear in the fight. White parts are manual; coloured parts belong to rules.
             bodyPreview = Rect("BodyPreview", frame, At(56, 200, 330, 480), new Vector2(330, 480));
             var stage = Rect("Stage", bodyPreview, new Vector2(0, -221), new Vector2(330, 22)).gameObject.AddComponent<SlabGraphic>();
             stage.color = OverridePalette.Neutral; stage.Cut = 10; stage.raycastTarget = false;
+            OvArrive(stage, Vector2.zero, 1);
             // 245 canvas units per world unit stands the 1.55-unit player on the stage slab.
             StandFigure(bodyPreview, new Vector2(-34, -210 + .75f * 245));
 
             ruleList = Rect("RuleList", frame, At(416, 150, 724, 560), new Vector2(724, 560));
             var heading = OvText("Rules", ruleList, new Vector2(-362 + 150, 242), new Vector2(300, 64), 58, OverridePalette.Text, TextAlignmentOptions.CaplineLeft);
             float headingWidth = heading.GetPreferredValues().x;
-            OvText(displayedRules.Count.ToString(), ruleList, new Vector2(-362 + headingWidth + 16 + 60, 242), new Vector2(120, 64), 58,
-                OverridePalette.TextDim, TextAlignmentOptions.CaplineLeft);
+            OvArrive(heading, new Vector2(0, 24), 2);
+            OvArrive(OvText(displayedRules.Count.ToString(), ruleList, new Vector2(-362 + headingWidth + 16 + 60, 242), new Vector2(120, 64), 58,
+                OverridePalette.TextDim, TextAlignmentOptions.CaplineLeft), new Vector2(0, 24), 2);
 
             float top = 222;
             for (int i = 0; i < displayedRules.Count; i++) { OvRuleCard(ruleList, i, top); top += 98; }
@@ -90,6 +89,8 @@ namespace GoGhost.Duel
                 behaviour.Fill = OverridePalette.Surface; behaviour.Ink = OverridePalette.SignalText;
                 add.interactable = game.DraftLoadout.TotalRules < limit;
                 tutorialSubmit = (RectTransform)add.transform;
+                OvCarry(add, top, addTop, 2 + displayedRules.Count);
+                addTopNow = top;
                 top += 98;
                 for (int i = displayedRules.Count + 1; i < limit; i++)
                 {
@@ -97,16 +98,29 @@ namespace GoGhost.Duel
                     var slab = slot.gameObject.AddComponent<SlabGraphic>();
                     slab.color = new Color32(14, 14, 18, 255); slab.Cut = 18; slab.raycastTarget = false;
                     OvText((i + 1).ToString(), slot, new Vector2(-362 + 70, 0), new Vector2(60, 60), 34, OverridePalette.Disabled, TextAlignmentOptions.CaplineLeft);
+                    OvArrive(slot, new Vector2(0, -36), 2 + i);
                     top += 70;
                 }
             }
 
             Button start;
+            QuadMorph closing = null;
             float railTop = 160;
             if (game.Wave <= DuelGame.FinalBossWave)
             {
                 var profile = OvTargetCard(frame, At(1184, railTop, 360, 244), final);
                 tutorialProfile = (RectTransform)profile.transform;
+                targetCard = profile.gameObject;
+                // Coming back from the file, the card stays out until the field has closed onto it.
+                if (pageEntering && pageChange == PageChange.Expand)
+                {
+                    closing = Rect("Closing field", frame, Vector2.zero, Vector2.zero).gameObject.AddComponent<QuadMorph>();
+                    closing.color = final ? OverridePalette.Surface : MissionColor; closing.raycastTarget = false;
+                    closing.From = FieldQuad; closing.To = CardQuad; closing.Seconds = .30f; closing.RemoveAtEnd = true;
+                    var appear = profile.gameObject.AddComponent<Arrive>();
+                    appear.Delay = .27f - .03f; appear.Seconds = .06f;
+                }
+                else EnterFrom(profile, 3, 1);
                 dialogueExits.Add(tutorialProfile);
                 railTop += 256;
             }
@@ -114,12 +128,14 @@ namespace GoGhost.Duel
                 OverrideButtonKind.Tertiary, 32, true);
             test.name = "TestLoadout";
             test.interactable = ConfigurationReady;
+            EnterFrom(test, 4, 1);
             tutorialTest = (RectTransform)test.transform;
             if (test.interactable) dialogueExits.Add(tutorialTest);
             start = OvButton("Start Mission", frame, At(1184, 744, 360, 108), new Vector2(360, 108), game.StartMission,
                 OverrideButtonKind.Primary, 54, align: TextAlignmentOptions.Capline);
             start.name = "StartMission";
             start.interactable = ConfigurationReady;
+            EnterFrom(start, 5, 1);
             tutorialStart = (RectTransform)start.transform;
             if (start.interactable) dialogueExits.Add(tutorialStart);
 
@@ -137,6 +153,7 @@ namespace GoGhost.Duel
 #endif
             // The character walks back from the editor in front of the rule cards.
             bodyPreview.SetAsLastSibling();
+            if (closing != null) closing.transform.SetAsLastSibling();
             UpdateConfigurationSignals();
         }
 
@@ -180,7 +197,10 @@ namespace GoGhost.Duel
             remove.GetComponent<DuelButtonOutline>().Subtle = true; BuildTrashIcon(remove.transform);
 
             var hover = line.gameObject.AddComponent<CardHover>();
-            hover.Slab = slab; hover.Tools = toolGroup; hover.Move = line;
+            hover.Slab = slab; hover.Tools = toolGroup; hover.Move = line; hover.Owner = this;
+            // A card that changed rows travels from its old row; on a new page the cards arrive in turn.
+            if (!entering) OvCarry(slot, top, cardTops.TryGetValue(rule, out float before) ? before : float.NaN, 2 + i);
+            cardTopsNow[rule] = top;
             hover.Busy = () => installingCardRect == line && Time.unscaledTime - installedAt < CardRevealSeconds;
             if (entering)
             {
@@ -190,6 +210,15 @@ namespace GoGhost.Duel
                 installingCard.alpha = opacity;
                 line.anchoredPosition = Vector2.right * ((1 - opacity) * 8);
             }
+        }
+
+        // Moves an element from the row it had on the last build of this page, or lets it arrive with a new page.
+        void OvCarry(Component target, float top, float before, float order)
+        {
+            if (pageEntering) { OvArrive(target, new Vector2(0, -36), order); return; }
+            if (float.IsNaN(before) || Mathf.Abs(before - top) < 1) return;
+            var carry = target.gameObject.AddComponent<Arrive>();
+            carry.From = new Vector2(0, top - before); carry.Fade = false; carry.Glide = true; carry.Seconds = .21f;
         }
 
         void OvCardArea(string name, RectTransform root, Vector2 pos, Vector2 size, UnityEngine.Events.UnityAction click, ConditionalRule rule, int row)
@@ -209,7 +238,8 @@ namespace GoGhost.Duel
             var root = Rect("TargetProfile", frame, pos, size);
             var hit = root.gameObject.AddComponent<Image>(); hit.color = Color.clear; hit.raycastTarget = true;
             var button = root.gameObject.AddComponent<Button>();
-            button.transition = Selectable.Transition.None; button.targetGraphic = hit; button.onClick.AddListener(game.OpenTargetProfile);
+            button.transition = Selectable.Transition.None; button.targetGraphic = hit;
+            button.onClick.AddListener(() => UiClicked(root.gameObject)); button.onClick.AddListener(game.OpenTargetProfile);
             var face = Rect("Face", root, Vector2.zero, size);
             var slab = face.gameObject.AddComponent<SlabGraphic>();
             Color fill = final ? OverridePalette.SurfaceHover : MissionColor;
@@ -359,24 +389,33 @@ namespace GoGhost.Duel
             Color mission = MissionColor;
 
             // The field keeps its 120-in-900 slant and runs past the top, bottom and right of any screen.
-            var field = Rect("Target field", frame, new Vector2(1450, 0), new Vector2(3100, 2700)).gameObject.AddComponent<SlabGraphic>();
-            field.color = final ? OverridePalette.Surface : mission; field.Cut = 360; field.raycastTarget = false;
+            // The field opens out of the overview's target card when the page is entered from there.
+            bool opening = pageEntering && pageChange == PageChange.Expand;
+            var field = Rect("Target field", frame, Vector2.zero, Vector2.zero).gameObject.AddComponent<QuadMorph>();
+            field.color = final ? OverridePalette.Surface : mission; field.raycastTarget = false;
+            field.To = FieldQuad; field.From = opening ? CardQuad : null;
+            profileField = field.gameObject;
             var edge = Rect("Edge", frame, new Vector2(863 - 800, 0), new Vector2(ScreenSpan, 34));
             edge.localRotation = Quaternion.Euler(0, 0, 82.4f);
             var stripes = edge.gameObject.AddComponent<StripeGraphic>();
             stripes.color = OverridePalette.Ink; stripes.Other = final ? OverridePalette.Signal : mission; stripes.SecondsPerPeriod = 0; stripes.raycastTarget = false;
+            if (opening) { var late = OvArrive(edge, Vector2.zero, 0); late.Delay = .24f; late.Seconds = .12f; }
 
             int last = Mathf.Min(game.ProfilePage, game.ProfileLines.Length - 1);
             bool skills = last >= 0 && game.ProfileLines[last].profileField == "Skills";
             var panel = Rect("Target panel", frame, new Vector2(1250 - 800, 0), new Vector2(560, 760));
             DrawProfileSilhouette(panel, final, game.Wave == 2 && skills, final ? (Color?)null : OverridePalette.Ink);
+            if (pageEntering) { var land = panel.gameObject.AddComponent<SlamIn>(); land.From = 1.12f; land.Seconds = .16f; land.Delay = opening ? .26f : .08f; }
 
             var back = OvButton("« Back", frame, At(56, 44, 170, 52), new Vector2(170, 52), game.BackFromProfile, OverrideButtonKind.Tertiary, 30,
                 align: TextAlignmentOptions.Capline);
             back.name = "ProfileBack";
+            EnterFrom(back, 0, -1, 40);
             dialogueExits.Add((RectTransform)back.transform);
-            OvText("Mission " + game.Wave, frame, new Vector2(60 + 300 - 800, 450 - 148), new Vector2(600, 44), 36, mission, TextAlignmentOptions.CaplineLeft, false, 1);
-            OvText("Target Profile", frame, new Vector2(56 + 450 - 800, 450 - 231), new Vector2(900, 130), 118, OverridePalette.Text, TextAlignmentOptions.CaplineLeft, true, -.5f);
+            OvArrive(OvText("Mission " + game.Wave, frame, new Vector2(60 + 300 - 800, 450 - 148), new Vector2(600, 44), 36, mission, TextAlignmentOptions.CaplineLeft, false, 1),
+                new Vector2(-70, 0), 1);
+            OvArrive(OvText("Target Profile", frame, new Vector2(56 + 450 - 800, 450 - 231), new Vector2(900, 130), 118, OverridePalette.Text, TextAlignmentOptions.CaplineLeft, true, -.5f),
+                new Vector2(-120, 0), 1);
 
             string[] fields = { "Codename", "Threat", "Weapon", "Location", "Skills" };
             const float rowTop = 300, rowHeight = 76, rowWidth = 700;
@@ -437,19 +476,20 @@ namespace GoGhost.Duel
             OvFill(page, OverridePalette.Ink);
             var frame = OvFrame();
             OvButton("« Back", frame, At(56, 44, 170, 52), new Vector2(170, 52), CloseHelp, OverrideButtonKind.Tertiary, 30,
-                align: TextAlignmentOptions.Capline).name = "HelpBack";
+                enterDelay: Enter(0), align: TextAlignmentOptions.Capline).name = "HelpBack";
             string[] tabs = { "What're the controls?", "What is configuration?" };
             for (int i = 0; i < tabs.Length; i++)
             {
                 int tab = i;
                 bool open = helpTab == i;
                 var button = OvButton(tabs[i], frame, At(56, 164 + i * 96, 440, 84), new Vector2(440, 84), () => SelectHelpTab(tab),
-                    open ? OverrideButtonKind.Secondary : OverrideButtonKind.Tertiary, 37);
+                    open ? OverrideButtonKind.Secondary : OverrideButtonKind.Tertiary, 37, false, Enter(1 + i));
                 button.name = "HelpTab" + i;
                 if (!open) button.GetComponent<SlabButton>().Fill = OverridePalette.Surface;
             }
             OvDivider(frame, 553);
-            OvText(tabs[helpTab], frame, new Vector2(640 + 450 - 800, 450 - 98), new Vector2(900, 100), 84, OverridePalette.Text, TextAlignmentOptions.CaplineLeft, true, -.5f);
+            OvArrive(OvText(tabs[helpTab], frame, new Vector2(640 + 450 - 800, 450 - 98), new Vector2(900, 100), 84, OverridePalette.Text, TextAlignmentOptions.CaplineLeft, true, -.5f),
+                new Vector2(70, 0), 2);
             if (helpTab == 0)
             {
                 (string key, string action)[] controls =
@@ -465,7 +505,8 @@ namespace GoGhost.Duel
                     var key = Rect("Key", frame, At(640, top, 240, 58), new Vector2(240, 58)).gameObject.AddComponent<SlabGraphic>();
                     key.color = OverridePalette.Text; key.Cut = 12; key.raycastTarget = false;
                     OvText(controls[i].key, key.transform, Vector2.zero, new Vector2(220, 58), 32, OverridePalette.Ink, TextAlignmentOptions.Capline, false, .5f);
-                    OvBodyAt(controls[i].action, frame, At(908, top, 600, 58), new Vector2(600, 58), 26, OverridePalette.Text);
+                    OvArrive(key, new Vector2(36, 0), 3 + i * .6f);
+                    OvArrive(OvBodyAt(controls[i].action, frame, At(908, top, 600, 58), new Vector2(600, 58), 26, OverridePalette.Text), new Vector2(36, 0), 3 + i * .6f);
                 }
                 return;
             }

@@ -11,7 +11,7 @@ namespace GoGhost.Duel
         // Frame-space bookkeeping lets the rebuilt character continue from where the last page left it.
         Vector2 figureSlideFrom, figureFrameHome, figureFramePosition;
         float figureSlideAt = float.NegativeInfinity, figureSeenAt = float.NegativeInfinity;
-        int builtStep = -1;
+        int builtStep = -1, builtCategory = -1;
         bool editorTour;
 
         bool ConditionChosen()
@@ -87,6 +87,7 @@ namespace GoGhost.Duel
             button.name = name;
             var behaviour = button.GetComponent<SlabButton>();
             behaviour.Fill = fill; behaviour.Ink = ink; behaviour.Shift = 8; behaviour.EnterSide = side;
+            if (fill != OverridePalette.Surface) MarkSelected(button, name + "/" + label + "/" + parent.name, OverridePalette.Surface, fill);
             var text = behaviour.Label;
             float pad = Mathf.Min(24, size.x * .12f);
             text.rectTransform.sizeDelta = new Vector2(size.x - pad * 2, size.y);
@@ -117,7 +118,8 @@ namespace GoGhost.Duel
             var root = Rect(name, parent, pos, size);
             var hit = root.gameObject.AddComponent<Image>(); hit.color = Color.clear; hit.raycastTarget = true;
             var button = root.gameObject.AddComponent<Button>();
-            button.transition = Selectable.Transition.None; button.targetGraphic = hit; button.onClick.AddListener(click);
+            button.transition = Selectable.Transition.None; button.targetGraphic = hit;
+            button.onClick.AddListener(() => UiClicked(root.gameObject)); button.onClick.AddListener(click);
             var face = Rect("Face", root, Vector2.zero, size);
             var slab = face.gameObject.AddComponent<SlabGraphic>();
             Color fill = active ? activeFill : filled ? OverridePalette.Neutral : OverridePalette.Surface;
@@ -131,6 +133,8 @@ namespace GoGhost.Duel
             behaviour.Owner = this; behaviour.Button = button; behaviour.Face = face; behaviour.Slab = slab;
             behaviour.Label = text; behaviour.Icon = title; behaviour.Fill = fill; behaviour.Ink = ink;
             behaviour.Shift = 8; behaviour.EnterDelay = enterDelay; behaviour.EnterSide = side;
+            // The card of the side that has just opened fills from the left.
+            if (active) MarkSelected(button, name, filled ? OverridePalette.Neutral : OverridePalette.Surface, filled ? restInk : OverridePalette.Disabled);
         }
 
         void BuildOverrideEditor()
@@ -146,11 +150,7 @@ namespace GoGhost.Duel
             bool fresh = builtSelector != selectorRow, turned = fresh || builtStep != step;
             builtStep = step;
 
-            OvText("Body Configuration", frame, new Vector2(56 + 600 - 800, 450 - 81.6f), new Vector2(1200, 112), 112,
-                OverridePalette.Text, TextAlignmentOptions.CaplineLeft, true, -.5f);
-            OvButton("Help", frame, At(1424, 56, 120, 48), new Vector2(120, 48), OpenHelp, OverrideButtonKind.Tertiary, 28,
-                align: TextAlignmentOptions.Capline).name = "ConfigurationHelp";
-            OvRule(frame, 56, 132, 1488);
+            OvHeader(frame, "Body Configuration");
 
             // The sentence: Condition » Action. The card of the open side is filled.
             const float column = 520, leftX = 56, rightX = 1024, cardTop = 160, cardHeight = 108, listTop = 292, listHeight = 398;
@@ -169,10 +169,12 @@ namespace GoGhost.Duel
                 linked ? OverridePalette.Signal : (Color)new Color32(0x3A, 0x3A, 0x44, 255));
             arrow.name = "PreviewActionArrow";
             if (linked) arrow.gameObject.AddComponent<Drift>();
+            if (pageEntering) { var land = arrow.gameObject.AddComponent<SlamIn>(); land.From = 1.35f; land.Seconds = .15f; land.Delay = 2 * OvMotion.Stagger; }
 
             bodyPreview = Rect("BodyPreview", frame, At(616, listTop, 368, 410), new Vector2(368, 410));
             var stage = Rect("Stage", bodyPreview, new Vector2(0, -194), new Vector2(368, 22)).gameObject.AddComponent<SlabGraphic>();
             stage.color = OverridePalette.Neutral; stage.Cut = 10; stage.raycastTarget = false;
+            OvArrive(stage, Vector2.zero, 1);
             StandFigure(bodyPreview, new Vector2(-80, -183 + .75f * 245));
 
             // Both columns exist for the tutorial frame; only the open side holds choices.
@@ -184,10 +186,12 @@ namespace GoGhost.Duel
             var cancel = OvButton("Cancel", frame, At(1020, 762, 200, 72), new Vector2(200, 72), CancelRuleEdit, OverrideButtonKind.Tertiary, 34,
                 align: TextAlignmentOptions.Capline);
             cancel.name = "CancelRuleEdit";
+            EnterFrom(cancel, 3, 1, 40);
             var confirm = OvButton("Confirm", frame, At(1244, 744, 300, 108), new Vector2(300, 108), CommitRuleChoice, OverrideButtonKind.Primary, 54,
                 align: TextAlignmentOptions.Capline);
             confirm.name = "ConfirmRule";
             confirm.interactable = CanConfirmRule();
+            EnterFrom(confirm, 4, 1);
             tutorialSubmit = (RectTransform)confirm.transform;
             if (game.ConfigurationVoice.Focus != TutorialFocus.None)
             {
@@ -212,6 +216,9 @@ namespace GoGhost.Duel
             const float categoryWidth = 208, gap = 16, row = 56, pitch = 64;
             float optionLeft = categoryWidth + gap, optionWidth = w - optionLeft;
             int shown = 0, openRow = -1;
+            // Opening another category brings its choices in; picking a choice does not.
+            bool switched = !enter && builtCategory >= 0 && builtCategory != conditionCategory;
+            builtCategory = conditionCategory;
             for (int i = 0; i < ConditionalCatalog.Categories.Length; i++)
             {
                 int category = i;
@@ -234,10 +241,11 @@ namespace GoGhost.Duel
                 if (condition != selected) candidate.SetCondition(selectedConditionIndex, new RuleCondition(condition));
                 string reason = ConditionalCatalog.HasAnyCompatibleAction(candidate) ? null : "These conditions cannot be true together.";
                 bool chosen = selected == condition;
-                OvChoice(entry.Label, panel, Slot(optionLeft, top, optionWidth, row), new Vector2(optionWidth, row),
+                var choice = OvChoice(entry.Label, panel, Slot(optionLeft, top, optionWidth, row), new Vector2(optionWidth, row),
                     () => ApplyChoice(condition, false, null), chosen ? OverridePalette.Text : OverridePalette.Surface,
                     chosen ? OverridePalette.Ink : OverridePalette.Text, "Handler/EditorCondition" + condition, reason, NeuralBodySystem.None,
-                    enter ? .06f + index * .03f : -1, -1);
+                    enter ? .06f + index * .03f : switched ? index * .02f : -1, -1);
+                if (switched && !enter) choice.GetComponent<SlabButton>().EnterDistance = 40;
                 top += pitch; index++;
             }
             // Parameters sit under the whole list, so choosing an option never moves the others.
@@ -266,16 +274,23 @@ namespace GoGhost.Duel
             const float line = 3, margin = 8;
             float frameLeft = optionLeft - margin, frameRight = w + 14, frameTop = -margin, frameBottom = listBottom + margin;
             float link = openRow * pitch + row / 2;
-            void Line(float left, float y, float width, float height)
+            Image Line(float left, float y, float width, float height)
             {
                 var image = Image(panel, Slot(left, y, width, height), new Vector2(width, height), OverridePalette.Signal);
                 image.raycastTarget = false; image.transform.SetAsFirstSibling();
+                return image;
             }
             Line(frameLeft, frameTop, frameRight - frameLeft, line);
             Line(frameLeft, frameBottom - line, frameRight - frameLeft, line);
             Line(frameRight - line, frameTop, line, frameBottom - frameTop);
             Line(frameLeft, frameTop, line, Mathf.Max(frameBottom, link + line / 2) - frameTop);
-            Line(categoryWidth - 4, link - line / 2, frameLeft - categoryWidth + 4 + line, line);
+            var connector = Line(categoryWidth - 4, link - line / 2, frameLeft - categoryWidth + 4 + line, line);
+            if (switched && !float.IsNaN(bracketLink) && !Mathf.Approximately(bracketLink, link))
+            {
+                var travel = connector.gameObject.AddComponent<Arrive>();
+                travel.From = new Vector2(0, link - bracketLink); travel.Fade = false; travel.Seconds = .17f;
+            }
+            bracketLink = link;
         }
 
         void OvActionStep(RectTransform panel, ConditionalRule rule, bool enter)

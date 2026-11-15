@@ -77,7 +77,7 @@ namespace GoGhost.Duel
         }
         void OnDestroy()
         {
-            if (IsTrainingEnemy && profile != null) Destroy(profile);
+            if ((IsTrainingEnemy || IsGhost) && profile != null) Destroy(profile);
             Perception?.Dispose();
             if(Health!=null){Health.OnDied-=OnDied;Health.OnDamaged-=OnDamaged;}
         }
@@ -112,7 +112,7 @@ namespace GoGhost.Duel
                 if(facts.Confidence>.1f)Face(facts.Position-Position);
                 else if(Mathf.Abs(Velocity.x)>.1f)Face(Velocity);
             }
-            if (IsTrainingEnemy) TickTraining(); else if (Axe != null) Axe.Tick(); else Tactics.Tick();
+            if (IsGhost) TickGhost(); else if (IsTrainingEnemy) TickTraining(); else if (Axe != null) Axe.Tick(); else Tactics.Tick();
             bool grounded=Motor.Grounded;
             if(grounded&&!wasGrounded)
             {Sounds?.Play(Sfx.Land,ActorId);PublishCue(.12f);}

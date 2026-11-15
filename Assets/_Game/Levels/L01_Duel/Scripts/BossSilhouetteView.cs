@@ -102,21 +102,36 @@ namespace GoGhost.Duel
 
         Sprite plainWeapon;
         bool drawnWeapon;
+        Material ghostMaterial;
 
         void SetColors()
         {
             InstallCleanRig();
             bool gunner = visualKind == BossKind.Gunner;
-            bodyColor = actor != null && actor.IsTrainingEnemy ? NeuralPalette.Secondary : gunner ? NeuralPalette.Gunner : NeuralPalette.Swordsman;
+            bool ghost = actor != null && actor.IsGhost;
+            bodyColor = ghost ? GhostHologram.Body : actor != null && actor.IsTrainingEnemy ? NeuralPalette.Secondary : gunner ? NeuralPalette.Gunner : NeuralPalette.Swordsman;
             weaponColor = NeuralPalette.Primary;
             var weapon=parts[(int)Part.Weapon];var extra=parts[(int)Part.Sheath];
             if(weapon==null)return;
             if(plainWeapon==null)plainWeapon=weapon.sprite;
             // The Test Room robot keeps the plain bar; its body has no owner colour for the accents.
-            drawnWeapon=!(actor!=null&&actor.IsTrainingEnemy);
+            drawnWeapon=!(actor!=null&&(actor.IsTrainingEnemy||actor.IsGhost));
             weapon.sprite=!drawnWeapon?plainWeapon:gunner?BossWeaponSprites.Rifle:BossWeaponSprites.Blade;
             // The drawn weapons carry their own colours; alpha still follows Camo.
             if(drawnWeapon)weaponColor=Color.white;
+            if(ghost)
+            {
+                // The player's revolver, and the whole figure in the projection's rows.
+                weapon.sprite=RevolverPresentationGeometry.Body; weaponColor=GhostHologram.Gun;
+                if(ghostMaterial==null)
+                {
+                    ghostMaterial=new Material(Resources.Load<Shader>("GhostProjection")){hideFlags=HideFlags.HideAndDontSave};
+                    // No band of light on the body yet; the rows alone.
+                    ghostMaterial.SetFloat("_Low",-1000);ghostMaterial.SetFloat("_High",-1000);
+                }
+                foreach(var part in GetComponentsInChildren<SpriteRenderer>(true))
+                    if(part.GetComponent<SpriteMask>()==null)part.sharedMaterial=ghostMaterial;
+            }
             // The second slot is the rifle's lit charge cells, or the plain weapons' grip.
             if(extra!=null)
             {

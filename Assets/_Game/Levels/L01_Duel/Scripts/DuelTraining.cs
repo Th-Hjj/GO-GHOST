@@ -61,8 +61,9 @@ namespace GoGhost.Duel
                     gunnerSpawn.y + PlatformTierRise * 3);
             }
             var instance = Instantiate(gunnerPrefab, trainingEnemySpawn, Quaternion.identity, encounter.transform);
-            instance.name = "TrainingEnemy";
             var actor = instance.GetComponent<BossAgent>();
+            if (GhostArena) { instance.name = "GHOST"; actor.ConfigureGhost(Player, navigation); return actor; }
+            instance.name = "TrainingEnemy";
             actor.ConfigureTraining(Player, navigation);
             return actor;
         }
@@ -80,6 +81,8 @@ namespace GoGhost.Duel
             if (actors.Length == 0 || actors[0].IsAlive) return;
             if (enemyRespawnAt == 0) enemyRespawnAt = Time.time + 3f;
             if (Time.time < enemyRespawnAt) return;
+            // What a win over GHOST leads to is undecided; for now it also returns to the title.
+            if (GhostArena) { LeaveGhostArena(); return; }
             var previous = actors[0];
             foreach (var shot in encounter.GetComponentsInChildren<Projectile>())
                 if (shot.Owner == previous.gameObject) shot.Retire();

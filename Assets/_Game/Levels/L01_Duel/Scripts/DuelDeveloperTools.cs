@@ -127,7 +127,7 @@ namespace GoGhost.Duel
             Player.SetRuntimeHealth(max,fresh?max:Player.CurrentHealth);
             foreach(var boss in actors)
             {
-                if(boss==null||!boss.IsAlive||boss.IsTrainingEnemy||boss.IsFinalBoss)continue;
+                if(boss==null||!boss.IsAlive||boss.IsTrainingEnemy||boss.IsFinalBoss||boss.IsGhost)continue;
                 max=(int)GetDeveloperValue(boss.ActorId==1?DeveloperSetting.GunnerMaxHealth:DeveloperSetting.SwordMaxHealth);
                 boss.Health.SetRuntimeHealth(max,fresh?max:boss.Health.CurrentHealth);
             }

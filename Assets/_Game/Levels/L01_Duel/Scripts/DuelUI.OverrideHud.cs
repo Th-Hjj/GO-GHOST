@@ -116,9 +116,9 @@ namespace GoGhost.Duel
                 float x = count > 1 ? (i - (count - 1) / 2f) * (bossBarWidth + 20) : 0;
                 var bar = Rect("Boss health", hud, Vector2.zero, Vector2.zero);
                 bossHealthGroups[i] = bar.gameObject.AddComponent<CanvasGroup>();
-                Color colour = actor.IsTrainingEnemy ? OverridePalette.TextDim : actor.IsFinalBoss ? OverridePalette.Text
+                Color colour = actor.IsGhost ? GhostHologram.Body : actor.IsTrainingEnemy ? OverridePalette.TextDim : actor.IsFinalBoss ? OverridePalette.Text
                     : actor.Profile.Kind == BossKind.Gunner ? NeuralPalette.Gunner : NeuralPalette.Swordsman;
-                string label = actor.IsTrainingEnemy ? "Dummy Robot" : actor.IsFinalBoss ? BossAgent.FinalBossName : actor.ActorId == 1 ? "Gunner" : "Swordsman";
+                string label = actor.IsGhost ? "Ghost" : actor.IsTrainingEnemy ? "Dummy Robot" : actor.IsFinalBoss ? BossAgent.FinalBossName : actor.ActorId == 1 ? "Gunner" : "Swordsman";
                 var name = OvText(label, bar, new Vector2(x - bossBarWidth * .15f, 376), new Vector2(bossBarWidth * .7f, 70), points,
                     actor.IsTrainingEnemy ? OverridePalette.TextDim : OverridePalette.Text, TextAlignmentOptions.CaplineLeft);
                 name.enableAutoSizing = true; name.fontSizeMax = points; name.fontSizeMin = 28;

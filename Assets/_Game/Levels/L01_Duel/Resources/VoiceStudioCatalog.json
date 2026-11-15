@@ -655,7 +655,7 @@
     {
       "key": "Handler/EditorActionJ01",
       "label": "Rule editor - Jump",
-      "text": "Jump. You jump again each time you land.",
+      "text": "Jump when you landed.",
       "locked": false
     },
     {

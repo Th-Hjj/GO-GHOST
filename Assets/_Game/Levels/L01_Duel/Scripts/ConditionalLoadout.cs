@@ -729,7 +729,7 @@ namespace GoGhost.Duel
                 case ActionIds.MoveTowardCenter:return "Move toward the center of the arena.";
                 case ActionIds.Move:return "Move toward an enemy or away from them.";
                 case ActionIds.HoldPosition:return "Stop moving horizontally.";
-                case ActionIds.Jump:return "Jump. You jump again each time you land.";
+                case ActionIds.Jump:return "Jump when you landed.";
                 case ActionIds.RepeatJumps:return "Keep jumping.";
                 default:return "";
             }

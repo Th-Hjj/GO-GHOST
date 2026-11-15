@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Rule editor: join reaches the frame, looser spacing
+
+- **Asked:** a join that pointed at nothing when the open category sat below the frame, and a page that felt cramped; tune the whole page.
+- **Cause of the bug:** the original layout continued the frame's left edge down to a low category; the rewrite of the picker had left that out.
+- **Changed:** `OvPicker` draws the continuation along the slant. Spacing: card to frame 16 to 32 (list top 292 to 308), join 14 to 22, frame line to choices 8 to 10, choices 306 to 294 wide, floor raised 12 so its top lies on the side slabs' bottom edge and 22 above Happy's box, side slab edge 10 to 5 wide.
+- **Checked:** Unity compiled; one Play Mode pass with the tutorial silenced, captures in `Logs/RuleWording/`: `u1_enemy.png` (Enemy open below a two-row frame, the case that was broken; enlarged in `u1_zoom.png`), `u2_enemy_chips.png`, `u3_body.png`, `u4_action.png`.
+- **Not tested:** the join's travel while switching categories, six choices in one category, the first-rule tutorial over this layout, Reduce Flashing and other aspect ratios.
+
 ## 2026-11-14 — Rule editor: category column, slanted rows, parameters last
 
 - **Asked:** the tabs version put the parameters above the categories and shrank everything; return to the original order (category, choice, parameter) on both sides, with a frame that really slants (decision recorded in `CLAUDE.md` and `AGENTS.md`).

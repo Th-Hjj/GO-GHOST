@@ -32,8 +32,8 @@ namespace GoGhost.Duel
         // row as the last row inside that frame. Every row steps left by the slabs' own slant, so the columns and
         // the frame run parallel to each slab's edge and the frame keeps one clearance all the way round.
         // Six rows fit: five choices and their parameters, or six choices. The indent leaves room for four categories.
-        const float PickRow = 56, PickPitch = 64, PickChip = 48, PickCategory = 148, PickIndent = 42, PickChoice = 306;
-        const float PickSlant = 12f / 56f, PickLine = 3, PickClear = 8, PickJoin = 14;
+        const float PickRow = 56, PickPitch = 64, PickChip = 48, PickCategory = 148, PickIndent = 42, PickChoice = 294;
+        const float PickSlant = 12f / 56f, PickLine = 3, PickClear = 10, PickJoin = 22;
         // Where the choices begin: the category column, the join and the frame's room, less one slab's lean.
         const float PickLeft = PickIndent + PickCategory + PickJoin + PickLine + PickClear - PickRow * PickSlant;
         // Resting controls on the side slab are a clear step lighter than it, so they read as buttons.
@@ -181,7 +181,7 @@ namespace GoGhost.Duel
             panel.anchoredPosition += new Vector2(left ? -width / 2 : width / 2, 0);
             var slab = panel.gameObject.AddComponent<SlabGraphic>();
             slab.color = DialogueFill; slab.Cut = cut; slab.raycastTarget = false;
-            const float line = 10;
+            const float line = 5;
             var stripe = Rect("Edge", panel, new Vector2((left ? 1 : -1) * (width / 2 - (line + cut) / 2), 0), new Vector2(line + cut, height))
                 .gameObject.AddComponent<SlabGraphic>();
             stripe.color = edge; stripe.Cut = cut; stripe.raycastTarget = false;
@@ -252,7 +252,7 @@ namespace GoGhost.Duel
             else OvSidePanel(frame, selectingCondition, partColour, 1, 1, 0, -1);
 
             // The sentence: Condition » Action. The card of the open side is filled.
-            const float column = 520, leftX = 56, rightX = 1024, cardTop = 160, cardHeight = 108, listTop = 292, listHeight = 398;
+            const float column = 520, leftX = 56, rightX = 1024, cardTop = 160, cardHeight = 108, listTop = 308, listHeight = 392;
             var expression = ConditionalCatalog.Expression(rule);
             bool hasCondition = rule.Condition != 0, hasAction = !string.IsNullOrEmpty(rule.Action);
             Color system = hasAction ? NeuralPalette.Body(RuleSystem(rule)) : OverridePalette.Text;
@@ -280,8 +280,9 @@ namespace GoGhost.Duel
             // stands 54 left of the page's centre so that the whole silhouette sits midway between the two slabs:
             // the back of the body is as far from the left slab's edge as the muzzle is from the right one.
             // The floor is centred under the feet and ends short of both slabs.
-            const float stageHeight = 442, floorHeight = 22, floorWidth = 300, bodyX = 800 - 54;
-            bodyPreview = Rect("BodyPreview", frame, At(bodyX - floorWidth / 2, listTop, floorWidth, stageHeight), new Vector2(floorWidth, stageHeight));
+            // The floor's top edge continues the bottom edge of the side slabs (700), which leaves it clear of Happy's box.
+            const float stageTop = 280, stageHeight = 442, floorHeight = 22, floorWidth = 300, bodyX = 800 - 54;
+            bodyPreview = Rect("BodyPreview", frame, At(bodyX - floorWidth / 2, stageTop, floorWidth, stageHeight), new Vector2(floorWidth, stageHeight));
             float floorTop = -stageHeight / 2 + floorHeight;
             var stage = Rect("Stage", bodyPreview, new Vector2(0, floorTop - floorHeight / 2), new Vector2(floorWidth, floorHeight)).gameObject.AddComponent<SlabGraphic>();
             stage.color = OverridePalette.Neutral; stage.Cut = 10; stage.raycastTarget = false;
@@ -343,6 +344,17 @@ namespace GoGhost.Duel
             frame.transform.SetAsFirstSibling();
             // The join runs level from the open category to the frame; it travels along the slant when another opens.
             float joinY = open * PickPitch + PickRow / 2;
+            // An open category that sits lower than the frame's last row still reaches it: the frame's left edge
+            // carries on down its own slant to the height of the join.
+            if (joinY > frameBottom)
+            {
+                float edge = PickLeft + PickRow * PickSlant - room, drop = joinY - frameBottom + PickLine / 2;
+                float w = panel.sizeDelta.x, h = panel.sizeDelta.y;
+                var middle = new Vector2(-w / 2 + edge - (frameBottom + drop / 2) * PickSlant + PickLine / 2, h / 2 - frameBottom - drop / 2);
+                var tail = Image(panel, middle, new Vector2(drop * Mathf.Sqrt(1 + PickSlant * PickSlant), PickLine), OverridePalette.Signal);
+                tail.rectTransform.localRotation = Quaternion.Euler(0, 0, Mathf.Atan2(1, PickSlant) * Mathf.Rad2Deg);
+                tail.raycastTarget = false; tail.transform.SetAsFirstSibling();
+            }
             var link = Image(panel, PickSlot(panel, PickIndent + PickCategory - 2, joinY - PickLine / 2, PickJoin + 4, PickLine), new Vector2(PickJoin + 4, PickLine), OverridePalette.Signal);
             link.raycastTarget = false; link.transform.SetAsFirstSibling();
             if (switched && !float.IsNaN(bracketLink) && !Mathf.Approximately(bracketLink, joinY))

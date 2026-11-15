@@ -31,11 +31,19 @@ namespace GoGhost.Duel
         // a Signal join to a Signal frame that holds the open category's choices in one column, and the parameter
         // row as the last row inside that frame. Every row steps left by the slabs' own slant, so the columns and
         // the frame run parallel to each slab's edge and the frame keeps one clearance all the way round.
-        // Six rows fit: five choices and their parameters, or six choices. The indent leaves room for four categories.
-        const float PickRow = 56, PickPitch = 64, PickChip = 48, PickCategory = 148, PickIndent = 42, PickChoice = 294;
+        // Six rows fit: five choices and their parameters, or six choices.
+        const float PickRow = 56, PickPitch = 64, PickChip = 48, PickCategory = 148;
         const float PickSlant = 12f / 56f, PickLine = 3, PickClear = 10, PickJoin = 22;
+        // Each side is one figure: the sentence card and the list under it share two slanted guide lines. The
+        // category column's left edge continues the card's left edge and the frame's right edge continues the
+        // card's right edge, so the list is as wide as the card and sits under it to the eye, not only on paper.
+        const float EditorColumn = 520, EditorCardHeight = 108;
+        const float PickChoice = EditorColumn - (EditorCardHeight - PickRow) * PickSlant
+            - (PickCategory + PickJoin + (PickLine + PickClear) * 2 - PickRow * PickSlant);
+        // Where the top category starts within its column; set per side before the list is built.
+        float pickIndent;
         // Where the choices begin: the category column, the join and the frame's room, less one slab's lean.
-        const float PickLeft = PickIndent + PickCategory + PickJoin + PickLine + PickClear - PickRow * PickSlant;
+        float PickLeft => pickIndent + PickCategory + PickJoin + PickLine + PickClear - PickRow * PickSlant;
         // Resting controls on the side slab are a clear step lighter than it, so they read as buttons.
         static readonly Color ChoiceFill = OverridePalette.SurfaceHover;
 
@@ -146,7 +154,8 @@ namespace GoGhost.Duel
             bool lit = active && !filled;
             Color fill = lit ? activeFill : filled ? OverridePalette.Neutral : OverridePalette.Surface;
             Color ink = lit ? OverridePalette.Ink : filled ? restInk : OverridePalette.Disabled;
-            slab.color = fill; slab.Cut = 22; slab.raycastTarget = false;
+            // The card leans exactly as the rows under it do, so their edges can share one line.
+            slab.color = fill; slab.Cut = size.y * PickSlant; slab.raycastTarget = false;
             const float pad = 46;
             var title = OvText(heading, face, new Vector2(4, 28), new Vector2(size.x - pad * 2, 28), 22, ink, TextAlignmentOptions.CaplineLeft, false, 1);
             var text = OvText(value, face, new Vector2(-4, -15), new Vector2(size.x - pad * 2, 50), 40, ink, TextAlignmentOptions.CaplineLeft, false, .5f);
@@ -174,9 +183,9 @@ namespace GoGhost.Duel
         void OvSidePanel(RectTransform frame, bool left, Color edge, float from, float to, float delay, double born)
         {
             // It ends above the floor slab. Its inner edge keeps clear of the choices on its own side (which end at
-            // 576 and begin at 1024) and of the character and revolver: 584 to 700 on the left, 915 to 1031 on the right.
+            // 576 and begin at 1024) and of the character and revolver: 584 to 700 on the left, 895 to 1011 on the right.
             const float width = 2040, height = 550, cut = 116, top = 150;
-            var panel = Rect(left ? "Panel left" : "Panel right", frame, At(left ? 700 - width : 915, top, width, height), new Vector2(width, height));
+            var panel = Rect(left ? "Panel left" : "Panel right", frame, At(left ? 700 - width : 895, top, width, height), new Vector2(width, height));
             panel.pivot = new Vector2(left ? 0 : 1, .5f);
             panel.anchoredPosition += new Vector2(left ? -width / 2 : width / 2, 0);
             var slab = panel.gameObject.AddComponent<SlabGraphic>();
@@ -256,8 +265,13 @@ namespace GoGhost.Duel
             var expression = ConditionalCatalog.Expression(rule);
             bool hasCondition = rule.Condition != 0, hasAction = !string.IsNullOrEmpty(rule.Action);
             Color system = hasAction ? NeuralPalette.Body(RuleSystem(rule)) : OverridePalette.Text;
-            tutorialPreview = Rect("RulePreview", frame, At(leftX, cardTop, 1488, cardHeight), new Vector2(1488, cardHeight));
-            OvEditorCard("PreviewCondition", "Condition", expression.Conditions, frame, At(leftX, cardTop, column, cardHeight),
+            // The guide lines. On the left the lowest category touches the page margin and the card stands further
+            // right along the slant; on the right the card touches the margin and the list runs left under it.
+            float guide = (listTop + PickRow - cardTop - cardHeight) * PickSlant;
+            float leftIndent = 2 * PickPitch * PickSlant, rightIndent = -guide;
+            float leftCard = leftX + leftIndent + guide;
+            tutorialPreview = Rect("RulePreview", frame, At(leftCard, cardTop, rightX + column - leftCard, cardHeight), new Vector2(rightX + column - leftCard, cardHeight));
+            OvEditorCard("PreviewCondition", "Condition", expression.Conditions, frame, At(leftCard, cardTop, column, cardHeight),
                 new Vector2(column, cardHeight), () => EditPreview(0), selectingCondition, hasCondition, OverridePalette.Text, OverridePalette.Text,
                 fresh ? 0 : -1, -1);
             // Until its parameter is chosen the card shows the action's name alone.
@@ -267,7 +281,9 @@ namespace GoGhost.Duel
                 new Vector2(column, cardHeight), () => EditPreview(-1), !selectingCondition, hasAction, system, system,
                 fresh ? .05f : -1, 1);
             bool linked = ConditionChosen();
-            var arrow = OvText("»", frame, At(616, cardTop - 6, 368, cardHeight), new Vector2(368, cardHeight), 110,
+            // The arrow stands midway between the two cards.
+            float between = (leftCard + column + rightX) / 2;
+            var arrow = OvText("»", frame, At(between - 184, cardTop - 6, 368, cardHeight), new Vector2(368, cardHeight), 110,
                 linked ? OverridePalette.Signal : (Color)new Color32(0x3A, 0x3A, 0x44, 255));
             arrow.name = "PreviewActionArrow";
             editorArrow = arrow.rectTransform;
@@ -292,6 +308,7 @@ namespace GoGhost.Duel
             // Both columns exist for the tutorial frame; only the open side holds choices.
             ruleEditor = Rect("RuleEditor", frame, At(leftX, listTop, column, listHeight), new Vector2(column, listHeight));
             ruleList = Rect("RuleList", frame, At(rightX, listTop, column, listHeight), new Vector2(column, listHeight));
+            pickIndent = selectingCondition ? leftIndent : rightIndent;
             if (selectingCondition) OvConditionStep(ruleEditor, rule, turned);
             else OvActionStep(ruleList, rule, turned);
 
@@ -329,7 +346,7 @@ namespace GoGhost.Duel
             {
                 int index = i;
                 bool on = i == open;
-                OvOption(name + i, label(i), panel, PickSlot(panel, PickIndent, i * PickPitch, PickCategory, PickRow), new Vector2(PickCategory, PickRow),
+                OvOption(name + i, label(i), panel, PickSlot(panel, pickIndent, i * PickPitch, PickCategory, PickRow), new Vector2(PickCategory, PickRow),
                     () => pick(index), on ? colour(i) : ChoiceFill, on ? OverridePalette.Ink : colour(i), 26, enter ? i * .03f : -1, side, ChoiceFill);
             }
             if (open < 0 || rows == 0) return;
@@ -355,7 +372,7 @@ namespace GoGhost.Duel
                 tail.rectTransform.localRotation = Quaternion.Euler(0, 0, Mathf.Atan2(1, PickSlant) * Mathf.Rad2Deg);
                 tail.raycastTarget = false; tail.transform.SetAsFirstSibling();
             }
-            var link = Image(panel, PickSlot(panel, PickIndent + PickCategory - 2, joinY - PickLine / 2, PickJoin + 4, PickLine), new Vector2(PickJoin + 4, PickLine), OverridePalette.Signal);
+            var link = Image(panel, PickSlot(panel, pickIndent + PickCategory - 2, joinY - PickLine / 2, PickJoin + 4, PickLine), new Vector2(PickJoin + 4, PickLine), OverridePalette.Signal);
             link.raycastTarget = false; link.transform.SetAsFirstSibling();
             if (switched && !float.IsNaN(bracketLink) && !Mathf.Approximately(bracketLink, joinY))
             {

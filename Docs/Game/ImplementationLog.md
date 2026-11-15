@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Rule editor: card and list on shared guide lines
+
+- **Asked:** the list under each card looked shifted right; align by eye, not by arithmetic (decision recorded in `CLAUDE.md` and `AGENTS.md`).
+- **Cause:** the list was indented 42 units under the card's left corner while its frame reached the column's right edge, past the card's lower right corner. The bounding boxes matched; the adjacent edges did not.
+- **Changed:** `DuelUI.OverrideEditor.cs`: the indent is set per side so the category column continues the card's left edge; `PickChoice` is derived so the frame continues the card's right edge (325 wide); the cards lean by the rows' slant; the Condition card stands at 104 so the lowest category meets the 56 margin; the arrow is centred between the cards; the right slab's edge moves from 915 to 895 to keep clear of the category column.
+- **Checked:** Unity compiled; one Play Mode pass with the tutorial silenced, captures in `Logs/RuleWording/`: `v1_condition.png`, `v2_action.png`, `v3_action_full.png`.
+- **Not tested:** a fourth category on the left (it would cross the margin by 14 units), the tutorial pointer over the moved card, Reduce Flashing and other aspect ratios.
+
 ## 2026-11-14 — Rule editor: join reaches the frame, looser spacing
 
 - **Asked:** a join that pointed at nothing when the open category sat below the frame, and a page that felt cramped; tune the whole page.

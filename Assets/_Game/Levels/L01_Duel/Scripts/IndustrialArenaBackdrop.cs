@@ -49,7 +49,7 @@ namespace GoGhost.Duel
 
         Transform player;
         Bounds arena;
-        RawImage far, near, farLights;
+        RawImage far, near, farLights, nearMask;
         Material contourMaterial, hazeMaterial;
         readonly List<Texture2D> hazeTextures = new();
         // Floor haze in the mission colour, and a violet copy once the EMP sweep exists.
@@ -96,6 +96,13 @@ namespace GoGhost.Duel
             if (lights != null) backdrop.farLights = backdrop.AddPlate("Beacons", lights, 1f);
             backdrop.haze = backdrop.AddHaze("Floor haze", backdrop.FloorHaze(look.Haze));
             backdrop.haze.enabled = FloorHazeShown;
+            // Thomas, 2026-11-15: in Mission 3 the half-opacity towers let the far skyline's amber windows show through.
+            // A solid black copy of their silhouette sits behind them, so they hide what stands behind them.
+            if (plates && wave == DuelGame.FinalBossWave)
+            {
+                backdrop.nearMask = backdrop.AddPlate($"{look.NearLabel} silhouette", nearTexture, 1f);
+                backdrop.nearMask.color = Color.black;
+            }
             if (plates) backdrop.near = backdrop.AddPlate(look.NearLabel, nearTexture, look.NearOpacity);
             backdrop.AddLitHaze();
             backdrop.UpdateParallax();
@@ -326,6 +333,7 @@ namespace GoGhost.Duel
             SetCrop(far, position * FarTravelPixels);
             SetCrop(near, position * NearTravelPixels);
             if (farLights != null) farLights.uvRect = far.uvRect;
+            if (nearMask != null) nearMask.uvRect = near.uvRect;
             if (contourMaterial != null)
                 contourMaterial.SetVector("_CityCrops", new Vector4(far.uvRect.x, far.uvRect.width,
                     near.uvRect.x, near.uvRect.width));

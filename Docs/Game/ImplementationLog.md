@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-11-15 — Mission 3 near towers hide the far skyline
+
+- **Asked:** Thomas circled an orange band across the left tower in Mission 3 and asked how to fix it, then chose to fix Mission 3 only.
+- **Found:** `MegacityFar.png` has one amber row of windows (x 183-284, y 248-255) and a building with lit floor lines behind the left tower of `MegacityNear.png`. The tower is opaque in the art, but the near plate is drawn at 50%, so the far art showed through it.
+- **Changed:** `IndustrialArenaBackdrop.cs` adds, for Mission 3 only, a black copy of the near plate (its own alpha, full opacity) between the far plate and the near plate, sharing the near plate's parallax crop. No art or opacity changed.
+- **Checked:** the game assembly compiles with Unity's bundled compiler outside the Editor (Thomas was in Play Mode). An offline composite of the two plates at the left parallax position, drawn the way the canvas blends them, shows the band before and a solid tower after.
+- **NOT TESTED:** Mission 3 in Play Mode, including the EMP contour trace over the towers, other parallax positions and phase two. The part of the amber row to the right of the tower is not covered by any tower and still shows, as authored.
+
 ## 2026-11-15 — Phase-two platforms swing as a wave from left to right
 
 - **Asked:** Thomas was very unhappy with the platforms sinking together. He wanted the original swing height back and a wave from left to right, each platform starting when the one before it is half way. He asked for the design to be restated first, then chose: upward first, continuous, half of a one-way stroke.

@@ -27,11 +27,21 @@ namespace GoGhost.Duel
         RectTransform editorCardLeft, editorCardRight, editorArrow, editorFrame;
         Coroutine confirmSequence;
         int builtStep = -1, builtCategory = -1, builtActionCategory = -1, actionCategory;
-        // Both sides share one structure (Thomas, 2026-11-14): the parameter row under the sentence card, a row
-        // of category tabs, then the open category's choices in two columns inside a Signal frame joined to its tab.
-        // Five rows fit, so a category holds ten choices and a side holds four or five categories.
-        const float ChipHeight = 44, TabHeight = 44, ChoiceRow = 48, ChoicePitch = 54;
-        static readonly Color ChoiceFill = OverridePalette.SurfaceHover, ChoiceRim = new Color32(78, 78, 92, 255);
+        // Both sides share one layout (Thomas, 2026-11-14), read in the order it is used: a column of categories,
+        // a Signal join to a Signal frame that holds the open category's choices in one column, and the parameter
+        // row as the last row inside that frame. Every row steps left by the slabs' own slant, so the columns and
+        // the frame run parallel to each slab's edge and the frame keeps one clearance all the way round.
+        // Six rows fit: five choices and their parameters, or six choices. The indent leaves room for four categories.
+        const float PickRow = 56, PickPitch = 64, PickChip = 48, PickCategory = 148, PickIndent = 42, PickChoice = 306;
+        const float PickSlant = 12f / 56f, PickLine = 3, PickClear = 8, PickJoin = 14;
+        // Where the choices begin: the category column, the join and the frame's room, less one slab's lean.
+        const float PickLeft = PickIndent + PickCategory + PickJoin + PickLine + PickClear - PickRow * PickSlant;
+        // Resting controls on the side slab are a clear step lighter than it, so they read as buttons.
+        static readonly Color ChoiceFill = OverridePalette.SurfaceHover;
+
+        // A place in the picker. A row lower down starts further left, along the slant.
+        static Vector2 PickSlot(RectTransform panel, float left, float top, float width, float height)
+            => new Vector2(-panel.sizeDelta.x / 2 + left - top * PickSlant + width / 2, panel.sizeDelta.y / 2 - top - height / 2);
 
         bool ConditionChosen()
         {
@@ -98,8 +108,6 @@ namespace GoGhost.Duel
             var behaviour = button.GetComponent<SlabButton>();
             behaviour.Fill = fill; behaviour.Ink = ink; behaviour.Shift = 8; behaviour.EnterSide = side; behaviour.Overshoot = true;
             if (fill != resting) MarkSelected(button, name + "/" + label + "/" + parent.name, resting, fill);
-            // On the side slab a resting control needs an edge to read as a button rather than as loose words.
-            else if (rest.HasValue) behaviour.Rim = ChoiceRim;
             var text = behaviour.Label;
             float pad = Mathf.Min(24, size.x * .12f);
             text.rectTransform.sizeDelta = new Vector2(size.x - pad * 2, size.y);
@@ -311,78 +319,57 @@ namespace GoGhost.Duel
             UpdateConfigurationSignals();
         }
 
-        // Builds the tab row, the frame and its join, and returns where each choice of the open tab goes.
-        System.Func<int, Vector2> OvTabs(RectTransform panel, float side, int count, System.Func<int, string> label, System.Func<int, Color> colour,
-            int open, System.Action<int> pick, bool enter, bool switched, int choices, out Vector2 cell)
+        // The category column, the frame round the open category's rows and the join between them.
+        // rows: the choices of the open category. chips: whether a parameter row follows them.
+        void OvPicker(RectTransform panel, string name, float side, int count, System.Func<int, string> label, System.Func<int, Color> colour,
+            int open, System.Action<int> pick, bool enter, bool switched, int rows, bool chips)
         {
-            float w = panel.sizeDelta.x, h = panel.sizeDelta.y;
-            Vector2 Slot(float left, float top, float width, float height) => new Vector2(-w / 2 + left + width / 2, h / 2 - top - height / 2);
-            const float tabGap = 8, tabsTop = ChipHeight + 10, join = 12, line = 3, lean = 12, pad = 10, columnGap = 10;
-            float tab = (w - (count - 1) * tabGap) / count;
             for (int i = 0; i < count; i++)
             {
                 int index = i;
                 bool on = i == open;
-                OvOption("Tab" + i, label(i), panel, Slot(i * (tab + tabGap), tabsTop, tab, TabHeight), new Vector2(tab, TabHeight),
-                    () => pick(index), on ? colour(i) : ChoiceFill, on ? OverridePalette.Ink : colour(i), 24, enter ? i * .03f : -1, side, ChoiceFill);
+                OvOption(name + i, label(i), panel, PickSlot(panel, PickIndent, i * PickPitch, PickCategory, PickRow), new Vector2(PickCategory, PickRow),
+                    () => pick(index), on ? colour(i) : ChoiceFill, on ? OverridePalette.Ink : colour(i), 26, enter ? i * .03f : -1, side, ChoiceFill);
             }
-            // The frame holds the open tab's choices and leans like the slabs inside it.
-            int rows = Mathf.Max(1, (choices + 1) / 2);
-            float frameTop = tabsTop + TabHeight + join, frameHeight = pad * 2 + rows * ChoicePitch - (ChoicePitch - ChoiceRow);
-            var frame = Rect("Choice frame", panel, Slot(0, frameTop, w, frameHeight), new Vector2(w, frameHeight)).gameObject.AddComponent<SlabGraphic>();
-            frame.color = Color.clear; frame.Cut = lean; frame.raycastTarget = false; frame.SetFrame(line, OverridePalette.Signal);
+            if (open < 0 || rows == 0) return;
+            // The frame is a slab with the same slant as the rows inside it.
+            float margin = PickPitch - PickRow, room = PickLine + PickClear;
+            float frameTop = -margin, frameBottom = rows * PickPitch - margin + (chips ? PickChip + margin : 0) + margin;
+            float height = frameBottom - frameTop, cut = height * PickSlant;
+            float left = PickLeft + PickRow * PickSlant - room, width = PickChoice - PickRow * PickSlant + room * 2 + cut;
+            var frame = Rect("Choice frame", panel, PickSlot(panel, left - cut, frameTop, width, height), new Vector2(width, height))
+                .gameObject.AddComponent<SlabGraphic>();
+            frame.color = Color.clear; frame.Cut = cut; frame.raycastTarget = false; frame.SetFrame(PickLine, OverridePalette.Signal);
             frame.transform.SetAsFirstSibling();
-            // The join drops from the middle of the open tab onto the frame; it travels when another tab opens.
-            float joinX = open * (tab + tabGap) + tab / 2 - line / 2;
-            var link = Image(panel, Slot(joinX, tabsTop + TabHeight, line, join), new Vector2(line, join), OverridePalette.Signal);
+            // The join runs level from the open category to the frame; it travels along the slant when another opens.
+            float joinY = open * PickPitch + PickRow / 2;
+            var link = Image(panel, PickSlot(panel, PickIndent + PickCategory - 2, joinY - PickLine / 2, PickJoin + 4, PickLine), new Vector2(PickJoin + 4, PickLine), OverridePalette.Signal);
             link.raycastTarget = false; link.transform.SetAsFirstSibling();
-            if (switched && !float.IsNaN(bracketLink) && !Mathf.Approximately(bracketLink, joinX))
+            if (switched && !float.IsNaN(bracketLink) && !Mathf.Approximately(bracketLink, joinY))
             {
                 var travel = link.gameObject.AddComponent<Arrive>();
-                travel.From = new Vector2(bracketLink - joinX, 0); travel.Fade = false; travel.Seconds = .17f;
+                travel.From = new Vector2((joinY - bracketLink) * PickSlant, joinY - bracketLink); travel.Fade = false; travel.Seconds = .17f;
             }
-            bracketLink = joinX;
-            // The frame's slanted sides take one lean of room on each side of the two columns.
-            float inner = lean + line + 8, width = (w - inner * 2 - columnGap) / 2;
-            cell = new Vector2(width, ChoiceRow);
-            return i => Slot(inner + i % 2 * (width + columnGap), frameTop + pad + i / 2 * ChoicePitch, width, ChoiceRow);
+            bracketLink = joinY;
         }
 
         void OvConditionStep(RectTransform panel, ConditionalRule rule, bool enter)
         {
-            float w = panel.sizeDelta.x, h = panel.sizeDelta.y;
-            Vector2 Slot(float left, float top, float width, float height) => new Vector2(-w / 2 + left + width / 2, h / 2 - top - height / 2);
             int selected = selectedConditionIndex < rule.ConditionCount ? rule.GetCondition(selectedConditionIndex).Id : 0;
             // Opening another category brings its choices in; picking a choice does not.
             bool switched = !enter && builtCategory >= 0 && builtCategory != conditionCategory;
             builtCategory = conditionCategory;
-
-            // The parameters complete the sentence in the Condition card, so their row sits directly under it.
-            bool unfold = !enter && selected != builtChipCondition;
-            builtChipCondition = selected;
-            string[] parameters = selected != 0 ? ConditionalCatalog.ConditionOptions(selected) : System.Array.Empty<string>();
-            int current = ConditionalCatalog.ConditionOption(rule, selectedConditionIndex);
-            float chip = parameters.Length == 0 ? 0 : (w - (parameters.Length - 1) * 8) / parameters.Length;
-            for (int p = 0; p < parameters.Length; p++)
-            {
-                int value = p;
-                var draft = rule.Copy();
-                ConditionalCatalog.SetConditionOption(draft, value, selectedConditionIndex);
-                var button = OvOption("ConditionParameter" + p, parameters[p], panel, Slot(p * (chip + 8), 0, chip, ChipHeight),
-                    new Vector2(chip, ChipHeight), () => SelectConditionOption(value), current == p ? OverridePalette.Text : ChoiceFill,
-                    current == p ? OverridePalette.Ink : OverridePalette.Text, 22, -1, -1, ChoiceFill);
-                button.interactable = ConditionalCatalog.HasAnyCompatibleAction(draft);
-                button.GetComponent<SlabButton>().Waiting = current < 0;
-                if (unfold) Unfold(button, p);
-            }
-
             var categories = new System.Collections.Generic.List<int>();
             for (int i = 0; i < ConditionalCatalog.Categories.Length; i++) if (CategoryHasSelectableCondition(i)) categories.Add(i);
-            int choices = 0;
-            foreach (var entry in ConditionalCatalog.Conditions) if (entry.Category == conditionCategory) choices++;
-            var place = OvTabs(panel, -1, categories.Count, i => ConditionalCatalog.Categories[categories[i]], i => OverridePalette.Text,
+            int rows = 0;
+            foreach (var entry in ConditionalCatalog.Conditions) if (entry.Category == conditionCategory) rows++;
+            // The parameters belong to the chosen condition and show while its category is open.
+            int shown = selected != 0 && ConditionalCatalog.Condition(selected).Category == conditionCategory ? selected : 0;
+            string[] parameters = shown != 0 ? ConditionalCatalog.ConditionOptions(shown) : System.Array.Empty<string>();
+            OvPicker(panel, "ConditionCategory", -1, categories.Count, i => ConditionalCatalog.Categories[categories[i]], i => OverridePalette.Text,
                 categories.IndexOf(conditionCategory), i => { selectingCondition = true; conditionCategory = categories[i]; Show(); },
-                enter, switched, choices, out var cell);
+                enter, switched, rows, parameters.Length > 0);
+
             int index = 0;
             foreach (var entry in ConditionalCatalog.Conditions)
             {
@@ -392,13 +379,56 @@ namespace GoGhost.Duel
                 if (condition != selected) candidate.SetCondition(selectedConditionIndex, new RuleCondition(condition));
                 string reason = ConditionalCatalog.HasAnyCompatibleAction(candidate) ? null : "These conditions cannot be true together.";
                 bool chosen = selected == condition;
-                var choice = OvChoice(entry.Label, panel, place(index), cell,
+                var choice = OvChoice(entry.Label, panel, PickSlot(panel, PickLeft, index * PickPitch, PickChoice, PickRow), new Vector2(PickChoice, PickRow),
                     () => ApplyChoice(condition, false, null), chosen ? OverridePalette.Text : ChoiceFill,
                     chosen ? OverridePalette.Ink : OverridePalette.Text, "Handler/EditorCondition" + condition, reason, NeuralBodySystem.None,
-                    enter ? .09f + index * .03f : switched ? index * .02f : -1, -1, ChoiceFill);
+                    enter ? .06f + index * .03f : switched ? index * .02f : -1, -1, ChoiceFill);
                 if (switched) choice.GetComponent<SlabButton>().EnterDistance = 40;
                 index++;
             }
+
+            bool unfold = !enter && !switched && shown != builtChipCondition;
+            builtChipCondition = shown;
+            OvParameterRow(panel, "ConditionParameter", parameters, rows, ConditionalCatalog.ConditionOption(rule, selectedConditionIndex),
+                OverridePalette.Text, -1, SelectConditionOption, p =>
+                {
+                    var draft = rule.Copy();
+                    ConditionalCatalog.SetConditionOption(draft, p, selectedConditionIndex);
+                    return ConditionalCatalog.HasAnyCompatibleAction(draft);
+                }, unfold);
+        }
+
+        // The parameter row: each chip is as wide as its word needs, and the whole row shares one type size,
+        // so a long word such as On Platform does not end up smaller than its neighbours.
+        void OvParameterRow(RectTransform panel, string name, string[] parameters, int rows, int current, Color colour, float side,
+            System.Action<int> pick, System.Func<int, bool> allowed, bool unfold)
+        {
+            if (parameters.Length == 0) return;
+            const float gap = 8, points = 22;
+            float total = 0, room = PickChoice - (parameters.Length - 1) * gap;
+            foreach (string word in parameters) total += word.Length + 3;
+            float left = PickLeft, fit = 1;
+            var labels = new System.Collections.Generic.List<TMP_Text>();
+            for (int p = 0; p < parameters.Length; p++)
+            {
+                int value = p;
+                float width = room * (parameters[p].Length + 3) / total;
+                var button = OvOption(name + p, parameters[p], panel, PickSlot(panel, left, rows * PickPitch, width, PickChip), new Vector2(width, PickChip),
+                    () => pick(value), current == p ? colour : ChoiceFill, current == p ? OverridePalette.Ink : colour, points, -1, side, ChoiceFill);
+                button.interactable = allowed(p);
+                var behaviour = button.GetComponent<SlabButton>();
+                behaviour.Waiting = current < 0;
+                var label = behaviour.Label;
+                label.enableAutoSizing = false; label.fontSize = points;
+                label.alignment = TextAlignmentOptions.Capline;
+                float space = width - 22;
+                label.rectTransform.sizeDelta = new Vector2(space, PickChip);
+                fit = Mathf.Min(fit, space / Mathf.Max(1, label.GetPreferredValues(parameters[p]).x));
+                labels.Add(label);
+                if (unfold) Unfold(button, p);
+                left += width + gap;
+            }
+            foreach (var label in labels) label.fontSize = Mathf.Floor(points * fit);
         }
 
         // A parameter row opens downward from the control it belongs to.
@@ -410,54 +440,49 @@ namespace GoGhost.Duel
 
         void OvActionStep(RectTransform panel, ConditionalRule rule, bool enter)
         {
-            float w = panel.sizeDelta.x, h = panel.sizeDelta.y;
-            Vector2 Slot(float left, float top, float width, float height) => new Vector2(-w / 2 + left + width / 2, h / 2 - top - height / 2);
             string picked = ConditionalCatalog.PickerAction(rule.Action);
-            // Coming to this side opens the tab that holds the chosen action.
-            if (enter && !string.IsNullOrEmpty(picked))
+            int pickedCategory = -1;
+            if (!string.IsNullOrEmpty(picked))
                 for (int i = 0; i < ActionGroups.Length; i++)
-                    if (ActionGroups[i].System == NeuralPalette.System(ConditionalCatalog.Response(picked).Operation)) actionCategory = i;
+                    if (ActionGroups[i].System == NeuralPalette.System(ConditionalCatalog.Response(picked).Operation)) pickedCategory = i;
+            // Coming to this side opens the category that holds the chosen action.
+            if (enter && pickedCategory >= 0) actionCategory = pickedCategory;
             bool switched = !enter && builtActionCategory >= 0 && builtActionCategory != actionCategory;
             builtActionCategory = actionCategory;
-
-            // The parameters complete the sentence in the Action card, so their row sits directly under it.
-            bool unfold = !enter && picked != builtChipAction;
-            builtChipAction = picked;
-            string[] parameters = string.IsNullOrEmpty(rule.Action) ? System.Array.Empty<string>() : ConditionalCatalog.ActionOptions(rule.Action);
-            int current = actionOptionPending ? -1 : ConditionalCatalog.ActionOption(rule);
-            float chip = parameters.Length == 0 ? 0 : (w - (parameters.Length - 1) * 8) / parameters.Length;
-            for (int p = 0; p < parameters.Length; p++)
-            {
-                int value = p;
-                Color part = NeuralPalette.Body(RuleSystem(rule));
-                var draft = rule.Copy();
-                ConditionalCatalog.SetActionOption(draft, value);
-                var button = OvOption("ActionParameter" + p, parameters[p], panel, Slot(p * (chip + 8), 0, chip, ChipHeight), new Vector2(chip, ChipHeight),
-                    () => SelectActionOption(value), current == p ? part : ChoiceFill, current == p ? OverridePalette.Ink : part, 22, -1, 1, ChoiceFill);
-                button.interactable = ActionChoiceReason(draft, draft.Action) == null;
-                button.GetComponent<SlabButton>().Waiting = current < 0;
-                if (unfold) Unfold(button, p);
-            }
-
             var group = ActionGroups[actionCategory];
             Color colour = NeuralPalette.Body(group.System);
-            int choices = 0;
-            foreach (var entry in ConditionalCatalog.Responses) if (NeuralPalette.System(entry.Operation) == group.System) choices++;
-            var place = OvTabs(panel, 1, ActionGroups.Length, i => ActionGroups[i].Label, i => NeuralPalette.Body(ActionGroups[i].System),
-                actionCategory, i => { selectingCondition = false; actionCategory = i; Show(); }, enter, switched, choices, out var cell);
+            int rows = 0;
+            foreach (var entry in ConditionalCatalog.Responses) if (NeuralPalette.System(entry.Operation) == group.System) rows++;
+            // The parameters belong to the chosen action and show while its category is open.
+            bool shown = pickedCategory == actionCategory;
+            string[] parameters = shown ? ConditionalCatalog.ActionOptions(rule.Action) : System.Array.Empty<string>();
+            OvPicker(panel, "ActionCategory", 1, ActionGroups.Length, i => ActionGroups[i].Label, i => NeuralPalette.Body(ActionGroups[i].System),
+                actionCategory, i => { selectingCondition = false; actionCategory = i; Show(); }, enter, switched, rows, parameters.Length > 0);
+
             int index = 0;
             foreach (var entry in ConditionalCatalog.Responses)
             {
                 if (NeuralPalette.System(entry.Operation) != group.System) continue;
                 string action = entry.Id;
                 bool chosen = picked == action;
-                var choice = OvChoice(entry.Label, panel, place(index), cell,
+                var choice = OvChoice(entry.Label, panel, PickSlot(panel, PickLeft, index * PickPitch, PickChoice, PickRow), new Vector2(PickChoice, PickRow),
                     () => ApplyChoice(0, false, action), chosen ? colour : ChoiceFill, chosen ? OverridePalette.Ink : colour,
                     "Handler/EditorAction" + action, ActionChoiceReason(rule, action), group.System,
-                    enter ? .09f + index * .03f : switched ? index * .02f : -1, 1, ChoiceFill);
+                    enter ? .06f + index * .03f : switched ? index * .02f : -1, 1, ChoiceFill);
                 if (switched) choice.GetComponent<SlabButton>().EnterDistance = 40;
                 index++;
             }
+
+            string shownAction = shown ? picked : null;
+            bool unfold = !enter && !switched && shownAction != builtChipAction;
+            builtChipAction = shownAction;
+            OvParameterRow(panel, "ActionParameter", parameters, rows, actionOptionPending ? -1 : ConditionalCatalog.ActionOption(rule),
+                colour, 1, SelectActionOption, p =>
+                {
+                    var draft = rule.Copy();
+                    ConditionalCatalog.SetActionOption(draft, p);
+                    return ActionChoiceReason(draft, draft.Action) == null;
+                }, unfold);
         }
     }
 }

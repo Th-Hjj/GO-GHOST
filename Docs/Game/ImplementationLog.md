@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Rule editor: category column, slanted rows, parameters last
+
+- **Asked:** the tabs version put the parameters above the categories and shrank everything; return to the original order (category, choice, parameter) on both sides, with a frame that really slants (decision recorded in `CLAUDE.md` and `AGENTS.md`).
+- **Cause of the earlier version:** the parameter row had been fixed under the sentence card when the action side had no categories; adding tabs later left the categories between the parameters and the choices. Sizes had been set for ten choices per tab instead of the two to five that exist.
+- **Changed:** `DuelUI.OverrideEditor.cs`: `OvPicker` builds the category column, the Signal frame and the level join for either side; `PickSlot` steps each row left along the slant; `OvParameterRow` sizes chips by their words and gives the row one type size. `OvTabs` and its constants are removed. `SlabButton.Rim` is removed from `OverrideGraphics.cs`.
+- **Checked:** Unity compiled; two Play Mode passes with the tutorial silenced, captures in `Logs/RuleWording/`: `t1_condition.png` (Body open, Where You Stand with its three parameters), `t2_action.png`, `t3_pending.png` (Movement open, Change Platform waiting for one of four parameters). The first pass showed four chips too narrow for their words; the row was reworked and the second pass shows them fitting.
+- **Not tested:** switching categories and the join's travel, a category with six choices, the first-rule tutorial over this layout, Reduce Flashing and other aspect ratios.
+
 ## 2026-11-14 — Rule editor: tabs and grid on both sides, Signal join restored, button outlines
 
 - **Asked:** unify the two sides in a way that survives adding entries; put back the Signal line that ties a category to its choices, which the redesign had removed; make choices read as buttons; improve the character's place (decision recorded in `CLAUDE.md` and `AGENTS.md`).

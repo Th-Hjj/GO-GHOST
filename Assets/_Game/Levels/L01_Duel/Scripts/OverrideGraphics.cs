@@ -412,8 +412,6 @@ namespace GoGhost.Duel
         public float EnterSide = -1;
         // The entrance runs past its place and settles back.
         public bool Overshoot;
-        // A thin outline that marks a resting control as a button on a ground close to its own colour.
-        public Color? Rim;
         // A parameter group that still needs a choice pulses a Signal inner frame.
         public bool Waiting;
         // A leaving page keeps its controls as they looked when the player left.
@@ -475,9 +473,7 @@ namespace GoGhost.Duel
                 pulse.a = .5f + .5f * Mathf.Cos((float)(Time.unscaledTimeAsDouble % 1.2 / 1.2) * Mathf.PI * 2);
                 Slab.SetFrame(3, pulse);
             }
-            else if (available && focused) Slab.SetFrame(4, Fill == OverridePalette.Text ? OverridePalette.Ink : OverridePalette.Text);
-            else if (Rim.HasValue) Slab.SetFrame(2, available ? Color.Lerp(Rim.Value, Ink, .35f * eased) : Rim.Value * .6f + new Color(0, 0, 0, .4f));
-            else Slab.SetFrame(0, OverridePalette.Text);
+            else Slab.SetFrame(available && focused ? 4 : 0, Fill == OverridePalette.Text ? OverridePalette.Ink : OverridePalette.Text);
             var ink = !available ? OverridePalette.Disabled : swept < .5f ? sweepInk : Ink;
             if (Label != null) Label.color = ink;
             if (Icon != null) Icon.color = ink;

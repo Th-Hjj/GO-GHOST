@@ -466,7 +466,7 @@
       "key": "Handler/Mission1Skills",
       "label": "Mission 1 · Skills",
       "text": "Skills, Piercing Shot, Optical Camo.",
-      "profileMission": 1,
+      "profileMission": 0,
       "profileField": "Skills",
       "profileValue": "Piercing Shot · Optical Camo"
     },
@@ -514,7 +514,7 @@
       "key": "Handler/Mission2Skills",
       "label": "Mission 2 · Skills",
       "text": "Skills, Pursuit Draw, Still Blade.",
-      "profileMission": 2,
+      "profileMission": 0,
       "profileField": "Skills",
       "profileValue": "Pursuit Draw · Still Blade"
     },
@@ -570,7 +570,7 @@
       "key": "Handler/Mission3Skills",
       "label": "Mission 3 · Skills",
       "text": "Skills, [placeholder].",
-      "profileMission": 3,
+      "profileMission": 0,
       "profileField": "Skills",
       "profileValue": "[placeholder]"
     },

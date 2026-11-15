@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Target Profiles: four fields and consistent Final Boss portrait
+
+- **Asked:** fix the Final Boss dossier's unfinished presentation; Thomas then chose to remove Skills from all three dossiers so attacks remain a discovery in combat.
+- **Baseline:** the overview card already showed an Ink body on a rainbow, but the Final Boss profile used a rainbow body on a dark field with a Signal hazard edge. All dossiers displayed and read Skills; Mission 3 still used a placeholder.
+- **Changed:** `DuelUI.OverridePreparation.cs`, `DuelUI.Motion.cs` and `OverrideGraphics.cs` carry the card's rainbow through the expanded field and its return, draw the Final Boss body in Ink, and retain the axe colours. Profiles show only Codename, Threat, Weapon and Location. Swordsman's existing portrait pose is retained independently of the removed Skills row. `VoiceStudioCatalog.json` detaches the three Skills cues from the dossier sequence; existing audio assets and GUIDs remain. The intermediate five-skill text, new recording and multiline layout were withdrawn.
+- **Checked:** Unity 6000.6.0f1 compiled. In QHD Play Mode, an in-memory smoke used the developer wave fixtures with the overview tutorial silenced, then the normal target-card and Back callbacks for Missions 1–3. Each page had four rows without field-text overflow; the audio sources played the title and four fields (plus Mission 3's alias), with no Skills clip. All three returned to preparation and reopened silently. Inspected all three captures in `Logs/TargetProfileFix/mission-1-four-fields.png` through `mission-3-four-fields.png`; the reading/navigation report is `Logs/TargetProfileFix/four-fields-check.txt`. Final Boss opening and closing use the rainbow, and the closing field is removed on completion. Catalog routing, paired instruction files and diff whitespace checks passed.
+- **NOT TESTED:** 720p/other aspect ratios, Reduce Flashing, full combat progression and packaged builds. No build was made.
+
 ## 2026-11-14 — Rule editor: card and list on shared guide lines
 
 - **Asked:** the list under each card looked shifted right; align by eye, not by arithmetic (decision recorded in `CLAUDE.md` and `AGENTS.md`).

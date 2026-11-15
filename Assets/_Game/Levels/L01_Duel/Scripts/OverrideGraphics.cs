@@ -290,7 +290,7 @@ namespace GoGhost.Duel
     {
         public Vector2[] From, To;
         public float Seconds = .34f;
-        public bool RemoveAtEnd;
+        public bool RemoveAtEnd, Rainbow;
         readonly Vector2[] corners = new Vector2[4];
         double born;
         bool settled;
@@ -298,7 +298,7 @@ namespace GoGhost.Duel
         protected override void OnEnable() { base.OnEnable(); born = Time.unscaledTimeAsDouble; settled = false; }
         void Update()
         {
-            if (settled) return;
+            if (settled) { if (Rainbow) SetVerticesDirty(); return; }
             SetVerticesDirty();
             if (Time.unscaledTimeAsDouble - born < Seconds) return;
             settled = true;
@@ -312,7 +312,8 @@ namespace GoGhost.Duel
             float eased = From == null ? 1 : OvMotion.Glide((float)(Time.unscaledTimeAsDouble - born) / Mathf.Max(.01f, Seconds));
             for (int i = 0; i < 4; i++) corners[i] = From == null ? To[i] : Vector2.LerpUnclamped(From[i], To[i], eased);
             float pixel = 1f / Mathf.Max(.01f, canvas != null ? canvas.scaleFactor : 1f);
-            OverrideMesh.Polygon(vh, corners, color, pixel);
+            if (Rainbow) RainbowBlock.Populate(vh, corners, color.a, pixel);
+            else OverrideMesh.Polygon(vh, corners, color, pixel);
         }
     }
 
@@ -529,6 +530,36 @@ namespace GoGhost.Duel
                 int n = i * 2;
                 vh.AddTriangle(n - 2, n, n + 1);
                 vh.AddTriangle(n - 2, n + 1, n - 1);
+            }
+        }
+
+        // The profile uses the card's rainbow on its expanding quad. Keep one spectrum visible
+        // in the 900-unit page even though the field extends beyond the screen on every side.
+        internal static void Populate(VertexHelper vh, Vector2[] corners, float alpha, float feather)
+        {
+            float fullHeight = corners[1].y - corners[0].y;
+            float height = Mathf.Min(900, fullHeight);
+            float bottom = (corners[0].y + corners[1].y - height) * .5f;
+            float phase = GameSettings.ReduceFlashing ? 0 : (float)(Time.unscaledTimeAsDouble / 4 % 1.0);
+            int steps = Mathf.Max(12, Mathf.CeilToInt(fullHeight / height * 24));
+            for (int i = 0; i <= steps; i++)
+            {
+                float t = i / (float)steps;
+                Vector2 left = Vector2.Lerp(corners[0], corners[1], t), right = Vector2.Lerp(corners[3], corners[2], t);
+                Color tint = Color.HSVToRGB(Mathf.Repeat(phase + (left.y - bottom) / height, 1), .75f, 1);
+                tint.a = alpha;
+                Color clear = tint; clear.a = 0;
+                vh.AddVert(left - Vector2.right * feather, clear, Vector2.zero);
+                vh.AddVert(left, tint, Vector2.zero);
+                vh.AddVert(right, tint, Vector2.zero);
+                vh.AddVert(right + Vector2.right * feather, clear, Vector2.zero);
+                if (i == 0) continue;
+                int n = i * 4;
+                for (int j = 0; j < 3; j++)
+                {
+                    vh.AddTriangle(n - 4 + j, n + j, n + j + 1);
+                    vh.AddTriangle(n - 4 + j, n + j + 1, n - 3 + j);
+                }
             }
         }
     }

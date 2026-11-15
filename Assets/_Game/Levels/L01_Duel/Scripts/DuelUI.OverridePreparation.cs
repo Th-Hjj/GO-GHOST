@@ -115,8 +115,8 @@ namespace GoGhost.Duel
                 if (pageEntering && pageChange == PageChange.Expand)
                 {
                     closing = Rect("Closing field", frame, Vector2.zero, Vector2.zero).gameObject.AddComponent<QuadMorph>();
-                    closing.color = final ? OverridePalette.Surface : MissionColor; closing.raycastTarget = false;
-                    closing.From = FieldQuad; closing.To = CardQuad; closing.Seconds = .30f; closing.RemoveAtEnd = true;
+                    closing.color = final ? Color.white : MissionColor; closing.Rainbow = final; closing.raycastTarget = false;
+                    closing.From = final ? RainbowFieldQuad : FieldQuad; closing.To = CardQuad; closing.Seconds = .30f; closing.RemoveAtEnd = true;
                     var appear = profile.gameObject.AddComponent<Arrive>();
                     appear.Delay = .27f - .03f; appear.Seconds = .06f;
                 }
@@ -400,19 +400,18 @@ namespace GoGhost.Duel
             // The field opens out of the overview's target card when the page is entered from there.
             bool opening = pageEntering && pageChange == PageChange.Expand;
             var field = Rect("Target field", frame, Vector2.zero, Vector2.zero).gameObject.AddComponent<QuadMorph>();
-            field.color = final ? OverridePalette.Surface : mission; field.raycastTarget = false;
-            field.To = FieldQuad; field.From = opening ? CardQuad : null;
+            field.color = final ? Color.white : mission; field.Rainbow = final; field.raycastTarget = false;
+            field.To = final ? RainbowFieldQuad : FieldQuad; field.From = opening ? CardQuad : null;
             profileField = field.gameObject;
             var edge = Rect("Edge", frame, new Vector2(863 - 800, 0), new Vector2(ScreenSpan, 34));
             edge.localRotation = Quaternion.Euler(0, 0, 82.4f);
             var stripes = edge.gameObject.AddComponent<StripeGraphic>();
-            stripes.color = OverridePalette.Ink; stripes.Other = final ? OverridePalette.Signal : mission; stripes.SecondsPerPeriod = 0; stripes.raycastTarget = false;
+            stripes.color = OverridePalette.Ink; stripes.Other = final ? Color.clear : mission; stripes.SecondsPerPeriod = 0; stripes.raycastTarget = false;
             if (opening) { var late = OvArrive(edge, Vector2.zero, 0); late.Delay = .24f; late.Seconds = .12f; }
 
             int last = Mathf.Min(game.ProfilePage, game.ProfileLines.Length - 1);
-            bool skills = last >= 0 && game.ProfileLines[last].profileField == "Skills";
             var panel = Rect("Target panel", frame, new Vector2(1250 - 800, 0), new Vector2(560, 760));
-            DrawProfileSilhouette(panel, final, game.Wave == 2 && skills, final ? (Color?)null : OverridePalette.Ink);
+            DrawProfileSilhouette(panel, final, game.Wave == 2, OverridePalette.Ink);
             if (pageEntering) { var land = panel.gameObject.AddComponent<SlamIn>(); land.From = 1.12f; land.Seconds = .16f; land.Delay = opening ? .26f : .08f; }
 
             var back = OvButton("« Back", frame, At(56, 44, 170, 52), new Vector2(170, 52), game.BackFromProfile, OverrideButtonKind.Tertiary, 30,
@@ -425,7 +424,7 @@ namespace GoGhost.Duel
             OvArrive(OvText("Target Profile", frame, new Vector2(56 + 450 - 800, 450 - 231), new Vector2(900, 130), 118, OverridePalette.Text, TextAlignmentOptions.CaplineLeft, true, -.5f),
                 new Vector2(-120, 0), 1);
 
-            string[] fields = { "Codename", "Threat", "Weapon", "Location", "Skills" };
+            string[] fields = { "Codename", "Threat", "Weapon", "Location" };
             const float rowTop = 300, rowHeight = 76, rowWidth = 700;
             for (int i = 0; i <= fields.Length; i++)
                 Image(frame, new Vector2(56 + rowWidth / 2 - 800, 450 - (rowTop + i * rowHeight)), new Vector2(rowWidth, 2), OverridePalette.Neutral);

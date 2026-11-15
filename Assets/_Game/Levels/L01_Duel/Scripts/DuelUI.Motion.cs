@@ -287,6 +287,8 @@ namespace GoGhost.Duel
 
         static readonly Vector2[] CardQuad = { new Vector2(384, 46), new Vector2(406, 290), new Vector2(744, 290), new Vector2(722, 46) };
         static readonly Vector2[] FieldQuad = { new Vector2(-100, -1350), new Vector2(260, 1350), new Vector2(3000, 1350), new Vector2(2640, -1350) };
+        // Extend the rainbow beneath the transparent gaps in the profile's hazard edge.
+        static readonly Vector2[] RainbowFieldQuad = { new Vector2(-134, -1350), new Vector2(226, 1350), new Vector2(3000, 1350), new Vector2(2640, -1350) };
 
         // ---- interface cues ----
 

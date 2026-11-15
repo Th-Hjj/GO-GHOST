@@ -18,6 +18,18 @@ namespace GoGhost.Duel
         public OperationRules[] operations;
     }
 
+    // What outlives the save slot: finishing the game removes the save, and New Game must not undo this.
+    public static class GameProgress
+    {
+        const string ClearedKey = "progress.cleared";
+        // True once the Final Boss has been beaten on this machine. It brings GHOST to the title.
+        public static bool Cleared
+        {
+            get => PlayerPrefs.GetInt(ClearedKey, 0) != 0;
+            set { PlayerPrefs.SetInt(ClearedKey, value ? 1 : 0); PlayerPrefs.Save(); }
+        }
+    }
+
     public static class GameSave
     {
         static string Folder => Path.Combine(Application.persistentDataPath, "Save");

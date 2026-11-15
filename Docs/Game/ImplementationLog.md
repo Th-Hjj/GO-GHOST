@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — GHOST stage 1: cleared flag, hologram on the title, pointer
+
+- **Asked:** start GHOST (decision recorded in `CLAUDE.md` and `AGENTS.md`). Stage 1 of five.
+- **Changed:** `GameProgress.Cleared` (PlayerPrefs `progress.cleared`) is set when the Final Boss is beaten and outlives the save slot. `DuelUI.Ghost.cs`: with the flag set, the title builds the overview's player figure on the T of the logo, turned to face the menu, without a face, in GHOST's blue; `GhostHologram.shader` draws it as rising scan rows with a travelling bright band and an occasional displaced run of rows. `GhostPointer` swaps the system pointer for a generated blue arrow while it is over him. A click does nothing yet. Reduce Flashing holds the rows still and removes the displaced run.
+- **Checked:** Unity compiled; one Play Mode capture with the flag set by hand (`Logs/ArtRedesign/ghost_title.png`). The flag is left set on Thomas's machine. The pointer change, the flag being set by a real Final Boss win, the title without the flag, the opening and other aspect ratios NOT TESTED.
+- **Known:** where two limbs overlap, the faint rows are a little darker.
+
 ## 2026-11-14 — Title sky refitted to the smaller logo
 
 - **Asked:** finish the title resize: check the star distribution and what else on the page should follow.

@@ -381,3 +381,15 @@ Audio uses Kenney's [Sci-fi Sounds](https://kenney.nl/assets/sci-fi-sounds), [RP
 ## Evidence boundary
 
 The optional **GO GHOST > Playtest > Check Game Flow** command follows configuration, Testing and the numbered waves through the Final Boss choice and Bonus. See the [implementation log](ImplementationLog.md).
+
+## GHOST (title, after the game is finished)
+
+Confirmed by Thomas on 2026-11-14. Stage 1 is built; everything below it is design.
+
+- **Unlock:** `GameProgress.Cleared`, set by beating the Final Boss. Without it the title is unchanged.
+- **On the title:** he stands still on the T of the logo as a hologram and the pointer takes his look over him. Clicking him starts the fight.
+- **Body:** the player's body and revolver, blue scan rows, no face. Every player operation including Dodge; no Boss-only move.
+- **AI:** the strongest parts of the Gunner, Swordsman and Final Boss AI combined.
+- **Player:** named You, no face, no rules.
+- **Arena:** named GHOST. The five letters as thin strokes: horizontal strokes are one-way platforms on the 2.1 / 4.2 / 6.3 tiers, vertical strokes are projected light that bodies pass. Proposed size 44 x 11.5 with a camera that frames both fighters. Health for both proposed at 150.
+- **Transition:** the title turns into the arena without a cut. Defeat returns to the title. The result of a win is undecided.

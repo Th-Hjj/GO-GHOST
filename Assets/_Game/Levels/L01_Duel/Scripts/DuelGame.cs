@@ -381,7 +381,7 @@ namespace GoGhost.Duel
             Phase = value;
             if (value == DuelPhase.Configure || value == DuelPhase.TargetProfile || value == DuelPhase.Between) SaveGame();
             // Finishing the game removes the save.
-            if (value == DuelPhase.Complete && Wave == FinalBossWave) { GameSave.Delete(); savingRun = false; }
+            if (value == DuelPhase.Complete && Wave == FinalBossWave) { GameSave.Delete(); savingRun = false; GameProgress.Cleared = true; }
             MetricsStage();
             if (value == DuelPhase.Complete) PlayMetrics.EndRun("complete");
             phaseTime = 0;

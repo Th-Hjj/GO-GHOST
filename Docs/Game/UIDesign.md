@@ -112,7 +112,7 @@ A rebuild of the same page is a refresh: nothing replays, and an entrance that i
 
 The wipe runs on its own clock, advanced by at most a thirtieth of a second per frame, so a long frame under it (building a fight takes about 90 ms) delays it instead of making it jump. Whatever a wipe's callback builds goes under the wipe in the same frame. Menus use unscaled UI time. Combat HUD feedback keeps the combat clock, pause freeze and cleanup rules it has now, and gains no motion from the above. Reduce Flashing turns the wipe into a fade and removes the click brightening.
 
-**Interface cues.** `Tools/make_ui_sfx.py` writes `Resources/UiSfx/UiHover.wav` (a 32 ms dry tick) and `UiClick.wav` (an 85 ms edge over a falling knock with a faint blip). Slab buttons and rule cards play the tick on hover; every button plays the click. They follow the Effects volume and play while the game is paused.
+**Interface cues.** `Tools/make_ui_sfx.py` writes `Resources/UiSfx/UiHover.wav` (a 32 ms dry tick) and `UiClick.wav` (an 85 ms edge over a falling knock with a faint blip). Slab buttons and rule cards play the tick on hover; every button plays the click. They follow the Effects volume and play while the game is paused. The countdown plays `Resources/UiSfx/UiCount.ogg` on 3, 2 and 1, the same cue each time, and nothing at the start (Thomas, 2026-11-15). It is `glass_001.ogg` from Kenney's Interface Sounds 1.0, CC0, unmodified. No other transition has a sound of its own.
 
 **Tutorial pointer.** While Happy teaches, the page sits under one 48% shade and controls keep their own colours. What she names is framed by a 4-pixel Signal slab-cut opening (`SpotlightGraphic`). It opens in 180 ms when the line is heard, follows its target, travels to the next one and closes when the line ends. A line that waits for a choice keeps the frame without the shade once its text is dismissed.
 
@@ -210,7 +210,7 @@ The pages carry no black ground and no scanlines while held. Entrances count fro
 | 2 | Each Boss shows one white step |
 | 3 | The fight starts. The mission name and its line leave upward in .2 s |
 
-The Rules sidebar still slides in as the countdown begins.
+The Rules sidebar still slides in as the countdown begins. Each number is heard: see Interface cues.
 
 **Menu (D9, Thomas 2026-11-15, trial tuning).** Chosen from a played prototype over the centred column it replaces. The pause key opens it on every page after the title; preparation pages carry a Menu tertiary button at the top right, where Help was, that does the same. An Ink panel with a slanted Signal left edge wipes in from the right edge in .16 s. On it, right of 1084: a hazard rule, then Resume (primary), Configuration (secondary, in a fight or the Test Room only), Key Bindings, Settings and Main Menu (tertiary), arriving from the right 40 ms apart. The page it covers stays where it is and is rebuilt without replaying its entrance. A preparation page dims under a 74% Ink shade in .12 s and its character stays lit in front of the shade. A fight, the countdown and the Test Room are held as a result is: the arena grey and at 45%, the fighters in colour, the HUD dimmed. Resume slides the panel back out and fades the menu in .12 s. Key Bindings opened from the menu returns to the menu. In Body Configuration, Esc first closes the rule being edited. No title word is added (`DuelUI.Menu.cs`).
 

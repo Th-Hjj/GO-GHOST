@@ -230,6 +230,7 @@ namespace GoGhost.Duel
             UpdateSaveNotice();
             UpdateCreationWords();
             UpdateHurtFlash();
+            UpdateCountdownCue();
             UpdateOverlayInput();
             UpdateTitleBackdrop();
             if (game.DeveloperToolsOpen) return;

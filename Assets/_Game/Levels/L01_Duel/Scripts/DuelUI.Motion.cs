@@ -36,7 +36,9 @@ namespace GoGhost.Duel
         float addTop = float.NaN, addTopNow = float.NaN, bracketLink = float.NaN;
 
         AudioSource uiAudio;
-        AudioClip uiHover, uiClick;
+        AudioClip uiHover, uiClick, uiCount;
+        // The number last announced, so a rebuilt HUD does not announce it again.
+        int countCue = -1;
         float uiHoverAt;
 
         static bool Preparation(PageKind kind) => kind == PageKind.Overview || kind == PageKind.Editor;
@@ -305,6 +307,7 @@ namespace GoGhost.Duel
             uiAudio.ignoreListenerPause = true;
             uiHover = Resources.Load<AudioClip>("UiSfx/UiHover");
             uiClick = Resources.Load<AudioClip>("UiSfx/UiClick");
+            uiCount = Resources.Load<AudioClip>("UiSfx/UiCount");
         }
 
         internal void PlayUiHover()
@@ -322,6 +325,23 @@ namespace GoGhost.Duel
             LoadUiAudio();
             var clip = click ? uiClick : uiHover;
             if (clip != null) uiAudio.PlayOneShot(clip, (click ? .55f : .32f) * GameSettings.EffectsScale);
+        }
+
+        // The countdown is heard as three identical cues, on 3, 2 and 1 (Thomas, 2026-11-15). The start has none.
+        // UiSfx/UiCount is glass_001 from Kenney's Interface Sounds (CC0). Without it the click stands in.
+        void UpdateCountdownCue()
+        {
+            if (game.Phase == DuelPhase.Prepare)
+            {
+                int count = Mathf.CeilToInt(game.PreparationRemaining);
+                if (count == countCue || count < 1) return;
+                countCue = count;
+                LoadUiAudio();
+                var clip = uiCount != null ? uiCount : uiClick;
+                if (clip != null) uiAudio.PlayOneShot(clip, .55f * GameSettings.EffectsScale);
+                return;
+            }
+            countCue = -1;
         }
 
         void UiClicked(GameObject control)

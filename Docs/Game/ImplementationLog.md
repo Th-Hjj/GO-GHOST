@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-11-15 — Countdown cue
+
+- **Asked:** stage 4 of the UI motion order, sounds for the transitions. Thomas rejected two rounds of synthesized candidates (seven events with unrelated timbres; then one family built from the click and hover), asked whether all of them were needed, and settled on the countdown alone: three identical cues, from a ready-made sound.
+- **Changed:** `DuelUI.Motion.cs` plays one cue as the countdown shows 3, 2 and 1, tracked apart from the HUD so a rebuild does not repeat it. `Resources/UiSfx/UiCount.ogg` is `glass_001.ogg` from Kenney's Interface Sounds 1.0 (CC0), copied unmodified from the pack on OpenGameArt; he chose it from ten candidates picked by measured length and pitch out of three CC0 Kenney packs. `Tools/make_ui_sfx.py` is unchanged.
+- **Checked:** Unity 6000.6.0f1 compiled and loads the clip (0.28 s). Before the cue was reduced to three, a Play Mode run showed the interface source starting at 0, 0.98 and 1.98 s into the countdown.
+- **NOT TESTED:** the final three-cue version in Play Mode, its level against the music that starts with the countdown, Pause during the countdown, and builds. The sound was chosen by Thomas; it was not heard here.
+
 ## 2026-11-15 — Game menu on the right; Help removed
 
 - **Asked:** stage 3 of the UI motion order. Thomas wanted Help gone and a game menu in its place, and left its relation to the pause menu to design. From a played prototype (the existing centred column, a right-hand panel, the centred column with motion) he chose the right-hand panel.

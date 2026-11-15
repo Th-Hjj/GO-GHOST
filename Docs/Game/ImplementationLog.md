@@ -8,6 +8,14 @@
 - **Checked:** the game assembly compiles with Unity's bundled compiler outside the Editor (Thomas was in Play Mode). An offline composite of the two plates at the left parallax position, drawn the way the canvas blends them, shows the band before and a solid tower after.
 - **NOT TESTED:** Mission 3 in Play Mode, including the EMP contour trace over the towers, other parallax positions and phase two. The part of the amber row to the right of the tower is not covered by any tower and still shows, as authored.
 
+## 2026-11-15 — Jumping from a Boss's head while he is rising
+
+- **Asked:** fix the player being unable to jump while standing on the Boss's head.
+- **Found:** grounding is only tested while the player's upward speed is at most .1, unless `RidingRisingCarrier` says the support is rising too, and that accepted kinematic bodies only (the moving platforms). A Boss is a dynamic body, so on a Boss who was jumping, or riding a rising platform, the player was not grounded and the jump was refused. In a Mission 1 sample the player sat on the Gunner's head at 3.35 upward and read as not grounded. Standing on a Boss who is not rising already worked through the contact test.
+- **Changed:** `PlayerMovement.RidingRisingCarrier` also accepts a body that carries an `Enemy`.
+- **Checked:** Unity 6000.6.0f1 compiled. In Play Mode the player was placed on the Gunner's head twelve times with his AI running; in all ten samples that touched him, rising at up to 5.1 and falling, the player read as grounded (`Logs/headjump2.txt`).
+- **NOT TESTED:** an actual jump from his head with real input, the Swordsman and the Final Boss, and whether Thomas's case was a rising Boss. If it still fails on a Boss standing still, the cause is elsewhere.
+
 ## 2026-11-15 — Phase two: punches lead by their wind-up; Meteor dives through platforms in its way
 
 - **Asked:** ideas to make the Final Boss smarter, especially axe teamwork and where moves land; the Meteor dive was often caught by a platform instead of landing beside the player. Of six proposals Thomas chose the first two.

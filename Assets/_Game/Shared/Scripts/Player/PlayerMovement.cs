@@ -52,7 +52,10 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
             var support = playerIsOther ? contact.collider : contact.otherCollider;
             float upward = playerIsOther ? contact.normal.y : -contact.normal.y;
             var carrier = support != null ? support.attachedRigidbody : null;
-            if (contact.enabled && upward > .5f && carrier != null && carrier.bodyType == RigidbodyType2D.Kinematic
+            // A moving platform, or another fighter's body: standing on a Boss that is rising (a jump, or a
+            // platform under him) is still standing, so a jump from his head is accepted.
+            if (contact.enabled && upward > .5f && carrier != null && carrier != rb
+                && (carrier.bodyType == RigidbodyType2D.Kinematic || support.GetComponentInParent<Enemy>() != null)
                 && rb.linearVelocity.y <= carrier.linearVelocity.y + 0.1f) return true;
         }
         return false;

@@ -20,7 +20,7 @@ namespace GoGhost.Duel
         void NoteDialoguePage()
         {
             bool configure = game.Phase == DuelPhase.Configure;
-            var current = (game.Phase, configure && selectorRow >= 0, configure && helpOpen,
+            var current = (game.Phase, configure && selectorRow >= 0, false,
                 game.Paused, game.DeveloperToolsOpen);
             if (lastDialoguePage.HasValue && lastDialoguePage.Value == current) return;
             lastDialoguePage = current;
@@ -31,15 +31,14 @@ namespace GoGhost.Duel
         {
             if (sceneDialogue != null) sceneDialogue.maxVisibleCharacters = game.DialogueVisibleCharacters;
             if (sceneContinue != null) sceneContinue.alpha = game.DialogueCanAdvance ? 1 : 0;
-            bool show = game.PendingDialogue != null && !game.Paused && !game.DeveloperToolsOpen
-                && !(game.Phase == DuelPhase.Configure && helpOpen);
+            bool show = game.PendingDialogue != null && !game.Paused && !game.DeveloperToolsOpen;
             bool wasShowingStory = DialogueVisible;
             DialogueVisible = show;
             UpdateTutorialFocus();
             bool explainingEditor = VisibleTutorialFocus == TutorialFocus.Relation;
             if (pageControls != null) pageControls.interactable = game.StartupProgress < 0
                 && (!show || TutorialChoiceOpen || (!explainingEditor && game.DialogueAllowsPreparationNavigation));
-            bool ruleEditorOpen = game.Phase == DuelPhase.Configure && selectorRow >= 0 && !helpOpen
+            bool ruleEditorOpen = game.Phase == DuelPhase.Configure && selectorRow >= 0
                 && !game.Paused && !game.DeveloperToolsOpen;
             // On a first Target Profile visit Happy's box follows her reading, without waiting for clicks.
             string readingLine = !show && game.Phase == DuelPhase.TargetProfile && !game.Paused && !game.DeveloperToolsOpen

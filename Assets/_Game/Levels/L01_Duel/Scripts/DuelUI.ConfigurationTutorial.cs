@@ -15,7 +15,7 @@ namespace GoGhost.Duel
         Vector2 spotCenter, spotSize;
         float spotShade, spotOpen;
 
-        bool TutorialOnPage => game.Phase == DuelPhase.Configure && !game.Paused && !game.DeveloperToolsOpen && !helpOpen;
+        bool TutorialOnPage => game.Phase == DuelPhase.Configure && !game.Paused && !game.DeveloperToolsOpen;
         TutorialFocus VisibleTutorialFocus => TutorialOnPage ? game.ConfigurationVoice.Focus : TutorialFocus.None;
         // Lines that wait for the player to choose something instead of a click.
         bool TutorialChoiceOpen => VisibleTutorialFocus is TutorialFocus.Pick or TutorialFocus.Confirm or TutorialFocus.Condition or TutorialFocus.Action;

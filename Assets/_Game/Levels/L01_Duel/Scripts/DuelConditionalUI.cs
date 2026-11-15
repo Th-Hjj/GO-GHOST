@@ -55,13 +55,12 @@ namespace GoGhost.Duel
         };
         public int SelectedOperation => (int)(string.IsNullOrEmpty(pendingRule?.Action)
             ?ControlOperation.Aim:ConditionalCatalog.Response(pendingRule.Action).Operation);
-        public bool ConfigurationReady => !helpOpen && pendingRule == null && selectorRow < 0 && ConditionalCatalog.IsValid(game.DraftLoadout);
-        internal bool OnPreparationOverview => !helpOpen && selectorRow < 0;
+        public bool ConfigurationReady => pendingRule == null && selectorRow < 0 && ConditionalCatalog.IsValid(game.DraftLoadout);
+        internal bool OnPreparationOverview => selectorRow < 0;
 
         string ScrollKey(string name) => name=="EquippedRules"?name:name+"/"+builtSelector;
         void CaptureConfigurationView()
         {
-            if(page!=null&&page==helpPage)return;
             focusName=focusLabel=null;
             if(page==null||game.Phase!=DuelPhase.Configure||displayedDraft!=game.DraftLoadout)
             {configurationScroll.Clear();return;}
@@ -127,11 +126,6 @@ namespace GoGhost.Duel
                 Show();
                 return true;
             }
-            if(helpOpen)
-            {
-                if(!DeveloperShortcutConsumed&&Keyboard.current!=null&&Keyboard.current.escapeKey.wasPressedThisFrame)CloseHelp();
-                return true;
-            }
             if (!DeveloperShortcutConsumed && selectorRow >= 0 && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
             {
                 CancelRuleEdit();
@@ -153,7 +147,6 @@ namespace GoGhost.Duel
         // its lifecycle owner updates the phase and draws the final page once it is ready.
         public void DiscardRulePicker()
         {
-            helpOpen=false;helpDraft=null;
             pendingRule=completedPreview=null;
             pendingRow=selectorRow=completedPreviewRow=-1;
             selectingCondition=selectingAdditional=false;

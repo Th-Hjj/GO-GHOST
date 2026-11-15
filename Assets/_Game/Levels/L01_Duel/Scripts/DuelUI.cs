@@ -62,8 +62,6 @@ namespace GoGhost.Duel
             trainingBack.anchorMin = trainingBack.anchorMax = trainingBack.pivot = new Vector2(0, 1);
             trainingBack.anchoredPosition = new Vector2(24, -28);
             dialogueExits.Add(trainingBack);
-            // Pause's backdrop belongs to Page. Keep the same navigation available above it.
-            if (game.Paused) trainingBack.SetParent(page, true);
         }
 
         public bool TrainingOwnsPointer()
@@ -148,8 +146,6 @@ namespace GoGhost.Duel
         void BuildPage()
         {
             CaptureConfigurationView();
-            CaptureHelpView();
-            if(game.Phase!=DuelPhase.Configure||helpDraft!=game.DraftLoadout)helpOpen=false;
             float oldScale=canvas.GetComponent<Canvas>().scaleFactor;
             ConfigurePageScale();
             sceneDialogue = null; sceneContinue = null;
@@ -159,6 +155,7 @@ namespace GoGhost.Duel
                 if(overlay!=OverlayPage.None&&game.Phase!=DuelPhase.Menu&&!game.Paused)overlay=OverlayPage.None;
                 if(game.Phase==DuelPhase.Menu&&overlay==OverlayPage.None&&!GameSettings.NoticeSeen)overlay=OverlayPage.Notice;
             }
+            LeaveMenuIfResumed();
             // The old page is destroyed, held under a wipe or left to flow out, depending on where the player is going.
             BeginPageChange(oldScale);
             page=Rect("Page",canvas,Vector2.zero,new Vector2(1600,900));
@@ -167,7 +164,14 @@ namespace GoGhost.Duel
             EndPageChange();
         }
 
+        // The menu opens over whatever page is open, which stays behind it.
         void BuildPageBody()
+        {
+            BuildPageContent();
+            BuildMenuLayer();
+        }
+
+        void BuildPageContent()
         {
             developerFields.Clear();
             dialogueExits.Clear();
@@ -186,12 +190,10 @@ namespace GoGhost.Duel
             if(overlay!=OverlayPage.None){BuildOverrideOverlay();return;}
             if(game.Phase==DuelPhase.Menu||game.Phase==DuelPhase.Configure||game.Phase==DuelPhase.CharacterCreation||game.Phase==DuelPhase.TargetProfile)
                 Image(page,Vector2.zero,new Vector2(4000,4000),NeuralPalette.Background);
-            if(game.Paused&&game.Phase!=DuelPhase.Fight&&game.Phase!=DuelPhase.Prepare&&game.Phase!=DuelPhase.Training){BuildOverridePause();return;}
             if(game.Phase==DuelPhase.TargetProfile){BuildTargetProfile();return;}
             if(game.Phase==DuelPhase.MissionEntry)return;
             if(game.Phase==DuelPhase.FinalVictoryHold)return;
             if(game.Phase!=DuelPhase.CharacterCreation)ForgetCreationWords();
-            if(game.Paused){BuildOverridePause();return;}
             if(game.Phase==DuelPhase.Menu){BuildOverrideMenu();return;}
             if(game.Phase==DuelPhase.CharacterCreation)
             {
@@ -199,7 +201,6 @@ namespace GoGhost.Duel
             }
             if(game.Phase==DuelPhase.Configure)
             {
-                if(helpOpen){BuildHelp();return;}
                 BuildConditionalLoadout();RestoreConfigurationView();return;
             }
             if(game.Phase==DuelPhase.Between||game.Phase==DuelPhase.Failed||game.Phase==DuelPhase.Complete&&game.Wave!=DuelGame.FinalBossWave)BeginHeldResult();

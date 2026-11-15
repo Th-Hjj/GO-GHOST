@@ -1,5 +1,14 @@
 # GO GHOST slice implementation
 
+## 2026-11-15 — Game menu on the right; Help removed
+
+- **Asked:** stage 3 of the UI motion order. Thomas wanted Help gone and a game menu in its place, and left its relation to the pause menu to design. From a played prototype (the existing centred column, a right-hand panel, the centred column with motion) he chose the right-hand panel.
+- **Baseline:** Esc cut to a centred column. On a preparation page the whole page went black; over a fight the arena sat under 74% black and the HUD was not drawn. Help was a separate page with a controls list and two definitions.
+- **Changed:** `DuelUI.Menu.cs` builds the menu as a layer over the page that is open; `DuelUI.cs` builds that page first, and `DuelUI.Motion.cs` treats opening and closing the menu as a refresh, so the page under it does not replay its entrance. `DuelGame.ApplyPause` holds a fight under the menu with the same `ResultHoldView` a result uses, which now restores the fighters' physics layers and removes its light when it ends. Key Bindings is on the menu and returns to it. `DuelUI.Help.cs`, the Help page builder and every Help branch are deleted; the header button is Menu.
+- **Checked:** Unity 6000.6.0f1 compiled. In QHD Play Mode with the developer Mission 1 fixture: the menu over the overview, Resume, the menu over a fight, Key Bindings and Back to the menu, Resume. After Resume the time scale was 1, one camera remained, its mask was restored and the player and Boss were back on layers 8 and 7. Inspected `Logs/menu_prep.png`, `menu_prep_after.png`, `menu_fight.png`, `menu_bindings.png` and `menu_fight_after.png`. The console was clean.
+- **Differences from the prototype:** a preparation page dims but does not lose its colour (the grade works on the camera, not the interface). The panel is wider on the real 1600-unit frame and covers the Target Profile card and Start Mission while open.
+- **NOT TESTED:** the Menu button itself (the menu was opened through the same call it makes), the menu over the rule editor, Target Profile, creation, the Test Room, the countdown and a held result, Settings from the menu, Configuration and Main Menu from the menu, Esc inside the rule editor, losing window focus, the F8 tools, Reduce Flashing, other resolutions, Check Game Flow and builds. Opening and closing were judged from stills.
+
 ## 2026-11-15 — Fight entry follow-ups: longer card, no flash, steadier wipe
 
 - **Asked:** after playing stage 2, Thomas found the card too quick to take in, saw something flash as it appeared, and found the transition not smooth.

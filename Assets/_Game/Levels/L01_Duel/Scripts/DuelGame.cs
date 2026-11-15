@@ -52,6 +52,7 @@ namespace GoGhost.Duel
         public bool DraftArms { get; private set; }
         public bool DraftSpine { get; private set; }
         GameObject encounter;
+        ResultHoldView menuHold;
         DuelUI ui;
         HandlerVoice handler;
         BossAgent[] actors = System.Array.Empty<BossAgent>();
@@ -370,6 +371,16 @@ namespace GoGhost.Duel
             coordinator?.SetPaused(still);
             effects?.SetPaused(still || Phase == DuelPhase.Prepare);
             Time.timeScale = held ? 0 : 1;
+            // Under the menu the fight is held the way a result is: grey and dim, with the fighters in colour.
+            if (encounter != null && !ResultHeld)
+            {
+                if (value && menuHold == null)
+                {
+                    menuHold = encounter.AddComponent<ResultHoldView>();
+                    menuHold.Begin(Time.unscaledTimeAsDouble, Player, actors, 0, DuelUI.MenuDimSeconds);
+                }
+                else if (!value && menuHold != null) { Destroy(menuHold); menuHold = null; }
+            }
             AudioListener.pause = value;
         }
         void SetPhase(DuelPhase value)
@@ -444,6 +455,7 @@ namespace GoGhost.Duel
             StopCombat();
             if (music != null) music.StopMusic(true);
             Paused = ResultHeld = false;
+            menuHold = null;
             Time.timeScale = 1;
             AudioListener.pause = false;
             if (encounter != null) { encounter.SetActive(false); Destroy(encounter); }

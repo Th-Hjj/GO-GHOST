@@ -14,25 +14,28 @@ namespace GoGhost.Duel
         // An unnamed layer, used only while a result is held.
         const int FighterLayer = 31;
         double heldAt;
+        float drainDelay = DrainDelay, drainSeconds = DrainSeconds;
+        GameObject holder;
+        readonly List<(GameObject part, int layer)> moved = new List<(GameObject, int)>();
         VolumeProfile profile;
         ColorAdjustments grade;
         Camera view, fighters;
         int viewMask;
 
         // 0 on the lethal frame, 1 once the arena is grey.
-        internal static float Drained(double heldAt)
+        internal static float Drained(double heldAt, float delay = DrainDelay, float seconds = DrainSeconds)
         {
-            float t = Mathf.Clamp01((float)(Time.unscaledTimeAsDouble - heldAt - DrainDelay) / DrainSeconds);
+            float t = Mathf.Clamp01((float)(Time.unscaledTimeAsDouble - heldAt - delay) / Mathf.Max(.01f, seconds));
             return t * t * (3 - 2 * t);
         }
 
-        internal void Begin(double held, PlayerHealth player, IReadOnlyList<BossAgent> bosses)
+        internal void Begin(double held, PlayerHealth player, IReadOnlyList<BossAgent> bosses, float delay = DrainDelay, float seconds = DrainSeconds)
         {
-            heldAt = held;
+            heldAt = held; drainDelay = delay; drainSeconds = seconds;
             profile = ScriptableObject.CreateInstance<VolumeProfile>();
             profile.hideFlags = HideFlags.HideAndDontSave;
             grade = profile.Add<ColorAdjustments>(true);
-            var holder = new GameObject("Result grade");
+            holder = new GameObject("Result grade");
             holder.transform.SetParent(transform, false);
             var volume = holder.AddComponent<Volume>();
             volume.isGlobal = true; volume.priority = 100; volume.sharedProfile = profile;
@@ -75,9 +78,13 @@ namespace GoGhost.Duel
             Apply();
         }
 
-        static void SetLayer(Transform root)
+        void SetLayer(Transform root)
         {
-            foreach (var part in root.GetComponentsInChildren<Transform>(true)) part.gameObject.layer = FighterLayer;
+            foreach (var part in root.GetComponentsInChildren<Transform>(true))
+            {
+                moved.Add((part.gameObject, part.gameObject.layer));
+                part.gameObject.layer = FighterLayer;
+            }
         }
 
         void LateUpdate() => Apply();
@@ -85,7 +92,7 @@ namespace GoGhost.Duel
         void Apply()
         {
             if (grade == null) return;
-            float drained = Drained(heldAt);
+            float drained = Drained(heldAt, drainDelay, drainSeconds);
             grade.saturation.value = -100 * drained;
             float level = Mathf.Lerp(1, Dim, drained);
             grade.colorFilter.value = new Color(level, level, level, 1);
@@ -99,6 +106,10 @@ namespace GoGhost.Duel
                 view.cullingMask = viewMask;
                 if (fighters != null) view.GetUniversalAdditionalCameraData().cameraStack.Remove(fighters);
             }
+            // The menu's hold ends with the fight still running: its bodies go back to the layers physics uses.
+            foreach (var (part, layer) in moved) if (part != null) part.layer = layer;
+            moved.Clear();
+            if (holder != null) Destroy(holder);
             if (fighters != null) Destroy(fighters.gameObject);
             if (profile != null) Destroy(profile);
             fighters = null; profile = null; grade = null; view = null;
@@ -110,10 +121,11 @@ namespace GoGhost.Duel
     {
         public double HeldAt;
         public float From = 1, To = ResultHoldView.Dim;
+        public float Delay = ResultHoldView.DrainDelay, Seconds = ResultHoldView.DrainSeconds;
         CanvasGroup group;
 
         void OnEnable() { if (!TryGetComponent(out group)) group = gameObject.AddComponent<CanvasGroup>(); group.blocksRaycasts = false; }
         void LateUpdate() => Apply();
-        public void Apply() => group.alpha = Mathf.Lerp(From, To, ResultHoldView.Drained(HeldAt));
+        public void Apply() => group.alpha = Mathf.Lerp(From, To, ResultHoldView.Drained(HeldAt, Delay, Seconds));
     }
 }

@@ -91,7 +91,7 @@ Built on 2026-11-14 (`DuelUI.Motion.cs`, `OvMotion` in `OverrideGraphics.cs`). T
 | Change | Used for | What happens |
 |---|---|---|
 | Wipe | A change of scene: title to and from the game, creation into preparation, a result into preparation or the title, preparation into the fight, the Test Room in and out | An Ink slab with a Signal leading edge and a hazard tail crosses the screen: 190 ms to cover, 30 ms held, 260 ms to open. The old page stays until it is covered. Forward runs left to right, back to the title right to left |
-| Flow | Overview, rule editor and Help; Settings and its pages over the title or Pause | The old page stays 150 ms in front while its elements step aside and fade. The new elements start 90 ms in. Between the overview and the editor the character slides, the rule and Help stay, and the title rolls upward inside a mask |
+| Flow | Overview and rule editor; Settings and its pages over the title or the menu | The old page stays 150 ms in front while its elements step aside and fade. The new elements start 90 ms in. Between the overview and the editor the character slides, the rule and Menu stay, and the title rolls upward inside a mask |
 | Open | Overview to and from Target Profile | The mission-colour field grows out of the target card's four corners in 340 ms and closes back onto the card in 300 ms |
 | Cut | Everything else, including the combat HUD and Pause over a fight | As before. The page's own entrances still play |
 | Hold | A fight into its result (defeat, Mission 1 and 2 cleared, the Bonus result) | The fight stops on the lethal frame and the result lands on it. See Results |
@@ -212,7 +212,7 @@ The pages carry no black ground and no scanlines while held. Entrances count fro
 
 The Rules sidebar still slides in as the countdown begins.
 
-**Pause (D9).** Combat stays visible at about 26% without colour. A hazard band, then Resume (primary), Configuration (secondary) and Main Menu (tertiary), entering from the left 40 ms apart. No title word is added. Pause opens on every page after the title; outside a fight or the Test Room it sits on black and omits Configuration. In Body Configuration, Esc first closes Help or the rule being edited.
+**Menu (D9, Thomas 2026-11-15, trial tuning).** Chosen from a played prototype over the centred column it replaces. The pause key opens it on every page after the title; preparation pages carry a Menu tertiary button at the top right, where Help was, that does the same. An Ink panel with a slanted Signal left edge wipes in from the right edge in .16 s. On it, right of 1084: a hazard rule, then Resume (primary), Configuration (secondary, in a fight or the Test Room only), Key Bindings, Settings and Main Menu (tertiary), arriving from the right 40 ms apart. The page it covers stays where it is and is rebuilt without replaying its entrance. A preparation page dims under a 74% Ink shade in .12 s and its character stays lit in front of the shade. A fight, the countdown and the Test Room are held as a result is: the arena grey and at 45%, the fighters in colour, the HUD dimmed. Resume slides the panel back out and fades the menu in .12 s. Key Bindings opened from the menu returns to the menu. In Body Configuration, Esc first closes the rule being edited. No title word is added (`DuelUI.Menu.cs`).
 
 **Rule injected (D10).** Combat is frozen. The new card slams into the sidebar with an EMP fill (#1D1730), pulses, and carries RULE INJECTED on an EMP chip. Happy's box sits at the top of the arena and reads the lines. The Boss bar is the rainbow with the two threshold marks beneath it; the reached mark is filled.
 
@@ -220,7 +220,7 @@ The Rules sidebar still slides in as the countdown begins.
 
 **Sealed (D12).** Card text and the Rules heading drop to Disabled, arrows break apart in EMP, the stripe under the heading turns EMP, and SEALED slams across the list on an EMP slab tilted 8°. The player is entirely white. Platforms and the arena frame keep their EMP outlines.
 
-**Help (D15).** Back, the two existing pages as slabs on the left (the open one filled), a vertical hazard divider, the page name as the heading and each control as a Text key slab with its action beside it. The configuration page shows the Condition and Action cards from the editor with their one-line definitions.
+**Help (D15).** Removed on 2026-11-15. The menu's Key Bindings page shows the controls with the player's own keys; the Test Room still lists them in its corner.
 
 **Test Room (D16).** The combat HUD with Back above the sidebar, TEST ROOM on a tertiary slab inside the arena's top-left corner, and the Dummy Robot name, HP and bar in Text dim.
 

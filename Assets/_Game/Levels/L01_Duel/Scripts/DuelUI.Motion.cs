@@ -11,7 +11,7 @@ namespace GoGhost.Duel
     // and Target Profile opens out of its own card. Docs/Game/UIDesign.md lists the rules and timings.
     public sealed partial class DuelUI
     {
-        enum PageKind { None, Dev, Menu, Creation, Overview, Editor, Help, Profile, Overlay, Pause, Cleared, Finished, Outcome, Hud, Blank }
+        enum PageKind { None, Dev, Menu, Creation, Overview, Editor, Profile, Overlay, Pause, Cleared, Finished, Outcome, Hud, Blank }
         enum PageChange { Refresh, Cut, Wipe, Flow, Expand }
 
         PageKind pageKind, previousKind;
@@ -39,7 +39,7 @@ namespace GoGhost.Duel
         AudioClip uiHover, uiClick;
         float uiHoverAt;
 
-        static bool Preparation(PageKind kind) => kind == PageKind.Overview || kind == PageKind.Editor || kind == PageKind.Help;
+        static bool Preparation(PageKind kind) => kind == PageKind.Overview || kind == PageKind.Editor;
         static bool Result(PageKind kind) => kind == PageKind.Cleared || kind == PageKind.Finished || kind == PageKind.Outcome;
 
         // Mirrors the order BuildPageBody chooses a page in.
@@ -55,7 +55,7 @@ namespace GoGhost.Duel
                 case DuelPhase.Menu: return PageKind.Menu;
                 case DuelPhase.CharacterCreation: return PageKind.Creation;
                 case DuelPhase.Configure:
-                    return helpOpen ? PageKind.Help : selectorRow >= 0 && displayedDraft == game.DraftLoadout ? PageKind.Editor : PageKind.Overview;
+                    return selectorRow >= 0 && displayedDraft == game.DraftLoadout ? PageKind.Editor : PageKind.Overview;
                 case DuelPhase.Between: return PageKind.Cleared;
                 case DuelPhase.Complete: return game.Wave == DuelGame.FinalBossWave ? PageKind.Finished : PageKind.Outcome;
                 case DuelPhase.Failed: return PageKind.Outcome;
@@ -70,6 +70,9 @@ namespace GoGhost.Duel
             if (from == PageKind.Overlay || to == PageKind.Overlay)
                 return from == to || from == PageKind.Menu || to == PageKind.Menu || from == PageKind.Pause || to == PageKind.Pause
                     ? PageChange.Flow : PageChange.Cut;
+            // The menu is a layer: the page under it is rebuilt as it stands, with no entrance of its own.
+            if (to == PageKind.Pause) { pausedOver = from; return PageChange.Refresh; }
+            if (from == PageKind.Pause && to == pausedOver) return PageChange.Refresh;
             if ((from == PageKind.Overview && to == PageKind.Profile) || (from == PageKind.Profile && to == PageKind.Overview)) return PageChange.Expand;
             if (Preparation(from) && Preparation(to)) return PageChange.Flow;
             // A change of scene is covered.
@@ -115,7 +118,7 @@ namespace GoGhost.Duel
                 else
                 {
                     bool hold = pageChange == PageChange.Wipe;
-                    sharedHeader = pageChange == PageChange.Flow && pageKind != PageKind.Help && kind != PageKind.Help
+                    sharedHeader = pageChange == PageChange.Flow
                         && Preparation(pageKind) && Preparation(kind);
                     if (sharedHeader)
                     {
@@ -260,9 +263,10 @@ namespace GoGhost.Duel
             mask.gameObject.AddComponent<RectMask2D>();
             headerTitle = OvText(title, mask, new Vector2(-20, 0), new Vector2(1200, 112), 112, OverridePalette.Text,
                 TextAlignmentOptions.CaplineLeft, true, -.5f);
-            var help = OvButton("Help", frame, At(1424, 56, 120, 48), new Vector2(120, 48), OpenHelp, OverrideButtonKind.Tertiary, 28,
+            // Opens the menu, as the pause key does.
+            var help = OvButton("Menu", frame, At(1424, 56, 120, 48), new Vector2(120, 48), () => game.SetPause(true), OverrideButtonKind.Tertiary, 28,
                 align: TextAlignmentOptions.Capline);
-            help.name = "ConfigurationHelp";
+            help.name = "ConfigurationMenu";
             var rule = OvRule(frame, 56, 132, 1488);
             headerShared.Add(help.gameObject); headerShared.Add(rule.gameObject);
             if (sharedHeader)

@@ -13,14 +13,16 @@ namespace GoGhost.Duel
         int listeningBinding = -1, listeningSince;
         internal bool OverlayOpen => overlay != OverlayPage.None;
         // Escape first closes Help or the rule being edited; only then does it pause.
-        internal bool EscapeClaimed => game.Phase == DuelPhase.Configure && !game.Paused && (helpOpen || selectorRow >= 0)
+        internal bool EscapeClaimed => game.Phase == DuelPhase.Configure && !game.Paused && selectorRow >= 0
             && GameSettings.BindingPath(GameSettings.Pause) == "<Keyboard>/escape";
 
         void OpenOverlay(OverlayPage value) { overlay = value; listeningBinding = -1; Show(); }
         void CloseOverlay()
         {
             listeningBinding = -1;
-            overlay = overlay == OverlayPage.Bindings ? OverlayPage.Settings : OverlayPage.None;
+            // Key Bindings opened from the menu goes back to the menu; opened from Settings, back to Settings.
+            overlay = overlay == OverlayPage.Bindings && !bindingsFromMenu ? OverlayPage.Settings : OverlayPage.None;
+            bindingsFromMenu = false;
             Show();
         }
 

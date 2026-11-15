@@ -99,6 +99,8 @@ The axe can cut from a wall to the floor, climb from the floor through a platfor
 
 **Pacing (Thomas, 2026-11-15, trial tuning).** Wind-ups: Jab .30 s, Uppercut .42, Backfist .40, Overhand .38, Meteor .45; the Cross that follows a Jab keeps its .16 s. A stroke counts toward a run when it starts within .9 s of the last punch ending. After the third stroke of a run no punch starts for .9 s (`ChainLimit`, `ChainRest` in `FinalBossBoxer.cs`); a Jab that is the third stroke gets no Cross. Movement and axe orders continue through the rest. The F8 panel still edits each punch's wind-up for the session.
 
+**Aim (Thomas, 2026-11-15).** A punch is aimed at the player's forecast position after its own wind-up plus .08 s. A Meteor dive picks the surface nearest the player, sights again for the dive's flight time, and passes through every other platform until it ends (`OpenDiveLane`, `ArenaNavigation2D.Passable`); the floor always stops it.
+
 **Warnings (2026-11-13).** During the half-second delay a violet line runs from the blade to the ordered destination and strengthens until launch. While a punch winds up, a thin line shows the stroke its fist will follow, brightening before the swing. A Meteor dive shows its line and the outline of its landing wave. None of these change damage, timing or the Boss's choices.
 
 **Defeat and victory.**

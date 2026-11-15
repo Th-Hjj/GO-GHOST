@@ -308,6 +308,10 @@ namespace GoGhost.Duel
             }
             return true;
         }
+        // Platforms a committed dive goes through: they neither stop a sweep nor count as footing.
+        // The owner of the dive fills and clears this, and ignores the same colliders in physics.
+        internal readonly System.Collections.Generic.HashSet<Collider2D> Passable = new System.Collections.Generic.HashSet<Collider2D>();
+
         public bool TrySupport(Vector2 center, Vector2 size, out Collider2D support)
         {
             bool supported = TrySupportHit(center, size, out var hit);
@@ -325,6 +329,7 @@ namespace GoGhost.Duel
             foreach (var hit in supportHits)
             {
                 if (hit.collider == null || hit.collider.isTrigger || hit.normal.y < .7f || hit.distance >= best) continue;
+                if (Passable.Contains(hit.collider)) continue;
                 if (OneWay(hit.collider, out var effector) && Vector2.Dot(hit.normal, effector.transform.up) < Mathf.Cos(effector.surfaceArc * .5f * Mathf.Deg2Rad)) continue;
                 support = hit; best = hit.distance;
             }
@@ -340,6 +345,7 @@ namespace GoGhost.Duel
             foreach (var hit in traversalHits)
             {
                 if (hit.collider == null || hit.collider.isTrigger || hit.collider == ignoredSupport) continue;
+                if (Passable.Contains(hit.collider)) continue;
                 if (OneWay(hit.collider, out var effector))
                 {
                     if (delta.y >= -.0001f || hit.normal.y < .5f || from.y - size.y * .5f < hit.point.y - .045f) continue;

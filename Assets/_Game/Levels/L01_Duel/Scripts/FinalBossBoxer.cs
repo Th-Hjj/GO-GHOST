@@ -101,7 +101,8 @@ namespace GoGhost.Duel
         {
             if (!CanStart(punch)) return false;
             var facts=actor.Perception.Facts;
-            Vector2 target=OpponentAt(facts,.26f);
+            // Aim where the opponent will be when the fist arrives: this punch's own wind-up and the start of its stroke.
+            Vector2 target=OpponentAt(facts,game.GetBossMoveTuning(true,(int)punch).Windup+.08f);
             if (punch == Punch.Leap && !FindJump(target,0,out jump)) return false;
             if (punch == Punch.Meteor)
             {
@@ -218,12 +219,45 @@ namespace GoGhost.Duel
         bool BeginDive(BossObservation facts)
         {
             var sight=facts.Visible ? OpponentAt(facts,.20f) : jump.Landing;
-            if (!FindDive(sight,out diveTarget)) return false;
+            if (!FindDive(sight,out diveTarget,out int landing)) return false;
+            if (facts.Visible)
+            {
+                // Sight once more for the time the dive itself takes.
+                float flight=Mathf.Min(.6f,Vector2.Distance(diveTarget,actor.Position)/24f);
+                if (FindDive(OpponentAt(facts,flight),out var led,out int ledSurface)) { diveTarget=led; landing=ledSurface; }
+            }
+            OpenDiveLane(landing);
             var delta=diveTarget-actor.Position;
             actor.Motor.EndAttackMotion();
             actor.Face(delta); LockedFacing=actor.Facing;
             actor.Motor.StartDash(delta,delta.magnitude+.45f,24f);
             return true;
+        }
+
+        // The dive lands on the surface it chose. Every other platform lets it through, so a step of the
+        // tower between him and the target no longer catches him (Thomas, 2026-11-15). The floor always stops him.
+        readonly List<Collider2D> divePassed = new List<Collider2D>();
+        void OpenDiveLane(int landing)
+        {
+            CloseDiveLane();
+            for (int i=1;i<surfaces.Length;i++)
+            {
+                var platform=surfaces[i].Collider;
+                if (i==landing || platform==null) continue;
+                divePassed.Add(platform);
+                actor.Navigation.Passable.Add(platform);
+                if (actor.Body!=null) Physics2D.IgnoreCollision(actor.Body,platform,true);
+            }
+        }
+        void CloseDiveLane()
+        {
+            foreach (var platform in divePassed)
+            {
+                if (platform==null) continue;
+                actor.Navigation.Passable.Remove(platform);
+                if (actor.Body!=null) Physics2D.IgnoreCollision(actor.Body,platform,false);
+            }
+            divePassed.Clear();
         }
 
         void DriveTo(Vector2 target,float seconds,float speed)
@@ -251,6 +285,7 @@ namespace GoGhost.Duel
         void Recover()
         {
             recoveryHand=HandLocal;
+            CloseDiveLane();
             if (actor.Motor.Grounded || Current==Punch.Meteor) actor.Motor.EndAttackMotion();
             SetPhase(Stage.Recovery,signatureLeap ? Mathf.Max(.76f,accepted.Recovery) : accepted.Recovery);
         }
@@ -330,6 +365,7 @@ namespace GoGhost.Duel
         }
         public void Cancel()
         {
+            CloseDiveLane();
             if (InFlight) actor.Sounds?.StopAttack(actor.ActorId,300000+Orders);
             if (Current != Punch.None) actor.Motor?.EndAttackMotion();
             Current=Punch.None; Phase=Stage.Idle; PreviewPunch=Punch.None;

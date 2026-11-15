@@ -8,6 +8,14 @@
 - **Checked:** the game assembly compiles with Unity's bundled compiler outside the Editor (Thomas was in Play Mode). An offline composite of the two plates at the left parallax position, drawn the way the canvas blends them, shows the band before and a solid tower after.
 - **NOT TESTED:** Mission 3 in Play Mode, including the EMP contour trace over the towers, other parallax positions and phase two. The part of the amber row to the right of the tower is not covered by any tower and still shows, as authored.
 
+## 2026-11-15 — Phase two: punches lead by their wind-up; Meteor dives through platforms in its way
+
+- **Asked:** ideas to make the Final Boss smarter, especially axe teamwork and where moves land; the Meteor dive was often caught by a platform instead of landing beside the player. Of six proposals Thomas chose the first two.
+- **Found:** `FindDive` chose the nearest surface point and dashed straight at it without checking the line, so any platform under the line caught the body; the tower put steps under most dives from a height. `TryStart` forecast the player .26 s ahead for every punch, shorter than the wind-ups set earlier the same day.
+- **Changed:** `FinalBossBoxer.cs` forecasts by the punch's wind-up plus .08 s. `BeginDive` sights a second time for the dive's flight time, then opens a lane: every platform except the landing one is added to `ArenaNavigation2D.Passable` (skipped by the terrain sweep and the footing test) and ignored in physics for the Boss's body, until the punch recovers or is cancelled.
+- **Checked:** the game assembly compiles with Unity's bundled compiler outside the Editor.
+- **NOT TESTED:** everything in play: a dive through a step, a dive stopped by the player's body inside a platform, the lane closing while he overlaps a platform, punches landing with the new lead, and a dive at a player on a moving step.
+
 ## 2026-11-15 — Wave lag shortened; direct phase-two entry starts mid-wave
 
 - **Asked:** the wave did not read as continuous; start each platform when the one before has moved a quarter or a fifth. Thomas also wanted the motion to begin during the transition, once everything has been coloured, not after the fight starts, and asked that the transition be understood first.

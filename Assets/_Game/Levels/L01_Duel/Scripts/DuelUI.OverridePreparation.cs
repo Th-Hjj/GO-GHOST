@@ -284,15 +284,12 @@ namespace GoGhost.Duel
             foreach (var part in figureLegs) if (part != null) part.color = legs;
             foreach (var part in figureTorso) if (part != null) part.color = torso;
             foreach (var part in figureArms) if (part != null) part.color = arms;
-            // The walk between places: eased travel with a stepped bob and a lean into the direction of travel.
-            // On arrival the body dips once; the floor opens under it on the way.
-            float age = time - figureSlideAt, slide = Mathf.Clamp01(age / figureWalkSeconds);
+            // The move between places is a plain eased slide, in the standing pose; a bob and a lean were tried
+            // and withdrawn (Thomas, 2026-11-14). The floor opens under the figure on the way.
+            float slide = Mathf.Clamp01((time - figureSlideAt) / figureWalkSeconds);
             bool walking = slide < 1;
             Vector2 offset = figureSlideFrom * (1 - OvMotion.Glide(slide));
-            float lift = walking ? (Mathf.FloorToInt(age / .07f) % 2 == 0 ? 0 : 7)
-                : age < figureWalkSeconds + .07f ? -6 : 0;
-            overviewFigureRoot.anchoredPosition = overviewFigureHome + offset + Vector2.up * lift;
-            overviewFigureRoot.localRotation = Quaternion.Euler(0, 0, walking ? -5 * figureTravel : 0);
+            overviewFigureRoot.anchoredPosition = overviewFigureHome + offset;
             if (figureFloor != null)
                 figureFloor.localScale = new Vector3(walking ? OvMotion.Snap(Mathf.Clamp01((slide - .3f) / .6f)) : 1, 1, 1);
             figureFramePosition = figureFrameHome + offset;

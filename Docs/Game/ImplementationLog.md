@@ -4,6 +4,7 @@
 
 - **Asked:** fill the empty half of the rule editor with the character and design the motion for it (decision recorded in `CLAUDE.md` and `AGENTS.md`).
 - **Changed:** `DuelUI.BuildOverrideEditor`: the body preview sits at 336 in the Action step and 896 in the Condition step. `StandFigure` / `UpdateOverrideFigure`: every move between places is now a walk timed by distance (.3 to .55 s) with eased travel, a stepped bob, a lean into the direction of travel, the floor slab opening at the destination and a dip on arrival; this also replaces the plain slide between the overview and the editor. The character always faces right. `UIDesign.md` follows.
+- **Follow-up the same day:** Thomas found the bob and lean strange; the move is now a plain eased slide in the standing pose, with the floor still opening. Compiled outside the editor only.
 - **Checked:** Unity compiled; one Play Mode pass captured the Action step, a frame mid-walk and the Condition step (`Logs/RuleWording/stand_*.png`), which also showed the refitted choice frame. Those captures were taken with the first version, in which the character turned to face the list; Thomas withdrew the turn and the facing-right version was compiled outside the editor only. The walk between overview and editor and the tutorial pointer over the moved preview NOT TESTED.
 
 ## 2026-11-14 — Three action descriptions shortened

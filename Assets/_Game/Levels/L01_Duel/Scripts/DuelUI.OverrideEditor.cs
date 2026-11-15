@@ -11,8 +11,8 @@ namespace GoGhost.Duel
         // Frame-space bookkeeping lets the rebuilt character continue from where the last page left it.
         Vector2 figureSlideFrom, figureFrameHome, figureFramePosition;
         float figureSlideAt = float.NegativeInfinity, figureSeenAt = float.NegativeInfinity;
-        // The walk: its length follows the distance. The character always faces right (Thomas, 2026-11-14).
-        float figureWalkSeconds = FigureSlideSeconds, figureTravel = 1;
+        // The slide's length follows the distance. The character always faces right (Thomas, 2026-11-14).
+        float figureWalkSeconds = FigureSlideSeconds;
         RectTransform figureFloor;
         int builtStep = -1, builtCategory = -1;
 
@@ -60,7 +60,6 @@ namespace GoGhost.Duel
                 figureSlideFrom = figureFramePosition - frameHome;
                 figureSlideAt = Time.unscaledTime;
                 figureWalkSeconds = Mathf.Clamp(.26f + Mathf.Abs(figureSlideFrom.x) / 3000f, .3f, .55f);
-                figureTravel = Mathf.Abs(figureSlideFrom.x) < 1 ? 0 : figureSlideFrom.x < 0 ? 1 : -1;
             }
             figureFloor = floor;
             figureFrameHome = frameHome;

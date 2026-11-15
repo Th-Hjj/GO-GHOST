@@ -18,7 +18,80 @@ namespace GoGhost.Duel
         public bool GhostReloading => IsGhost && Time.time < ghostReloadUntil;
         public bool GhostImmune => IsGhost && Time.time < ghostImmuneUntil;
 
-        public void ConfigureGhost(PlayerHealth player, ArenaNavigation2D navigation)
+        OfficerVisual.Puppet ghostPuppet;
+        GameObject ghostFigure;
+        Material ghostMaterial;
+        int ghostShots;
+        Vector2 ghostAim = Vector2.left;
+
+        // GHOST looks like the player because he is drawn by the player's own body view: a copy of the player's
+        // visual with every gameplay component removed, written to each frame from this actor.
+        void BuildGhostFigure(OfficerVisual bodyPrefab)
+        {
+            if (bodyPrefab == null) return;
+            var box = bodyPrefab.GetComponent<BoxCollider2D>();
+            float soles = box != null ? box.offset.y - box.size.y * .5f : -.75f;
+            var weaponPart = bodyPrefab.Part(LoadoutSlot.Weapon);
+            float reach = weaponPart != null && weaponPart.transform.parent != null
+                ? ((Vector2)weaponPart.transform.parent.localPosition).magnitude : .51f;
+            // Built inactive, so nothing on the copy wakes before it is stripped.
+            var holder = new GameObject("GHOST figure holder");
+            holder.SetActive(false);
+            ghostFigure = Instantiate(bodyPrefab.gameObject, holder.transform);
+            ghostFigure.name = "GHOST figure";
+            StripToVisual(ghostFigure);
+            ghostFigure.transform.SetParent(transform, false);
+            // The copy's soles on this body's soles.
+            ghostFigure.transform.localPosition = new Vector3(0, Body.bounds.min.y - transform.position.y - soles, 0);
+            ghostFigure.transform.localRotation = Quaternion.identity;
+            Destroy(holder);
+            ghostMaterial = new Material(Resources.Load<Shader>("GhostProjection")) { hideFlags = HideFlags.HideAndDontSave };
+            // The rows alone on the body; no travelling band.
+            ghostMaterial.SetFloat("_Low", -1000); ghostMaterial.SetFloat("_High", -1000);
+            ghostPuppet = new OfficerVisual.Puppet { Floor = soles, Reach = reach + .16f, Facing = -1, Aim = Vector2.left };
+            ghostFigure.GetComponent<OfficerVisual>().ConfigurePuppet(ghostPuppet, GhostHologram.Body, GhostHologram.Gun,
+                GhostHologram.Core, NeuralPalette.Alpha(GhostHologram.Light, .5f), ghostMaterial);
+        }
+
+        // Removes everything but transforms, renderers, masks and the body view, in an order RequireComponent allows.
+        static void StripToVisual(GameObject root)
+        {
+            for (int pass = 0; pass < 8; pass++)
+            {
+                bool removed = false;
+                foreach (var component in root.GetComponentsInChildren<Component>(true))
+                {
+                    if (component == null || component is Transform || component is SpriteRenderer || component is SpriteMask || component is OfficerVisual) continue;
+                    bool needed = false;
+                    foreach (var other in component.GetComponents<Component>())
+                    {
+                        if (other == null || other == component) continue;
+                        foreach (RequireComponent rule in other.GetType().GetCustomAttributes(typeof(RequireComponent), true))
+                            foreach (var type in new[] { rule.m_Type0, rule.m_Type1, rule.m_Type2 })
+                                if (type != null && type.IsInstanceOfType(component)) needed = true;
+                    }
+                    if (needed) continue;
+                    DestroyImmediate(component);
+                    removed = true;
+                }
+                if (!removed) break;
+            }
+        }
+
+        void WriteGhostPuppet()
+        {
+            if (ghostPuppet == null) return;
+            ghostPuppet.Grounded = Motor.Grounded; ghostPuppet.Dodging = Motor.DashActive; ghostPuppet.Velocity = Motor.Velocity;
+            ghostPuppet.Facing = Facing < 0 ? -1 : 1; ghostPuppet.Aim = ghostAim; ghostPuppet.ShotsFired = ghostShots;
+            ghostPuppet.Reloading = Time.time < ghostReloadUntil;
+            ghostPuppet.ReloadProgress = 1 - Mathf.Clamp01((ghostReloadUntil - Time.time) / GhostReload);
+            ghostPuppet.Dead = !IsAlive;
+            if (ghostFigure != null && ghostFigure.activeSelf != IsAlive) ghostFigure.SetActive(IsAlive);
+        }
+
+        void LateUpdate() { if (IsGhost) WriteGhostPuppet(); }
+
+        public void ConfigureGhost(PlayerHealth player, ArenaNavigation2D navigation, OfficerVisual bodyPrefab)
         {
             IsGhost = true;
             // Instance-only profile, as for the Test Room robot. The Gunner's asset is untouched.
@@ -33,12 +106,14 @@ namespace GoGhost.Duel
             profile.Burst = new BossAbilitySettings(1.1f, .25f, .1f, .5f, 3.4f, 30, 4, 1);
             profile.Motion = new BossMotionProfile { Speed = 7, Acceleration = 90, Braking = 90, JumpSpeed = 12, GravityScale = 3, AirControl = 1 };
             Configure(player, navigation, null, 1, false);
+            BuildGhostFigure(bodyPrefab);
             ghostAmmo = GhostMagazine;
             ghostShotAt = Time.time + 1f;
             Face(Vector2.left);
         }
 
         void OnDisable() { if (IsGhost && Health != null) Health.Invulnerable = false; }
+        void DestroyGhostLook() { if (ghostMaterial != null) Destroy(ghostMaterial); }
 
         void TickGhost()
         {
@@ -48,6 +123,7 @@ namespace GoGhost.Duel
             Vector2 target = (Vector2)Player.transform.position + Vector2.up * .1f;
             Vector2 toPlayer = target - chest;
             Face(toPlayer);
+            ghostAim = toPlayer.normalized;
 
             if (!Motor.DashActive)
             {
@@ -65,7 +141,7 @@ namespace GoGhost.Duel
             if (Time.time < ghostReloadUntil || Time.time < ghostShotAt || Motor.DashActive) return;
             if (ghostAmmo <= 0) { ghostAmmo = GhostMagazine; }
             FireGhostShot(chest, toPlayer.normalized);
-            ghostAmmo--;
+            ghostAmmo--; ghostShots++;
             ghostShotAt = Time.time + GhostShotInterval;
             if (ghostAmmo <= 0) { ghostReloadUntil = Time.time + GhostReload; ghostAmmo = GhostMagazine; }
         }

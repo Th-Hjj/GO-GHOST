@@ -62,7 +62,7 @@ namespace GoGhost.Duel
             }
             var instance = Instantiate(gunnerPrefab, trainingEnemySpawn, Quaternion.identity, encounter.transform);
             var actor = instance.GetComponent<BossAgent>();
-            if (GhostArena) { instance.name = "GHOST"; actor.ConfigureGhost(Player, navigation); return actor; }
+            if (GhostArena) { instance.name = "GHOST"; actor.ConfigureGhost(Player, navigation, PlayerVisualPrefab); return actor; }
             instance.name = "TrainingEnemy";
             actor.ConfigureTraining(Player, navigation);
             return actor;

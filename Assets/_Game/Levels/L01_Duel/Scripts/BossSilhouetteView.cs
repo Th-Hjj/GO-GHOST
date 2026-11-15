@@ -102,7 +102,6 @@ namespace GoGhost.Duel
 
         Sprite plainWeapon;
         bool drawnWeapon;
-        Material ghostMaterial;
 
         void SetColors()
         {
@@ -119,19 +118,7 @@ namespace GoGhost.Duel
             weapon.sprite=!drawnWeapon?plainWeapon:gunner?BossWeaponSprites.Rifle:BossWeaponSprites.Blade;
             // The drawn weapons carry their own colours; alpha still follows Camo.
             if(drawnWeapon)weaponColor=Color.white;
-            if(ghost)
-            {
-                // The player's revolver, and the whole figure in the projection's rows.
-                weapon.sprite=RevolverPresentationGeometry.Body; weaponColor=GhostHologram.Gun;
-                if(ghostMaterial==null)
-                {
-                    ghostMaterial=new Material(Resources.Load<Shader>("GhostProjection")){hideFlags=HideFlags.HideAndDontSave};
-                    // No band of light on the body yet; the rows alone.
-                    ghostMaterial.SetFloat("_Low",-1000);ghostMaterial.SetFloat("_High",-1000);
-                }
-                foreach(var part in GetComponentsInChildren<SpriteRenderer>(true))
-                    if(part.GetComponent<SpriteMask>()==null)part.sharedMaterial=ghostMaterial;
-            }
+
             // The second slot is the rifle's lit charge cells, or the plain weapons' grip.
             if(extra!=null)
             {
@@ -355,6 +342,8 @@ namespace GoGhost.Duel
         {
             if (parts == null || parts.Length != 16) return;
             float flash=HitFlash*.85f;
+            // GHOST is drawn by the player's own body view; this rig stays, fully transparent, for the muzzle flash and effects.
+            if (actor != null && actor.IsGhost) alpha = 0;
             for (int i=0;i<parts.Length;i++) if(parts[i]!=null)
             { Color color=i==(int)Part.Weapon?weaponColor:Color.Lerp(bodyColor,Color.white,flash);color.a=alpha;parts[i].color=color; }
             // Same base head/torso/limb dimensions as OfficerVisual; attacks retain their own poses.

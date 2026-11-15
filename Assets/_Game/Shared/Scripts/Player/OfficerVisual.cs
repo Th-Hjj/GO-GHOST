@@ -14,6 +14,30 @@ public sealed class OfficerVisual : MonoBehaviour
     private bool reloading;
     private float reloadVisualStartedAt;
     private bool animate;
+
+    // A second body that looks and moves exactly like the player but is driven by something else: no input,
+    // movement or weapon component, only what its owner writes here each frame.
+    public sealed class Puppet
+    {
+        public bool Grounded = true, Dodging, Reloading, Dead;
+        public int Facing = 1, ShotsFired;
+        public Vector2 Aim = Vector2.right, Velocity;
+        // 0 to 1 through a reload; the local height of the soles; the weapon anchor's distance from the aim origin.
+        public float ReloadProgress, Floor = -.75f, Reach = .67f;
+    }
+    private Puppet puppet;
+    private int puppetWeaponFacing = 1, poseFacing = 1;
+    private Color bodyTint = NeuralPalette.Primary, gunTint = RevolverPresentationGeometry.BodyColor,
+        coreTint = RevolverPresentationGeometry.CoreColor, haloTint = new Color(.35f, .78f, 1f, 1f);
+    private bool Dead => puppet != null ? puppet.Dead : health != null && health.IsDead;
+
+    public void ConfigurePuppet(Puppet source, Color body, Color gun, Color core, Color halo, Material material)
+    {
+        puppet = source; bodyTint = body; gunTint = gun; coreTint = core; haloTint = halo;
+        ConfigureLegacyCombat();
+        if (material == null) return;
+        foreach (var part in GetComponentsInChildren<SpriteRenderer>(true)) part.sharedMaterial = material;
+    }
     private PlayerMovement movement;
     private PlayerInputReader input;
     private PlayerShooting shooting;
@@ -137,7 +161,7 @@ public sealed class OfficerVisual : MonoBehaviour
     public void ConfigureLegacyCombat()
     {
         foreach (var part in new[] { leftArm, rightArm, leftLeg, rightLeg, torso, head, weapon, weaponGrip })
-            if (part != null) part.color = NeuralPalette.Primary;
+            if (part != null) part.color = bodyTint;
         SetReloading(false);
         movement = GetComponent<PlayerMovement>();
         input = GetComponent<PlayerInputReader>();
@@ -146,11 +170,12 @@ public sealed class OfficerVisual : MonoBehaviour
         health = GetComponent<PlayerHealth>();
         body = GetComponent<Rigidbody2D>();
         bodyCollider = GetComponent<Collider2D>();
-        animate = movement != null && input != null && shooting != null && body != null
+        animate = (puppet != null || movement != null && input != null && shooting != null && body != null)
             && leftArm != null && rightArm != null && leftLeg != null && rightLeg != null
             && torso != null && head != null && weapon != null && weaponGrip != null;
         if (!animate) return;
-        head.sprite = NeutralHeadMask(head.sprite);
+        // A puppet has no drawn face: the plain round head.
+        head.sprite = puppet != null ? StickmanSprites.Disc : NeutralHeadMask(head.sprite);
         if (leftForearm == null) leftForearm = AddSegment(leftArm, "LeftForearm");
         if (rightForearm == null) rightForearm = AddSegment(rightArm, "RightForearm");
         if (leftCalf == null) leftCalf = AddSegment(leftLeg, "LeftCalf");
@@ -173,7 +198,7 @@ public sealed class OfficerVisual : MonoBehaviour
             footLight = AddSegment(torso, "FootLight");
             footLight.sprite = StickmanSprites.Pool;
             footLight.sortingOrder = Mathf.Min(leftLeg.sortingOrder, rightLeg.sortingOrder) - 1;
-            footLight.color = NeuralPalette.Alpha(NeuralPalette.Primary, .30f);
+            footLight.color = NeuralPalette.Alpha(bodyTint, .30f);
         }
         if (cylinder == null)
         {
@@ -197,11 +222,11 @@ public sealed class OfficerVisual : MonoBehaviour
         foreach (var palm in new[] { supportPalm, triggerPalm }) {
             palm.transform.SetParent(weapon.transform.parent, false);
             palm.sortingOrder = weapon.sortingOrder + 3;
-            palm.color = NeuralPalette.Primary;
+            palm.color = bodyTint;
         }
         UpdateReloadVisual();
         clock = gait = stride = recoil = 0;
-        lastShots = shooting.ShotsFired;
+        lastShots = puppet != null ? puppet.ShotsFired : shooting.ShotsFired;
         Pose(true, Vector2.zero, 0);
     }
 
@@ -218,20 +243,22 @@ public sealed class OfficerVisual : MonoBehaviour
     {
         if (animate)
         {
-            if (footLight != null && health != null && health.IsDead) footLight.enabled = false;
-            if (Time.deltaTime <= 0 || input.NarrativePaused || (health != null && health.IsDead)) return;
-            if (!movement.isActiveAndEnabled) return;
+            if (footLight != null && Dead) footLight.enabled = false;
+            if (Time.deltaTime <= 0 || (puppet == null && input.NarrativePaused) || Dead) return;
+            if (puppet == null && !movement.isActiveAndEnabled) return;
             // Preparation has frozen physics, but the weapon anchor still updates before this view.
-            if (!body.simulated) { Pose(true, Vector2.zero, 0); return; }
+            if (puppet == null && !body.simulated) { Pose(true, Vector2.zero, 0); return; }
+            if (puppet != null && puppet.Reloading != reloading) SetReloading(puppet.Reloading);
             float dt = Time.deltaTime;
             clock += dt;
-            Vector2 velocity = body.linearVelocity;
-            bool grounded = movement.IsGrounded;
-            bool dodging = dodge != null && dodge.IsDodging;
+            Vector2 velocity = puppet != null ? puppet.Velocity : body.linearVelocity;
+            bool grounded = puppet != null ? puppet.Grounded : movement.IsGrounded;
+            bool dodging = puppet != null ? puppet.Dodging : dodge != null && dodge.IsDodging;
             stride = Mathf.MoveTowards(stride, grounded && !dodging ? Mathf.Clamp01(Mathf.Abs(velocity.x) / 7f) : 0, dt * 12);
             if (grounded && !dodging) gait += velocity.x * dt * 2.8f;
             recoil = Mathf.MoveTowards(recoil, 0, dt / .12f);
-            if (shooting.ShotsFired != lastShots) { recoil = 1; lastShots = shooting.ShotsFired; }
+            int shots = puppet != null ? puppet.ShotsFired : shooting.ShotsFired;
+            if (shots != lastShots) { recoil = 1; lastShots = shots; }
             Pose(grounded, velocity, dodging ? Mathf.Sign(velocity.x) : 0);
         }
         if (reloading) UpdateReloadVisual();
@@ -252,20 +279,21 @@ public sealed class OfficerVisual : MonoBehaviour
 
     private void Pose(bool grounded, Vector2 velocity, float dashDirection)
     {
-        Vector2 aim = shooting.CurrentBarrelDirection;
-        int facing = movement.FacingDirection;
+        Vector2 aim = puppet != null ? PuppetBarrel() : shooting.CurrentBarrelDirection;
+        int facing = poseFacing = puppet != null ? (puppet.Facing < 0 ? -1 : 1) : movement.FacingDirection;
         // Arms stay attached to the independently aimed Revolver when the legs face the other way.
-        int aimFacing = shooting.CurrentWeaponFacing;
+        int aimFacing = puppet != null ? puppetWeaponFacing : shooting.CurrentWeaponFacing;
         float wave = Mathf.Sin(gait), lift = Mathf.Cos(gait);
-        float compression = grounded ? movement.Footing.Compression(Time.time) : 0;
-        float extension = grounded ? 0 : movement.Footing.Extension(Time.time);
+        float compression = puppet != null ? 0 : grounded ? movement.Footing.Compression(Time.time) : 0;
+        float extension = puppet != null ? 0 : grounded ? 0 : movement.Footing.Extension(Time.time);
         float crouch = compression + (dashDirection != 0 ? .17f : 0);
         float breath = Mathf.Sin(clock * 2.4f) * .009f;
         float lean = Mathf.Clamp(velocity.x * .009f, -.07f, .07f) + dashDirection * .15f;
         Vector2 hip = new Vector2(-.34f * compression * facing, -.12f - crouch + Mathf.Abs(wave) * stride * .025f);
         Vector2 chest = new Vector2(lean + .13f * compression * facing, .34f - crouch + breath) - aim * (recoil * .035f);
         Vector2 headPoint = new Vector2(lean * .8f + .2f * compression * facing, .57f - crouch + breath) - aim * (recoil * .02f);
-        float floor = bodyCollider != null ? transform.InverseTransformPoint(bodyCollider.bounds.min).y + (grounded ? .025f : .075f) : -.87f;
+        float floor = puppet != null ? puppet.Floor + (grounded ? .025f : .075f)
+            : bodyCollider != null ? transform.InverseTransformPoint(bodyCollider.bounds.min).y + (grounded ? .025f : .075f) : -.87f;
         Vector2 front = new Vector2(.15f * facing + wave * .30f * stride, floor + Mathf.Max(0, lift) * .15f * stride);
         Vector2 back = new Vector2(-.15f * facing - wave * .30f * stride, floor + Mathf.Max(0, -lift) * .15f * stride);
         if (!grounded)
@@ -282,7 +310,7 @@ public sealed class OfficerVisual : MonoBehaviour
             if (!grounded) { front.y = floor + .28f; back.y = floor + .18f; }
         }
         Segment(torso, hip, chest + Vector2.up * .035f, .17f);
-        Place(head, headPoint, new Vector2(.46f, .46f), 0);
+        Place(head, headPoint, new Vector2(.46f, .46f) / (puppet != null ? StickmanSprites.DiscFill : 1), 0);
         Limb(leftLeg, leftCalf, leftKnee, hip + Vector2.left * (.075f * facing), back, new Vector2(.12f * facing, 0), true, compression, extension, grounded);
         Limb(rightLeg, rightCalf, rightKnee, hip + Vector2.right * (.075f * facing), front, new Vector2(.18f * facing, 0), false, compression, extension, grounded);
         // The support surface is the collider's lower edge; everything of the calves below it is masked away.
@@ -314,6 +342,30 @@ public sealed class OfficerVisual : MonoBehaviour
         PositionPalm(supportPalm, support, aimFacing, new Vector2(.095f,.065f));
         Arm(leftArm, leftForearm, chest + new Vector2(-.10f * aimFacing, -.04f), supportHand, aimFacing);
         Arm(rightArm, rightForearm, chest + new Vector2(.08f * aimFacing, -.04f), triggerHand, aimFacing);
+    }
+
+    // The puppet has no PlayerShooting to aim the weapon anchor, so the same pose is made here: the anchor on
+    // the aim line, and through a reload the same lift to beside the head and back.
+    private Vector2 PuppetBarrel()
+    {
+        Vector2 aim = puppet.Aim.sqrMagnitude > .0001f ? puppet.Aim.normalized : Vector2.right;
+        if (Mathf.Abs(aim.x) > .025f) puppetWeaponFacing = aim.x < 0 ? -1 : 1;
+        Vector2 barrel = aim, offset = Vector2.zero;
+        if (puppet.Reloading)
+        {
+            float t = Mathf.Clamp01(puppet.ReloadProgress);
+            float lift = t < .22f ? Mathf.SmoothStep(0, 1, t / .22f) : t < .74f ? 1 : 1 - Mathf.SmoothStep(0, 1, (t - .74f) / .26f);
+            float angle = Mathf.Atan2(aim.y, Mathf.Abs(aim.x) * puppetWeaponFacing) * Mathf.Rad2Deg;
+            if (puppetWeaponFacing < 0 && angle < 0) angle += 360;
+            angle = Mathf.Lerp(angle, 90, lift) * Mathf.Deg2Rad;
+            barrel = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+            offset = Vector2.right * (.22f * puppetWeaponFacing * lift);
+        }
+        var anchor = weapon.transform.parent;
+        if (anchor != null && anchor != transform)
+            anchor.SetPositionAndRotation(transform.TransformPoint(new Vector2(0, .28f) + barrel * puppet.Reach + offset),
+                transform.rotation * Quaternion.Euler(0, 0, Mathf.Atan2(barrel.y, barrel.x) * Mathf.Rad2Deg));
+        return barrel;
     }
 
     private static void PositionPalm(SpriteRenderer palm, Vector2 point, int facing, Vector2 size)
@@ -350,7 +402,7 @@ public sealed class OfficerVisual : MonoBehaviour
 
     private void Limb(SpriteRenderer upper, SpriteRenderer lower, SpriteRenderer knee, Vector2 start, Vector2 end, Vector2 bend, bool rear, float compression, float extension, bool cutFoot)
     {
-        Vector2 joint = JumpLandingPose.Knee(start, end, bend, movement.FacingDirection, rear, compression, extension);
+        Vector2 joint = JumpLandingPose.Knee(start, end, bend, poseFacing, rear, compression, extension);
         Segment(upper, start, joint, .17f);
         if (cutFoot) end += (end - joint).normalized * FootCutReach;
         Segment(lower, joint, end, .17f);
@@ -386,7 +438,7 @@ public sealed class OfficerVisual : MonoBehaviour
 
     void UpdateCylinder()
     {
-        if (cylinder == null || cylinderHalo == null || shooting == null) return;
+        if (cylinder == null || cylinderHalo == null || shooting == null && puppet == null) return;
         // Thomas, 2026-11-14: back to the single luminous core block and its halo; the six bars looked scattered and dull.
         cylinder.sprite = RevolverPresentationGeometry.Core;
         cylinder.enabled = weapon.enabled;
@@ -397,12 +449,12 @@ public sealed class OfficerVisual : MonoBehaviour
     private void UpdateReloadVisual()
     {
         float pulse = reloading ? .5f + .5f * Mathf.Cos((Time.time - reloadVisualStartedAt) * Mathf.PI * 6f) : 0;
-        Color body = AntiqueRevolver ? AntiqueBody : animate ? RevolverPresentationGeometry.BodyColor : NeuralPalette.Primary;
+        Color body = AntiqueRevolver ? AntiqueBody : animate ? gunTint : NeuralPalette.Primary;
         Color tint = Color.Lerp(body, NeuralPalette.Danger, pulse);
         if (weapon != null) weapon.color = tint;
         if (weaponGrip != null) weaponGrip.color = tint;
-        if (cylinder != null) cylinder.color = Color.Lerp(AntiqueRevolver ? AntiqueCylinder : RevolverPresentationGeometry.CoreColor, NeuralPalette.Danger, pulse);
-        if (cylinderHalo != null) cylinderHalo.color = Color.Lerp(new Color(.35f, .78f, 1f, 1f), NeuralPalette.Danger, pulse);
+        if (cylinder != null) cylinder.color = Color.Lerp(AntiqueRevolver ? AntiqueCylinder : coreTint, NeuralPalette.Danger, pulse);
+        if (cylinderHalo != null) cylinderHalo.color = Color.Lerp(haloTint, NeuralPalette.Danger, pulse);
     }
     // The UI and actor share this palette. Brightened indigo stays readable against black.
     public static Color SlotColor(LoadoutSlot slot) => slot switch

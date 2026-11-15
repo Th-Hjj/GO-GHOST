@@ -78,6 +78,7 @@ namespace GoGhost.Duel
         void OnDestroy()
         {
             if ((IsTrainingEnemy || IsGhost) && profile != null) Destroy(profile);
+            DestroyGhostLook();
             Perception?.Dispose();
             if(Health!=null){Health.OnDied-=OnDied;Health.OnDamaged-=OnDamaged;}
         }

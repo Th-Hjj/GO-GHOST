@@ -37,6 +37,13 @@
 - **Changed:** `ConditionalLoadout.cs`: new labels, categories, option names, one-sentence descriptions and shorter validation messages; `GroundStateOption` gains OnGround and OnPlatform and the old Grounded value reads "Where You Stand (Reselect)" and fails validation; `PlatformDirectionOption` gains Left and Right. `ConditionalController.Observation.cs` tells the floor from a one-way platform. `ConditionalController.Platforms.cs` picks the nearest reachable platform on the chosen side. Happy's lines follow the names: 18 Mission 3 invasion clips renamed in Unity (GUIDs kept), 3 added, and those 21 plus 9 editor descriptions re-voiced from text with the Voice Studio synthesis; catalog and recipes updated. `ConditionalRules.md` and `ArtDirection.md` follow.
 - **Checked:** Unity compiled; the catalog lists 248 legal invasion rules and every one of their voice keys has a clip; one Play Mode pass captured the overview and both editor steps (`Logs/RuleWording/`). The new clips were not listened to. On Ground / On Platform in a fight, Change Platform Left / Right in a fight, the Mission 3 invasion reading and a save holding an old Grounded rule NOT TESTED.
 
+## 2026-11-14 — GHOST is drawn by the player's own body view
+
+- **Asked:** he must not use the Gunner's look; he did not look like the player at all.
+- **Changed:** `OfficerVisual` gains a puppet mode: the same rig, poses, revolver, recoil and reload lift, driven by a small state object instead of the player's input, movement and weapon components, with its own body, gun, core and halo colours and the plain round head. The player's path through it is unchanged. `BossAgent.Ghost.cs` copies the player's visual from the combat prefab while inactive, strips every component but transforms, renderers, masks and the body view, parents it to GHOST with its soles on his, gives it the projection material and writes its state each frame. The Gunner rig on the actor is fully transparent and remains only for the muzzle flash.
+- **Checked:** Unity compiled; one Play Mode capture with You and GHOST side by side (`Logs/ArtRedesign/ghost_compare.png`): same head, limbs, stance and revolver. The player looked as before in the same capture. His reload lift, recoil, Dodge pose and jump pose NOT OBSERVED. A mission played after this change NOT TESTED.
+- **Known:** nothing shows when he is hit or dies yet; the figure is simply hidden on death.
+
 ## 2026-11-14 — GHOST stage 3: his body
 
 - **Asked:** stage 3 of five: GHOST's own body in place of the Test Room robot.

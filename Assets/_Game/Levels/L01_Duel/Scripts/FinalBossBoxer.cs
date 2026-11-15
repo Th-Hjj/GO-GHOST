@@ -11,9 +11,17 @@ namespace GoGhost.Duel
         public enum Stage { Idle, Windup, Slip, Active, Recovery }
         static readonly BossMoveTuning[] tuning =
         {
-            default, Tune(.18f,.23f,.60f,13), Tune(.29f,.40f,1.85f,24),
-            Tune(.26f,.38f,1.75f,23), Tune(.22f,.54f,2.05f,29), Tune(.26f,.74f,3.55f,36)
+            // Wind-ups are long enough to read and answer (Thomas, 2026-11-15); they were .18 to .29.
+            default, Tune(.30f,.23f,.60f,13), Tune(.42f,.40f,1.85f,24),
+            Tune(.40f,.38f,1.75f,23), Tune(.38f,.54f,2.05f,29), Tune(.45f,.74f,3.55f,36)
         };
+        // After three strokes in a row he rests: no punch may start for a while. A stroke belongs to the
+        // run when it starts soon after the last one ended. Walking and axe orders are not held.
+        const int ChainLimit = 3;
+        const float ChainRest = .9f, ChainGap = .9f;
+        int chain;
+        float lastPunchEnd = -100, restUntil;
+        internal bool Resting => Time.time < restUntil;
         static BossMoveTuning Tune(float windup,float recovery,float cooldown,int baseDamage)
             => new BossMoveTuning(windup,recovery,cooldown,BossProfile.AttackDamage(baseDamage));
         internal static BossMoveTuning DefaultTuning(Punch punch) => tuning[(int)punch];
@@ -56,7 +64,7 @@ namespace GoGhost.Duel
         }
 
         public bool Ready(Punch punch) => punch > Punch.None && (int)punch < readyAt.Length && Time.time >= readyAt[(int)punch];
-        public bool CanStart(Punch punch) => Ready(punch) && Current == Punch.None && actor.Running
+        public bool CanStart(Punch punch) => Ready(punch) && !Resting && Current == Punch.None && actor.Running
             && actor.IsAlive && (actor.Motor.Grounded || punch != Punch.Leap) && !Gesturing;
 
         public void Tick()
@@ -100,6 +108,7 @@ namespace GoGhost.Duel
                 if (actor.Motor.Grounded && !FindJump(target,.8f,out jump)) return false;
                 if (!actor.Motor.Grounded && !FindDive(target,out diveTarget)) return false;
             }
+            if (Time.time-lastPunchEnd > ChainGap) chain=0;
             Current=punch; Cross=false; signatureLeap=punch==Punch.Leap && ShoulderWindow;
             LockedFacing=Mathf.Abs(target.x-actor.Position.x) > .12f ? Mathf.Sign(target.x-actor.Position.x) : actor.Facing;
             actor.Face(Vector2.right*LockedFacing);
@@ -172,7 +181,7 @@ namespace GoGhost.Duel
                     return;
                 }
                 if (Time.time < phaseUntil) return;
-                if (Current == Punch.Jab && !Cross && facts.Visible)
+                if (Current == Punch.Jab && !Cross && chain < ChainLimit && facts.Visible)
                 {
                     var next=OpponentAt(facts,.15f)-actor.Position;
                     // A second advancing straight needs a useful lane, not a predicted hit.
@@ -191,6 +200,8 @@ namespace GoGhost.Duel
             if (Current==Punch.Leap && !actor.Motor.Grounded && Time.time-airStart<1.8f) return;
             if (Time.time < phaseUntil) return;
             readyAt[(int)Current]=Time.time+accepted.Cooldown;
+            lastPunchEnd=Time.time;
+            if (chain >= ChainLimit) { restUntil=Time.time+ChainRest; chain=0; actor.Trace("boxer rests"); }
             lastPunch=Current;
             Current=Punch.None;
             Phase=Stage.Idle;
@@ -226,7 +237,7 @@ namespace GoGhost.Duel
 
         void StartStroke()
         {
-            hit=false; Stroke++;
+            hit=false; Stroke++; chain++;
             float active=Current switch { Punch.Uppercut=>.21f, Punch.Backfist=>.22f, Punch.Leap=>.27f,
                 Punch.Meteor=>Mathf.Clamp(Vector2.Distance(diveTarget,actor.Position)/24f+.18f,.20f,.85f), _=>.14f };
             SetPhase(Stage.Active,active);

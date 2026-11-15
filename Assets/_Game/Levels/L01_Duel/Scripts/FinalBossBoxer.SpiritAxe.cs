@@ -6,7 +6,8 @@ namespace GoGhost.Duel
     {
         public enum AxeOrder { Opening, Cutoff, Lift, Shoulder }
         enum WeaponState { Held, Armed, Flying, Planted, Retired }
-        const float GestureSeconds=.20f, LaunchDelay=1f, FlightSpeed=15f;
+        // The order's warning lasts half a second (Thomas, 2026-11-15; it was one second).
+        const float GestureSeconds=.20f, LaunchDelay=.5f, FlightSpeed=15f;
         WeaponState weapon;
         bool opened, detached, axeSpent, lastAxeMiss;
         float launchAt, arriveAt, nextOrder, startAngle, endAngle, lastAxeSample;
@@ -15,7 +16,7 @@ namespace GoGhost.Duel
         internal bool Retired => weapon==WeaponState.Retired;
         public bool Detached => detached;
         public bool InFlight => weapon==WeaponState.Flying;
-        // Ordered and waiting out the one-second delay; the destination is already fixed.
+        // Ordered and waiting out the launch delay; the destination is already fixed.
         internal bool AxeOrdered => weapon==WeaponState.Armed;
         internal float LaunchProgress => Mathf.InverseLerp(CommandAt,launchAt,Time.time);
         public AxeOrder Order { get; private set; }

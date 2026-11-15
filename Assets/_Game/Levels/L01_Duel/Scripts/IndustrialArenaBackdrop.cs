@@ -165,7 +165,7 @@ namespace GoGhost.Duel
 
         // Only the axe's energy gives off light (Thomas, 2026-11-14), not its cuts.
         // Phase one: the ice-blue socket charges through a throw's wind-up and the flying axe carries it.
-        // Phase two: the violet axe is dim where it stands, swells through the one-second order and is brightest in flight.
+        // Phase two: the violet axe is dim where it stands, swells through the order's delay and is brightest in flight.
         void AxeLights(BossAgent boss)
         {
             var axe = boss.Axe;

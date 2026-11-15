@@ -19,7 +19,8 @@ namespace GoGhost.Duel
             if (!boxer.Detached)
             {
                 float age=boxer.Orders==0 ? 0 : Time.time-boxer.CommandAt;
-                float lift=Ease(age/.27f), release=Ease((age-.70f)/.30f);
+                // The opening throw leaves the hand half a second after its order.
+                float lift=Ease(age/.20f), release=Ease((age-.32f)/.18f);
                 float loaded=lift*(1-release);
                 var aim=LocalDirection(boxer.Destination-actor.Position).normalized;
                 p.FrontHand=Vector2.Lerp(new Vector2(.23f,.08f),new Vector2(-.45f,.63f),lift);

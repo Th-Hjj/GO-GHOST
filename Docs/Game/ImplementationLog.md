@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-11-15 — Final Boss phase two: longer wind-ups, a rest after three strokes, half-second axe order
+
+- **Asked:** a combat-design review of phase two, then proposals 1 and 2 of five, plus the axe's warning cut from one second to half.
+- **Changed:** `FinalBossBoxer.cs` default wind-ups are .30 / .42 / .40 / .38 / .45 for Jab, Uppercut, Backfist, Overhand and Meteor (were .18 / .29 / .26 / .22 / .26). It counts strokes in a run and, after the third, refuses new punches for .9 s; a Jab that is the third stroke has no Cross. `FinalBossBoxer.SpiritAxe.cs` sets `LaunchDelay` to .5 s, which also shortens the forecast used to pick the axe's destination. `BossSilhouetteView.Boxer.cs` fits the opening throw's arm pose into the half second.
+- **Checked:** Unity 6000.6.0f1 compiled. Nothing was run, at Thomas's request to cut checking.
+- **NOT TESTED:** everything in play: how the punches read, whether the rest is felt, the axe at half a second (its warning line, the palm ring, the opening throw's pose and the order cue, which was made for a one-second delay), Overhand and Meteor jump timing with the longer wind-ups, and balance.
+- **Not changed:** damage, health, recoveries, cooldowns, the Cross's .16 s beat, phase one.
+
 ## 2026-11-15 — Unbound at 40%, the Swordsman's bar mark, Continue on the ending
 
 - **Asked:** start the balance pass, treating the current game as Normal. Thomas finds the Swordsman fine apart from Unbound, which should begin at 40% health; his bar should mark that point with a red question mark like the Final Boss's; the ending's button should read Continue and play the credits.

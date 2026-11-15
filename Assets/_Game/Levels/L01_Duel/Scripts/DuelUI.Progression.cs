@@ -12,6 +12,7 @@ namespace GoGhost.Duel
         internal bool DialogueVisible { get; private set; }
         TMPro.TMP_Text ambientSpeaker, ambientDialogue, sceneDialogue, ambientContinue, sceneContinue;
         UnityEngine.UI.Image ambientPanel;
+        SlabGraphic ambientMark;
         const float FooterButtonHeight = 48;
         float dialogueFooterRightInset, dialogueFooterBottomInset;
         (DuelPhase phase, bool editor, bool help, bool pause, bool tools)? lastDialoguePage;
@@ -88,6 +89,10 @@ namespace GoGhost.Duel
                     ambientSpeaker.text = game.HappySpeakerName;
                     ambientDialogue.maxVisibleCharacters = int.MaxValue;
                 }
+                // With nothing to read and nothing being said, Happy's mark rests so it does not compete with Confirm.
+                bool resting = string.IsNullOrEmpty(ambientDialogue.text) && !game.CurrentVoice.Audible;
+                Color mark = resting ? Color.Lerp(DialogueFill, OverridePalette.Signal, .3f) : OverridePalette.Signal;
+                ambientMark.color = Color.Lerp(ambientMark.color, mark, 1 - Mathf.Exp(-Time.unscaledDeltaTime * 14));
             }
         }
 

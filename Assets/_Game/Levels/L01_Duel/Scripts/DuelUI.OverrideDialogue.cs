@@ -66,6 +66,7 @@ namespace GoGhost.Duel
             block.anchoredPosition = Vector2.zero; block.sizeDelta = new Vector2(168, 0);
             var mark = block.gameObject.AddComponent<SlabGraphic>();
             mark.color = OverridePalette.Signal; mark.Cut = 22; mark.raycastTarget = false;
+            ambientMark = mark;
             OvVoiceBars(block, 62, 86);
 
             ambientSpeaker = OvText("", panel, Vector2.zero, Vector2.zero, 22, OverridePalette.SignalText, TextAlignmentOptions.CaplineLeft, false, 1);

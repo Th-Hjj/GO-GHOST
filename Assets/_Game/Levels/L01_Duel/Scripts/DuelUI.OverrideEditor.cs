@@ -102,8 +102,10 @@ namespace GoGhost.Duel
             button.onClick.AddListener(() => UiClicked(root.gameObject)); button.onClick.AddListener(click);
             var face = Rect("Face", root, Vector2.zero, size);
             var slab = face.gameObject.AddComponent<SlabGraphic>();
-            Color fill = active ? activeFill : filled ? OverridePalette.Neutral : OverridePalette.Surface;
-            Color ink = active ? OverridePalette.Ink : filled ? restInk : OverridePalette.Disabled;
+            // Full colour only invites a choice. Once a side holds one, its card rests and the choices below carry the colour.
+            bool lit = active && !filled;
+            Color fill = lit ? activeFill : filled ? OverridePalette.Neutral : OverridePalette.Surface;
+            Color ink = lit ? OverridePalette.Ink : filled ? restInk : OverridePalette.Disabled;
             slab.color = fill; slab.Cut = 22; slab.raycastTarget = false;
             const float pad = 46;
             var title = OvText(heading, face, new Vector2(4, 28), new Vector2(size.x - pad * 2, 28), 22, ink, TextAlignmentOptions.CaplineLeft, false, 1);
@@ -114,7 +116,7 @@ namespace GoGhost.Duel
             behaviour.Label = text; behaviour.Icon = title; behaviour.Fill = fill; behaviour.Ink = ink;
             behaviour.Shift = 8; behaviour.EnterDelay = enterDelay; behaviour.EnterSide = side;
             // The card of the side that has just opened fills from the left.
-            if (active) MarkSelected(button, name, filled ? OverridePalette.Neutral : OverridePalette.Surface, filled ? restInk : OverridePalette.Disabled);
+            if (lit) MarkSelected(button, name, OverridePalette.Surface, OverridePalette.Disabled);
         }
 
         void BuildOverrideEditor()

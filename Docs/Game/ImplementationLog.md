@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Rule editor: resting voice mark, dark sentence cards
+
+- **Asked:** from a review of the rule editor, Thomas approved two points: Happy's box should not draw the eye while it is empty, and one colour should not fill four blocks at once.
+- **Changed:** `DuelUI.Progression.cs` / `DuelUI.OverrideDialogue.cs`: the Signal block behind the voice bars fades to a dark Signal when the box has no text and no voice is audible, and returns when either appears. `DuelUI.OverrideEditor.cs`: a Condition or Action card is full colour only while its side is open and empty; once it holds a choice it stays dark with coloured text, on either side. The fixed parameter row is unchanged.
+- **Checked:** Unity compiled, including the category regrouping from the entry below; one Play Mode capture of the Action step (`Logs/RuleWording/editor_cards.png`) shows the dark Action card. The tutorial was speaking during the capture, so the resting voice mark was NOT OBSERVED. Other pages that show Happy's box NOT TESTED.
+
 ## 2026-11-14 — Condition categories: Body / Weapon / Enemy
 
 - **Asked:** regroup the conditions by what they are about (decision recorded in `CLAUDE.md` and `AGENTS.md`).

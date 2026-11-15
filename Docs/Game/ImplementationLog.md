@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-11-15 — Final Boss arena: the Tower, and platforms that sink together
+
+- **Asked:** Thomas found the phase-two platforms hard to jump onto, with a long wait after a missed window, and noted the layout was Mission 2's, never designed for this fight. He asked for a level-design view of both phases and chose the tower from two drawn layouts.
+- **Found:** with a 2.33 jump and 2.1 tiers, the 1.05 swing in opposite phase closed floor-to-low about 45% of the time and low-to-high about half the time, and the two windows barely overlapped. The high platforms were never reachable from the floor and the low ones sank below head height.
+- **Changed:** `DuelArenaLayouts.cs` adds `FinalBossLayout` (x -10, -5, 0, 5, 10 at 2.1, 4.2, 6.3, 4.2, 2.1) and uses it for Mission 3 only. `PlatformOscillator.cs` moves every platform from home to .6 below and back over 3 s; `DuelFinalBossFight.cs` starts them all in the same phase.
+- **Checked:** Unity 6000.6.0f1 compiled. One Play Mode capture of Mission 3 phase one from the developer entry (`Logs/tower_half.png`): the five platforms stand as drawn and the Boss was in the air between the low and middle platforms on the left.
+- **NOT TESTED:** phase two and the new motion, the EMP's rim trace on the new platforms, Anchor Vault, Underpass Return and Palm Deflection on this layout, the boxer's jump planning with the 6.3 peak, the ceiling above the peak, the Boss camping the peak or failing to reach it, and how any of it plays.
+
 ## 2026-11-15 — Final Boss phase two: longer wind-ups, a rest after three strokes, half-second axe order
 
 - **Asked:** a combat-design review of phase two, then proposals 1 and 2 of five, plus the axe's warning cut from one second to half.

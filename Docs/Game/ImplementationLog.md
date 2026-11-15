@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Remove unrequested mission-clear praise
+
+- **Asked:** remove Happy's added "Good job." after Mission 1 and "Clean work." after Mission 2.
+- **Changed:** removed `Handler/WaveOneClear2` and `Handler/WaveTwoClear2` from `VoiceStudioCatalog.json`. The prefix-driven clear sequences now contain only the original mission-clear line, with no extra subtitle or acknowledgement. Historical WAVs and authoring archives remain untouched.
+- **Checked:** imported and reloaded the catalog in Unity. A temporary Editor fixture invoked `HandlerVoice.WaveCleared` for both missions, verified the original caption and AudioClip, then advanced each sequence and verified its completion callback with no remaining dialogue. The check compiled and passed; the temporary object was removed. Existing unrelated save/tooling edits were preserved.
+- **NOT TESTED:** Play Mode combat victories, full Check Game Flow and packaged builds. No C# source changed and no build was made.
+
 ## 2026-11-14 — Target Profiles: four fields and consistent Final Boss portrait
 
 - **Asked:** fix the Final Boss dossier's unfinished presentation; Thomas then chose to remove Skills from all three dossiers so attacks remain a discovery in combat.

@@ -352,23 +352,9 @@
       "transcribed": false
     },
     {
-      "key": "Handler/WaveOneClear2",
-      "label": "Mission 1 clear 2",
-      "text": "Good job.",
-      "locked": false,
-      "transcribed": false
-    },
-    {
       "key": "Handler/WaveTwoClear",
       "label": "Mission 2 clear 1",
       "text": "Mission two cleared.",
-      "locked": false,
-      "transcribed": false
-    },
-    {
-      "key": "Handler/WaveTwoClear2",
-      "label": "Mission 2 clear 2",
-      "text": "Clean work.",
       "locked": false,
       "transcribed": false
     },

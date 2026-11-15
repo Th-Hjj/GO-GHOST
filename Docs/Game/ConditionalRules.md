@@ -159,3 +159,5 @@ F8 groups controls under Tuning, Missions and Analytics. Tuning retains Player, 
 ## Validation and delivery
 
 For rule changes, check selector labels and parameters, migration, rule priority, manual fallback, feedback and cleanup. During iteration, exercise the affected rule in Test Room. The optional Check Game Flow command covers progression changes. The [implementation log](ImplementationLog.md) distinguishes source inspection, compilation, Editor checks and standalone play.
+
+**Jump forgiveness (Thomas, 2026-11-15, trial tuning).** In `PlayerMovement`, for every jump in the Duel, manual or by rule: a jump is accepted for .1 s after walking off a support (not after a jump, a drop-through or while rising); a press that could not be used is kept for .1 s and spent on landing; a jump from a rising kinematic platform adds the platform's upward speed; and once per time in the air, at the top of a rise, feet within .4 below the top of a one-way platform that the body overlaps by at least .2 get one more push onto it. A step of about 2.7 is reachable; the still tier is 2.1.

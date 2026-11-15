@@ -23,7 +23,7 @@ namespace GoGhost.Duel
         // Every Boss damage multiplier rounds the same way: whole HP, halves up (RoundToInt would round .5 to even).
         internal static int ScaleDamage(int damage, float factor) => Mathf.FloorToInt(damage * factor + .5f);
         // Mission 2 Swordsman and Final Boss phase two hit for a fraction of their tuned damage.
-        internal const float MissionTwoSwordFactor = .95f, PhaseTwoFactor = .9f;
+        internal const float MissionTwoSwordFactor = .95f, PhaseTwoFactor = .85f;
 
         public BossKind Kind;
         public int Health=720;

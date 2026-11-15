@@ -2,7 +2,7 @@
 
 The preparation page offers rule editing and optional **Test Room** practice. Each numbered mission also has a **Target Profile**. Back returns from either visit. **Start Mission** fades the preparation page out and reveals the live arena. Defeat offers direct Retry or Configuration.
 
-Boss attacks first use 75% of base damage, rounded half up. Multiply the resulting attack damage by 0.95 for the Mission 2 Swordsman or by 0.90 for Final Boss phase two, rounding half up per hit. Bonus uses the original 75% values. A reflected projectile carries its original shot damage.
+Boss attacks first use 75% of base damage, rounded half up. Multiply the resulting attack damage by 0.95 for the Mission 2 Swordsman or by 0.85 for Final Boss phase two (Thomas, 2026-11-15; 0.90 before), rounding half up per hit. Phase two then lands Jab 9, Cross 11, Uppercut 15, Backfist 14, Overhand 19, Meteor 23, axe 14 and the shoulder axe 20. Bonus uses the original 75% values. A reflected projectile carries its original shot damage.
 
 ## Final Boss and optional Bonus
 

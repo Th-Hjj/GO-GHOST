@@ -97,6 +97,16 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
     public bool HitPushActive => hitPushRemaining > 0 && Time.time < hitPushUntil;
     public int HitPushCount { get; private set; }
     private int airJumpsRemaining;
+    // Jump forgiveness in Duel (Thomas, 2026-11-15). A jump is still accepted for a moment after walking off
+    // a support, and a press made just before landing is used on landing. A jump from a rising platform adds
+    // the platform's upward speed. At the top of a rise, feet that are just short of a one-way platform the
+    // body is over are carried onto it, which makes a step up to about 2.7 reachable.
+    public const float CoyoteSeconds = .1f, JumpBufferSeconds = .1f, LedgeReach = .4f;
+    private float lastGroundedAt = float.NegativeInfinity, jumpBufferedAt = float.NegativeInfinity, supportRise, previousVertical;
+    private bool ledgeUsed;
+    private readonly Collider2D[] ledgeHits = new Collider2D[8];
+    private bool CoyoteJump => legacyCombat && !IsGrounded && droppingThrough == null && rb.linearVelocity.y <= .1f
+        && Time.time - lastGroundedAt <= CoyoteSeconds;
     private bool attemptActive;
     private bool HasDeployment => officer != null && officer.Deployment != null;
     public bool HasDoubleJump => !legacyCombat && (HasDeployment ? attemptActive && officer.Deployment.HasDoubleJump : doubleJumpUnlocked);
@@ -138,6 +148,7 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         ordinaryDirection = 0;
         ordinaryActionId = null;
         hitPushRemaining = 0; HitPushCount = 0;
+        lastGroundedAt = jumpBufferedAt = float.NegativeInfinity; supportRise = previousVertical = 0; ledgeUsed = false;
         groundSupport = null;
         DropThroughCount = 0;
     }
@@ -230,6 +241,9 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
             descentSpeed = 0;
             RefillAirResources();
             jumpInFlight = jumpWasAscending = false;
+            lastGroundedAt = Time.time; ledgeUsed = false;
+            var lift = groundSupport != null ? groundSupport.attachedRigidbody : null;
+            supportRise = lift != null && lift.bodyType == RigidbodyType2D.Kinematic ? Mathf.Max(0, lift.linearVelocity.y) : 0;
         }
         else if (jumpInFlight)
         {
@@ -254,8 +268,13 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         }
         else if(Mathf.Abs(input.AimDirection.x)>.01f) FacingDirection=input.AimDirection.x>0?1:-1;
         if(spriteRenderer!=null) spriteRenderer.flipX=FacingDirection<0;
-        bool executableJump = input.JumpPressedThisFrame && (IsGrounded || HasDoubleJump && airJumpsRemaining > 0)
+        bool coyote = CoyoteJump;
+        // A press that could not be used is kept briefly and spent on the landing that follows.
+        bool buffered = legacyCombat && IsGrounded && !input.JumpPressedThisFrame && Time.time - jumpBufferedAt <= JumpBufferSeconds;
+        bool executableJump = (input.JumpPressedThisFrame || buffered) && (IsGrounded || coyote || HasDoubleJump && airJumpsRemaining > 0)
             && (input.LegacyCombatActive || dodge == null || !dodge.IsDodging) && input.GameplayInputEnabled;
+        if (legacyCombat && input.JumpPressedThisFrame && !executableJump && input.GameplayInputEnabled) jumpBufferedAt = Time.time;
+        if (executableJump) jumpBufferedAt = float.NegativeInfinity;
         if (executableJump && input.LegacyCombatActive && dodge != null && dodge.IsDodging)
         {
             dodge.InterruptForJump();
@@ -272,7 +291,7 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         }
         if (executableJump && !acceptedDodge)
         {
-            TryJump();
+            TryJump(coyote);
         }
         if(input.ConditionalFrame.JumpOwned && input.JumpPressedThisFrame)
             input.NotifyConditionalAction(ControlOperation.Jump,executableJump&&!acceptedDodge);
@@ -334,6 +353,8 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         hitPushRemaining = 0;
 
         float vertical = rb.linearVelocity.y;
+        if (legacyCombat) vertical = ReachLedge(vertical);
+        previousVertical = vertical;
         if (HasHover && input.GameplayInputEnabled && input.JumpHeld && !IsGrounded && vertical <= 0 && HoverRemaining > 0)
         {
             IsHovering = true;
@@ -373,6 +394,7 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         if (!CanDropThrough(expectedSupport)) return false;
         droppingThrough = groundSupport;
         dropStartedAt = Time.time;
+        lastGroundedAt = float.NegativeInfinity;
         Physics2D.IgnoreCollision(movementShape, droppingThrough, true);
         DropThroughCount++;
         groundSupport = null;
@@ -417,14 +439,46 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         return true;
     }
 
-    private void TryJump()
+    // At the top of a rise: if the feet are within LedgeReach below the top of a one-way platform the body is
+    // over, one more push carries them onto it. Once per time in the air; never while dropping through.
+    private float ReachLedge(float vertical)
+    {
+        bool apex = previousVertical > .05f && vertical <= .05f;
+        if (!apex || ledgeUsed || IsGrounded || droppingThrough != null || !rb.simulated || movementShape == null
+            || input.NarrativePaused || !input.GameplayInputEnabled) return vertical;
+        var body = movementShape.bounds;
+        float feet = body.min.y, best = 0, carry = 0;
+        var filter = new ContactFilter2D { useLayerMask = true, layerMask = groundLayer, useTriggers = false };
+        int count = Physics2D.OverlapBox(new Vector2(body.center.x, feet + LedgeReach * .5f + .02f),
+            new Vector2(body.size.x, LedgeReach + .04f), 0, filter, ledgeHits);
+        for (int i = 0; i < count; i++)
+        {
+            var platform = ledgeHits[i];
+            if (platform == null || !IsDropThroughSupport(platform) || Physics2D.GetIgnoreCollision(movementShape, platform)) continue;
+            var deck = platform.bounds;
+            float short_ = deck.max.y - feet;
+            float over = Mathf.Min(body.max.x, deck.max.x) - Mathf.Max(body.min.x, deck.min.x);
+            if (short_ <= .01f || short_ > LedgeReach || over < .2f || short_ <= best) continue;
+            best = short_;
+            var lift = platform.attachedRigidbody;
+            carry = lift != null && lift.bodyType == RigidbodyType2D.Kinematic ? Mathf.Max(0, lift.linearVelocity.y) : 0;
+        }
+        if (best <= 0) return vertical;
+        ledgeUsed = true;
+        float gravity = -Physics2D.gravity.y * rb.gravityScale;
+        return Mathf.Sqrt(2 * gravity * (best + .08f)) + carry;
+    }
+
+    private void TryJump(bool coyote = false)
     {
         bool accepted = false;
-        if (IsGrounded)
+        if (IsGrounded || coyote)
         {
             if (legacyCombat) footing.TakeOff(Time.time);
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, JumpSpeed);
+            // A rising platform passes its speed on, so the jump is as high above it as above still ground.
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, JumpSpeed + (legacyCombat && IsGrounded ? supportRise : 0));
             IsGrounded = false;
+            lastGroundedAt = float.NegativeInfinity;
             accepted = true;
         }
         else if (HasDoubleJump && airJumpsRemaining > 0)

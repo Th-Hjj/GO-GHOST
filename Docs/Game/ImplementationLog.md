@@ -8,6 +8,13 @@
 - **Checked:** the game assembly compiles with Unity's bundled compiler outside the Editor (Thomas was in Play Mode). An offline composite of the two plates at the left parallax position, drawn the way the canvas blends them, shows the band before and a solid tower after.
 - **NOT TESTED:** Mission 3 in Play Mode, including the EMP contour trace over the towers, other parallax positions and phase two. The part of the amber row to the right of the tower is not covered by any tower and still shows, as authored.
 
+## 2026-11-15 — Jump forgiveness; phase-two damage at 85%
+
+- **Asked:** crossing the phase-two platforms was still uncomfortable and cost falls in play. Thomas chose all three jump proposals and asked for phase-two damage slightly lower.
+- **Changed:** `PlayerMovement.cs` adds coyote time (.1 s), a jump buffer (.1 s), the rising platform's speed on take-off, and `ReachLedge`, which at the top of a rise gives one more push when the feet are within .4 of a one-way platform's top. All four are limited to the Duel's combat mode. `BossProfile.PhaseTwoFactor` is .85 (was .9).
+- **Checked:** the game assembly compiles with Unity's bundled compiler outside the Editor.
+- **NOT TESTED:** everything in play: each of the four in a fight, a rule-driven Jump using the coyote window or the buffer, the ledge push near a platform's end or while the Boss stands on it, Change Platform routes with the higher jump, the Boss's forecasts of a player who now jumps higher from a rising step, and Missions 1 and 2, where the same forgiveness now applies.
+
 ## 2026-11-15 — Jumping from a Boss's head while he is rising
 
 - **Asked:** fix the player being unable to jump while standing on the Boss's head.

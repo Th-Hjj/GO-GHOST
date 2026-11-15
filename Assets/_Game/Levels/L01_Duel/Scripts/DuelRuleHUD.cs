@@ -308,7 +308,8 @@ namespace GoGhost.Duel
             float left=panel/Mathf.Max(1,width);
             camera.rect=new Rect(left,0,1-left,1);
             float aspect=camera.pixelRect.width/Mathf.Max(1,camera.pixelRect.height);
-            camera.orthographicSize=Mathf.Max(10,16.8f/Mathf.Max(.3f,aspect));
+            // The GHOST arena's own camera decides how far back to stand.
+            if(!game.GhostArena)camera.orthographicSize=Mathf.Max(10,16.8f/Mathf.Max(.3f,aspect));
         }
         void UpdateRuleHud()
         {

@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — GHOST stage 2: the letter arena and its camera
+
+- **Asked:** stage 2 of five.
+- **Changed:** `DuelGame.Ghost.cs`: clicking GHOST on the title enters the GHOST arena as You (no face, no rules, nothing saved). The authored frame is stretched to 44 x 11.5 and restored on leaving. Ten one-way platforms are the horizontal strokes of G, H, O, S and T on the 2.1 / 4.2 / 6.3 tiers; nine vertical strokes are drawn by `GhostProjection.shader` and own no collider. `GhostArenaCamera` frames both fighters, from the game's own scale back to the whole word, keeping the floor's height on screen. `ArenaLook.Ghost` gives the rims a pale blue-white. The encounter runs on the Test Room's lifecycle with its robot standing in for GHOST, placed on the T; Back, Configuration, Main Menu and defeat all return to the title. `DuelRuleHUD` leaves the camera's size alone here and the Test Room chip and controls list are hidden.
+- **Checked:** Unity compiled; entered by calling `EnterGhostArena` in Play Mode, one capture of the whole word (`Logs/ArtRedesign/ghost_arena_full.png`); Back returned to the title with the frame at 30 wide again. The last edit (the camera hands itself back in `OnDisable`) was made while Thomas was in Play Mode: NOT COMPILED. Entering by a real click, walking and jumping every platform, defeat returning to the title, a mission played after leaving and other aspect ratios NOT TESTED.
+- **Known:** the stand-in is labelled Dummy Robot and walks off the T at once. No title backdrop in the arena yet and no transition; both belong to stage 5.
+
 ## 2026-11-14 — GHOST stage 1: cleared flag, hologram on the title, pointer
 
 - **Asked:** start GHOST (decision recorded in `CLAUDE.md` and `AGENTS.md`). Stage 1 of five.

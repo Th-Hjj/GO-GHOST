@@ -17,6 +17,7 @@ namespace GoGhost.Duel
         public void BackFromTraining()
         {
             if (Phase != DuelPhase.Training || !DialogueAllowsPreparationNavigation) return;
+            if (GhostArena) { LeaveGhostArena(); return; }
             ClearEncounter();
             SetPhase(DuelPhase.Configure);
         }
@@ -55,6 +56,9 @@ namespace GoGhost.Duel
                 float spawnX = Mathf.Abs(Player.transform.position.x - gunnerSpawn.x) < 2
                     ? 2 * arenaBounds.center.x - gunnerSpawn.x : gunnerSpawn.x;
                 trainingEnemySpawn = new Vector3(spawnX, gunnerSpawn.y);
+                // GHOST's place: on the T, as he stood on the title.
+                if (GhostArena) trainingEnemySpawn = new Vector3(arenaBounds.center.x + GhostOpponentX,
+                    gunnerSpawn.y + PlatformTierRise * 3);
             }
             var instance = Instantiate(gunnerPrefab, trainingEnemySpawn, Quaternion.identity, encounter.transform);
             instance.name = "TrainingEnemy";
@@ -68,8 +72,9 @@ namespace GoGhost.Duel
             if (Paused || DeveloperToolsOpen || Player == null) return;
             if (Player.IsDead)
             {
-                if (playerRespawnAt == 0) { playerRespawnAt = Time.time + 1.2f; PlayMetrics.RecordTrainingDeath(); }
-                if (Time.time >= playerRespawnAt) CreateEncounter(true);
+                if (playerRespawnAt == 0) { playerRespawnAt = Time.time + 1.2f; if (!GhostArena) PlayMetrics.RecordTrainingDeath(); }
+                // Losing to GHOST returns to the title.
+                if (Time.time >= playerRespawnAt) { if (GhostArena) LeaveGhostArena(); else CreateEncounter(true); }
                 return;
             }
             if (actors.Length == 0 || actors[0].IsAlive) return;

@@ -190,6 +190,12 @@ namespace GoGhost.Duel
             Player.DamageTaken += ui.ShowHurtFlash;
             input = Player.GetComponent<PlayerInputReader>();
             input.SetGameplayInputEnabled(false);
+            if (GhostArena)
+            {
+                // You open at the left end of the word, under the G.
+                Player.transform.position = new Vector3(arenaBounds.center.x + GhostPlayerX, Player.transform.position.y, Player.transform.position.z);
+                Physics2D.SyncTransforms();
+            }
             Rifle = Player.GetComponent<PlayerShooting>();
             Dodge = Player.GetComponent<PlayerDodge>();
             navigation = encounter.AddComponent<ArenaNavigation2D>();
@@ -197,7 +203,13 @@ namespace GoGhost.Duel
             AlignPlayerOpeningSupport();
             // The Test Room keeps the same lighting with neutral haze and no plates.
             IndustrialArenaBackdrop.Create(encounter.transform, Player.transform, arenaBounds, training ? 0 : Wave);
-            ArenaSilhouetteDressing.Create(encounter.transform, arenaBounds, ActivePlatforms, ArenaLook.For(training ? 0 : Wave));
+            ArenaSilhouetteDressing.Create(encounter.transform, arenaBounds, ActivePlatforms,
+                GhostArena ? ArenaLook.Ghost : ArenaLook.For(training ? 0 : Wave));
+            if (GhostArena)
+            {
+                BuildGhostStems(platforms[0].bounds.max.y, ActivePlatforms[1].bounds.size.y);
+                encounter.AddComponent<GhostArenaCamera>().Initialize(this, arenaBounds);
+            }
             Player.GetComponent<PlayerMovement>().ConfigureLegacyCombat();
             Rifle.ConfigureLegacyCombat();
             Dodge.ConfigureLegacyCombat();
@@ -320,11 +332,13 @@ namespace GoGhost.Duel
         {
             bool pausedEncounter = Paused && (Phase == DuelPhase.Training || Phase == DuelPhase.Prepare || Phase == DuelPhase.Fight);
             if (Phase != DuelPhase.Failed && !pausedEncounter) return;
+            if (GhostArena) { LeaveGhostArena(); return; }
             ClearEncounter("configuration");
             SetPhase(DuelPhase.Configure);
         }
         public void MainMenu()
         {
+            if (GhostArena) { LeaveGhostArena(); return; }
             // An unfinished character is not worth a save.
             if (Phase != DuelPhase.CharacterCreation) SaveGame();
             ClearEncounter("main_menu");

@@ -20,7 +20,7 @@ namespace GoGhost.Duel
             holder.gameObject.AddComponent<GhostHologram>().Setup(figure, game.Appearance.CombatSprite, k, delay);
             var hit = Rect("Pointer area", holder, new Vector2(-.12f * k, .88f * k), new Vector2(1.15f * k, 1.9f * k)).gameObject.AddComponent<Image>();
             hit.color = Color.clear; hit.raycastTarget = true;
-            hit.gameObject.AddComponent<GhostPointer>();
+            hit.gameObject.AddComponent<GhostPointer>().Clicked = game.EnterGhostArena;
         }
     }
 
@@ -102,8 +102,9 @@ namespace GoGhost.Duel
     }
 
     // While the pointer is over GHOST it is drawn in his material: blue scan rows that rise, with a displaced run now and then.
-    public sealed class GhostPointer : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+    public sealed class GhostPointer : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
     {
+        public System.Action Clicked;
         const int Size = 32, Frames = 6;
         static Texture2D[] frames;
         bool over;
@@ -111,6 +112,12 @@ namespace GoGhost.Duel
 
         public void OnPointerEnter(PointerEventData data) => over = true;
         public void OnPointerExit(PointerEventData data) => Release();
+        public void OnPointerClick(PointerEventData data)
+        {
+            if (data.button != PointerEventData.InputButton.Left) return;
+            Release();
+            Clicked?.Invoke();
+        }
         void OnDisable() => Release();
 
         void Release()

@@ -19,6 +19,9 @@ namespace GoGhost.Duel
             FarOpacity = farOpacity; NearOpacity = nearOpacity;
         }
 
+        // The GHOST arena: his blue in the haze, a pale blue-white on the landing edges, no plates.
+        public static ArenaLook Ghost => new ArenaLook(null, null, null, GhostHologram.Body, new Color32(227, 235, 255, 255), 0, 0);
+
         // Mission 3 starts cold white; the EMP dyes its haze violet. The Test Room and the Bonus have no plates.
         public static ArenaLook For(int wave) => wave switch
         {

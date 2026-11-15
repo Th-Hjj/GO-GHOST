@@ -77,7 +77,7 @@ namespace GoGhost.Duel
         {
             var arena = ArenaOnHud();
             waveTitleGroup = null; preparationSlam = null;
-            if (game.Phase == DuelPhase.Training)
+            if (game.Phase == DuelPhase.Training && !game.GhostArena)
             {
                 var chip = OvText("Test Room", hud, Vector2.zero, new Vector2(200, 46), 34, OverridePalette.TextDim, TextAlignmentOptions.Capline, false, 1);
                 float chipWidth = chip.GetPreferredValues().x + 52;

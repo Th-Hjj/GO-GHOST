@@ -46,7 +46,8 @@ namespace GoGhost.Duel
 
         void ApplyPlatformLayout(bool training)
         {
-            var layout = training ? TrainingLayout
+            if (GhostArena) WidenArenaForGhost();
+            var layout = GhostArena ? GhostLayout : training ? TrainingLayout
                 : Wave == 1 ? WaveOneLayout : WaveTwoThreeLayout;
 
             // The existing list contains the floor first, followed by the five one-way platforms.
@@ -89,6 +90,7 @@ namespace GoGhost.Duel
 
         void ClearPlatformLayout()
         {
+            RestoreArenaAfterGhost();
             if (stagePlatforms == null) return;
             // Destroy is deferred; disable the entire old group before any next encounter scans terrain.
             stagePlatforms.SetActive(false);

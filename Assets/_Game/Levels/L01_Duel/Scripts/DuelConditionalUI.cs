@@ -334,7 +334,11 @@ namespace GoGhost.Duel
             pendingRule = null;
             pendingRow = selectorRow = -1;
             if (row == displayedRules.Count) Show();
-            else game.EditLoadout(d => { displayedRules.RemoveAt(row); WriteRuleOrder(d); }, "remove");
+            else
+            {
+                LeaveRemovedCard(row);
+                game.EditLoadout(d => { displayedRules.RemoveAt(row); WriteRuleOrder(d); }, "remove");
+            }
         }
 
         void MoveRule(int row, int direction)

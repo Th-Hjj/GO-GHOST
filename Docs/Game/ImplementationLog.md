@@ -1,5 +1,14 @@
 # GO GHOST slice implementation
 
+## 2026-11-15 — Stage 5 leftovers: dialogue box, removed card, save notice
+
+- **Asked:** stage 5 of the UI motion order. The list was cut to three pieces before designing; Thomas approved them from a played prototype. Settings, Key Bindings, Credits and an autosave mark were proposed as not worth doing and left alone.
+- **Changed:** `DuelUI.Progression.cs` and `DuelUI.OverrideDialogue.cs` animate Happy's box open and closed instead of switching it on and off. `DuelConditionalUI.cs` and `DuelUI.OverridePreparation.cs` lift a removed rule card out of the page being rebuilt, slide and fade it, and hold the cards below until it has gone; + Add Rule now sits in front of the empty slots. `DuelUI.cs` rebuilds the save notice as a slab with a coloured block, arriving from above and leaving upward.
+- **Checked:** Unity 6000.6.0f1 compiled. In QHD Play Mode with the developer Mission 1 fixture and three rules: consecutive captures of the box opening on Happy's first line (`Logs/left_sheet.png`: block, then slab, then words), and a rule removed through its own button, after which two rules remained and the page was correct (`Logs/left_card_after.png`). The first run threw on a card that already carried a canvas group; fixed and rerun with a clean console.
+- **NOT OBSERVED:** the removed card in mid-slide (the capture landed after it had gone) and the box closing.
+- **NOT TESTED:** the save notice in any state (nothing in this pass can raise one from outside the save code), the box in the rule editor, Target Profile and the Test Room, + Add Rule in front of the slots after the last fix, Reduce Flashing and builds.
+- **Not done:** the exit for the choices on a rule-editor side that closes. It needs the closing side's choices rebuilt in a leaving state, which is a larger change than the other three.
+
 ## 2026-11-15 — Countdown cue
 
 - **Asked:** stage 4 of the UI motion order, sounds for the transitions. Thomas rejected two rounds of synthesized candidates (seven events with unrelated timbres; then one family built from the click and hover), asked whether all of them were needed, and settled on the countdown alone: three identical cues, from a ready-made sound.

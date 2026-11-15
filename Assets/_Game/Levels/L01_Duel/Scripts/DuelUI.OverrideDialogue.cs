@@ -58,6 +58,8 @@ namespace GoGhost.Duel
 
             var back = Rect("Slab", panel, Vector2.zero, Vector2.zero);
             back.anchorMin = Vector2.zero; back.anchorMax = Vector2.one; back.sizeDelta = Vector2.zero;
+            back.pivot = new Vector2(0, .5f);
+            ambientBody = back;
             var slab = back.gameObject.AddComponent<SlabGraphic>();
             slab.color = DialogueFill; slab.Cut = 22; slab.raycastTarget = false;
 
@@ -67,6 +69,8 @@ namespace GoGhost.Duel
             var mark = block.gameObject.AddComponent<SlabGraphic>();
             mark.color = OverridePalette.Signal; mark.Cut = 22; mark.raycastTarget = false;
             ambientMark = mark;
+            ambientBlock = block.gameObject.AddComponent<CanvasGroup>();
+            ambientBlock.blocksRaycasts = false;
             OvVoiceBars(block, 62, 86);
 
             ambientSpeaker = OvText("", panel, Vector2.zero, Vector2.zero, 22, OverridePalette.SignalText, TextAlignmentOptions.CaplineLeft, false, 1);
@@ -84,6 +88,28 @@ namespace GoGhost.Duel
             mark2.anchoredPosition = new Vector2(-62, 30);
             ambientContinue.alpha = 0;
             ambientContinue.gameObject.AddComponent<Drift>().Distance = 5;
+        }
+
+        RectTransform ambientBody;
+        CanvasGroup ambientBlock;
+        bool ambientOpen;
+        float ambientChangedAt = float.NegativeInfinity;
+
+        // The voice block arrives first and the sentence slab opens out of it; closing runs the other way. Trial tuning.
+        bool AnimateAmbientBox(bool open)
+        {
+            if (open != ambientOpen) { ambientOpen = open; ambientChangedAt = Time.unscaledTime; }
+            float t = Time.unscaledTime - ambientChangedAt, block, body;
+            if (open) { block = OvMotion.Snap(t / .10f); body = OvMotion.Snap((t - .06f) / .16f); }
+            else { body = 1 - Mathf.Clamp01(t / .08f); block = 1 - Mathf.Clamp01((t - .06f) / .06f); }
+            if (ambientBody == null) return open;
+            ambientBody.localScale = new Vector3(body, 1, 1);
+            ambientBlock.alpha = block;
+            ((RectTransform)ambientBlock.transform).anchoredPosition = new Vector2(-40 * (1 - block), 0);
+            float words = Mathf.Clamp01((body - .6f) / .4f);
+            ambientSpeaker.alpha = ambientDialogue.alpha = words;
+            if (words < 1) ambientContinue.alpha = 0;
+            return open || block > 0;
         }
 
         void BuildOverrideCreation()

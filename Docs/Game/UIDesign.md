@@ -116,7 +116,9 @@ The wipe runs on its own clock, advanced by at most a thirtieth of a second per 
 
 **Tutorial pointer.** While Happy teaches, the page sits under one 48% shade and controls keep their own colours. What she names is framed by a 4-pixel Signal slab-cut opening (`SpotlightGraphic`). It opens in 180 ms when the line is heard, follows its target, travels to the next one and closes when the line ends. A line that waits for a choice keeps the frame without the shade once its text is dismissed.
 
-Not built: an exit for the column that closes inside the rule editor, the hazard-rule draw-in on pages other than the results, and motion for a removed rule card itself.
+**Leftovers (Thomas, 2026-11-15, trial tuning).** Happy's box opens when there is something to say: the voice block arrives from the left in .10 s and the sentence slab opens out of it in .16 s, starting .06 s later; the words appear once the slab is most of the way open. It closes the other way in .12 s and stays up through a run of lines. A removed rule card slides 60 right and fades in .12 s, and the cards below wait for it before they travel; + Add Rule travels in front of the empty slots. The save notice is the dialogue slab, 740 by 60, with a 74-wide block on its left (Danger for a problem, Text for a recovery); it arrives from above in .24 s and leaves upward in .12 s.
+
+Not built: an exit for the column that closes inside the rule editor, and the hazard-rule draw-in on pages other than the results.
 
 ## Screens
 

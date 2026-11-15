@@ -44,7 +44,8 @@ namespace GoGhost.Duel
             string readingLine = !show && game.Phase == DuelPhase.TargetProfile && !game.Paused && !game.DeveloperToolsOpen
                 ? game.ProfileReadingText : null;
             bool reading = readingLine != null;
-            if (!show && !ruleEditorOpen && !reading && dialogueOverlay == null) return;
+            bool wanted = show || ruleEditorOpen || reading;
+            if (!wanted && dialogueOverlay == null) return;
             if (dialogueOverlay == null)
             {
                 var blocker = Image(canvas, Vector2.zero, Vector2.zero, Color.clear);
@@ -59,11 +60,14 @@ namespace GoGhost.Duel
             }
             if (show && !wasShowingStory)
                 UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
-            dialogueOverlay.gameObject.SetActive(show || ruleEditorOpen || reading);
-            if (!show && !ruleEditorOpen && !reading) return;
-            dialogueOverlay.SetAsLastSibling();
             bool ambient = !game.FinalBossCutscene && !game.InvasionHeld;
-            ambientPanel.gameObject.SetActive(ambient && !game.CurrentVoice.WaitingForPageSpeech);
+            // The box opens when there is something to say and closes after it; it stays up through a run of lines.
+            bool open = wanted && ambient && !game.CurrentVoice.WaitingForPageSpeech;
+            bool visible = AnimateAmbientBox(open);
+            dialogueOverlay.gameObject.SetActive(wanted || visible);
+            ambientPanel.gameObject.SetActive(visible);
+            if (!wanted) return;
+            dialogueOverlay.SetAsLastSibling();
             if (ambient)
             {
                 float width = canvas.rect.width;

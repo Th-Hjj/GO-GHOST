@@ -26,29 +26,43 @@ namespace GoGhost.Duel
         void UpdateSaveNotice()
         {
             string message = game.SaveNotice;
-            if (message != displayedSaveNotice) { displayedSaveNotice = message; saveNoticeAt = Time.unscaledTime; }
+            if (message != displayedSaveNotice) { displayedSaveNotice = message; saveNoticeAt = Time.unscaledTime; CloseSaveNotice(); }
             // Recovery is informational; an unresolved failure/repair message stays visible.
             bool recoveryOnly = message == "Restored your previous save.";
             bool visible = !string.IsNullOrEmpty(message) && (!recoveryOnly || Time.unscaledTime - saveNoticeAt < 10);
-            if (!visible) { if (saveNoticePanel != null) saveNoticePanel.gameObject.SetActive(false); return; }
+            if (!visible) { CloseSaveNotice(); return; }
             if (saveNoticePanel == null)
             {
-                saveNoticePanel = Image(canvas, Vector2.zero, new Vector2(680, 64), NeuralPalette.Background).rectTransform;
-                saveNoticePanel.name = "Save status";
+                // The same slab as Happy's box, with a block on the left: Danger for a problem, Text for a recovery.
+                float width = Mathf.Min(740, canvas.rect.width - 64);
+                saveNoticePanel = Rect("Save status", canvas, Vector2.zero, new Vector2(width, 60));
                 saveNoticePanel.anchorMin = saveNoticePanel.anchorMax = new Vector2(.5f, 1);
                 saveNoticePanel.pivot = new Vector2(.5f, 1);
-                saveNoticePanel.anchoredPosition = new Vector2(0, -12);
-                saveNoticeText = Text(message, saveNoticePanel, Vector2.zero, new Vector2(632, 56), 24);
-                saveNoticeText.rectTransform.anchorMin = Vector2.zero;
-                saveNoticeText.rectTransform.anchorMax = Vector2.one;
-                saveNoticeText.rectTransform.offsetMin = new Vector2(24, 4);
-                saveNoticeText.rectTransform.offsetMax = new Vector2(-24, -4);
+                saveNoticePanel.anchoredPosition = new Vector2(0, -16);
+                var slab = saveNoticePanel.gameObject.AddComponent<SlabGraphic>();
+                slab.color = DialogueFill; slab.Cut = 13; slab.raycastTarget = false;
+                var block = Rect("Block", saveNoticePanel, new Vector2(-width / 2 + 37, 0), new Vector2(74, 60)).gameObject.AddComponent<SlabGraphic>();
+                block.color = recoveryOnly ? OverridePalette.Text : NeuralPalette.Danger; block.Cut = 13; block.raycastTarget = false;
+                saveNoticeText = OvBodyAt(message, saveNoticePanel, new Vector2(42, 0), new Vector2(width - 120, 56), 20, OverridePalette.Text);
+                saveNoticeText.textWrappingMode = TextWrappingModes.NoWrap;
+                saveNoticeText.enableAutoSizing = true; saveNoticeText.fontSizeMax = 20; saveNoticeText.fontSizeMin = 13;
+                var arrive = saveNoticePanel.gameObject.AddComponent<Arrive>();
+                arrive.From = new Vector2(0, 36);
             }
-            saveNoticePanel.sizeDelta = new Vector2(Mathf.Min(680, canvas.rect.width - 64), 64);
-            saveNoticePanel.gameObject.SetActive(true);
             saveNoticePanel.SetAsLastSibling();
-            saveNoticeText.text = message;
-            saveNoticeText.color = recoveryOnly ? NeuralPalette.Primary : NeuralPalette.Danger;
+        }
+
+        // The notice leaves upward and is rebuilt if another message comes.
+        void CloseSaveNotice()
+        {
+            if (saveNoticePanel == null) return;
+            var leaving = saveNoticePanel;
+            saveNoticePanel = null; saveNoticeText = null;
+            if (leaving.TryGetComponent(out Arrive arrive)) Destroy(arrive);
+            if (!leaving.TryGetComponent(out CanvasGroup _)) leaving.gameObject.AddComponent<CanvasGroup>();
+            leaving.gameObject.AddComponent<PageLeave>().Seconds = .12f;
+            var away = leaving.gameObject.AddComponent<SlideAway>();
+            away.To = new Vector2(0, 36); away.Seconds = .12f; away.Go();
         }
 
         void BuildTrainingButtons()

@@ -101,6 +101,8 @@ namespace GoGhost.Duel
                     OvArrive(slot, new Vector2(0, -36), 2 + i);
                     top += 70;
                 }
+                // + Add Rule travels to its new row in front of the empty slots, not under them.
+                add.transform.SetAsLastSibling();
             }
 
             Button start;
@@ -212,6 +214,29 @@ namespace GoGhost.Duel
             }
         }
 
+        const float RemovedCardSeconds = .12f;
+        float cardRemovedAt = float.NegativeInfinity;
+
+        // The removed card is lifted out of the page that is about to be rebuilt, slides right and fades.
+        void LeaveRemovedCard(int row)
+        {
+            if (ruleList == null) return;
+            var line = ruleList.Find("Rule slot/RuleRow" + row);
+            for (int i = 0; line == null && i < ruleList.childCount; i++) line = ruleList.GetChild(i).Find("RuleRow" + row);
+            if (line == null) return;
+            var slot = (RectTransform)line.parent;
+            slot.SetParent(canvas, true);
+            foreach (var hover in slot.GetComponentsInChildren<CardHover>()) hover.enabled = false;
+            // The card's entrance may already have given it a group.
+            foreach (var arrive in slot.GetComponentsInChildren<Arrive>()) Destroy(arrive);
+            if (!slot.TryGetComponent(out CanvasGroup group)) group = slot.gameObject.AddComponent<CanvasGroup>();
+            group.alpha = 1; group.blocksRaycasts = false; group.interactable = false;
+            slot.gameObject.AddComponent<PageLeave>().Seconds = RemovedCardSeconds;
+            var away = slot.gameObject.AddComponent<SlideAway>();
+            away.To = new Vector2(60 * slot.lossyScale.x / Mathf.Max(.01f, canvas.lossyScale.x), 0); away.Seconds = RemovedCardSeconds; away.Go();
+            cardRemovedAt = Time.unscaledTime;
+        }
+
         // Moves an element from the row it had on the last build of this page, or lets it arrive with a new page.
         void OvCarry(Component target, float top, float before, float order)
         {
@@ -219,6 +244,8 @@ namespace GoGhost.Duel
             if (float.IsNaN(before) || Mathf.Abs(before - top) < 1) return;
             var carry = target.gameObject.AddComponent<Arrive>();
             carry.From = new Vector2(0, top - before); carry.Fade = false; carry.Glide = true; carry.Seconds = .21f;
+            // The cards below a removed one wait for it to leave.
+            if (Time.unscaledTime - cardRemovedAt < .05f) carry.Delay = RemovedCardSeconds;
         }
 
         void OvCardArea(string name, RectTransform root, Vector2 pos, Vector2 size, UnityEngine.Events.UnityAction click, ConditionalRule rule, int row)

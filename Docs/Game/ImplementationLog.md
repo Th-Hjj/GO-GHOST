@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Title proportions
+
+- **Asked:** the logo was too large for the new landscape and the buttons too heavy; keep the hazard band as it is (decision recorded in `CLAUDE.md` and `AGENTS.md`).
+- **Changed:** `DuelUI.BuildOverrideMenu`: logo 340 to 272, resting the same distance above the band on the same left edge; Continue and New Game 494 wide to 420 with heights and type at 85%; the small row 48 high; the group keeps its bottom edge. `UIDesign.md` follows.
+- **Checked:** Unity compiled; one Play Mode capture of the title with a save (`Logs/ArtRedesign/title_resized.png`). The title without a save, the opening's logo landing and other aspect ratios NOT TESTED.
+
 ## 2026-11-14 — No player hit lines
 
 - **Asked:** remove the Danger lines at the contact when the player loses health (decision recorded in `CLAUDE.md` and `AGENTS.md`).

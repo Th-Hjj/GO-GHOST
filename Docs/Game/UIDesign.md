@@ -45,7 +45,7 @@ Text on Signal or on any body-system or Boss colour is Ink.
 
 | Element | Face | Size |
 |---|---|---|
-| Logo, result word | Display 900 | 340 |
+| Logo, result word | Display 900 | 272 logo, 340 result word |
 | Who Are You | Display 900 | 236 |
 | Screen title | Display 900 | 112 (Mission N), 118 (Target Profile), 76 (Body Configuration) |
 | HUD name and HP | Display 900 | 68 |

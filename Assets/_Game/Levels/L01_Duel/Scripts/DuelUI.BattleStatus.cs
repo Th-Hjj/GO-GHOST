@@ -132,12 +132,15 @@ namespace GoGhost.Duel
                 bossHealthText[i].Update(policeHealth[i], "", actor.Health.CurrentHealth);
                 float fraction = (float)actor.Health.CurrentHealth / actor.Health.MaxHealth;
                 policeFill[i].rectTransform.sizeDelta = new Vector2(bossBarWidth * fraction, HealthBarHeight);
+                // An empty slab still draws its slanted end.
+                policeFill[i].enabled = fraction > 0;
                 UpdateBossLag(i, fraction);
                 if (policeFill[i] is FlowingHealthFill rainbow && actor.Axe.PhaseTwo && actor.View != null)
                     rainbow.UpdateFlow(actor.View.RainbowPhase, policeHealth[i]);
             }
             playerFill.rectTransform.sizeDelta =
                 new Vector2(PlayerBarWidth * game.Player.CurrentHealth / game.Player.MaxHealth, HealthBarHeight);
+            playerFill.enabled = game.Player.CurrentHealth > 0;
             playerFill.color = game.Rules != null && game.Rules.IsLowHealth
                 ? NeuralPalette.Danger : NeuralPalette.Primary;
         }

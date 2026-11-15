@@ -209,6 +209,8 @@ namespace GoGhost.Duel
             else if (Time.time - lagAt[i] > .35f)
                 lagValue[i] = Mathf.MoveTowards(lagValue[i], fraction, Time.deltaTime * (lagValue[i] - fraction + .04f) / .3f);
             bossLag[i].rectTransform.sizeDelta = new Vector2(bossBarWidth * lagValue[i], HealthBarHeight);
+            // An empty slab still draws its slanted end.
+            bossLag[i].enabled = lagValue[i] > 0;
         }
     }
 }

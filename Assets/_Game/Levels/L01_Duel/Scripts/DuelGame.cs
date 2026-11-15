@@ -361,12 +361,14 @@ namespace GoGhost.Duel
         {
             Paused = value;
             MetricsStage();
-            Rules?.SetFeedbackPaused(value || InvasionHeld);
-            input?.SetNarrativePaused(value || InvasionHeld);
-            foreach (var actor in actors) if (actor != null) actor.SetPaused(value);
-            coordinator?.SetPaused(value);
-            effects?.SetPaused(value || Phase == DuelPhase.Prepare);
-            Time.timeScale = value || InvasionHeld ? 0 : 1;
+            // A held result keeps the fight stopped whether or not the pause menu is open.
+            bool still = value || ResultHeld, held = still || InvasionHeld;
+            Rules?.SetFeedbackPaused(held);
+            input?.SetNarrativePaused(held);
+            foreach (var actor in actors) if (actor != null) actor.SetPaused(still);
+            coordinator?.SetPaused(still);
+            effects?.SetPaused(still || Phase == DuelPhase.Prepare);
+            Time.timeScale = held ? 0 : 1;
             AudioListener.pause = value;
         }
         void SetPhase(DuelPhase value)
@@ -440,7 +442,7 @@ namespace GoGhost.Duel
             DeveloperToolsOpen = developerResumeOnClose = false;
             StopCombat();
             if (music != null) music.StopMusic(true);
-            Paused = false;
+            Paused = ResultHeld = false;
             Time.timeScale = 1;
             AudioListener.pause = false;
             if (encounter != null) { encounter.SetActive(false); Destroy(encounter); }
@@ -515,11 +517,12 @@ namespace GoGhost.Duel
             if (!defeat && Wave == 2)
             {
                 PlayMetrics.EndRun("complete");
-                ClearEncounter();
+                HoldResult(false);
                 SetPhase(DuelPhase.Between);
                 sounds?.Play(Sfx.Victory);
                 handler.WaveCleared(2, () =>
                 {
+                    ClearEncounter();
                     Wave = FinalBossWave;
                     SetPhase(DuelPhase.Configure);
                 });
@@ -532,7 +535,7 @@ namespace GoGhost.Duel
                 SetPhase(DuelPhase.FinalVictoryHold);
                 return;
             }
-            StopCombat();
+            HoldResult(defeat);
             sounds?.Play(defeat ? Sfx.Defeat : Sfx.Victory);
             SetPhase(defeat ? DuelPhase.Failed : Wave == BonusWave ? DuelPhase.Complete : DuelPhase.Between);
             if (!defeat)

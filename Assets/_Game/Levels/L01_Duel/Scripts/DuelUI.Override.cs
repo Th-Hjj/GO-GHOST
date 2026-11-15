@@ -228,47 +228,55 @@ namespace GoGhost.Duel
         // Defeat, and the Bonus result.
         void BuildOverrideOutcome()
         {
-            bool failed = game.Phase == DuelPhase.Failed;
-            OvFill(page, NeuralPalette.Alpha(OverridePalette.Ink, .72f));
-            OvScanlines(page, .3f);
+            bool failed = game.Phase == DuelPhase.Failed, held = game.ResultHeld;
+            // A held result lands on the fight itself, which dims behind it.
+            if (!held) { OvFill(page, NeuralPalette.Alpha(OverridePalette.Ink, .72f)); OvScanlines(page, .3f); }
             var word = OvGlitchWord(failed ? "Defeat" : "Complete", page, new Vector2(0, 450 - 351), new Vector2(1600, 292), 340,
                 TextAlignmentOptions.Capline, 2.8f, 8);
-            word.gameObject.AddComponent<SlamIn>();
-            OvBand(page, 502);
+            word.gameObject.AddComponent<SlamIn>().Delay = held ? ResultWordAt : 0;
+            var band = OvBand(page, 502);
+            if (held) OvDrawAcross(band, ResultBandAt);
+            float firstIn = held ? ResultButtonAt : Enter(11), secondIn = held ? ResultSecondAt : Enter(13);
             var first = new Vector2(480, 96); var second = new Vector2(480, 68);
             Vector2 firstAt = At(560, 574, 480, 96), secondAt = At(560, 684, 480, 68);
             if (game.CanRetryFinalBossPhaseTwo)
             {
-                OvButton("Retry Phase 2", page, firstAt, first, game.RetryFinalBossPhaseTwo, OverrideButtonKind.Primary, 56, true, Enter(11)).name = "RetryPhaseTwo";
-                OvButton("Configuration", page, secondAt, second, game.Reconfigure, OverrideButtonKind.Secondary, 40, false, Enter(13)).name = "Reconfigure";
+                OvButton("Retry Phase 2", page, firstAt, first, game.RetryFinalBossPhaseTwo, OverrideButtonKind.Primary, 56, true, firstIn).name = "RetryPhaseTwo";
+                OvButton("Configuration", page, secondAt, second, game.Reconfigure, OverrideButtonKind.Secondary, 40, false, secondIn).name = "Reconfigure";
             }
             else if (failed)
             {
-                OvButton("Retry", page, firstAt, first, game.RetryFight, OverrideButtonKind.Primary, 62, true, Enter(11));
-                OvButton("Configuration", page, secondAt, second, game.Reconfigure, OverrideButtonKind.Secondary, 40, false, Enter(13)).name = "Reconfigure";
+                OvButton("Retry", page, firstAt, first, game.RetryFight, OverrideButtonKind.Primary, 62, true, firstIn);
+                OvButton("Configuration", page, secondAt, second, game.Reconfigure, OverrideButtonKind.Secondary, 40, false, secondIn).name = "Reconfigure";
             }
             else
             {
-                OvButton("Restart", page, firstAt, first, game.NewGame, OverrideButtonKind.Primary, 62, true, Enter(11));
-                OvButton("Main Menu", page, secondAt, second, game.MainMenu, OverrideButtonKind.Secondary, 40, false, Enter(13));
+                OvButton("Restart", page, firstAt, first, game.NewGame, OverrideButtonKind.Primary, 62, true, firstIn);
+                OvButton("Main Menu", page, secondAt, second, game.MainMenu, OverrideButtonKind.Secondary, 40, false, secondIn);
             }
         }
 
         void BuildOverrideCleared()
         {
-            OvFill(page, OverridePalette.Ink);
-            OvScanlines(page, .3f);
+            bool held = game.ResultHeld;
+            if (!held) { OvFill(page, OverridePalette.Ink); OvScanlines(page, .3f); }
             var mission = Rect("Mission slab", page, new Vector2(0, 450 - 108 - 68), new Vector2(600, 136));
             var slab = mission.gameObject.AddComponent<SlabGraphic>();
             slab.color = game.Wave == 1 ? NeuralPalette.Gunner : NeuralPalette.Swordsman; slab.raycastTarget = false;
             var name = OvText(game.WaveLabel, mission, Vector2.zero, new Vector2(1200, 136), 120, OverridePalette.Ink, TextAlignmentOptions.Capline, true, 1);
             mission.sizeDelta = new Vector2(name.GetPreferredValues().x + 128, 136);
             var word = OvGlitchWord("Cleared", page, new Vector2(0, 450 - 421), new Vector2(1600, 292), 340, TextAlignmentOptions.Capline, 2.8f, 8);
-            word.gameObject.AddComponent<SlamIn>().Delay = .12f;
-            OvBand(page, 574);
+            word.gameObject.AddComponent<SlamIn>().Delay = held ? ResultWordAt : .12f;
+            var band = OvBand(page, 574);
+            if (held)
+            {
+                OvDrawAcross(band, ResultBandAt);
+                var arrive = mission.gameObject.AddComponent<Arrive>();
+                arrive.From = new Vector2(-120, 0); arrive.Delay = ResultSlabAt;
+            }
             if (game.Wave == 1)
                 OvButton("Continue to Mission 2", page, At(460, 650, 680, 100), new Vector2(680, 100), game.ContinueToWaveTwo,
-                    OverrideButtonKind.Primary, 60, true, Enter(15)).name = "ContinueToWaveTwo";
+                    OverrideButtonKind.Primary, 60, true, held ? ResultButtonAt : Enter(15)).name = "ContinueToWaveTwo";
         }
 
         void BuildOverrideFinished()

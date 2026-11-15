@@ -309,7 +309,7 @@ namespace GoGhost.Duel
             SpeakSequence("Handler/TutorialIntro", installExample: installExample, auto: true);
         }
 
-        void SpeakSequence(string prefix, Action finished = null, Action installExample = null, bool auto = false)
+        void SpeakSequence(string prefix, Action finished = null, Action installExample = null, bool auto = false, bool realtime = false)
         {
             var lines = VoiceStudioCatalog.Current.lines;
             int index = 0;
@@ -319,7 +319,7 @@ namespace GoGhost.Duel
                 {
                     var line = lines[index++];
                     if (!line.key.StartsWith(prefix, StringComparison.Ordinal)) continue;
-                    SpeakDialogue(line.key, Next);
+                    SpeakDialogue(line.key, Next, realtime);
                     // The line that asks for a rule waits for the player to add one.
                     if (auto && Focus != TutorialFocus.AddRule) StartCoroutine(AutoAdvance(dialogueId));
                     if (line.key == "Handler/TutorialIntroJump") installExample?.Invoke();
@@ -333,9 +333,10 @@ namespace GoGhost.Duel
         public void WaveCleared(int wave, Action advance = null)
         {
             Stop();
-            if (wave == 1) SpeakSequence("Handler/WaveOneClear", advance);
-            else if (wave == 2) SpeakSequence("Handler/WaveTwoClear", advance);
-            else if (wave == DuelGame.BonusWave) SpeakSequence("Handler/BonusClear", advance);
+            // The result holds the fight on a stopped combat clock, so these lines reveal in real time.
+            if (wave == 1) SpeakSequence("Handler/WaveOneClear", advance, realtime: true);
+            else if (wave == 2) SpeakSequence("Handler/WaveTwoClear", advance, realtime: true);
+            else if (wave == DuelGame.BonusWave) SpeakSequence("Handler/BonusClear", advance, realtime: true);
         }
 
         internal void PlayLine(string name) => PlayRecordedLine(name, waitForPage: false);

@@ -912,6 +912,23 @@ namespace GoGhost.Duel
         }
     }
 
+    // A masked strip that opens from its left edge, so what it holds is drawn across the screen.
+    public sealed class DrawAcross : MonoBehaviour
+    {
+        public float Width, Seconds = .16f, Delay;
+        RectTransform rect;
+        double born;
+
+        void OnEnable() { rect = (RectTransform)transform; born = OvMotion.Born; Apply(); }
+        void LateUpdate() => Apply();
+
+        void Apply()
+        {
+            float t = Mathf.Clamp01((float)(Time.unscaledTimeAsDouble - born - Delay) / Mathf.Max(.01f, Seconds));
+            rect.sizeDelta = new Vector2(Width * OvMotion.Snap(t), rect.sizeDelta.y);
+        }
+    }
+
     // One of the two sentence cards driven into the other: a short pull back, then the hit.
     public sealed class CardSlam : MonoBehaviour
     {

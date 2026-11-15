@@ -86,7 +86,8 @@ namespace GoGhost.Duel
         {ClearRuleHud();ruleGlowStates.Clear();ruleGlowController=null;DisposeCharacterFonts();if(portraitMaterial!=null)Destroy(portraitMaterial);}
         void BuildRuleHud()
         {
-            bool battle=game.Phase==DuelPhase.Prepare||game.Phase==DuelPhase.Fight||game.Phase==DuelPhase.Training;
+            // A held result keeps the HUD of the fight it ended.
+            bool battle=game.Phase==DuelPhase.Prepare||game.Phase==DuelPhase.Fight||game.Phase==DuelPhase.Training||game.ResultHeld;
             if(!battle||ruleGlowController!=game.Rules)
             {ruleGlowStates.Clear();ruleGlowController=battle?game.Rules:null;}
             if(!battle)return;
@@ -285,7 +286,7 @@ namespace GoGhost.Duel
             float scale=canvas.GetComponent<Canvas>().scaleFactor;
             float width=Screen.width/Mathf.Max(.01f,scale),height=Screen.height/Mathf.Max(.01f,scale);
             bool hasRules=ruleSidebar!=null&&hudRules==game.Rules&&
-                (game.Phase==DuelPhase.Prepare||game.Phase==DuelPhase.Fight||game.Phase==DuelPhase.Training);
+                (game.Phase==DuelPhase.Prepare||game.Phase==DuelPhase.Fight||game.Phase==DuelPhase.Training||game.ResultHeld);
             if(hasRules&&(Mathf.Abs(ruleHudSize.x-width)>.5f||Mathf.Abs(ruleHudSize.y-height)>.5f))LayoutRuleHud(width,height);
             float sidebar=hasRules?rulePanelWidth:0;
             // Reveal the player's sidebar at the opening countdown and withdraw it after the EMP.

@@ -93,7 +93,8 @@ Built on 2026-11-14 (`DuelUI.Motion.cs`, `OvMotion` in `OverrideGraphics.cs`). T
 | Wipe | A change of scene: title to and from the game, creation into preparation, a result into preparation or the title, preparation into the fight | An Ink slab with a Signal leading edge and a hazard tail crosses the screen: 190 ms to cover, 30 ms held, 260 ms to open. The old page stays until it is covered. Forward runs left to right, back to the title right to left |
 | Flow | Overview, rule editor and Help; Settings and its pages over the title or Pause | The old page stays 150 ms in front while its elements step aside and fade. The new elements start 90 ms in. Between the overview and the editor the character slides, the rule and Help stay, and the title rolls upward inside a mask |
 | Open | Overview to and from Target Profile | The mission-colour field grows out of the target card's four corners in 340 ms and closes back onto the card in 300 ms |
-| Cut | Everything else, including the combat HUD, Pause over a fight and the results | As before. The page's own entrances still play |
+| Cut | Everything else, including the combat HUD and Pause over a fight | As before. The page's own entrances still play |
+| Hold | A fight into its result (defeat, Mission 1 and 2 cleared, the Bonus result) | The fight stops on the lethal frame and the result lands on it. See Results |
 
 A rebuild of the same page is a refresh: nothing replays, and an entrance that is under way carries on.
 
@@ -115,7 +116,7 @@ Menus use unscaled UI time. Combat HUD feedback keeps the combat clock, pause fr
 
 **Tutorial pointer.** While Happy teaches, the page sits under one 48% shade and controls keep their own colours. What she names is framed by a 4-pixel Signal slab-cut opening (`SpotlightGraphic`). It opens in 180 ms when the line is heard, follows its target, travels to the next one and closes when the line ends. A line that waits for a choice keeps the frame without the shade once its text is dismissed.
 
-Not built: an exit for the column that closes inside the rule editor, the hazard-rule draw-in, and motion for a removed rule card itself.
+Not built: an exit for the column that closes inside the rule editor, the hazard-rule draw-in on pages other than the results, and motion for a removed rule card itself.
 
 ## Screens
 
@@ -178,7 +179,20 @@ One player stands on the right roof with their back to the camera, looking towar
 
 **Combat HUD (D3).** Positions are unchanged: Rules on the left, Boss top centre, player bottom centre. Boss name left and HP right in the Boss colour over a 22-high slab bar. Lost Boss health stays as a Text segment for 0.35 s, then shrinks over 0.6 s. Rule cards are 248 wide. Health-only HUD, the Dodge foot bar, reload feedback and the existing match hold and fade are unchanged.
 
-**Results (D7, D13, D14).** The arena dims to about 30% and loses colour. The result word slams in with the glitch treatment over a hazard band. Primary button first, secondary below.
+**Results (D7, D13, D14).** The result word slams in with the glitch treatment over a hazard band. Primary button first, secondary below.
+
+**Held result (Thomas, 2026-11-15, trial tuning).** Chosen from a played prototype over the cut it replaces and a slow-motion fall, which would have needed a new fallen pose for three characters. A defeat, a Mission 1 or 2 win and the Bonus result stop the fight on the lethal frame, on the stopped combat clock Pause uses: bodies, bullets, warning lines and effects stay where they are until the player leaves the result (`DuelGame.ResultHold.cs`). Opening and closing Pause on a result keeps it held. The Final Boss victory keeps its own .85-second hold and the Finished page.
+
+| Seconds after the lethal frame | What happens |
+|---|---|
+| 0 | Everything stops. A defeated player shows the white step, then stays in the Danger tint |
+| .08 to .38 | The arena loses its colour and dims to 45%. Both fighters keep their colour. The HUD stays in place and dims to 45%; a beaten Boss's empty bar fades out |
+| .42 | The mission name arrives from the left (cleared only) |
+| .48 | The result word slams in |
+| .56 | The hazard band is drawn across from the left edge in .16 s |
+| .76, .81 | Primary button, then secondary |
+
+The pages carry no black ground and no scanlines while held. Entrances count from the lethal frame, so a rebuilt page carries on instead of replaying. Retry is immediate. Happy's box appears .8 s after the page as before and covers the player's bar. Mission 2 stays held until her line is acknowledged, then wipes into Mission 3 preparation. The grade is a runtime post-processing volume; the fighters are drawn after it by a second camera with its own light (`ResultHoldView.cs`). No art or asset is changed. The result is centred on the screen, so with a Rules sidebar a fighter can stand behind the word or a button.
 
 - **Defeat (D7):** Retry, then Configuration. Phase-two defeat uses Retry Phase 2.
 - **Mission cleared (D13):** the mission name on a slab in that mission's colour, CLEARED as the result word, Continue to Mission 2 as the only button.

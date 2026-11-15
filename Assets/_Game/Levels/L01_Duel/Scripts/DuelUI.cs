@@ -202,6 +202,7 @@ namespace GoGhost.Duel
                 if(helpOpen){BuildHelp();return;}
                 BuildConditionalLoadout();RestoreConfigurationView();return;
             }
+            if(game.Phase==DuelPhase.Between||game.Phase==DuelPhase.Failed||game.Phase==DuelPhase.Complete&&game.Wave!=DuelGame.FinalBossWave)BeginHeldResult();
             if(game.Phase==DuelPhase.Between){BuildOverrideCleared();return;}
             if(game.Phase==DuelPhase.Complete && game.Wave==DuelGame.FinalBossWave){BuildOverrideFinished();return;}
             if(game.Phase==DuelPhase.Failed || game.Phase==DuelPhase.Complete){BuildOverrideOutcome();return;}

@@ -1,5 +1,14 @@
 # GO GHOST slice implementation
 
+## 2026-11-15 — Held result: the fight stops on the lethal frame
+
+- **Asked:** audit the UI motion in new-player order, agree an order of work, design each stage before building it. Stage 1 is the end of a fight. Thomas played a browser prototype of three options (the existing cut, a freeze, a slow-motion fall) and chose the freeze.
+- **Baseline:** a result replaced the fight in the frame of the lethal hit. Defeat laid 72% black over the arena; Mission 1 and 2 cleared used an opaque page, and Mission 2 destroyed the encounter in that frame. The HUD was not drawn on results.
+- **Changed:** `DuelGame.ResultHold.cs` holds the encounter instead of stopping it; `ApplyPause` keeps a held result stopped through Pause; `ClearEncounter` still performs the full teardown. `ResultHoldView.cs` drains and dims the arena with a runtime volume and draws the fighters after it through an overlay camera on an unnamed layer, with a wide point light because 2D lights follow camera layers and a second global light is an error. `DuelUI.ResultHold.cs`, `DuelUI.Override.cs`, `DuelUI.cs` and `DuelRuleHUD.cs` keep the HUD and sidebar on result pages, dim them, remove the black ground and scanlines, and time the entrances from the lethal frame; `DrawAcross` in `OverrideGraphics.cs` draws the hazard band in. `HandlerVoice` reveals the mission-clear lines in real time, since the combat clock is stopped. `PlayerFeedbackView` lets the white step pass and keeps the Danger tint. Empty health fills no longer draw their slanted end.
+- **Differences from the prototype:** the arena and HUD dim to 45%, not 30%, which was nearly black on the real arena. The Boss shows no white step on the lethal hit. The HUD dims but keeps a trace of its colours. Happy's box keeps its existing .8 s delay.
+- **Checked:** Unity 6000.6.0f1 compiled. In QHD Play Mode, with developer wave fixtures and forced damage: Mission 1 defeat without and with a Rules sidebar, Mission 1 win, Continue to Mission 2, Mission 2 defeat, Pause and Resume on that result (time scale stayed 0), and Retry (time scale 1, camera mask and stack restored, one camera). Inspected `Logs/hold_defeat_a.png`, `hold_defeat_b.png`, `hold_win_b.png`, `hold_lose2.png`, `hold_side.png` and `hold_retry.png`. The console was clean after the light fix.
+- **NOT TESTED:** a Mission 2 win and its hand-over to Mission 3, the Bonus result, a Final Boss defeat in either phase, Configuration and Main Menu from a held result, Reduce Flashing, other resolutions, a kill by a real bullet in flight, real input, Check Game Flow and builds. The motion itself was judged from stills, not watched.
+
 ## 2026-11-14 — Save recovery and stale-check bug fixes
 
 - **Scope:** Thomas asked to start items 1 and 2, then clarified that this pass is for fixing bugs, not producing a formal package. No player build, release, retail/playtest split, F8/F9 change or performance recorder is included.

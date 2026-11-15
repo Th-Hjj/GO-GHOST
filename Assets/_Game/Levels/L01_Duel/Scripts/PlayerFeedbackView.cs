@@ -43,10 +43,19 @@ namespace GoGhost.Duel
             hurtAt = Time.time;
         }
 
+        // A held result stops the combat clock on the hit: the white step still passes, then the Danger tint stays.
+        bool held;
+        float heldAt;
+        internal void HoldHit()
+        {
+            if (Time.time - hurtAt > WhiteSeconds + HurtSeconds) return;
+            held = true; heldAt = Time.unscaledTime;
+        }
+
         void LateUpdate()
         {
             if (health == null) return;
-            float sinceHit = Time.time - hurtAt;
+            float sinceHit = held ? Mathf.Min(Time.unscaledTime - heldAt, WhiteSeconds) : Time.time - hurtAt;
             bool white = sinceHit < WhiteSeconds && !GameSettings.ReduceFlashing;
             float hurt = Mathf.Clamp01(1 - (sinceHit - WhiteSeconds) / HurtSeconds);
             bool ghost = dodge != null && dodge.ImmunityActive && !health.IsDead;

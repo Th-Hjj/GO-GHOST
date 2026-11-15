@@ -165,7 +165,17 @@ namespace GoGhost.Duel
             StretchPage();
             OvFill(page, OverridePalette.Ink);
             // On launch the landscape opens first; the logo lands on it and the menu follows.
-            float hold = BeginTitleOpening(), late = hold / OvMotion.Stagger;
+            float hold = BeginTitleOpening();
+            // The credits roll first in the same way: the logo and the menu wait for the names to pass.
+            bool entering = pageEntering, credits = false;
+            if (hold <= 0)
+            {
+                pageEntering = entering || creditsRoll;
+                hold = BeginCredits();
+                credits = hold > 0;
+                if (!credits) pageEntering = entering;
+            }
+            float late = hold / OvMotion.Stagger;
             BuildTitleBackdrop();
             OvScanlines(page, .28f);
             var frame = Rect("Frame", page, Vector2.zero, new Vector2(1600, 900));
@@ -177,6 +187,7 @@ namespace GoGhost.Duel
             else OvArrive(logo, new Vector2(-120, 0), 0);
             // After the game is finished GHOST stands on the T. He appears once the logo is in place.
             BuildTitleGhost(frame, logo);
+            if (credits) BuildCreditsRoll(frame);
             OvArrive(OvBand(frame, 514), new Vector2(-200, 0), 1 + late);
             // With a save, Continue leads and New Game asks before replacing it.
             bool saved = GameSave.Exists;
@@ -194,7 +205,7 @@ namespace GoGhost.Duel
             const float span = 420 - 8, gap = 8;
             string[] titles = quit ? new[] { "Settings", "Credits", "Quit" } : new[] { "Settings", "Credits" };
             float[] shares = quit ? new[] { 149f, 139f, 0f } : new[] { 211f, 0f };
-            UnityEngine.Events.UnityAction[] clicks = { () => OpenOverlay(OverlayPage.Settings), () => OpenOverlay(OverlayPage.Credits), Application.Quit };
+            UnityEngine.Events.UnityAction[] clicks = { () => OpenOverlay(OverlayPage.Settings), PlayCreditsFromTitle, Application.Quit };
             float x = 92;
             for (int i = 0; i < titles.Length; i++)
             {
@@ -203,7 +214,8 @@ namespace GoGhost.Duel
                     TextAlignmentOptions.Capline).GetComponent<SlabButton>().EnterDistance = 40;
                 x += w + gap;
             }
-            if (hold > 0) BuildTitleBlocker();
+            if (hold > 0 && !credits) BuildTitleBlocker();
+            pageEntering = entering;
         }
 
         // Defeat, and the Bonus result.
@@ -282,7 +294,8 @@ namespace GoGhost.Duel
             divider.localRotation = Quaternion.Euler(0, 0, 82);
             var stripes = divider.gameObject.AddComponent<StripeGraphic>();
             stripes.color = OverridePalette.Signal; stripes.Other = OverridePalette.Ink; stripes.raycastTarget = false;
-            OvButton("Main Menu", frame, At(990, 690, 440, 96), new Vector2(440, 96), game.MainMenu, OverrideButtonKind.Primary, 62, true, Enter(50));
+            // The credits roll on the way back to the title.
+            OvButton("Main Menu", frame, At(990, 690, 440, 96), new Vector2(440, 96), () => { PlayCredits(); game.MainMenu(); }, OverrideButtonKind.Primary, 62, true, Enter(50));
         }
     }
 }

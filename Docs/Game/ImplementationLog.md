@@ -1,5 +1,14 @@
 # GO GHOST slice implementation
 
+## 2026-11-15 — Credits roll on the title's sky
+
+- **Asked:** stage 6 of the UI motion order. Thomas had shelved the ending and its scene after the credits but wanted a rolling credits screen. From a played prototype he chose the roll on the title's night sky.
+- **Baseline:** the title's Credits button opened a static page of three rows. Finishing the game went from "You've Finished The Game!" straight to the title.
+- **Changed:** `DuelUI.Credits.cs` rolls the names up a masked window on the title and tells the title how long its logo and menu must wait; `BuildOverrideMenu` treats that wait as it treats the opening. The Finished page's Main Menu and the title's Credits button both start the roll. The static Credits page and its overlay entry are deleted.
+- **Checked:** Unity 6000.6.0f1 compiled. In QHD Play Mode the roll was started from the title's Credits button and captured at about 3, 9, 16.6 and 18.2 s (`Logs/cred_sheet.png`): the first row entering, the second passing, the last fading at the top, then the logo, band and menu in place with the blocker gone. The console was clean.
+- **NOT TESTED:** the roll after "You've Finished The Game!" under the wipe, ending it with a key or a click, a window resize during it, Reduce Flashing, other resolutions and builds. Its pace was judged from stills.
+- **Left for Thomas:** whether to credit Kenney for the countdown cue (CC0, credit optional) and whether Happy's voice gets a row; neither was added.
+
 ## 2026-11-15 — Tutorial frame goes round the sentence card only
 
 - **Asked:** after the slanted frame round the whole editor side, Thomas said the screen still looked like a bug and asked for a better answer. Of three options he chose framing the sentence card alone.

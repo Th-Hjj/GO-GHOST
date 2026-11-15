@@ -181,6 +181,8 @@ One player stands on the right roof with their back to the camera, looking towar
 
 **Combat HUD (D3).** Positions are unchanged: Rules on the left, Boss top centre, player bottom centre. Boss name left and HP right in the Boss colour over a 22-high slab bar. Lost Boss health stays as a Text segment for 0.35 s, then shrinks over 0.6 s. Rule cards are 248 wide. Health-only HUD, the Dodge foot bar, reload feedback and the existing match hold and fade are unchanged.
 
+**Credits roll (Thomas, 2026-11-15, trial tuning).** Chosen from a played prototype over a roll on black. The title is built as usual and the names travel up its sky, left-aligned on the logo's left edge (92), inside a window from 40 to 540 that fades over 90 units at its top and bottom. Each row is its role in Text dim at 30 above its names in Text at 76; rows stand 150 apart. The roll starts .5 s in and moves 80 units a second, about 17 s in all. As the last name fades at the top the logo slams in and the hazard band and menu follow in their usual order, so the roll ends as the title. Nothing on the title can be pressed meanwhile; any key or click ends the roll at once. It plays on the way from "You've Finished The Game!" to the title, under that page's wipe, and from the title's Credits button, which no longer opens a page. It lists A game by, Music and Fonts. A scene after the credits is undecided; it belongs between the last name and the logo (`DuelUI.Credits.cs`).
+
 **Results (D7, D13, D14).** The result word slams in with the glitch treatment over a hazard band. Primary button first, secondary below.
 
 **Held result (Thomas, 2026-11-15, trial tuning).** Chosen from a played prototype over the cut it replaces and a slow-motion fall, which would have needed a new fallen pose for three characters. A defeat, a Mission 1 or 2 win and the Bonus result stop the fight on the lethal frame, on the stopped combat clock Pause uses: bodies, bullets, warning lines and effects stay where they are until the player leaves the result (`DuelGame.ResultHold.cs`). Opening and closing Pause on a result keeps it held. The Final Boss victory keeps its own .85-second hold and the Finished page.
@@ -254,7 +256,7 @@ Thomas accepted these with the mockups on 2026-11-12.
 | Page | Why | Content |
 |---|---|---|
 | Settings (N2) | No volume, display or accessibility control exists | Audio: Master, Music, Effects, Voice, ten steps each. Display: Fullscreen, Resolution, VSync. Accessibility: Reduce Flashing. Changes apply at once; Back returns. Reached from the title and from Pause |
-| Credits (N3) | Collaborator music and two OFL fonts need crediting | Role and name rows in the Target Profile layout. Names are placeholders on the canvas |
+| Credits (N3) | Collaborator music and two OFL fonts need crediting | Replaced on 2026-11-15 by the credits roll on the title; see Credits roll |
 | New Game confirmation (N4) | New Game would replace a saved run with one click | "Start a new game?", "Your saved run will be replaced.", Cancel (primary) and New Game. Shown only when a save exists |
 | Key bindings (N6) | Thomas asked for rebinding on 2026-11-12 | Opened from Settings › Controls. One row per action with its key on a Text slab; Reset to Defaults below |
 | Flashing-lights notice (N5) | The style uses flashes, glitches and a red damage flash | One static screen on first launch with Continue and Settings. No animation on this screen |

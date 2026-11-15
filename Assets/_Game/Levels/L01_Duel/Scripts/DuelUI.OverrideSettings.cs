@@ -8,7 +8,7 @@ namespace GoGhost.Duel
     // Override UI, stage 7: Settings, Key Bindings, Credits, the New Game confirmation and the flashing-lights notice.
     public sealed partial class DuelUI
     {
-        enum OverlayPage { None, Settings, Bindings, Credits, Confirm, Notice }
+        enum OverlayPage { None, Settings, Bindings, Confirm, Notice }
         OverlayPage overlay;
         int listeningBinding = -1, listeningSince;
         internal bool OverlayOpen => overlay != OverlayPage.None;
@@ -55,7 +55,6 @@ namespace GoGhost.Duel
             {
                 case OverlayPage.Settings: BuildOverrideSettings(); break;
                 case OverlayPage.Bindings: BuildOverrideBindings(); break;
-                case OverlayPage.Credits: BuildOverrideCredits(); break;
                 case OverlayPage.Confirm: BuildOverrideConfirm(); break;
                 case OverlayPage.Notice: BuildOverrideNotice(); break;
             }
@@ -205,26 +204,6 @@ namespace GoGhost.Duel
             listeningBinding = -1;
             if (path != "<Keyboard>/escape") GameSettings.Bind(index, path);
             Show();
-        }
-
-        void BuildOverrideCredits()
-        {
-            var frame = OvOverlayFrame("Credits");
-            (string role, string names)[] rows =
-            {
-                ("A game by", "Thomas Hong · Walker Grupp"),
-                ("Music", "Efe Inan"),
-                ("Fonts", "Barlow Condensed · JetBrains Mono"),
-            };
-            const float rowTop = 300, rowHeight = 76, rowWidth = 1100;
-            for (int i = 0; i <= rows.Length; i++)
-                Image(frame, new Vector2(56 + rowWidth / 2 - 800, 450 - (rowTop + i * rowHeight)), new Vector2(rowWidth, 2), OverridePalette.Neutral);
-            for (int i = 0; i < rows.Length; i++)
-            {
-                float y = 450 - (rowTop + i * rowHeight + rowHeight / 2);
-                OvText(rows[i].role, frame, new Vector2(84 + 130 - 800, y), new Vector2(260, 60), 28, OverridePalette.TextDim, TextAlignmentOptions.CaplineLeft, false, 1);
-                OvText(rows[i].names, frame, new Vector2(360 + 400 - 800, y), new Vector2(800, 60), 40, OverridePalette.Text, TextAlignmentOptions.CaplineLeft);
-            }
         }
 
         void BuildOverrideConfirm()

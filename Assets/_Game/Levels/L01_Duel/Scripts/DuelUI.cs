@@ -245,6 +245,7 @@ namespace GoGhost.Duel
             UpdateCreationWords();
             UpdateHurtFlash();
             UpdateCountdownCue();
+            UpdateCredits();
             UpdateOverlayInput();
             UpdateTitleBackdrop();
             if (game.DeveloperToolsOpen) return;

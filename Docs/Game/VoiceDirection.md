@@ -7,7 +7,7 @@ Thomas's decision on 2026-11-05 establishes two production references for new or
 | Speaker | Decision | Listening reference |
 |---|---|---|
 | Happy | **Approved.** Use the v0.8 stereo inner voice for every new or revised Happy line. It supersedes the v0.4 B-light master. | [Happy inner voice · 6.41 s](VoiceReferences/Happy-Inner-v08.wav) |
-| Final Boss | **Provisional.** Use the faster, more inflected v0.3 take with the game's deep B treatment until Thomas revises it. | [Final Boss B · 7.19 s](VoiceReferences/FinalBoss-B.wav) |
+| Final Boss | **Approved (Thomas, 2026-11-15).** Use the faster, more inflected v0.3 take with the game's deep B treatment. | [Final Boss B · 7.19 s](VoiceReferences/FinalBoss-B.wav) |
 
 Thomas owns character, dialogue, motivation and emotional direction. Most existing lines are placeholders or first passes. Leave unspecified direction blank. The audition text demonstrates sound and timing only. Michael remains reserved for the player; give additional speakers their own approved reference before authoring lines for them.
 

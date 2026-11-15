@@ -104,6 +104,7 @@ namespace GoGhost.Duel
                 pageEntering = wipePending || now < pageEnterStart + .6;
                 OvMotion.EntranceStart = pageEntering ? pageEnterStart : 0;
                 OvMotion.Continue = pageEntering;
+                if (kind == PageKind.Editor) LiftClosingSide();
                 if (old != null) { old.gameObject.SetActive(false); Destroy(old.gameObject); }
             }
             else

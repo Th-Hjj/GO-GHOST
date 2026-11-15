@@ -50,7 +50,7 @@ Thomas chose this direction for everything inside the arena. Mockups: <https://c
 - Joints are discs at the knee and elbow. The player gets two knee renderers (its elbows were already round). Bosses reuse the four part slots the stickman never showed: Hair and Coat are the elbows, BackFoot and FrontFoot the knees.
 - Feet: a standing calf runs .10 past the sole and a `SpriteMask` below the support surface cuts it flat. The mask is off in the air, on defeat, while kneeling and in UI portraits.
 - Foot light: a soft ellipse on the support surface while grounded, in the fighter's colour (EMP violet for the Final Boss), following Camo alpha.
-- Not done: the mission overview's UI copy of the player still has the old knees. Dash and Dodge afterimages copy the lengthened calves without the mask.
+- The mission overview's UI copy of the player has the same round knee disc. Dash and Dodge afterimages carry their own copy of the foot mask (`StickmanSprites.CarryFootCut`), so their feet are cut flat too (2026-11-14, seen in play 2026-11-15).
 
 Confirmed by Thomas, 2026-10-16. This direction supersedes earlier monochrome configuration art, uniform green execution feedback, blue Gunner, green player HP and green/gold weapons. Verification belongs in Implementation_Log; this document records the approved direction.
 

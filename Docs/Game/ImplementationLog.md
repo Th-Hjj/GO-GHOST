@@ -1,5 +1,15 @@
 # GO GHOST slice implementation
 
+## 2026-11-15 — Small leftovers: closing side of the rule editor; stale notes cleared
+
+- **Asked:** do all the small leftovers. Thomas also approved the Final Boss's voice as it is.
+- **Found:** three of the four were already in the source and only the documents were stale. The overview figure's knees and the afterimage feet were fixed on 2026-11-14, and the Bonus result has been the Defeat layout with COMPLETE since the Override pages were built. The one missing piece was the exit for the rule editor's closing side.
+- **Changed:** `DuelUI.OverrideEditor.cs` lifts the closing side's list out of the page that is about to be rebuilt (`LiftClosingSide`, called from the refresh branch of `BeginPageChange`) and, once the new page has its side slabs, lets it slide 60 toward its own edge and fade in .12 s (`LeaveClosingSide`). `VoiceDirection.md` marks the Final Boss voice approved; `ArtDirection.md` and `UIDesign.md` no longer list the finished pieces as open.
+- **Checked:** Unity 6000.6.0f1 compiled. In QHD Play Mode, a New Game with the tutorial on and isolated save storage: Condition to Action after picking Near Wall, and back through the Condition card. About 30 ms after each change the old list was still drawn, shifted toward its edge, and gone by the next capture; nothing was left behind (`Logs/close_sheet.png`). A Bonus fight from the developer entry: the Dodge afterimages' feet are cut flat on the floor (`Logs/tail_dodge_zoom.png`), and killing both Bosses gave COMPLETE, Restart and Main Menu on the held fight (`Logs/tail_result_half.png`). The console was clean.
+- **Starter rule (Thomas asked whether it had been removed):** it has not. In the same New Game Happy installed Incoming Attack (Any) → Jump on her example line, the card and + Add Rule were framed in turn, and the legs turned green (`Logs/tutfix_sheet.png`). The developer entries (**GO GHOST > Playtest > Wave n**, `ConfigurePlaytestWave`) play Happy's introduction without installing the rule; that is where it is missing.
+- **NOT OBSERVED:** the closing list at mid-fade (one capture per change landed inside the .12 s). The Boss and player bars are not visible in the Bonus result capture; not compared with a Defeat capture.
+- **NOT TESTED:** the closing side with real input, with Reduce Flashing, Cancel or Confirm during the .12 s, other resolutions, Check Game Flow and builds.
+
 ## 2026-11-15 — Whole-game check; flow check extended for upkeep
 
 - **Asked:** check the whole game and fix obvious problems, in a way that eases later polish and long-term upkeep.

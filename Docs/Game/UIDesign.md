@@ -118,7 +118,9 @@ The wipe runs on its own clock, advanced by at most a thirtieth of a second per 
 
 **Leftovers (Thomas, 2026-11-15, trial tuning).** Happy's box opens when there is something to say: the voice block arrives from the left in .10 s and the sentence slab opens out of it in .16 s, starting .06 s later; the words appear once the slab is most of the way open. It closes the other way in .12 s and stays up through a run of lines. A removed rule card slides 60 right and fades in .12 s, and the cards below wait for it before they travel; + Add Rule travels in front of the empty slots. The save notice is the dialogue slab, 740 by 60, with a 74-wide block on its left (Danger for a problem, Text for a recovery); it arrives from above in .24 s and leaves upward in .12 s.
 
-Not built: an exit for the column that closes inside the rule editor, and the hazard-rule draw-in on pages other than the results.
+**Closing side of the rule editor (2026-11-15, trial tuning).** When the open side changes, the side that closes keeps its categories, frame and choices for .12 s: they slide 60 toward their own screen edge and fade while the slab under them closes.
+
+Not built: the hazard-rule draw-in on pages other than the results.
 
 ## Screens
 
@@ -297,7 +299,7 @@ Thomas confirmed on 2026-11-12 that keys must be rebindable. The rules below are
 
 ## Not designed yet
 
-The second Help page, the Bonus result and the frame-by-frame EMP sweep across the cards. F8 developer tools keep their current plain look.
+The frame-by-frame EMP sweep across the cards. The Bonus result is built as the Defeat layout with COMPLETE, Restart and Main Menu on the held fight. Help was removed on 2026-11-15. F8 developer tools keep their current plain look.
 
 ## Proposed implementation stages
 

@@ -200,6 +200,39 @@ namespace GoGhost.Duel
             wipe.Seconds = to > from ? .24f : .14f; wipe.Over = 22 / width; wipe.HideWhenClosed = true;
         }
 
+        const float ClosingSideSeconds = .12f;
+        RectTransform closingSide;
+        bool closingLeft;
+
+        // The side that closes keeps its categories, frame and choices for a moment: they are lifted out of the
+        // page that is about to be rebuilt, and leave toward their own screen edge with the slab under them.
+        void LiftClosingSide()
+        {
+            if (closingSide != null) { Destroy(closingSide.gameObject); closingSide = null; }
+            int step = selectingCondition ? 0 : 1;
+            if (builtSelector != selectorRow || builtStep < 0 || builtStep == step || page == null) return;
+            var list = builtStep == 0 ? ruleEditor : ruleList;
+            if (list == null || !list.IsChildOf(page)) return;
+            if (hoveredRuleOption != null && hoveredRuleOption.transform.IsChildOf(list)) hoveredRuleOption = null;
+            list.SetParent(canvas, true);
+            closingSide = list; closingLeft = builtStep == 0;
+        }
+
+        // Called once the new page has its side slabs, so the leaving choices lie on the slab that is closing.
+        void LeaveClosingSide(RectTransform frame)
+        {
+            if (closingSide == null) return;
+            var list = closingSide; closingSide = null;
+            list.SetParent(frame, true);
+            list.name = "Closing side";
+            foreach (var button in list.GetComponentsInChildren<SlabButton>()) button.Frozen = true;
+            if (!list.TryGetComponent(out CanvasGroup group)) group = list.gameObject.AddComponent<CanvasGroup>();
+            group.alpha = 1; group.blocksRaycasts = false; group.interactable = false;
+            list.gameObject.AddComponent<PageLeave>().Seconds = ClosingSideSeconds;
+            var away = list.gameObject.AddComponent<SlideAway>();
+            away.To = new Vector2(closingLeft ? -60 : 60, 0); away.Seconds = ClosingSideSeconds; away.Go();
+        }
+
         // Confirm: the two cards are driven together, the arrow bursts, the body dips, then the rule is installed.
         void ConfirmRule()
         {
@@ -267,6 +300,7 @@ namespace GoGhost.Duel
             if (turning) OvSidePanel(frame, selectingCondition, partColour, 0, 1, .1f, panelTurnAt);
             else if (pageEntering) OvSidePanel(frame, selectingCondition, partColour, 0, 1, .06f, -1);
             else OvSidePanel(frame, selectingCondition, partColour, 1, 1, 0, -1);
+            LeaveClosingSide(frame);
 
             // The sentence: Condition » Action. The card of the open side is filled.
             const float column = 520, leftX = 56, rightX = 1024, cardTop = 160, cardHeight = 108, listTop = 308, listHeight = 392;

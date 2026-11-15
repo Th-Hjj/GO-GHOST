@@ -278,6 +278,7 @@ namespace GoGhost.Duel
             float guide = (listTop + PickRow - cardTop - cardHeight) * PickSlant;
             float leftIndent = 2 * PickPitch * PickSlant, rightIndent = -guide;
             float leftCard = leftX + leftIndent + guide;
+            editorGuideX = new Vector2(leftCard, rightX);
             tutorialPreview = Rect("RulePreview", frame, At(leftCard, cardTop, rightX + column - leftCard, cardHeight), new Vector2(rightX + column - leftCard, cardHeight));
             OvEditorCard("PreviewCondition", "Condition", expression.Conditions, frame, At(leftCard, cardTop, column, cardHeight),
                 new Vector2(column, cardHeight), () => EditPreview(0), selectingCondition, hasCondition, OverridePalette.Text, OverridePalette.Text,

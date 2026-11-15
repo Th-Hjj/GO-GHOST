@@ -250,13 +250,16 @@ namespace GoGhost.Duel
     public sealed class SpotlightGraphic : MaskableGraphic
     {
         Vector2 centre, size;
-        float shade, frame;
+        float shade, frame, lean = -1;
         readonly Vector2[] hole = new Vector2[4];
 
-        public void Set(Vector2 at, Vector2 extent, float shadeAlpha, float frameAlpha)
+        // extent is the opening's own width and height; slant is how far its top stands right of its bottom,
+        // or negative for the small lean an ordinary control gets.
+        public void Set(Vector2 at, Vector2 extent, float shadeAlpha, float frameAlpha, float slant = -1)
         {
-            if (centre == at && size == extent && Mathf.Approximately(shade, shadeAlpha) && Mathf.Approximately(frame, frameAlpha)) return;
-            centre = at; size = extent; shade = shadeAlpha; frame = frameAlpha;
+            if (centre == at && size == extent && Mathf.Approximately(shade, shadeAlpha) && Mathf.Approximately(frame, frameAlpha)
+                && Mathf.Approximately(lean, slant)) return;
+            centre = at; size = extent; shade = shadeAlpha; frame = frameAlpha; lean = slant;
             SetVerticesDirty();
         }
 
@@ -264,7 +267,7 @@ namespace GoGhost.Duel
         {
             vh.Clear();
             // The opening leans like every slab. The lean is shared between both ends, so it never reaches far past what it frames.
-            float half = Mathf.Min(20, size.y * .21f) / 2;
+            float half = (lean >= 0 ? lean : Mathf.Min(20, size.y * .21f)) / 2;
             float left = centre.x - size.x / 2, right = centre.x + size.x / 2, bottom = centre.y - size.y / 2, top = centre.y + size.y / 2;
             hole[0] = new Vector2(left - half, bottom); hole[1] = new Vector2(left + half, top);
             hole[2] = new Vector2(right + half, top); hole[3] = new Vector2(right - half, bottom);

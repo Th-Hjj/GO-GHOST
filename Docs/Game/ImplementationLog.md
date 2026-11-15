@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-11-15 — Tutorial frame follows the rule editor's slant
+
+- **Asked:** fix the tutorial highlight. Thomas's capture showed the Signal frame on the Condition side cutting across the sentence card and the category column.
+- **Found:** the frame was the upright bounding box of the list area stretched up to the card, with at most 20 units of lean. Since the editor's sides became slanted figures on shared guide lines (2026-11-14), that box no longer matched them. Not caused by this session's motion work.
+- **Changed:** `SpotlightGraphic.Set` takes an optional slant. For the Condition and Action lines `DuelUI.ConfigurationTutorial.cs` builds the frame from the editor's own layout numbers (card left edge, card top, slab foot, `PickSlant`) instead of from bounding boxes; other targets keep the small default lean.
+- **Checked:** Unity 6000.6.0f1 compiled. A real New Game with the tutorial on, driven to the editor: the Condition line and, after picking Landed, the Action line. Inspected `Logs/tut_condition.png` and `Logs/tut_action.png`; both frames run along the card's edges and enclose the categories, the choices and the slab's foot. The console was clean.
+- **NOT TESTED:** the frame travelling between the two sides, the Relation and Confirm lines, other resolutions and window shapes, and builds.
+
 ## 2026-11-15 — Stage 5 leftovers: dialogue box, removed card, save notice
 
 - **Asked:** stage 5 of the UI motion order. The list was cut to three pieces before designing; Thomas approved them from a played prototype. Settings, Key Bindings, Credits and an autosave mark were proposed as not worth doing and left alone.

@@ -13,7 +13,9 @@ namespace GoGhost.Duel
         // Happy's pointer: one Signal frame that opens on what she is talking about and travels to the next thing.
         SpotlightGraphic tutorialSpot;
         Vector2 spotCenter, spotSize;
-        float spotShade, spotOpen;
+        float spotShade, spotOpen, spotLean;
+        // Left edge of the Condition card and of the Action card on the editor's frame.
+        Vector2 editorGuideX;
 
         bool TutorialOnPage => game.Phase == DuelPhase.Configure && !game.Paused && !game.DeveloperToolsOpen;
         TutorialFocus VisibleTutorialFocus => TutorialOnPage ? game.ConfigurationVoice.Focus : TutorialFocus.None;
@@ -56,14 +58,29 @@ namespace GoGhost.Duel
             if (target != null)
             {
                 var bounds = TutorialBounds(target);
-                // Include that column's summary, categories, options and parameters.
+                Vector2 centre = bounds.center, size = bounds.size + Vector2.one * 16;
+                // An ordinary control gets a small lean, stored as zero here.
+                float lean = 0;
+                // A side of the rule editor is one slanted figure, from its sentence card down to the foot of its list:
+                // the frame follows the two guide lines the card and the list share, not their upright bounding box.
                 if ((focus is TutorialFocus.Condition or TutorialFocus.Action) && tutorialPreview != null)
-                    bounds.yMax = TutorialBounds(tutorialPreview).yMax;
-                Vector2 size = bounds.size + Vector2.one * 16;
-                if (spotOpen <= 0) { spotCenter = bounds.center; spotSize = size; }
+                {
+                    const float top = 160, cardBottom = 268, bottom = 700, column = 520;
+                    var frame = (RectTransform)tutorialPreview.parent;
+                    float scale = frame.lossyScale.x / Mathf.Max(.0001f, page.lossyScale.x);
+                    float cardLeft = focus == TutorialFocus.Condition ? editorGuideX.x : editorGuideX.y;
+                    float height = bottom - top, slant = height * PickSlant;
+                    float width = column - (cardBottom - top) * PickSlant, footLeft = cardLeft - (bottom - cardBottom) * PickSlant;
+                    var middle = new Vector2(footLeft + (width + slant) / 2 - 800, 450 - (top + bottom) / 2);
+                    centre = page.InverseTransformPoint(frame.TransformPoint(middle));
+                    size = new Vector2(width, height) * scale + Vector2.one * 16;
+                    lean = size.y * PickSlant;
+                }
+                if (spotOpen <= 0) { spotCenter = centre; spotSize = size; spotLean = lean; }
                 float follow = 1 - Mathf.Exp(-step * 14);
-                spotCenter = Vector2.Lerp(spotCenter, bounds.center, follow);
+                spotCenter = Vector2.Lerp(spotCenter, centre, follow);
                 spotSize = Vector2.Lerp(spotSize, size, follow);
+                spotLean = Mathf.Lerp(spotLean, lean, follow);
             }
             spotOpen = Mathf.MoveTowards(spotOpen, target != null ? 1 : 0, step / .18f);
             spotShade = Mathf.MoveTowards(spotShade, speaking && DialogueVisible ? .48f : 0, step * .48f / .18f);
@@ -79,7 +96,9 @@ namespace GoGhost.Duel
             }
             tutorialSpot.gameObject.SetActive(true);
             tutorialSpot.transform.SetAsLastSibling();
-            tutorialSpot.Set(spotCenter, spotSize * OvMotion.Snap(spotOpen), spotShade, spotOpen);
+            // Below one unit of lean the frame is an ordinary control's, with the small default lean.
+            float opened = OvMotion.Snap(spotOpen);
+            tutorialSpot.Set(spotCenter, spotSize * opened, spotShade, spotOpen, spotLean > 1 ? spotLean * opened : -1);
         }
 
         Rect TutorialBounds(RectTransform target)

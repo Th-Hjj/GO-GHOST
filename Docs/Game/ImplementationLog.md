@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-11-15 — Tutorial frame goes round the sentence card only
+
+- **Asked:** after the slanted frame round the whole editor side, Thomas said the screen still looked like a bug and asked for a better answer. Of three options he chose framing the sentence card alone.
+- **Found:** three sets of Signal lines sat side by side: the tutorial frame, the side slab's inner edge and the frame round the choices. The tutorial frame's right edge ran a few dozen units from the slab's edge, and its lower left corner left the page margin.
+- **Changed:** on the Condition and Action lines `DuelUI.ConfigurationTutorial.cs` frames only that side's sentence card, with the card's own slant and 6 units of room.
+- **Checked:** Unity 6000.6.0f1 compiled. A real New Game with the tutorial on, driven to the editor: inspected the Condition line and, after picking Landed, the Action line (`Logs/tut_sheet.png`). Each frame hugs its card and nothing else is framed.
+- **NOT TESTED:** the frame travelling between the two cards, the Relation and Confirm lines, other resolutions and builds.
+
 ## 2026-11-15 — Tutorial frame follows the rule editor's slant
 
 - **Asked:** fix the tutorial highlight. Thomas's capture showed the Signal frame on the Condition side cutting across the sentence card and the category column.

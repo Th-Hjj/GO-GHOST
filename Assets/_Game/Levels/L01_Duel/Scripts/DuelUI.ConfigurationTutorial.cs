@@ -61,19 +61,17 @@ namespace GoGhost.Duel
                 Vector2 centre = bounds.center, size = bounds.size + Vector2.one * 16;
                 // An ordinary control gets a small lean, stored as zero here.
                 float lean = 0;
-                // A side of the rule editor is one slanted figure, from its sentence card down to the foot of its list:
-                // the frame follows the two guide lines the card and the list share, not their upright bounding box.
+                // In the rule editor Happy points at the sentence card alone, in the card's own shape. A frame round the
+                // whole side ran beside the side slab's edge and the choices' frame and read as a drawing error (Thomas, 2026-11-15).
                 if ((focus is TutorialFocus.Condition or TutorialFocus.Action) && tutorialPreview != null)
                 {
-                    const float top = 160, cardBottom = 268, bottom = 700, column = 520;
+                    const float top = 160, cardHeight = 108, column = 520, room = 12;
                     var frame = (RectTransform)tutorialPreview.parent;
                     float scale = frame.lossyScale.x / Mathf.Max(.0001f, page.lossyScale.x);
                     float cardLeft = focus == TutorialFocus.Condition ? editorGuideX.x : editorGuideX.y;
-                    float height = bottom - top, slant = height * PickSlant;
-                    float width = column - (cardBottom - top) * PickSlant, footLeft = cardLeft - (bottom - cardBottom) * PickSlant;
-                    var middle = new Vector2(footLeft + (width + slant) / 2 - 800, 450 - (top + bottom) / 2);
+                    var middle = new Vector2(cardLeft + column / 2 - 800, 450 - top - cardHeight / 2);
                     centre = page.InverseTransformPoint(frame.TransformPoint(middle));
-                    size = new Vector2(width, height) * scale + Vector2.one * 16;
+                    size = new Vector2(column - cardHeight * PickSlant, cardHeight) * scale + Vector2.one * room;
                     lean = size.y * PickSlant;
                 }
                 if (spotOpen <= 0) { spotCenter = centre; spotSize = size; spotLean = lean; }

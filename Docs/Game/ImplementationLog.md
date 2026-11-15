@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Rule editor: tabs and grid on both sides, Signal join restored, button outlines
+
+- **Asked:** unify the two sides in a way that survives adding entries; put back the Signal line that ties a category to its choices, which the redesign had removed; make choices read as buttons; improve the character's place (decision recorded in `CLAUDE.md` and `AGENTS.md`).
+- **Cause of the flat choices:** the side slab was filled 18,18,23 and the resting choices 21,21,26, so the slabs disappeared into it.
+- **Changed:** `DuelUI.OverrideEditor.cs`: `OvTabs` builds the tab row, the Signal frame and the join for either side; `OvConditionStep` and `OvActionStep` place the parameter row at the top and the open tab's choices in the frame; the action side has its own open tab, which follows the chosen action when the side opens. `OvOption` takes the resting fill; resting controls on the slab use SurfaceHover and `SlabButton.Rim`, a 2-unit outline. The character stands 54 left of centre on a 300 floor.
+- **Checked:** compiled outside the editor, which was in Play Mode. Nothing of this was seen in the game: the tab row, the frame and join, the outlines, the character's place and the tutorial over the new layout are all NOT OBSERVED.
+
 ## 2026-11-14 — Rule editor: character size, floor and option effects corrected
 
 - **Asked:** after seeing the redesign in play: the character was too large, the floor was shorter on the left than the right, and the effects tied to options are not wanted here because previews will be made separately.

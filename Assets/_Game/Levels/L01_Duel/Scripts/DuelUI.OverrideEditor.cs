@@ -14,14 +14,11 @@ namespace GoGhost.Duel
         // The slide's length follows the distance. The character always faces right (Thomas, 2026-11-14).
         float figureWalkSeconds = FigureSlideSeconds;
         RectTransform figureFloor;
-        // The editor shows the character larger than the overview; the size changes along the slide.
-        const float EditorFigureScale = 1.15f;
+        // The character keeps the overview's size in the editor (1.15 was tried and withdrawn, Thomas 2026-11-14).
+        // A place may still ask for another size; the size then changes along the slide.
         float figureScale = 1, figureScaleFrom = 1, figureScaleNow = 1;
-        // The body's answers: a white step on the part a newly picked action takes, and a dip when a rule is confirmed.
-        float figurePickAt = float.NegativeInfinity, figureDipAt = float.NegativeInfinity, figurePose;
-        NeuralBodySystem figurePickSystem, figurePoseSystem;
-        readonly System.Collections.Generic.List<(RectTransform part, Vector2 at, float turn, int group)> figureParts
-            = new System.Collections.Generic.List<(RectTransform, Vector2, float, int)>();
+        // The body dips once when a rule is confirmed. Previews of what an option does are made separately.
+        float figureDipAt = float.NegativeInfinity;
         // What the sentence cards and parameter rows last showed, so only a change is animated.
         readonly System.Collections.Generic.Dictionary<string, string> cardTexts = new System.Collections.Generic.Dictionary<string, string>();
         int builtChipCondition;
@@ -160,9 +157,9 @@ namespace GoGhost.Duel
         void OvSidePanel(RectTransform frame, bool left, Color edge, float from, float to, float delay, double born)
         {
             // It ends above the floor slab. Its inner edge keeps clear of the choices on its own side (which end at
-            // 576 and begin at 1024) and of the character: 584 to 700 on the left, 900 to 1016 on the right.
+            // 576 and begin at 1024) and of the character and revolver: 584 to 700 on the left, 915 to 1031 on the right.
             const float width = 2040, height = 550, cut = 116, top = 150;
-            var panel = Rect(left ? "Panel left" : "Panel right", frame, At(left ? 700 - width : 900, top, width, height), new Vector2(width, height));
+            var panel = Rect(left ? "Panel left" : "Panel right", frame, At(left ? 700 - width : 915, top, width, height), new Vector2(width, height));
             panel.pivot = new Vector2(left ? 0 : 1, .5f);
             panel.anchoredPosition += new Vector2(left ? -width / 2 : width / 2, 0);
             var slab = panel.gameObject.AddComponent<SlabGraphic>();
@@ -262,15 +259,14 @@ namespace GoGhost.Duel
 
             // The character is the centre of the page and does not move while a rule is written; the panels move
             // around them. The floor ends just above Happy's box and the buttons.
-            const float stageHeight = 442, floorHeight = 22;
-            bodyPreview = Rect("BodyPreview", frame, At(540, listTop, column, stageHeight), new Vector2(column, stageHeight));
+            const float stageHeight = 442, floorHeight = 22, floorWidth = 400;
+            bodyPreview = Rect("BodyPreview", frame, At(800 - floorWidth / 2, listTop, floorWidth, stageHeight), new Vector2(floorWidth, stageHeight));
             float floorTop = -stageHeight / 2 + floorHeight;
-            var stage = Rect("Stage", bodyPreview, new Vector2(0, floorTop - floorHeight / 2), new Vector2(column, floorHeight)).gameObject.AddComponent<SlabGraphic>();
+            var stage = Rect("Stage", bodyPreview, new Vector2(0, floorTop - floorHeight / 2), new Vector2(floorWidth, floorHeight)).gameObject.AddComponent<SlabGraphic>();
             stage.color = OverridePalette.Neutral; stage.Cut = 10; stage.raycastTarget = false;
             OvArrive(stage, Vector2.zero, 1);
-            // Body and revolver together reach 56 units behind the body's centre line and 164 ahead of it,
-            // so the body stands 54 back for the whole silhouette to sit on the page's centre.
-            StandFigure(bodyPreview, new Vector2(-54 * EditorFigureScale, floorTop + .75f * 245 * EditorFigureScale), stage.rectTransform, EditorFigureScale);
+            // The body stands on the page's centre line, under the arrow, with the floor centred under its feet.
+            StandFigure(bodyPreview, new Vector2(0, floorTop + .75f * 245), stage.rectTransform);
 
             // Both columns exist for the tutorial frame; only the open side holds choices.
             ruleEditor = Rect("RuleEditor", frame, At(leftX, listTop, column, listHeight), new Vector2(column, listHeight));

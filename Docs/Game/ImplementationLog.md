@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Rule editor: character size, floor and option effects corrected
+
+- **Asked:** after seeing the redesign in play: the character was too large, the floor was shorter on the left than the right, and the effects tied to options are not wanted here because previews will be made separately.
+- **Cause of the floor:** the floor was centred on the page while the body stood 62 units left of it so that body and revolver together were centred.
+- **Changed:** the character is back at the overview's size and stands on the page's centre line; the floor is 400 wide and centred under the feet; the right slab's inner edge moves 15 units right to keep clear of the revolver. The hover pose accent, `PoseFigure`, the part list and the white step on pick are removed. The Confirm dip stays.
+- **Checked:** compiled outside the editor, which was in Play Mode. Not seen in the game: NOT OBSERVED.
+
 ## 2026-11-14 — Rule editor redesign: centred character, side slabs, motion
 
 - **Asked:** build the approved prototype into the game (decision recorded in `CLAUDE.md` and `AGENTS.md`).

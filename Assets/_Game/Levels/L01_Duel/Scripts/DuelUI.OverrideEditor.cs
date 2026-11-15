@@ -11,6 +11,9 @@ namespace GoGhost.Duel
         // Frame-space bookkeeping lets the rebuilt character continue from where the last page left it.
         Vector2 figureSlideFrom, figureFrameHome, figureFramePosition;
         float figureSlideAt = float.NegativeInfinity, figureSeenAt = float.NegativeInfinity;
+        // The walk: its length follows the distance. The character always faces right (Thomas, 2026-11-14).
+        float figureWalkSeconds = FigureSlideSeconds, figureTravel = 1;
+        RectTransform figureFloor;
         int builtStep = -1, builtCategory = -1;
 
         bool ConditionChosen()
@@ -47,7 +50,8 @@ namespace GoGhost.Duel
             Show();
         }
 
-        void StandFigure(RectTransform stage, Vector2 home)
+        // floor: the slab under the feet, which opens as the figure arrives.
+        void StandFigure(RectTransform stage, Vector2 home, RectTransform floor = null)
         {
             Vector2 frameHome = stage.anchoredPosition + home;
             if (Time.unscaledTime - figureSeenAt > .25f) figureSlideAt = float.NegativeInfinity;
@@ -55,7 +59,10 @@ namespace GoGhost.Duel
             {
                 figureSlideFrom = figureFramePosition - frameHome;
                 figureSlideAt = Time.unscaledTime;
+                figureWalkSeconds = Mathf.Clamp(.26f + Mathf.Abs(figureSlideFrom.x) / 3000f, .3f, .55f);
+                figureTravel = Mathf.Abs(figureSlideFrom.x) < 1 ? 0 : figureSlideFrom.x < 0 ? 1 : -1;
             }
+            figureFloor = floor;
             figureFrameHome = frameHome;
             overviewFigureHome = home;
             // 245 canvas units per world unit, the same size on the overview and in the editor.
@@ -158,11 +165,14 @@ namespace GoGhost.Duel
             if (linked) arrow.gameObject.AddComponent<Drift>();
             if (pageEntering) { var land = arrow.gameObject.AddComponent<SlamIn>(); land.From = 1.35f; land.Seconds = .15f; land.Delay = 2 * OvMotion.Stagger; }
 
-            bodyPreview = Rect("BodyPreview", frame, At(616, listTop, 368, 410), new Vector2(368, 410));
+            // The character stands in the middle of the side that holds no choices.
+            float previewLeft = selectingCondition ? 896 : 336;
+            bodyPreview = Rect("BodyPreview", frame, At(previewLeft, listTop, 368, 410), new Vector2(368, 410));
             var stage = Rect("Stage", bodyPreview, new Vector2(0, -194), new Vector2(368, 22)).gameObject.AddComponent<SlabGraphic>();
             stage.color = OverridePalette.Neutral; stage.Cut = 10; stage.raycastTarget = false;
             OvArrive(stage, Vector2.zero, 1);
-            StandFigure(bodyPreview, new Vector2(-80, -183 + .75f * 245));
+            // The revolver reaches forward, so the body stands back from the centre to keep the silhouette centred.
+            StandFigure(bodyPreview, new Vector2(-80, -183 + .75f * 245), stage.rectTransform);
 
             // Both columns exist for the tutorial frame; only the open side holds choices.
             ruleEditor = Rect("RuleEditor", frame, At(leftX, listTop, column, listHeight), new Vector2(column, listHeight));

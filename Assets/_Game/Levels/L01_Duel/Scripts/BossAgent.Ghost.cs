@@ -45,9 +45,10 @@ namespace GoGhost.Duel
             ghostFigure.transform.localPosition = new Vector3(0, Body.bounds.min.y - transform.position.y - soles, 0);
             ghostFigure.transform.localRotation = Quaternion.identity;
             Destroy(holder);
-            ghostMaterial = new Material(Resources.Load<Shader>("GhostProjection")) { hideFlags = HideFlags.HideAndDontSave };
-            // The rows alone on the body; no travelling band.
-            ghostMaterial.SetFloat("_Low", -1000); ghostMaterial.SetFloat("_High", -1000);
+            // The same hologram as the figure on the title.
+            ghostMaterial = new Material(Resources.Load<Shader>("GhostBody")) { hideFlags = HideFlags.HideAndDontSave };
+            ghostMaterial.SetColor("_Light", GhostHologram.Light);
+            ghostMaterial.SetVector("_Window", new Vector4(1e6f, 1e6f, 0, 0));
             ghostPuppet = new OfficerVisual.Puppet { Floor = soles, Reach = reach + .16f, Facing = -1, Aim = Vector2.left };
             ghostFigure.GetComponent<OfficerVisual>().ConfigurePuppet(ghostPuppet, GhostHologram.Body, GhostHologram.Gun,
                 GhostHologram.Core, NeuralPalette.Alpha(GhostHologram.Light, .5f), ghostMaterial);
@@ -87,6 +88,18 @@ namespace GoGhost.Duel
             ghostPuppet.ReloadProgress = 1 - Mathf.Clamp01((ghostReloadUntil - Time.time) / GhostReload);
             ghostPuppet.Dead = !IsAlive;
             if (ghostFigure != null && ghostFigure.activeSelf != IsAlive) ghostFigure.SetActive(IsAlive);
+            if (ghostMaterial == null) return;
+            // The title figure's timing: rows climb, a band passes every 3.4 s, a run of chest rows jumps aside every 2.9 s.
+            float now = Time.time;
+            bool still = GameSettings.ReduceFlashing;
+            float beat = now % 2.9f / 2.9f;
+            bool jump = !still && beat > .91f && beat < .95f;
+            ghostMaterial.SetFloat("_Feet", Body.bounds.min.y);
+            ghostMaterial.SetFloat("_Clock", still ? 0 : now * 1.8f);
+            ghostMaterial.SetFloat("_Band", Mathf.Lerp(-.2f, 1.95f, now % 3.4f / 3.4f));
+            ghostMaterial.SetFloat("_BandHalf", .16f);
+            ghostMaterial.SetFloat("_Shift", -.09f * (Facing < 0 ? -1 : 1));
+            ghostMaterial.SetVector("_Window", jump ? new Vector4(.80f, .98f, 0, 0) : new Vector4(1e6f, 1e6f, 0, 0));
         }
 
         void LateUpdate() { if (IsGhost) WriteGhostPuppet(); }

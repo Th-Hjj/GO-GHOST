@@ -43,6 +43,12 @@
 - **Changed:** `ConditionalLoadout.cs`: new labels, categories, option names, one-sentence descriptions and shorter validation messages; `GroundStateOption` gains OnGround and OnPlatform and the old Grounded value reads "Where You Stand (Reselect)" and fails validation; `PlatformDirectionOption` gains Left and Right. `ConditionalController.Observation.cs` tells the floor from a one-way platform. `ConditionalController.Platforms.cs` picks the nearest reachable platform on the chosen side. Happy's lines follow the names: 18 Mission 3 invasion clips renamed in Unity (GUIDs kept), 3 added, and those 21 plus 9 editor descriptions re-voiced from text with the Voice Studio synthesis; catalog and recipes updated. `ConditionalRules.md` and `ArtDirection.md` follow.
 - **Checked:** Unity compiled; the catalog lists 248 legal invasion rules and every one of their voice keys has a clip; one Play Mode pass captured the overview and both editor steps (`Logs/RuleWording/`). The new clips were not listened to. On Ground / On Platform in a fight, Change Platform Left / Right in a fight, the Mission 3 invasion reading and a save holding an old Grounded rule NOT TESTED.
 
+## 2026-11-14 — GHOST's arena body carries the title's hologram
+
+- **Asked:** why his hologram in the arena was not the one on the title, which Thomas likes; and whether his head could be round like the player's.
+- **Changed:** his body had been given the letter strokes' quiet material. `GhostBody.shader` now draws it as on the title: rows that climb at the same rate and contrast, one bright band travelling up him every 3.4 s, and a run of chest rows displaced sideways for a moment every 2.9 s, drawn by a second pass. Rows are whole screen pixels. Reduce Flashing holds the rows and removes the displaced run. The head was already the round disc in the current build; four logged captures over ten seconds name it `Stickman disc` each time.
+- **Checked:** Unity compiled, shader without errors; two Play Mode captures, one ordinary and one inside the displaced beat, show rows, band and the displaced run (`Logs/ArtRedesign/ghost_holo_strip.png`). Reduce Flashing NOT TESTED.
+
 ## 2026-11-14 — GHOST arena: letter strokes dimmed below GHOST
 
 - **Asked:** Thomas sent a capture of GHOST as a blue column with no readable head.

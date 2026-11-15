@@ -160,7 +160,10 @@ namespace GoGhost.Duel
             {
                 var oscillator = moving[i].GetComponent<PlatformOscillator>();
                 if (oscillator == null) oscillator = moving[i].gameObject.AddComponent<PlatformOscillator>();
-                oscillator.Begin(0, -i * PlatformOscillator.WaveLag, easeIn);
+                // In the transition the wave starts from rest. A direct phase-two entry has no transition,
+                // so the wave is already running when the arena appears.
+                float clock = (easeIn ? 0 : PlatformOscillator.Period * 2) - i * PlatformOscillator.WaveLag;
+                oscillator.Begin(0, clock, easeIn);
             }
             Trace($"final boss phase 2: {moving.Count} platforms moving");
         }

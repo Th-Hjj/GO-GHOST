@@ -8,6 +8,14 @@
 - **Checked:** the game assembly compiles with Unity's bundled compiler outside the Editor (Thomas was in Play Mode). An offline composite of the two plates at the left parallax position, drawn the way the canvas blends them, shows the band before and a solid tower after.
 - **NOT TESTED:** Mission 3 in Play Mode, including the EMP contour trace over the towers, other parallax positions and phase two. The part of the amber row to the right of the tower is not covered by any tower and still shows, as authored.
 
+## 2026-11-15 — Wave lag shortened; direct phase-two entry starts mid-wave
+
+- **Asked:** the wave did not read as continuous; start each platform when the one before has moved a quarter or a fifth. Thomas also wanted the motion to begin during the transition, once everything has been coloured, not after the fight starts, and asked that the transition be understood first.
+- **Found:** the transition already starts the platforms the moment the third front finishes (`WaveProgress(2) >= 1`), 6.45 s before the fight. The only path where motion starts with the arena is a direct phase-two entry (Retry Phase 2 or the developer shortcut), which has no transition; since the wave was added it restarted there from rest.
+- **Changed:** `PlatformOscillator.WaveLag` is a sixteenth of the cycle (.25 s, a quarter of the first rise; it was 1 s). `DuelFinalBossFight.StartPlatformMotion` gives a direct entry a clock two cycles in, so its wave is already running. The transition's start point is unchanged.
+- **Checked:** the game assembly compiles with Unity's bundled compiler outside the Editor.
+- **NOT TESTED:** everything in play. Not established: where Thomas saw the motion begin late (the real transition or a direct entry).
+
 ## 2026-11-15 — Phase-two platforms swing as a wave from left to right
 
 - **Asked:** Thomas was very unhappy with the platforms sinking together. He wanted the original swing height back and a wave from left to right, each platform starting when the one before it is half way. He asked for the design to be restated first, then chose: upward first, continuous, half of a one-way stroke.

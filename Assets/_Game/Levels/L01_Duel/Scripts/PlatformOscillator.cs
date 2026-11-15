@@ -4,8 +4,9 @@ namespace GoGhost.Duel
 {
     // Final Boss phase two: the shockwave sets the platforms swinging half a tier (1.05) above and below
     // home over 4 s. They move as a wave from left to right (Thomas, 2026-11-15): each starts upward when
-    // the one on its left reaches the top of its first rise, a quarter of a cycle later, and then keeps
-    // swinging. A platform waits at home until its turn. Sinking together by .6 was tried the same day and
+    // the one on its left is a quarter of the way up its first rise, .25 s later, and then keeps swinging.
+    // Starting at the top of that rise (1 s) was tried first and did not read as one wave.
+    // A platform waits at home until its turn. Sinking together by .6 was tried the same day and
     // rejected. A kinematic body driven by velocity pushes riders physically and lets their grounding read
     // the carrier's speed. FixedUpdate stops while paused; the stage layout owns cleanup.
     [RequireComponent(typeof(Collider2D))]
@@ -13,7 +14,7 @@ namespace GoGhost.Duel
     {
         public const float Amplitude = DuelGame.PlatformTierRise * .5f, Period = 4f;
         // How long after its left neighbour a platform starts.
-        public const float WaveLag = Period * .25f;
+        public const float WaveLag = Period / 16f;
         Rigidbody2D body;
         Vector2 home;
         float phase, clock, rampRemaining;

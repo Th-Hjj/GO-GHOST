@@ -99,6 +99,9 @@ namespace GoGhost.Duel
         void BuildGhostStems(float floorY, float thickness)
         {
             var material = new Material(Resources.Load<Shader>("GhostProjection")) { hideFlags = HideFlags.HideAndDontSave };
+            // The band of light travels from the letters' feet to their heads.
+            material.SetFloat("_Low", floorY + PlatformTierRise - thickness);
+            material.SetFloat("_High", floorY + PlatformTierRise * 3);
             var group = new GameObject("GHOST letter strokes");
             group.transform.SetParent(encounter.transform, false);
             group.AddComponent<OwnedMaterial>().Material = material;

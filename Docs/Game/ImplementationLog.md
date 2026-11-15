@@ -12,6 +12,12 @@
 - **Changed:** `ConditionalLoadout.cs`: new labels, categories, option names, one-sentence descriptions and shorter validation messages; `GroundStateOption` gains OnGround and OnPlatform and the old Grounded value reads "Where You Stand (Reselect)" and fails validation; `PlatformDirectionOption` gains Left and Right. `ConditionalController.Observation.cs` tells the floor from a one-way platform. `ConditionalController.Platforms.cs` picks the nearest reachable platform on the chosen side. Happy's lines follow the names: 18 Mission 3 invasion clips renamed in Unity (GUIDs kept), 3 added, and those 21 plus 9 editor descriptions re-voiced from text with the Voice Studio synthesis; catalog and recipes updated. `ConditionalRules.md` and `ArtDirection.md` follow.
 - **Checked:** Unity compiled; the catalog lists 248 legal invasion rules and every one of their voice keys has a clip; one Play Mode pass captured the overview and both editor steps (`Logs/RuleWording/`). The new clips were not listened to. On Ground / On Platform in a fight, Change Platform Left / Right in a fight, the Mission 3 invasion reading and a save holding an old Grounded rule NOT TESTED.
 
+## 2026-11-14 — GHOST arena: a band of light climbs the letter strokes
+
+- **Asked:** with the rows held still the strokes looked a little too dead.
+- **Changed:** `GhostProjection.shader`: one soft band of light climbs each vertical stroke from the letters' feet to their heads in five seconds, a little later on each letter to the right. The rows themselves still stand still. `DuelGame.Ghost.cs` gives the shader the two heights.
+- **Checked:** Unity compiled; the first version failed to compile as a shader (reserved names) and drew magenta, fixed before commit. One Play Mode capture shows the bands at staggered heights (`Logs/ArtRedesign/ghost_band.png`). In motion NOT OBSERVED here.
+
 ## 2026-11-14 — GHOST arena: lines drawn by coverage, strokes' rows held still
 
 - **Asked:** the horizontal lines still flickered badly after the pixel snapping; Thomas added that the hologram effect itself may be the cause.

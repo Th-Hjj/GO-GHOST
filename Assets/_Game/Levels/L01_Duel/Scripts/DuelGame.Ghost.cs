@@ -37,9 +37,10 @@ namespace GoGhost.Duel
             16, 0, 1, 3,                        // T
         };
 
-        Bounds authoredBounds;
-        Vector3[] authoredSurfacePosition, authoredSurfaceScale;
-        Transform[] arenaSurfaces;
+        // The editor fills an unmarked private array with an empty one instead of null.
+        [System.NonSerialized] Bounds authoredBounds;
+        [System.NonSerialized] Vector3[] authoredSurfacePosition, authoredSurfaceScale;
+        [System.NonSerialized] Transform[] arenaSurfaces;
 
         // From the title, by clicking GHOST. The player is You: no face, no rules, and nothing is saved.
         public void EnterGhostArena()
@@ -84,7 +85,7 @@ namespace GoGhost.Duel
 
         void RestoreArenaAfterGhost()
         {
-            if (arenaSurfaces == null) return;
+            if (arenaSurfaces == null || arenaSurfaces.Length < 4) return;
             for (int i = 0; i < 4; i++)
             {
                 if (arenaSurfaces[i] == null) continue;
@@ -128,6 +129,8 @@ namespace GoGhost.Duel
 
     // Frames both fighters. At rest it is the game's own camera; as they separate it pulls back, at most far
     // enough to show the whole word. The floor keeps its height on screen.
+    // Runs before the arena's outline, which lays its lines on this camera's pixel grid in the same frame.
+    [DefaultExecutionOrder(-50)]
     sealed class GhostArenaCamera : MonoBehaviour
     {
         // Room kept beside the outermost fighter, the frame's margin beyond the walls, and seconds to settle. Trial tuning.
@@ -136,7 +139,7 @@ namespace GoGhost.Duel
         Camera view;
         Bounds arena;
         Vector3 homePosition;
-        float homeSize, floorShare;
+        float homeSize, floorShare, travel;
 
         public void Initialize(DuelGame owner, Bounds bounds)
         {
@@ -145,6 +148,7 @@ namespace GoGhost.Duel
             homePosition = view.transform.position; homeSize = view.orthographicSize;
             // Where the floor sits between the bottom and the middle of the authored view.
             floorShare = (homePosition.y - arena.min.y) / homeSize;
+            travel = homePosition.x;
             Frame(1);
         }
 
@@ -164,8 +168,14 @@ namespace GoGhost.Duel
             float reach = Mathf.Max(0, arena.extents.x + WallMargin - size * aspect);
             float x = Mathf.Clamp((left + right) * .5f, arena.center.x - reach, arena.center.x + reach);
             size = Mathf.Lerp(view.orthographicSize, size, blend);
+            // Settled is settled: the last fractions of a slow approach only make thin lines crawl.
+            if (Mathf.Abs(size - view.orthographicSize) < .0005f) size = view.orthographicSize;
             view.orthographicSize = size;
-            view.transform.position = new Vector3(Mathf.Lerp(view.transform.position.x, x, blend), arena.min.y + floorShare * size, homePosition.z);
+            // Whole pixels, so the arena's thin lines land on the same rows from one frame to the next.
+            float pixel = 2 * size / Mathf.Max(1, view.pixelHeight);
+            x = Mathf.Lerp(travel, x, blend); travel = x;
+            view.transform.position = new Vector3(Mathf.Round(x / pixel) * pixel,
+                Mathf.Round((arena.min.y + floorShare * size) / pixel) * pixel, homePosition.z);
         }
 
         // The encounter is switched off before it is destroyed; hand the camera back at once.

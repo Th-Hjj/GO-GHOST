@@ -25,7 +25,9 @@ namespace GoGhost.Duel
         readonly List<SpriteRenderer> frameHairlines = new();
 
         // supports[0] is the floor; the rest are this encounter's one-way platforms.
-        public static void Create(Transform attempt, Bounds arena, Collider2D[] supports, ArenaLook look)
+        // steady: the camera moves and zooms here, so every line is kept a whole number of pixels thick and
+        // laid on the pixel grid each frame. Otherwise a thin line changes thickness as it travels and flickers.
+        public static void Create(Transform attempt, Bounds arena, Collider2D[] supports, ArenaLook look, bool steady = false)
         {
             var surface = supports != null && supports.Length > 0 && supports[0] != null
                 ? supports[0].GetComponent<SpriteRenderer>() : null;
@@ -34,6 +36,7 @@ namespace GoGhost.Duel
             dressing.transform.SetParent(attempt, false);
             dressing.material = surface.sharedMaterial;
             dressing.sortingLayer = surface.sortingLayerID;
+            dressing.steady = steady;
             dressing.Build(arena, supports, look);
         }
 
@@ -43,16 +46,13 @@ namespace GoGhost.Duel
             // The floor edge is brightest under the middle of the arena.
             ramp = MakeSprite(64, 4, (u, v) => Mathf.Pow(Mathf.Lerp(.3f, 1f, 1f - Mathf.Abs(2f * u - 1f)), 2.2f));
 
-            float floor = arena.min.y, left = arena.min.x, right = arena.max.x, ceiling = arena.max.y;
-            Place(Quad("Floor rim", ramp, look.Rim), new Vector2(arena.center.x, floor - RimHeight * .5f),
-                new Vector2(arena.size.x, RimHeight));
+            frame = arena;
+            floorRim = Quad("Floor rim", ramp, look.Rim);
             Color side = NeuralPalette.Alpha(look.Rim, SideStrength);
             frameHairlines.Add(Quad("Ceiling edge", pixel, side));
-            Place(frameHairlines[0], new Vector2(arena.center.x, ceiling + RimHeight * .5f), new Vector2(arena.size.x, RimHeight));
             frameHairlines.Add(Quad("Left wall edge", pixel, side));
-            Place(frameHairlines[1], new Vector2(left - RimHeight * .5f, arena.center.y), new Vector2(RimHeight, arena.size.y));
             frameHairlines.Add(Quad("Right wall edge", pixel, side));
-            Place(frameHairlines[2], new Vector2(right + RimHeight * .5f, arena.center.y), new Vector2(RimHeight, arena.size.y));
+            PlaceFrame();
 
             for (int i = 1; i < supports.Length; i++)
             {
@@ -78,7 +78,39 @@ namespace GoGhost.Duel
             foreach (var line in frameHairlines) if (line != null) line.enabled = false;
         }
 
-        void LateUpdate() => Follow();
+        void LateUpdate() { if (steady) PlaceFrame(); Follow(); }
+
+        bool steady;
+        Bounds frame;
+        SpriteRenderer floorRim;
+        Camera view;
+        // The line's thickness and the grid it sits on, in world units. Away from the steady arena both are the authored values.
+        float rim = RimHeight, grid;
+        Vector2 gridOrigin;
+
+        void ReadGrid()
+        {
+            rim = RimHeight; grid = 0;
+            if (!steady) return;
+            if (view == null) view = Camera.main;
+            if (view == null) return;
+            grid = 2 * view.orthographicSize / Mathf.Max(1, view.pixelHeight);
+            rim = Mathf.Max(2, Mathf.Round(RimHeight / grid)) * grid;
+            gridOrigin = view.transform.position;
+        }
+
+        float SnapX(float x) => grid > 0 ? gridOrigin.x + Mathf.Round((x - gridOrigin.x) / grid) * grid : x;
+        float SnapY(float y) => grid > 0 ? gridOrigin.y + Mathf.Round((y - gridOrigin.y) / grid) * grid : y;
+
+        void PlaceFrame()
+        {
+            ReadGrid();
+            float floor = SnapY(frame.min.y), left = SnapX(frame.min.x), right = SnapX(frame.max.x), ceiling = SnapY(frame.max.y);
+            Place(floorRim, new Vector2(frame.center.x, floor - rim * .5f), new Vector2(frame.size.x, rim));
+            Place(frameHairlines[0], new Vector2(frame.center.x, ceiling + rim * .5f), new Vector2(frame.size.x, rim));
+            Place(frameHairlines[1], new Vector2(left - rim * .5f, frame.center.y), new Vector2(rim, frame.size.y));
+            Place(frameHairlines[2], new Vector2(right + rim * .5f, frame.center.y), new Vector2(rim, frame.size.y));
+        }
 
         // Final Boss phase two moves the platforms. A collider's bounds only refresh on a physics step,
         // which does not run during the countdown, so each rim follows the platform's drawn sprite.
@@ -92,11 +124,12 @@ namespace GoGhost.Duel
                 outline.Bottom.enabled = outline.Left.enabled = outline.Right.enabled = shown && !sidesHidden;
                 if (!shown) continue;
                 Bounds bounds = outline.Surface != null ? outline.Surface.bounds : support.bounds;
-                float sideHeight = Mathf.Max(0, bounds.size.y - RimHeight);
-                Place(outline.Top, new Vector2(bounds.center.x, bounds.max.y - RimHeight * .5f), new Vector2(bounds.size.x, RimHeight));
-                Place(outline.Bottom, new Vector2(bounds.center.x, bounds.min.y + RimHeight * .5f), new Vector2(bounds.size.x, RimHeight));
-                Place(outline.Left, new Vector2(bounds.min.x + RimHeight * .5f, bounds.min.y + sideHeight * .5f), new Vector2(RimHeight, sideHeight));
-                Place(outline.Right, new Vector2(bounds.max.x - RimHeight * .5f, bounds.min.y + sideHeight * .5f), new Vector2(RimHeight, sideHeight));
+                float top = SnapY(bounds.max.y), bottom = SnapY(bounds.min.y), west = SnapX(bounds.min.x), east = SnapX(bounds.max.x);
+                float sideHeight = Mathf.Max(0, top - bottom - rim), width = east - west, middle = (west + east) * .5f;
+                Place(outline.Top, new Vector2(middle, top - rim * .5f), new Vector2(width, rim));
+                Place(outline.Bottom, new Vector2(middle, bottom + rim * .5f), new Vector2(width, rim));
+                Place(outline.Left, new Vector2(west + rim * .5f, bottom + sideHeight * .5f), new Vector2(rim, sideHeight));
+                Place(outline.Right, new Vector2(east - rim * .5f, bottom + sideHeight * .5f), new Vector2(rim, sideHeight));
             }
         }
 

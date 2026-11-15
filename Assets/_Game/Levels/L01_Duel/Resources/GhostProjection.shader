@@ -5,8 +5,8 @@ Shader "GO GHOST/Ghost Projection"
     Properties
     {
         [PerRendererData] _MainTex ("Sprite", 2D) = "white" {}
-        _Period ("Row height", Float) = .0556
-        _Speed ("Rise per second", Float) = .1
+        _Period ("Row height in pixels at 1440", Float) = 4
+        _Speed ("Rows per second", Float) = 1.8
     }
     SubShader
     {
@@ -25,7 +25,6 @@ Shader "GO GHOST/Ghost Projection"
             {
                 float4 clip : SV_POSITION;
                 float2 uv : TEXCOORD0;
-                float height : TEXCOORD1;
                 fixed4 colour : COLOR;
             };
             Varyings vert(appdata_full v)
@@ -33,13 +32,14 @@ Shader "GO GHOST/Ghost Projection"
                 Varyings o;
                 o.clip = UnityObjectToClipPos(v.vertex);
                 o.uv = v.texcoord.xy;
-                o.height = mul(unity_ObjectToWorld, v.vertex).y;
                 o.colour = v.color;
                 return o;
             }
             fixed4 frag(Varyings i) : SV_Target
             {
-                float row = frac((i.height - _Time.y * _Speed) / _Period) < .62 ? 1 : .24;
+                // Screen rows, so the camera pulling back never changes their size or makes them crawl.
+                float period = max(3, round(_Period * _ScreenParams.y / 1440));
+                float row = frac(floor(i.clip.y) / period + _Time.y * _Speed) < .62 ? 1 : .24;
                 fixed4 colour = i.colour;
                 colour.a *= tex2D(_MainTex, i.uv).a * row;
                 return colour;

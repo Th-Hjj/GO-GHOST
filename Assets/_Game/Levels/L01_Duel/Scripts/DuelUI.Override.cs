@@ -176,7 +176,7 @@ namespace GoGhost.Duel
             if (hold > 0) { var slam = logo.gameObject.AddComponent<SlamIn>(); slam.From = 1.35f; slam.Seconds = .1f; slam.Delay = hold; }
             else OvArrive(logo, new Vector2(-120, 0), 0);
             // After the game is finished GHOST stands on the T. He appears once the logo is in place.
-            BuildTitleGhost(frame, hold > 0 ? hold + .5f : .45f);
+            BuildTitleGhost(frame, logo);
             OvArrive(OvBand(frame, 514), new Vector2(-200, 0), 1 + late);
             // With a save, Continue leads and New Game asks before replacing it.
             bool saved = GameSave.Exists;

@@ -204,7 +204,7 @@ namespace GoGhost.Duel
             // The Test Room keeps the same lighting with neutral haze and no plates.
             IndustrialArenaBackdrop.Create(encounter.transform, Player.transform, arenaBounds, training ? 0 : Wave);
             ArenaSilhouetteDressing.Create(encounter.transform, arenaBounds, ActivePlatforms,
-                GhostArena ? ArenaLook.Ghost : ArenaLook.For(training ? 0 : Wave));
+                GhostArena ? ArenaLook.Ghost : ArenaLook.For(training ? 0 : Wave), GhostArena);
             if (GhostArena)
             {
                 BuildGhostStems(platforms[0].bounds.max.y, ActivePlatforms[1].bounds.size.y);

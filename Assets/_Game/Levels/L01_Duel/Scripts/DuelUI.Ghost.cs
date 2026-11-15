@@ -8,7 +8,7 @@ namespace GoGhost.Duel
     // on the T of the logo as a hologram, and the pointer takes the same look while it is over him.
     public sealed partial class DuelUI
     {
-        void BuildTitleGhost(RectTransform frame, float delay)
+        void BuildTitleGhost(RectTransform frame, RectTransform logo)
         {
             if (!GameProgress.Cleared) return;
             // The middle of the T's bar on the 1600 x 900 frame, and the page's units per world unit.
@@ -17,7 +17,7 @@ namespace GoGhost.Duel
             // The player's own body, pose and revolver, turned to face the menu.
             var figure = OvPlayerFigure(holder, new Vector2(0, .75f * k), k);
             figure.localScale = new Vector3(-1, 1, 1);
-            holder.gameObject.AddComponent<GhostHologram>().Setup(figure, game.Appearance.CombatSprite, k, delay);
+            holder.gameObject.AddComponent<GhostHologram>().Setup(figure, game.Appearance.CombatSprite, k, logo);
             var hit = Rect("Pointer area", holder, new Vector2(-.12f * k, .88f * k), new Vector2(1.15f * k, 1.9f * k)).gameObject.AddComponent<Image>();
             hit.color = Color.clear; hit.raycastTarget = true;
             hit.gameObject.AddComponent<GhostPointer>().Clicked = game.EnterGhostArena;
@@ -33,12 +33,17 @@ namespace GoGhost.Duel
         const float RowPeriod = 2.5f, RowSpeed = 4.5f, BandSeconds = 3.4f, SlicePeriod = 2.9f, SliceShift = 5;
 
         Material body, slice;
-        RectTransform figure, displaced;
-        float k, from;
+        RectTransform figure, displaced, logo;
+        CanvasGroup logoGroup;
+        float k, from, built;
+        bool logoLanded;
+        // He appears this long after the logo has finished arriving. The opening can be skipped or held,
+        // so he waits on the logo itself and keeps no clock of his own.
+        const float AfterLogo = .35f;
 
-        public void Setup(RectTransform built, Sprite head, float unit, float delay)
+        public void Setup(RectTransform shape, Sprite head, float unit, RectTransform word)
         {
-            figure = built; k = unit; from = Time.unscaledTime + delay;
+            figure = shape; k = unit; logo = word; built = Time.unscaledTime; from = float.PositiveInfinity;
             var shader = Resources.Load<Shader>("GhostHologram");
             body = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
             slice = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
@@ -73,6 +78,13 @@ namespace GoGhost.Duel
         {
             if (body == null) return;
             float now = Time.unscaledTime, scale = Mathf.Max(1e-5f, transform.lossyScale.y);
+            if (!logoLanded)
+            {
+                // Both of the logo's entrances fade it in through a CanvasGroup and end at its own size.
+                if (logoGroup == null && logo != null) logo.TryGetComponent(out logoGroup);
+                bool there = logoGroup != null ? logoGroup.alpha >= .999f && Mathf.Abs(logo.localScale.x - 1) < .001f : now - built > 1.5f;
+                if (there) { logoLanded = true; from = now + AfterLogo; }
+            }
             float fade = Mathf.Clamp01((now - from) / .3f);
             // A short run of rows across the chest jumps sideways for a moment.
             float beat = now % SlicePeriod / SlicePeriod;

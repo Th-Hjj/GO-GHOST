@@ -1,5 +1,7 @@
 # Configuration Help
 
+> **Historical.** The Help page was removed on 2026-11-15 (see `UIDesign.md`, game menu). Controls are on Key Bindings.
+
 Confirmed by Thomas, 2026-10-29. Body Configuration's Help opens two read-only pages named exactly **What're the controls?** and **What is configuration?**. Back or Escape returns to the same configuration and unfinished draft. Tabs have independent scroll positions and use the existing fonts, palette and controls.
 
 The first page contains only A/D movement, mouse aim, Space jump, Left Shift Dodge, left mouse Fire, right mouse Rapidly fire, R Reload and Escape pause/resume. Thomas's screenshot corrections remove the S entry, extra aim/fire/reload explanations, Training/Configuration navigation and the Pause and practice heading.

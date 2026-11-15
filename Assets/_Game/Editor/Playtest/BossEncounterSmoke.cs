@@ -39,9 +39,9 @@ public static partial class BossEncounterSmoke
             (saveOnly ? "Save-" : "Flow-") + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N").Substring(0, 6)));
         Directory.CreateDirectory(reportDirectory);
         report.Clear(); steps.Clear();
-        game = null; failure = runtimeError = null;
+        game = null; failure = runtimeError = null; holdPause = false; shots = 0;
         batch = batchMode; running = true; finishing = false; autoAcknowledge = true; saveRecoveryOnly = saveOnly;
-        deadline = EditorApplication.timeSinceStartup + 360;
+        deadline = EditorApplication.timeSinceStartup + 480;
         lastFrame = -1;
         Note("Controlled flow check; tutorial off, callback navigation, forced damage. Not a human-input or balance test.");
         EditorSceneManager.playModeStartScene = scene;
@@ -86,7 +86,7 @@ public static partial class BossEncounterSmoke
             if (game == null) game = UnityEngine.Object.FindAnyObjectByType<DuelGame>();
             if (game == null) return;
             // Running as an Editor fixture can lose focus to the controlling tool.
-            if (game.Paused) game.SetPause(false);
+            if (game.Paused && !holdPause) game.SetPause(false);
             if (autoAcknowledge && game.DialogueReady && game.Phase != DuelPhase.Configure
                 && game.Phase != DuelPhase.TargetProfile)
                 game.AcknowledgeDialogue();

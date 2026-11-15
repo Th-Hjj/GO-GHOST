@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-11-15 — Whole-game check; flow check extended for upkeep
+
+- **Asked:** check the whole game and fix obvious problems, in a way that eases later polish and long-term upkeep.
+- **Found:** no fault in the game. Check Game Flow itself was stale: it expected the Test Room the instant its button was pressed, which the wipe of stage 2 delays. `Docs/Game/README.md` still described the Help page, the generated greeting and an unbuilt Override UI.
+- **Changed:** no game code. The flow check waits for the Test Room wipe and gains `BossEncounterSmoke.Interface.cs`: the menu on eight kinds of page (items, Key Bindings and Settings returning to it, Resume restoring the time scale), Mission 1 defeat with Retry, Configuration and the menu's Configuration, Main Menu then Continue, the credits after the ending, and one capture of each page into the report's `Pages/` folder. Its time limit is 480 s. The docs README is corrected and gains a Maintenance section; `Help.md` is marked historical.
+- **Checked:** Unity 6000.6.0f1 compiled. Check Game Flow passed three times, the last with every new step (`Logs/BossEncounter/Flow-20261115-100422-*`, about 2 min 50 s). All 25 page captures were looked through at QHD: creation, overview, rule editor, Target Profile, Test Room, the three target cards and fights, the menu on each page, DEFEAT, CLEARED, the title with a save, the ending, the credits and the title afterwards with GHOST on the T. Nothing was misplaced or missing.
+- **NOT TESTED:** the tutorial, editing a rule, real keyboard and mouse input including the pause key and skipping the credits, Reduce Flashing, the Bonus, GHOST, window-focus pause, F8 tools, other resolutions and builds. The check proves flow by callbacks and forced damage, not balance.
+
 ## 2026-11-15 — Credits roll on the title's sky
 
 - **Asked:** stage 6 of the UI motion order. Thomas had shelved the ending and its scene after the credits but wanted a rolling credits screen. From a played prototype he chose the roll on the title's night sky.

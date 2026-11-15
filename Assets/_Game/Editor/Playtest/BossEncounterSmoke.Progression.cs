@@ -21,8 +21,20 @@ public static partial class BossEncounterSmoke
         PlayMetrics.MarkTestData();
         game.TutorialWanted = false; // The first-rule tutorial has its own interaction acceptance pass.
         game.Appearance.Name = "Game Flow Smoke";
+        yield return Settle(1f);
+        yield return Shot("creation");
+        yield return CheckMenu("creation", false);
         game.CompleteCharacterCreation();
         Require(game.Phase == DuelPhase.Configure && game.DraftLoadout.TotalRules == 0, "Tutorial-off creation did not open empty configuration.");
+        yield return Settle(1f);
+        yield return Shot("overview");
+        yield return CheckMenu("overview", false, true);
+        yield return Click("AddRule");
+        yield return Settle(1f);
+        yield return Shot("rule-editor");
+        yield return CheckMenu("rule editor", false);
+        yield return Click("CancelRuleEdit");
+        yield return WaitFor(() => AvailableButton("StartMission") != null, "Cancel did not return to the overview.");
         string metricsPath = PlayMetrics.JsonPath;
         string closedMetrics = null;
         int equippedRules = game.DraftLoadout.TotalRules;
@@ -32,14 +44,22 @@ public static partial class BossEncounterSmoke
             Require(game.Wave == wave && game.TrainingPending, "Missing preparation for Mission " + wave);
             yield return CheckProfile(wave);
             yield return Click("TestLoadout");
-            Require(game.Phase == DuelPhase.Training && game.Bosses.Count == 1 && game.Bosses[0].IsTrainingEnemy, "Missing Test Room.");
+            // Entering and leaving the Test Room happen once the wipe has covered the screen.
+            yield return WaitFor(() => game.Phase == DuelPhase.Training && game.Bosses.Count == 1 && game.Bosses[0].IsTrainingEnemy, "Missing Test Room.");
+            if (wave == 1) { yield return Settle(.8f); yield return Shot("test-room"); yield return CheckMenu("Test Room", true); }
             yield return Click("← Back");
-            Require(game.Phase == DuelPhase.Configure && game.Player == null, "Test Room did not cleanly return to preparation.");
+            yield return WaitFor(() => game.Phase == DuelPhase.Configure && game.Player == null, "Test Room did not cleanly return to preparation.");
+            if (wave == 2) yield return CheckMainMenuAndContinue(wave);
             yield return Click("StartMission");
+            yield return Settle(1.2f);
+            yield return Shot("target-card-" + wave);
             yield return WaitFor(() => game.Phase != DuelPhase.MissionEntry, "Mission entry did not finish.");
             Require(game.Phase == DuelPhase.Prepare && game.PendingDialogue == null, "Missing normal countdown.");
+            if (wave == 1) yield return CheckMenu("countdown", true);
             yield return WaitFor(() => game.Phase == DuelPhase.Fight, "Combat did not start.");
             game.Player.IsInvulnerable = true;
+            yield return Shot("fight-" + wave);
+            if (wave == 1) { yield return CheckMenu("fight", true); yield return CheckDefeatRoutes(); }
             Note("PASS Mission " + wave + ": preparation, Test Room return, Start Mission, countdown.");
             if (wave == DuelGame.FinalBossWave) break;
 
@@ -47,6 +67,8 @@ public static partial class BossEncounterSmoke
             if (wave == 1)
             {
                 yield return WaitFor(() => game.Phase == DuelPhase.Between && game.PendingDialogue == null, "Mission 1 result.", 25);
+                yield return Settle(1f);
+                yield return Shot("cleared");
                 yield return Click("ContinueToWaveTwo");
                 yield return WaitFor(() => game.Wave == 2 && game.Phase == DuelPhase.Configure, "Mission 2 preparation.");
             }
@@ -109,11 +131,14 @@ public static partial class BossEncounterSmoke
             Require(Array.Exists(texts, text => text.text == line), "Missing ending text: " + line);
         Require(!GameSave.Exists && GameProgress.Cleared, "Victory did not remove the test save and set the isolated cleared flag.");
         Require(File.ReadAllText(metricsPath) == closedMetrics, "Final Boss or retry changed the closed Mission 2 metrics.");
+        yield return Settle(1.5f);
+        yield return Shot("finished");
         yield return Click("Main Menu");
         Require(game.Phase == DuelPhase.Menu && game.Player == null && !game.Paused && !AudioListener.pause && Time.timeScale == 1,
             "Main Menu did not clear combat/global pause.");
+        yield return CheckCredits();
         Note("PASS final victory protection, ending, save removal, cleared flag, analytics cutoff, Main Menu cleanup.");
-        Note("NOT TESTED: complete tutorial, physical input, balance, standalone build, other hardware.");
+        Note("NOT TESTED: complete tutorial, rule editing, physical input, the pause key, Reduce Flashing, balance, standalone build, other hardware.");
     }
 
     static IEnumerator CheckProfile(int wave)
@@ -153,6 +178,7 @@ public static partial class BossEncounterSmoke
             Require(game.Phase == DuelPhase.TargetProfile && !voice.Speaking && Property<int>(game, "ProfileReading") == -1,
                 "Revisited interrupted profile replayed speech.");
         });
+        if (wave == 1) { yield return Shot("target-profile"); yield return CheckMenu("Target Profile", false); }
         yield return Click("ProfileBack");
         Note("PASS Mission " + wave + " dossier: exactly four fields, automatic ordered clips, Back during speech, silent revisit.");
     }

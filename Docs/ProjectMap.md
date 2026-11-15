@@ -9,7 +9,7 @@ Only enabled build scene and default Editor Play entry: `Assets/_Game/Levels/L01
 | Folder | Contents |
 |---|---|
 | `Assets/_Game/Levels/L01_Duel/Scenes` | Formal Duel scene |
-| `Assets/_Game/Levels/L01_Duel/Scripts` | DuelGame lifecycle/Training/Final Boss/Bonus, character creation, conditional rules, Help, metrics, Boss executors/navigation/coordination |
+| `Assets/_Game/Levels/L01_Duel/Scripts` | DuelGame lifecycle/Training/Final Boss/Bonus, character creation, conditional rules, game menu, metrics, Boss executors/navigation/coordination |
 | `Assets/_Game/Levels/L01_Duel/Prefabs`, `Data`, `Art`, `Audio` | Actual combat prefab, Bosses/profiles, materials and licensed wave music |
 | `Assets/_Game/Levels/L01_Duel/Resources/Handler`, `FinalBossVoice` | Recorded Happy greeting, tutorial and wave-clear lines, plus the seven Final Boss dialogue clips |
 | `Tools/VoiceStudio/HandlerVoice` and `Assets/Plugins/HandlerVoice` | Voice Studio synthesis model, lexicon and notices, with editor-only native runtimes for Windows x64 and macOS in Plugins. No build contains them |
@@ -18,7 +18,7 @@ Only enabled build scene and default Editor Play entry: `Assets/_Game/Levels/L01
 | `Assets/_Game/Shared/Scripts/Compatibility` | Retained serialized/API contracts and optional components used by original executors; [details](../Assets/_Game/Shared/Scripts/Compatibility/README.md) |
 | `Assets/_Game/Shared/Prefabs`, `Data`, `Audio`, `Fonts`, `Presentation` | Reused player/projectile, physics/data, sounds, fonts and presentation assets |
 | `Assets/_Game/Editor/Build` | DuelBuild: open formal scene, set Play entry and explicit build commands |
-| `Assets/_Game/Editor/Playtest` | Manual wave and phase entries plus the optional Check Game Flow command |
+| `Assets/_Game/Editor/Playtest` | Manual wave and phase entries plus Check Game Flow, the end-to-end check with page captures (see `Docs/Game/README.md`, Maintenance) |
 | `Assets/_Game/Editor/Authoring` | Current Boss/presentation authoring tools |
 
 `ConditionalThreatGeometry` contains the physical threat prediction required by current rules. The old autonomous `LegacyPlayerAI` remains archived. Current body UI shares the extracted contour/pulse components and drawn face; the retained particle brain is inactive in formal configuration. It does not depend on historical MissionUI screens. The current combat prefab is `DuelCombatAttempt.prefab`; Boss assets are `Gunner` and `Swordsman`, with their existing GUIDs and enum values preserved.

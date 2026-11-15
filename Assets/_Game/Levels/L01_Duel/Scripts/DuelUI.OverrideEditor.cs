@@ -219,18 +219,26 @@ namespace GoGhost.Duel
                 var burst = editorArrow.gameObject.AddComponent<PopOut>();
                 burst.Idle = 1; burst.Delay = .2f; burst.Seconds = .14f; burst.ScaleTo = 2.4f;
             }
-            if (editorFrame != null && !GameSettings.ReduceFlashing)
-            {
-                var white = Image(editorFrame, Vector2.zero, new Vector2(ScreenSpan, ScreenSpan), Color.white);
-                white.raycastTarget = false;
-                var flash = white.gameObject.AddComponent<PopOut>();
-                flash.Idle = 0; flash.Peak = .3f; flash.Delay = .22f; flash.Seconds = .12f;
-            }
+            // The hit shows on the two cards alone: they whiten as they meet and cool slowly. Nothing lights the page.
+            if (!GameSettings.ReduceFlashing) { CardGlow(editorCardLeft); CardGlow(editorCardRight); }
             figureDipAt = Time.unscaledTime + .22f;
-            yield return new WaitForSecondsRealtime(.4f);
+            yield return new WaitForSecondsRealtime(.56f);
             confirmSequence = null;
             if (pageControls != null) pageControls.blocksRaycasts = true;
             CommitRuleChoice();
+        }
+
+        // White laid over a sentence card's slab, under its words.
+        void CardGlow(RectTransform card)
+        {
+            var face = card != null ? card.Find("Face") as RectTransform : null;
+            if (face == null || !face.TryGetComponent(out SlabGraphic slab)) return;
+            var glow = Rect("Glow", face, Vector2.zero, face.rect.size);
+            glow.SetAsFirstSibling();
+            var white = glow.gameObject.AddComponent<SlabGraphic>();
+            white.color = Color.white; white.Cut = slab.Cut; white.raycastTarget = false;
+            var fade = glow.gameObject.AddComponent<PopOut>();
+            fade.Idle = 0; fade.Peak = .5f; fade.Delay = .17f; fade.Rise = .07f; fade.Seconds = .3f;
         }
 
         void BuildOverrideEditor()

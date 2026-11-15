@@ -934,6 +934,8 @@ namespace GoGhost.Duel
     public sealed class PopOut : MonoBehaviour
     {
         public float Idle, Peak = 1, Delay, Seconds = .14f, ScaleTo = 1;
+        // Seconds spent climbing to Peak before the fade. Zero starts at Peak.
+        public float Rise;
         CanvasGroup group;
         double born;
 
@@ -942,9 +944,10 @@ namespace GoGhost.Duel
 
         void Apply()
         {
-            float t = (float)(Time.unscaledTimeAsDouble - born - Delay) / Seconds;
-            if (t < 0) { group.alpha = Idle; return; }
-            t = Mathf.Clamp01(t);
+            float since = (float)(Time.unscaledTimeAsDouble - born - Delay);
+            if (since < 0) { group.alpha = Idle; return; }
+            if (since < Rise) { group.alpha = Peak * since / Rise; return; }
+            float t = Mathf.Clamp01((since - Rise) / Seconds);
             group.alpha = Peak * (1 - t);
             transform.localScale = Vector3.one * Mathf.Lerp(1, ScaleTo, OvMotion.Snap(t));
         }

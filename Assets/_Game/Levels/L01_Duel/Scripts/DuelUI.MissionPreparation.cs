@@ -83,7 +83,7 @@ namespace GoGhost.Duel
         }
 
         // Seconds from Start Mission: the card pulls apart, then the countdown begins. Trial tuning.
-        internal const float EntryCardOpens=1f, EntryCardSeconds=1.24f;
+        internal const float EntryCardOpens=1.9f, EntryCardSeconds=2.25f;
         static readonly Vector2[] EntryInkQuad={new Vector2(-3000,-1350),new Vector2(-3000,1350),new Vector2(260,1350),new Vector2(-100,-1350)};
         RectTransform entryCard;
         bool entrySplit;

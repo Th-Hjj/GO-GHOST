@@ -933,7 +933,7 @@ namespace GoGhost.Duel
     public sealed class SlideAway : MonoBehaviour
     {
         public Vector2 To;
-        public float Seconds = .22f;
+        public float Seconds = .32f;
         RectTransform rect;
         Vector2 home;
         double at = -1;

@@ -42,7 +42,7 @@ At actual grip contact he reads the latest visible player observation and at mos
 
 The EMP release uses the 3.3 s edit of BigDino1995’s [ScifiCannon](https://freesound.org/people/BigDino1995/sounds/569903/) (CC0), with a stretched low-frequency tail and short fade. The later phase change uses the same sound, a wider white-rimmed front and two trailing violet rings across the platforms.
 
-Mission 3 victory stops damage immediately. The arena stays visible for .85 seconds while the Boss settles into his defeat pose. **You've Finished The Game!** then offers **Main Menu**. The duo remains available through the editor playtest shortcut. The duo retains its geometry, music, AI and both-dead victory. Wave 3 and Bonus are outside the closed Wave 2 metrics record.
+Mission 3 victory stops damage immediately. The arena stays visible for .85 seconds while the Boss settles into his defeat pose. **You've Finished The Game!** then offers **Continue**, which rolls the credits on the way to the title. The duo remains available through the editor playtest shortcut. The duo retains its geometry, music, AI and both-dead victory. Wave 3 and Bonus are outside the closed Wave 2 metrics record.
 
 ## Final Boss redesign — approved for trial 2026-11-06
 
@@ -130,7 +130,7 @@ Thomas accepted proposals A+B: when Swordsman is Unbound with no living partner,
 
 ## Unbound threshold and silhouette trails — approved 2026-10-24
 
-Swordsman enters Unbound once at **33% remaining health**, at the existing idle decision boundary after the current action and recovery. This supersedes the former 45% threshold. In Unbound, ordinary physical movement, jumping and falling also emit the existing human-shaped silhouette afterimages. A small velocity dead zone excludes stationary physics noise; Hunt emits no body silhouettes, including dash/flank movement (the later 2026-10-24 correction). Appearance remains unchanged: .055 s sampling, .14 s fade, .16 starting opacity and at most three silhouettes. Pause freezes the effect, death/encounter cleanup removes it, and a fresh encounter starts in Hunt. These silhouettes have no independent damage; damaging afterblades are unchanged. Pacing A+B is governed by the later approved override above; other aggression proposals remain unapproved.
+Swordsman enters Unbound once at **40% remaining health** (Thomas, 2026-11-15; 33% before, 45% originally), at the existing idle decision boundary after the current action and recovery. His health bar marks the point with a coral question mark, filled once his health reaches it. In Unbound, ordinary physical movement, jumping and falling also emit the existing human-shaped silhouette afterimages. A small velocity dead zone excludes stationary physics noise; Hunt emits no body silhouettes, including dash/flank movement (the later 2026-10-24 correction). Appearance remains unchanged: .055 s sampling, .14 s fade, .16 starting opacity and at most three silhouettes. Pause freezes the effect, death/encounter cleanup removes it, and a fresh encounter starts in Hunt. These silhouettes have no independent damage; damaging afterblades are unchanged. Pacing A+B is governed by the later approved override above; other aggression proposals remain unapproved.
 
 ## Training robot override — 2026-10-24
 

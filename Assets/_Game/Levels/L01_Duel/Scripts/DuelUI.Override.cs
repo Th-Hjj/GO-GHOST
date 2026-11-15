@@ -294,8 +294,9 @@ namespace GoGhost.Duel
             divider.localRotation = Quaternion.Euler(0, 0, 82);
             var stripes = divider.gameObject.AddComponent<StripeGraphic>();
             stripes.color = OverridePalette.Signal; stripes.Other = OverridePalette.Ink; stripes.raycastTarget = false;
-            // The credits roll on the way back to the title.
-            OvButton("Main Menu", frame, At(990, 690, 440, 96), new Vector2(440, 96), () => { PlayCredits(); game.MainMenu(); }, OverrideButtonKind.Primary, 62, true, Enter(50));
+            // Continue leads into the credits, which roll on the way back to the title (Thomas, 2026-11-15).
+            // The control keeps its old name for Check Game Flow.
+            OvButton("Continue", frame, At(990, 690, 440, 96), new Vector2(440, 96), () => { PlayCredits(); game.MainMenu(); }, OverrideButtonKind.Primary, 62, true, Enter(50)).name = "Main Menu";
         }
     }
 }

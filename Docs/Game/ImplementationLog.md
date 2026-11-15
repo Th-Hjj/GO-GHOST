@@ -1,5 +1,14 @@
 # GO GHOST slice implementation
 
+## 2026-11-15 — Unbound at 40%, the Swordsman's bar mark, Continue on the ending
+
+- **Asked:** start the balance pass, treating the current game as Normal. Thomas finds the Swordsman fine apart from Unbound, which should begin at 40% health; his bar should mark that point with a red question mark like the Final Boss's; the ending's button should read Continue and play the credits.
+- **Changed:** `Swordsman.asset` and the default in `SwordCombat.cs` set `UnboundHealth` to .40 (was .33). `DuelUI.OverrideHud.cs` builds a coral question mark and its chip under that point on any Swordsman bar (Mission 2 and the Bonus); `DuelUI.BattleStatus.cs` fills it once his health has reached it and hides it until the bar is shown in the countdown. `DuelUI.Override.cs` labels the ending's button Continue; its action (credits, then the title) and its control name are unchanged.
+- **Checked:** Unity 6000.6.0f1 compiled. In QHD Play Mode, Mission 2 from the developer entry with forced damage: the mark under the bar at 999 and 409 HP, and filled at 389 (`Logs/unbound_sheet.png`). Check Game Flow passed (`Logs/BossEncounter/Flow-20261115-225916-9fa82f`), including the ending button, the credits and the title after them; its capture of the ending shows Continue.
+- **NOT OBSERVED:** the Swordsman actually turning Unbound at the new point (it happens at his next action boundary; the capture shows health and the mark only), and the mark in the Bonus.
+- **NOT TESTED:** how the fight plays with the earlier Unbound, real input, Reduce Flashing, other resolutions and builds.
+- **Not changed:** Unbound's recovery (.40 s) and the Redline cooldown (9 s); shortening them was proposed and not confirmed. Final Boss phase two is waiting for Thomas's direction.
+
 ## 2026-11-15 — Small leftovers: closing side of the rule editor; stale notes cleared
 
 - **Asked:** do all the small leftovers. Thomas also approved the Final Boss's voice as it is.

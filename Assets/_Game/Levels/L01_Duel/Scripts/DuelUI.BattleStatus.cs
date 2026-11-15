@@ -148,6 +148,14 @@ namespace GoGhost.Duel
                         mark.color=spent||reached?OverridePalette.Text:NeuralPalette.Emp;
                         if(invasionChips[j]!=null)invasionChips[j].color=spent||reached?NeuralPalette.Emp:Color.clear;
                     }
+                if (i < unboundMarks.Length && unboundMarks[i] != null)
+                {
+                    // Filled once his health has reached it, like a reached invasion mark.
+                    bool reached = actor.Health.CurrentHealth <= actor.Health.MaxHealth * actor.Profile.Sword.UnboundHealth;
+                    unboundMarks[i].color = reached ? OverridePalette.Text : NeuralPalette.Swordsman;
+                    unboundMarks[i].alpha = bossRoll.shown ? 1 : 0;
+                    unboundChips[i].color = reached && bossRoll.shown ? NeuralPalette.Swordsman : Color.clear;
+                }
                 bossHealthText[i].Update(policeHealth[i], "", Mathf.RoundToInt(actor.Health.CurrentHealth * bossRoll.fill));
                 policeHealth[i].alpha = bossRoll.shown ? 1 : 0;
                 if (i < bossTracks.Length && bossTracks[i] != null) bossTracks[i].enabled = bossRoll.shown;

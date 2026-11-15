@@ -14,6 +14,9 @@ namespace GoGhost.Duel
         Graphic[] bossLag = System.Array.Empty<Graphic>();
         float[] lagValue = System.Array.Empty<float>(), lagSeen = System.Array.Empty<float>(), lagAt = System.Array.Empty<float>();
         readonly Graphic[] invasionChips = new Graphic[2];
+        // The Swordsman's bar marks the health at which he becomes Unbound, as the Final Boss's bar marks his invasions.
+        Graphic[] unboundChips = System.Array.Empty<Graphic>();
+        TMP_Text[] unboundMarks = System.Array.Empty<TMP_Text>();
         CanvasGroup waveTitleGroup;
         // The countdown calls the roll: the mission, the Boss on "3", the player on "2". Seconds into the countdown; trial tuning.
         const float TitleLineSpan = 2400, BossRollAt = .06f, PlayerRollAt = 1.06f;
@@ -133,6 +136,7 @@ namespace GoGhost.Duel
             lagValue = new float[count]; lagSeen = new float[count]; lagAt = new float[count];
             bossHealthText = new HealthTextState[count];
             bossHealthGroups = new CanvasGroup[count];
+            unboundChips = new Graphic[count]; unboundMarks = new TMP_Text[count];
             bossNames = new TMP_Text[count]; bossNameHome = new Vector2[count]; bossTracks = new Graphic[count];
             bool counting = game.Phase == DuelPhase.Prepare;
             bossBarWidth = count > 1 ? 350 : 720;
@@ -161,7 +165,16 @@ namespace GoGhost.Duel
                     policeFill[i] = rainbow;
                     if (!actor.Axe.PhaseTwo) BuildOverrideInvasionMarks(bar, 325);
                 }
-                else policeFill[i] = OvBarFill(bar, new Vector2(x, 325), bossBarWidth, colour);
+                else
+                {
+                    policeFill[i] = OvBarFill(bar, new Vector2(x, 325), bossBarWidth, colour);
+                    if (!actor.IsGhost && !actor.IsTrainingEnemy && actor.Profile.Kind == BossKind.Swordsman && actor.Profile.Sword != null && actor.Profile.Sword.UnboundHealth > 0)
+                    {
+                        float at = x + bossBarWidth * (actor.Profile.Sword.UnboundHealth - .5f);
+                        unboundChips[i] = Image(bar, new Vector2(at, 325 - 26), new Vector2(26, 24), Color.clear);
+                        unboundMarks[i] = OvText("?", bar, new Vector2(at, 325 - 26), new Vector2(30, 26), 22, NeuralPalette.Swordsman);
+                    }
+                }
                 float fraction = actor.Health.MaxHealth > 0 ? (float)actor.Health.CurrentHealth / actor.Health.MaxHealth : 0;
                 // During the countdown the bar fills from empty, so nothing waits behind it.
                 lagValue[i] = lagSeen[i] = counting ? 0 : fraction; lagAt[i] = float.NegativeInfinity;

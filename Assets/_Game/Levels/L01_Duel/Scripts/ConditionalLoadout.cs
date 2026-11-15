@@ -3,7 +3,8 @@ using System.Collections.Generic;
 
 namespace GoGhost.Duel
 {
-    public enum GroundStateOption { Unspecified, Grounded, Airborne }
+    // Grounded is the retired "floor or platform" value. Rules that hold it need a new selection.
+    public enum GroundStateOption { Unspecified, Grounded, Airborne, OnGround, OnPlatform }
     public enum EnemyDistanceOption { Unspecified, Close, Mid, Far }
     // Serialized Bullet value 2 maps to Ranged; removed Low keeps value 4 and is invalid.
     public enum IncomingAttackOption { Unspecified=0, Any=1, Ranged=2, Bullet=Ranged, Melee=3, Low=4 }
@@ -17,7 +18,7 @@ namespace GoGhost.Duel
     public enum KeepRangeOption { Mid=0, Short=1, Long=2 }
     // Inert serialized compatibility only. Fire actions no longer have ammo policies.
     public enum AmmoUseOption { AllowEmpty, KeepTwoRounds }
-    public enum PlatformDirectionOption { Unspecified, Higher, Lower }
+    public enum PlatformDirectionOption { Unspecified, Higher, Lower, Left, Right }
 
     [Serializable] public struct RuleCondition
     {
@@ -282,15 +283,16 @@ namespace GoGhost.Duel
             new[]{ActionIds.AutoAim},new[]{ActionIds.Fire,ActionIds.ShortBurst},new[]{ActionIds.Dodge}
         };
         public static readonly string[] OperationLabels={"Horizontal Movement","Jump","Aim","Fire","Dodge"};
-        public static readonly string[] Categories={"Body State","Weapon","Position","Threats","Action Events"};
+        public static readonly string[] Categories={"Body State","Weapon","Position","Attacks","Moments"};
         public static readonly ConditionEntry[] Conditions={
-            new ConditionEntry(ConditionIds.GroundState,"Ground State",0),new ConditionEntry(ConditionIds.LowHealth,"Player Low Health",0),new ConditionEntry(ConditionIds.TookDamage,"Took Damage",0,true,true),
-            new ConditionEntry(ConditionIds.Reloading,"Reloading",1),new ConditionEntry(ConditionIds.TriggerHeld,"Trigger Held",1),
-            new ConditionEntry(ConditionIds.EnemyNearAim,"Enemy Near Your Aim",1,enemySource:true),
-            new ConditionEntry(ConditionIds.EnemyDistance,"Horizontal Enemy Distance",2,enemySource:true),
+            new ConditionEntry(ConditionIds.GroundState,"Where You Stand",0),new ConditionEntry(ConditionIds.LowHealth,"Low Health",0),
+            new ConditionEntry(ConditionIds.Reloading,"Reloading",1),new ConditionEntry(ConditionIds.TriggerHeld,"Fire Button Held",1),
+            new ConditionEntry(ConditionIds.EnemyNearAim,"Aiming at Enemy",1,enemySource:true),
+            new ConditionEntry(ConditionIds.EnemyDistance,"Enemy Distance",2,enemySource:true),
             new ConditionEntry(ConditionIds.NearWall,"Near Wall",2),
             new ConditionEntry(ConditionIds.IncomingAttack,"Incoming Attack",3,enemySource:true),
-            new ConditionEntry(ConditionIds.Landed,"Landed",4,true),new ConditionEntry(ConditionIds.HitEnemy,"Hit Enemy",4,true,true)
+            new ConditionEntry(ConditionIds.Landed,"Landed",4,true),new ConditionEntry(ConditionIds.TookDamage,"You Got Hit",4,true,true),
+            new ConditionEntry(ConditionIds.HitEnemy,"Your Shot Hit",4,true,true)
         };
         static readonly int[] SharedConditionIds=Array.ConvertAll(Conditions,c=>c.Id);
         // Preserve the indexed API; every operation references the same ordered catalog.
@@ -318,14 +320,14 @@ namespace GoGhost.Duel
             new ConditionEntry(47,"Horizontal Movement Blocked",3),new ConditionEntry(50,"Aim Target Lost",1,true)
         };
         public static readonly ResponseEntry[] Responses={
-            new ResponseEntry(ActionIds.Move,"Move",ControlOperation.Movement),new ResponseEntry(ActionIds.KeepDistance,"Keep Distance",ControlOperation.Movement),
+            new ResponseEntry(ActionIds.Move,"Move",ControlOperation.Movement),new ResponseEntry(ActionIds.KeepDistance,"Hold Range",ControlOperation.Movement),
             new ResponseEntry(ActionIds.Jump,"Jump",ControlOperation.Jump),new ResponseEntry(ActionIds.ChangePlatform,"Change Platform",ControlOperation.Jump),
             new ResponseEntry(ActionIds.AutoAim,"Auto Aim",ControlOperation.Aim),new ResponseEntry(ActionIds.Fire,"Fire",ControlOperation.Fire),
             new ResponseEntry(ActionIds.Dodge,"Dodge",ControlOperation.Dodge,true)
         };
         // Store the actual mode ID on the rule so combat, old loadouts and metrics keep their meaning.
         static readonly ResponseEntry[] AlternateModes={
-            new ResponseEntry(ActionIds.ShortBurst,"Short Burst",ControlOperation.Fire,true)
+            new ResponseEntry(ActionIds.ShortBurst,"Fire (Rapid)",ControlOperation.Fire,true)
         };
         static readonly ResponseEntry[] HistoricalResponses={
             new ResponseEntry(ActionIds.AimAssist,"Aim Assist",ControlOperation.Aim),
@@ -344,13 +346,14 @@ namespace GoGhost.Duel
             new ResponseEntry(ActionIds.FireKeepReserve,"Fire and Keep a Reserve",ControlOperation.Fire,true),new ResponseEntry(ActionIds.DodgeSaferSide,"Dodge to Safer Side",ControlOperation.Dodge,true)
         };
         static readonly string[] NoOptions=Array.Empty<string>();
-        static readonly string[] GroundOptions={"Grounded","Airborne"},DistanceOptions={"Close","Mid","Far"};
+        static readonly string[] GroundOptions={"On Ground","On Platform","In Air"},DistanceOptions={"Close","Mid","Far"};
+        static readonly GroundStateOption[] GroundValues={GroundStateOption.OnGround,GroundStateOption.OnPlatform,GroundStateOption.Airborne};
         static readonly string[] IncomingOptions={"Any","Melee","Ranged"},DirectionOptions={"Toward Enemy","Away from Enemy"};
         static readonly MoveDirectionOption[] MoveValues={MoveDirectionOption.TowardEnemy,MoveDirectionOption.AwayFromEnemy};
         static readonly IncomingAttackOption[] IncomingValues={IncomingAttackOption.Any,IncomingAttackOption.Melee,IncomingAttackOption.Ranged};
-        static readonly string[] FireOptions={"Keep Firing","Short Burst"};
-        static readonly string[] DodgeOptions={"Away from Threat","Toward Enemy"};
-        static readonly string[] PlatformOptions={"Higher","Lower"};
+        static readonly string[] FireOptions={"Steady","Rapid"};
+        static readonly string[] DodgeOptions={"Away from Attack","Toward Enemy"};
+        static readonly string[] PlatformOptions={"Up","Down","Left","Right"};
         static readonly string[] RangeOptions={"Close","Mid","Far"};
         static readonly KeepRangeOption[] RangeValues={KeepRangeOption.Short,KeepRangeOption.Mid,KeepRangeOption.Long};
         public static bool IsSelectableCondition(int id)=>Array.IndexOf(SharedConditionIds,id)>=0;
@@ -358,7 +361,7 @@ namespace GoGhost.Duel
         public static bool IsSelectableResponse(string id)
         {foreach(var response in Responses)if(response.Id==PickerAction(id))return true;return false;}
         public static string PickerAction(string id)=>id==ActionIds.ShortBurst?ActionIds.Fire:id;
-        public static string ExecutionLabel(string id)=>id==ActionIds.Fire?FireOptions[0]:Response(id).Label;
+        public static string ExecutionLabel(string id)=>id==ActionIds.Fire?"Fire ("+FireOptions[0]+")":Response(id).Label;
         // Retained source API for old callers; no action exposes an ammo option.
         public static bool UsesAmmoOption(string action)=>false;
         public static bool IsShootingAction(string action)=>action==ActionIds.FireOneShot||action==ActionIds.ShortBurst||action==ActionIds.Fire;
@@ -377,7 +380,9 @@ namespace GoGhost.Duel
             var condition=rule.GetCondition(index);
             switch(condition.Id)
             {
-                case ConditionIds.GroundState:return (int)condition.GroundState-1;
+                case ConditionIds.GroundState:
+                    var ground=condition.GroundState;
+                    return ground==GroundStateOption.Unspecified?-1:ground==GroundStateOption.Grounded?-2:Array.IndexOf(GroundValues,ground);
                 case ConditionIds.EnemyDistance:return (int)condition.Distance-1;
                 case ConditionIds.IncomingAttack:
                     var incoming=condition.IncomingAttack;
@@ -395,7 +400,7 @@ namespace GoGhost.Duel
             if(index<-1||index>=ConditionOptions(id).Length)throw new ArgumentOutOfRangeException(nameof(index));
             switch(id)
             {
-                case ConditionIds.GroundState:condition.GroundState=(GroundStateOption)(index+1);break;
+                case ConditionIds.GroundState:condition.GroundState=index<0?GroundStateOption.Unspecified:GroundValues[index];break;
                 case ConditionIds.EnemyDistance:condition.Distance=(EnemyDistanceOption)(index+1);break;
                 case ConditionIds.IncomingAttack:
                     var incoming=index<0?IncomingAttackOption.Unspecified:IncomingValues[index];
@@ -484,18 +489,18 @@ namespace GoGhost.Duel
         {
             if(rule==null)return null;
             if((action==ActionIds.Jump||action==ActionIds.ChangePlatform)&&HasGroundState(rule,GroundStateOption.Airborne))
-                return action==ActionIds.Jump?"Jump requires being grounded.":"Changing platforms must start on the ground or a platform.";
+                return action==ActionIds.Jump?"You can't jump while in the air.":"You can't change platforms while in the air.";
             if(IsShootingAction(action)&&rule.HasCondition(9))return "Cannot fire while reloading.";
             return null;
         }
         // Cooldowns, collisions, absent public targets and current resources belong to execution.
         static string RuleReason(int operation,ConditionalRule rule,bool requireComplete)
         {
-            if(operation<0||operation>=5||rule==null)return "Choose a condition and an action for this operation.";
+            if(operation<0||operation>=5||rule==null)return "Choose a condition and an action.";
             rule=rule.Copy(); // Validate the same migration that editing and fight snapshots receive.
             string conditionReason=ConditionRuleReason(rule,requireComplete);
             if(conditionReason!=null)return conditionReason;
-            if(Array.IndexOf(FormalResponses[operation],rule.Action)<0)return "Choose an action for this operation.";
+            if(Array.IndexOf(FormalResponses[operation],rule.Action)<0)return "Choose an action.";
             string conflict=ConditionActionConflict(rule,rule.Action);
             if(conflict!=null)return conflict;
             if(rule.Action==ActionIds.KeepDistance&&!Enum.IsDefined(typeof(KeepRangeOption),rule.KeepRange))return "Choose Close, Mid or Far.";
@@ -505,8 +510,8 @@ namespace GoGhost.Duel
                 if(rule.Action==ActionIds.AutoAim&&rule.AutoAim!=AutoAimOption.Nearest)return "Select Auto Aim to aim at the nearest enemy.";
                 if(rule.Action==ActionIds.Dodge&&rule.DodgeDirection!=DodgeDirectionOption.AwayFromThreat&&rule.DodgeDirection!=DodgeDirectionOption.TowardEnemy)return "Choose a dodge direction.";
             }
-            if(rule.Action==ActionIds.ChangePlatform&&(rule.PlatformDirection<PlatformDirectionOption.Unspecified||rule.PlatformDirection>PlatformDirectionOption.Lower
-                ||requireComplete&&rule.PlatformDirection==PlatformDirectionOption.Unspecified))return "Choose Higher or Lower.";
+            if(rule.Action==ActionIds.ChangePlatform&&(rule.PlatformDirection<PlatformDirectionOption.Unspecified||rule.PlatformDirection>PlatformDirectionOption.Right
+                ||requireComplete&&rule.PlatformDirection==PlatformDirectionOption.Unspecified))return "Choose a direction.";
             return null;
         }
         static bool HasGroundState(ConditionalRule rule,GroundStateOption option)
@@ -523,7 +528,7 @@ namespace GoGhost.Duel
                 if(reason!=null)return reason;
                 int option=ConditionOption(rule,i);
                 if(option<0)continue;
-                if(id==ConditionIds.GroundState){if(ground>=0&&ground!=option)return "Grounded and Airborne cannot both be true.";ground=option;}
+                if(id==ConditionIds.GroundState){if(ground>=0&&ground!=option)return "These conditions cannot be true together.";ground=option;}
                 if(id==ConditionIds.EnemyDistance){if(distance>=0&&distance!=option)return "The same enemy cannot be in two distance ranges.";distance=option;}
             }
             return null;
@@ -575,11 +580,13 @@ namespace GoGhost.Duel
             if(option>=0&&option<options.Length)
             {
                 if(id==ConditionIds.GroundState)return options[option];
-                if(id==ConditionIds.EnemyDistance)return "Horizontal Enemy Distance ("+options[option]+")";
+                if(id==ConditionIds.EnemyDistance)return "Enemy Distance ("+options[option]+")";
                 if(id==ConditionIds.IncomingAttack)return "Incoming Attack ("+options[option]+")";
             }
             if(id==ConditionIds.IncomingAttack&&condition.IncomingAttack==IncomingAttackOption.Low)
                 return "Incoming Attack (Reselect)";
+            if(id==ConditionIds.GroundState&&condition.GroundState==GroundStateOption.Grounded)
+                return "Where You Stand (Reselect)";
             return id==37?(rule.Below?"Enemy Below":"Enemy Above"):Condition(id).Label;
         }
         public static RuleExpression Expression(ConditionalRule rule)
@@ -602,7 +609,7 @@ namespace GoGhost.Duel
             {
                 int option=ActionOption(rule);
                 label+=" ("+(option>=0&&option<options.Length?options[option]:"Reselect")+")";
-                if(rule.Action==ActionIds.ChangePlatform&&option>=0&&option<options.Length)label+=option==0?" ↑":" ↓";
+                if(rule.Action==ActionIds.ChangePlatform&&option>=0&&option<options.Length)label+=" "+"↑↓←→"[option];
             }
             return label;
         }
@@ -614,13 +621,14 @@ namespace GoGhost.Duel
             switch(choice.Id)
             {
                 case ConditionIds.GroundState:
-                    if(choice.GroundState==GroundStateOption.Grounded)return "While you're standing on the ground or a platform.";
-                    if(choice.GroundState==GroundStateOption.Airborne)return "While you're in the air, whether you're jumping or falling.";
+                    if(choice.GroundState==GroundStateOption.OnGround)return "While you're standing on the arena floor.";
+                    if(choice.GroundState==GroundStateOption.OnPlatform)return "While you're standing on a platform.";
+                    if(choice.GroundState==GroundStateOption.Airborne)return "While you're in the air.";
                     break;
                 case ConditionIds.EnemyDistance:
-                    if(choice.Distance==EnemyDistanceOption.Close)return "While an enemy is close to you from left to right.";
-                    if(choice.Distance==EnemyDistanceOption.Mid)return "While an enemy is a medium distance away from left to right.";
-                    if(choice.Distance==EnemyDistanceOption.Far)return "While an enemy is far from you from left to right.";
+                    if(choice.Distance==EnemyDistanceOption.Close)return "While an enemy is close to you.";
+                    if(choice.Distance==EnemyDistanceOption.Mid)return "While an enemy is a medium distance away.";
+                    if(choice.Distance==EnemyDistanceOption.Far)return "While an enemy is far from you.";
                     break;
                 case ConditionIds.IncomingAttack:
                     if(choice.IncomingAttack==IncomingAttackOption.Melee)return "When an enemy is about to hit you up close.";
@@ -633,18 +641,18 @@ namespace GoGhost.Duel
         {
             switch(id)
             {
-                case ConditionIds.GroundState:return "While you're on the ground or in the air.";
-                case ConditionIds.LowHealth:return "When your health drops to 40% or less.";
+                case ConditionIds.GroundState:return "While you're on the ground, on a platform or in the air.";
+                case ConditionIds.LowHealth:return "While your health is at 40% or less.";
                 case ConditionIds.TookDamage:return "When you take damage.";
                 case 54:return "When moving horizontally.";
                 case 55:return "When you're dodging.";
-                case ConditionIds.Reloading:return "When you're reloading.";
+                case ConditionIds.Reloading:return "While you're reloading.";
                 case 12:return "When there's one or two bullets left.";
-                case ConditionIds.TriggerHeld:return "While you hold the fire button.";
-                case ConditionIds.EnemyNearAim:return "While you're aiming at or close to an enemy.";
+                case ConditionIds.TriggerHeld:return "While you hold down the fire button.";
+                case ConditionIds.EnemyNearAim:return "While your gun points at an enemy, or nearly at one.";
                 case 40:return "A visible enemy's current body intersects your current muzzle ray.";
                 case 56:return "When you're actively firing.";
-                case ConditionIds.EnemyDistance:return "How far apart you and an enemy are from left to right.";
+                case ConditionIds.EnemyDistance:return "How far an enemy is from you.";
                 case 35:return "When an enemy is getting closer.";
                 case 39:return "You can see enemies on both sides of you.";
                 case ConditionIds.NearWall:return "While you're near the left or right wall of the arena.";
@@ -681,34 +689,36 @@ namespace GoGhost.Duel
             if(rule==null)return "";
             string action=ExecutionAction(rule);
             if(action==ActionIds.ChangePlatform&&rule.PlatformDirection==PlatformDirectionOption.Higher)return "Get onto a platform above you.";
-            if(action==ActionIds.ChangePlatform&&rule.PlatformDirection==PlatformDirectionOption.Lower)return "Get down to a platform below you.";
+            if(action==ActionIds.ChangePlatform&&rule.PlatformDirection==PlatformDirectionOption.Lower)return "Drop to the platform or floor below you.";
+            if(action==ActionIds.ChangePlatform&&rule.PlatformDirection==PlatformDirectionOption.Left)return "Get onto the nearest platform to your left.";
+            if(action==ActionIds.ChangePlatform&&rule.PlatformDirection==PlatformDirectionOption.Right)return "Get onto the nearest platform to your right.";
             if(action==ActionIds.KeepDistance)
             {
                 switch(rule.KeepRange)
                 {
-                    case KeepRangeOption.Short:return "Move closer or step back to stay near an enemy.";
-                    case KeepRangeOption.Mid:return "Move closer or step back to stay a medium distance from an enemy.";
-                    case KeepRangeOption.Long:return "Move closer or step back to stay far from an enemy.";
+                    case KeepRangeOption.Short:return "Stay close to an enemy.";
+                    case KeepRangeOption.Mid:return "Stay a medium distance from an enemy.";
+                    case KeepRangeOption.Long:return "Stay far from an enemy.";
                 }
             }
-            if(action==ActionIds.Dodge)return "Dodge away from the incoming threat.";
+            if(action==ActionIds.Dodge)return "Dodge away from the attack that's coming at you.";
             return ResponseDescription(action);
         }
         public static string ResponseDescription(string id)
         {
             switch(id)
             {
-                case ActionIds.ChangePlatform:return "Move to a higher or lower platform.";
+                case ActionIds.ChangePlatform:return "Move to a platform above, below, left or right of you.";
                 case ActionIds.AutoAim:return "Your gun aims at the nearest enemy for you.";
                 case ActionIds.AutoAimLowestHealth:return "Aim at the enemy with the lowest health percentage.";
                 case ActionIds.AimAtDetectedEnemy:return "Aim at the visible enemy associated with the detected situation.";
                 case ActionIds.AimAssist:return "Auto aim assistance";
                 case ActionIds.FireOneShot:return "Fire one bullet.";
-                case ActionIds.ShortBurst:return "Quickly fire every bullet you have left. Each shot is less accurate and deals less damage.";
+                case ActionIds.ShortBurst:return "Quickly fire every bullet left in the cylinder.";
                 case ActionIds.Fire:return "Fire accurate shots one after another.";
                 case ActionIds.HoldFire:return "Stop firing.";
                 case ActionIds.FireKeepReserve:return "Shoot until only two rounds remain in the magazine.";
-                case ActionIds.Dodge:return "Dodge away from danger or toward an enemy.";
+                case ActionIds.Dodge:return "Dodge away from an attack or toward an enemy.";
                 case ActionIds.DodgeTowardEnemy:return "Dodge toward an enemy.";
                 case ActionIds.DodgeMoveDirection:return "Dodge in your movement direction, or your last direction if stopped.";
                 case ActionIds.DodgeTowardAim:return "Dodge toward your aim.";
@@ -718,7 +728,7 @@ namespace GoGhost.Duel
                 case ActionIds.MoveTowardCenter:return "Move toward the center of the arena.";
                 case ActionIds.Move:return "Move toward an enemy or away from them.";
                 case ActionIds.HoldPosition:return "Stop moving horizontally.";
-                case ActionIds.Jump:return "Jump whenever grounded while the condition holds.";
+                case ActionIds.Jump:return "Jump. You jump again each time you land.";
                 case ActionIds.RepeatJumps:return "Keep jumping.";
                 default:return "";
             }

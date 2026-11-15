@@ -182,7 +182,7 @@ Confirmed by Thomas after the UI audit, updated 2026-10-24: configuration naviga
 
 Separate compact rule cards with small gaps; keep reorder/removal controls visually secondary. Description body copy uses Regular without a duplicate title. Combat actions use an independent fixed arrow column and hanging text alignment; both retain fixed geometry through acceptance and release. Configuration rebuilds retain keyboard focus where possible and local scroll positions for each view. No new explanatory copy or control mode.
 
-Category and option cards keep consistent gaps and readable type. Parameters occupy the reserved space under the corresponding picker. The Fire action offers Keep Firing and Short Burst. Each option has its own footer description.
+Category and option cards keep consistent gaps and readable type. Parameters occupy the reserved space under the corresponding picker. The Fire action offers Steady and Rapid. Each option has its own footer description.
 
 Research references: [Unity Mask](https://docs.unity3d.com/Packages/com.unity.ugui@2.0/manual/script-Mask.html), [clear interactive affordances](https://gameaccessibilityguidelines.com/give-a-clear-indication-that-interactive-elements-are-interactive/), and [Xbox XAG 102 contrast](https://learn.microsoft.com/en-us/xbox/accessibility/xbox-accessibility-guidelines/102). Stroke sizes are project choices, not universal accessibility thresholds or a compliance claim.
 

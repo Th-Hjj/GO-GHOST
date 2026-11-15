@@ -32,21 +32,33 @@
       "locked": false
     },
     {
-      "key": "Handler/InvasionActionChangePlatformHigher",
-      "label": "Mission 3 · Action, Change Platform, Higher",
-      "text": "Action, Change Platform, Higher.",
+      "key": "Handler/InvasionActionChangePlatformDown",
+      "label": "Mission 3 · Action, Change Platform, Down",
+      "text": "Action, Change Platform, Down.",
       "locked": false
     },
     {
-      "key": "Handler/InvasionActionChangePlatformLower",
-      "label": "Mission 3 · Action, Change Platform, Lower",
-      "text": "Action, Change Platform, Lower.",
+      "key": "Handler/InvasionActionChangePlatformLeft",
+      "label": "Mission 3 · Action, Change Platform, Left",
+      "text": "Action, Change Platform, Left.",
       "locked": false
     },
     {
-      "key": "Handler/InvasionActionDodgeAwayfromThreat",
-      "label": "Mission 3 · Action, Dodge, Away from Threat",
-      "text": "Action, Dodge, Away from Threat.",
+      "key": "Handler/InvasionActionChangePlatformRight",
+      "label": "Mission 3 · Action, Change Platform, Right",
+      "text": "Action, Change Platform, Right.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionActionChangePlatformUp",
+      "label": "Mission 3 · Action, Change Platform, Up",
+      "text": "Action, Change Platform, Up.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionActionDodgeAwayfromAttack",
+      "label": "Mission 3 · Action, Dodge, Away from Attack",
+      "text": "Action, Dodge, Away from Attack.",
       "locked": false
     },
     {
@@ -56,39 +68,39 @@
       "locked": false
     },
     {
-      "key": "Handler/InvasionActionFireKeepFiring",
-      "label": "Mission 3 · Action, Fire, Keep Firing",
-      "text": "Action, Fire, Keep Firing.",
+      "key": "Handler/InvasionActionFireRapid",
+      "label": "Mission 3 · Action, Fire, Rapid",
+      "text": "Action, Fire, Rapid.",
       "locked": false
     },
     {
-      "key": "Handler/InvasionActionFireShortBurst",
-      "label": "Mission 3 · Action, Fire, Short Burst",
-      "text": "Action, Fire, Short Burst.",
+      "key": "Handler/InvasionActionFireSteady",
+      "label": "Mission 3 · Action, Fire, Steady",
+      "text": "Action, Fire, Steady.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionActionHoldRangeClose",
+      "label": "Mission 3 · Action, Hold Range, Close",
+      "text": "Action, Hold Range, Close.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionActionHoldRangeFar",
+      "label": "Mission 3 · Action, Hold Range, Far",
+      "text": "Action, Hold Range, Far.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionActionHoldRangeMid",
+      "label": "Mission 3 · Action, Hold Range, Mid",
+      "text": "Action, Hold Range, Mid.",
       "locked": false
     },
     {
       "key": "Handler/InvasionActionJump",
       "label": "Mission 3 · Action, Jump",
       "text": "Action, Jump.",
-      "locked": false
-    },
-    {
-      "key": "Handler/InvasionActionKeepDistanceClose",
-      "label": "Mission 3 · Action, Keep Distance, Close",
-      "text": "Action, Keep Distance, Close.",
-      "locked": false
-    },
-    {
-      "key": "Handler/InvasionActionKeepDistanceFar",
-      "label": "Mission 3 · Action, Keep Distance, Far",
-      "text": "Action, Keep Distance, Far.",
-      "locked": false
-    },
-    {
-      "key": "Handler/InvasionActionKeepDistanceMid",
-      "label": "Mission 3 · Action, Keep Distance, Mid",
-      "text": "Action, Keep Distance, Mid.",
       "locked": false
     },
     {
@@ -104,45 +116,39 @@
       "locked": false
     },
     {
-      "key": "Handler/InvasionConditionAirborne",
-      "label": "Mission 3 · Condition, Airborne",
-      "text": "Condition, Airborne.",
+      "key": "Handler/InvasionConditionAimingatEnemy",
+      "label": "Mission 3 · Condition, Aiming at Enemy",
+      "text": "Condition, Aiming at Enemy.",
       "locked": false
     },
     {
-      "key": "Handler/InvasionConditionEnemyNearYourAim",
-      "label": "Mission 3 · Condition, Enemy Near Your Aim",
-      "text": "Condition, Enemy Near Your Aim.",
+      "key": "Handler/InvasionConditionEnemyDistanceClose",
+      "label": "Mission 3 · Condition, Enemy Distance, Close",
+      "text": "Condition, Enemy Distance, Close.",
       "locked": false
     },
     {
-      "key": "Handler/InvasionConditionGrounded",
-      "label": "Mission 3 · Condition, Grounded",
-      "text": "Condition, Grounded.",
+      "key": "Handler/InvasionConditionEnemyDistanceFar",
+      "label": "Mission 3 · Condition, Enemy Distance, Far",
+      "text": "Condition, Enemy Distance, Far.",
       "locked": false
     },
     {
-      "key": "Handler/InvasionConditionHitEnemy",
-      "label": "Mission 3 · Condition, Hit Enemy",
-      "text": "Condition, Hit Enemy.",
+      "key": "Handler/InvasionConditionEnemyDistanceMid",
+      "label": "Mission 3 · Condition, Enemy Distance, Mid",
+      "text": "Condition, Enemy Distance, Mid.",
       "locked": false
     },
     {
-      "key": "Handler/InvasionConditionHorizontalEnemyDistanceClose",
-      "label": "Mission 3 · Condition, Horizontal Enemy Distance, Close",
-      "text": "Condition, Horizontal Enemy Distance, Close.",
+      "key": "Handler/InvasionConditionFireButtonHeld",
+      "label": "Mission 3 · Condition, Fire Button Held",
+      "text": "Condition, Fire Button Held.",
       "locked": false
     },
     {
-      "key": "Handler/InvasionConditionHorizontalEnemyDistanceFar",
-      "label": "Mission 3 · Condition, Horizontal Enemy Distance, Far",
-      "text": "Condition, Horizontal Enemy Distance, Far.",
-      "locked": false
-    },
-    {
-      "key": "Handler/InvasionConditionHorizontalEnemyDistanceMid",
-      "label": "Mission 3 · Condition, Horizontal Enemy Distance, Mid",
-      "text": "Condition, Horizontal Enemy Distance, Mid.",
+      "key": "Handler/InvasionConditionInAir",
+      "label": "Mission 3 · Condition, In Air",
+      "text": "Condition, In Air.",
       "locked": false
     },
     {
@@ -170,15 +176,27 @@
       "locked": false
     },
     {
+      "key": "Handler/InvasionConditionLowHealth",
+      "label": "Mission 3 · Condition, Low Health",
+      "text": "Condition, Low Health.",
+      "locked": false
+    },
+    {
       "key": "Handler/InvasionConditionNearWall",
       "label": "Mission 3 · Condition, Near Wall",
       "text": "Condition, Near Wall.",
       "locked": false
     },
     {
-      "key": "Handler/InvasionConditionPlayerLowHealth",
-      "label": "Mission 3 · Condition, Player Low Health",
-      "text": "Condition, Player Low Health.",
+      "key": "Handler/InvasionConditionOnGround",
+      "label": "Mission 3 · Condition, On Ground",
+      "text": "Condition, On Ground.",
+      "locked": false
+    },
+    {
+      "key": "Handler/InvasionConditionOnPlatform",
+      "label": "Mission 3 · Condition, On Platform",
+      "text": "Condition, On Platform.",
       "locked": false
     },
     {
@@ -188,15 +206,15 @@
       "locked": false
     },
     {
-      "key": "Handler/InvasionConditionTookDamage",
-      "label": "Mission 3 · Condition, Took Damage",
-      "text": "Condition, Took Damage.",
+      "key": "Handler/InvasionConditionYouGotHit",
+      "label": "Mission 3 · Condition, You Got Hit",
+      "text": "Condition, You Got Hit.",
       "locked": false
     },
     {
-      "key": "Handler/InvasionConditionTriggerHeld",
-      "label": "Mission 3 · Condition, Trigger Held",
-      "text": "Condition, Trigger Held.",
+      "key": "Handler/InvasionConditionYourShotHit",
+      "label": "Mission 3 · Condition, Your Shot Hit",
+      "text": "Condition, Your Shot Hit.",
       "locked": false
     },
     {
@@ -558,44 +576,44 @@
     },
     {
       "key": "Handler/EditorCondition51",
-      "label": "Rule editor - Ground State",
-      "text": "While you're on the ground or in the air.",
+      "label": "Rule editor - Where You Stand",
+      "text": "While you're on the ground, on a platform or in the air.",
       "locked": false
     },
     {
       "key": "Handler/EditorCondition4",
-      "label": "Rule editor - Player Low Health",
-      "text": "When your health drops to 40% or less.",
+      "label": "Rule editor - Low Health",
+      "text": "While your health is at 40% or less.",
       "locked": false
     },
     {
       "key": "Handler/EditorCondition6",
-      "label": "Rule editor - Took Damage",
+      "label": "Rule editor - You Got Hit",
       "text": "When you take damage.",
       "locked": false
     },
     {
       "key": "Handler/EditorCondition9",
       "label": "Rule editor - Reloading",
-      "text": "When you're reloading.",
+      "text": "While you're reloading.",
       "locked": false
     },
     {
       "key": "Handler/EditorCondition17",
-      "label": "Rule editor - Trigger Held",
-      "text": "While you hold the fire button.",
+      "label": "Rule editor - Fire Button Held",
+      "text": "While you hold down the fire button.",
       "locked": false
     },
     {
       "key": "Handler/EditorCondition18",
-      "label": "Rule editor - Enemy Near Your Aim",
-      "text": "While you're aiming at or close to an enemy.",
+      "label": "Rule editor - Aiming at Enemy",
+      "text": "While your gun points at an enemy, or nearly at one.",
       "locked": false
     },
     {
       "key": "Handler/EditorCondition52",
-      "label": "Rule editor - Horizontal Enemy Distance",
-      "text": "How far apart you and an enemy are from left to right.",
+      "label": "Rule editor - Enemy Distance",
+      "text": "How far an enemy is from you.",
       "locked": false
     },
     {
@@ -618,7 +636,7 @@
     },
     {
       "key": "Handler/EditorCondition13",
-      "label": "Rule editor - Hit Enemy",
+      "label": "Rule editor - Your Shot Hit",
       "text": "When one of your shots damages an enemy.",
       "locked": false
     },
@@ -637,13 +655,13 @@
     {
       "key": "Handler/EditorActionJ01",
       "label": "Rule editor - Jump",
-      "text": "Jump whenever grounded while the condition holds.",
+      "text": "Jump. You jump again each time you land.",
       "locked": false
     },
     {
       "key": "Handler/EditorActionJ04",
       "label": "Rule editor - Change Platform",
-      "text": "Move to a higher or lower platform.",
+      "text": "Move to a platform above, below, left or right of you.",
       "locked": false
     },
     {
@@ -654,14 +672,14 @@
     },
     {
       "key": "Handler/EditorActionM03",
-      "label": "Rule editor - Keep Distance",
+      "label": "Rule editor - Hold Range",
       "text": "Step back if an enemy gets too close. Move closer if they get too far away.",
       "locked": false
     },
     {
       "key": "Handler/EditorActionD01",
       "label": "Rule editor - Dodge",
-      "text": "Dodge away from danger or toward an enemy.",
+      "text": "Dodge away from an attack or toward an enemy.",
       "locked": false
     }
   ]

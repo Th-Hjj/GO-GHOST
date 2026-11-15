@@ -4,7 +4,9 @@ The current rule editor pairs **one condition with one action**. The player can 
 
 **Jump priority — Thomas, 2026-10-26:** legal manual and automatic Jump takes priority over Dodge. A new Jump immediately interrupts an active Dodge; same-frame Jump/Dodge requests execute only Jump, regardless of the Dodge rule's DisplayOrder. Interruption ends remaining Dodge movement and immunity, preserves the original cooldown deadline and does not emit Dodge Finished. Ignored Boss body pairs restore after safe separation if the interruption occurs inside a Boss. Invalid airborne requests do not cancel Dodge or grant another jump. Ordinary Jump rules retain DisplayOrder among themselves; Move/Aim/Fire remain parallel and accepted platform routes retain their existing commitment. Pause, focus, F8 and lifecycle input gates still apply.
 
-**Fire** offers **Keep Firing** and **Short Burst**. Short Burst (F02) commits the remaining magazine with reduced accuracy and damage, just like manual RMB. In combat and the Test Room, R starts a normal reload when the magazine is partially spent. Any unfinished burst ends immediately. Its remaining shots are discarded.
+**Wording — Thomas, 2026-11-14:** the names and descriptions below replace the earlier ones. Older paragraphs in this file that say Keep Firing, Short Burst, Keep Distance, Higher / Lower, Grounded or Away from Threat describe the same entries under their former names.
+
+**Fire** offers **Steady** and **Rapid**. Rapid (F02, formerly Short Burst) commits the remaining magazine with reduced accuracy and damage, just like manual RMB. In combat and the Test Room, R starts a normal reload when the magazine is partially spent. Any unfinished burst ends immediately. Its remaining shots are discarded.
 
 ## Help
 
@@ -14,7 +16,7 @@ Thomas, 2026-10-29: presets and sequential death unlocks are removed, including 
 
 The player may equip at most **5** rules in every wave, including Happy's starter rule (`ConditionalCatalog.PlayerRuleLimit`). Storage and validation allow 20 (`MaxRulesTotal`) so the Final Boss can append rules beyond the equipped cap for the current fight. Retry and Configuration discard invaded rules. Only the player executes conditional rules. The combat sidebar shows the player's list on the left. The EMP seals that list and phase two uses manual controls. [Boss Encounters](BossEncounters.md#final-boss-and-optional-bonus)
 
-The overview shows the equipped Rules list directly below the header. The Condition → Action preview appears only in the editor. For current selectable entries, disable Jump and Change Platform (Higher or Lower) when Airborne is selected, and Fire (either mode) when Reloading is selected. All other pairs remain selectable. An unfinished draft can select either side first and needs a valid complete pair to Confirm.
+The overview shows the equipped Rules list directly below the header. The Condition → Action preview appears only in the editor. For current selectable entries, disable Jump and Change Platform (any direction) when In Air is selected, and Fire (either mode) when Reloading is selected. All other pairs remain selectable. An unfinished draft can select either side first and needs a valid complete pair to Confirm.
 
 **Rule editor layout — 2026-11-05:** While a rule is open, Condition and Action have side-by-side pickers. Each uses the same width and outer edges as its preview above, with the arrow centered between previews. Either side can be selected first. Options and parameters edit the local draft. Confirm saves a valid combination and Cancel discards the draft. The equipped Rules list appears in the overview.
 
@@ -28,9 +30,11 @@ The overview shows the equipped Rules list directly below the header. The Condit
 
 **Body turning:** A/D and resolved horizontal Move turn the body; idle retains facing. Mouse/automatic Aim owns the Revolver independently. Move uses the selected enemy-relative direction.
 
-**Change Platform — Thomas, 2026-10-27:** J04 retains required **Higher / Lower** under Legs/Jump. Rules display `Change Platform (Higher) ↑` or `Change Platform (Lower) ↓` throughout editing, setup and combat; copies and fight snapshots preserve the direction.
+**Change Platform — Thomas, 2026-10-27; directions 2026-11-14:** J04 requires **Up / Down / Left / Right** under Legs/Jump. Rules display `Change Platform (Up) ↑`, `(Down) ↓`, `(Left) ←` or `(Right) →` throughout editing, setup and combat; copies and fight snapshots preserve the direction.
 
 J04 claims Move and Jump for one complete transition. Before acceptance, legal ordinary Jump has priority; global DisplayOrder decides the remaining competition with Move and Dodge rows. After acceptance, ordinary rule rematching cannot preempt either claim. Aim and Fire remain independent. Unavailable destinations release both claims to lower rows/manual input.
+
+**Left / Right** take the nearest reachable platform whose middle lies on that side of the player, at any height within one jump. The floor is not a destination. Nearest means the shortest walk plus flight. A higher or level platform is reached with an ordinary jump; a lower one may use the drop-through, an edge or a jump.
 
 Selection checks active collider support geometry, actual player width, speed, jump speed, gravity, landing clearance and intervening terrain. Prefer the next reachable height, then the shortest horizontal approach/flight; ties use stable support/sample order. Higher uses a bounded supported approach and an ordinary jump. Lower may use the same current-support drop-through as manual S, walk off an edge, or jump to a lower support, including the floor. There is no transform write, jump boost, authored-coordinate shortcut or general graph route.
 
@@ -58,35 +62,35 @@ There are exactly **11 selectable conditions in five categories** and **seven ac
 
 | Category | Ordered conditions and fixed options |
 |---|---|
-| Body State | A51 Ground State (Grounded / Airborne); A04 Player Low Health; A06 Took Damage |
-| Weapon | A09 Reloading; A17 Trigger Held; A18 Enemy Near Your Aim |
-| Position | A52 Horizontal Enemy Distance (Close / Mid / Far); A45 Near Wall |
-| Threats | A53 Incoming Attack (Any / Melee / Ranged) |
-| Action Events | A03 Landed; A13 Hit Enemy |
+| Body State | A51 Where You Stand (On Ground / On Platform / In Air); A04 Low Health |
+| Weapon | A09 Reloading; A17 Fire Button Held; A18 Aiming at Enemy |
+| Position | A52 Enemy Distance (Close / Mid / Far); A45 Near Wall |
+| Attacks | A53 Incoming Attack (Any / Melee / Ranged) |
+| Moments | A03 Landed; A06 You Got Hit; A13 Your Shot Hit |
 
-Took Damage, Landed and Hit Enemy are events. The other eight selectable conditions are states. Q06 Aim Assist is retired; existing rules using it require reselection. The rows below describe the 11 selectable observations.
+You Got Hit, Landed and Your Shot Hit are events. The other eight selectable conditions are states. Q06 Aim Assist is retired; existing rules using it require reselection. The rows below describe the 11 selectable observations.
 
 | Condition | Required observation |
 |---|---|
-| Ground State | The player is grounded or airborne. |
-| Player Low Health | Enters at 40% HP or below and leaves at the 45% recovery threshold. |
-| Took Damage | Actual damage to the player within the 0.5-second event window. |
+| Where You Stand | On Ground: standing on the arena floor. On Platform: standing on a one-way platform. In Air: not grounded. The retired Grounded value (floor or platform) shows as Where You Stand (Reselect) and is invalid until edited. |
+| Low Health | Enters at 40% HP or below and leaves at the 45% recovery threshold. |
+| You Got Hit | Actual damage to the player within the 0.5-second event window. |
 | Reloading | The revolver is reloading. |
-| Trigger Held | Gated manual LMB is held. |
-| Enemy Near Your Aim | A visible enemy is near manual aim, with 12-degree entry and 16-degree exit thresholds. |
-| Horizontal Enemy Distance | Horizontal distance to a visible enemy. The Close and Far thresholds are 5.3 and 8.5 units with 0.35 units of hysteresis. |
+| Fire Button Held | Gated manual LMB is held. |
+| Aiming at Enemy | A visible enemy is near manual aim, with 12-degree entry and 16-degree exit thresholds. |
+| Enemy Distance | Horizontal distance to a visible enemy. The Close and Far thresholds are 5.3 and 8.5 units with 0.35 units of hysteresis. |
 | Near Wall | The player is near an arena side boundary. |
 | Incoming Attack | A public attack threatens the player within 0.20 seconds. Melee covers physical slashes and dashes. Ranged covers bullets, Piercing beams and flying sword waves. Any includes both. |
 | Landed | The player lands on the ground or a platform after being airborne. |
-| Hit Enemy | A player attack deals positive damage to an enemy. |
+| Your Shot Hit | A player attack deals positive damage to an enemy. |
 
 | Runtime operation | Selectable action and options |
 |---|---|
-| Move | M11 Move (Toward Enemy / Away from Enemy); M03 Keep Distance (Close / Mid / Far) |
-| Jump | J01 Jump; J04 Change Platform (Higher / Lower) |
+| Move | M11 Move (Toward Enemy / Away from Enemy); M03 Hold Range (Close / Mid / Far) |
+| Jump | J01 Jump; J04 Change Platform (Up / Down / Left / Right) |
 | Aim | Auto Aim at nearest (Q01, no parameters) |
-| Fire | Fire: Keep Firing (F03, default) / Short Burst (F02) |
-| Dodge | D01 Dodge (Away from Threat / Toward Enemy) |
+| Fire | Fire: Steady (F03, default) / Rapid (F02) |
+| Dodge | D01 Dodge (Away from Attack / Toward Enemy) |
 
 **Keep Firing** requests precise single rounds at the primary interval while the complete state remains true, including after automatic reload; event responses retain their 0.5-second acceptance deadline. **Short Burst** (F02) calls the same rapid, per-shot-spread process as manual RMB. Its first successful paid shot snapshots all remaining rounds, including itself. Zero rounds cannot accept or complete. The weapon exclusively owns its budget, cadence, completion and source; no Controller-side second burst simulation exists. Trigger/primary/additional-state loss cannot interrupt an accepted burst. Aim, Move, Jump and Dodge remain independent. Each shot uses the latest resolved Aim plus fresh uniform spread, at the current actual muzzle. The last paid shot raises ShotFired, then BurstFinished exactly once, then ReloadStarted. It never crosses reload. Death, disable and encounter cleanup cancel without completion; pause freezes it. Events enter the next normal solve, never recursive rule execution. Manual consecutive single shots are not bursts.
 
@@ -108,7 +112,7 @@ The internal weapon firing process (no longer a selectable condition) starts onl
 
 **Move** (M11) uses **Toward Enemy** or **Away from Enemy**, based on a visible target. Toward Enemy holds zero input within the horizontal alignment tolerance and resumes when the target moves outside it. Move releases to a lower rule or manual input as soon as the condition or event window expires. Terrain still blocks movement.
 
-**Keep Distance**, M03, retains the original bands and .35-unit hysteresis: Close 2.1–5.3, Mid 5.3–8.5 and Far 8.5–11.7 units. The player retreats when too close, approaches when too far and holds still inside the band. The row owns movement until its condition or event window ends, its target becomes invalid or a higher-priority action takes over. Serialized `KeepRangeOption.Short/Mid/Long` values remain 1/0/2 and display Close/Mid/Far; omitted data remains Mid. Invalid values fail normal validation.
+**Hold Range** (formerly Keep Distance), M03, retains the original bands and .35-unit hysteresis: Close 2.1–5.3, Mid 5.3–8.5 and Far 8.5–11.7 units. The player retreats when too close, approaches when too far and holds still inside the band. The row owns movement until its condition or event window ends, its target becomes invalid or a higher-priority action takes over. Serialized `KeepRangeOption.Short/Mid/Long` values remain 1/0/2 and display Close/Mid/Far; omitted data remains Mid. Invalid values fail normal validation.
 
 Hold Position / Stop Moving and Hold Fire are removed without substitute actions. Their old rules remain invalid until edited.
 

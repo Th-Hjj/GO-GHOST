@@ -32,7 +32,7 @@ namespace GoGhost.Duel
             var state=states[1,r.Row];
             if(state.PlatformFailed&&state.PlatformFailureVersion==nav.Version
                 &&Vector2.Distance(state.PlatformFailurePosition,body.position)<.25f)return false;
-            if(!SelectPlatform(rule.PlatformDirection==PlatformDirectionOption.Higher,nav,out var plan))return false;
+            if(!SelectPlatform(rule.PlatformDirection,nav,out var plan))return false;
             state.PlatformFailed=false;r.Platform=plan;
             return ContinuePlatform(rule,r);
         }
@@ -95,9 +95,11 @@ namespace GoGhost.Duel
             return true;
         }
 
-        bool SelectPlatform(bool higher,ArenaNavigation2D nav,out PlatformTransition best)
+        bool SelectPlatform(PlatformDirectionOption direction,ArenaNavigation2D nav,out PlatformTransition best)
         {
             best=null;
+            bool higher=direction==PlatformDirectionOption.Higher;
+            bool sideways=direction==PlatformDirectionOption.Left||direction==PlatformDirectionOption.Right;
             Vector2 size=shape.bounds.size,origin=shape.bounds.center;
             if(!nav.TrySupport(origin,size,out var source)||!ActiveSupport(source))return false;
             float speed=movement.MoveSpeed,gravity=-Physics2D.gravity.y*body.gravityScale;
@@ -113,8 +115,17 @@ namespace GoGhost.Duel
             {
                 if(!ActiveSupport(destination)||destination==source)continue;
                 var to=destination.bounds;
-                float rise=to.max.y-from.max.y,level=Mathf.Abs(rise);
-                if(higher?rise<=.12f||rise>maxRise:rise>=-.12f)continue;
+                // Left and Right take the nearest platform at any height, so only the route cost ranks them.
+                float rise=to.max.y-from.max.y,level=sideways?0:Mathf.Abs(rise);
+                if(sideways)
+                {
+                    // A platform lies left or right by its middle. The floor is not a platform.
+                    float side=to.center.x-origin.x;
+                    if(!PlayerMovement.IsDropThroughSupport(destination)||rise>maxRise
+                        ||(direction==PlatformDirectionOption.Left?side>-half:side<half))continue;
+                }
+                else if(higher?rise<=.12f||rise>maxRise:rise>=-.12f)continue;
+                bool climb=higher||sideways&&rise>-.12f;
                 if(level>bestRise+.05f)continue;
                 float min=to.min.x+margin,max=to.max.x-margin;
                 if(min>max)continue;
@@ -124,11 +135,11 @@ namespace GoGhost.Duel
                     float land=point==0?Mathf.Clamp(origin.x,min,max):point==1?(min+max)*.5f:point==2?min:max;
                     Vector2 landing=new Vector2(land,to.max.y+size.y*.5f+.025f);
                     if(!nav.CanStand(landing,size)||!PlatformLandingFree(landing,size))continue;
-                    // Lower can use the current one-way support, an edge, or an ordinary jump.
+                    // A lower destination can use the current one-way support, an edge, or an ordinary jump.
                     // Equal geometry/cost keeps this stable order, preferring the direct S capability.
-                    for(int route=0;route<(higher?1:3);route++)
+                    for(int route=0;route<(climb?1:3);route++)
                     {
-                        bool jump=higher||route==2,drop=!higher&&route==0;
+                        bool jump=climb||route==2,drop=!climb&&route==0;
                         if(drop&&!PlayerMovement.IsDropThroughSupport(source))continue;
                         bool edge=!jump&&!drop;
                         for(int side=0;side<(edge?2:3);side++)

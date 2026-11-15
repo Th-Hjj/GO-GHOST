@@ -235,7 +235,11 @@ namespace GoGhost.Duel
             ctx=EmptyContext();
             switch(id)
             {
-                case ConditionIds.GroundState:return option==(int)GroundStateOption.Grounded?movement.IsGrounded:!movement.IsGrounded;
+                case ConditionIds.GroundState:
+                    if(option==(int)GroundStateOption.Airborne)return !movement.IsGrounded;
+                    if(!movement.IsGrounded)return false;
+                    // The retired Grounded value never reaches a fight; validation asks for a new selection.
+                    return option==(int)GroundStateOption.Grounded||StandingOnPlatform()==(option==(int)GroundStateOption.OnPlatform);
                 case ConditionIds.LowHealth:return lowHealth;
                 case ConditionIds.Reloading:return gun.IsReloading;
                 case 12:return !gun.IsReloading&&gun.AmmoInMagazine>0&&gun.AmmoInMagazine<=2;
@@ -290,6 +294,19 @@ namespace GoGhost.Duel
             }
         }
         float MouseAngle(int target)=>Vector2.Angle(raw.Aim,(Vector2)contacts[target].Bounds.center-gun.AimOrigin);
+        // The floor is the one support that cannot be dropped through.
+        bool StandingOnPlatform()
+        {
+            if(platforms==null)return false;
+            var bounds=shape.bounds;
+            foreach(var support in platforms)
+            {
+                if(!PlayerMovement.IsDropThroughSupport(support))continue;
+                var b=support.bounds;
+                if(Mathf.Abs(bounds.min.y-b.max.y)<=.13f&&bounds.max.x>b.min.x&&bounds.min.x<b.max.x)return true;
+            }
+            return false;
+        }
         bool NearSupportEdge()
         {
             if(!movement.IsGrounded||platforms==null)return false;

@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Rule wording, On Platform, Change Platform Left / Right
+
+- **Asked:** apply the approved renames without the trailing explanations, split ground from platform, and add moving to the platform on the left or right (decision recorded in `CLAUDE.md` and `AGENTS.md`).
+- **Changed:** `ConditionalLoadout.cs`: new labels, categories, option names, one-sentence descriptions and shorter validation messages; `GroundStateOption` gains OnGround and OnPlatform and the old Grounded value reads "Where You Stand (Reselect)" and fails validation; `PlatformDirectionOption` gains Left and Right. `ConditionalController.Observation.cs` tells the floor from a one-way platform. `ConditionalController.Platforms.cs` picks the nearest reachable platform on the chosen side. Happy's lines follow the names: 18 Mission 3 invasion clips renamed in Unity (GUIDs kept), 3 added, and those 21 plus 9 editor descriptions re-voiced from text with the Voice Studio synthesis; catalog and recipes updated. `ConditionalRules.md` and `ArtDirection.md` follow.
+- **Checked:** Unity compiled; the catalog lists 248 legal invasion rules and every one of their voice keys has a clip; one Play Mode pass captured the overview and both editor steps (`Logs/RuleWording/`). The new clips were not listened to. On Ground / On Platform in a fight, Change Platform Left / Right in a fight, the Mission 3 invasion reading and a save holding an old Grounded rule NOT TESTED.
+
 ## 2026-11-14 — GHOST stage 2: the letter arena and its camera
 
 - **Asked:** stage 2 of five.

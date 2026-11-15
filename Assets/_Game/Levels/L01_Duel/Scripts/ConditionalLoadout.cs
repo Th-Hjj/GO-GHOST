@@ -682,7 +682,7 @@ namespace GoGhost.Duel
         }
         public static string PickerDescription(string action)
         {
-            if(action==ActionIds.Fire)return "Choose between steady shots and a quick burst.";
+            if(action==ActionIds.Fire)return "Fire your gun.";
             return ResponseDescription(action);
         }
         public static string ResponseDescription(ConditionalRule rule)
@@ -725,11 +725,11 @@ namespace GoGhost.Duel
                 case ActionIds.DodgeTowardAim:return "Dodge toward your aim.";
                 case ActionIds.ApproachEnemy:return "Move closer to an enemy.";
                 case ActionIds.RetreatFromEnemy:return "Move away from an enemy.";
-                case ActionIds.KeepDistance:return "Step back if an enemy gets too close. Move closer if they get too far away.";
+                case ActionIds.KeepDistance:return "Keep a set distance from an enemy.";
                 case ActionIds.MoveTowardCenter:return "Move toward the center of the arena.";
                 case ActionIds.Move:return "Move toward an enemy or away from them.";
                 case ActionIds.HoldPosition:return "Stop moving horizontally.";
-                case ActionIds.Jump:return "Jump when you landed.";
+                case ActionIds.Jump:return "Jump when you land.";
                 case ActionIds.RepeatJumps:return "Keep jumping.";
                 default:return "";
             }

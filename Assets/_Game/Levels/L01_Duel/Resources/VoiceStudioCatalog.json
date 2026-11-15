@@ -649,13 +649,13 @@
     {
       "key": "Handler/EditorActionF03",
       "label": "Rule editor - Fire",
-      "text": "Choose between steady shots and a quick burst.",
+      "text": "Fire your gun.",
       "locked": false
     },
     {
       "key": "Handler/EditorActionJ01",
       "label": "Rule editor - Jump",
-      "text": "Jump when you landed.",
+      "text": "Jump when you land.",
       "locked": false
     },
     {
@@ -673,7 +673,7 @@
     {
       "key": "Handler/EditorActionM03",
       "label": "Rule editor - Hold Range",
-      "text": "Step back if an enemy gets too close. Move closer if they get too far away.",
+      "text": "Keep a set distance from an enemy.",
       "locked": false
     },
     {

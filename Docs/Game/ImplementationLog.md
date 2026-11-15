@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Three action descriptions shortened
+
+- **Asked:** Fire, Hold Range and Jump descriptions (Thomas approved the wording).
+- **Changed:** Fire reads "Fire your gun.", Hold Range "Keep a set distance from an enemy." and Jump "Jump when you land." in `ConditionalLoadout.cs` and the voice catalog; the three lines are re-voiced from text and their recipes updated.
+- **Checked:** compiled outside the editor. The clips were not listened to and the editor was not opened: NOT TESTED.
+
 ## 2026-11-14 — Rule editor: choice frame refitted
 
 - **Asked:** the Signal frame around the condition choices was out of line with the slabs it encloses.

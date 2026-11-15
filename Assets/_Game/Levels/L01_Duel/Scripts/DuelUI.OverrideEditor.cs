@@ -293,7 +293,7 @@ namespace GoGhost.Duel
             string picked = ConditionalCatalog.PickerAction(rule.Action);
             int index = 0;
 
-            // Parameters sit in one row under the groups, so choosing an action never moves the others.
+            // Parameters keep one reserved row, so choosing an action never moves the others.
             void Chips(float y)
             {
                 string[] parameters = ConditionalCatalog.ActionOptions(rule.Action);
@@ -316,6 +316,9 @@ namespace GoGhost.Duel
                 }
             }
 
+            // The parameters complete the sentence in the Action card, so their row sits directly under it.
+            if (!string.IsNullOrEmpty(rule.Action)) Chips(0);
+            top = 48 + 10;
             foreach (var group in ActionGroups)
             {
                 OvText(group.Label, panel, Slot(4, top, 300, 24), new Vector2(300, 24), 22, OverridePalette.TextDim,
@@ -338,7 +341,6 @@ namespace GoGhost.Duel
                 if (columnIndex != 0) top += row + 8;
                 top += 6;
             }
-            if (!string.IsNullOrEmpty(rule.Action)) Chips(Mathf.Min(top, h - 48));
         }
     }
 }

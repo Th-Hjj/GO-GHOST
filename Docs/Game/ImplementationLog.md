@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Rule editor: parameter row under the Action card
+
+- **Asked:** keep the parameter row in a fixed place (players disliked options moving) but stop it reading as a row of the Dodge group; Thomas chose option A after seeing it in play.
+- **Changed:** `DuelUI.OvActionStep`: the reserved parameter row sits directly under the Action card, above the Weapon heading; the three groups start one row lower and never move. The Jump description reads "Jump when you landed." and its line is re-voiced (previous commit).
+- **Checked:** Thomas's two Play Mode screenshots of the Action step (Hold Range and Change Platform). No capture by this session.
+
 ## 2026-11-14 — Rule editor: resting voice mark, dark sentence cards
 
 - **Asked:** from a review of the rule editor, Thomas approved two points: Happy's box should not draw the eye while it is empty, and one colour should not fill four blocks at once.

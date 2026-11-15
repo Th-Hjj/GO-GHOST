@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Rule editor: every action parameter is chosen by the player
+
+- **Asked:** Hold Range, Dodge and Fire arrived with a parameter already selected while Move and Change Platform waited for one; use one rule (decision recorded in `CLAUDE.md` and `AGENTS.md`).
+- **Changed:** `DuelConditionalUI.cs` / `DuelUI.OverrideEditor.cs`: the draft remembers that a newly picked action's parameter is not chosen yet; its chips wait, Confirm stays off and the Action card shows the action's name without "(Reselect)". Opening an existing rule keeps its saved parameter. No data format change.
+- **Checked:** compiled outside the editor with Unity's own compiler, because the editor was in Play Mode. Not run: the editor flow, the first-rule tutorial's Confirm prompt and Help-then-return with a waiting draft NOT TESTED.
+
 ## 2026-11-14 — Rule editor: parameter row under the Action card
 
 - **Asked:** keep the parameter row in a fixed place (players disliked options moving) but stop it reading as a row of the Dodge group; Thomas chose option A after seeing it in play.

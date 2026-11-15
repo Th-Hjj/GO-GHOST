@@ -23,7 +23,8 @@ namespace GoGhost.Duel
         bool ActionChosen()
         {
             if (pendingRule == null || string.IsNullOrEmpty(pendingRule.Action)) return false;
-            return ConditionalCatalog.ActionOptions(pendingRule.Action).Length == 0 || ConditionalCatalog.ActionOption(pendingRule) >= 0;
+            return ConditionalCatalog.ActionOptions(pendingRule.Action).Length == 0
+                || !actionOptionPending && ConditionalCatalog.ActionOption(pendingRule) >= 0;
         }
 
         // Completing one side opens the other while it is still empty.
@@ -40,6 +41,7 @@ namespace GoGhost.Duel
         void SelectActionOption(int option)
         {
             selectingCondition = false;
+            actionOptionPending = false;
             ConditionalCatalog.SetActionOption(pendingRule, option);
             AdvanceEditorStep(false);
             Show();
@@ -143,7 +145,10 @@ namespace GoGhost.Duel
             OvEditorCard("PreviewCondition", "Condition", expression.Conditions, frame, At(leftX, cardTop, column, cardHeight),
                 new Vector2(column, cardHeight), () => EditPreview(0), selectingCondition, hasCondition, OverridePalette.Text, OverridePalette.Text,
                 fresh ? 0 : -1, -1);
-            OvEditorCard("PreviewAction", "Action", expression.Action, frame, At(rightX, cardTop, column, cardHeight),
+            // Until its parameter is chosen the card shows the action's name alone.
+            string actionText = hasAction && !ActionChosen()
+                ? ConditionalCatalog.Response(ConditionalCatalog.PickerAction(rule.Action)).Label : expression.Action;
+            OvEditorCard("PreviewAction", "Action", actionText, frame, At(rightX, cardTop, column, cardHeight),
                 new Vector2(column, cardHeight), () => EditPreview(-1), !selectingCondition, hasAction, system, system,
                 fresh ? .05f : -1, 1);
             bool linked = ConditionChosen();
@@ -298,7 +303,7 @@ namespace GoGhost.Duel
             {
                 string[] parameters = ConditionalCatalog.ActionOptions(rule.Action);
                 if (parameters.Length == 0) return;
-                int current = ConditionalCatalog.ActionOption(rule);
+                int current = actionOptionPending ? -1 : ConditionalCatalog.ActionOption(rule);
                 Color colour = NeuralPalette.Body(RuleSystem(rule));
                 // Two chips sit under the two option columns.
                 float space = parameters.Length == 2 ? gap : 8;

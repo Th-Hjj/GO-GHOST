@@ -10,6 +10,8 @@ namespace GoGhost.Duel
     {
         int conditionCategory;
         int selectorRow = -1, pendingRow = -1;
+        // A newly picked action waits for its parameter, even where saved data has a default value (Thomas, 2026-11-14).
+        bool actionOptionPending;
         bool selectingCondition, selectingAdditional;
         int selectedConditionIndex;
         ConditionalRule pendingRule;
@@ -324,6 +326,7 @@ namespace GoGhost.Duel
                 || !game.ConfigurationVoice.CanOpenRuleEditor) return;
             // Incomplete choices stay UI-local; the combat loadout only receives a complete pair.
             pendingRule = new ConditionalRule();
+            actionOptionPending = false;
             selectingAdditional=false;
             pendingRow = displayedRules.Count;
             conditionCategory = 0;
@@ -367,6 +370,7 @@ namespace GoGhost.Duel
             {
                 pendingRule = displayedRules[row].Copy();
                 pendingRow = row;
+                actionOptionPending = false;
                 completedPreview=displayedRules[row].Copy();completedPreviewRow=row;
             }
             selectorRow = row;selectingAdditional=false;selectedConditionIndex=0;
@@ -379,7 +383,7 @@ namespace GoGhost.Duel
         void ChooseCondition(int row,int index)
         {
             if(pendingRule==null||pendingRow!=row)
-            {pendingRule=displayedRules[row].Copy();pendingRow=row;completedPreview=pendingRule.Copy();completedPreviewRow=row;}
+            {pendingRule=displayedRules[row].Copy();pendingRow=row;actionOptionPending=false;completedPreview=pendingRule.Copy();completedPreviewRow=row;}
             selectorRow=row;selectingCondition=true;selectingAdditional=index>0;selectedConditionIndex=index;
             int id=index<pendingRule.ConditionCount?pendingRule.GetCondition(index).Id:0;
             conditionCategory=id==0?0:ConditionalCatalog.Condition(id).Category;
@@ -409,6 +413,8 @@ namespace GoGhost.Duel
             if(action==null){SelectCondition(condition);return;}
             if(ActionChoiceReason(pendingRule,action)!=null)return;
             selectingCondition=false;
+            if(ConditionalCatalog.PickerAction(pendingRule.Action)!=action)
+                actionOptionPending=ConditionalCatalog.ActionOptions(action).Length>0;
             SelectPickerAction(pendingRule,action);
             AdvanceEditorStep(false);
             Show();
@@ -435,7 +441,7 @@ namespace GoGhost.Duel
 
         bool CanConfirmRule()
         {
-            return pendingRule!=null&&!string.IsNullOrEmpty(pendingRule.Action)
+            return pendingRule!=null&&!string.IsNullOrEmpty(pendingRule.Action)&&!actionOptionPending
                 &&(selectorRow<displayedRules.Count||displayedRules.Count<ConditionalCatalog.PlayerRuleLimit)
                 &&ConditionalCatalog.IsAllowed((int)ConditionalCatalog.Response(pendingRule.Action).Operation,pendingRule);
         }

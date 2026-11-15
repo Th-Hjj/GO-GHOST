@@ -6,6 +6,8 @@ The current rule editor pairs **one condition with one action**. The player can 
 
 **Wording — Thomas, 2026-11-14:** the names and descriptions below replace the earlier ones. Older paragraphs in this file that say Keep Firing, Short Burst, Keep Distance, Higher / Lower, Grounded or Away from Threat describe the same entries under their former names.
 
+**Parameters — Thomas, 2026-11-14:** the editor never pre-selects an action's parameter. A newly picked Move, Hold Range, Change Platform, Fire or Dodge waits for its option in the fixed row under the Action card, and Confirm needs it. This is editor state only; `KeepRange`, `DodgeDirection` and the Fire mode keep their serialized defaults for older rules.
+
 **Fire** offers **Steady** and **Rapid**. Rapid (F02, formerly Short Burst) commits the remaining magazine with reduced accuracy and damage, just like manual RMB. In combat and the Test Room, R starts a normal reload when the magazine is partially spent. Any unfinished burst ends immediately. Its remaining shots are discarded.
 
 ## Help

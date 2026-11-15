@@ -41,7 +41,8 @@ namespace GoGhost.Duel
                 if (boxer.Current!=FinalBossBoxer.Punch.None)
                 {
                     bool prep=boxer.Phase==FinalBossBoxer.Stage.Windup || boxer.Phase==FinalBossBoxer.Stage.Slip;
-                    float amount=prep ? Ease(boxer.PhaseProgress) : boxer.Phase==FinalBossBoxer.Stage.Recovery ? 1-Ease(boxer.PhaseProgress) : 1;
+                    // The Meteor's locked hold keeps the full wind-up pose.
+                    float amount=prep ? (boxer.DiveLocked ? 1 : Ease(boxer.PhaseProgress)) : boxer.Phase==FinalBossBoxer.Stage.Recovery ? 1-Ease(boxer.PhaseProgress) : 1;
                     float twist=prep ? -.14f : .19f, dip=prep ? -.07f : 0;
                     switch(boxer.Current)
                     {

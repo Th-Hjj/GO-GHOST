@@ -275,7 +275,8 @@ namespace GoGhost.Duel
         }
         bool FindDive(Vector2 target,out Vector2 contact) => FindDive(target,out contact,out _);
         // surface: which of the surfaces the dive lands on (0 is the floor).
-        bool FindDive(Vector2 target,out Vector2 contact,out int surface)
+        // delay: seconds before the dive leaves, so a moving surface is met where it will be.
+        bool FindDive(Vector2 target,out Vector2 contact,out int surface,float delay=0)
         {
             SampleSurfaces();
             contact=default; surface=-1; float cost=float.PositiveInfinity;
@@ -284,7 +285,7 @@ namespace GoGhost.Duel
                 var s=surfaces[i];
                 float x=Mathf.Clamp(target.x,s.Bounds.min.x+.15f,s.Bounds.max.x-.15f);
                 float flight=Vector2.Distance(actor.Position,new Vector2(x,s.Top(0)))/24f;
-                var point=new Vector2(x,s.Top(flight)+actor.Motor.Size.y*.5f);
+                var point=new Vector2(x,s.Top(delay+flight)+actor.Motor.Size.y*.5f);
                 if (point.y>=actor.Position.y-.28f) continue;
                 float score=(point-target).sqrMagnitude;
                 if (score<cost) { cost=score; contact=point; surface=i; }

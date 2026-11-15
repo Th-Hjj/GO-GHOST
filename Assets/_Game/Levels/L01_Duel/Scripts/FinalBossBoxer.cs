@@ -151,15 +151,24 @@ namespace GoGhost.Duel
                         SetPhase(Stage.Slip,jump.Motion.JumpSpeed / (Mathf.Abs(Physics2D.gravity.y)*jump.Motion.GravityScale));
                         return;
                     }
-                    if (!BeginDive(facts)) { Recover(); return; }
+                    if (!LockDive(facts)) Recover();
+                    return;
                 }
                 StartStroke();
             }
             if (Phase == Stage.Slip)
             {
                 airborne |= !actor.Motor.Grounded;
-                if (Time.time < phaseUntil && !(airborne && actor.Motor.Grounded)) return;
-                if (Current==Punch.Meteor && !BeginDive(facts)) { Recover(); return; }
+                if (diveLocked)
+                {
+                    if (Time.time < phaseUntil) return;
+                    BeginDive();
+                }
+                else
+                {
+                    if (Time.time < phaseUntil && !(airborne && actor.Motor.Grounded)) return;
+                    if (Current==Punch.Meteor) { if (!LockDive(facts)) Recover(); return; }
+                }
                 StartStroke();
             }
             if (Phase == Stage.Active)
@@ -216,22 +225,36 @@ namespace GoGhost.Duel
             return FindJump(sight,Current==Punch.Meteor ? .8f : 0,out jump) && TakeOff(jump);
         }
 
-        bool BeginDive(BossObservation facts)
+        // At the top of the rise the Meteor stops in the air and locks where it will land (Thomas, 2026-11-15):
+        // the dive line and landing outline show for the whole hold, then the dive follows that line without
+        // tracking. It was .2 to .3 s of warning before, only during the dive itself.
+        internal const float DiveHold = .30f;
+        bool diveLocked;
+        int diveSurface;
+        internal bool DiveLocked => diveLocked;
+        bool LockDive(BossObservation facts)
         {
-            var sight=facts.Visible ? OpponentAt(facts,.20f) : jump.Landing;
-            if (!FindDive(sight,out diveTarget,out int landing)) return false;
+            var sight=facts.Visible ? OpponentAt(facts,DiveHold+.20f) : jump.Landing;
+            if (!FindDive(sight,out diveTarget,out diveSurface,DiveHold)) return false;
             if (facts.Visible)
             {
-                // Sight once more for the time the dive itself takes.
+                // Sight once more for the hold and the time the dive itself takes.
                 float flight=Mathf.Min(.6f,Vector2.Distance(diveTarget,actor.Position)/24f);
-                if (FindDive(OpponentAt(facts,flight),out var led,out int ledSurface)) { diveTarget=led; landing=ledSurface; }
+                if (FindDive(OpponentAt(facts,DiveHold+flight),out var led,out int ledSurface,DiveHold)) { diveTarget=led; diveSurface=ledSurface; }
             }
-            OpenDiveLane(landing);
+            actor.Face(diveTarget-actor.Position); LockedFacing=actor.Facing;
+            actor.Motor.HoldInAir();
+            diveLocked=true;
+            SetPhase(Stage.Slip,DiveHold);
+            return true;
+        }
+        void BeginDive()
+        {
+            diveLocked=false;
+            OpenDiveLane(diveSurface);
             var delta=diveTarget-actor.Position;
             actor.Motor.EndAttackMotion();
-            actor.Face(delta); LockedFacing=actor.Facing;
             actor.Motor.StartDash(delta,delta.magnitude+.45f,24f);
-            return true;
         }
 
         // The dive lands on the surface it chose. Every other platform lets it through, so a step of the
@@ -285,6 +308,7 @@ namespace GoGhost.Duel
         void Recover()
         {
             recoveryHand=HandLocal;
+            diveLocked=false;
             CloseDiveLane();
             if (actor.Motor.Grounded || Current==Punch.Meteor) actor.Motor.EndAttackMotion();
             SetPhase(Stage.Recovery,signatureLeap ? Mathf.Max(.76f,accepted.Recovery) : accepted.Recovery);
@@ -322,7 +346,7 @@ namespace GoGhost.Duel
         public Vector2 Fist() { var p=HandLocal; return actor.Position+new Vector2(LockedFacing*p.x,p.y); }
         // Read by the view to warn of the punch being wound up and of the Meteor's landing.
         internal Vector2 StrokeWorld(float t) { var p=StrokePoint(t); return actor.Position+new Vector2(LockedFacing*p.x,p.y); }
-        internal bool Diving => Current==Punch.Meteor && Phase==Stage.Active && Time.time>=ImpactAt+.5f;
+        internal bool Diving => Current==Punch.Meteor && (diveLocked || Phase==Stage.Active) && Time.time>=ImpactAt+.5f;
         internal Vector2 DiveLanding => diveTarget-Vector2.up*(actor.Motor.Size.y*.5f);
         public Bounds PunchArea() => new Bounds(Fist(),Vector3.one*.48f);
         void SampleFist()
@@ -366,6 +390,7 @@ namespace GoGhost.Duel
         public void Cancel()
         {
             CloseDiveLane();
+            diveLocked=false;
             if (InFlight) actor.Sounds?.StopAttack(actor.ActorId,300000+Orders);
             if (Current != Punch.None) actor.Motor?.EndAttackMotion();
             Current=Punch.None; Phase=Stage.Idle; PreviewPunch=Punch.None;

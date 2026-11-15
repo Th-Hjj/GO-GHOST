@@ -8,6 +8,13 @@
 - **Checked:** the game assembly compiles with Unity's bundled compiler outside the Editor (Thomas was in Play Mode). An offline composite of the two plates at the left parallax position, drawn the way the canvas blends them, shows the band before and a solid tower after.
 - **NOT TESTED:** Mission 3 in Play Mode, including the EMP contour trace over the towers, other parallax positions and phase two. The part of the amber row to the right of the tower is not covered by any tower and still shows, as authored.
 
+## 2026-11-15 — Meteor holds .3 s at its apex
+
+- **Asked:** the Meteor's wind-up felt short. Its .45 s wind-up showed only the fist's stroke; the dive line and landing outline appeared only during the .2 to .3 s dive. Thomas chose a .3 s locked hold.
+- **Changed:** `FinalBossBoxer.cs` splits the dive into `LockDive` (choose and fix the landing, face it, hold in the air, `DiveHold` .3 s) and `BeginDive` (open the lane and dash); `Diving` is true through the hold, so the existing warning draws for it. `FinalBossBoxer.Footwork.FindDive` takes the hold as a delay for moving surfaces. `BossMotor2D.HoldInAir` cancels gravity until the next attack motion, as the axe grip already did. The view keeps the full wind-up pose through the hold.
+- **Checked:** the game assembly compiles with Unity's bundled compiler outside the Editor.
+- **NOT TESTED:** everything in play: the hold's look and feel, the line and outline over the hold, a dive at a player who moves during it, a hold that begins after an early landing, and pausing during it.
+
 ## 2026-11-15 — Jump forgiveness; phase-two damage at 85%
 
 - **Asked:** crossing the phase-two platforms was still uncomfortable and cost falls in play. Thomas chose all three jump proposals and asked for phase-two damage slightly lower.

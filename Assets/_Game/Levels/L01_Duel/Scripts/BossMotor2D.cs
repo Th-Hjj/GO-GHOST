@@ -52,7 +52,7 @@ namespace GoGhost.Duel
         int stepIndex;
         bool enabledCombat, launched, leftGround, jumpRequested, dashStopPending;
         float move, speedScale = 1, dashRemaining, dashSpeed, routeAge, progressAge;
-        bool dropping, dropRequested, stepping, holdingAxeGrip;
+        bool dropping, dropRequested, stepping, holdingAxeGrip, hovering;
         float dropHorizontal, stepRemaining,dropLandingX;
         bool fixedDropLanding;
         Vector2 stepPosition;
@@ -121,8 +121,8 @@ namespace GoGhost.Duel
         // Retire attack motion without disabling terrain/body collision or normal gravity.
         public void EndAttackMotion()
         {
-            bool driven=DashActive || holdingAxeGrip;
-            holdingAxeGrip=false;
+            bool driven=DashActive || holdingAxeGrip || hovering;
+            holdingAxeGrip=hovering=false;
             DashActive=dashStopPending=dropping=dropRequested=stepping=jumpRequested=false;
             fixedDropLanding=false;ClearRoute();
             if(body!=null)body.linearVelocity=new Vector2(0,driven?0:body.linearVelocity.y);
@@ -137,6 +137,15 @@ namespace GoGhost.Duel
             body.linearVelocity=Vector2.zero;
             holdingAxeGrip=true;
             return true;
+        }
+
+        // Stay where the body is, in the air, until the next attack motion: the Meteor's locked hold at its apex.
+        internal void HoldInAir()
+        {
+            if(!enabledCombat || body==null)return;
+            EndAttackMotion();
+            body.linearVelocity=Vector2.zero;
+            hovering=true;
         }
 
         // Only a physical catch supplies this aerial takeoff.
@@ -183,7 +192,7 @@ namespace GoGhost.Duel
         public void Stop()
         {
             JumpStartedAt=-1;
-            dropping = dropRequested = stepping = holdingAxeGrip = false;
+            dropping = dropRequested = stepping = holdingAxeGrip = hovering = false;
             DropBlocked = false;
             route = null; DashActive = false; DashBlocked = dashStopPending = false; jumpRequested = false;
             RouteFailed = RouteCompleted = false; RouteFailure = null; launched = leftGround = false;
@@ -209,7 +218,7 @@ namespace GoGhost.Duel
                 airborneDescent = 0f;
             }
             else airborneDescent = -body.linearVelocity.y;
-            if(holdingAxeGrip)
+            if(holdingAxeGrip || hovering)
             {
                 // Counter just this fixed step's gravity while braced on the axe.
                 // Keep ordinary dynamic contacts, without snapping to the anchor.

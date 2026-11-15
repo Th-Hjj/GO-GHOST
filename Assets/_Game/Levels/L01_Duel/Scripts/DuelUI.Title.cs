@@ -430,7 +430,7 @@ namespace GoGhost.Duel
         {
             1700, 610, 905, 748, 40, 1,
             818, 752, 1700, 470, 46, 1,
-            1700, 372, 1080, 438, 58, .6f,
+            1700, 372, 960, 451, 69, .6f,
         };
         Image titleCraft, titleStrobe, titleStrobeGlow;
         int titleRoute;
@@ -503,7 +503,9 @@ namespace GoGhost.Duel
                 chance *= Mathf.Clamp01((new Vector2(x - 858, (y - 760) * 1.4f).magnitude - 90) / 330);
                 Vector2 point = TitlePlatePoint(x, y);
                 // Few behind the logo, where they would only show between the letters.
-                if (point.x > -730 && point.x < 330 && point.y > 50 && point.y < 365) chance *= .3f;
+                if (point.x > -716 && point.x < 244 && point.y > -30 && point.y < 176) chance *= .3f;
+                // None under the hazard band: it divides the starry sky from the city's light.
+                if (point.y < -77 + point.x * .021f + 18) chance = 0;
                 if (Roll() > chance) continue;
                 made++;
                 float bright = Roll(); bright *= bright;

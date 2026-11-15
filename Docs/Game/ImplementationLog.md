@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Title sky refitted to the smaller logo
+
+- **Asked:** finish the title resize: check the star distribution and what else on the page should follow.
+- **Changed:** `DuelUI.Title.cs`: the area where stars are thinned behind the logo now matches the logo's actual place (it had covered the sky above it); no stars are placed under the hazard band; the high aircraft route runs on to end behind the smaller logo at the same speed. `DuelUI.Override.cs`: the logo's glitch spread is scaled with it (7 to 5.6). The star field keeps its seed and count but its positions changed. Logo position, band, plate, figure, searchlights and menu are unchanged.
+- **Checked:** Unity compiled; one Play Mode capture (`Logs/ArtRedesign/title_refit.png`). The aircraft route and the opening NOT OBSERVED.
+
 ## 2026-11-14 — Title proportions
 
 - **Asked:** the logo was too large for the new landscape and the buttons too heavy; keep the hazard band as it is (decision recorded in `CLAUDE.md` and `AGENTS.md`).

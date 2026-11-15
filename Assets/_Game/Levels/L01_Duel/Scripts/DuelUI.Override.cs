@@ -172,7 +172,7 @@ namespace GoGhost.Duel
             // 80% of the size it had on the plain black title, so the night sky has room above and beside it.
             // Its left edge and its distance above the band are unchanged (Thomas, 2026-11-14).
             var logo = OvGlitchWord("GO GHOST", frame, new Vector2(85.6f + 700 - 800, 450 - 377), new Vector2(1400, 292), 272,
-                TextAlignmentOptions.CaplineLeft, 3.4f, 7);
+                TextAlignmentOptions.CaplineLeft, 3.4f, 5.6f);
             if (hold > 0) { var slam = logo.gameObject.AddComponent<SlamIn>(); slam.From = 1.35f; slam.Seconds = .1f; slam.Delay = hold; }
             else OvArrive(logo, new Vector2(-120, 0), 0);
             OvArrive(OvBand(frame, 514), new Vector2(-200, 0), 1 + late);

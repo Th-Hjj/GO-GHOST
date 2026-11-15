@@ -49,14 +49,30 @@ def package_player(staging, output):
             if damaged:
                 raise ValueError(f"ZIP verification failed for {damaged}")
             entries = z.namelist()
-            names = {Path(name).name for name in entries}
-            required = {"Assembly-CSharp.dll", "model.int8.onnx", "voices.bin", "tokens.txt"}
-            if any(".app/Contents/MacOS/" in name for name in entries):
-                required.update({"libonnxruntime.dylib", "libsherpa-onnx-c-api.dylib"})
-            elif any((staging / (exe.stem + "_Data")).is_dir() for exe in staging.glob("*.exe")):
-                required.update({"onnxruntime.dll", "sherpa-onnx-c-api.dll"})
+            prefix = output.stem + "/"
+            names = {name[len(prefix):] for name in entries if name.startswith(prefix)}
+            players = [exe for exe in staging.glob("*.exe")
+                       if (staging / (exe.stem + "_Data")).is_dir()]
+            apps = list(staging.glob("*.app"))
+            if len(players) == 1 and not apps:
+                exe = players[0]
+                data = exe.stem + "_Data"
+                required = {exe.name, "UnityPlayer.dll", data + "/globalgamemanagers"}
+                if "GameAssembly.dll" in names:
+                    required |= {"GameAssembly.dll", data + "/il2cpp_data/Metadata/global-metadata.dat"}
+                else:
+                    required |= {data + "/Managed/Assembly-CSharp.dll",
+                                 "MonoBleedingEdge/EmbedRuntime/mono-2.0-bdwgc.dll"}
+            elif len(apps) == 1 and not players:
+                app = apps[0].name + "/Contents/"
+                if not any(name.startswith(app + "MacOS/") for name in names):
+                    raise ValueError("Missing macOS player executable.")
+                required = {app + "Resources/Data/globalgamemanagers"}
+                if (app + "Resources/Data/Managed/Assembly-CSharp.dll" not in names
+                        and app + "Resources/Data/il2cpp_data/Metadata/global-metadata.dat" not in names):
+                    raise ValueError("Missing macOS game assemblies or IL2CPP metadata.")
             else:
-                raise ValueError("Missing desktop player executable.")
+                raise ValueError("Expected exactly one desktop player.")
             if required - names:
                 raise ValueError(f"Missing player files: {sorted(required - names)}")
         archive.replace(output)

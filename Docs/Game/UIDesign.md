@@ -250,6 +250,8 @@ Thomas confirmed on 2026-11-12 that the game needs a save. The rules below are p
 - **Finishing the game** removes the save. The title then shows New Game alone.
 - **Analytics (Thomas, 2026-11-12):** Continue extends the same analytics record as the saved run. Only New Game starts a new record. The save therefore stores which record it belongs to.
 
+**Recovery fixes (2026-11-14).** Continue keeps all known historical rules, including parameters that need reselection; the existing validation blocks Test Room and Start Mission until repaired. The automatic slot commits the drawing and progress together and retains one previous snapshot. If the current file is damaged, Continue restores that snapshot and tells the player; unsupported newer saves are preserved. A failed write leaves the committed data available, keeps the drawing eligible for retry, and shows a persistent, non-blocking save notice. Successful retry clears that failure notice. This pass does not create a new player build.
+
 ### Key rebinding
 
 Thomas confirmed on 2026-11-12 that keys must be rebindable. The rules below are proposed.

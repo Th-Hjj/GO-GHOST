@@ -18,6 +18,38 @@ namespace GoGhost.Duel
         UnityEngine.UI.Graphic[] policeFill = System.Array.Empty<UnityEngine.UI.Graphic>();
         UnityEngine.UI.Graphic playerFill;
         RectTransform trainingBack;
+        RectTransform saveNoticePanel;
+        TMP_Text saveNoticeText;
+        string displayedSaveNotice;
+        float saveNoticeAt;
+
+        void UpdateSaveNotice()
+        {
+            string message = game.SaveNotice;
+            if (message != displayedSaveNotice) { displayedSaveNotice = message; saveNoticeAt = Time.unscaledTime; }
+            // Recovery is informational; an unresolved failure/repair message stays visible.
+            bool recoveryOnly = message == "Restored your previous save.";
+            bool visible = !string.IsNullOrEmpty(message) && (!recoveryOnly || Time.unscaledTime - saveNoticeAt < 10);
+            if (!visible) { if (saveNoticePanel != null) saveNoticePanel.gameObject.SetActive(false); return; }
+            if (saveNoticePanel == null)
+            {
+                saveNoticePanel = Image(canvas, Vector2.zero, new Vector2(680, 64), NeuralPalette.Background).rectTransform;
+                saveNoticePanel.name = "Save status";
+                saveNoticePanel.anchorMin = saveNoticePanel.anchorMax = new Vector2(.5f, 1);
+                saveNoticePanel.pivot = new Vector2(.5f, 1);
+                saveNoticePanel.anchoredPosition = new Vector2(0, -12);
+                saveNoticeText = Text(message, saveNoticePanel, Vector2.zero, new Vector2(632, 56), 24);
+                saveNoticeText.rectTransform.anchorMin = Vector2.zero;
+                saveNoticeText.rectTransform.anchorMax = Vector2.one;
+                saveNoticeText.rectTransform.offsetMin = new Vector2(24, 4);
+                saveNoticeText.rectTransform.offsetMax = new Vector2(-24, -4);
+            }
+            saveNoticePanel.sizeDelta = new Vector2(Mathf.Min(680, canvas.rect.width - 64), 64);
+            saveNoticePanel.gameObject.SetActive(true);
+            saveNoticePanel.SetAsLastSibling();
+            saveNoticeText.text = message;
+            saveNoticeText.color = recoveryOnly ? NeuralPalette.Primary : NeuralPalette.Danger;
+        }
 
         void BuildTrainingButtons()
         {
@@ -193,6 +225,7 @@ namespace GoGhost.Duel
         {
             if (game == null) return;
             UpdateDialogueOverlay();
+            UpdateSaveNotice();
             UpdateCreationWords();
             UpdateHurtFlash();
             UpdateOverlayInput();

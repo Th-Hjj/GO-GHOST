@@ -97,7 +97,16 @@ public static class PlayMetrics
     public static Attempt Current { get; private set; }
     public static RunData Run => run;
     public static string LastSaveError { get; private set; }
-    public static string DirectoryPath => Path.Combine(Application.persistentDataPath, "Analytics");
+    public static string DirectoryPath
+    {
+        get
+        {
+#if UNITY_EDITOR
+            if (GameSave.TestStorageActive) return GameSave.TestAnalyticsFolder;
+#endif
+            return Path.Combine(Application.persistentDataPath, "Analytics");
+        }
+    }
     public static string JsonPath => run == null ? "" : Path.Combine(DirectoryPath, run.runId + ".json");
     public static string CsvPath => run == null ? "" : Path.Combine(DirectoryPath, run.runId + ".csv");
     public static bool RunActive => run != null && !run.finished;

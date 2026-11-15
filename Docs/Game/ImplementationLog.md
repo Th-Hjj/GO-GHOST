@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-11-15 — Fight entry follow-ups: longer card, no flash, steadier wipe
+
+- **Asked:** after playing stage 2, Thomas found the card too quick to take in, saw something flash as it appeared, and found the transition not smooth.
+- **Found:** the card was built inside the wipe's own callback, after the wipe had moved itself to the front, so for one frame the card was drawn over the wipe. The silhouette and the name also faded in while the wipe was still opening. Building the encounter costs one frame of about 94 ms just after the click, and the wipe, timed by the wall clock, skipped that part of its travel.
+- **Changed:** the card holds until 1.9 s and opens in .32 s; the countdown starts at 2.25 s. `WipeOverlay` returns to the front straight after its callback and advances on its own clock by at most 1/30 s per frame. The silhouette no longer slams in; the name lands .4 s after the cover.
+- **Checked:** Unity 6000.6.0f1 compiled. One Play Mode run of Mission 1's entry: no card frame over the wipe in consecutive captures (`Logs/cover_sheet.png`), the card as expected at .9 s (`Logs/card_check.png`), and the only frame over 40 ms inside the entry was the 94 ms one at the start of the wipe. The console was clean.
+- **NOT TESTED:** how it feels at speed (judged from stills and frame times), Missions 2 and 3, the other wipes that share the new clock (title, creation, results, Test Room), Reduce Flashing and builds.
+
 ## 2026-11-15 — Fight entry: target card and countdown roll call
 
 - **Asked:** stage 2 of the UI motion order, the start of a fight. Thomas played a browser prototype of three options (the existing entry, a roll call during the countdown, a target card before it) and chose the target card with the roll call.

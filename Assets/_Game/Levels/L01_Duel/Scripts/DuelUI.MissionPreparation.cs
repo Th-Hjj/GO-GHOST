@@ -84,6 +84,8 @@ namespace GoGhost.Duel
 
         // Seconds from Start Mission: the card pulls apart, then the countdown begins. Trial tuning.
         internal const float EntryCardOpens=1.9f, EntryCardSeconds=2.25f;
+        // The card is whole when the wipe opens on it; the name is the one thing that lands, once the wipe has gone.
+        const float EntryNameAfter=.4f;
         static readonly Vector2[] EntryInkQuad={new Vector2(-3000,-1350),new Vector2(-3000,1350),new Vector2(260,1350),new Vector2(-100,-1350)};
         RectTransform entryCard;
         bool entrySplit;
@@ -103,7 +105,7 @@ namespace GoGhost.Duel
             string name=final?BossAgent.FinalBossName:game.Wave==1?"Gunner":"Swordsman";
             var title=OvText(name,left,new Vector2(76+370-800,0),new Vector2(740,260),236,OverridePalette.Text,TextAlignmentOptions.CaplineLeft,true,-1);
             title.enableAutoSizing=true;title.fontSizeMax=236;title.fontSizeMin=90;
-            var slam=title.gameObject.AddComponent<SlamIn>();slam.From=1.35f;slam.Seconds=.1f;slam.Delay=.14f;
+            var slam=title.gameObject.AddComponent<SlamIn>();slam.From=1.35f;slam.Seconds=.1f;slam.Delay=EntryNameAfter;
 
             var right=Rect("Right",entryCard,Vector2.zero,Vector2.zero);
             right.gameObject.AddComponent<SlideAway>().To=new Vector2(1500,0);
@@ -116,7 +118,6 @@ namespace GoGhost.Duel
             stripes.color=OverridePalette.Ink;stripes.Other=final?Color.clear:mission;stripes.SecondsPerPeriod=0;stripes.raycastTarget=false;
             var panel=Rect("Target panel",right,new Vector2(1250-800,0),new Vector2(560,760));
             DrawProfileSilhouette(panel,final,game.Wave==2,OverridePalette.Ink);
-            var land=panel.gameObject.AddComponent<SlamIn>();land.From=1.12f;land.Seconds=.16f;land.Delay=.08f;
         }
 
         // Leaving for the Test Room, or coming back, is covered like any other change of scene.

@@ -210,19 +210,23 @@ namespace GoGhost.Duel
         public float Direction = 1;
         public System.Action Covered;
         CanvasGroup group;
-        double born;
+        // Its own clock, advanced by at most one slow frame at a time: the page change under it can take
+        // a long frame, and a wipe timed by the wall clock would jump across the screen instead of crossing it.
+        float clock;
         bool fired;
 
-        void OnEnable() => born = Time.unscaledTimeAsDouble;
+        void OnEnable() => clock = 0;
         void LateUpdate() { transform.SetAsLastSibling(); if (Body != null) Apply(); }
 
         // Finish at once: used when another page change arrives before this one has ended.
         public void Cut() { Fire(); Destroy(gameObject); }
-        void Fire() { if (fired) return; fired = true; var call = Covered; Covered = null; call?.Invoke(); }
+        // What the callback builds is added to the canvas after this wipe, so the wipe goes back on top of it at once.
+        void Fire() { if (fired) return; fired = true; var call = Covered; Covered = null; call?.Invoke(); if (this != null) transform.SetAsLastSibling(); }
 
         void Apply()
         {
-            float t = (float)(Time.unscaledTimeAsDouble - born);
+            float t = clock;
+            clock += Mathf.Min(Time.unscaledDeltaTime, 1 / 30f);
             float close = Mathf.Clamp01(t / OvMotion.WipeClose), open = Mathf.Clamp01((t - OvMotion.WipeClose - OvMotion.WipeHold) / OvMotion.WipeOpen);
             if (GameSettings.ReduceFlashing)
             {

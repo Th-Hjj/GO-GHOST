@@ -68,8 +68,13 @@ namespace GoGhost.Duel
             if(outgoingPreparation==null)return;
             if(elapsed<=0)
             {
-                preparationCovered=false;
-                StartWipe(1,OverridePalette.Signal,()=>preparationCovered=true);
+                preparationCovered=entrySplit=false;
+                StartWipe(1,OverridePalette.Signal,()=>{preparationCovered=true;BuildEntryCard();});
+            }
+            if(entryCard!=null && !entrySplit && elapsed>=EntryCardOpens)
+            {
+                entrySplit=true;
+                foreach(var half in entryCard.GetComponentsInChildren<SlideAway>())half.Go();
             }
             outgoingPreparation.transform.SetAsLastSibling();
             float scale=outgoingScale/canvas.GetComponent<Canvas>().scaleFactor;
@@ -77,8 +82,57 @@ namespace GoGhost.Duel
             outgoingPreparation.alpha=preparationCovered?0:1;
         }
 
+        // Seconds from Start Mission: the card pulls apart, then the countdown begins. Trial tuning.
+        internal const float EntryCardOpens=1f, EntryCardSeconds=1.24f;
+        static readonly Vector2[] EntryInkQuad={new Vector2(-3000,-1350),new Vector2(-3000,1350),new Vector2(260,1350),new Vector2(-100,-1350)};
+        RectTransform entryCard;
+        bool entrySplit;
+
+        // The wipe opens on the target: the dossier's field and silhouette, and the name the HUD is about to show.
+        void BuildEntryCard()
+        {
+            if(game.Wave>DuelGame.FinalBossWave || game.ProfileSilhouette==null)return;
+            bool final=game.Wave==DuelGame.FinalBossWave;
+            Color mission=MissionColor;
+            entryCard=Rect("Entry card",canvas,Vector2.zero,new Vector2(1600,900));
+            var left=Rect("Left",entryCard,Vector2.zero,Vector2.zero);
+            left.gameObject.AddComponent<SlideAway>().To=new Vector2(-1500,0);
+            var ground=Rect("Ground",left,Vector2.zero,Vector2.zero).gameObject.AddComponent<QuadMorph>();
+            ground.color=OverridePalette.Ink;ground.To=EntryInkQuad;ground.raycastTarget=false;
+            OvText("Mission "+game.Wave,left,new Vector2(76+300-800,450-316),new Vector2(600,50),44,mission,TextAlignmentOptions.CaplineLeft,false,1);
+            string name=final?BossAgent.FinalBossName:game.Wave==1?"Gunner":"Swordsman";
+            var title=OvText(name,left,new Vector2(76+370-800,0),new Vector2(740,260),236,OverridePalette.Text,TextAlignmentOptions.CaplineLeft,true,-1);
+            title.enableAutoSizing=true;title.fontSizeMax=236;title.fontSizeMin=90;
+            var slam=title.gameObject.AddComponent<SlamIn>();slam.From=1.35f;slam.Seconds=.1f;slam.Delay=.14f;
+
+            var right=Rect("Right",entryCard,Vector2.zero,Vector2.zero);
+            right.gameObject.AddComponent<SlideAway>().To=new Vector2(1500,0);
+            var field=Rect("Target field",right,Vector2.zero,Vector2.zero).gameObject.AddComponent<QuadMorph>();
+            field.color=final?Color.white:mission;field.Rainbow=final;field.raycastTarget=false;
+            field.To=final?RainbowFieldQuad:FieldQuad;
+            var edge=Rect("Edge",right,new Vector2(863-800,0),new Vector2(ScreenSpan,34));
+            edge.localRotation=Quaternion.Euler(0,0,82.4f);
+            var stripes=edge.gameObject.AddComponent<StripeGraphic>();
+            stripes.color=OverridePalette.Ink;stripes.Other=final?Color.clear:mission;stripes.SecondsPerPeriod=0;stripes.raycastTarget=false;
+            var panel=Rect("Target panel",right,new Vector2(1250-800,0),new Vector2(560,760));
+            DrawProfileSilhouette(panel,final,game.Wave==2,OverridePalette.Ink);
+            var land=panel.gameObject.AddComponent<SlamIn>();land.From=1.12f;land.Seconds=.16f;land.Delay=.08f;
+        }
+
+        // Leaving for the Test Room, or coming back, is covered like any other change of scene.
+        WipeOverlay actionWipe;
+        internal bool WipeThen(float direction,System.Action act)
+        {
+            if(actionWipe!=null||wipePending)return false;
+            if(pageControls!=null)pageControls.blocksRaycasts=false;
+            actionWipe=StartWipe(direction,OverridePalette.Signal,()=>{actionWipe=null;if(pageControls!=null)pageControls.blocksRaycasts=true;act();});
+            return true;
+        }
+
         internal void EndPreparationFade()
         {
+            if(entryCard!=null)Destroy(entryCard.gameObject);
+            entryCard=null;
             if(outgoingPreparation!=null)Destroy(outgoingPreparation.gameObject);
             outgoingPreparation=null;
         }

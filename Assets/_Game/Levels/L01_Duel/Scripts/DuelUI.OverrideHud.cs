@@ -15,6 +15,23 @@ namespace GoGhost.Duel
         float[] lagValue = System.Array.Empty<float>(), lagSeen = System.Array.Empty<float>(), lagAt = System.Array.Empty<float>();
         readonly Graphic[] invasionChips = new Graphic[2];
         CanvasGroup waveTitleGroup;
+        // The countdown calls the roll: the mission, the Boss on "3", the player on "2". Seconds into the countdown; trial tuning.
+        const float TitleLineSpan = 2400, BossRollAt = .06f, PlayerRollAt = 1.06f;
+        RectTransform titleLine, titleSlab;
+        Vector2 titleSlabHome, playerNameHome;
+        TMP_Text[] bossNames = System.Array.Empty<TMP_Text>();
+        Vector2[] bossNameHome = System.Array.Empty<Vector2>();
+        Graphic[] bossTracks = System.Array.Empty<Graphic>();
+        Graphic playerTrack;
+        TMP_Text playerNameText;
+
+        // How far a name has arrived, how full its bar is, and whether the bar is on screen yet.
+        (float name, float fill, bool shown) Roll(float at)
+        {
+            if (game.Phase != DuelPhase.Prepare) return (1, 1, true);
+            float c = DuelGame.PreparationSeconds - game.PreparationRemaining;
+            return (OvMotion.Snap((c - at) / .24f), OvMotion.Snap((c - at - .06f) / .5f), c >= at);
+        }
         SlamIn preparationSlam;
 
         // Arena interior in the battle HUD's local coordinates, for the layout the sidebar settles into.
@@ -76,7 +93,7 @@ namespace GoGhost.Duel
         void BuildOverrideHud(RectTransform hud)
         {
             var arena = ArenaOnHud();
-            waveTitleGroup = null; preparationSlam = null;
+            waveTitleGroup = null; preparationSlam = null; titleLine = titleSlab = null;
             if (game.Phase == DuelPhase.Training && !game.GhostArena)
             {
                 var chip = OvText("Test Room", hud, Vector2.zero, new Vector2(200, 46), 34, OverridePalette.TextDim, TextAlignmentOptions.Capline, false, 1);
@@ -93,9 +110,17 @@ namespace GoGhost.Duel
                 var root = Rect("Mission title", hud, Vector2.zero, Vector2.zero);
                 waveTitleGroup = root.gameObject.AddComponent<CanvasGroup>();
                 waveTitleGroup.blocksRaycasts = false;
-                var line = Rect("Hazard line", root, new Vector2(arena.center.x, arena.yMax - 156), new Vector2(ScreenSpan, 12)).gameObject.AddComponent<StripeGraphic>();
+                // The line is drawn across from the left inside a strip that opens.
+                titleLine = Rect("Line draw", root, Vector2.zero, new Vector2(0, 12));
+                titleLine.pivot = new Vector2(0, .5f);
+                titleLine.anchoredPosition = new Vector2(arena.center.x - TitleLineSpan / 2, arena.yMax - 156);
+                titleLine.gameObject.AddComponent<RectMask2D>();
+                var line = Rect("Hazard line", titleLine, Vector2.zero, new Vector2(ScreenSpan, 12)).gameObject.AddComponent<StripeGraphic>();
+                line.rectTransform.anchorMin = line.rectTransform.anchorMax = new Vector2(0, .5f);
+                line.rectTransform.anchoredPosition = new Vector2(TitleLineSpan / 2, 0);
                 line.Band = 14; line.color = OverridePalette.Signal; line.raycastTarget = false;
                 var slab = Rect("Title slab", root, new Vector2(arena.center.x, arena.yMax - 84), new Vector2(400, 100)).gameObject.AddComponent<SlabGraphic>();
+                titleSlab = slab.rectTransform; titleSlabHome = titleSlab.anchoredPosition;
                 slab.color = OverridePalette.Text; slab.Cut = 22; slab.raycastTarget = false;
                 waveTitle = OvText(game.WaveLabel, slab.transform, new Vector2(0, -1), new Vector2(400, 100), 84, OverridePalette.Ink, TextAlignmentOptions.Capline, true, 1);
                 slab.rectTransform.sizeDelta = new Vector2(waveTitle.GetPreferredValues().x + 108, 100);
@@ -108,6 +133,8 @@ namespace GoGhost.Duel
             lagValue = new float[count]; lagSeen = new float[count]; lagAt = new float[count];
             bossHealthText = new HealthTextState[count];
             bossHealthGroups = new CanvasGroup[count];
+            bossNames = new TMP_Text[count]; bossNameHome = new Vector2[count]; bossTracks = new Graphic[count];
+            bool counting = game.Phase == DuelPhase.Prepare;
             bossBarWidth = count > 1 ? 350 : 720;
             float points = count > 1 ? 48 : 68;
             for (int i = 0; i < count; i++)
@@ -122,8 +149,9 @@ namespace GoGhost.Duel
                 var name = OvText(label, bar, new Vector2(x - bossBarWidth * .15f, 376), new Vector2(bossBarWidth * .7f, 70), points,
                     actor.IsTrainingEnemy ? OverridePalette.TextDim : OverridePalette.Text, TextAlignmentOptions.CaplineLeft);
                 name.enableAutoSizing = true; name.fontSizeMax = points; name.fontSizeMin = 28;
+                bossNames[i] = name; bossNameHome[i] = name.rectTransform.anchoredPosition;
                 policeHealth[i] = OvText("", bar, new Vector2(x + bossBarWidth * .3f, 376), new Vector2(bossBarWidth * .4f, 70), points, colour, TextAlignmentOptions.CaplineRight);
-                OvBar(bar, new Vector2(x, 325), bossBarWidth, OverridePalette.SurfaceHover);
+                bossTracks[i] = OvBar(bar, new Vector2(x, 325), bossBarWidth, OverridePalette.SurfaceHover);
                 bossLag[i] = OvBarFill(bar, new Vector2(x, 325), bossBarWidth, OverridePalette.Text);
                 if (actor.IsFinalBoss)
                 {
@@ -135,16 +163,18 @@ namespace GoGhost.Duel
                 }
                 else policeFill[i] = OvBarFill(bar, new Vector2(x, 325), bossBarWidth, colour);
                 float fraction = actor.Health.MaxHealth > 0 ? (float)actor.Health.CurrentHealth / actor.Health.MaxHealth : 0;
-                lagValue[i] = lagSeen[i] = fraction; lagAt[i] = float.NegativeInfinity;
+                // During the countdown the bar fills from empty, so nothing waits behind it.
+                lagValue[i] = lagSeen[i] = counting ? 0 : fraction; lagAt[i] = float.NegativeInfinity;
             }
 
             var playerBar = Rect("Player health", hud, Vector2.zero, Vector2.zero);
-            OvBar(playerBar, new Vector2(0, -333), PlayerBarWidth, OverridePalette.SurfaceHover);
+            playerTrack = OvBar(playerBar, new Vector2(0, -333), PlayerBarWidth, OverridePalette.SurfaceHover);
             playerFill = OvBarFill(playerBar, new Vector2(0, -333), PlayerBarWidth, NeuralPalette.Primary);
             var playerName = Text(game.Appearance.DisplayName, playerBar, new Vector2(-PlayerBarWidth * .15f, -384), new Vector2(PlayerBarWidth * .7f, 64), 44,
                 TextAlignmentOptions.MidlineLeft, CharacterNameFont(true));
             playerName.color = OverridePalette.Text; playerName.textWrappingMode = TextWrappingModes.NoWrap;
             playerName.enableAutoSizing = true; playerName.fontSizeMin = 18; playerName.fontSizeMax = 44;
+            playerNameText = playerName; playerNameHome = playerName.rectTransform.anchoredPosition;
             playerHealth = OvText("", playerBar, new Vector2(PlayerBarWidth * .3f, -384), new Vector2(PlayerBarWidth * .4f, 70), 68, OverridePalette.Text, TextAlignmentOptions.CaplineRight);
 
             if (game.Phase == DuelPhase.Prepare)

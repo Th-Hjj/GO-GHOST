@@ -929,6 +929,24 @@ namespace GoGhost.Duel
         }
     }
 
+    // Half of a card that pulls away along its cut.
+    public sealed class SlideAway : MonoBehaviour
+    {
+        public Vector2 To;
+        public float Seconds = .22f;
+        RectTransform rect;
+        Vector2 home;
+        double at = -1;
+
+        public void Go() { rect = (RectTransform)transform; home = rect.anchoredPosition; at = Time.unscaledTimeAsDouble; }
+        void LateUpdate()
+        {
+            if (at < 0) return;
+            float t = Mathf.Clamp01((float)(Time.unscaledTimeAsDouble - at) / Seconds);
+            rect.anchoredPosition = home + To * (1 - Mathf.Pow(1 - t, 3));
+        }
+    }
+
     // One of the two sentence cards driven into the other: a short pull back, then the hit.
     public sealed class CardSlam : MonoBehaviour
     {

@@ -12,6 +12,7 @@ namespace GoGhost.Duel
     public sealed partial class DuelGame : MonoBehaviour
     {
         public const float PreparationSeconds = 3f;
+        const float BossReadyAt = 2f;
         public float PreparationRemaining => Phase == DuelPhase.Prepare ? Mathf.Max(0, PreparationSeconds - phaseTime) : 0;
         [SerializeField] InputActionAsset inputActions;
         [SerializeField] TMP_FontAsset font;
@@ -482,14 +483,19 @@ namespace GoGhost.Duel
             }
             else if (Phase == DuelPhase.Prepare)
             {
+                float before = phaseTime;
                 phaseTime += Time.deltaTime;
+                // On "1" each Boss answers with one white step.
+                if (before < BossReadyAt && phaseTime >= BossReadyAt)
+                    foreach (var actor in actors) if (actor != null && actor.View != null) actor.View.Hit();
                 if (phaseTime >= PreparationSeconds) BeginCombat();
             }
             else if (Phase == DuelPhase.MissionEntry)
             {
                 phaseTime += Time.deltaTime;
                 ui.FadePreparation(phaseTime);
-                if (phaseTime >= PreparationFadeSeconds + .15f)
+                // A numbered mission opens on its target card; the Bonus keeps the short entry.
+                if (phaseTime >= (Wave <= FinalBossWave ? DuelUI.EntryCardSeconds : PreparationFadeSeconds + .15f))
                     StartCountdown();
             }
         }

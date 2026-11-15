@@ -22,7 +22,7 @@ namespace GoGhost.Duel
 
         HealthTextState playerHealthText;
         HealthTextState[] bossHealthText = System.Array.Empty<HealthTextState>();
-        const float WaveTitleFadeSeconds = .6f;
+        const float WaveTitleFadeSeconds = .2f;
         TMP_Text waveTitle;
         DamageEdgeGraphic hurtFlash;
         float hurtAt;
@@ -85,12 +85,22 @@ namespace GoGhost.Duel
             if (waveTitle != null)
             {
                 // The encounter clock survives pause/F8 page rebuilds and resets for each attempt.
-                float shown = game.Phase == DuelPhase.Prepare
-                    ? 1 : Mathf.Clamp01(1 - game.FightClock / WaveTitleFadeSeconds);
+                // The name slams in on "3" while its line is drawn across; both leave upward when the fight starts.
+                bool counting = game.Phase == DuelPhase.Prepare;
+                float c = counting ? DuelGame.PreparationSeconds - game.PreparationRemaining : 10;
+                float leave = counting ? 0 : OvMotion.Snap(game.FightClock / WaveTitleFadeSeconds);
+                float shown = (1 - leave) * Mathf.Clamp01(c / .06f);
                 if (waveTitleGroup != null)
                 {
                     waveTitleGroup.alpha = shown;
-                    if (shown <= 0) waveTitleGroup.gameObject.SetActive(false);
+                    if (titleSlab != null)
+                    {
+                        float land = 1 - Mathf.Pow(1 - Mathf.Clamp01(c / .1f), 3);
+                        titleSlab.localScale = Vector3.one * (GameSettings.ReduceFlashing ? 1 : Mathf.Lerp(1.35f, 1, land));
+                        titleSlab.anchoredPosition = titleSlabHome + Vector2.up * (60 * leave);
+                    }
+                    if (titleLine != null) titleLine.sizeDelta = new Vector2(TitleLineSpan * OvMotion.Snap(c / .16f) * (1 - leave), 12);
+                    if (!counting && leave >= 1) waveTitleGroup.gameObject.SetActive(false);
                 }
                 else
                 {
@@ -102,7 +112,16 @@ namespace GoGhost.Duel
 
         void UpdateHealthStatus()
         {
-            playerHealthText.Update(playerHealth, "", game.Player.CurrentHealth);
+            var playerRoll = Roll(PlayerRollAt);
+            playerHealthText.Update(playerHealth, "", Mathf.RoundToInt(game.Player.CurrentHealth * playerRoll.fill));
+            playerHealth.alpha = playerRoll.shown ? 1 : 0;
+            if (playerTrack != null) playerTrack.enabled = playerRoll.shown;
+            if (playerNameText != null)
+            {
+                playerNameText.alpha = playerRoll.name;
+                playerNameText.rectTransform.anchoredPosition = playerNameHome + Vector2.left * (70 * (1 - playerRoll.name));
+            }
+            var bossRoll = Roll(BossRollAt);
             for (int i = 0; i < policeHealth.Length && i < game.Bosses.Count; i++)
             {
                 var actor = game.Bosses[i];
@@ -129,8 +148,15 @@ namespace GoGhost.Duel
                         mark.color=spent||reached?OverridePalette.Text:NeuralPalette.Emp;
                         if(invasionChips[j]!=null)invasionChips[j].color=spent||reached?NeuralPalette.Emp:Color.clear;
                     }
-                bossHealthText[i].Update(policeHealth[i], "", actor.Health.CurrentHealth);
-                float fraction = (float)actor.Health.CurrentHealth / actor.Health.MaxHealth;
+                bossHealthText[i].Update(policeHealth[i], "", Mathf.RoundToInt(actor.Health.CurrentHealth * bossRoll.fill));
+                policeHealth[i].alpha = bossRoll.shown ? 1 : 0;
+                if (i < bossTracks.Length && bossTracks[i] != null) bossTracks[i].enabled = bossRoll.shown;
+                if (i < bossNames.Length && bossNames[i] != null)
+                {
+                    bossNames[i].alpha = bossRoll.name;
+                    bossNames[i].rectTransform.anchoredPosition = bossNameHome[i] + Vector2.left * (70 * (1 - bossRoll.name));
+                }
+                float fraction = (float)actor.Health.CurrentHealth / actor.Health.MaxHealth * bossRoll.fill;
                 policeFill[i].rectTransform.sizeDelta = new Vector2(bossBarWidth * fraction, HealthBarHeight);
                 // An empty slab still draws its slanted end.
                 policeFill[i].enabled = fraction > 0;
@@ -139,8 +165,8 @@ namespace GoGhost.Duel
                     rainbow.UpdateFlow(actor.View.RainbowPhase, policeHealth[i]);
             }
             playerFill.rectTransform.sizeDelta =
-                new Vector2(PlayerBarWidth * game.Player.CurrentHealth / game.Player.MaxHealth, HealthBarHeight);
-            playerFill.enabled = game.Player.CurrentHealth > 0;
+                new Vector2(PlayerBarWidth * game.Player.CurrentHealth / game.Player.MaxHealth * playerRoll.fill, HealthBarHeight);
+            playerFill.enabled = game.Player.CurrentHealth > 0 && playerRoll.fill > 0;
             playerFill.color = game.Rules != null && game.Rules.IsLowHealth
                 ? NeuralPalette.Danger : NeuralPalette.Primary;
         }

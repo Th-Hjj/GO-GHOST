@@ -11,15 +11,19 @@ namespace GoGhost.Duel
         public void StartConfiguredEncounter()
         {
             if (!TrainingPending || Paused || DeveloperToolsOpen || !DialogueAllowsPreparationNavigation || !ui.ConfigurationReady) return;
-            CreateEncounter(true);
+            ui.WipeThen(1, () => { if (TrainingPending && !Paused && !DeveloperToolsOpen) CreateEncounter(true); });
         }
 
         public void BackFromTraining()
         {
             if (Phase != DuelPhase.Training || !DialogueAllowsPreparationNavigation) return;
             if (GhostArena) { LeaveGhostArena(); return; }
-            ClearEncounter();
-            SetPhase(DuelPhase.Configure);
+            ui.WipeThen(-1, () =>
+            {
+                if (Phase != DuelPhase.Training || GhostArena) return;
+                ClearEncounter();
+                SetPhase(DuelPhase.Configure);
+            });
         }
 
         // Kept for existing scripted callers. Test Room itself offers only Back.

@@ -1,5 +1,15 @@
 # GO GHOST slice implementation
 
+## 2026-11-15 — Fight entry: target card and countdown roll call
+
+- **Asked:** stage 2 of the UI motion order, the start of a fight. Thomas played a browser prototype of three options (the existing entry, a roll call during the countdown, a target card before it) and chose the target card with the roll call.
+- **Baseline:** Start Mission's wipe opened on an arena with the mission name, hazard line, both health bars and the Boss already in place; only the countdown number moved. The Test Room was entered and left with a cut.
+- **Changed:** `DuelUI.MissionPreparation.cs` builds the target card when the wipe has covered the overview and pulls its halves apart one second after the click (`SlideAway` in `OverrideGraphics.cs`); `DuelGame.cs` holds mission entry for 1.24 s on numbered missions and gives each Boss one white step two seconds into the countdown. `DuelUI.OverrideHud.cs` and `DuelUI.BattleStatus.cs` drive the mission name, hazard line, names and bars from the countdown clock, and the mission name now leaves upward in .2 s instead of fading over .6 s. `DuelTraining.cs` enters and leaves the Test Room under a wipe through `WipeThen`.
+- **Difference from the prototype:** the Boss already holds its weapon up during the countdown, so the beat on 1 is the white step alone. No lowered pose was added.
+- **Checked:** Unity 6000.6.0f1 compiled. In QHD Play Mode, with the developer Mission 1 fixture and one rule: Start Mission, the card, the countdown at about .3, 1.3 and 2.0 s, the first frames of the fight, then Pause, Configuration, Test Room and Back. Inspected `Logs/start_card.png`, `start_split.png`, `start_count3.png`, `start_count2.png`, `start_count1.png`, `start_fight.png`, `start_testroom.png`, `start_backwipe.png` and `start_back.png`. The console was clean.
+- **NOT OBSERVED:** the Boss's white step (the capture landed after it) and the card halves in mid-travel.
+- **NOT TESTED:** Missions 2 and 3 and their cards, the Bonus entry, Retry, Pause during the countdown, the held result after this change, Reduce Flashing, other resolutions, real input, Check Game Flow and builds. The motion was judged from stills, not watched.
+
 ## 2026-11-15 — Held result: the fight stops on the lethal frame
 
 - **Asked:** audit the UI motion in new-player order, agree an order of work, design each stage before building it. Stage 1 is the end of a fight. Thomas played a browser prototype of three options (the existing cut, a freeze, a slow-motion fall) and chose the freeze.

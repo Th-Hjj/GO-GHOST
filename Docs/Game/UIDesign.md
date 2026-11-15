@@ -90,7 +90,7 @@ Built on 2026-11-14 (`DuelUI.Motion.cs`, `OvMotion` in `OverrideGraphics.cs`). T
 
 | Change | Used for | What happens |
 |---|---|---|
-| Wipe | A change of scene: title to and from the game, creation into preparation, a result into preparation or the title, preparation into the fight | An Ink slab with a Signal leading edge and a hazard tail crosses the screen: 190 ms to cover, 30 ms held, 260 ms to open. The old page stays until it is covered. Forward runs left to right, back to the title right to left |
+| Wipe | A change of scene: title to and from the game, creation into preparation, a result into preparation or the title, preparation into the fight, the Test Room in and out | An Ink slab with a Signal leading edge and a hazard tail crosses the screen: 190 ms to cover, 30 ms held, 260 ms to open. The old page stays until it is covered. Forward runs left to right, back to the title right to left |
 | Flow | Overview, rule editor and Help; Settings and its pages over the title or Pause | The old page stays 150 ms in front while its elements step aside and fade. The new elements start 90 ms in. Between the overview and the editor the character slides, the rule and Help stay, and the title rolls upward inside a mask |
 | Open | Overview to and from Target Profile | The mission-colour field grows out of the target card's four corners in 340 ms and closes back onto the card in 300 ms |
 | Cut | Everything else, including the combat HUD and Pause over a fight | As before. The page's own entrances still play |
@@ -198,7 +198,19 @@ The pages carry no black ground and no scanlines while held. Entrances count fro
 - **Mission cleared (D13):** the mission name on a slab in that mission's colour, CLEARED as the result word, Continue to Mission 2 as the only button.
 - **Finished (D14):** YOU'VE, FINISHED and THE GAME! stack and slam in the way WHO ARE YOU did, with the last line in Signal. The character stands beside them entirely white. Main Menu is the only button. The Bonus result (COMPLETE, Restart, Main Menu) follows D7.
 
-**Countdown (D8).** The mission name enters as a Text slab at the top of the arena over a thin hazard line. 3, 2 and 1 slam in at 330 in the arena centre; 1 is Signal. The HUD is already in place. Everything leaves when combat starts.
+**Fight entry (Thomas, 2026-11-15, trial tuning).** Chosen from a played prototype over the entry it replaces and the roll call alone. Start Mission's wipe opens on a target card instead of the arena: the Target Profile field in the mission colour with the Ink silhouette on the right, and on the left the mission in its colour above the Boss's name, which slams in .33 s after the click. The Final Boss uses the rainbow field. One second after the click the two halves pull apart along the slant in .22 s onto the arena, and the countdown begins at 1.24 s. Retry, the Bonus and the Test Room have no card. Entering the Test Room and Back from it are covered by the wipe, forward and back.
+
+**Countdown (D8).** Three seconds, as before. 3, 2 and 1 slam in at 330 in the arena centre; 1 is Signal. The countdown calls the roll on the combat clock, so Pause holds it:
+
+| Seconds into the countdown | What happens |
+|---|---|
+| 0 | The mission name slams in on its Text slab (1.35 to 1 in .1 s); the hazard line under it is drawn across from the left in .16 s |
+| .06 | The Boss's name arrives from the left; its bar and HP fill from empty in .5 s |
+| 1.06 | The player's name and bar, the same way |
+| 2 | Each Boss shows one white step |
+| 3 | The fight starts. The mission name and its line leave upward in .2 s |
+
+The Rules sidebar still slides in as the countdown begins.
 
 **Pause (D9).** Combat stays visible at about 26% without colour. A hazard band, then Resume (primary), Configuration (secondary) and Main Menu (tertiary), entering from the left 40 ms apart. No title word is added. Pause opens on every page after the title; outside a fight or the Test Room it sits on black and omits Configuration. In Body Configuration, Esc first closes Help or the rule being edited.
 

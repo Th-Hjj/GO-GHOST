@@ -56,17 +56,15 @@ Use the approved tall six-region standing figure from ArtDirection.md. Arms are 
 
 **2026-10-27 consolidation — Thomas:** retain existing concise descriptions except where a removal, merge, rename or behavior change requires correction. A25 Enemy Preparing an Attack, A56 Firing and A61 Move Finished join the historical/nonselectable conditions A40/A39. A rule containing any removed condition remains intact and invalid until edited; never remove one conjunct and run the broader rule. No extra tutorial or State/Event labels.
 
-There are exactly **11 selectable conditions in five categories** and **seven action entries in three picker categories**, retaining five independent runtime operations. Fixed branches are parameters, not separate entries. IDs stay internal; historical definitions remain readable for migration or repair.
+There are exactly **11 selectable conditions in three categories** (Thomas, 2026-11-14: grouped by what the condition is about, replacing the five earlier categories) and **seven action entries in three picker categories**, retaining five independent runtime operations. Fixed branches are parameters, not separate entries. IDs stay internal; historical definitions remain readable for migration or repair.
 
 **Enemy State** and its Enemy Recovering, Enemy Reloading and Enemy Reappeared entries are removed from the selectable catalog. **Q03 Aim at Detected Enemy** remains hidden. **F05 Fire and Keep a Reserve** remains historical and nonselectable; its former Ammo Use replacement is also removed. No Always or replacement Enemy Vulnerable entry is introduced. Old removed rules must not silently re-equip or become a different tactic.
 
 | Category | Ordered conditions and fixed options |
 |---|---|
-| Body State | A51 Where You Stand (On Ground / On Platform / In Air); A04 Low Health |
-| Weapon | A09 Reloading; A17 Fire Button Held; A18 Aiming at Enemy |
-| Position | A52 Enemy Distance (Close / Mid / Far); A45 Near Wall |
-| Attacks | A53 Incoming Attack (Any / Melee / Ranged) |
-| Moments | A03 Landed; A06 You Got Hit; A13 Your Shot Hit |
+| Body | A51 Where You Stand (On Ground / On Platform / In Air); A03 Landed; A45 Near Wall; A04 Low Health; A06 You Got Hit |
+| Weapon | A09 Reloading; A17 Fire Button Held; A18 Aiming at Enemy; A13 Your Shot Hit |
+| Enemy | A52 Enemy Distance (Close / Mid / Far); A53 Incoming Attack (Any / Melee / Ranged) |
 
 You Got Hit, Landed and Your Shot Hit are events. The other eight selectable conditions are states. Q06 Aim Assist is retired; existing rules using it require reselection. The rows below describe the 11 selectable observations.
 

@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Condition categories: Body / Weapon / Enemy
+
+- **Asked:** regroup the conditions by what they are about (decision recorded in `CLAUDE.md` and `AGENTS.md`).
+- **Changed:** `ConditionalCatalog.Categories` and each selectable condition's category in `ConditionalLoadout.cs`; `ConditionalRules.md` follows. Condition IDs, labels, behaviour and voice lines are unchanged.
+- **Checked:** static only. The editor was in Play Mode for another session, so Unity had not recompiled when this was committed; the change is one array of names and category numbers. Compile and the editor's condition step NOT TESTED.
+
 ## 2026-11-14 — Rule wording, On Platform, Change Platform Left / Right
 
 - **Asked:** apply the approved renames without the trailing explanations, split ground from platform, and add moving to the platform on the left or right (decision recorded in `CLAUDE.md` and `AGENTS.md`).

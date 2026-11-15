@@ -283,16 +283,17 @@ namespace GoGhost.Duel
             new[]{ActionIds.AutoAim},new[]{ActionIds.Fire,ActionIds.ShortBurst},new[]{ActionIds.Dodge}
         };
         public static readonly string[] OperationLabels={"Horizontal Movement","Jump","Aim","Fire","Dodge"};
-        public static readonly string[] Categories={"Body State","Weapon","Position","Attacks","Moments"};
+        // Grouped by what the condition is about: the player's body, the revolver or an enemy.
+        public static readonly string[] Categories={"Body","Weapon","Enemy"};
         public static readonly ConditionEntry[] Conditions={
-            new ConditionEntry(ConditionIds.GroundState,"Where You Stand",0),new ConditionEntry(ConditionIds.LowHealth,"Low Health",0),
+            new ConditionEntry(ConditionIds.GroundState,"Where You Stand",0),new ConditionEntry(ConditionIds.Landed,"Landed",0,true),
+            new ConditionEntry(ConditionIds.NearWall,"Near Wall",0),new ConditionEntry(ConditionIds.LowHealth,"Low Health",0),
+            new ConditionEntry(ConditionIds.TookDamage,"You Got Hit",0,true,true),
             new ConditionEntry(ConditionIds.Reloading,"Reloading",1),new ConditionEntry(ConditionIds.TriggerHeld,"Fire Button Held",1),
             new ConditionEntry(ConditionIds.EnemyNearAim,"Aiming at Enemy",1,enemySource:true),
+            new ConditionEntry(ConditionIds.HitEnemy,"Your Shot Hit",1,true,true),
             new ConditionEntry(ConditionIds.EnemyDistance,"Enemy Distance",2,enemySource:true),
-            new ConditionEntry(ConditionIds.NearWall,"Near Wall",2),
-            new ConditionEntry(ConditionIds.IncomingAttack,"Incoming Attack",3,enemySource:true),
-            new ConditionEntry(ConditionIds.Landed,"Landed",4,true),new ConditionEntry(ConditionIds.TookDamage,"You Got Hit",4,true,true),
-            new ConditionEntry(ConditionIds.HitEnemy,"Your Shot Hit",4,true,true)
+            new ConditionEntry(ConditionIds.IncomingAttack,"Incoming Attack",2,enemySource:true)
         };
         static readonly int[] SharedConditionIds=Array.ConvertAll(Conditions,c=>c.Id);
         // Preserve the indexed API; every operation references the same ordered catalog.

@@ -115,7 +115,8 @@ namespace GoGhost.Duel
                 stroke.transform.SetParent(group.transform, false);
                 stroke.sprite = StickmanSprites.Block;
                 stroke.sharedMaterial = material;
-                stroke.color = NeuralPalette.Alpha(GhostHologram.Body, .85f);
+                // Well under GHOST's own strength: he is the same blue, and at full strength he vanished in front of a stroke.
+                stroke.color = NeuralPalette.Alpha(GhostHologram.Body, .38f);
                 if (surface != null) { stroke.sortingLayerID = surface.sortingLayerID; stroke.sortingOrder = surface.sortingOrder - 1; }
                 Vector2 size = stroke.sprite.bounds.size;
                 stroke.transform.position = new Vector3(x, (foot + head) * .5f, 0);

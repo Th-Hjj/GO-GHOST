@@ -278,6 +278,10 @@ namespace GoGhost.Duel
                 if (highlighted == system) colour = Color.Lerp(NeuralPalette.Body(system), Color.white, .5f + .5f * Mathf.Sin(time * 9));
                 if (system == installedSystem && installAge >= 0 && installAge < BodyInstallSeconds)
                     colour = Color.Lerp(Color.white, colour, installAge / BodyInstallSeconds);
+                // A newly picked action takes its part in one white step.
+                float picked = time - figurePickAt;
+                if (system == figurePickSystem && picked >= 0 && picked < .3f)
+                    colour = Color.Lerp(Color.white, colour, picked < .08f ? 0 : (picked - .08f) / .22f);
                 return colour;
             }
             Color legs = Part(NeuralBodySystem.Legs), torso = Part(NeuralBodySystem.Spine), arms = Part(NeuralBodySystem.Arms);
@@ -289,11 +293,41 @@ namespace GoGhost.Duel
             float slide = Mathf.Clamp01((time - figureSlideAt) / figureWalkSeconds);
             bool walking = slide < 1;
             Vector2 offset = figureSlideFrom * (1 - OvMotion.Glide(slide));
-            overviewFigureRoot.anchoredPosition = overviewFigureHome + offset;
+            figureScaleNow = walking ? Mathf.Lerp(figureScaleFrom, figureScale, OvMotion.Glide(slide)) : figureScale;
+            // In the editor the body answers the action under the pointer with a two-step accent of its own pose:
+            // the arms lift the revolver, the legs sink, the torso leans back.
+            var posed = selectorRow >= 0 ? previewSystem : NeuralBodySystem.None;
+            if (posed != NeuralBodySystem.None) figurePoseSystem = posed;
+            figurePose = Mathf.MoveTowards(figurePose, posed != NeuralBodySystem.None && posed == figurePoseSystem ? 1 : 0, Time.unscaledDeltaTime / .09f);
+            float pose = figurePose >= 1 ? 1 : figurePose >= .5f ? .5f : 0;
+            float sink = figurePoseSystem == NeuralBodySystem.Legs ? .06f * pose : 0;
+            float dip = time >= figureDipAt && time < figureDipAt + .09f ? 12 : 0;
+            PoseFigure(figurePoseSystem == NeuralBodySystem.Arms ? 9 * pose : 0, figurePoseSystem == NeuralBodySystem.Spine ? 7 * pose : 0);
+            // The feet stay on the floor while the body sinks.
+            float feet = .75f * 245 * figureScaleNow;
+            overviewFigureRoot.localScale = new Vector3(figureScaleNow, figureScaleNow * (1 - sink), 1);
+            overviewFigureRoot.anchoredPosition = overviewFigureHome + offset + Vector2.down * (feet * sink + dip);
             if (figureFloor != null)
                 figureFloor.localScale = new Vector3(walking ? OvMotion.Snap(Mathf.Clamp01((slide - .3f) / .6f)) : 1, 1, 1);
             figureFramePosition = figureFrameHome + offset;
             figureSeenAt = time;
+        }
+
+        // Turns the arms about the shoulder and everything above the hips about the hip, from the standing pose.
+        void PoseFigure(float armsTurn, float torsoTurn)
+        {
+            Vector2 shoulder = new Vector2(0, .30f * 245), hip = new Vector2(0, -.12f * 245);
+            static Vector2 About(Vector2 point, Vector2 pivot, float degrees)
+                => pivot + (Vector2)(Quaternion.Euler(0, 0, degrees) * (point - pivot));
+            foreach (var (part, at, turn, group) in figureParts)
+            {
+                if (part == null) continue;
+                Vector2 place = at; float angle = turn;
+                if (group == 2) { place = About(place, shoulder, armsTurn); angle += armsTurn; }
+                if (group >= 1) { place = About(place, hip, torsoTurn) + Vector2.left * (2.4f * torsoTurn); angle += torsoTurn; }
+                part.anchoredPosition = place;
+                part.localRotation = Quaternion.Euler(0, 0, angle);
+            }
         }
 
         // The player exactly as the fight shows them at rest: OfficerVisual's standing pose, its limb widths,
@@ -379,6 +413,14 @@ namespace GoGhost.Duel
             {
                 figureArms.Add(Part(palm, trigger, new Vector2(.10f, .075f), 12, NeuralPalette.Primary));
                 figureArms.Add(Part(palm, support, new Vector2(.095f, .065f), 12, NeuralPalette.Primary));
+            }
+            // Built in this order: four arm segments, six leg pieces, torso, head, then the revolver and the hands.
+            // Group 0 is the legs, 1 the torso and head, 2 the arms with everything they hold.
+            figureParts.Clear();
+            for (int i = 0; i < root.childCount; i++)
+            {
+                var part = (RectTransform)root.GetChild(i);
+                figureParts.Add((part, part.anchoredPosition, part.localEulerAngles.z, i < 4 ? 2 : i < 10 ? 0 : i < 12 ? 1 : 2));
             }
             return root;
         }

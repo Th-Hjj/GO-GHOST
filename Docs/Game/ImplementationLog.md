@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Rule editor redesign: centred character, side slabs, motion
+
+- **Asked:** build the approved prototype into the game (decision recorded in `CLAUDE.md` and `AGENTS.md`).
+- **Changed:** `DuelUI.OverrideEditor.cs`: the character stands centred at 1.15 scale on a 520 floor; `OvSidePanel` draws the open side's slab and its coloured edge; the Signal frame and join around the condition choices are removed and the choices are 324 wide; cards and options use an overshooting entrance; changed card words rise in; parameter rows unfold; Confirm plays `PlayConfirm` before `CommitRuleChoice`. `DuelUI.OverridePreparation.cs`: the figure changes size along its slide, records its parts, and `PoseFigure` turns arms and upper body for the hover accent; a picked action flashes its part. `OverrideGraphics.cs`: `OvMotion.Back`, `SlabButton.Overshoot`, and the `EdgeWipe`, `CardSlam` and `PopOut` components. `UIDesign.md` follows.
+- **Checked:** Unity compiled; two Play Mode passes with captures in `Logs/RuleWording/` (`m*` first pass, `n*` after refitting the slabs): both steps at rest, a frame mid-change, the arms accent on hover, and a frame of the Confirm sequence. The first pass showed the slab's edge crossing the choice lists; the slabs were refitted and the second pass shows them clear.
+- **Not done / not tested:** the choices of the side being left disappear at once instead of leaving in turn (the page is rebuilt on a side change). The legs and torso accents, the white step on pick, the unfold, the rising card words, the overview-to-editor slide with the size change, Reduce Flashing, the first-rule tutorial over this layout and other aspect ratios NOT TESTED.
+
 ## 2026-11-14 — Rule editor: the character stands on the empty side and walks across
 
 - **Asked:** fill the empty half of the rule editor with the character and design the motion for it (decision recorded in `CLAUDE.md` and `AGENTS.md`).

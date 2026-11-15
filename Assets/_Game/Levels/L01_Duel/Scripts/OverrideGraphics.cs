@@ -127,6 +127,8 @@ namespace GoGhost.Duel
         public static bool Continue;
         public static double Born => Continue ? EntranceStart : System.Math.Max(Time.unscaledTimeAsDouble, EntranceStart);
         public static float Snap(float t) => 1 - Mathf.Pow(1 - Mathf.Clamp01(t), 4);
+        // Arrives past its place and settles back: about a tenth of the distance.
+        public static float Back(float t) { t = Mathf.Clamp01(t) - 1; return 1 + 2.70158f * t * t * t + 1.70158f * t * t; }
         public static float Glide(float t) { t = Mathf.Clamp01(t); return t < .5f ? 4 * t * t * t : 1 - Mathf.Pow(-2 * t + 2, 3) / 2; }
     }
 
@@ -408,6 +410,8 @@ namespace GoGhost.Duel
         public float Shift = 12, EnterDelay = -1, EnterDistance = 90;
         // -1 enters from the left, 1 from the right.
         public float EnterSide = -1;
+        // The entrance runs past its place and settles back.
+        public bool Overshoot;
         // A parameter group that still needs a choice pulses a Signal inner frame.
         public bool Waiting;
         // A leaving page keeps its controls as they looked when the player left.
@@ -451,7 +455,9 @@ namespace GoGhost.Duel
             press = Mathf.MoveTowards(press, available && !Frozen && pressed ? 1 : 0, Time.unscaledDeltaTime / PressSeconds);
             float eased = 1 - (1 - hover) * (1 - hover);
             float arrived = EnterDelay < 0 ? 1 : OvMotion.Snap((float)(Time.unscaledTimeAsDouble - born - EnterDelay) / OvMotion.EnterSeconds);
-            Face.anchoredPosition = new Vector2(Shift * eased - 6 * press + EnterSide * (1 - arrived) * EnterDistance, 0);
+            float travelled = !Overshoot || EnterDelay < 0 ? arrived
+                : OvMotion.Back((float)(Time.unscaledTimeAsDouble - born - EnterDelay) / OvMotion.EnterSeconds);
+            Face.anchoredPosition = new Vector2(Shift * eased - 6 * press + EnterSide * (1 - travelled) * EnterDistance, 0);
             Face.localScale = Vector3.one * (1 - .015f * press);
             group.alpha = arrived;
             var fill = available ? Fill * (1 + .12f * eased) : Dimmed ?? OverridePalette.DisabledFill;
@@ -851,6 +857,65 @@ namespace GoGhost.Duel
                 ring.a = Mathf.Clamp01(t / .25f) * Mathf.Clamp01((BrushLeaves - t) / .2f);
                 Ring(vh, brush, half + 5, 3, ring);
             }
+        }
+    }
+
+    // A panel that opens from, or closes onto, the edge its pivot sits on.
+    public sealed class EdgeWipe : MonoBehaviour
+    {
+        public float From, To = 1, Seconds = .24f, Delay, Over;
+        // Set to continue a wipe that an earlier build of the page began.
+        public double Born = -1;
+        public bool HideWhenClosed;
+
+        void OnEnable() { if (Born < 0) Born = OvMotion.Born; Apply(); }
+        void LateUpdate() => Apply();
+
+        void Apply()
+        {
+            float t = Mathf.Clamp01((float)(Time.unscaledTimeAsDouble - Born - Delay) / Mathf.Max(.01f, Seconds));
+            bool opening = To > From;
+            float eased = opening ? OvMotion.Snap(t) + Over * Mathf.Sin(t * Mathf.PI) * t : t * t;
+            transform.localScale = new Vector3(Mathf.LerpUnclamped(From, To, eased), 1, 1);
+            if (HideWhenClosed && !opening && t >= 1) gameObject.SetActive(false);
+        }
+    }
+
+    // One of the two sentence cards driven into the other: a short pull back, then the hit.
+    public sealed class CardSlam : MonoBehaviour
+    {
+        public float Distance, Seconds = .26f;
+        RectTransform rect;
+        Vector2 home;
+        double born;
+
+        void OnEnable() { rect = (RectTransform)transform; home = rect.anchoredPosition; born = Time.unscaledTimeAsDouble; }
+        void LateUpdate()
+        {
+            float t = Mathf.Clamp01((float)(Time.unscaledTimeAsDouble - born) / Seconds);
+            float x = t < .22f ? -.07f * Distance * OvMotion.Snap(t / .22f)
+                : Mathf.LerpUnclamped(-.07f * Distance, Distance, OvMotion.Back((t - .22f) / .78f));
+            rect.anchoredPosition = home + Vector2.right * x;
+        }
+    }
+
+    // Holds one opacity until its moment, then starts from Peak and fades out, growing if asked.
+    public sealed class PopOut : MonoBehaviour
+    {
+        public float Idle, Peak = 1, Delay, Seconds = .14f, ScaleTo = 1;
+        CanvasGroup group;
+        double born;
+
+        void OnEnable() { born = Time.unscaledTimeAsDouble; if (!TryGetComponent(out group)) group = gameObject.AddComponent<CanvasGroup>(); Apply(); }
+        void LateUpdate() => Apply();
+
+        void Apply()
+        {
+            float t = (float)(Time.unscaledTimeAsDouble - born - Delay) / Seconds;
+            if (t < 0) { group.alpha = Idle; return; }
+            t = Mathf.Clamp01(t);
+            group.alpha = Peak * (1 - t);
+            transform.localScale = Vector3.one * Mathf.Lerp(1, ScaleTo, OvMotion.Snap(t));
         }
     }
 

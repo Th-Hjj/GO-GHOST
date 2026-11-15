@@ -414,7 +414,11 @@ namespace GoGhost.Duel
             if(ActionChoiceReason(pendingRule,action)!=null)return;
             selectingCondition=false;
             if(ConditionalCatalog.PickerAction(pendingRule.Action)!=action)
+            {
                 actionOptionPending=ConditionalCatalog.ActionOptions(action).Length>0;
+                figurePickAt=Time.unscaledTime;
+                figurePickSystem=NeuralPalette.System(ConditionalCatalog.Response(action).Operation);
+            }
             SelectPickerAction(pendingRule,action);
             AdvanceEditorStep(false);
             Show();

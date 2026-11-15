@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-11-15 — Phase-two platforms swing as a wave from left to right
+
+- **Asked:** Thomas was very unhappy with the platforms sinking together. He wanted the original swing height back and a wave from left to right, each platform starting when the one before it is half way. He asked for the design to be restated first, then chose: upward first, continuous, half of a one-way stroke.
+- **Changed:** `PlatformOscillator.cs` swings 1.05 above and below home over 4 s again; a negative start clock holds a platform at home until its turn and its first .4 s are eased. `DuelFinalBossFight.cs` starts the platforms, left to right, one second (a quarter cycle) apart.
+- **Checked:** the game assembly compiles with Unity's bundled compiler outside the Editor (Thomas was in Play Mode).
+- **NOT TESTED:** everything in play: the wave's look, boarding the steps (out of reach about 45% of the time by calculation), the lowest steps dipping to 1.05 above the floor, the peak rising to 7.35 under a ceiling near 9, the boxer's jump planning against the delayed start, and a direct phase-two retry, where the wave starts again from the left.
+
 ## 2026-11-15 — Final Boss arena: the Tower, and platforms that sink together
 
 - **Asked:** Thomas found the phase-two platforms hard to jump onto, with a long wait after a missed window, and noted the layout was Mission 2's, never designed for this fight. He asked for a level-design view of both phases and chose the tower from two drawn layouts.

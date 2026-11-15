@@ -2,16 +2,18 @@ using UnityEngine;
 
 namespace GoGhost.Duel
 {
-    // Final Boss phase two: the shockwave sets the platforms bobbing. Since 2026-11-15 they all sink
-    // together, .6 below home and back, every 3 s. They never rise above home and keep their distance
-    // from each other, so every jump that works on the still tower works at any moment. Before that each
-    // swung 1.05 above and below home over 4 s, opposite to its neighbours, which closed every link
-    // about half the time. A kinematic body driven by velocity pushes riders physically and lets their
-    // grounding read the carrier's speed. FixedUpdate stops while paused; the stage layout owns cleanup.
+    // Final Boss phase two: the shockwave sets the platforms swinging half a tier (1.05) above and below
+    // home over 4 s. They move as a wave from left to right (Thomas, 2026-11-15): each starts upward when
+    // the one on its left reaches the top of its first rise, a quarter of a cycle later, and then keeps
+    // swinging. A platform waits at home until its turn. Sinking together by .6 was tried the same day and
+    // rejected. A kinematic body driven by velocity pushes riders physically and lets their grounding read
+    // the carrier's speed. FixedUpdate stops while paused; the stage layout owns cleanup.
     [RequireComponent(typeof(Collider2D))]
     public sealed class PlatformOscillator : MonoBehaviour
     {
-        public const float Amplitude = .3f, Period = 3f;
+        public const float Amplitude = DuelGame.PlatformTierRise * .5f, Period = 4f;
+        // How long after its left neighbour a platform starts.
+        public const float WaveLag = Period * .25f;
         Rigidbody2D body;
         Vector2 home;
         float phase, clock, rampRemaining;
@@ -33,8 +35,10 @@ namespace GoGhost.Duel
             body.position = new Vector2(home.x, Target(clock));
         }
 
-        // Starts at home with no speed and only ever goes below it.
-        float Target(float time) => home.y - Amplitude * (1 - Mathf.Cos(time / Period * Mathf.PI * 2 + phase));
+        // A negative clock is the wait before this platform's turn in the wave.
+        // The first moments are eased so a waiting platform does not jump to full speed.
+        float Target(float time) => time < 0 ? home.y
+            : home.y + Amplitude * Mathf.Sin(time / Period * Mathf.PI * 2 + phase) * Mathf.SmoothStep(0, 1, time / RampDuration);
 
         // A combatant can see the flight of a moving support, including its EMP start-up ramp.
         internal float DisplacementAfter(float seconds)

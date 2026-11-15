@@ -200,8 +200,11 @@ namespace GoGhost.Duel
             float w = panel.sizeDelta.x, h = panel.sizeDelta.y;
             Vector2 Slot(float left, float top, float width, float height) => new Vector2(-w / 2 + left + width / 2, h / 2 - top - height / 2);
             int selected = selectedConditionIndex < rule.ConditionCount ? rule.GetCondition(selectedConditionIndex).Id : 0;
-            const float categoryWidth = 208, gap = 16, row = 56, pitch = 64;
-            float optionLeft = categoryWidth + gap, optionWidth = w - optionLeft;
+            // The frame around the choices leans by one row's cut. Its room is kept clear on both sides of the
+            // choices, so it never reaches into the category column or past the Condition card's edge.
+            const float categoryWidth = 176, row = 56, pitch = 64, line = 3, margin = 8, lean = 12, clear = 6, link0 = 14;
+            const float frameRoom = line + clear + lean;
+            float optionLeft = categoryWidth + link0 + frameRoom, optionWidth = w - frameRoom - optionLeft;
             int shown = 0, openRow = -1;
             // Opening another category brings its choices in; picking a choice does not.
             bool switched = !enter && builtCategory >= 0 && builtCategory != conditionCategory;
@@ -258,12 +261,12 @@ namespace GoGhost.Duel
             }
             if (openRow < 0 || index == 0) return;
             // A Signal frame ties the open category to the choices that belong to it. It leans like the slabs inside it.
-            const float line = 3, margin = 8;
             float frameTop = -margin, frameBottom = listBottom + margin, height = frameBottom - frameTop;
-            float cut = Mathf.Min(20, Mathf.Round(height * .21f)), slope = cut / height;
-            // Wide enough that the top row's lower corner and the bottom row's upper corner stay inside.
-            float frameLeft = optionLeft - 3 - slope * (height - margin - row);
-            float frameRight = w + 3 + cut - slope * (margin + row);
+            float cut = lean, slope = cut / height;
+            // The top row's lower left corner and the bottom row's upper right corner come closest to the frame;
+            // both keep the same clearance.
+            float reach = line + clear + cut * (1 - (margin + row) / height);
+            float frameLeft = optionLeft - reach, frameRight = optionLeft + optionWidth + reach;
             float link = openRow * pitch + row / 2;
             var frame = Rect("Choice frame", panel, Slot(frameLeft, frameTop, frameRight - frameLeft, height), new Vector2(frameRight - frameLeft, height))
                 .gameObject.AddComponent<SlabGraphic>();

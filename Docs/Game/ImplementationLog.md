@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-11-14 — Rule editor: choice frame refitted
+
+- **Asked:** the Signal frame around the condition choices was out of line with the slabs it encloses.
+- **Cause:** the frame leaned up to 20 units over its whole height and was sized for three rows. With five rows under Body its lower left corner ran into the category column, its right edge passed the Condition card, and the distance to the slabs ran from zero to sixteen units. With the open category below the frame, the join was a few units long and read as a stray mark.
+- **Changed:** `DuelUI.OvConditionStep`: the frame leans by one row's cut (12) whatever its height and keeps the same clearance at its two nearest corners; the category column is 176 wide (was 208) and the choices are 288 wide (was 296), leaving a fixed 14-unit join and the frame's own room on both sides, inside the 520 column.
+- **Checked:** compiled outside the editor, which was in Play Mode; positions worked through for five rows and for two rows with the category below the frame. Not seen in the game: NOT OBSERVED.
+
 ## 2026-11-14 — Rule editor: every action parameter is chosen by the player
 
 - **Asked:** Hold Range, Dodge and Fire arrived with a parameter already selected while Move and Change Platform waited for one; use one rule (decision recorded in `CLAUDE.md` and `AGENTS.md`).

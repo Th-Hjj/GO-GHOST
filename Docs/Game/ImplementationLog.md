@@ -12,6 +12,12 @@
 - **Changed:** `ConditionalLoadout.cs`: new labels, categories, option names, one-sentence descriptions and shorter validation messages; `GroundStateOption` gains OnGround and OnPlatform and the old Grounded value reads "Where You Stand (Reselect)" and fails validation; `PlatformDirectionOption` gains Left and Right. `ConditionalController.Observation.cs` tells the floor from a one-way platform. `ConditionalController.Platforms.cs` picks the nearest reachable platform on the chosen side. Happy's lines follow the names: 18 Mission 3 invasion clips renamed in Unity (GUIDs kept), 3 added, and those 21 plus 9 editor descriptions re-voiced from text with the Voice Studio synthesis; catalog and recipes updated. `ConditionalRules.md` and `ArtDirection.md` follow.
 - **Checked:** Unity compiled; the catalog lists 248 legal invasion rules and every one of their voice keys has a clip; one Play Mode pass captured the overview and both editor steps (`Logs/RuleWording/`). The new clips were not listened to. On Ground / On Platform in a fight, Change Platform Left / Right in a fight, the Mission 3 invasion reading and a save holding an old Grounded rule NOT TESTED.
 
+## 2026-11-14 — GHOST arena: lines drawn by coverage, strokes' rows held still
+
+- **Asked:** the horizontal lines still flickered badly after the pixel snapping; Thomas added that the hologram effect itself may be the cause.
+- **Changed:** the pixel snapping of the outline is withdrawn: lines that each step at their own moment still flicker. In the GHOST arena the outline is now drawn by `ArenaLine.shader`, on quads one pixel larger than the line, each pixel taking the share the line covers; each line's colour is set through a property block. The letters' vertical strokes no longer climb: their rows stand still and the faint rows are .55 instead of .24. The camera still moves in whole pixels. Missions are unchanged.
+- **Checked:** Unity compiled; three frames two apart while the camera was pulling back show the same line thickness and no hard steps (`Logs/ArtRedesign/ghost_line_strip.png`). In motion NOT OBSERVED here; Thomas judges.
+
 ## 2026-11-14 — GHOST fixes: his entrance on the title, steady arena lines
 
 - **Asked:** GHOST appeared before the logo and stood in the air; the platform lines flickered while the arena camera moved.

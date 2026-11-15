@@ -6,7 +6,7 @@ Shader "GO GHOST/Ghost Projection"
     {
         [PerRendererData] _MainTex ("Sprite", 2D) = "white" {}
         _Period ("Row height in pixels at 1440", Float) = 4
-        _Speed ("Rows per second", Float) = 1.8
+        _Speed ("Rows per second", Float) = 0
     }
     SubShader
     {
@@ -38,8 +38,10 @@ Shader "GO GHOST/Ghost Projection"
             fixed4 frag(Varyings i) : SV_Target
             {
                 // Screen rows, so the camera pulling back never changes their size or makes them crawl.
+                // They stand still and the faint rows are only a little darker: over strokes this large,
+                // climbing high-contrast rows read as flicker (Thomas, 2026-11-14).
                 float period = max(3, round(_Period * _ScreenParams.y / 1440));
-                float row = frac(floor(i.clip.y) / period + _Time.y * _Speed) < .62 ? 1 : .24;
+                float row = frac(floor(i.clip.y) / period + _Time.y * _Speed) < .62 ? 1 : .55;
                 fixed4 colour = i.colour;
                 colour.a *= tex2D(_MainTex, i.uv).a * row;
                 return colour;

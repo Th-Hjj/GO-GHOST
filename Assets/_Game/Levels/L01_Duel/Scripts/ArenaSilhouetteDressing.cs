@@ -25,8 +25,9 @@ namespace GoGhost.Duel
         readonly List<SpriteRenderer> frameHairlines = new();
 
         // supports[0] is the floor; the rest are this encounter's one-way platforms.
-        // steady: the camera moves and zooms here, so every line is kept a whole number of pixels thick and
-        // laid on the pixel grid each frame. Otherwise a thin line changes thickness as it travels and flickers.
+        // steady: the camera moves and zooms here. A hard-edged line a few pixels thick changes thickness as it
+        // travels, and snapping it to the pixel grid makes neighbouring lines step at different moments; both flicker.
+        // Here each line is drawn by ArenaLine, which spreads it over the pixels it actually covers.
         public static void Create(Transform attempt, Bounds arena, Collider2D[] supports, ArenaLook look, bool steady = false)
         {
             var surface = supports != null && supports.Length > 0 && supports[0] != null
@@ -37,6 +38,11 @@ namespace GoGhost.Duel
             dressing.material = surface.sharedMaterial;
             dressing.sortingLayer = surface.sortingLayerID;
             dressing.steady = steady;
+            if (steady)
+            {
+                dressing.material = new Material(Resources.Load<Shader>("ArenaLine")) { hideFlags = HideFlags.HideAndDontSave };
+                dressing.owned.Add(dressing.material);
+            }
             dressing.Build(arena, supports, look);
         }
 
@@ -84,23 +90,20 @@ namespace GoGhost.Duel
         Bounds frame;
         SpriteRenderer floorRim;
         Camera view;
-        // The line's thickness and the grid it sits on, in world units. Away from the steady arena both are the authored values.
-        float rim = RimHeight, grid;
-        Vector2 gridOrigin;
+        // One screen pixel in world units; ArenaLine needs each quad that much larger on every side. Zero elsewhere.
+        const float rim = RimHeight;
+        float grid;
 
         void ReadGrid()
         {
-            rim = RimHeight; grid = 0;
+            grid = 0;
             if (!steady) return;
             if (view == null) view = Camera.main;
-            if (view == null) return;
-            grid = 2 * view.orthographicSize / Mathf.Max(1, view.pixelHeight);
-            rim = Mathf.Max(2, Mathf.Round(RimHeight / grid)) * grid;
-            gridOrigin = view.transform.position;
+            if (view != null) grid = 2 * view.orthographicSize / Mathf.Max(1, view.pixelHeight);
         }
 
-        float SnapX(float x) => grid > 0 ? gridOrigin.x + Mathf.Round((x - gridOrigin.x) / grid) * grid : x;
-        float SnapY(float y) => grid > 0 ? gridOrigin.y + Mathf.Round((y - gridOrigin.y) / grid) * grid : y;
+        static float SnapX(float x) => x;
+        static float SnapY(float y) => y;
 
         void PlaceFrame()
         {
@@ -142,11 +145,19 @@ namespace GoGhost.Duel
             quad.sortingLayerID = sortingLayer;
             quad.sortingOrder = 1;
             quad.color = color;
+            if (steady)
+            {
+                var block = new MaterialPropertyBlock();
+                quad.GetPropertyBlock(block);
+                block.SetColor("_Tint", color);
+                quad.SetPropertyBlock(block);
+            }
             return quad;
         }
 
-        static void Place(SpriteRenderer quad, Vector2 centre, Vector2 size)
+        void Place(SpriteRenderer quad, Vector2 centre, Vector2 size)
         {
+            size += Vector2.one * (grid * 2);
             Vector2 source = quad.sprite.bounds.size;
             quad.transform.position = new Vector3(centre.x, centre.y, 0);
             quad.transform.localScale = new Vector3(size.x / source.x, size.y / source.y, 1);

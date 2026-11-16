@@ -89,7 +89,7 @@ namespace GoGhost.Duel
             }
             city.SetFloat("_Radius", boss.WaveRadius(2));
             // The haze turns violet with the front that traces the skyline.
-            if (backdrop != null) backdrop.SetEmpHaze(boss.WaveProgress(2));
+            if (backdrop != null) { backdrop.SetEmpHaze(boss.WaveProgress(2)); backdrop.SetEmpCity(boss.WaveProgress(2)); }
             if (boss.WaveProgress(2) >= 1) Finish();
         }
 
@@ -98,7 +98,7 @@ namespace GoGhost.Duel
             sweeping = false;
             terrain.SetFloat("_Radius", FinishedRadius);
             city.SetFloat("_Radius", FinishedRadius);
-            if (backdrop != null) backdrop.SetEmpHaze(1);
+            if (backdrop != null) { backdrop.SetEmpHaze(1); backdrop.SetEmpCity(1); }
             if (Cards != null) Cards.SetFloat("_Radius", FinishedRadius);
             if (player != null) player.SetFloat("_Radius", -1);
         }

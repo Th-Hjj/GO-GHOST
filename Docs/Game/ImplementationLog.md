@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-11-15 — Moving lights in the three mission backgrounds
+
+- **Asked:** a little motion in all three backgrounds; the two Mission 1 beacons changed together. He chose the crown and the sign letter for Mission 2, then asked for the crown to flow without a rest and a little dimmer and for a real running-light effect on the casino; approved a Mission 3 design; asked for the stutter before the EMP blackout to be removed.
+- **Changed:** `IndustrialArenaBackdrop` splits the beacon layer into two halves with periods 3.2 and 4.3 s. Small tiles in `Resources/Arena` hold the plates' own lit pixels and are drawn over the plates through `SetTileCrop`, which follows the plate's crop: `CasinoCrown1`–`5` (a travelling crest, 2.6 s a turn, .42), `CasinoMarquee1`–`3` (three chase phases, .2 s a step, .8), `CasinoSignLetter` (the S, out for .5 to .9 s every 20 to 40 s), `MegacityCrown1`–`4` (crest climbing, 3.5 s, .38), `MegacityBridge` (a narrowed window of the lit strip crossing in 2.6 s, resting 1.6 s, then back) and `MegacityBeacon` (one point used at four antenna tips, periods 2.9 to 5.3 s). `FinalBossEmpSweep` calls `SetEmpCity` with the third front's progress; at .3 the Mission 3 lights go out, and a direct phase-two entry starts dark. The plate art is unchanged.
+- **Checks:** compiled in the editor. Play Mode captures at 2560×1440: Mission 2 with the crown lit, the S out and every third bulb lit, each on its drawn place with the parallax moved; Mission 3 phase one with the crown, the bridge light and four beacons in place; a direct phase-two entry with every city light reading zero.
+- **NOT TESTED:** Check Game Flow. NOT OBSERVED: the Mission 1 beacons after the split (compiled only), the lights going out during the played EMP transition, Reduce Flashing, other resolutions.
+
 ## 2026-11-15 — Swordsman: no afterblade from a swing that hit
 
 - **Asked:** in the Swordsman's first phase, at point-blank range, two or three hits land very quickly; add a little space.

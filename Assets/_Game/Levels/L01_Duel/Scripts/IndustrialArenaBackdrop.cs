@@ -49,7 +49,7 @@ namespace GoGhost.Duel
 
         Transform player;
         Bounds arena;
-        RawImage far, near, farLights, nearMask;
+        RawImage far, near, farLights, farLightsRight, nearMask;
         Material contourMaterial, hazeMaterial;
         readonly List<Texture2D> hazeTextures = new();
         // Floor haze in the mission colour, and a violet copy once the EMP sweep exists.
@@ -93,7 +93,18 @@ namespace GoGhost.Duel
             if (plates) backdrop.far = backdrop.AddPlate(look.FarLabel, farTexture, look.FarOpacity);
             // Only the factory has this layer: the two stack beacons.
             var lights = plates ? Resources.Load<Texture2D>($"Arena/{look.Artwork}FarLights") : null;
-            if (lights != null) backdrop.farLights = backdrop.AddPlate("Beacons", lights, 1f);
+            if (lights != null)
+            {
+                // Thomas, 2026-11-15: the two beacons no longer change together. Each half of the layer has its own clock.
+                backdrop.farLights = backdrop.AddPlate("Beacon left", lights, 1f);
+                backdrop.farLights.rectTransform.anchorMax = new Vector2(.5f, 1f);
+                backdrop.farLightsRight = backdrop.AddPlate("Beacon right", lights, 1f);
+                backdrop.farLightsRight.rectTransform.anchorMin = new Vector2(.5f, 0f);
+            }
+            bool casino = plates && look.Artwork == "Casino";
+            if (casino) backdrop.AddCrownLights();
+            bool megacity = plates && look.Artwork == "Megacity";
+            if (megacity) backdrop.AddAntennaBeacons();
             backdrop.haze = backdrop.AddHaze("Floor haze", backdrop.FloorHaze(look.Haze));
             backdrop.haze.enabled = FloorHazeShown;
             // Thomas, 2026-11-15: in Mission 3 the half-opacity towers let the far skyline's amber windows show through.
@@ -104,6 +115,8 @@ namespace GoGhost.Duel
                 backdrop.nearMask.color = Color.black;
             }
             if (plates) backdrop.near = backdrop.AddPlate(look.NearLabel, nearTexture, look.NearOpacity);
+            if (casino) backdrop.AddSignLetter();
+            if (megacity) backdrop.AddTowerLights();
             backdrop.AddLitHaze();
             backdrop.UpdateParallax();
         }
@@ -275,8 +288,15 @@ namespace GoGhost.Duel
             return Linear(colour * (HazeStrength * rise * rise), 0);
         });
 
-        // Slow beacon cycle in seconds; the lights dim to a quarter and return.
-        const float BeaconPeriod = 3.2f;
+        // Slow beacon cycles in seconds; the lights dim to a quarter and return.
+        // The two periods differ, so the beacons drift in and out of step.
+        const float BeaconPeriod = 3.2f, BeaconPeriodRight = 4.3f;
+
+        static Color Beacon(float period)
+        {
+            float glow = .5f + .5f * Mathf.Sin(Time.time * 2f * Mathf.PI / period);
+            return new Color(1f, 1f, 1f, Mathf.Lerp(.25f, 1f, glow));
+        }
 
         void LateUpdate()
         {
@@ -284,9 +304,186 @@ namespace GoGhost.Duel
             UpdateLights();
             if (farLights != null)
             {
-                float glow = .5f + .5f * Mathf.Sin(Time.time * 2f * Mathf.PI / BeaconPeriod);
-                farLights.color = new Color(1f, 1f, 1f, Mathf.Lerp(.25f, 1f, glow));
+                farLights.color = Beacon(BeaconPeriod);
+                farLightsRight.color = Beacon(BeaconPeriodRight);
             }
+            UpdateCasinoLights();
+            UpdateMegacityLights();
+        }
+
+        // Mission 3 (Thomas, 2026-11-15, trial): light climbs the near tower's crown, a light crosses the skybridge and
+        // four far antennas carry slow beacons. The front that traces the skyline puts all of it out for phase two.
+        static readonly Rect TowerTile = new Rect(62, 236, 164, 126), BridgeTile = new Rect(864, 207, 72, 16);
+        // Antenna tips on the far plate that show between the near towers; each tile is one 7-pixel point.
+        static readonly Rect[] AntennaTiles =
+            { new Rect(302, 256, 7, 7), new Rect(412, 149, 7, 7), new Rect(624, 164, 7, 7), new Rect(717, 220, 7, 7) };
+        static readonly float[] AntennaPeriods = { 3.7f, 5.3f, 4.6f, 2.9f };
+        const float TowerPeriod = 3.5f, TowerStrength = .38f, AntennaStrength = .7f;
+        const float BridgeFrom = 868, BridgeTo = 932, BridgeCore = 8, BridgeGlow = 20;
+        const float BridgeCrossing = 2.6f, BridgeRest = 1.6f, BridgeStrength = .5f;
+        // The city goes dark once the skyline front is this far out.
+        const float PowerCutAt = .3f;
+        RawImage[] towerTiers, antennas;
+        RawImage bridgeCore, bridgeGlow;
+        float powerCutAt = float.NaN;
+
+        void AddAntennaBeacons()
+        {
+            antennas = new RawImage[AntennaTiles.Length];
+            for (int i = 0; i < antennas.Length; i++) antennas[i] = AddTile($"Antenna beacon {i + 1}", "MegacityBeacon");
+        }
+
+        void AddTowerLights()
+        {
+            towerTiers = new RawImage[4];
+            for (int tier = 0; tier < towerTiers.Length; tier++)
+                towerTiers[tier] = AddTile($"Tower crown tier {tier + 1}", $"MegacityCrown{tier + 1}");
+            bridgeGlow = AddTile("Skybridge light glow", "MegacityBridge");
+            bridgeCore = AddTile("Skybridge light", "MegacityBridge");
+        }
+
+        // 0 while the EMP has not reached the city; 1 once the skyline front has finished (or on a direct phase-two entry).
+        internal void SetEmpCity(float progress)
+        {
+            if (!float.IsNaN(powerCutAt) || progress < PowerCutAt) return;
+            // A direct entry has no transition to watch, so the city is already dark.
+            powerCutAt = progress >= 1 ? float.NegativeInfinity : Time.time;
+        }
+
+        // Full until the power is cut, then dark. Two stutters on the way out were built first; Thomas found them unnecessary.
+        float CityPower() => float.IsNaN(powerCutAt) ? 1 : 0;
+
+        void UpdateMegacityLights()
+        {
+            if (towerTiers == null && antennas == null) return;
+            float power = CityPower();
+            bool steady = GameSettings.ReduceFlashing;
+            if (antennas != null)
+                for (int i = 0; i < antennas.Length; i++)
+                {
+                    if (antennas[i] == null) continue;
+                    float glow = .5f + .5f * Mathf.Sin(Time.time * 2f * Mathf.PI / AntennaPeriods[i] + i * 1.7f);
+                    antennas[i].color = new Color(1f, 1f, 1f, power * AntennaStrength * (steady ? .7f : Mathf.Lerp(.15f, 1f, glow)));
+                }
+            if (towerTiers == null) return;
+            // One crest climbs from the lowest setback to the spire and starts again from the bottom.
+            for (int tier = 0; tier < towerTiers.Length; tier++)
+            {
+                if (towerTiers[tier] == null) continue;
+                float wave = .5f + .5f * Mathf.Cos(2f * Mathf.PI * (Time.time / TowerPeriod - tier / (float)towerTiers.Length));
+                towerTiers[tier].color = new Color(1f, 1f, 1f, steady ? 0 : power * wave * wave * TowerStrength);
+            }
+            float bridge = steady ? 0 : power * BridgeStrength;
+            if (bridgeCore != null) bridgeCore.color = new Color(1f, 1f, 1f, bridge);
+            if (bridgeGlow != null) bridgeGlow.color = new Color(1f, 1f, 1f, bridge * .45f);
+        }
+
+        // Where the skybridge light is, in plate pixels: across, a rest out of sight, back, a rest.
+        float BridgeLightCentre()
+        {
+            float lap = BridgeCrossing + BridgeRest, t = Mathf.Repeat(Time.time, lap * 2);
+            bool back = t >= lap;
+            float along = Mathf.Clamp01((back ? t - lap : t) / BridgeCrossing);
+            float from = BridgeFrom - BridgeGlow * .5f, to = BridgeTo + BridgeGlow * .5f;
+            return Mathf.Lerp(from, to, back ? 1 - along : along);
+        }
+
+        // Shows only the tile's pixels between two plate columns: the image itself is narrowed to that span.
+        static void SetTileWindow(RawImage tile, RawImage plate, Rect pixels, float fromPixel, float toPixel)
+        {
+            if (tile == null) return;
+            fromPixel = Mathf.Clamp(fromPixel, pixels.xMin, pixels.xMax);
+            toPixel = Mathf.Clamp(toPixel, fromPixel, pixels.xMax);
+            float left = plate.uvRect.x * plate.texture.width;
+            var rect = tile.rectTransform;
+            rect.anchorMin = new Vector2((fromPixel - left) / VisibleWidthPixels, 0f);
+            rect.anchorMax = new Vector2((toPixel - left) / VisibleWidthPixels, 1f);
+            tile.uvRect = new Rect((fromPixel - pixels.x) / pixels.width, -pixels.y / pixels.height,
+                (toPixel - fromPixel) / pixels.width, plate.texture.height / pixels.height);
+        }
+
+        // Mission 2 (Thomas, 2026-11-15, trial): light flows across the hotel's fan crown without a rest, the marquee's bulbs
+        // run as a chase, every third one lit, and one letter of the sign drops out now and then.
+        // Small tiles hold only the plate's own lit pixels and lie over it; the plate art is not altered.
+        // Tile rectangles are in plate pixels, measured from the plate's lower left.
+        static readonly Rect CrownTile = new Rect(834, 258, 142, 68), SignTile = new Rect(137, 259, 16, 24),
+            MarqueeTile = new Rect(0, 194, 232, 36);
+        // The crown was a sweep every 6 s at .6 with a rest; he asked for it continuous, flowing and a little dimmer.
+        const float CrownPeriod = 2.6f, CrownStrength = .42f;
+        const float ChaseStep = .2f, ChaseStrength = .8f;
+        const float SignOutStrength = .85f;
+        RawImage[] crownFins, chaseBulbs;
+        RawImage signLetter;
+        readonly System.Random sceneryDice = new System.Random();
+        float signOutAt = float.NaN, signOutSeconds = .7f;
+
+        RawImage AddTile(string label, string resource)
+        {
+            var texture = Resources.Load<Texture2D>($"Arena/{resource}");
+            if (texture == null) { Debug.LogError($"Background light {resource} could not be loaded."); return null; }
+            var tile = AddPlate(label, texture, 1f);
+            tile.color = Color.clear;
+            return tile;
+        }
+
+        void AddCrownLights()
+        {
+            crownFins = new RawImage[5];
+            for (int fin = 0; fin < crownFins.Length; fin++)
+                crownFins[fin] = AddTile($"Crown fin {fin + 1}", $"CasinoCrown{fin + 1}");
+        }
+
+        void AddSignLetter()
+        {
+            chaseBulbs = new RawImage[3];
+            for (int phase = 0; phase < chaseBulbs.Length; phase++)
+                chaseBulbs[phase] = AddTile($"Marquee bulbs {phase + 1}", $"CasinoMarquee{phase + 1}");
+            signLetter = AddTile("Sign letter out", "CasinoSignLetter");
+        }
+
+        float Between(float from, float to) => Mathf.Lerp(from, to, (float)sceneryDice.NextDouble());
+
+        void UpdateCasinoLights()
+        {
+            bool steady = GameSettings.ReduceFlashing;
+            if (crownFins != null)
+            {
+                // One crest travels left to right and comes round again; each fin is a fifth of a turn behind the last.
+                for (int fin = 0; fin < crownFins.Length; fin++)
+                {
+                    if (crownFins[fin] == null) continue;
+                    float wave = .5f + .5f * Mathf.Cos(2f * Mathf.PI * (Time.time / CrownPeriod - fin / (float)crownFins.Length));
+                    crownFins[fin].color = new Color(1f, 1f, 1f, steady ? 0 : wave * wave * CrownStrength);
+                }
+            }
+            if (chaseBulbs != null)
+            {
+                // Hard steps, as a real chaser switches: the lit third moves one bulb to the right each step.
+                int lit = Mathf.FloorToInt(Time.time / ChaseStep) % chaseBulbs.Length;
+                for (int phase = 0; phase < chaseBulbs.Length; phase++)
+                    if (chaseBulbs[phase] != null)
+                        chaseBulbs[phase].color = new Color(1f, 1f, 1f, !steady && phase == lit ? ChaseStrength : 0);
+            }
+            if (signLetter == null) return;
+            if (float.IsNaN(signOutAt)) signOutAt = Time.time + Between(10, 25);
+            // A failing tube: out, back for an instant, out for a while, then it catches again.
+            float e = Time.time - signOutAt, d = signOutSeconds;
+            bool dark = !steady && e >= 0 && (e < .07f || (e >= .14f && e < .14f + d) || (e >= .2f + d && e < .26f + d));
+            signLetter.color = new Color(1f, 1f, 1f, dark ? SignOutStrength : 0);
+            if (e >= .26f + d)
+            {
+                signOutAt = Time.time + Between(20, 40);
+                signOutSeconds = Between(.5f, .9f);
+            }
+        }
+
+        // A tile shows its own rectangle of the plate it lies over, wherever that plate's crop has moved.
+        static void SetTileCrop(RawImage tile, RawImage plate, Rect pixels)
+        {
+            if (tile == null) return;
+            float left = plate.uvRect.x * plate.texture.width;
+            tile.uvRect = new Rect((left - pixels.x) / pixels.width, -pixels.y / pixels.height,
+                VisibleWidthPixels / pixels.width, plate.texture.height / pixels.height);
         }
 
         internal void AddEmpContours(Material material)
@@ -332,7 +529,23 @@ namespace GoGhost.Duel
             float position = shownPosition;
             SetCrop(far, position * FarTravelPixels);
             SetCrop(near, position * NearTravelPixels);
-            if (farLights != null) farLights.uvRect = far.uvRect;
+            if (farLights != null)
+            {
+                var crop = far.uvRect;
+                farLights.uvRect = new Rect(crop.x, 0f, crop.width * .5f, 1f);
+                farLightsRight.uvRect = new Rect(crop.x + crop.width * .5f, 0f, crop.width * .5f, 1f);
+            }
+            if (crownFins != null) foreach (var fin in crownFins) SetTileCrop(fin, far, CrownTile);
+            if (chaseBulbs != null) foreach (var bulbs in chaseBulbs) SetTileCrop(bulbs, near, MarqueeTile);
+            SetTileCrop(signLetter, near, SignTile);
+            if (antennas != null) for (int i = 0; i < antennas.Length; i++) SetTileCrop(antennas[i], far, AntennaTiles[i]);
+            if (towerTiers != null)
+            {
+                foreach (var tier in towerTiers) SetTileCrop(tier, near, TowerTile);
+                float centre = BridgeLightCentre();
+                SetTileWindow(bridgeCore, near, BridgeTile, centre - BridgeCore * .5f, centre + BridgeCore * .5f);
+                SetTileWindow(bridgeGlow, near, BridgeTile, centre - BridgeGlow * .5f, centre + BridgeGlow * .5f);
+            }
             if (nearMask != null) nearMask.uvRect = near.uvRect;
             if (contourMaterial != null)
                 contourMaterial.SetVector("_CityCrops", new Vector4(far.uvRect.x, far.uvRect.width,

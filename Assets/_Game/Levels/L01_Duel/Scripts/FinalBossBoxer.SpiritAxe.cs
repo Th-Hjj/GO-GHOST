@@ -92,11 +92,12 @@ namespace GoGhost.Duel
                 AxePivot=startPivot; AxeAngle=startAngle;
                 Vector2 direction=(Destination-startPivot).normalized;
                 startEdge=AxeEdge;
-                // Finish with the handle in the arena: a shallow flight into the floor
-                // turns blade-down, while a wall planting turns blade-out.
-                Vector2 embed = Mathf.Abs(Destination.y-floor)<.02f
-                    ? new Vector2(direction.x*.38f,-1) : new Vector2(Mathf.Sign(Destination.x-actor.Navigation.ArenaBounds.center.x),direction.y*.38f);
-                float plantAngle=Mathf.Atan2(embed.y,embed.x)*Mathf.Rad2Deg+BladeSide*22f;
+                // Finish with the handle in the arena: a shallow flight into the floor turns blade-down.
+                // In a wall the handle stands straight out, level, because the player can stand on it.
+                bool intoFloor=Mathf.Abs(Destination.y-floor)<.02f;
+                Vector2 embed = new Vector2(direction.x*.38f,-1);
+                float plantAngle=intoFloor ? Mathf.Atan2(embed.y,embed.x)*Mathf.Rad2Deg+BladeSide*22f
+                    : Destination.x>actor.Navigation.ArenaBounds.center.x ? 0 : 180;
                 float distance=Vector2.Distance(startEdge,Destination);
                 float turns=Mathf.Max(1,Mathf.RoundToInt(distance/6f));
                 endAngle=startAngle+Mathf.DeltaAngle(startAngle,plantAngle)+(direction.x>=0?-1:1)*360f*turns;
@@ -145,6 +146,53 @@ namespace GoGhost.Duel
             actor.Sounds?.PlayPanned(Sfx.AxePlant,actor.Axe.PanAt(Destination.x),actor.ActorId,300000+Orders,
                 pitch:AnchorNormal.y>0 ? .90f : 1f);
         }
+        // A planted axe is a place to stand (Thomas, 2026-11-15). In a wall the level handle is a short
+        // one-way platform; in the floor the end of the handle is a small perch. It stays through the
+        // half-second order and is gone when the axe leaves. Only the player uses it: the Boss's body,
+        // his sweeps and the route graph ignore it.
+        const float ShaftBelowGrip=.595f, ShaftAboveGrip=.528f, ShaftHalf=.06f;
+        BoxCollider2D perch;
+        float perchAt=float.NaN;
+        internal bool PerchActive => perch!=null && perch.enabled;
+        internal Vector2 PerchLeft { get; private set; }
+        internal Vector2 PerchRight { get; private set; }
+        void SyncPerch()
+        {
+            bool stand=detached && (weapon==WeaponState.Planted || weapon==WeaponState.Armed);
+            if (!stand) { if (perch!=null && perch.enabled) perch.enabled=false; return; }
+            if (perch!=null && perch.enabled && perchAt==PlantedAt) return;
+            if (perch==null)
+            {
+                var go=new GameObject("Axe perch") { layer=LayerMask.NameToLayer("Ground") };
+                go.transform.SetParent(actor.transform.parent,false);
+                perch=go.AddComponent<BoxCollider2D>();
+                perch.usedByEffector=true;
+                var oneWay=go.AddComponent<PlatformEffector2D>();
+                oneWay.useOneWay=true; oneWay.surfaceArc=110; oneWay.useSideFriction=false;
+                actor.Navigation.Passable.Add(perch); actor.Navigation.Unscanned.Add(perch);
+                if (actor.Body!=null) Physics2D.IgnoreCollision(actor.Body,perch,true);
+            }
+            perchAt=PlantedAt;
+            Vector2 forward=Axis(AxeAngle), grip=AxePivot-forward*.736f;
+            Vector2 butt=grip-forward*ShaftBelowGrip, neck=grip+forward*ShaftAboveGrip;
+            float left,right,top;
+            if (Mathf.Abs(lastAxeTarget.y-floor)<.02f) { left=butt.x-.15f; right=butt.x+.15f; top=butt.y; }
+            else { left=Mathf.Min(butt.x,neck.x); right=Mathf.Max(butt.x,neck.x); top=grip.y+ShaftHalf; }
+            const float thick=.10f;
+            perch.transform.SetPositionAndRotation(new Vector2((left+right)*.5f,top-thick*.5f),Quaternion.identity);
+            perch.size=new Vector2(right-left,thick);
+            PerchLeft=new Vector2(left,top); PerchRight=new Vector2(right,top);
+            perch.enabled=true;
+            Physics2D.SyncTransforms();
+        }
+        void RemovePerch()
+        {
+            if (perch==null) return;
+            actor.Navigation?.Passable.Remove(perch); actor.Navigation?.Unscanned.Remove(perch);
+            Object.Destroy(perch.gameObject);
+            perch=null;
+        }
+
         void Arm(OrderPlan plan)
         {
             weapon=WeaponState.Armed;

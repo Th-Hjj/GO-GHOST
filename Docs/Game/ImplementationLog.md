@@ -40,6 +40,14 @@
   - Open questions for Thomas: whether a Boss's head counts as On Ground, and whether the longer punch lunge is wanted.
 - **NOT TESTED:** everything in play with real input: each jump change, the Bonus Restart confirmation, the binding refusals, the Esc and focus fixes, the cursor on the creation menu, the window size in a standalone build, and the platform wave's look. The second-pass fixes after the review were compiled only.
 
+## 2026-11-15 — The planted axe can be stood on
+
+- **Asked:** make the axe a place to stand while it is stuck in a wall or anywhere else and not moving.
+- **Changed:** `FinalBossBoxer.SpiritAxe.cs` keeps one static one-way collider on the Ground layer, enabled while the detached axe is planted or ordered and placed once per plant from the axe's pivot and angle: along the level handle in a wall, at the handle's end in the floor. A wall plant now ends at 0 or 180 degrees so the handle is level. The Boss ignores the collider in physics, `ArenaNavigation2D.Passable` keeps it out of his sweeps and footing, and the new `Unscanned` set keeps it out of the route graph. `BossSilhouetteView.Boxer.cs` draws the rim light on its top.
+- **Checked:** the game assembly compiles with Unity's bundled compiler outside the Editor.
+- **NOT TESTED:** everything in play: where the collider sits against the drawn handle, the look of the level wall plant, standing, jumping from and dropping through it, the axe leaving under the player, the rim line, and the plant's settle wobble against a fixed collider. The handle's measurements come from the sprite (grip to end .595, grip to head .528).
+- **Not changed:** phase one's planted axe, and the two prototype punches, which are being redesigned.
+
 ## 2026-11-15 — Meteor holds .3 s at its apex
 
 - **Asked:** the Meteor's wind-up felt short. Its .45 s wind-up showed only the fist's stroke; the dive line and landing outline appeared only during the .2 to .3 s dive. Thomas chose a .3 s locked hold.

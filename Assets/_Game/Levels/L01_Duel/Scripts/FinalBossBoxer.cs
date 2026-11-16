@@ -71,6 +71,7 @@ namespace GoGhost.Duel
         {
             if (Retired || playerBody == null || actor.Player.IsDead) return;
             TickWeapon();
+            SyncPerch();
             if (!actor.Running || !actor.IsAlive) return;
             TickImpact();
             if (!actor.Running || actor.Player.IsDead) return;
@@ -390,6 +391,7 @@ namespace GoGhost.Duel
         public void Cancel()
         {
             CloseDiveLane();
+            RemovePerch();
             diveLocked=false;
             if (InFlight) actor.Sounds?.StopAttack(actor.ActorId,300000+Orders);
             if (Current != Punch.None) actor.Motor?.EndAttackMotion();

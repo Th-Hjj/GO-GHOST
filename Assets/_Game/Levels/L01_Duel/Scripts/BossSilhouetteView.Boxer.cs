@@ -93,6 +93,9 @@ namespace GoGhost.Duel
             }
             if (boxer.Detached && !boxer.InFlight)
                 DrawSpiritContact(boxer);
+            // A landing edge carries a rim light, like every other place to stand.
+            if (boxer.PerchActive)
+                SetLine(AxeLine(29,"Axe perch rim",2),boxer.PerchLeft,boxer.PerchRight,.03f,NeuralPalette.Alpha(NeuralPalette.Primary,.85f));
             DrawFistTrace(boxer);
             DrawMeteorImpact(boxer);
             DrawBoxerWarnings(boxer);

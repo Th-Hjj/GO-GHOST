@@ -124,7 +124,8 @@ namespace GoGhost.Duel
             foreach (var collider in all)
             {
                 if (collider.gameObject.scene != gameObject.scene || collider.gameObject.layer != groundLayer
-                    || collider.isTrigger || !collider.enabled || !collider.gameObject.activeInHierarchy) continue;
+                    || collider.isTrigger || !collider.enabled || !collider.gameObject.activeInHierarchy
+                    || Unscanned.Contains(collider)) continue;
                 int id = collider.GetEntityId().GetHashCode(); present.Add(id);
                 int fingerprint = Fingerprint(collider);
                 if (geometry.TryGetValue(id, out var previous) && previous.Fingerprint == fingerprint) continue;
@@ -311,6 +312,9 @@ namespace GoGhost.Duel
         // Platforms a committed dive goes through: they neither stop a sweep nor count as footing.
         // The owner of the dive fills and clears this, and ignores the same colliders in physics.
         internal readonly System.Collections.Generic.HashSet<Collider2D> Passable = new System.Collections.Generic.HashSet<Collider2D>();
+
+        // Ground the route graph never sees: the planted axe's perch, which is the player's alone.
+        internal readonly System.Collections.Generic.HashSet<Collider2D> Unscanned = new System.Collections.Generic.HashSet<Collider2D>();
 
         public bool TrySupport(Vector2 center, Vector2 size, out Collider2D support)
         {

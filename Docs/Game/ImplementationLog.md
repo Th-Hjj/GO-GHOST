@@ -4,8 +4,8 @@
 
 - **Asked:** only Mission 3 phase two shows a double outline on the arena frame; make it like the other missions.
 - **Found:** the EMP sweep gave every arena sprite a violet outline on top of `ArenaSilhouetteDressing`'s own.
-- **Changed:** `FinalBossEmpSweep.Initialize` takes the active supports and outlines the platforms only. `ArenaSilhouetteDressing.HidePlatformHairlines` (was `HideFrameHairlines`) hides only the platforms' dim sides; the ceiling and wall lines stay.
-- **Checks:** the game assembly compiles outside the editor with no errors; the editor was in Play Mode. NOT OBSERVED in the game: phase two after the transition and on direct retry.
+- **Changed:** after a first pass that only removed the violet line from the frame, he asked for the one outline to be dyed. `FinalBossEmpSweep` no longer makes outline copies of the arena sprites; it hands its terrain material to `ArenaSilhouetteDressing.Dye`, which puts it on every line. The shader's new `_Before` colour paints the rim colour ahead of the front and EMP violet behind it. `HideFrameHairlines` is removed: no line hides.
+- **Checks:** the game assembly compiles outside the editor with no errors; the editor was in Play Mode. The shader change has not been compiled by Unity. NOT OBSERVED in the game: the dye during the transition, phase two and direct retry.
 
 ## 2026-11-15 — Tower: six platforms, tiers 1.9 apart
 
@@ -53,6 +53,14 @@
   - The EMP outline's "Sprite Tiling" warnings: the arena borders use Unity's built-in sliced UI sprite and draw correctly.
   - Open questions for Thomas: whether a Boss's head counts as On Ground, and whether the longer punch lunge is wanted.
 - **NOT TESTED:** everything in play with real input: each jump change, the Bonus Restart confirmation, the binding refusals, the Esc and focus fixes, the cursor on the creation menu, the window size in a standalone build, and the platform wave's look. The second-pass fixes after the review were compiled only.
+
+## 2026-11-15 — Counter dash that punched on the spot
+
+- **Asked:** fix the counter: once set off, the Boss threw the punch where he stood.
+- **Found, by reading:** the dash is aimed from his centre at the player's forecast centre. With both on the same surface that line can point a few millimetres downward, and `BossMotor2D` ends a dash the moment its sweep meets terrain, so the surface he stood on stopped it in the first step. Not reproduced in play.
+- **Changed:** `FinalBossBoxer.Moves.cs` adds `CounterDelta`: when he is grounded and the target is less than .35 above him the dash is level, and a near-zero line falls back to his facing. The warning line uses the same vector.
+- **Checked:** the game assembly compiles with Unity's bundled compiler outside the Editor.
+- **NOT TESTED:** in play. If he still punches on the spot the cause is elsewhere.
 
 ## 2026-11-15 — Punches wound up standing still; rising fist leads; hit-stop and counter range limits removed
 

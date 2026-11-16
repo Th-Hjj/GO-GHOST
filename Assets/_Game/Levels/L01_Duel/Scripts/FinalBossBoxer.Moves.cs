@@ -62,8 +62,21 @@ namespace GoGhost.Duel
         {
             get
             {
-                Vector2 delta=CounterTarget-actor.Position;
+                Vector2 delta=CounterDelta;
                 return actor.Position+delta.normalized*(delta.magnitude+.4f);
+            }
+        }
+        // From where he stands to the target. A target level with him or lower is reached along the
+        // surface he stands on: aimed even slightly downward, the dash met that surface at once and he
+        // punched on the spot.
+        Vector2 CounterDelta
+        {
+            get
+            {
+                Vector2 delta=CounterTarget-actor.Position;
+                if (actor.Motor.Grounded && delta.y < .35f) delta.y=0;
+                if (delta.sqrMagnitude < .04f) delta=Vector2.right*(LockedFacing*.2f);
+                return delta;
             }
         }
         // When the guard was last set off; the view gathers a ring on the fists from this moment.
@@ -161,7 +174,7 @@ namespace GoGhost.Duel
         // damage, trail and recovery, along the line the warning showed.
         void LaunchCounter()
         {
-            Vector2 delta=CounterTarget-actor.Position;
+            Vector2 delta=CounterDelta;
             float distance=delta.magnitude+.4f;
             if (Time.time-lastPunchEnd > ChainGap) chain=0;
             Current=Punch.Leap; Cross=false; signatureLeap=false; Rising=false; counter=true;

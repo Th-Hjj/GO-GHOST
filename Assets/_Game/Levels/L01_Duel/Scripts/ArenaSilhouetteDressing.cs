@@ -53,6 +53,7 @@ namespace GoGhost.Duel
             ramp = MakeSprite(64, 4, (u, v) => Mathf.Pow(Mathf.Lerp(.3f, 1f, 1f - Mathf.Abs(2f * u - 1f)), 2.2f));
 
             frame = arena;
+            rimColour = look.Rim;
             floorRim = Quad("Floor rim", ramp, look.Rim);
             Color side = NeuralPalette.Alpha(look.Rim, SideStrength);
             frameHairlines.Add(Quad("Ceiling edge", pixel, side));
@@ -75,14 +76,14 @@ namespace GoGhost.Duel
             Follow();
         }
 
-        // The EMP draws its own violet outline round each platform; a second line inside it reads as a mistake.
-        // The platforms' dim sides give way to it. The landing edges and the arena frame stay as in every mission.
-        bool sidesHidden;
-        internal void HidePlatformHairlines()
+        // The EMP adds no outline of its own: this one outline turns violet as the front passes over it
+        // (Thomas, 2026-11-15). The material paints the rim colour ahead of the front and its own behind.
+        readonly List<SpriteRenderer> lines = new();
+        Color rimColour;
+        internal void Dye(Material emp)
         {
-            sidesHidden = true;
-            // The first three are the ceiling and the two walls.
-            for (int i = 3; i < frameHairlines.Count; i++) if (frameHairlines[i] != null) frameHairlines[i].enabled = false;
+            emp.SetColor("_Before", NeuralPalette.Alpha(rimColour, 1));
+            foreach (var line in lines) if (line != null) line.sharedMaterial = emp;
         }
 
         void LateUpdate() { if (steady) PlaceFrame(); Follow(); }
@@ -125,7 +126,7 @@ namespace GoGhost.Duel
                 var support = outline.Support;
                 bool shown = support != null && support.gameObject.activeInHierarchy && support.enabled;
                 outline.Top.enabled = shown;
-                outline.Bottom.enabled = outline.Left.enabled = outline.Right.enabled = shown && !sidesHidden;
+                outline.Bottom.enabled = outline.Left.enabled = outline.Right.enabled = shown;
                 if (!shown) continue;
                 Bounds bounds = outline.Surface != null ? outline.Surface.bounds : support.bounds;
                 float top = SnapY(bounds.max.y), bottom = SnapY(bounds.min.y), west = SnapX(bounds.min.x), east = SnapX(bounds.max.x);
@@ -146,6 +147,7 @@ namespace GoGhost.Duel
             quad.sortingLayerID = sortingLayer;
             quad.sortingOrder = 1;
             quad.color = color;
+            lines.Add(quad);
             if (steady)
             {
                 var block = new MaterialPropertyBlock();

@@ -105,6 +105,13 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
     private float lastGroundedAt = float.NegativeInfinity, jumpBufferedAt = float.NegativeInfinity, supportRise, previousVertical;
     private bool ledgeUsed;
     private readonly Collider2D[] ledgeHits = new Collider2D[8];
+    // A one-way platform that has come down over the body. The solver would otherwise push the body out
+    // through the nearer face, which is the top once the platform's middle is below the body's: the player
+    // was squeezed up onto a first-tier platform of the moving tower (Thomas, 2026-11-15). The pair is
+    // ignored until the feet are above the top or the body is clear of it.
+    private const float PassUnderDepth = .12f, LandingSpeed = 3f;
+    private readonly System.Collections.Generic.List<Collider2D> passingUnder = new();
+    private readonly Collider2D[] passHits = new Collider2D[8];
     private bool CoyoteJump => legacyCombat && !IsGrounded && droppingThrough == null && rb.linearVelocity.y <= .1f
         && Time.time - lastGroundedAt <= CoyoteSeconds;
     /// <summary>A jump can start now: on a support, or within the coyote window after leaving one. Rules use it too.</summary>
@@ -141,6 +148,9 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
     public void CleanupAttempt()
     {
         RestoreDropThrough();
+        foreach (var platform in passingUnder)
+            if (platform != null && movementShape != null) Physics2D.IgnoreCollision(movementShape, platform, false);
+        passingUnder.Clear();
         attemptActive = false;
         airJumpsRemaining = 0;
         HoverRemaining = 0;
@@ -322,6 +332,7 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
     private void FixedUpdate()
     {
         UpdateDropThrough();
+        UpdatePassUnder();
         // The solver may already have zeroed vertical velocity when the next ground probe succeeds.
         if (legacyCombat && rb.simulated && !input.NarrativePaused && input.GameplayInputEnabled)
         {
@@ -432,6 +443,41 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         if (below || beside || Time.time - dropStartedAt > 1.5f) RestoreDropThrough();
     }
 
+    private void UpdatePassUnder()
+    {
+        if (!legacyCombat || movementShape == null) return;
+        var body = movementShape.bounds;
+        for (int i = passingUnder.Count - 1; i >= 0; i--)
+        {
+            var platform = passingUnder[i];
+            if (platform != null && platform != droppingThrough && platform.enabled && platform.gameObject.activeInHierarchy)
+            {
+                var deck = platform.bounds;
+                bool inside = body.min.y < deck.max.y - .02f && body.max.y > deck.min.y
+                    && body.max.x > deck.min.x && body.min.x < deck.max.x;
+                if (inside) continue;
+                Physics2D.IgnoreCollision(movementShape, platform, false);
+            }
+            passingUnder.RemoveAt(i);
+        }
+        if (!rb.simulated) return;
+        var filter = new ContactFilter2D { useLayerMask = true, layerMask = groundLayer, useTriggers = false };
+        int count = Physics2D.OverlapBox(body.center, body.size, 0, filter, passHits);
+        for (int i = 0; i < count; i++)
+        {
+            var platform = passHits[i];
+            if (platform == null || platform == droppingThrough || !IsDropThroughSupport(platform)
+                || Physics2D.GetIgnoreCollision(movementShape, platform)) continue;
+            var deck = platform.bounds;
+            if (deck.max.y - body.min.y <= PassUnderDepth || body.max.y <= deck.min.y) continue;
+            // A fast landing can sink this deep for one step; that is a landing, not a platform coming down.
+            var lift = platform.attachedRigidbody;
+            if (rb.linearVelocity.y - (lift != null ? lift.linearVelocity.y : 0) < -LandingSpeed) continue;
+            Physics2D.IgnoreCollision(movementShape, platform, true);
+            passingUnder.Add(platform);
+        }
+    }
+
     private void RestoreDropThrough()
     {
         if (droppingThrough != null && movementShape != null)
@@ -468,7 +514,8 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         for (int i = 0; i < count; i++)
         {
             var platform = ledgeHits[i];
-            if (platform == null || !IsDropThroughSupport(platform) || Physics2D.GetIgnoreCollision(movementShape, platform)) continue;
+            if (platform == null || !IsDropThroughSupport(platform)
+                || Physics2D.GetIgnoreCollision(movementShape, platform) && !passingUnder.Contains(platform)) continue;
             var deck = platform.bounds;
             float short_ = deck.max.y - feet;
             float over = Mathf.Min(body.max.x, deck.max.x) - Mathf.Max(body.min.x, deck.min.x);

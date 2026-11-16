@@ -10,6 +10,7 @@ Shader "GO GHOST/Final Boss EMP Sweep"
         _ScreenScale ("World units per HUD pixel", Float) = 0
         _Trail ("Transient contact width", Float) = 0
         _EdgeFadeWidth ("Distance from peak to settled violet", Float) = 0.22
+        _Before ("Colour ahead of the wave (alpha 0: nothing)", Color) = (0,0,0,0)
         _CityContours ("Use architectural contours", Float) = 0
         _CityCrops ("Far and near parallax crops", Vector) = (0,1,0,1)
         [HideInInspector] _ClipRect ("UI clip", Vector) = (-32767,-32767,32767,32767)
@@ -31,7 +32,7 @@ Shader "GO GHOST/Final Boss EMP Sweep"
             float4 _Origin, _ClipRect;
             float _Radius, _ScreenScale, _Trail, _EdgeFadeWidth, _CityContours;
             float4 _CityCrops;
-            half4 _Tint, _FrontColor;
+            half4 _Tint, _FrontColor, _Before;
             struct Varyings
             {
                 float4 clip : SV_POSITION;
@@ -80,7 +81,9 @@ Shader "GO GHOST/Final Boss EMP Sweep"
                     mask = max(outerRim(nearDistance, 1.15), farRim);
                 }
                 else mask = tex2D(_MainTex, i.uv).a;
-                ink.a *= coverage * mask * i.alpha;
+                // A line that already exists keeps its place and strength and changes colour as the wave passes.
+                if (_Before.a > 0) ink = lerp(_Before, ink, coverage) * half4(1, 1, 1, mask * i.alpha);
+                else ink.a *= coverage * mask * i.alpha;
                 #ifdef UNITY_UI_CLIP_RECT
                     ink.a *= UnityGet2DClipping(i.local, _ClipRect);
                 #endif

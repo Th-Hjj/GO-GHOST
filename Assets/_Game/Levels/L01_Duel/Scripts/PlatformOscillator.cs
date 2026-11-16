@@ -62,7 +62,9 @@ namespace GoGhost.Duel
 
         void FixedUpdate()
         {
-            if (body == null) return;
+            // The countdown holds every body. A clock that ran on would throw the platform to its new place
+            // in one step when the fight starts.
+            if (body == null || !body.simulated) return;
             float dt = Time.fixedDeltaTime;
             Advance(ref clock, ref rampRemaining, dt);
             body.linearVelocity = new Vector2(0, (Target(clock) - body.position.y) / dt);

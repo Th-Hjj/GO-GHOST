@@ -10,7 +10,7 @@ namespace GoGhost.Duel
         SwordTravel swordTravel;
         readonly List<SwordBeat> swordPhrase=new List<SwordBeat>(7);
         readonly List<BossThreat> swordSafety=new List<BossThreat>(8);
-        int swordIndex,swordBeatId,swordPhraseEchoStart;
+        int swordIndex,swordBeatId,swordPhraseEchoStart,swordBeatHits;
         float swordDecisionAt,swordDeadline,swordTravelDeadline,swordArcFrom,swordArcTo,swordFacing;
         float swordRecoveryStarted=-1,swordLastProgressAt;
         Vector2 swordLastProgress,swordDrawStart,swordBladePrevious;
@@ -398,6 +398,9 @@ namespace GoGhost.Duel
         void SeedSwordCut()
         {
             if(swordCutSeeded)return;swordCutSeeded=true;
+            // A swing that took the player's health leaves no blade: at close range the blade
+            // landed between that cut and the next. A later swing that misses can still leave it.
+            if(ConnectedHits!=swordBeatHits)return;
             // Only a completed real swing can leave a blade. Draw/traversal never seed one.
             // Both lane waves and afterblades consume the phrase's one successful emission.
             // Expiry or an ally block never grants another seed within this phrase.
@@ -408,6 +411,7 @@ namespace GoGhost.Duel
         void ActivateSwordBeat()
         {
             Activated[(int)Ability]++;LastActiveAt=Time.time;hitInWindow=false;bossesHitInWindow.Clear();previousCutProgress=0;
+            swordBeatHits=ConnectedHits;
             if(CurrentSwordBeat==SwordBeat.Traverse||CurrentSwordBeat==SwordBeat.JumpCut)
             {
                 bool started;

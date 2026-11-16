@@ -1,5 +1,26 @@
 # GO GHOST slice implementation
 
+## 2026-11-15 — Swordsman: no afterblade from a swing that hit
+
+- **Asked:** in the Swordsman's first phase, at point-blank range, two or three hits land very quickly; add a little space.
+- **Found (by reading and calculation, not seen):** the first completed swing of a phrase leaves an afterblade that launches .20 s later. At point-blank range it lands about .4 s after the first cut and .25 s before the second, so three hits fall within about .65 s.
+- **Changed:** `SeedSwordCut` leaves no blade when the swing removed player health (`swordBeatHits` against `ConnectedHits`). A swing that misses, or is dodged through, leaves it as before; the one-per-phrase limit is unchanged. Unbound and the Bonus share the code.
+- **Checks:** compiled in the editor. In Play Mode, Mission 2 with the player standing still: three Duel phrases all hit, the afterblade count stayed 0, and health fell at .66 s and .78 s intervals within a phrase (13, 13, 19). NOT OBSERVED: a missed or dodged swing still leaving its blade, Unbound and the Bonus.
+
+## 2026-11-15 — Phase two: rest .8 s, no guard into a reload
+
+- **Asked:** a light increase in the Boss's pressure and cleverness. He rejected four proposals as too much, and rejected gating punches on reach at release: missed punches are the pressure. He chose two.
+- **Changed:** `FinalBossBoxer.ChainRest` .9 to .8. `TryCover` returns false while `facts.ReloadVisible`.
+- **Checked:** the game assembly compiles outside the editor.
+- **NOT TESTED:** in play.
+
+## 2026-11-15 — Player squeezed onto a platform at the start of phase two
+
+- **Asked:** at the start of phase two the player is pushed onto a platform; he named the cause as the platform's pull while it moves.
+- **Found (by reading and calculation, not seen):** with tiers 1.9 apart a first-tier platform's lowest point puts its middle (.70 above the floor) below the middle of a standing player (.775), so the solver pushes the body out through the top. On a direct phase-two entry `PlatformOscillator`'s clock also ran through the countdown while the bodies were held, and the platform went to its new place in one step when the fight began.
+- **Changed:** `PlayerMovement.UpdatePassUnder` ignores the pair with a one-way platform that overlaps the body with its top more than .12 above the feet, until the feet are above the top or the body is clear; a landing faster than 3 relative to the platform is left alone. The apex carry still sees such a platform. `PlatformOscillator.FixedUpdate` does nothing while its body is not simulated.
+- **Checks:** the game assembly compiles outside the editor with no errors. NOT TESTED in Play Mode: he stopped the run. The fix, ordinary jumps through platforms, landings and S drop-through are NOT OBSERVED.
+
 ## 2026-11-15 — Phase-two arena frame like every mission
 
 - **Asked:** only Mission 3 phase two shows a double outline on the arena frame; make it like the other missions.

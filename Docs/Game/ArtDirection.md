@@ -41,7 +41,7 @@ Thomas chose this direction for everything inside the arena. Mockups: <https://c
 - Light sources: revolver cylinder (ice blue, constant), muzzle flash (.14 s), bullets (ice blue for the player, Gunner orange, coral once reflected, grey-blue for the Test Room robot), sword waves and afterblades (coral, dimmer while charging), the phase-one axe socket through a throw's wind-up and in flight (ice blue), the phase-two axe (violet; dim planted, swelling through the half-second order, brightest in flight).
 - Floor haze is hidden (`FloorHazeShown = false`). Its layers and `Resources/ArenaHaze.shader` remain, so `SetEmpHaze` still runs, but Mission 3 no longer shows the haze turning violet.
 - `Resources/Arena/IndustrialFarLights.png` holds only the two stack beacons, shares the far plate's crop and fades slowly in and out.
-- `ArenaSilhouetteDressing` outlines the structure: full strength on the floor and platform tops, .14 on the ceiling, the wall faces and each platform's underside and ends. Once the EMP outline exists the platforms' dim sides hide; the floor, walls and ceiling get no EMP outline and keep theirs. It follows the platforms' sprites every frame and owns no collider.
+- `ArenaSilhouetteDressing` outlines the structure: full strength on the floor and platform tops, .14 on the ceiling, the wall faces and each platform's underside and ends. In Final Boss phase two the EMP's first front dyes this outline violet as it passes; the EMP adds no outline of its own. It follows the platforms' sprites every frame and owns no collider.
 
 **Stage 2 as built**
 

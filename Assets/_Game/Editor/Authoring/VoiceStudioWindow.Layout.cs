@@ -16,7 +16,6 @@ namespace GoGhost.Duel.EditorTools
                 case "Handler/WhoAreYou": return "创建角色 · Who are you?";
                 case "Handler/Greeting": return "默认问候";
                 case "Handler/TutorialIntro": return "进入配置页";
-                case "Handler/TutorialGoodbye": return "离开配置页";
                 case "Handler/WaveOneClear": return "第一波通关";
                 case "Handler/WaveTwoClear": return "第二波通关";
                 case "Handler/BonusClear": return "奖励战通关";

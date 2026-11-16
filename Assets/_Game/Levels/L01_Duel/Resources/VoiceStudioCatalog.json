@@ -373,20 +373,6 @@
       "transcribed": false
     },
     {
-      "key": "FinalBossVoice/Line6",
-      "label": "Bonus offer 1",
-      "text": "There is a bonus challenge.",
-      "locked": false,
-      "bonusOffer": true
-    },
-    {
-      "key": "FinalBossVoice/Line7",
-      "label": "Bonus offer 2",
-      "text": "Do you want to enter the bonus wave?",
-      "locked": false,
-      "bonusOffer": true
-    },
-    {
       "key": "FinalBossVoice/Turn1",
       "label": "Final Boss kneeling · 1",
       "text": "You're strong.",
@@ -449,14 +435,6 @@
       "locked": false
     },
     {
-      "key": "Handler/Mission1Skills",
-      "label": "Mission 1 · Skills",
-      "text": "Skills, Piercing Shot, Optical Camo.",
-      "profileMission": 0,
-      "profileField": "Skills",
-      "profileValue": "Piercing Shot · Optical Camo"
-    },
-    {
       "key": "Handler/Mission2Title",
       "label": "Mission 2 · Target Profile",
       "text": "Target Profile for Mission 2",
@@ -495,14 +473,6 @@
       "profileField": "Location",
       "profileValue": "Casino",
       "locked": false
-    },
-    {
-      "key": "Handler/Mission2Skills",
-      "label": "Mission 2 · Skills",
-      "text": "Skills, Pursuit Draw, Still Blade.",
-      "profileMission": 0,
-      "profileField": "Skills",
-      "profileValue": "Pursuit Draw · Still Blade"
     },
     {
       "key": "Handler/Mission3Title",
@@ -551,14 +521,6 @@
       "profileField": "Location",
       "profileValue": "Tower",
       "locked": false
-    },
-    {
-      "key": "Handler/Mission3Skills",
-      "label": "Mission 3 · Skills",
-      "text": "Skills, [placeholder].",
-      "profileMission": 0,
-      "profileField": "Skills",
-      "profileValue": "[placeholder]"
     },
     {
       "key": "Handler/EditorCondition51",

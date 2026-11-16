@@ -11,7 +11,7 @@ namespace GoGhost.Duel
         public string key, label, text;
         public int profileMission;
         public string profileField, profileValue;
-        public bool locked, transcribed, bonusOffer, transition;
+        public bool locked, transcribed, transition;
     }
 
     [Serializable]

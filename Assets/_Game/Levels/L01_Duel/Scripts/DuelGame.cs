@@ -31,6 +31,8 @@ namespace GoGhost.Duel
         public DuelPhase Phase { get; private set; }
         public int Wave { get; private set; } = 1;
         public bool Paused { get; private set; }
+        // The frame on which the menu opened or closed; that key press is spent.
+        public int PauseChangedFrame { get; private set; } = -1;
         public bool FirstConfiguration { get; private set; }
         // Chosen on the creation page; a New Game starts with the tutorial on.
         public bool TutorialWanted { get; set; } = true;
@@ -104,8 +106,10 @@ namespace GoGhost.Duel
             if (music != null) music.StopMusic(true);
             Appearance?.Dispose();
         }
+        bool unfocused;
         void OnApplicationFocus(bool focus)
         {
+            unfocused = !focus;
             if (!focus) developerResumeOnClose = false;
             if (!focus && (Phase == DuelPhase.Fight || Phase == DuelPhase.Prepare || Phase == DuelPhase.Training)) SetPause(true);
         }
@@ -320,6 +324,8 @@ namespace GoGhost.Duel
         {
             SetPhase(DuelPhase.Prepare);
             music?.PlayWave(Wave, finalBossPhaseTwo: FinalBossPhaseTwoReached);
+            // The target card cannot pause, so a focus lost while it was up pauses the countdown.
+            if (unfocused) SetPause(true);
         }
         void BeginCombat()
         {
@@ -357,6 +363,7 @@ namespace GoGhost.Duel
             if (value && startup != null) return;
             if (Paused == value) return;
             ApplyPause(value);
+            PauseChangedFrame = Time.frameCount;
             ui.Show();
         }
         void ApplyPause(bool value)
@@ -409,8 +416,8 @@ namespace GoGhost.Duel
                 handler.Stop();
             Phase = value;
             if (value == DuelPhase.Configure || value == DuelPhase.TargetProfile || value == DuelPhase.Between) SaveGame();
-            // Finishing the game removes the save.
-            if (value == DuelPhase.Complete && Wave == FinalBossWave)
+            // Finishing the game removes the save; a developer or playtest run has none to remove.
+            if (value == DuelPhase.Complete && Wave == FinalBossWave && savingRun)
             {
                 if (!GameSave.Delete()) SaveNotice = GameSave.LastMessage;
                 savingRun = false; GameProgress.Cleared = true;
@@ -469,7 +476,7 @@ namespace GoGhost.Duel
         void Update()
         {
             TickMetrics();
-            if (!ui.DeveloperShortcutConsumed && !ui.OverlayOpen && !ui.EscapeClaimed && GameSettings.Pressed(GameSettings.Pause)) SetPause(!Paused);
+            if (!ui.DeveloperShortcutConsumed && !ui.OverlayOpen && !ui.EscapeClaimed && !ui.TextEntryFocused && GameSettings.Pressed(GameSettings.Pause)) SetPause(!Paused);
             if (Paused || DeveloperToolsOpen) return;
             if (InvasionHeld) { TickInvasionReading(); return; }
             if (Keyboard.current != null && Keyboard.current.f9Key.wasPressedThisFrame)

@@ -619,48 +619,6 @@ namespace GoGhost.Duel
         }
     }
 
-    // Ring that fills clockwise from the top, with feathered edges.
-    [RequireComponent(typeof(CanvasRenderer))]
-    public sealed class RingGraphic : MaskableGraphic
-    {
-        public float Thickness = 16;
-        float fill = 1;
-        public float Fill
-        {
-            get => fill;
-            set { value = Mathf.Clamp01(value); if (Mathf.Approximately(fill, value)) return; fill = value; SetVerticesDirty(); }
-        }
-
-        protected override void OnPopulateMesh(VertexHelper vh)
-        {
-            vh.Clear();
-            if (fill <= 0) return;
-            var r = GetPixelAdjustedRect();
-            float outer = Mathf.Min(r.width, r.height) / 2, inner = outer - Thickness;
-            float pixel = 1f / Mathf.Max(.01f, canvas != null ? canvas.scaleFactor : 1f);
-            Vector2 centre = r.center;
-            Color32 solid = color, clear = color; clear.a = 0;
-            const int steps = 120;
-            int count = Mathf.CeilToInt(steps * fill);
-            for (int i = 0; i <= count; i++)
-            {
-                float angle = Mathf.Min(i / (float)steps, fill) * Mathf.PI * 2;
-                var direction = new Vector2(Mathf.Sin(angle), Mathf.Cos(angle));
-                vh.AddVert(centre + direction * (outer + pixel), clear, Vector2.zero);
-                vh.AddVert(centre + direction * outer, solid, Vector2.zero);
-                vh.AddVert(centre + direction * inner, solid, Vector2.zero);
-                vh.AddVert(centre + direction * (inner - pixel), clear, Vector2.zero);
-                if (i == 0) continue;
-                int k = i * 4;
-                for (int band = 0; band < 3; band++)
-                {
-                    vh.AddTriangle(k - 4 + band, k + band, k + band + 1);
-                    vh.AddTriangle(k - 4 + band, k + band + 1, k - 3 + band);
-                }
-            }
-        }
-    }
-
     // Leaning bars that follow a loudness value; they rest at a low height when silent.
     public sealed class VoiceBars : MonoBehaviour
     {

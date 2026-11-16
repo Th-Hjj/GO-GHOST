@@ -146,13 +146,6 @@ namespace GoGhost.Duel
             dialogueFooterLeftInset = halfWidth - 744 * fit;
             dialogueFooterRightInset = halfWidth - 340 * fit;
             dialogueFooterBottomInset = halfHeight - 402 * fit;
-#if UNITY_EDITOR
-            if (ruleSetupViewSample != null)
-            {
-                foreach (var button in ruleList.GetComponentsInChildren<Button>()) button.onClick.RemoveAllListeners();
-                start.interactable = false;
-            }
-#endif
             // The character walks back from the editor in front of the rule cards.
             bodyPreview.SetAsLastSibling();
             if (closing != null) closing.transform.SetAsLastSibling();

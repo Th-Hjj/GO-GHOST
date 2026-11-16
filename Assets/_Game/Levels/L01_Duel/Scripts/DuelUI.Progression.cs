@@ -15,12 +15,12 @@ namespace GoGhost.Duel
         SlabGraphic ambientMark;
         const float FooterButtonHeight = 48;
         float dialogueFooterRightInset, dialogueFooterBottomInset;
-        (DuelPhase phase, bool editor, bool help, bool pause, bool tools)? lastDialoguePage;
+        (DuelPhase phase, bool editor, bool pause, bool tools)? lastDialoguePage;
 
         void NoteDialoguePage()
         {
             bool configure = game.Phase == DuelPhase.Configure;
-            var current = (game.Phase, configure && selectorRow >= 0, false,
+            var current = (game.Phase, configure && selectorRow >= 0,
                 game.Paused, game.DeveloperToolsOpen);
             if (lastDialoguePage.HasValue && lastDialoguePage.Value == current) return;
             lastDialoguePage = current;

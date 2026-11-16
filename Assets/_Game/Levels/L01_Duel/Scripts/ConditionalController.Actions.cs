@@ -177,7 +177,7 @@ namespace GoGhost.Duel
             output.FireRequest=rule.Action==ActionIds.ShortBurst?WeaponFireRequest.Burst
                 :rule.Action==ActionIds.Fire?WeaponFireRequest.Continuous:WeaponFireRequest.Single;
         }
-        bool CanJump()=>movement.IsGrounded&&input.GameplayInputEnabled&&movement.isActiveAndEnabled;
+        bool CanJump()=>movement.CanStartJump&&input.GameplayInputEnabled&&movement.isActiveAndEnabled;
         bool SourcePoint(Running r,out Vector2 point)
         {
             if(r.Context.HasPosition){point=r.Context.Position;return true;}

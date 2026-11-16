@@ -31,11 +31,10 @@ namespace GoGhost.Duel
             else if (analyticsTab == 1) BuildRunSummary(run);
             else
             {
-                bool total = analyticsTab == 1;
-                var operations = total ? PlayMetrics.RunOperations(true) : fight?.operations;
-                float seconds = total ? run.combatSeconds + (PlayMetrics.Current?.seconds ?? 0) : fight?.seconds ?? 0;
-                string title = total ? "RUN" : fight == null ? "FIGHT" : MetricWave(fight.wave)+"  "+PlayMetrics.BossName(fight.wave)+"  "+fight.result.Replace('_',' ').ToUpperInvariant();
-                bool test = total ? run.testData || (PlayMetrics.Current?.testData ?? false) : fight?.testData ?? false;
+                var operations = fight?.operations;
+                float seconds = fight?.seconds ?? 0;
+                string title = fight == null ? "FIGHT" : MetricWave(fight.wave)+"  "+PlayMetrics.BossName(fight.wave)+"  "+fight.result.Replace('_',' ').ToUpperInvariant();
+                bool test = fight?.testData ?? false;
                 AnalyticsText(title+"    "+MetricNumber(seconds)+"s"+(test?"    TEST DATA":""),0,155,1300,27);
                 if (operations == null) AnalyticsText("Start a fight to collect action data.",0,65,1300);
                 else if (analyticsTab == 2) BuildAnalyticsActions(operations);
@@ -60,7 +59,6 @@ namespace GoGhost.Duel
                     if(fight!=null)AnalyticsText("Remaining HP  You: "+fight.playerHealth+" / "+fight.playerMaxHealth
                         +(fight.gunnerMaxHealth>0?"    Gunner: "+fight.gunnerHealth+" / "+fight.gunnerMaxHealth:"")
                         +(fight.swordMaxHealth>0?"    Swordsman: "+fight.swordHealth+" / "+fight.swordMaxHealth:""),0,-318,1300,21);
-                    if(total&&run.levelCleared)AnalyticsText("Level clear: "+MetricNumber(run.levelClearSeconds)+" combat seconds",0,-370,1300,22);
                 }
             }
             var open=Button("Open data folder",page,new Vector2(500,-400),new Vector2(300,48),
@@ -78,7 +76,7 @@ namespace GoGhost.Duel
                 "Character: "+MetricNumber(run.creationSeconds)+"s    Configuration: "+MetricNumber(run.configurationSeconds)+"s",
                 "Training: "+MetricNumber(run.trainingSeconds)+"s    Paused: "+MetricNumber(run.pauseSeconds)+"s",
                 "Rules  Added: "+run.rulesAdded+"    Edited: "+run.rulesEdited+"    Removed: "+run.rulesRemoved+"    Reordered: "+run.rulesReordered,
-                "Most rules equipped: "+run.maxRulesEquipped+"    Help opened: "+run.helpOpened,
+                "Most rules equipped: "+run.maxRulesEquipped,
                 "First rule: "+(run.firstRuleAtSeconds<0?"N/A":MetricNumber(run.firstRuleAtSeconds)+"s")+"    First fight: "+(run.firstFightAtSeconds<0?"N/A":MetricNumber(run.firstFightAtSeconds)+"s"),
                 "Deaths  Training: "+run.trainingDeaths+"    W1: "+run.deathsByWave[1]+"    W2: "+run.deathsByWave[2],
                 (run.finished?"Ended: "+run.endReason:"In progress")+(run.editor?"    EDITOR":"")+(run.testData?"    TEST DATA":"")

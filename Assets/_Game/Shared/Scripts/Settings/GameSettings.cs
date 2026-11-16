@@ -72,6 +72,8 @@ public static class GameSettings
         // The browser page owns the canvas size; only fullscreen can change there.
         if (Application.platform == RuntimePlatform.WebGLPlayer) { Screen.fullScreen = Fullscreen; return; }
         int width = Width > 0 ? Width : Screen.currentResolution.width, height = Height > 0 ? Height : Screen.currentResolution.height;
+        // A window as large as the desktop would push its title bar off screen.
+        if (!Fullscreen && (Width <= 0 || Height <= 0)) { width = width * 4 / 5; height = height * 4 / 5; }
         Screen.SetResolution(width, height, Fullscreen ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed);
     }
 

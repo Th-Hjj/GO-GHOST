@@ -474,6 +474,12 @@ namespace GoGhost.Duel
                 if(IncompatibilityReasonForActionChoice(rule,response.Id)==null)return true;
             return false;
         }
+        // A condition entry is closed when it contradicts the other conditions or the action already chosen.
+        public static string ConditionChoiceReason(ConditionalRule rule)
+        {
+            if(!HasAnyCompatibleAction(rule))return "These conditions cannot be true together.";
+            return rule!=null&&IsSelectableResponse(rule.Action)?ConditionActionConflict(rule,rule.Action):null;
+        }
         public static bool IsAllowed(int operation,ConditionalRule rule)=>IncompatibilityReason(operation,rule)==null;
         // Legacy pair queries describe option availability, never a completed rule's validity.
         public static bool IsAllowed(int operation,int condition,string action)=>IncompatibilityReason(operation,condition,action)==null;

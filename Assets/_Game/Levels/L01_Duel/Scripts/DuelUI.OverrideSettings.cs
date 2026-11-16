@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
@@ -11,8 +12,11 @@ namespace GoGhost.Duel
         enum OverlayPage { None, Settings, Bindings, Confirm, Notice }
         OverlayPage overlay;
         int listeningBinding = -1, listeningSince;
+        // Typing the name must not open the menu when Pause is bound to a letter.
+        public bool TextEntryFocused => EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null
+            && EventSystem.current.currentSelectedGameObject.GetComponent<TMP_InputField>() is TMP_InputField field && field.isFocused;
         internal bool OverlayOpen => overlay != OverlayPage.None;
-        // Escape first closes Help or the rule being edited; only then does it pause.
+        // Escape first closes an overlay or the rule being edited; only then does it open the menu.
         internal bool EscapeClaimed => game.Phase == DuelPhase.Configure && !game.Paused && selectorRow >= 0
             && GameSettings.BindingPath(GameSettings.Pause) == "<Keyboard>/escape";
 
@@ -201,6 +205,11 @@ namespace GoGhost.Duel
                     : mouse.middleButton.wasPressedThisFrame ? "<Mouse>/middleButton" : null;
             if (path == null) return;
             int index = listeningBinding;
+            // S stays Drop Through, and a mouse button for Pause would turn every click into the menu: keep listening.
+            // A swap would hand Pause this action's mouse button just the same.
+            bool mouseToPause = index == GameSettings.Pause ? path.StartsWith("<Mouse>")
+                : GameSettings.BindingPath(GameSettings.Pause) == path && GameSettings.BindingPath(index).StartsWith("<Mouse>");
+            if (path == "<Keyboard>/s" || mouseToPause) return;
             listeningBinding = -1;
             if (path != "<Keyboard>/escape") GameSettings.Bind(index, path);
             Show();

@@ -18,17 +18,7 @@ namespace GoGhost.Duel
         ConditionalLoadout displayedDraft;
         // Presentation order only. Runtime priority remains the relative order within each operation.
         readonly List<ConditionalRule> displayedRules = new List<ConditionalRule>();
-#if UNITY_EDITOR
-        List<ConditionalRule> ruleSetupViewSample;
-        // Layout capacity fixtures never change the loadout or gameplay budget.
-        internal void SetRuleSetupViewSample(IReadOnlyList<ConditionalRule> sample)
-        {
-            ruleSetupViewSample=sample==null?null:new List<ConditionalRule>();
-            if(sample!=null)foreach(var rule in sample)if(rule!=null)ruleSetupViewSample.Add(rule.Copy());
-            completedPreview=null;completedPreviewRow=-1;
-            CancelRuleEdit();
-        }
-#endif
+
         Vector2Int configurationScreen;
         RectTransform ruleEditor, ruleList, bodyPreview;
         readonly MissionBodyRegion[] neuralRegions=new MissionBodyRegion[6];
@@ -126,7 +116,7 @@ namespace GoGhost.Duel
                 Show();
                 return true;
             }
-            if (!DeveloperShortcutConsumed && selectorRow >= 0 && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            if (!DeveloperShortcutConsumed && game.PauseChangedFrame != Time.frameCount && selectorRow >= 0 && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
             {
                 CancelRuleEdit();
             }
@@ -203,9 +193,6 @@ namespace GoGhost.Duel
 
         void EditPreview(int part)
         {
-#if UNITY_EDITOR
-            if(ruleSetupViewSample!=null)return;
-#endif
             if(pendingRule==null)
             {
                 if(completedPreviewRow>=0&&completedPreviewRow<displayedRules.Count)ChooseRule(completedPreviewRow,part>=0);
@@ -277,9 +264,6 @@ namespace GoGhost.Duel
         void SyncRuleRows()
         {
             displayedRules.Clear();
-#if UNITY_EDITOR
-            if(ruleSetupViewSample!=null){displayedRules.AddRange(ruleSetupViewSample);return;}
-#endif
             displayedRules.AddRange(game.DraftLoadout.OrderedRules());
         }
 
@@ -312,9 +296,6 @@ namespace GoGhost.Duel
 
         void AddRule()
         {
-#if UNITY_EDITOR
-            if(ruleSetupViewSample!=null)return;
-#endif
             if (pendingRule != null || game.DraftLoadout.TotalRules >= ConditionalCatalog.PlayerRuleLimit
                 || !game.ConfigurationVoice.CanOpenRuleEditor) return;
             // Incomplete choices stay UI-local; the combat loadout only receives a complete pair.
@@ -445,9 +426,6 @@ namespace GoGhost.Duel
 
         void CommitRuleChoice()
         {
-#if UNITY_EDITOR
-            if(ruleSetupViewSample!=null)return;
-#endif
             if(!CanConfirmRule())return;
             int row=selectorRow;
             var complete=pendingRule.Copy();
@@ -509,19 +487,6 @@ namespace GoGhost.Duel
         public void OnPointerExit(PointerEventData data) => Leave?.Invoke();
     }
 
-    public sealed class RulePreviewPart : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
-    {
-        public int Part;
-        public CanvasGroup HoverControls;
-        public void SetControlsVisible(bool visible)
-        {
-            if(HoverControls==null)return;
-            HoverControls.alpha=visible?1:0;
-            HoverControls.interactable=HoverControls.blocksRaycasts=visible;
-        }
-        public void OnPointerEnter(PointerEventData data)=>SetControlsVisible(true);
-        public void OnPointerExit(PointerEventData data)=>SetControlsVisible(false);
-    }
 
     // Inspect disabled choices without making them selectable. Scroll/drag still bubble to ScrollRect.
     public sealed class ConditionalOptionDescription : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, ISelectHandler, IDeselectHandler, IPointerClickHandler

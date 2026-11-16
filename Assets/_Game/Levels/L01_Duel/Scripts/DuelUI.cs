@@ -28,7 +28,10 @@ namespace GoGhost.Duel
             string message = game.SaveNotice;
             if (message != displayedSaveNotice) { displayedSaveNotice = message; saveNoticeAt = Time.unscaledTime; CloseSaveNotice(); }
             // Recovery is informational; an unresolved failure/repair message stays visible.
-            bool recoveryOnly = message == "Restored your previous save.";
+            // A lost drawing is final (the blank face is saved over it), so it is informational too.
+            bool recoveryOnly = message == "Restored your previous save."
+                || message == "Restored your previous save. Your drawing could not be restored."
+                || message == "Your drawing could not be restored.";
             bool visible = !string.IsNullOrEmpty(message) && (!recoveryOnly || Time.unscaledTime - saveNoticeAt < 10);
             if (!visible) { CloseSaveNotice(); return; }
             if (saveNoticePanel == null)
@@ -163,10 +166,11 @@ namespace GoGhost.Duel
             float oldScale=canvas.GetComponent<Canvas>().scaleFactor;
             ConfigurePageScale();
             sceneDialogue = null; sceneContinue = null;
-            // Settings and its pages open over the title and over Pause only.
+            // Settings and its pages open over the title and over Pause only; the New Game confirmation
+            // can also open over the Bonus result, whose Restart replaces the save.
             if(!game.DeveloperToolsOpen)
             {
-                if(overlay!=OverlayPage.None&&game.Phase!=DuelPhase.Menu&&!game.Paused)overlay=OverlayPage.None;
+                if(overlay!=OverlayPage.None&&overlay!=OverlayPage.Confirm&&game.Phase!=DuelPhase.Menu&&!game.Paused)overlay=OverlayPage.None;
                 if(game.Phase==DuelPhase.Menu&&overlay==OverlayPage.None&&!GameSettings.NoticeSeen)overlay=OverlayPage.Notice;
             }
             LeaveMenuIfResumed();

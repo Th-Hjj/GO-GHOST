@@ -259,7 +259,7 @@ namespace GoGhost.Duel
             behaviour.EnterDelay = order * OvMotion.Stagger; behaviour.EnterSide = side; behaviour.EnterDistance = distance;
         }
 
-        // Title, Help and the hazard rule: the same on the overview and in the editor.
+        // Title, Menu and the hazard rule: the same on the overview and in the editor.
         void OvHeader(RectTransform frame, string title)
         {
             var mask = Rect("Title mask", frame, new Vector2(26 + 650 - 800, 450 - 81.6f), new Vector2(1300, 132));

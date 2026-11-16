@@ -48,7 +48,7 @@ namespace GoGhost.Duel
             edge.color = OverridePalette.Signal; edge.To = MenuEdgeQuad; edge.raycastTarget = false;
 
             const float left = 1084, width = 460;
-            float top = encounter ? 238 : 276;
+            float top = encounter && !game.GhostArena ? 238 : 276;
             var rule = OvRule(menuRoot, left, top - 34, width);
             var draw = rule.gameObject.AddComponent<Arrive>(); draw.From = new Vector2(60, 0); draw.Delay = .06f;
             int index = 0;
@@ -61,7 +61,7 @@ namespace GoGhost.Duel
             }
             Item("Resume", 100, () => game.SetPause(false), OverrideButtonKind.Primary, 64, true);
             // Configuration is only an exit from a fight or the Test Room.
-            if (encounter) Item("Configuration", 72, game.Reconfigure, OverrideButtonKind.Secondary, 42);
+            if (encounter && !game.GhostArena) Item("Configuration", 72, game.Reconfigure, OverrideButtonKind.Secondary, 42);
             Item("Key Bindings", 64, () => { bindingsFromMenu = true; OpenOverlay(OverlayPage.Bindings); }, OverrideButtonKind.Tertiary, 38);
             Item("Settings", 64, () => { bindingsFromMenu = false; OpenOverlay(OverlayPage.Settings); }, OverrideButtonKind.Tertiary, 38);
             Item("Main Menu", 64, game.MainMenu, OverrideButtonKind.Tertiary, 38);

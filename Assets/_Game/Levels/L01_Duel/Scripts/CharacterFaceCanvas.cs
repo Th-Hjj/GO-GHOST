@@ -16,9 +16,13 @@ namespace GoGhost.Duel
         Texture2D brushTexture;
         Sprite brushSprite;
 
-        public void Initialize(CharacterAppearance value)
+        // True while a menu or overlay covers the page; the system pointer then stays visible.
+        System.Func<bool> covered;
+
+        public void Initialize(CharacterAppearance value, System.Func<bool> isCovered = null)
         {
             appearance = value;
+            covered = isCovered;
             area = (RectTransform)transform;
             var cursor = new GameObject("Brush", typeof(RectTransform), typeof(Image));
             brush = cursor.GetComponent<RectTransform>();
@@ -50,7 +54,7 @@ namespace GoGhost.Duel
         public void OnInitializePotentialDrag(PointerEventData data) => data.useDragThreshold = false;
         public void OnPointerDown(PointerEventData data)
         {
-            if (data.button != PointerEventData.InputButton.Left || !Application.isFocused) return;
+            if (data.button != PointerEventData.InputButton.Left || !Application.isFocused || covered != null && covered()) return;
             EventSystem.current?.SetSelectedGameObject(null);
             drawing = Point(data.position, data.pressEventCamera, out previous);
             hasPrevious = drawing;
@@ -71,7 +75,8 @@ namespace GoGhost.Duel
         void Update()
         {
             var mouse = Mouse.current;
-            if (mouse == null || !Application.isFocused || !Point(mouse.position.ReadValue(), null, out var uv))
+            if (mouse == null || !Application.isFocused || covered != null && covered()
+                || !Point(mouse.position.ReadValue(), null, out var uv))
             { RestoreCursor(); return; }
             if (!mouse.leftButton.isPressed) drawing = hasPrevious = false;
             if (!cursorHidden) { previousCursorVisible = Cursor.visible; Cursor.visible = false; cursorHidden = true; }

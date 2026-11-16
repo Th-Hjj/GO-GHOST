@@ -107,6 +107,12 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
     private readonly Collider2D[] ledgeHits = new Collider2D[8];
     private bool CoyoteJump => legacyCombat && !IsGrounded && droppingThrough == null && rb.linearVelocity.y <= .1f
         && Time.time - lastGroundedAt <= CoyoteSeconds;
+    /// <summary>A jump can start now: on a support, or within the coyote window after leaving one. Rules use it too.</summary>
+    public bool CanStartJump => IsGrounded || CoyoteJump;
+    // Another fighter's body under the feet; a jump from it adds his upward speed, as from a rising platform.
+    private Rigidbody2D fighterSupport;
+    // A fighter mid-jump rises far faster than a platform; capped so the jump clears him without doubling (trial value).
+    public const float FighterRiseCap = 3f;
     private bool attemptActive;
     private bool HasDeployment => officer != null && officer.Deployment != null;
     public bool HasDoubleJump => !legacyCombat && (HasDeployment ? attemptActive && officer.Deployment.HasDoubleJump : doubleJumpUnlocked);
@@ -193,6 +199,7 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         bool previouslyGrounded = IsGrounded;
         IsGrounded = false;
         groundSupport = null;
+        fighterSupport = null;
         if (groundCheck != null && (rb.linearVelocity.y <= 0.1f || RidingRisingCarrier()))
         {
             // A downward foot probe avoids treating a wall as a landing surface.
@@ -225,6 +232,7 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
                     if (!terrain && support.GetComponentInParent<Enemy>() == null) continue;
                     IsGrounded = true;
                     if (terrain) groundSupport = support;
+                    else fighterSupport = support.attachedRigidbody;
                     break;
                 }
             }
@@ -243,7 +251,8 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
             jumpInFlight = jumpWasAscending = false;
             lastGroundedAt = Time.time; ledgeUsed = false;
             var lift = groundSupport != null ? groundSupport.attachedRigidbody : null;
-            supportRise = lift != null && lift.bodyType == RigidbodyType2D.Kinematic ? Mathf.Max(0, lift.linearVelocity.y) : 0;
+            supportRise = lift != null && lift.bodyType == RigidbodyType2D.Kinematic ? Mathf.Max(0, lift.linearVelocity.y)
+                : fighterSupport != null ? Mathf.Clamp(fighterSupport.linearVelocity.y, 0, FighterRiseCap) : 0;
         }
         else if (jumpInFlight)
         {
@@ -270,10 +279,13 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         if(spriteRenderer!=null) spriteRenderer.flipX=FacingDirection<0;
         bool coyote = CoyoteJump;
         // A press that could not be used is kept briefly and spent on the landing that follows.
-        bool buffered = legacyCombat && IsGrounded && !input.JumpPressedThisFrame && Time.time - jumpBufferedAt <= JumpBufferSeconds;
+        // A rule that owns Jump this frame decides it alone; a stored manual press is dropped, not spent later.
+        bool ruleOwnsJump = input.ConditionalControlsActive && input.ConditionalFrame.JumpOwned;
+        if (ruleOwnsJump) jumpBufferedAt = float.NegativeInfinity;
+        bool buffered = legacyCombat && IsGrounded && !ruleOwnsJump && !input.JumpPressedThisFrame && Time.time - jumpBufferedAt <= JumpBufferSeconds;
         bool executableJump = (input.JumpPressedThisFrame || buffered) && (IsGrounded || coyote || HasDoubleJump && airJumpsRemaining > 0)
             && (input.LegacyCombatActive || dodge == null || !dodge.IsDodging) && input.GameplayInputEnabled;
-        if (legacyCombat && input.JumpPressedThisFrame && !executableJump && input.GameplayInputEnabled) jumpBufferedAt = Time.time;
+        if (legacyCombat && input.JumpPressedThisFrame && !executableJump && !ruleOwnsJump && input.GameplayInputEnabled) jumpBufferedAt = Time.time;
         if (executableJump) jumpBufferedAt = float.NegativeInfinity;
         if (executableJump && input.LegacyCombatActive && dodge != null && dodge.IsDodging)
         {
@@ -286,6 +298,8 @@ public class PlayerMovement : MonoBehaviour, IAttemptAugmentation
         {
             input.ResolveLegacyDodge(executableJump);
             acceptedDodge = !executableJump && input.DodgePressedThisFrame && dodge != null && dodge.TryDodge(input.DodgeDirection);
+            // A Dodge chosen after an earlier Space press wins over that stale press.
+            if (acceptedDodge) jumpBufferedAt = float.NegativeInfinity;
             if(input.ConditionalFrame.DodgeOwned && input.DodgePressedThisFrame)
                 input.NotifyConditionalAction(ControlOperation.Dodge,acceptedDodge);
         }

@@ -205,6 +205,8 @@ namespace GoGhost.Duel
             EventSystem.current?.SetSelectedGameObject(null);
             ui.DiscardRulePicker();
             ClearEncounter();
+            // A jumped run is not the player's run: never write, delete or clear their save.
+            savingRun = false;
             metricsWaveJumpPending = true;
             if(wave>2){PlayMetrics.MarkTestData();PlayMetrics.EndRun("developer_wave_jump");}
             // Keep equipped rules/order, but discard any incomplete picker draft.

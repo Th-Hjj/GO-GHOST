@@ -244,7 +244,7 @@ namespace GoGhost.Duel
             }
             else
             {
-                OvButton("Restart", page, firstAt, first, game.NewGame, OverrideButtonKind.Primary, 62, true, firstIn);
+                OvButton("Restart", page, firstAt, first, RequestNewGame, OverrideButtonKind.Primary, 62, true, firstIn);
                 OvButton("Main Menu", page, secondAt, second, game.MainMenu, OverrideButtonKind.Secondary, 40, false, secondIn);
             }
         }

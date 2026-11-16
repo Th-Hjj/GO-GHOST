@@ -44,19 +44,27 @@ namespace GoGhost.Duel
         // A combatant can see the flight of a moving support, including its EMP start-up ramp.
         internal float DisplacementAfter(float seconds)
         {
-            float remaining = Mathf.Max(0, rampRemaining - seconds);
-            float advance = seconds - (rampRemaining*rampRemaining - remaining*remaining) / (2*RampDuration);
-            return Target(clock + advance) - body.position.y;
+            float c = clock, ramp = rampRemaining;
+            Advance(ref c, ref ramp, seconds);
+            return Target(c) - body.position.y;
+        }
+
+        // A waiting platform's clock runs at full speed until its turn; its own speed ramp starts then,
+        // so every platform starts exactly WaveLag after its left neighbour and keeps that lag.
+        static void Advance(ref float c, ref float ramp, float seconds)
+        {
+            if (ramp > 0 && c < 0) { float wait = Mathf.Min(seconds, -c); c += wait; seconds -= wait; }
+            // Integrate the speed ramp, including a step crossing its end.
+            float next = Mathf.Max(0, ramp - seconds);
+            c += seconds - (ramp*ramp - next*next) / (2*RampDuration);
+            ramp = next;
         }
 
         void FixedUpdate()
         {
             if (body == null) return;
             float dt = Time.fixedDeltaTime;
-            // Integrate the speed ramp, including a fixed step crossing its end.
-            float nextRemaining = Mathf.Max(0, rampRemaining-dt);
-            clock += dt - (rampRemaining*rampRemaining-nextRemaining*nextRemaining)/(2*RampDuration);
-            rampRemaining = nextRemaining;
+            Advance(ref clock, ref rampRemaining, dt);
             body.linearVelocity = new Vector2(0, (Target(clock) - body.position.y) / dt);
         }
     }

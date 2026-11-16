@@ -157,7 +157,7 @@ namespace GoGhost.Duel
             var guide = Rect("DrawGuide", face, Vector2.zero, new Vector2(490, 490)).gameObject.AddComponent<DrawGuide>();
             guide.Appearance = game.Appearance; guide.raycastTarget = false;
             guide.color = Color.Lerp(Color.black, OverridePalette.Text, .42f); guide.Brush = OverridePalette.Text;
-            face.gameObject.AddComponent<CharacterFaceCanvas>().Initialize(game.Appearance);
+            face.gameObject.AddComponent<CharacterFaceCanvas>().Initialize(game.Appearance, () => game.Paused || OverlayOpen);
             OvArrive(face, Vector2.zero, 2);
             OvButton("Clear", frame, At(1384, 270, 130, 52), new Vector2(130, 52), game.Appearance.Clear, OverrideButtonKind.Tertiary, 30,
                 enterDelay: Enter(4), align: TextAlignmentOptions.Capline).name = "ClearFace";

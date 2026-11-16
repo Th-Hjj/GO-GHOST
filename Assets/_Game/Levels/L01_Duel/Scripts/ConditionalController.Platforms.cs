@@ -28,7 +28,8 @@ namespace GoGhost.Duel
         {
             var nav=PlatformGeometry;
             // The controller checks that this row's shared Move/Jump claim is free before admission.
-            if(!CanJump()||movement.HitPushActive||!body.simulated||movement.MoveSpeed<=.01f||nav==null)return false;
+            // A route walks to its take-off first, so it starts only from a real support, never in the coyote window.
+            if(!movement.IsGrounded||!CanJump()||movement.HitPushActive||!body.simulated||movement.MoveSpeed<=.01f||nav==null)return false;
             var state=states[1,r.Row];
             if(state.PlatformFailed&&state.PlatformFailureVersion==nav.Version
                 &&Vector2.Distance(state.PlatformFailurePosition,body.position)<.25f)return false;

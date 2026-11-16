@@ -449,7 +449,7 @@ namespace GoGhost.Duel
                 int condition = entry.Id;
                 var candidate = rule.Copy();
                 if (condition != selected) candidate.SetCondition(selectedConditionIndex, new RuleCondition(condition));
-                string reason = ConditionalCatalog.HasAnyCompatibleAction(candidate) ? null : "These conditions cannot be true together.";
+                string reason = ConditionalCatalog.ConditionChoiceReason(candidate);
                 bool chosen = selected == condition;
                 var choice = OvChoice(entry.Label, panel, PickSlot(panel, PickLeft, index * PickPitch, PickChoice, PickRow), new Vector2(PickChoice, PickRow),
                     () => ApplyChoice(condition, false, null), chosen ? OverridePalette.Text : ChoiceFill,
@@ -466,7 +466,7 @@ namespace GoGhost.Duel
                 {
                     var draft = rule.Copy();
                     ConditionalCatalog.SetConditionOption(draft, p, selectedConditionIndex);
-                    return ConditionalCatalog.HasAnyCompatibleAction(draft);
+                    return ConditionalCatalog.ConditionChoiceReason(draft) == null;
                 }, unfold);
         }
 

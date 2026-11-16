@@ -3,8 +3,8 @@ using UnityEngine;
 namespace GoGhost.Duel
 {
     // The GHOST arena (Thomas, 2026-11-14): the five letters of the title as terrain, wider than the screen.
-    // Stage 2 builds the place and its camera. GHOST's own body and AI are not built yet, so the Test Room's
-    // robot stands in for him and the encounter runs on the Test Room's lifecycle.
+    // Stage 2 builds the place and its camera; stage 3 gives GHOST his body and plain behaviour
+    // (BossAgent.Ghost.cs). The encounter runs on the Test Room's lifecycle. His AI is stage 4.
     public sealed partial class DuelGame
     {
         public bool GhostArena { get; private set; }

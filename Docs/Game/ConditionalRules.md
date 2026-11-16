@@ -70,7 +70,7 @@ You Got Hit, Landed and Your Shot Hit are events. The other eight selectable con
 
 | Condition | Required observation |
 |---|---|
-| Where You Stand | On Ground: standing on the arena floor. On Platform: standing on a one-way platform. In Air: not grounded. The retired Grounded value (floor or platform) shows as Where You Stand (Reselect) and is invalid until edited. |
+| Where You Stand | On Ground: standing on the arena floor, or on a Boss's head (Thomas, 2026-11-15). On Platform: standing on a one-way platform. In Air: not grounded. The retired Grounded value (floor or platform) shows as Where You Stand (Reselect) and is invalid until edited. |
 | Low Health | Enters at 40% HP or below and leaves at the 45% recovery threshold. |
 | You Got Hit | Actual damage to the player within the 0.5-second event window. |
 | Reloading | The revolver is reloading. |

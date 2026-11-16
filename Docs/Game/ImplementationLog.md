@@ -40,6 +40,13 @@
   - Open questions for Thomas: whether a Boss's head counts as On Ground, and whether the longer punch lunge is wanted.
 - **NOT TESTED:** everything in play with real input: each jump change, the Bonus Restart confirmation, the binding refusals, the Esc and focus fixes, the cursor on the creation menu, the window size in a standalone build, and the platform wave's look. The second-pass fixes after the review were compiled only.
 
+## 2026-11-15 — Wall-planted axe keeps its tilt
+
+- **Asked:** Thomas rejected the level handle as ugly. He approved the redesigned Rising Uppercut and kept the first Counter Guard.
+- **Changed:** `FinalBossBoxer.SpiritAxe.cs` restores the original wall-plant angle. The wall perch is a level collider up to .8 wide at the handle's middle; the rim light follows the tilted handle.
+- **Checked:** the game assembly compiles with Unity's bundled compiler outside the Editor.
+- **NOT TESTED:** everything in play. At the steepest plants (about 43 degrees) the feet can stand up to about .35 above or below the drawn handle at the platform's ends.
+
 ## 2026-11-15 — The planted axe can be stood on
 
 - **Asked:** make the axe a place to stand while it is stuck in a wall or anywhere else and not moving.

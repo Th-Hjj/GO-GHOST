@@ -1,6 +1,6 @@
 # Override — UI design specification
 
-**Status.** Thomas chose this direction on 2026-11-12 after his professor described the existing UI as looking like an AI-generated prototype. It replaces the whole interface style. **Nothing here is implemented yet.** Until a stage lands, [Art Direction](ArtDirection.md) still describes the source. Gameplay, progression, dialogue rules and all existing copy are unchanged.
+**Status.** Thomas chose this direction on 2026-11-12 after his professor described the existing UI as looking like an AI-generated prototype. It replaces the whole interface style. It is built through the combat HUD and the pages below; what is not built is noted where it applies. [Art Direction](ArtDirection.md) describes the world art. Gameplay, progression, dialogue rules and all existing copy are unchanged.
 
 **Setting keywords (Thomas):** future, cyberpunk, AI, living organism, self-control.
 
@@ -40,7 +40,7 @@ Text on Signal or on any body-system or Boss colour is Ink.
 ### Type
 
 - **Display:** Barlow Condensed Italic, 800 and 900, uppercase. Titles, buttons, names, HP, rule actions, options.
-- **Text:** JetBrains Mono, 500 and 700. Dialogue, rule conditions, the name field, Help.
+- **Text:** JetBrains Mono, 500 and 700. Dialogue, rule conditions, the name field.
 - Both are SIL OFL. They replace IBM Plex. Player names keep the runtime system CJK fallback.
 
 | Element | Face | Size |
@@ -76,7 +76,7 @@ Match state never changes font, size, weight, spacing or wrapping (existing rule
 | Option slab | Surface; conditions in Text, actions in their system colour | #22222A, shifts 8 | Filled: Text for conditions and categories, system colour for actions; Ink text | Disabled colours |
 | Parameter chip | As option, 48 high | As option | As option | — |
 | Rule card | Surface; number block in the action's system colour; condition in Text; action in system colour | Shifts 12, #1E1E25, shows reorder and remove | HUD match: whole card fills with the system colour, Ink text | — |
-| Empty slot | Ink/Surface diagonal bands, numeral in Disabled | — | — | — |
+| Empty slot | Flat #0E0E12 slab, numeral in Disabled | — | — | — |
 
 Keyboard focus is a 4-pixel Text frame inside the slab. A parameter group waiting for a choice pulses a Signal inner frame every 1.2 s.
 
@@ -161,9 +161,9 @@ Nothing on the title carries text or passes in front of the logo and menu.
 
 One player stands on the right roof with their back to the camera, looking toward the city. Preserve the round head, cold-white simple body and electromagnetic revolver's silhouette and ice-blue core. Build the shoulders, straight planted legs, relaxed arms and weapon perspective for this rear view; do not reuse the side-on combat pose or show the drawn face on the back of the head. Thomas accepted the rear pose but requested the game's blocky limbs: use straight-sided, constant-width segments and a straight torso, without prominent round joint discs or an anatomical waist. Each arm and leg is one complete rigid rectangular block, with no elbow/knee segmentation or separate hand/finger shapes. Perspective moves the attachment points; it must not shear the limb rectangles or their end caps. Keep every end perpendicular to its long sides, with no foot clipping or ground-alignment treatment. Draw the title body blocks as opaque rectangles without a stretched transparent border, keeping their edges crisp at the approved dimensions. The arm end directly overlaps the revolver grip. The torso is also one regular rectangle with flat edges and no raised side-plane corners. Preserve the approved short neck, head proportions and stance; only flatten the torso edges. Both feet stand on the roof surface inside the rear rim, not on its bright edge. Bring the legs only slightly inward. Shoulder and hip axes and foot placement follow the roof rising toward screen-right; the torso remains upright. Use near/far limb overlap and attachment placement to establish the oblique rear view. The city, roof and player share a bottom-aligned frame that scales uniformly to fill the display. `Art/Title/Outskirts.png` contains only the environment and is the source plate; `DuelUI.Title.cs` builds the cover figure separately. This supersedes the unbuilt fight on the logo and leaves mission backgrounds unchanged.
 
-**Who Are You (D4).** This is the first time the player hears the voice. WHO, ARE and YOU slam in on the spoken words; YOU is Signal with one glitch. The voice slab sits above them with no name. The head ring is 440 across, 16 thick, and pulses Signal once the line ends. The cursor is a ring the size of the brush. Clear sits to the right; the name field and Upload sit under the head. Until the first mark a dim ghost face (two eyes, then a smile) is drawn inside the head with a travelling brush ring, looping, and it returns after Clear. Tutorial On / Off sits at the bottom right.
+**Who Are You (D4).** This is the first time the player hears the voice. WHO, ARE and YOU slam in on the spoken words; YOU is Signal with one glitch. The voice slab sits above them with no name. The head is 440 across, with no ring round it. The cursor is a ring the size of the brush. Clear sits to the right; the name field and Upload sit under the head. Until the first mark a dim ghost face (two eyes, then a smile) is drawn inside the head with a travelling brush ring, looping, and it returns after Clear. Tutorial On / Off sits at the bottom right.
 
-**Uploading (D4b).** A fixed scan of about 2.4 s. A bright Signal line with a fading wake sweeps down the drawn face and back up, then the head flashes Signal once (no flash with Reduce Flashing). Upload turns into the Uploading bar with its percentage. Back, Clear and the Tutorial choice dim. The head ring does not show progress.
+**Uploading (D4b).** A fixed scan of about 2.4 s. A bright Signal line with a fading wake sweeps down the drawn face and back up, then the head flashes Signal once (no flash with Reduce Flashing). Upload turns into the Uploading bar with its percentage. Back, Clear and the Tutorial choice dim.
 
 **Mission overview (D2).** Left: the actual side-view combat character, facing right, on a stage slab. It is assembled from the player's own parts, sizes and resting pose, never redrawn (Thomas, 2026-11-12). Centre: Rules and its count, the rule cards, then **+ Add Rule occupying the first empty slot**, then the remaining empty slots; five slots are always visible. Right: Target Profile card in the mission colour with the target facing left, Test Room, and Start Mission bottom right. Happy's box bottom left. Hovering a rule shows its controls and makes the character demonstrate the action.
 
@@ -251,34 +251,32 @@ Thomas accepted these with the mockups on 2026-11-12.
 - **Voice loudness.** A per-frame level from the playing voice clip for the seven bars.
 - **Fonts.** SDF assets for the four weights, with their OFL texts, under `Assets/_Game/Shared/Fonts/`.
 
-## Proposed new pages
+## New pages
 
 **Built on 2026-11-12** after Thomas authorized the remaining changes for the Beta 66% build. The pages follow N1–N6 on the canvas. Credits lists Thomas Hong and Walker Grupp, Efe Inan for music, and the two fonts; the Voice, Sound and Special thanks rows are left out until Thomas supplies them. Wording that differs from what Thomas wants should be corrected here and in `DuelUI.OverrideSettings.cs`.
 
 | Page | Why | Content |
 |---|---|---|
-| Settings (N2) | No volume, display or accessibility control exists | Audio: Master, Music, Effects, Voice, ten steps each. Display: Fullscreen, Resolution, VSync. Accessibility: Reduce Flashing. Changes apply at once; Back returns. Reached from the title and from Pause |
+| Settings (N2) | No volume, display or accessibility control exists | Audio: Master, Music, Effects, Voice, ten steps each. Display: Fullscreen, Resolution, VSync. Accessibility: Reduce Flashing. Changes apply at once; Back returns. Reached from the title and from the menu |
 | Credits (N3) | Collaborator music and two OFL fonts need crediting | Replaced on 2026-11-15 by the credits roll on the title; see Credits roll |
 | New Game confirmation (N4) | New Game would replace a saved run with one click | "Start a new game?", "Your saved run will be replaced.", Cancel (primary) and New Game. Shown only when a save exists |
-| Key bindings (N6) | Thomas asked for rebinding on 2026-11-12 | Opened from Settings › Controls. One row per action with its key on a Text slab; Reset to Defaults below |
+| Key bindings (N6) | Thomas asked for rebinding on 2026-11-12 | Opened from Settings and from the menu; Back returns to whichever opened it. One row per action with its key on a Text slab; Reset to Defaults below |
 | Flashing-lights notice (N5) | The style uses flashes, glitches and a red damage flash | One static screen on first launch with Continue and Settings. No animation on this screen |
 | Title menu (N1) | Entry points for the above | With a save: Continue is the primary and New Game the secondary. Without one: New Game is the primary and Continue is absent. Settings, Credits and Quit sit in one row of tertiary slabs underneath |
 
-Pause gains a Settings entry between Configuration and Main Menu if Settings is approved (shown on D9).
-
 **Reduce Flashing** removes glitch bursts, the scanline overlay, the red damage flash and stripe scrolling, and softens slam-ins to a fade.
 
-**Work they need.** A save file and stored preferences, neither of which the game has. Binding overrides for the existing input actions. Volume control per group; voices already route through a mixer group, music and effects need checking. Resolution and fullscreen switching.
+**Work they needed**, built with them: a save file and stored preferences, binding overrides for the existing input actions, volume control per group, and resolution and fullscreen switching.
 
 ### Save and Continue
 
-Thomas confirmed on 2026-11-12 that the game needs a save. The rules below are proposed.
+Thomas confirmed on 2026-11-12 that the game needs a save. The rules below are built.
 
 - **One slot, saved automatically.** There is no Save button and no slot screen.
 - **What is stored:** the drawn face, the name, the equipped rules in order, the mission reached, and which tutorial lines and dossier briefings have already played.
 - **When it is written:** after Upload, whenever a rule is confirmed, removed or reordered, and when a mission is cleared.
 - **Continue** opens the preparation page of the mission reached. A fight in progress is never stored, so quitting mid-fight returns to that mission's preparation. Injected rules and phase-two retry state are not stored.
-- **Main Menu** from Pause or a result needs no confirmation, because only the current fight is lost.
+- **Main Menu** from the menu or a result needs no confirmation, because only the current fight is lost.
 - **Finishing the game** removes the save. The title then shows New Game alone.
 - **Analytics (Thomas, 2026-11-12):** Continue extends the same analytics record as the saved run. Only New Game starts a new record. The save therefore stores which record it belongs to.
 
@@ -286,13 +284,13 @@ Thomas confirmed on 2026-11-12 that the game needs a save. The rules below are p
 
 ### Key rebinding
 
-Thomas confirmed on 2026-11-12 that keys must be rebindable. The rules below are proposed.
+Thomas confirmed on 2026-11-12 that keys must be rebindable. The rules below are built.
 
 - **Rebindable:** Move left, Move right, Jump, Dodge, Fire, Rapidly fire, Reload, Pause / resume. Aim stays on the mouse.
-- **Flow:** click a row; its key slab turns Signal, pulses and reads "Press a key"; the next key or mouse button is bound. Esc cancels listening. To rebind Pause itself, the first Esc cancels and any other key binds.
-- **Conflicts:** binding a key that another action uses swaps the two, so no action is ever left without a key.
-- **Reset to Defaults** restores the list in Help.
-- Help's controls page and any key named in dialogue read the current bindings.
+- **Flow:** click a row; its key slab turns Signal and reads "Press a key"; the next key or mouse button is bound. Esc cancels listening. To rebind Pause itself, the first Esc cancels and any other key binds.
+- **Conflicts:** binding a key that another action uses swaps the two, so no action is ever left without a key. S stays Drop Through and is not accepted, and Pause never takes a mouse button, directly or through a swap; the row keeps listening instead.
+- **Reset to Defaults** restores the default bindings.
+- The Key Bindings page and the Test Room's control list read the current bindings.
 - Bindings are stored with the settings, separately from the save, and survive New Game.
 
 **Language.** All copy stays English; Thomas does not need other languages.
@@ -301,9 +299,9 @@ Thomas confirmed on 2026-11-12 that keys must be rebindable. The rules below are
 
 The frame-by-frame EMP sweep across the cards. The Bonus result is built as the Defeat layout with COMPLETE, Restart and Main Menu on the held fight. Help was removed on 2026-11-15. F8 developer tools keep their current plain look.
 
-## Proposed implementation stages
+## Implementation stages (historical)
 
-Proposed, not confirmed. Each stage compiles, is exercised from its normal entry in Play Mode and is captured.
+The 2026-11-12 plan, since carried out or superseded: Help was removed on 2026-11-15, the attract fight gave way to the outskirts title, and the preview vignettes are not built. Each stage compiled, was exercised from its normal entry in Play Mode and was captured.
 
 1. Fonts, palette constants, slab and stripe graphics, button states; title (without the fight), pause and results.
 2. Happy's box with live bars; Who Are You and Uploading.

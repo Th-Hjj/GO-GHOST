@@ -1,12 +1,44 @@
 # GO GHOST slice implementation
 
-## 2026-11-15 — Mission 3 near towers hide the far skyline
+## 2026-11-15 — Whole-project audit and fixes
 
-- **Asked:** Thomas circled an orange band across the left tower in Mission 3 and asked how to fix it, then chose to fix Mission 3 only.
-- **Found:** `MegacityFar.png` has one amber row of windows (x 183-284, y 248-255) and a building with lit floor lines behind the left tower of `MegacityNear.png`. The tower is opaque in the art, but the near plate is drawn at 50%, so the far art showed through it.
-- **Changed:** `IndustrialArenaBackdrop.cs` adds, for Mission 3 only, a black copy of the near plate (its own alpha, full opacity) between the far plate and the near plate, sharing the near plate's parallax crop. No art or opacity changed.
-- **Checked:** the game assembly compiles with Unity's bundled compiler outside the Editor (Thomas was in Play Mode). An offline composite of the two plates at the left parallax position, drawn the way the canvas blends them, shows the band before and a solid tower after.
-- **NOT TESTED:** Mission 3 in Play Mode, including the EMP contour trace over the towers, other parallax positions and phase two. The part of the amber row to the right of the tower is not covered by any tower and still shows, as authored.
+- **Asked:** check the whole project for bugs, outdated files, display and flow problems, then fix everything found.
+- **Found:** a multi-agent audit with a second, adversarial check of each finding confirmed 71 of 77 findings. None was a crash, softlock or progression break. A full Check Game Flow passed before any change.
+- **Changed (code):**
+  - Esc that closes the menu over the rule editor no longer also cancels the draft (`DuelGame.PauseChangedFrame`).
+  - Focus lost during the target card pauses the countdown when it starts.
+  - F8 mission jumps never write the save. A Final Boss win deletes the save and sets the cleared flag only in a saving run.
+  - The GHOST arena menu has no Configuration item, and its items sit where other four-item menus do.
+  - The Bonus result's Restart asks before replacing a save; the confirmation can now open over that page.
+  - Over the creation page's menu, the brush cursor gives way to the system pointer.
+  - Drawing-loss save notices time out like the plain recovery notice.
+  - Windowed mode with no chosen resolution opens at 80% of the desktop.
+  - Key Bindings refuses S (Drop Through) and never gives Pause a mouse button, directly or through a swap. The Pause key does nothing while the name field has focus.
+  - With an action already chosen, conditions and options that contradict it (In Air with Jump or Change Platform, Reloading with Fire) are closed with their reason.
+  - Rule Jumps use the coyote window (`PlayerMovement.CanStartJump`). Change Platform still starts only from a real support.
+  - A buffered press is dropped while a rule owns Jump, and an accepted Dodge clears it.
+  - A jump from a rising Boss adds his upward speed, capped at 3 (`FighterRiseCap`, trial value).
+  - Each phase-two platform's speed ramp starts at its own turn, so the transition wave starts exactly .25 s apart (it was .45 s for the first gap).
+- **Changed (cleanup):**
+  - Removed dead code: `RingGraphic`, the six-bar cylinder masks, the rule-setup fixture hook, `RulePreviewPart`, the unreachable F8 run-total branch, the Help-opened line and the Help tuple member.
+  - Removed the Alpha 50 build menu. Observe Third Wave is renamed Observe Bonus.
+  - Removed the five retired catalog lines (Bonus offer, Mission Skills) and 25 voice WAVs that nothing plays.
+  - Removed `boss_fight_2.wav`; its manifest entry keeps the provenance.
+  - Removed the two empty folders.
+  - Cleared the committed `preloadedAssets` build residue.
+  - Moved `FinalBoss/HOW_TO_APPLY_FINAL_BOSS.txt` to `Legacy/Docs/Prototypes/`.
+  - Corrected stale text in 17 docs.
+- **Checked:**
+  - Unity 6000.6.0f1 compiled.
+  - Check Game Flow passed in full after the fixes, from save recovery through credits, including save removal and the cleared flag.
+  - An independent review of the code diff found the Restart, Change Platform, Pause-swap and menu-offset problems, all fixed above. Compiled again after those fixes.
+- **Not done:**
+  - URP `m_RuntimeSettings` residue: it is not reachable through `SerializedObject`.
+  - The dynamic LiberationSans fallback atlas churn is left uncommitted.
+  - `bundleVersion` stays 0.80.0 until the next build sets its number.
+  - The EMP outline's "Sprite Tiling" warnings: the arena borders use Unity's built-in sliced UI sprite and draw correctly.
+  - Open questions for Thomas: whether a Boss's head counts as On Ground, and whether the longer punch lunge is wanted.
+- **NOT TESTED:** everything in play with real input: each jump change, the Bonus Restart confirmation, the binding refusals, the Esc and focus fixes, the cursor on the creation menu, the window size in a standalone build, and the platform wave's look. The second-pass fixes after the review were compiled only.
 
 ## 2026-11-15 — Meteor holds .3 s at its apex
 
@@ -45,6 +77,14 @@
 - **Changed:** `PlatformOscillator.WaveLag` is a sixteenth of the cycle (.25 s, a quarter of the first rise; it was 1 s). `DuelFinalBossFight.StartPlatformMotion` gives a direct entry a clock two cycles in, so its wave is already running. The transition's start point is unchanged.
 - **Checked:** the game assembly compiles with Unity's bundled compiler outside the Editor.
 - **NOT TESTED:** everything in play. Not established: where Thomas saw the motion begin late (the real transition or a direct entry).
+
+## 2026-11-15 — Mission 3 near towers hide the far skyline
+
+- **Asked:** Thomas circled an orange band across the left tower in Mission 3 and asked how to fix it, then chose to fix Mission 3 only.
+- **Found:** `MegacityFar.png` has one amber row of windows (x 183-284, y 248-255) and a building with lit floor lines behind the left tower of `MegacityNear.png`. The tower is opaque in the art, but the near plate is drawn at 50%, so the far art showed through it.
+- **Changed:** `IndustrialArenaBackdrop.cs` adds, for Mission 3 only, a black copy of the near plate (its own alpha, full opacity) between the far plate and the near plate, sharing the near plate's parallax crop. No art or opacity changed.
+- **Checked:** the game assembly compiles with Unity's bundled compiler outside the Editor (Thomas was in Play Mode). An offline composite of the two plates at the left parallax position, drawn the way the canvas blends them, shows the band before and a solid tower after.
+- **NOT TESTED:** Mission 3 in Play Mode, including the EMP contour trace over the towers, other parallax positions and phase two. The part of the amber row to the right of the tower is not covered by any tower and still shows, as authored.
 
 ## 2026-11-15 — Phase-two platforms swing as a wave from left to right
 

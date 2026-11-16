@@ -7,7 +7,7 @@ Start with the current assignment in [AGENTS.md](../../AGENTS.md) / [CLAUDE.md](
 | [Configuration Help](Help.md) | Historical: the Help page was removed on 2026-11-15; controls are on Key Bindings in the game menu |
 | [Conditional Rules](ConditionalRules.md) | Current player controls, condition/action catalog, configuration, arbitration and feedback |
 | [Boss Encounters](BossEncounters.md) | Progression, arena, Boss combat, public observations and Bonus duo coordination |
-| [Art Direction](ArtDirection.md) | Current visual language, typography, body diagram and combat readability |
+| [Art Direction](ArtDirection.md) | Current arena and fighter art, palette and combat readability; its pre-Override configuration sections are historical |
 | [UI Design: Override](UIDesign.md) | Override UI as built: tokens, components, screens, motion, menu, settings, save and key bindings |
 | [Voice Direction](VoiceDirection.md) | Speaker references, rendering and pause rules, and progression cues |
 | [Voice Studio](VoiceStudio.md#录入新台词) | Registering fixed dialogue, connecting its gameplay cue, auditioning edits and saving to game |
@@ -26,7 +26,7 @@ New Game opens **Who Are You**, where Happy asks “Who are you?” aloud. Draw 
 
 A new character enters configuration with **Rules 0**. Happy installs **Incoming Attack (Any) → Jump** as she starts the example line. It uses one of the 5 slots and requests a jump on each legal landing while an attack is incoming. Players can edit or remove it for the rest of that run. The editor offers 11 conditions and seven actions. New rules pair one condition with one action. Older rules can contain several conditions joined by AND. The catalog documents priority, manual fallback and choices that require reselection. [Conditional Rules](ConditionalRules.md)
 
-Each preparation page keeps the body and Rules list beside + Add Rule. Edit a rule in **Body Configuration** and use Confirm or Cancel to return. **Target Profile** presents the numbered mission target with four fields: Codename, Threat, Weapon and Location. Skills are left for the player to discover in combat. Happy reads the dossier on its first visit, including the location after the weapon: Factory, Casino or Tower for Missions 1, 2 and 3 respectively. All later visits in that run show the full dossier silently, including after an interrupted first visit. **Test Room** opens practice with the Dummy Robot. Each has a top-left Back button. **Start Mission** fades preparation into the arena over .35 s and leaves .15 s before the countdown. The drawn face, nickname and equipped rules persist across visits and retries.
+Each preparation page keeps the body and Rules list beside + Add Rule. Edit a rule in **Body Configuration** and use Confirm or Cancel to return. **Target Profile** presents the numbered mission target with four fields: Codename, Threat, Weapon and Location. Skills are left for the player to discover in combat. Happy reads the dossier on its first visit, including the location after the weapon: Factory, Casino or Tower for Missions 1, 2 and 3 respectively. All later visits in that run show the full dossier silently, including after an interrupted first visit. **Test Room** opens practice with the Dummy Robot. Each has a top-left Back button. **Start Mission** wipes onto the target card, which holds until 1.9 s and pulls apart onto the arena; the three-second countdown starts at 2.25 s and calls the roll. Retry and the Bonus have no card. The drawn face, nickname and equipped rules persist across visits and retries.
 
 There is no Help page. The pause key, or the **Menu** button on preparation pages, opens the game menu on every page after the title: Resume, Configuration (in a fight or the Test Room), Key Bindings, Settings and Main Menu. Each New Game saves one independent JSON record with the character nickname; see [Gameplay Analytics](GameplayAnalytics.md).
 
@@ -36,7 +36,7 @@ Mission 2 victory closes the playtest record. Mission 3 phase one opens with the
 
 The refreshed **Beta 33%** packages for Windows x64 and macOS include Happy’s starter Jump rule, personalized offline greeting, tutorial and victory lines. The desktop Kokoro bank contains Heart (speaker 0, Happy) and Michael (speaker 1, reserved for the player). Fixed dialogue uses recorded clips. [Download Beta 33%](https://github.com/Th-Hjj/GO-GHOST/releases/tag/beta-33)
 
-**GO GHOST > Playtest > Wave 1 / Wave 2 / Bonus Wave** opens empty configuration for a developer test. **Wave 3** opens Wave 3 configuration for a quick preview through Testing. See [Maintenance](#maintenance) for **Check Game Flow**, and the [implementation log](ImplementationLog.md) for checks actually run.
+**GO GHOST > Playtest > Wave 1 / Wave 2 / Wave 3 / Bonus Wave** opens that mission's preparation with empty Rules for a developer test, with the Test Room and Start Mission available. **Wave 3 Phase 2** opens Mission 3 preparation and Start Mission enters phase two directly. See [Maintenance](#maintenance) for **Check Game Flow**, and the [implementation log](ImplementationLog.md) for checks actually run.
 
 ## Maintenance
 

@@ -23,7 +23,7 @@ Walker is busy, so Thomas leads development alone until further notice.
 | `Legacy/Assets/_Legacy/PolicePrototype/` | Retired Police policies, authoring/conversion tools and historical validation |
 | `Legacy/Assets/_Legacy/Prototypes/` | Preserved Thomas/Walker prototypes and retired shared-player experiments |
 | `Docs/Game/`, `Legacy/Docs/` | Current authority/single log, and superseded documentation respectively |
-| `Assets/Settings/`, `Assets/TextMesh Pro/`, `Assets/Welcome/`, `Packages/`, `ProjectSettings/` | Existing packages, template assets and configuration; keep in place |
+| `Assets/Settings/`, `Assets/TextMesh Pro/`, `Packages/`, `ProjectSettings/` | Existing packages, template assets and configuration; keep in place |
 
 Current runtime assets must not reference `_Legacy`. Retained types used by original executors live in `Shared/Scripts/Compatibility`, with their limitations documented there. Optional Editor partial hooks preserve conversion of old content. The root Legacy directory is outside Unity import/compilation and is optional for the current game. Recovery is explicit; see `Docs/LegacyRestoration.md`. Formal game content is organized by responsibility, not developer name. See `ProjectMap.md` and `StructureMigration.csv`.
 

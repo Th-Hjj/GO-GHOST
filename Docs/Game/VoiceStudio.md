@@ -4,13 +4,13 @@
 
 ## 录入新台词
 
-**改已有台词**：在工作台选中原条目，展开「改台词、换录音或单独调音色」，选择「按文字重新念」或导入对应的新录音。试听后点「保存这句到游戏」。沿用原来的资源名和游戏触发点。带玩家昵称的问候使用「调角色和整体声音」里的昵称问候台词，保留一个 `{name}`；固定的「默认问候」可以作为单句编辑。
+**改已有台词**：在工作台选中原条目，展开「改台词、换录音或单独调音色」，选择「按文字重新念」或导入对应的新录音。试听后点「保存这句到游戏」。沿用原来的资源名和游戏触发点。游戏中每位玩家听到同一句录好的「默认问候」，可以作为单句编辑。「调角色和整体声音」里的昵称问候台词只用于工作台试听，保留一个 `{name}`。
 
 **新增固定台词**需要同时登记台词和放入第一版录音。工作台按目录表生成左侧列表，选中条目时从磁盘读取它的 WAV。
 
 1. 在 [VoiceStudioCatalog.json](../../Assets/_Game/Levels/L01_Duel/Resources/VoiceStudioCatalog.json) 的 `lines` 数组中添加一个对象。`key` 是唯一、长期使用的资源名，Happy 用 `Handler/`，Final Boss 会面用 `FinalBossVoice/`；斜杠后只用英文字母和数字。改词时保留这个 key。`label` 填方便查找的触发场合，`text` 填实际念出的台词。普通新句用 `locked: false`，跟随角色设置；开场特例继续使用已有条目。
 2. 在目录表所在的 `Resources` 目录下放入 **`<key>.wav`**，路径大小写与 key 一致。使用 24 kHz、16 位 PCM WAV，Happy 的成品保留双声道。可以先放入这句的占位录音，再进工作台用干声或文字制作新版本。新 WAV 随 Unity 生成的同名 `.meta` 一起提交；替换录音时保留原 GUID。
-3. 接入游戏触发点。Happy 的固定对白由对应的流程回调用同一 key 调用 `HandlerVoice.PlayLine`；上传阶段按目录预载固定配音。准备页按顺序读取 `Handler/TutorialIntro` 开头的台词；首次打开编辑器后读取 `Handler/TutorialEditor` 开头的台词。玩家选出完整规则时，`Handler/TutorialConfirm` 播放一次。确认安装后回到准备页，按顺序播放 `Handler/TutorialPreparation` 开头的三句，同时高亮对应的按钮。Mission 3 第一阶段直接开始倒计时。入侵波碰到玩家后战斗停时。`Handler/InvasionWarning` 确认写入，随后 Happy 按实际抽到的规则播放 Condition 和 Action 的成句录音，参数也一起读出。标记 `bonusOffer: true` 的条目在战胜 Boss 后播放，最后一页开放 Bonus 选择。标记 `transition: true` 的条目（`FinalBossVoice/Turn1` 至 `Turn3`）由 Boss 在第一阶段末跪地时按目录顺序播放，每句独立点击；第三句后释放 EMP。新增转阶段或 Bonus 台词时，标记对应的触发地点，并按确认的剧情顺序插入。[Happy 播放入口](../../Assets/_Game/Levels/L01_Duel/Scripts/HandlerVoice.cs) · [会面翻页逻辑](../../Assets/_Game/Levels/L01_Duel/Scripts/DuelGame.Progression.cs)
+3. 接入游戏触发点。Happy 的固定对白由对应的流程回调用同一 key 调用 `HandlerVoice.PlayLine`；玩家画脸时按目录预载固定配音。准备页按顺序读取 `Handler/TutorialIntro` 开头的台词；首次打开编辑器后，`Handler/TutorialEditorCondition`、`TutorialEditorAction` 和 `TutorialEditorRelation` 依次跟随玩家的选择播放，`TutorialEditorPick` 不播放。玩家选出完整规则时，`Handler/TutorialConfirm` 播放一次。确认安装后回到准备页，按顺序播放 `Handler/TutorialPreparation` 开头的三句，同时高亮对应的按钮。Mission 3 第一阶段直接开始倒计时。入侵波碰到玩家后战斗停时。`Handler/InvasionWarning` 确认写入，随后 Happy 按实际抽到的规则播放 Condition 和 Action 的成句录音，参数也一起读出。标记 `transition: true` 的条目（`FinalBossVoice/Turn1` 至 `Turn3`）由 Boss 在第一阶段末跪地时按目录顺序播放，每句独立点击；第三句后释放 EMP。新增转阶段台词时，标记 `transition: true`，并按确认的剧情顺序插入。[Happy 播放入口](../../Assets/_Game/Levels/L01_Duel/Scripts/HandlerVoice.cs) · [转阶段翻页逻辑](../../Assets/_Game/Levels/L01_Duel/Scripts/DuelGame.FinalBossTransition.cs)
 4. 重新打开工作台，在对应角色下找到新条目。点「播放游戏版」核对首版，再微调一个参数、生成并播放草稿。要验证角色联动，可以先在角色页试调并点「列出本次改动」，确认清单包含这句，然后放弃试调。只把要交付的版本保存到游戏；重开工具后应能听到已保存的版本，并由预定游戏事件播放同一句。保存产生的 `VoiceAuthoring/` 配方和归档素材随目录表、WAV 一起提交，供下一次编辑。
 
 可参照现有的「默认问候」条目。下面的 key 对应 `Resources/Handler/Greeting.wav`：
@@ -58,8 +58,8 @@ Happy 的「开场与昵称问候」可另行试听开场等待和玩家昵称�
 
 ## 文件与恢复
 
-运行时目录 `Assets/_Game/Levels/L01_Duel/Resources/VoiceStudioCatalog.json` 保存稳定资源名、台词、角色默认值和触发延迟。Final Boss 的页面文字和音频来自同一条记录。固定配音仍写入原 WAV，保留 Unity GUID。游戏只加载正式资源；新生成的昵称使用当前设置。
+运行时目录 `Assets/_Game/Levels/L01_Duel/Resources/VoiceStudioCatalog.json` 保存稳定资源名、台词、角色默认值和触发延迟。Final Boss 的页面文字和音频来自同一条记录。固定配音仍写入原 WAV，保留 Unity GUID。游戏只加载正式资源；昵称试听只在工作台中使用当前设置。
 
 首次采用后，项目根目录的 `VoiceAuthoring/` 保存配方、按内容哈希归档的源音频、使用过的示范和上一次采用的恢复记录。若要跨机器编辑，请一并版本控制该目录、目录表和受影响的正式 WAV。采用使用示范的草稿时，该示范也会归档到制作素材中。单独试听的内容保存在 `Library/VoiceStudio/`。工作台本身不会提交或推送你的编辑。
 
-工作台先生成候选文件，采用时校验试听文件、旧成品和目录版本。遇到外部编辑冲突请重新载入并试听。中断的写入会在下次工作台操作时从事务记录恢复。作者工具使用项目已有 Kokoro 模型；`Tools/VoiceStudio/author-voices.bin` 是制作声库的 Heart 和 George 条目，压缩的英式词典用于 Final Boss，授权见 `Assets/StreamingAssets/HandlerVoice/LICENSE`。两者位于玩家构建之外。
+工作台先生成候选文件，采用时校验试听文件、旧成品和目录版本。遇到外部编辑冲突请重新载入并试听。中断的写入会在下次工作台操作时从事务记录恢复。作者工具使用项目已有 Kokoro 模型；`Tools/VoiceStudio/author-voices.bin` 是制作声库的 Heart 和 George 条目，压缩的英式词典用于 Final Boss，授权见 `Tools/VoiceStudio/HandlerVoice/LICENSE`。两者位于玩家构建之外。

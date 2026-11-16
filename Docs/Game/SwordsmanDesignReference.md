@@ -1,6 +1,6 @@
 # Swordsman: Relentless Swordmaster
 
-Historical design rationale and implementation plan from 2026-10-18. For current tuning and mechanics use [Boss Encounters](BossEncounters.md): Unbound at 33% HP, solo ordinary/Redline terminal recovery .40/.80 s, and the former W3 duo as optional Bonus. Older alternatives, values and task-specific delivery limits below are not current acceptance criteria.
+Historical design rationale and implementation plan from 2026-10-18. For current tuning and mechanics use [Boss Encounters](BossEncounters.md): Unbound at 40% HP, solo ordinary/Redline terminal recovery .40/.80 s, and the former W3 duo as optional Bonus. Older alternatives, values and task-specific delivery limits below are not current acceptance criteria.
 
 Status: **Design and implementation plan approved by Thomas on 2026-10-18; local Editor implementation and focused checks completed. Human pressure/balance remains unvalidated.**
 

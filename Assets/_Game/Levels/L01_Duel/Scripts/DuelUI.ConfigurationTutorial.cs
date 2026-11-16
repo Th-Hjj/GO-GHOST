@@ -8,14 +8,13 @@ namespace GoGhost.Duel
     {
         RectTransform tutorialPreview, tutorialSubmit, tutorialExample;
         RectTransform tutorialProfile, tutorialTest, tutorialStart;
+        RectTransform tutorialCondition, tutorialAction;
         readonly List<Button> tutorialEditorButtons = new List<Button>();
         readonly Vector3[] tutorialCorners = new Vector3[4];
         // Happy's pointer: one Signal frame that opens on what she is talking about and travels to the next thing.
         SpotlightGraphic tutorialSpot;
         Vector2 spotCenter, spotSize;
         float spotShade, spotOpen, spotLean;
-        // Left edge of the Condition card and of the Action card on the editor's frame.
-        Vector2 editorGuideX;
 
         bool TutorialOnPage => game.Phase == DuelPhase.Configure && !game.Paused && !game.DeveloperToolsOpen;
         TutorialFocus VisibleTutorialFocus => TutorialOnPage ? game.ConfigurationVoice.Focus : TutorialFocus.None;
@@ -29,6 +28,7 @@ namespace GoGhost.Duel
             tutorialSpot = null;
             tutorialPreview = tutorialSubmit = tutorialExample = null;
             tutorialProfile = tutorialTest = tutorialStart = null;
+            tutorialCondition = tutorialAction = null;
             tutorialEditorButtons.Clear();
         }
 
@@ -45,8 +45,8 @@ namespace GoGhost.Duel
                 TutorialFocus.Example => tutorialExample,
                 TutorialFocus.AddRule when OnPreparationOverview => tutorialSubmit,
                 TutorialFocus.Confirm => tutorialSubmit,
-                TutorialFocus.Condition => ruleEditor,
-                TutorialFocus.Action => ruleList,
+                TutorialFocus.Condition => tutorialCondition,
+                TutorialFocus.Action => tutorialAction,
                 TutorialFocus.Relation => tutorialPreview,
                 TutorialFocus.TargetProfile => tutorialProfile,
                 TutorialFocus.TestLoadout => tutorialTest,
@@ -57,23 +57,7 @@ namespace GoGhost.Duel
             float step = Time.unscaledDeltaTime;
             if (target != null)
             {
-                var bounds = TutorialBounds(target);
-                Vector2 centre = bounds.center, size = bounds.size + Vector2.one * 16;
-                // An ordinary control gets a small lean, stored as zero here.
-                float lean = 0;
-                // In the rule editor Happy points at the sentence card alone, in the card's own shape. A frame round the
-                // whole side ran beside the side slab's edge and the choices' frame and read as a drawing error (Thomas, 2026-11-15).
-                if ((focus is TutorialFocus.Condition or TutorialFocus.Action) && tutorialPreview != null)
-                {
-                    const float top = 160, cardHeight = 108, column = 520, room = 12;
-                    var frame = (RectTransform)tutorialPreview.parent;
-                    float scale = frame.lossyScale.x / Mathf.Max(.0001f, page.lossyScale.x);
-                    float cardLeft = focus == TutorialFocus.Condition ? editorGuideX.x : editorGuideX.y;
-                    var middle = new Vector2(cardLeft + column / 2 - 800, 450 - top - cardHeight / 2);
-                    centre = page.InverseTransformPoint(frame.TransformPoint(middle));
-                    size = new Vector2(column - cardHeight * PickSlant, cardHeight) * scale + Vector2.one * room;
-                    lean = size.y * PickSlant;
-                }
+                TutorialOpening(target, focus, out Vector2 centre, out Vector2 size, out float lean);
                 if (spotOpen <= 0) { spotCenter = centre; spotSize = size; spotLean = lean; }
                 float follow = 1 - Mathf.Exp(-step * 14);
                 spotCenter = Vector2.Lerp(spotCenter, centre, follow);
@@ -94,17 +78,102 @@ namespace GoGhost.Duel
             }
             tutorialSpot.gameObject.SetActive(true);
             tutorialSpot.transform.SetAsLastSibling();
-            // Below one unit of lean the frame is an ordinary control's, with the small default lean.
             float opened = OvMotion.Snap(spotOpen);
-            tutorialSpot.Set(spotCenter, spotSize * opened, spotShade, spotOpen, spotLean > 1 ? spotLean * opened : -1);
+            tutorialSpot.Set(spotCenter, spotSize * opened, spotShade, spotOpen, spotLean * opened);
         }
 
-        Rect TutorialBounds(RectTransform target)
+        void TutorialOpening(RectTransform target, TutorialFocus focus, out Vector2 centre, out Vector2 size, out float lean)
         {
-            target.GetWorldCorners(tutorialCorners);
-            Vector2 min = page.InverseTransformPoint(tutorialCorners[0]);
-            Vector2 max = page.InverseTransformPoint(tutorialCorners[2]);
-            return UnityEngine.Rect.MinMaxRect(min.x, min.y, max.x, max.y);
+            var button = target.GetComponent<SlabButton>();
+            var slab = button != null ? button.Slab : target.GetComponent<SlabGraphic>();
+            // Groups have upright edges: leaning a tall group reaches into the neighbouring column.
+            // Individual controls follow their own cut, including the shallower Target Profile card.
+            float slope = slab != null ? TutorialCut(slab) / Mathf.Max(1, slab.rectTransform.rect.height)
+                : focus == TutorialFocus.Relation ? PickSlant : 0;
+            Vector2 min = Vector2.one * float.PositiveInfinity, max = Vector2.one * float.NegativeInfinity;
+            if (focus == TutorialFocus.Relation)
+            {
+                // These cards are siblings of the sentence's layout marker, not its children.
+                TutorialContent(tutorialCondition, slope, ref min, ref max);
+                TutorialContent(tutorialAction, slope, ref min, ref max);
+            }
+            else TutorialContent(target, slope, ref min, ref max);
+            if (float.IsInfinity(min.x)) TutorialRect(target, target.rect, 0, slope, ref min, ref max);
+
+            // Work in sheared coordinates so every corner is enclosed, including rotated limbs.
+            // Padding includes the inward-drawn 4-unit ring and scales with the page's design frame.
+            float scale = target.lossyScale.x / Mathf.Max(.0001f, page.lossyScale.x);
+            float room = (focus is TutorialFocus.Body or TutorialFocus.Rules ? 20 : 14) * scale;
+            // The rule rows have only ten units between them; the first row is also under the heading.
+            // The profile and Test Room are twelve units apart. Their frames must stay in those gaps.
+            float verticalRoom = (focus is TutorialFocus.AddRule or TutorialFocus.Example ? 6
+                : focus is TutorialFocus.TargetProfile or TutorialFocus.TestLoadout ? 8
+                : room / scale) * scale;
+            min -= new Vector2(room * Mathf.Sqrt(1 + slope * slope), verticalRoom);
+            max += new Vector2(room * Mathf.Sqrt(1 + slope * slope), verticalRoom);
+            size = max - min;
+            centre = (min + max) * .5f;
+            centre.x += slope * centre.y;
+            lean = size.y * slope;
+        }
+
+        static float TutorialCut(SlabGraphic slab) => Mathf.Min(slab.Cut >= 0 ? slab.Cut : Mathf.Round(slab.rectTransform.rect.height * .21f), slab.rectTransform.rect.width);
+
+        void TutorialContent(RectTransform root, float slope, ref Vector2 min, ref Vector2 max)
+        {
+            if (root == null || !root.gameObject.activeInHierarchy) return;
+            var button = root.GetComponent<SlabButton>();
+            if (button != null && button.Slab != null)
+            {
+                var face = button.Slab;
+                TutorialRect(face.rectTransform, face.rectTransform.rect, TutorialCut(face), slope, ref min, ref max);
+                return;
+            }
+            var graphic = root.GetComponent<Graphic>();
+            if (graphic != null && graphic.enabled && graphic.color.a > 0)
+            {
+                if (graphic is SlabGraphic slab)
+                {
+                    TutorialRect(root, root.rect, TutorialCut(slab), slope, ref min, ref max);
+                    return; // The slab already encloses its labels and icons.
+                }
+                if (graphic is TMPro.TMP_Text text)
+                {
+                    if (text.havePropertiesChanged) text.ForceMeshUpdate();
+                    // TMP's line ascender includes empty space above the visible capitals.
+                    // Use the rendered glyph quads so the Rules frame stays below the header stripe.
+                    for (int i = 0; i < text.textInfo.characterCount; i++)
+                    {
+                        var character = text.textInfo.characterInfo[i];
+                        if (!character.isVisible) continue;
+                        TutorialPoint(root, character.vertex_BL.position, slope, ref min, ref max);
+                        TutorialPoint(root, character.vertex_TL.position, slope, ref min, ref max);
+                        TutorialPoint(root, character.vertex_TR.position, slope, ref min, ref max);
+                        TutorialPoint(root, character.vertex_BR.position, slope, ref min, ref max);
+                    }
+                }
+                else TutorialRect(root, root.rect, 0, slope, ref min, ref max);
+            }
+            for (int i = 0; i < root.childCount; i++)
+                if (root.GetChild(i) is RectTransform child) TutorialContent(child, slope, ref min, ref max);
+        }
+
+        void TutorialRect(RectTransform root, Rect rect, float cut, float slope, ref Vector2 min, ref Vector2 max)
+        {
+            tutorialCorners[0] = new Vector2(rect.xMin, rect.yMin);
+            tutorialCorners[1] = new Vector2(rect.xMin + cut, rect.yMax);
+            tutorialCorners[2] = new Vector2(rect.xMax, rect.yMax);
+            tutorialCorners[3] = new Vector2(rect.xMax - cut, rect.yMin);
+            for (int i = 0; i < 4; i++)
+                TutorialPoint(root, tutorialCorners[i], slope, ref min, ref max);
+        }
+
+        void TutorialPoint(RectTransform root, Vector3 local, float slope, ref Vector2 min, ref Vector2 max)
+        {
+            Vector2 point = page.InverseTransformPoint(root.TransformPoint(local));
+            point.x -= slope * point.y;
+            min = Vector2.Min(min, point);
+            max = Vector2.Max(max, point);
         }
     }
 }

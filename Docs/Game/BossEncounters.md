@@ -419,7 +419,7 @@ The optional **GO GHOST > Playtest > Check Game Flow** command plays New Game to
 
 ## GHOST (title, after the game is finished)
 
-Confirmed by Thomas on 2026-11-14. Stages 1 and 2 are built: the unlock, the title figure and pointer, and the arena with its camera (44 x 11.5, trial). His body is built with the player's numbers (150 HP, six rounds at 20, Dodge 3 units with .20 s immunity) and plain behaviour; his AI is not.
+Confirmed by Thomas on 2026-11-14. Stages 1 and 2 are built: the unlock, the title figure and pointer, and the arena with its camera (44 x 11.5, trial). His body is built with the player's numbers (150 HP, six rounds at 20, Dodge 3 units with .20 s immunity; the player's own shot became 15 on 2026-11-15 and whether his follows is undecided) and plain behaviour; his AI is not.
 
 - **Unlock:** `GameProgress.Cleared`, set by beating the Final Boss. Without it the title is unchanged.
 - **On the title:** he stands still on the T of the logo as a hologram and the pointer takes his look over him. Clicking him starts the fight.

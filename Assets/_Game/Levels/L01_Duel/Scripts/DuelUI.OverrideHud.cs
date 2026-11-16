@@ -173,6 +173,7 @@ namespace GoGhost.Duel
                         float at = x + bossBarWidth * (actor.Profile.Sword.UnboundHealth - .5f);
                         unboundChips[i] = Image(bar, new Vector2(at, 325 - 26), new Vector2(26, 24), Color.clear);
                         unboundMarks[i] = OvText("?", bar, new Vector2(at, 325 - 26), new Vector2(30, 26), 22, NeuralPalette.Swordsman);
+                        unboundMarks[i].alpha = 0;
                     }
                 }
                 float fraction = actor.Health.MaxHealth > 0 ? (float)actor.Health.CurrentHealth / actor.Health.MaxHealth : 0;
@@ -203,9 +204,10 @@ namespace GoGhost.Duel
             for (int i = 0; i < FinalBossAxe.InvasionPercents.Length && i < invasionChips.Length; i++)
             {
                 float x = bossBarWidth * (FinalBossAxe.InvasionPercents[i] / 100f - .5f);
-                var chip = Image(bar, new Vector2(x, y - 26), new Vector2(26, 24), NeuralPalette.Emp);
+                var chip = Image(bar, new Vector2(x, y - 26), new Vector2(26, 24), Color.clear);
                 invasionChips[i] = chip;
                 invasionThresholdMarks[i] = OvText("?", bar, new Vector2(x, y - 26), new Vector2(30, 26), 22, NeuralPalette.Emp);
+                invasionThresholdMarks[i].alpha = 0;
             }
         }
 

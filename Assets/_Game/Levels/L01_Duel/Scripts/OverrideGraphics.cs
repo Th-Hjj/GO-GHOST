@@ -181,6 +181,61 @@ namespace GoGhost.Duel
         }
     }
 
+    // The picker outline shares the first choice's entrance, then resizes from its fixed top edge.
+    public sealed class PickerBracketMotion : MonoBehaviour
+    {
+        public float Bottom { get; private set; }
+        public float Join { get; private set; }
+        SlabGraphic frame;
+        RectTransform link, tail;
+        CanvasGroup group;
+        Vector2 home, frameSize, framePosition, linkPosition, edgeOrigin;
+        float top, slope, line, fromBottom, toBottom, fromJoin, toJoin, seconds, side;
+        double born;
+        bool entering;
+
+        public void Begin(SlabGraphic outline, RectTransform join, RectTransform extension, Vector2 edge,
+            float frameTop, float bottom, float joinY, float slant, float thickness,
+            bool enter, float direction, PickerBracketMotion previous, float duration)
+        {
+            frame = outline; link = join; tail = extension; edgeOrigin = edge;
+            top = frameTop; slope = slant; line = thickness; entering = enter; side = direction;
+            toBottom = bottom; toJoin = joinY;
+            fromBottom = !enter && previous != null ? previous.Bottom : bottom;
+            fromJoin = !enter && previous != null ? previous.Join : joinY;
+            seconds = duration; born = enter ? OvMotion.Born : Time.unscaledTimeAsDouble;
+            home = ((RectTransform)transform).anchoredPosition;
+            frameSize = frame.rectTransform.sizeDelta; framePosition = frame.rectTransform.anchoredPosition;
+            linkPosition = link.anchoredPosition;
+            group = gameObject.AddComponent<CanvasGroup>(); group.blocksRaycasts = false;
+            Apply(); // Hide before the first rendered frame, not one LateUpdate later.
+        }
+
+        void LateUpdate() => Apply();
+        void Apply()
+        {
+            float t = Mathf.Clamp01((float)(Time.unscaledTimeAsDouble - born - (entering ? .06f : 0))
+                / (entering ? OvMotion.EnterSeconds : seconds));
+            float eased = OvMotion.Snap(t);
+            group.alpha = entering ? eased : 1;
+            ((RectTransform)transform).anchoredPosition = home + (entering
+                ? Vector2.right * (side * 90 * (1 - OvMotion.Back(t))) : Vector2.zero);
+            Bottom = Mathf.Lerp(fromBottom, toBottom, eased);
+            Join = Mathf.Lerp(fromJoin, toJoin, eased);
+            float height = Bottom - top;
+            Vector2 size = frameSize + new Vector2(slope, 1) * (Bottom - toBottom);
+            frame.rectTransform.sizeDelta = size;
+            frame.rectTransform.anchoredPosition = framePosition + (frameSize - size) * .5f;
+            frame.Cut = height * slope; frame.SetVerticesDirty();
+            link.anchoredPosition = linkPosition + new Vector2(-slope, -1) * (Join - toJoin);
+            float drop = Join > Bottom ? Join - Bottom + line / 2 : 0;
+            tail.gameObject.SetActive(drop > 0);
+            tail.sizeDelta = new Vector2(drop * Mathf.Sqrt(1 + slope * slope), line);
+            tail.anchoredPosition = edgeOrigin + new Vector2(-(Bottom + drop / 2) * slope + line / 2, -Bottom - drop / 2);
+            if (t >= 1) enabled = false;
+        }
+    }
+
     // The page that is leaving: its elements step aside while the whole page fades, then it is destroyed.
     public sealed class PageLeave : MonoBehaviour
     {

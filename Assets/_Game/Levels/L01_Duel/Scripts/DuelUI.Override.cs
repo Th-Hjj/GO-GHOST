@@ -253,14 +253,21 @@ namespace GoGhost.Duel
         {
             bool held = game.ResultHeld;
             if (!held) { OvFill(page, OverridePalette.Ink); OvScanlines(page, .3f); }
-            var mission = Rect("Mission slab", page, new Vector2(0, 450 - 108 - 68), new Vector2(600, 136));
+            // One title group in the upper part, the held fight left open in the middle, and one place at the bottom
+            // that Happy's box and the button use in turn (Thomas, 2026-11-15).
+            const float wordPoints = 240, wordCentre = 300, slabHeight = 80;
+            var mission = Rect("Mission slab", page, Vector2.zero, new Vector2(600, slabHeight));
             var slab = mission.gameObject.AddComponent<SlabGraphic>();
             slab.color = game.Wave == 1 ? NeuralPalette.Gunner : NeuralPalette.Swordsman; slab.raycastTarget = false;
-            var name = OvText(game.WaveLabel, mission, Vector2.zero, new Vector2(1200, 136), 120, OverridePalette.Ink, TextAlignmentOptions.Capline, true, 1);
-            mission.sizeDelta = new Vector2(name.GetPreferredValues().x + 128, 136);
-            var word = OvGlitchWord("Cleared", page, new Vector2(0, 450 - 421), new Vector2(1600, 292), 340, TextAlignmentOptions.Capline, 2.8f, 8);
+            var name = OvText(game.WaveLabel, mission, Vector2.zero, new Vector2(1200, slabHeight), 70, OverridePalette.Ink, TextAlignmentOptions.Capline, true, 1);
+            mission.sizeDelta = new Vector2(name.GetPreferredValues().x + 76, slabHeight);
+            var word = OvGlitchWord("Cleared", page, new Vector2(0, 450 - wordCentre), new Vector2(1600, 206), wordPoints, TextAlignmentOptions.Capline, 2.8f, 6);
             word.gameObject.AddComponent<SlamIn>().Delay = held ? ResultWordAt : .12f;
-            var band = OvBand(page, 574);
+            // The slab is the word's tag: it sits on the word's upper left corner, on the same slanted left edge.
+            float wordWidth = word.GetComponentInChildren<TMP_Text>().GetPreferredValues().x;
+            float capHalf = wordPoints * .35f, slabCentre = wordCentre - capHalf - 12 - slabHeight / 2;
+            mission.anchoredPosition = new Vector2(-wordWidth / 2 + mission.sizeDelta.x / 2 + (wordCentre - slabCentre) * .21f, 450 - slabCentre);
+            var band = OvBand(page, wordCentre + capHalf + 18, 16);
             if (held)
             {
                 OvDrawAcross(band, ResultBandAt);
@@ -268,8 +275,18 @@ namespace GoGhost.Duel
                 arrive.From = new Vector2(-120, 0); arrive.Delay = ResultSlabAt;
             }
             if (game.Wave == 1)
-                OvButton("Continue to Mission 2", page, At(460, 650, 680, 100), new Vector2(680, 100), game.ContinueToWaveTwo,
-                    OverrideButtonKind.Primary, 60, true, held ? ResultButtonAt : Enter(15)).name = "ContinueToWaveTwo";
+            {
+                var next = OvButton("Continue to Mission 2", page, At(460, 764, 680, 100), new Vector2(680, 100), game.ContinueToWaveTwo,
+                    OverrideButtonKind.Primary, 60, true, held ? ResultButtonAt : Enter(15));
+                next.name = "ContinueToWaveTwo";
+                if (held)
+                {
+                    // The button takes the place of Happy's box once she has finished.
+                    next.gameObject.SetActive(false);
+                    var wait = page.gameObject.AddComponent<AfterDialogue>();
+                    wait.Owner = this; wait.Target = next.GetComponent<SlabButton>(); wait.NotBefore = game.ResultHeldAt + ResultButtonAt;
+                }
+            }
         }
 
         void BuildOverrideFinished()

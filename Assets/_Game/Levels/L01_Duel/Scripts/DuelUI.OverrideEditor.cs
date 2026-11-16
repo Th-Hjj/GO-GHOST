@@ -26,6 +26,7 @@ namespace GoGhost.Duel
         double panelTurnAt = double.NegativeInfinity;
         RectTransform editorCardLeft, editorCardRight, editorArrow, editorFrame;
         Coroutine confirmSequence;
+        PickerBracketMotion pickerBracket;
         int builtStep = -1, builtCategory = -1, builtActionCategory = -1, actionCategory;
         // Both sides share one layout (Thomas, 2026-11-14), read in the order it is used: a column of categories,
         // a Signal join to a Signal frame that holds the open category's choices in one column, and the parameter
@@ -144,6 +145,8 @@ namespace GoGhost.Duel
             bool active, bool filled, Color activeFill, Color restInk, float enterDelay, float side)
         {
             var root = Rect(name, parent, pos, size);
+            if (name == "PreviewCondition") tutorialCondition = root;
+            if (name == "PreviewAction") tutorialAction = root;
             var hit = root.gameObject.AddComponent<Image>(); hit.color = Color.clear; hit.raycastTarget = true;
             var button = root.gameObject.AddComponent<Button>();
             button.transition = Selectable.Transition.None; button.targetGraphic = hit;
@@ -312,7 +315,6 @@ namespace GoGhost.Duel
             float guide = (listTop + PickRow - cardTop - cardHeight) * PickSlant;
             float leftIndent = 2 * PickPitch * PickSlant, rightIndent = -guide;
             float leftCard = leftX + leftIndent + guide;
-            editorGuideX = new Vector2(leftCard, rightX);
             tutorialPreview = Rect("RulePreview", frame, At(leftCard, cardTop, rightX + column - leftCard, cardHeight), new Vector2(rightX + column - leftCard, cardHeight));
             OvEditorCard("PreviewCondition", "Condition", expression.Conditions, frame, At(leftCard, cardTop, column, cardHeight),
                 new Vector2(column, cardHeight), () => EditPreview(0), selectingCondition, hasCondition, OverridePalette.Text, OverridePalette.Text,
@@ -398,30 +400,25 @@ namespace GoGhost.Duel
             float frameTop = -margin, frameBottom = rows * PickPitch - margin + (chips ? PickChip + margin : 0) + margin;
             float height = frameBottom - frameTop, cut = height * PickSlant;
             float left = PickLeft + PickRow * PickSlant - room, width = PickChoice - PickRow * PickSlant + room * 2 + cut;
-            var frame = Rect("Choice frame", panel, PickSlot(panel, left - cut, frameTop, width, height), new Vector2(width, height))
+            var bracket = Rect("Choice bracket", panel, Vector2.zero, panel.sizeDelta);
+            bracket.SetAsFirstSibling();
+            var frame = Rect("Choice frame", bracket, PickSlot(panel, left - cut, frameTop, width, height), new Vector2(width, height))
                 .gameObject.AddComponent<SlabGraphic>();
             frame.color = Color.clear; frame.Cut = cut; frame.raycastTarget = false; frame.SetFrame(PickLine, OverridePalette.Signal);
             frame.transform.SetAsFirstSibling();
-            // The join runs level from the open category to the frame; it travels along the slant when another opens.
             float joinY = open * PickPitch + PickRow / 2;
-            // An open category that sits lower than the frame's last row still reaches it: the frame's left edge
-            // carries on down its own slant to the height of the join.
-            if (joinY > frameBottom)
-            {
-                float edge = PickLeft + PickRow * PickSlant - room, drop = joinY - frameBottom + PickLine / 2;
-                float w = panel.sizeDelta.x, h = panel.sizeDelta.y;
-                var middle = new Vector2(-w / 2 + edge - (frameBottom + drop / 2) * PickSlant + PickLine / 2, h / 2 - frameBottom - drop / 2);
-                var tail = Image(panel, middle, new Vector2(drop * Mathf.Sqrt(1 + PickSlant * PickSlant), PickLine), OverridePalette.Signal);
-                tail.rectTransform.localRotation = Quaternion.Euler(0, 0, Mathf.Atan2(1, PickSlant) * Mathf.Rad2Deg);
-                tail.raycastTarget = false; tail.transform.SetAsFirstSibling();
-            }
-            var link = Image(panel, PickSlot(panel, pickIndent + PickCategory - 2, joinY - PickLine / 2, PickJoin + 4, PickLine), new Vector2(PickJoin + 4, PickLine), OverridePalette.Signal);
-            link.raycastTarget = false; link.transform.SetAsFirstSibling();
-            if (switched && !float.IsNaN(bracketLink) && !Mathf.Approximately(bracketLink, joinY))
-            {
-                var travel = link.gameObject.AddComponent<Arrive>();
-                travel.From = new Vector2((joinY - bracketLink) * PickSlant, joinY - bracketLink); travel.Fade = false; travel.Seconds = .17f;
-            }
+            float edge = PickLeft + PickRow * PickSlant - room;
+            var tail = Image(bracket, Vector2.zero, Vector2.zero, OverridePalette.Signal);
+            tail.rectTransform.localRotation = Quaternion.Euler(0, 0, Mathf.Atan2(1, PickSlant) * Mathf.Rad2Deg);
+            tail.raycastTarget = false;
+            var link = Image(bracket, PickSlot(panel, pickIndent + PickCategory - 2, joinY - PickLine / 2, PickJoin + 4, PickLine), new Vector2(PickJoin + 4, PickLine), OverridePalette.Signal);
+            link.raycastTarget = false;
+            var motion = bracket.gameObject.AddComponent<PickerBracketMotion>();
+            motion.Begin(frame, link.rectTransform, tail.rectTransform,
+                new Vector2(-panel.sizeDelta.x / 2 + edge, panel.sizeDelta.y / 2),
+                frameTop, frameBottom, joinY, PickSlant, PickLine, enter, side,
+                float.IsNaN(bracketLink) ? null : pickerBracket, switched ? .17f : .15f);
+            pickerBracket = motion;
             bracketLink = joinY;
         }
 

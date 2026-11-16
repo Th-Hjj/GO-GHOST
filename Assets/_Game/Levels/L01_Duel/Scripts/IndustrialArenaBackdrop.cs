@@ -321,11 +321,9 @@ namespace GoGhost.Duel
         const float TowerPeriod = 3.5f, TowerStrength = .38f, AntennaStrength = .7f;
         const float BridgeFrom = 868, BridgeTo = 932, BridgeCore = 8, BridgeGlow = 20;
         const float BridgeCrossing = 2.6f, BridgeRest = 1.6f, BridgeStrength = .5f;
-        // The city goes dark once the skyline front is this far out.
-        const float PowerCutAt = .3f;
         RawImage[] towerTiers, antennas;
         RawImage bridgeCore, bridgeGlow;
-        float powerCutAt = float.NaN;
+        Material cityLightMaterial;
 
         void AddAntennaBeacons()
         {
@@ -342,28 +340,35 @@ namespace GoGhost.Duel
             bridgeCore = AddTile("Skybridge light", "MegacityBridge");
         }
 
-        // 0 while the EMP has not reached the city; 1 once the skyline front has finished (or on a direct phase-two entry).
-        internal void SetEmpCity(float progress)
+        // The world-space canvas uses the same origin and radius as the visible third ring.
+        // Clip light pixels behind that front, including cropped/parallax tiles and the moving bridge light.
+        internal void SetEmpCity(Vector2 origin, float radius)
         {
-            if (!float.IsNaN(powerCutAt) || progress < PowerCutAt) return;
-            // A direct entry has no transition to watch, so the city is already dark.
-            powerCutAt = progress >= 1 ? float.NegativeInfinity : Time.time;
+            if (towerTiers == null && antennas == null) return;
+            if (cityLightMaterial == null)
+            {
+                cityLightMaterial = new Material(Resources.Load<Shader>("FinalBossEmpSweep"))
+                    { name = "EMP city lights", hideFlags = HideFlags.DontSave };
+                cityLightMaterial.SetFloat("_CityLight", 1);
+                if (antennas != null) foreach (var light in antennas) if (light != null) light.material = cityLightMaterial;
+                if (towerTiers != null) foreach (var light in towerTiers) if (light != null) light.material = cityLightMaterial;
+                if (bridgeCore != null) bridgeCore.material = cityLightMaterial;
+                if (bridgeGlow != null) bridgeGlow.material = cityLightMaterial;
+            }
+            cityLightMaterial.SetVector("_Origin", origin);
+            cityLightMaterial.SetFloat("_Radius", radius);
         }
-
-        // Full until the power is cut, then dark. Two stutters on the way out were built first; Thomas found them unnecessary.
-        float CityPower() => float.IsNaN(powerCutAt) ? 1 : 0;
 
         void UpdateMegacityLights()
         {
             if (towerTiers == null && antennas == null) return;
-            float power = CityPower();
             bool steady = GameSettings.ReduceFlashing;
             if (antennas != null)
                 for (int i = 0; i < antennas.Length; i++)
                 {
                     if (antennas[i] == null) continue;
                     float glow = .5f + .5f * Mathf.Sin(Time.time * 2f * Mathf.PI / AntennaPeriods[i] + i * 1.7f);
-                    antennas[i].color = new Color(1f, 1f, 1f, power * AntennaStrength * (steady ? .7f : Mathf.Lerp(.15f, 1f, glow)));
+                    antennas[i].color = new Color(1f, 1f, 1f, AntennaStrength * (steady ? .7f : Mathf.Lerp(.15f, 1f, glow)));
                 }
             if (towerTiers == null) return;
             // One crest climbs from the lowest setback to the spire and starts again from the bottom.
@@ -371,9 +376,9 @@ namespace GoGhost.Duel
             {
                 if (towerTiers[tier] == null) continue;
                 float wave = .5f + .5f * Mathf.Cos(2f * Mathf.PI * (Time.time / TowerPeriod - tier / (float)towerTiers.Length));
-                towerTiers[tier].color = new Color(1f, 1f, 1f, steady ? 0 : power * wave * wave * TowerStrength);
+                towerTiers[tier].color = new Color(1f, 1f, 1f, steady ? 0 : wave * wave * TowerStrength);
             }
-            float bridge = steady ? 0 : power * BridgeStrength;
+            float bridge = steady ? 0 : BridgeStrength;
             if (bridgeCore != null) bridgeCore.color = new Color(1f, 1f, 1f, bridge);
             if (bridgeGlow != null) bridgeGlow.color = new Color(1f, 1f, 1f, bridge * .45f);
         }
@@ -564,6 +569,7 @@ namespace GoGhost.Duel
             foreach (var texture in hazeTextures) if (texture != null) Destroy(texture);
             if (hazeMaterial != null) Destroy(hazeMaterial);
             if (litMaterial != null) Destroy(litMaterial);
+            if (cityLightMaterial != null) Destroy(cityLightMaterial);
             if (rifle != null) rifle.ShotFired -= OnShotFired;
         }
     }

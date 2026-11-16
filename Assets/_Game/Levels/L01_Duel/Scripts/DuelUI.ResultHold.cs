@@ -26,6 +26,15 @@ namespace GoGhost.Duel
                     var leave = bar.gameObject.AddComponent<ResultDim>();
                     leave.HeldAt = game.ResultHeldAt; leave.To = 0; leave.Apply();
                 }
+            // On a cleared mission the player's bar leaves too, so Happy's box and the button have the bottom of the
+            // screen to themselves (Thomas, 2026-11-15).
+            if (game.Phase == DuelPhase.Between)
+                foreach (var part in battleUi.GetComponentsInChildren<RectTransform>(true))
+                {
+                    if (part.name != "Player health") continue;
+                    var leave = part.gameObject.AddComponent<ResultDim>();
+                    leave.HeldAt = game.ResultHeldAt; leave.To = 0; leave.Apply();
+                }
             if (ruleSidebar != null)
             {
                 var cover = Image(ruleSidebar, Vector2.zero, Vector2.zero, OverridePalette.Ink).rectTransform;
@@ -37,6 +46,9 @@ namespace GoGhost.Duel
             UpdateRuleHud();
             UpdateBattleStatus();
         }
+
+        // Happy has a line pending or her box is still on screen.
+        internal bool DialogueBoxBusy => game.PendingDialogue != null || (ambientPanel != null && ambientPanel.gameObject.activeSelf);
 
         // The hazard band is drawn across the screen from the left edge.
         void OvDrawAcross(RectTransform band, float delay)
@@ -52,6 +64,22 @@ namespace GoGhost.Duel
             band.anchoredPosition = new Vector2(width / 2, 0);
             var draw = mask.gameObject.AddComponent<DrawAcross>();
             draw.Width = width; draw.Delay = delay;
+        }
+    }
+
+    // Keeps a button away until Happy's box has closed, then lets it arrive in that place.
+    public sealed class AfterDialogue : MonoBehaviour
+    {
+        internal DuelUI Owner;
+        public SlabButton Target;
+        public double NotBefore;
+
+        void Update()
+        {
+            if (Target == null || Target.gameObject.activeSelf || Owner == null) return;
+            if (Time.unscaledTimeAsDouble < NotBefore || Owner.DialogueBoxBusy) return;
+            Target.EnterDelay = (float)(Time.unscaledTimeAsDouble - OvMotion.Born) + .04f;
+            Target.gameObject.SetActive(true);
         }
     }
 }

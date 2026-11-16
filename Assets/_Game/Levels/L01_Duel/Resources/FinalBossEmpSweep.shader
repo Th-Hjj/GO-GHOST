@@ -12,6 +12,7 @@ Shader "GO GHOST/Final Boss EMP Sweep"
         _EdgeFadeWidth ("Distance from peak to settled violet", Float) = 0.22
         _Before ("Colour ahead of the wave (alpha 0: nothing)", Color) = (0,0,0,0)
         _CityContours ("Use architectural contours", Float) = 0
+        _CityLight ("Extinguish light behind the front", Float) = 0
         _CityCrops ("Far and near parallax crops", Vector) = (0,1,0,1)
         [HideInInspector] _ClipRect ("UI clip", Vector) = (-32767,-32767,32767,32767)
     }
@@ -30,7 +31,7 @@ Shader "GO GHOST/Final Boss EMP Sweep"
             #include "UnityUI.cginc"
             sampler2D _MainTex;
             float4 _Origin, _ClipRect;
-            float _Radius, _ScreenScale, _Trail, _EdgeFadeWidth, _CityContours;
+            float _Radius, _ScreenScale, _Trail, _EdgeFadeWidth, _CityContours, _CityLight;
             float4 _CityCrops;
             half4 _Tint, _FrontColor, _Before;
             struct Varyings
@@ -65,6 +66,15 @@ Shader "GO GHOST/Final Boss EMP Sweep"
                 if (_ScreenScale > 0)
                     delta = (i.screen.xy / i.screen.w * _ScreenParams.xy - _Origin.xy) * _ScreenScale;
                 float behind = _Radius - length(delta);
+                if (_CityLight > 0.5)
+                {
+                    half4 light = tex2D(_MainTex, i.uv);
+                    light.a *= i.alpha * (1 - step(0, behind));
+                    #ifdef UNITY_UI_CLIP_RECT
+                        light.a *= UnityGet2DClipping(i.local, _ClipRect);
+                    #endif
+                    return light;
+                }
                 half coverage = smoothstep(-0.045, 0.045, behind);
                 half4 ink = lerp(_Tint, _FrontColor, 1 - smoothstep(0, _EdgeFadeWidth, behind));
                 if (_Trail > 0) coverage *= 1 - smoothstep(0, _Trail, behind);

@@ -45,7 +45,7 @@ Text on Signal or on any body-system or Boss colour is Ink.
 
 | Element | Face | Size |
 |---|---|---|
-| Logo, result word | Display 900 | 272 logo, 340 result word |
+| Logo, result word | Display 900 | 272 logo, 340 result word (240 for CLEARED) |
 | Who Are You | Display 900 | 236 |
 | Screen title | Display 900 | 112 (Mission N), 118 (Target Profile), 76 (Body Configuration) |
 | HUD name and HP | Display 900 | 68 |
@@ -114,7 +114,9 @@ The wipe runs on its own clock, advanced by at most a thirtieth of a second per 
 
 **Interface cues.** `Tools/make_ui_sfx.py` writes `Resources/UiSfx/UiHover.wav` (a 32 ms dry tick) and `UiClick.wav` (an 85 ms edge over a falling knock with a faint blip). Slab buttons and rule cards play the tick on hover; every button plays the click. They follow the Effects volume and play while the game is paused. The countdown plays `Resources/UiSfx/UiCount.ogg` on 3, 2 and 1, the same cue each time, and nothing at the start (Thomas, 2026-11-15). It is `glass_001.ogg` from Kenney's Interface Sounds 1.0, CC0, unmodified. No other transition has a sound of its own.
 
-**Tutorial pointer.** While Happy teaches, the page sits under one 48% shade and controls keep their own colours. What she names is framed by a 4-pixel Signal slab-cut opening (`SpotlightGraphic`). It opens in 180 ms when the line is heard, follows its target, travels to the next one and closes when the line ends. A line that waits for a choice keeps the frame without the shade once its text is dismissed. In the rule editor the frame goes round the sentence card alone, in the card's own slanted shape (Thomas, 2026-11-15). An upright frame round the whole side cut across the card, and a slanted one round the whole side ran beside the side slab's edge and the choices' frame and read as a drawing error.
+**Tutorial pointer.** While Happy teaches, the page sits under one 48% shade and controls keep their own colours. What she names is framed by a 4-pixel Signal slab-cut opening (`SpotlightGraphic`). It opens in 180 ms when the line is heard, follows its target, travels to the next one and closes when the line ends. A line that waits for a choice keeps the frame without the shade once its text is dismissed. In the rule editor the frame goes round the sentence card alone, in the card's own slanted shape (Thomas, 2026-11-15). An upright frame round the whole side cut across the card, and a slanted one round the whole side ran beside the side slab's edge and the choices' frame and read as a drawing error. Body and Rules fit their visible contents with upright sides; individual controls follow their own cuts. Rules uses rendered glyph bounds to stay below the hazard band. Add Rule and example cards have 6-unit vertical padding, the profile and Test Room 8, other controls 14; the ring remains 4 units. The editor targets its live sentence cards rather than reconstructing their positions (Thomas, 2026-11-15).
+
+**Picker frame motion (Thomas, 2026-11-15).** The frame, join and any extension enter together with the first option, sharing its .06 s delay, .24 s slide/fade and overshoot. Within one side, category changes resize the frame and move the join over .17 s; adding parameters moves only the lower edge over .15 s. The top corners remain fixed.
 
 **Leftovers (Thomas, 2026-11-15, trial tuning).** Happy's box opens when there is something to say: the voice block arrives from the left in .10 s and the sentence slab opens out of it in .16 s, starting .06 s later; the words appear once the slab is most of the way open. It closes the other way in .12 s and stays up through a run of lines. A removed rule card slides 60 right and fades in .12 s, and the cards below wait for it before they travel; + Add Rule travels in front of the empty slots. The save notice is the dialogue slab, 740 by 60, with a 74-wide block on its left (Danger for a problem, Text for a recovery); it arrives from above in .24 s and leaves upward in .12 s.
 
@@ -192,16 +194,16 @@ One player stands on the right roof with their back to the camera, looking towar
 | Seconds after the lethal frame | What happens |
 |---|---|
 | 0 | Everything stops. A defeated player shows the white step, then stays in the Danger tint |
-| .08 to .38 | The arena loses its colour and dims to 45%. Both fighters keep their colour. The HUD stays in place and dims to 45%; a beaten Boss's empty bar fades out |
+| .08 to .38 | The arena loses its colour and dims to 45%. Both fighters keep their colour. The HUD stays in place and dims to 45%; a beaten Boss's empty bar fades out, and on a cleared mission the player's bar with it |
 | .42 | The mission name arrives from the left (cleared only) |
 | .48 | The result word slams in |
 | .56 | The hazard band is drawn across from the left edge in .16 s |
-| .76, .81 | Primary button, then secondary |
+| .76, .81 | Primary button, then secondary. On a cleared mission the button waits for Happy's box to close |
 
-The pages carry no black ground and no scanlines while held. Entrances count from the lethal frame, so a rebuilt page carries on instead of replaying. Retry is immediate. Happy's box appears .8 s after the page as before and covers the player's bar. Mission 2 stays held until her line is acknowledged, then wipes into Mission 3 preparation. The grade is a runtime post-processing volume; the fighters are drawn after it by a second camera with its own light (`ResultHoldView.cs`). No art or asset is changed. The result is centred on the screen, so with a Rules sidebar a fighter can stand behind the word or a button.
+The pages carry no black ground and no scanlines while held. Entrances count from the lethal frame, so a rebuilt page carries on instead of replaying. Retry is immediate. Happy's box appears .8 s after the page as before; on a defeat it covers the player's bar. Mission 2 stays held until her line is acknowledged, then wipes into Mission 3 preparation. The grade is a runtime post-processing volume; the fighters are drawn after it by a second camera with its own light (`ResultHoldView.cs`). No art or asset is changed. The result is centred on the screen, so with a Rules sidebar a fighter can stand behind the word or a button.
 
 - **Defeat (D7):** Retry, then Configuration. Phase-two defeat uses Retry Phase 2.
-- **Mission cleared (D13):** the mission name on a slab in that mission's colour, CLEARED as the result word, Continue to Mission 2 as the only button.
+- **Mission cleared (D13):** the mission name on a slab in that mission's colour, CLEARED as the result word, Continue to Mission 2 as the only button. Laid out as one title group over the open fight (Thomas, 2026-11-15, from a played sample; the page had read as crowded, with five rows from top to bottom and the word covering both fighters). CLEARED is 240, centred 300 from the top. The mission slab is its tag: 80 high with 70-point type, 12 above the capitals, on the word's slanted left edge. The hazard band is 16 thick, 18 below the capitals. The player's bar fades out. Happy's box and the button use the bottom of the screen in turn: the button (680 by 100, top at 764) arrives at full strength once her line is acknowledged and her box has closed (`AfterDialogue` in `DuelUI.ResultHold.cs`). Defeat and the Bonus result keep 340 and their centred buttons. The values are trial tuning.
 - **Finished (D14):** YOU'VE, FINISHED and THE GAME! stack and slam in the way WHO ARE YOU did, with the last line in Signal. The character stands beside them entirely white. Continue is the only button and leads into the credits roll (Thomas, 2026-11-15; it read Main Menu before, and keeps that control name for Check Game Flow). The Bonus result (COMPLETE, Restart, Main Menu) follows D7.
 
 **Fight entry (Thomas, 2026-11-15, trial tuning).** Chosen from a played prototype over the entry it replaces and the roll call alone. Start Mission's wipe opens on a target card instead of the arena: the Target Profile field in the mission colour with the Ink silhouette on the right, and on the left the mission in its colour above the Boss's name. The card is whole when the wipe opens on it; the name is the one thing that lands, .4 s after the wipe has covered the overview. A silhouette and a name that both arrived while the wipe was still opening read as a flash (Thomas, 2026-11-15). The Final Boss uses the rainbow field. The card holds until 1.9 s after the click, so it can be read for about a second and a half; then the two halves pull apart along the slant in .32 s onto the arena, and the countdown begins at 2.25 s. A first version opened after one second and was too quick to take in (Thomas, 2026-11-15). Retry, the Bonus and the Test Room have no card. Entering the Test Room and Back from it are covered by the wipe, forward and back.
@@ -310,3 +312,5 @@ The 2026-11-12 plan, since carried out or superseded: Help was removed on 2026-1
 5. Combat HUD, countdown, rule cards, injected and sealed states, Test Room.
 6. Attract fight and preview vignettes.
 7. The proposed new pages, once approved.
+
+**Health threshold marks (Thomas, 2026-11-15).** Swordsman Unbound and Final Boss invasion question marks and their filled chips stay hidden while paused or in developer tools. They follow the boss bar roll-call visibility before combat and restore their reached state on resume.

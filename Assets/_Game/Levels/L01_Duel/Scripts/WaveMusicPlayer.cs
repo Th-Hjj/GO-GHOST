@@ -16,7 +16,12 @@ namespace GoGhost.Duel
         [SerializeField, Min(0)] float fadeSeconds = .35f;
         float fade, targetFade, loadingSeconds;
         bool pending;
-        AudioClip finalBossPhaseTwoTrack;
+        AudioClip finalBossPhaseTwoTrack, preparationTrack;
+        // Efe Inan's mx_transition: one loop under every preparation page. Trial tuning.
+        const float PreparationGain = 1f, TestRoomLevel = .7f, PreparationFadeIn = 1f;
+        float preparationLevel = 1f, preparationTarget = 1f;
+        /// <summary>The preparation loop is the current track, playing or still loading.</summary>
+        public bool PreparationPlaying => preparationTrack != null && output != null && output.clip == preparationTrack;
         const float FinalBossPhaseTwoGain = .977237f; // -0.2 dB relative to the music reference
 
         // Short-term loudness trims (dB) at 3, 9, 15, 21, 27 and 33 seconds.
@@ -33,6 +38,7 @@ namespace GoGhost.Duel
         internal void CollectAudioClips(System.Collections.Generic.HashSet<AudioClip> destination)
         {
             if (finalBossPhaseTwoTrack != null) destination.Add(finalBossPhaseTwoTrack);
+            if (preparationTrack != null) destination.Add(preparationTrack);
             if (waveTracks == null) return;
             foreach (var track in waveTracks) if (track != null) destination.Add(track);
         }
@@ -50,6 +56,7 @@ namespace GoGhost.Duel
             {
                 if (finalBossPhaseTwoTrack != null && output != null && output.clip == finalBossPhaseTwoTrack)
                     return FinalBossPhaseTwoGain;
+                if (PreparationPlaying) return PreparationGain * preparationLevel;
                 int index = TrackIndex(CurrentWave);
                 return waveGains != null && index >= 0 && index < waveGains.Length ? Mathf.Max(0, waveGains[index]) : 1f;
             }
@@ -58,6 +65,7 @@ namespace GoGhost.Duel
         void Awake()
         {
             finalBossPhaseTwoTrack = Resources.Load<AudioClip>("mx_bosstheme3_p2_wip");
+            preparationTrack = Resources.Load<AudioClip>("mx_transition");
             if (output == null) output = GetComponent<AudioSource>();
             output.playOnAwake = false;
             output.loop = true;
@@ -91,6 +99,23 @@ namespace GoGhost.Duel
             pending = true;
             targetFade = 1;
             // Streaming/background imports may not be ready on the first combat frame.
+            if (output.clip.loadState == AudioDataLoadState.Unloaded) output.clip.LoadAudioData();
+        }
+
+        /// <summary>Starts the preparation loop, or keeps it running across preparation pages.</summary>
+        public void PlayPreparation(bool testRoom)
+        {
+            preparationTarget = testRoom ? TestRoomLevel : 1f;
+            if (PreparationPlaying) { targetFade = 1; return; }
+            StopMusic(true);
+            if (output == null || !isActiveAndEnabled || preparationTrack == null) return;
+            output.clip = preparationTrack;
+            // The menu over a preparation page pauses the listener; this loop plays on under it.
+            output.ignoreListenerPause = true;
+            introTrim = null;
+            preparationLevel = preparationTarget;
+            pending = true;
+            targetFade = 1;
             if (output.clip.loadState == AudioDataLoadState.Unloaded) output.clip.LoadAudioData();
         }
 
@@ -131,13 +156,14 @@ namespace GoGhost.Duel
             if (output == null) return;
             output.Stop();
             output.clip = null;
+            output.ignoreListenerPause = false;
             output.volume = 0;
         }
 
         void Update()
         {
             // The listener freezes the actual sample position; freeze fades/loading waits too.
-            if (output == null || AudioListener.pause) return;
+            if (output == null || AudioListener.pause && !output.ignoreListenerPause) return;
             if (pending)
             {
                 if (output.clip == null) { StopMusic(true); return; }
@@ -157,7 +183,9 @@ namespace GoGhost.Duel
                     return;
                 }
             }
-            fade = fadeSeconds > 0 ? Mathf.MoveTowards(fade, targetFade, Time.unscaledDeltaTime / fadeSeconds) : targetFade;
+            float seconds = PreparationPlaying && targetFade > 0 ? PreparationFadeIn : fadeSeconds;
+            fade = seconds > 0 ? Mathf.MoveTowards(fade, targetFade, Time.unscaledDeltaTime / seconds) : targetFade;
+            preparationLevel = Mathf.MoveTowards(preparationLevel, preparationTarget, Time.unscaledDeltaTime);
             ApplyVolume();
             if (targetFade == 0 && fade == 0 && output.clip != null) StopMusic(true);
         }

@@ -1,11 +1,49 @@
 # GO GHOST slice implementation
 
+## 2026-11-15 — Tutorial frames, picker motion, EMP lights and paused thresholds
+
+- **Changed:** tutorial frames measure visible content, including rotated body pieces and rendered glyphs. Body and Rules have upright frames; individual slabs use their own cut. Add Rule, example rules, Target Profile and Test Room have margins fitted to their neighbouring controls. Condition and Action target their actual sentence cards.
+- **Changed:** the choice frame and category join enter with the first option. Category changes interpolate the frame and join from their current geometry; adding a parameter extends the lower edge while the top stays fixed.
+- **Changed:** Mission 3 light tiles use the third EMP front's actual origin and radius. Each light pixel goes dark when reached; the completed sweep and direct phase-two entry keep every light off. Mission 2's Unbound mark and the Final Boss's invasion marks, including filled chips, hide during pause and follow the boss bar's countdown reveal.
+- **Checks:** editor compilation passed. At 2560x1440, controlled Play Mode captures covered all 11 tutorial targets, including empty/populated Rules; picker entrance, side/category changes and parameter growth; the third EMP sweep with its material radius sampled throughout, and direct phase-two darkness; Mission 2 and 3 countdown/fight pause and resume. Captures are under `Logs/HighlightReview`, `Logs/PickerReview`, `Logs/EmpReview` and `Logs/ThresholdReview`. The existing Check Game Flow passed (`Logs/BossEncounter/Flow-20261116-055941-410ca7/game-flow.txt`) before the final picker/EMP/pause changes, which received the focused checks above.
+- **Limits:** the EMP was invoked through the actual Shockwave/CreateEmpSweep methods, not reached by playing through its spoken transition. Other aspect ratios and a full manual tutorial playthrough were not checked.
+- **Web delivery:** Unity 6000.6.0f1 WebGL build succeeded with 0 errors and 377 warnings (including existing obsolete API warnings), in 329 s. Output: `Builds/Web-20261115/go-ghost`. The website's three data parts reconstruct the original 33,816,738-byte data file; total Build payload is 47,352,129 bytes. The site passed `npm run build`; a fresh headless Edge profile loaded the new package through the site's existing split-data loader and rendered its flashing-lights page with no JavaScript/console errors. Unused URP post-processing shaders emitted warnings. The concurrent Boss defeat animation work is excluded from this release.
+
+## 2026-11-15 — Preparation music
+
+Efe Inan's `mx_transition.wav` (98 s, imported with the phase-two theme's settings, in `Audio/Music/Resources`) loops under Configure, Target Profile and Training. `WaveMusicPlayer.PlayPreparation` keeps one playback across those pages and ignores the listener pause, so it plays under the menu; `DuelGame.SetPhase` starts it and fades it out on any other page. Test Room level .7, fade-in 1 s, gain 1 (trial). GHOST's arena is excluded.
+
+Checked in Play Mode: compiles; the loop starts on Mission 1 preparation, keeps its position into Mission 2 preparation and keeps playing with the menu open. NOT TESTED: the Test Room level, the fade on Start Mission, the loop seam, loudness by ear.
+
 ## 2026-11-15 — Moving lights in the three mission backgrounds
 
 - **Asked:** a little motion in all three backgrounds; the two Mission 1 beacons changed together. He chose the crown and the sign letter for Mission 2, then asked for the crown to flow without a rest and a little dimmer and for a real running-light effect on the casino; approved a Mission 3 design; asked for the stutter before the EMP blackout to be removed.
 - **Changed:** `IndustrialArenaBackdrop` splits the beacon layer into two halves with periods 3.2 and 4.3 s. Small tiles in `Resources/Arena` hold the plates' own lit pixels and are drawn over the plates through `SetTileCrop`, which follows the plate's crop: `CasinoCrown1`–`5` (a travelling crest, 2.6 s a turn, .42), `CasinoMarquee1`–`3` (three chase phases, .2 s a step, .8), `CasinoSignLetter` (the S, out for .5 to .9 s every 20 to 40 s), `MegacityCrown1`–`4` (crest climbing, 3.5 s, .38), `MegacityBridge` (a narrowed window of the lit strip crossing in 2.6 s, resting 1.6 s, then back) and `MegacityBeacon` (one point used at four antenna tips, periods 2.9 to 5.3 s). `FinalBossEmpSweep` calls `SetEmpCity` with the third front's progress; at .3 the Mission 3 lights go out, and a direct phase-two entry starts dark. The plate art is unchanged.
 - **Checks:** compiled in the editor. Play Mode captures at 2560×1440: Mission 2 with the crown lit, the S out and every third bulb lit, each on its drawn place with the parallax moved; Mission 3 phase one with the crown, the bridge light and four beacons in place; a direct phase-two entry with every city light reading zero.
 - **NOT TESTED:** Check Game Flow. NOT OBSERVED: the Mission 1 beacons after the split (compiled only), the lights going out during the played EMP transition, Reduce Flashing, other resolutions.
+
+## 2026-11-15 — Mission cleared page: one title group, box and button in turn
+
+- **Asked:** the Mission 1 cleared page looks crowded; how to improve it. He asked for a sample in the game, said the player's bar still showing broke the moment, then kept the sample.
+- **Changed:** `BuildOverrideCleared` sets CLEARED at 240 (was 340) centred 300 from the top, makes the mission slab a tag on the word's upper left (80 high, 70-point type), thins the hazard band to 16 just under the word, and moves Continue to Mission 2 to the bottom (top 764). On a held result the button stays away until Happy's line is acknowledged and her box has closed (`AfterDialogue`, `DuelUI.DialogueBoxBusy`). `BeginHeldResult` fades the player's bar out on a cleared mission.
+- **Checks:** compiled in the editor. In Play Mode at 2560×1440, Mission 1 from the developer entry with the Gunner killed by a direct call: one capture with Happy's box and no button, one after acknowledging with the button in its place and no player bar.
+- **NOT TESTED:** Check Game Flow. By reading, it waits for the line to clear and one second more before clicking `ContinueToWaveTwo`, and the button appears about .2 s after the line clears. NOT OBSERVED: the Mission 2 cleared page (same code, no button), other resolutions, a page rebuilt by opening the menu on the result.
+- **Not changed:** Defeat and the Bonus result (340, centred buttons); the arena outline's dim level.
+
+## 2026-11-15 — Arrows in the game's own font atlases
+
+- **Asked:** why `LiberationSans SDF - Fallback.asset` is always modified, then to put the four arrows into the game's own atlases.
+- **Found:** Change Platform's `↑↓←→` were in none of the Override font assets, which had no fallback, so TMP drew them from LiberationSans's dynamic fallback atlas and the editor rewrote that asset in each Play Mode. Barlow Condensed's files have no arrow glyphs; JetBrains Mono's have all four.
+- **Changed:** the four arrows are added to `JetBrainsMono-Medium SDF` and `JetBrainsMono-Bold SDF` from their own TTFs (the assets stay static). `BarlowCondensed-BlackItalic SDF` and `BarlowCondensed-ExtraBoldItalic SDF` fall back to `JetBrainsMono-Bold SDF`. No code changed.
+- **Checks:** in Play Mode, Mission 1 preparation with four Change Platform rules shows all four arrows on the cards, and the LiberationSans fallback asset's hash was the same before and after the session. NOT OBSERVED: the fight HUD's rule cards and the rule editor; a build.
+
+## 2026-11-15 — Player damage 15 and 8
+
+- **Asked:** check the three missions' fights; they feel too fast and he wants them longer, with Mission 1 medium, Mission 2 medium-high and Mission 3 high. He then chose to weaken the player's damage to 15 and 8.
+- **Changed:** `PlayerShooting.LegacyRifle` deals 15 a primary shot (was 20). A burst round deals `BurstDamageShare` (8/15) of the primary, rounded half up: 8 (was 75%: 15). F8's bullet damage still scales both.
+- **By calculation, not seen:** hits to kill go from 34 to 45 (Gunner), 50 to 67 (Swordsman) and 100 to 134 (Final Boss, both pools). With every primary shot landing, the shortest kills are about 29 s, 45 s and 89 s (were 22, 33 and 66). A full burst deals 48 (was 90) against the magazine's 90 by primary fire (was 120); counting the reload, bursts fall from about 39 to 21 damage a second and primary fire from about 30 to 22, so emptying the magazine by burst is no longer the faster way to deal damage.
+- **Checks:** compiled in the editor. In Play Mode, Mission 1 from the developer entry reported `BulletDamage` 15, magazine 6, interval .45; the burst expression evaluates to 8. NOT OBSERVED: a real primary or burst hit removing 15 or 8 (Thomas took over the editor during the check), the Test Room and the Bonus.
+- **Not changed:** Boss health (666 / 999 / 1000 + 1000) and damage, player health (150), GHOST's shot (still 20, undecided). An earlier proposal in the same session to raise Boss and player health was based on the local analytics records, which are Thomas's own development play and say nothing about difficulty; it is withdrawn.
 
 ## 2026-11-15 — Swordsman: no afterblade from a swing that hit
 

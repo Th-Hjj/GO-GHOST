@@ -415,6 +415,14 @@ namespace GoGhost.Duel
                 || Phase == DuelPhase.Between || value == DuelPhase.Failed)
                 handler.Stop();
             Phase = value;
+            if (music != null)
+            {
+                // One loop runs under Body Configuration, Target Profile and the Test Room; any other page fades it out.
+                // GHOST's arena runs as Training and is not a preparation page.
+                if (!GhostArena && (value == DuelPhase.Configure || value == DuelPhase.TargetProfile || value == DuelPhase.Training))
+                    music.PlayPreparation(value == DuelPhase.Training);
+                else if (music.PreparationPlaying) music.StopMusic();
+            }
             if (value == DuelPhase.Configure || value == DuelPhase.TargetProfile || value == DuelPhase.Between) SaveGame();
             // Finishing the game removes the save; a developer or playtest run has none to remove.
             if (value == DuelPhase.Complete && Wave == FinalBossWave && savingRun)
@@ -433,7 +441,7 @@ namespace GoGhost.Duel
             EndInvasionReading();
             Rules?.Dispose();Rules=null;
             ClearPlayerGlow();
-            if (music != null) music.StopMusic();
+            if (music != null && !music.PreparationPlaying) music.StopMusic();
             if (encounter == null) return;
             // All contacts from this rendered frame finish before this LateUpdate boundary.
             foreach (var projectile in encounter.GetComponentsInChildren<Projectile>()) projectile.Retire();
@@ -460,7 +468,7 @@ namespace GoGhost.Duel
             FinishMetrics("abandoned", reason: reason);
             DeveloperToolsOpen = developerResumeOnClose = false;
             StopCombat();
-            if (music != null) music.StopMusic(true);
+            if (music != null && !music.PreparationPlaying) music.StopMusic(true);
             Paused = ResultHeld = false;
             menuHold = null;
             Time.timeScale = 1;

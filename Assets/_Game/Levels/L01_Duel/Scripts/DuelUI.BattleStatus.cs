@@ -122,6 +122,7 @@ namespace GoGhost.Duel
                 playerNameText.rectTransform.anchoredPosition = playerNameHome + Vector2.left * (70 * (1 - playerRoll.name));
             }
             var bossRoll = Roll(BossRollAt);
+            bool showThresholds = bossRoll.shown && !game.Paused && !game.DeveloperToolsOpen;
             for (int i = 0; i < policeHealth.Length && i < game.Bosses.Count; i++)
             {
                 var actor = game.Bosses[i];
@@ -146,15 +147,16 @@ namespace GoGhost.Duel
                         bool reached=(long)actor.Health.CurrentHealth*100<=(long)actor.Health.MaxHealth*FinalBossAxe.InvasionPercents[j];
                         // The reached mark is filled.
                         mark.color=spent||reached?OverridePalette.Text:NeuralPalette.Emp;
-                        if(invasionChips[j]!=null)invasionChips[j].color=spent||reached?NeuralPalette.Emp:Color.clear;
+                        mark.alpha = showThresholds ? 1 : 0;
+                        if(invasionChips[j]!=null)invasionChips[j].color=showThresholds&&(spent||reached)?NeuralPalette.Emp:Color.clear;
                     }
                 if (i < unboundMarks.Length && unboundMarks[i] != null)
                 {
                     // Filled once his health has reached it, like a reached invasion mark.
                     bool reached = actor.Health.CurrentHealth <= actor.Health.MaxHealth * actor.Profile.Sword.UnboundHealth;
                     unboundMarks[i].color = reached ? OverridePalette.Text : NeuralPalette.Swordsman;
-                    unboundMarks[i].alpha = bossRoll.shown ? 1 : 0;
-                    unboundChips[i].color = reached && bossRoll.shown ? NeuralPalette.Swordsman : Color.clear;
+                    unboundMarks[i].alpha = showThresholds ? 1 : 0;
+                    unboundChips[i].color = reached && showThresholds ? NeuralPalette.Swordsman : Color.clear;
                 }
                 bossHealthText[i].Update(policeHealth[i], "", Mathf.RoundToInt(actor.Health.CurrentHealth * bossRoll.fill));
                 policeHealth[i].alpha = bossRoll.shown ? 1 : 0;

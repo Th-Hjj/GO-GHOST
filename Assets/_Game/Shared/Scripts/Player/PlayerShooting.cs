@@ -31,7 +31,10 @@ public partial class PlayerShooting : MonoBehaviour, IAttemptAugmentation
     private OfficerVisual visual;
     private bool legacyCombat;
     // Retained API name; formal combat uses the six-round Revolver.
-    public static readonly WeaponProfile LegacyRifle = new WeaponProfile(20, .45f, 6, 1.80f, .10f, 14f);
+    // Thomas, 2026-11-15: 15 a primary shot (was 20), so fights last longer.
+    public static readonly WeaponProfile LegacyRifle = new WeaponProfile(15, .45f, 6, 1.80f, .10f, 14f);
+    // A burst round deals 8 of the primary's 15 (was 75%: 15 of 20), whole HP with halves rounded up.
+    const float BurstDamageShare = 8f / 15f;
     private WeaponProfile? runtimeRifle;
     private float runtimeBulletSpeed = -1;
     private WeaponProfile Weapon => legacyCombat ? runtimeRifle ?? LegacyRifle : officer.Deployment.Weapon;
@@ -268,8 +271,8 @@ public partial class PlayerShooting : MonoBehaviour, IAttemptAugmentation
         nextFireTime=Time.time+burstWeapon.FireInterval;
         nextBurstAt+=Mathf.Max(.01f,burstWeapon.BurstInterval);
         lastFireRequest=WeaponFireRequest.Burst;
-        // Half-up rounding keeps the integer damage contract (30 * .75 = 22.5 -> 23).
-        int burstDamage = Mathf.FloorToInt(burstWeapon.Damage * .75f + .5f);
+        // Half-up rounding keeps the integer damage contract (15 -> 8).
+        int burstDamage = Mathf.FloorToInt(burstWeapon.Damage * BurstDamageShare + .5f);
         if (!FireWeapon(direction,burstWeapon,burstActor,burstBulletSpeed,burstDamage)) { CancelBurst(); return; }
         if (!IsBursting) return; // A lifecycle callback may have canceled the actor.
         BurstShotsRemaining--;

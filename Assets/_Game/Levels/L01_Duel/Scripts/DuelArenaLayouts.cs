@@ -42,13 +42,19 @@ namespace GoGhost.Duel
         // Mission 3, the Tower (Thomas, 2026-11-15): stairs of one tier climb from both sides to a peak over
         // the middle. Each step is 1 unit across and 2.1 up, the floor under the peak is open for 6 units,
         // and a cornered fighter can climb over the other. Mission 2 and the Bonus keep the layout above.
+        // Later the same day he found phase two's moving steps hard to board and a fall costly. The tower's
+        // tiers are 1.9 apart, which leaves a jump .43 to spare instead of .23, and a sixth platform on the
+        // first tier under the peak gives the floor a way up in the middle and each second-tier step two
+        // ways in. Every other stage keeps the shared 2.1.
+        public const float FinalBossTierRise = 1.9f;
         static readonly PlatformPlacement[] FinalBossLayout =
         {
-            new PlatformPlacement(-10f, PlatformTierRise, 4f),
-            new PlatformPlacement(-5f, PlatformTierRise * 2, 4f),
-            new PlatformPlacement(0, PlatformTierRise * 3, 4f),
-            new PlatformPlacement(5f, PlatformTierRise * 2, 4f),
-            new PlatformPlacement(10f, PlatformTierRise, 4f)
+            new PlatformPlacement(-10f, FinalBossTierRise, 4f),
+            new PlatformPlacement(-5f, FinalBossTierRise * 2, 4f),
+            new PlatformPlacement(0, FinalBossTierRise * 3, 4f),
+            new PlatformPlacement(5f, FinalBossTierRise * 2, 4f),
+            new PlatformPlacement(10f, FinalBossTierRise, 4f),
+            new PlatformPlacement(0, FinalBossTierRise, 4f)
         };
 
         GameObject stagePlatforms;

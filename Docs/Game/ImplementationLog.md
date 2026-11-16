@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-11-15 — Tower: six platforms, tiers 1.9 apart
+
+- **Asked:** phase two's platforms still cause falls and missed jumps; redesign them. He chose from a moving diagram: a low platform under the peak, tiers 1.9 apart, the current wave.
+- **Found (by calculation, not play):** with tiers 2.1 apart and the 1.05 swing, the floor could not reach the first tier 30% of the time, for up to 1.2 s, and the first tier stood only by the walls.
+- **Changed:** `FinalBossLayout` has a sixth platform at x 0 on the first tier and uses `FinalBossTierRise` 1.9. `StartPlatformMotion` gives platforms at the same x the same place in the wave.
+- **Checks:** the game assembly compiles outside the editor with no errors. NOT TESTED in Play Mode at his instruction: the Boss's routes, Meteor landings and the axe on the new layout are NOT OBSERVED.
+
 ## 2026-11-15 — Whole-project audit and fixes
 
 - **Asked:** check the whole project for bugs, outdated files, display and flow problems, then fix everything found.

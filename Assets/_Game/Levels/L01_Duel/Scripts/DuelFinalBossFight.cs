@@ -156,13 +156,16 @@ namespace GoGhost.Duel
             var moving = new System.Collections.Generic.List<Collider2D>(supports.Length - 1);
             for (int i = 1; i < supports.Length; i++) if (supports[i] != null) moving.Add(supports[i]);
             moving.Sort((a, b) => a.bounds.center.x.CompareTo(b.bounds.center.x));
+            int column = 0;
             for (int i = 0; i < moving.Count; i++)
             {
+                // Platforms one above the other are one column of the wave and move together.
+                if (i > 0 && moving[i].bounds.center.x - moving[i - 1].bounds.center.x > .5f) column++;
                 var oscillator = moving[i].GetComponent<PlatformOscillator>();
                 if (oscillator == null) oscillator = moving[i].gameObject.AddComponent<PlatformOscillator>();
                 // In the transition the wave starts from rest. A direct phase-two entry has no transition,
                 // so the wave is already running when the arena appears.
-                float clock = (easeIn ? 0 : PlatformOscillator.Period * 2) - i * PlatformOscillator.WaveLag;
+                float clock = (easeIn ? 0 : PlatformOscillator.Period * 2) - column * PlatformOscillator.WaveLag;
                 oscillator.Begin(0, clock, easeIn);
             }
             Trace($"final boss phase 2: {moving.Count} platforms moving");

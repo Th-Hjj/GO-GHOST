@@ -75,13 +75,14 @@ namespace GoGhost.Duel
             Follow();
         }
 
-        // The EMP draws its own violet outline round the structure; a second line inside it reads as a mistake.
-        // The dim sides give way to it. The landing edges stay.
+        // The EMP draws its own violet outline round each platform; a second line inside it reads as a mistake.
+        // The platforms' dim sides give way to it. The landing edges and the arena frame stay as in every mission.
         bool sidesHidden;
-        internal void HideFrameHairlines()
+        internal void HidePlatformHairlines()
         {
             sidesHidden = true;
-            foreach (var line in frameHairlines) if (line != null) line.enabled = false;
+            // The first three are the ceiling and the two walls.
+            for (int i = 3; i < frameHairlines.Count; i++) if (frameHairlines[i] != null) frameHairlines[i].enabled = false;
         }
 
         void LateUpdate() { if (steady) PlaceFrame(); Follow(); }

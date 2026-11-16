@@ -14,7 +14,7 @@ namespace GoGhost.Duel
         void CreateEmpSweep(BossSilhouetteView view, Vector2 origin)
         {
             EmpSweep = encounter.AddComponent<FinalBossEmpSweep>();
-            EmpSweep.Initialize(platforms[0].transform.parent, Player.GetComponent<OfficerVisual>(), view, origin);
+            EmpSweep.Initialize(ActivePlatforms,Player.GetComponent<OfficerVisual>(), view, origin);
         }
         // Set before StartCoroutine: its first lines run before the handle is returned.
         public bool FinalBossCutscene { get; private set; }

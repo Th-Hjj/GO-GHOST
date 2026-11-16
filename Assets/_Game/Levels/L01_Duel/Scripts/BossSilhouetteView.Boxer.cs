@@ -41,17 +41,22 @@ namespace GoGhost.Duel
                 if (boxer.Current!=FinalBossBoxer.Punch.None)
                 {
                     bool prep=boxer.Phase==FinalBossBoxer.Stage.Windup || boxer.Phase==FinalBossBoxer.Stage.Slip;
-                    // The Meteor's locked hold keeps the full wind-up pose.
-                    float amount=prep ? (boxer.DiveLocked ? 1 : Ease(boxer.PhaseProgress)) : boxer.Phase==FinalBossBoxer.Stage.Recovery ? 1-Ease(boxer.PhaseProgress) : 1;
-                    float twist=prep ? -.14f : .19f, dip=prep ? -.07f : 0;
+                    // Every punch coils into its own pose in the first part of the wind-up and then holds
+                    // it still, as the Meteor holds at its apex (Thomas, 2026-11-15). The poses are large
+                    // enough to tell apart: a lean back, a deep crouch, a turned back, a raised fist.
+                    float amount=prep ? (boxer.DiveLocked ? 1 : boxer.CoilProgress) : boxer.Phase==FinalBossBoxer.Stage.Recovery ? 1-Ease(boxer.PhaseProgress) : 1;
+                    float twist=prep ? -.22f : .19f, dip=prep ? -.06f : 0;
+                    if (prep && boxer.Current==FinalBossBoxer.Punch.Jab && !boxer.Cross) p.BackFoot.x-=.14f*amount;
                     switch(boxer.Current)
                     {
-                        case FinalBossBoxer.Punch.Uppercut: dip=prep ? -.21f : .10f; break;
-                        case FinalBossBoxer.Punch.Backfist: twist=prep ? -.27f : .23f; break;
+                        case FinalBossBoxer.Punch.Uppercut:
+                            twist=prep ? -.08f : .19f;
+                            dip=prep ? (boxer.Rising ? -.44f : -.34f) : .10f; break;
+                        case FinalBossBoxer.Punch.Backfist: twist=prep ? -.40f : .23f; dip=prep ? -.08f : 0; break;
                         case FinalBossBoxer.Punch.Leap:
                             p.BackFoot-=new Vector2(.24f,-.10f)*amount;
                             p.FrontFoot+=new Vector2(.18f,.12f)*amount;
-                            twist=prep ? -.08f : .25f; break;
+                            twist=prep ? -.20f : .25f; dip=prep ? -.12f : 0; break;
                         case FinalBossBoxer.Punch.Meteor:
                             twist=prep ? -.12f : .32f; dip=prep ? .03f : -.19f;
                             p.BackFoot+=new Vector2(-.22f,.14f)*amount; break;
@@ -72,6 +77,14 @@ namespace GoGhost.Duel
                     p.FrontHand=Vector2.Lerp(Vector2.Lerp(p.FrontHand,new Vector2(.27f,.50f),up),new Vector2(.30f,-.14f),down);
                     p.BackHand=Vector2.Lerp(Vector2.Lerp(p.BackHand,new Vector2(.19f,.44f),up),new Vector2(.08f,-.20f),down);
                     p.Chest+=new Vector2(.03f,-.03f)*(up-down); p.Head+=new Vector2(.03f,-.04f)*(up-down);
+                    if (boxer.Cover==FinalBossBoxer.CoverStage.Warn)
+                    {
+                        // Set off: he sinks and draws the rear fist back, and holds that until he goes.
+                        float coil=Ease(Mathf.Clamp01(boxer.CoverProgress/.4f));
+                        p.Hip+=new Vector2(-.06f,-.18f)*coil; p.Chest+=new Vector2(-.14f,-.18f)*coil; p.Head+=new Vector2(-.10f,-.18f)*coil;
+                        p.BackHand=Vector2.Lerp(p.BackHand,new Vector2(-.34f,.20f),coil);
+                        p.BackFoot.x-=.16f*coil;
+                    }
                 }
             }
             float ageSinceOrder=Time.time-boxer.CommandAt;

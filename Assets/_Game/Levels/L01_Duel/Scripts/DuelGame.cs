@@ -473,26 +473,9 @@ namespace GoGhost.Duel
             Rifle = null; Dodge = null; effects = null; encounterSounds = null;
             playerRespawnAt = enemyRespawnAt = 0;
         }
-        // A hit-stop: the whole fight stands still for a moment and then carries on. It runs on real
-        // time, and gives way to the menu, a held result and an invasion reading, which stop the fight themselves.
-        float hitStopUntil = -1;
-        internal void HitStop(float seconds)
-        {
-            if (Phase != DuelPhase.Fight || Paused || ResultHeld || InvasionHeld || seconds <= 0) return;
-            hitStopUntil = Time.unscaledTime + seconds;
-            Time.timeScale = 0;
-        }
-        void TickHitStop()
-        {
-            if (hitStopUntil < 0 || Time.unscaledTime < hitStopUntil) return;
-            hitStopUntil = -1;
-            if (!Paused && !ResultHeld && !InvasionHeld) Time.timeScale = 1;
-        }
-
         void Update()
         {
             TickMetrics();
-            TickHitStop();
             if (!ui.DeveloperShortcutConsumed && !ui.OverlayOpen && !ui.EscapeClaimed && !ui.TextEntryFocused && GameSettings.Pressed(GameSettings.Pause)) SetPause(!Paused);
             if (Paused || DeveloperToolsOpen) return;
             if (InvasionHeld) { TickInvasionReading(); return; }

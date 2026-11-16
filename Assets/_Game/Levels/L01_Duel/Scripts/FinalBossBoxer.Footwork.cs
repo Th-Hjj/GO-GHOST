@@ -146,6 +146,13 @@ namespace GoGhost.Duel
             desirability[(int)Punch.Uppercut]+=punish+(rising ? 1.1f : 0);
             desirability[(int)Punch.Leap]+=punish+pincer;
             desirability[(int)Punch.Meteor]+=punish;
+            // A punch is wound up standing still, so it is only thrown from where its release can reach.
+            if (actor.Motor.Grounded)
+            {
+                if (gap > LungeReach(Punch.Jab)-.3f) desirability[(int)Punch.Jab]=float.NegativeInfinity;
+                if (gap > LungeReach(Punch.Backfist)-.3f) desirability[(int)Punch.Backfist]=float.NegativeInfinity;
+                if (!rising && gap > LungeReach(Punch.Uppercut)-.3f) desirability[(int)Punch.Uppercut]=float.NegativeInfinity;
+            }
             // A fist thrown on the ground cannot reach another level.
             if (Mathf.Abs(delta.y) > 1.3f)
             {

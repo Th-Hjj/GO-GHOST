@@ -15,7 +15,9 @@ namespace GoGhost.Duel
         Vector2 origin;
         bool sweeping;
 
-        internal void Initialize(Transform arena, OfficerVisual body, BossSilhouetteView view, Vector2 contact)
+        // supports[0] is the floor. The floor, walls and ceiling keep the outline every mission has and get no
+        // violet one (Thomas, 2026-11-15); the EMP traces the platforms only.
+        internal void Initialize(Collider2D[] supports, OfficerVisual body, BossSilhouetteView view, Vector2 contact)
         {
             origin = contact;
             boss = view;
@@ -25,10 +27,14 @@ namespace GoGhost.Duel
             if (view != null) terrain.SetFloat("_EdgeFadeWidth", .48f * view.ShockwaveSpeed);
             city = Make(shader, "EMP skyline contours", NeuralPalette.Alpha(NeuralPalette.Emp, .49f));
             city.SetColor("_FrontColor", NeuralPalette.Alpha(NeuralPalette.Emp, .72f));
-            foreach (var surface in arena.GetComponentsInChildren<SpriteRenderer>())
-                if (surface.enabled) AddOverlay(surface, terrain, -1, .065f);
+            for (int i = 1; i < supports.Length; i++)
+            {
+                if (supports[i] == null) continue;
+                foreach (var surface in supports[i].GetComponentsInChildren<SpriteRenderer>())
+                    if (surface.enabled) AddOverlay(surface, terrain, -1, .065f);
+            }
             var dressing = GetComponentInChildren<ArenaSilhouetteDressing>();
-            if (dressing != null) dressing.HideFrameHairlines();
+            if (dressing != null) dressing.HidePlatformHairlines();
             backdrop = GetComponentInChildren<IndustrialArenaBackdrop>();
             if (backdrop != null) backdrop.AddEmpContours(city);
 
@@ -106,7 +112,7 @@ namespace GoGhost.Duel
 
         void OnDisable()
         {
-            // The outer walls belong to the scene and outlive this encounter.
+            // The platforms belong to the scene and outlive this encounter.
             foreach (var copy in overlays) if (copy != null) copy.enabled = false;
         }
 

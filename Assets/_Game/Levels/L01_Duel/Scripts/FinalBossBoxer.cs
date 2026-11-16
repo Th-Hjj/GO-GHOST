@@ -125,10 +125,9 @@ namespace GoGhost.Duel
             accepted=game.GetBossMoveTuning(true,(int)punch);
             Started[(int)punch]++;
             if (actor.Motor.Grounded || punch==Punch.Meteor) actor.Motor.EndAttackMotion();
+            // Every punch is wound up standing still (Thomas, 2026-11-15): he plants, coils into the
+            // punch's own pose, holds it, and only then moves. The lunge belongs to the release.
             // An airborne straight or hook keeps the steering of its existing jump.
-            // The first beat can cover ground even when the target is outside fist reach.
-            if (!Rising && (punch==Punch.Jab || punch==Punch.Backfist || punch==Punch.Uppercut))
-                DriveTo(target,accepted.Windup,punch==Punch.Jab ? 18f : 13f);
             actor.Perception.ExpressedPressure(actor.Position);
             SetPhase(Stage.Windup,accepted.Windup);
             actor.Trace($"boxer {punch} starts");
@@ -168,12 +167,16 @@ namespace GoGhost.Duel
                     // The platforms have moved during the wind-up; the place he jumps at has not.
                     if (FindJump(risingTarget,0,out jump) && TakeOff(jump))
                     {
+                        // The fist leads from the ground up: the stroke starts with the take-off and
+                        // lasts to the top of the jump, so the whole rise is the punch.
                         airborne=false; airStart=Time.time;
-                        SetPhase(Stage.Slip,Mathf.Max(.04f,jump.StrikeAt));
+                        StartStroke();
+                        SetPhase(Stage.Active,Mathf.Clamp(jump.Motion.JumpSpeed/(Mathf.Abs(Physics2D.gravity.y)*jump.Motion.GravityScale),.25f,.7f));
                         return;
                     }
                     Rising=false;
                 }
+                ReleaseLunge(facts);
                 StartStroke();
             }
             if (Phase == Stage.Slip)
@@ -327,6 +330,18 @@ namespace GoGhost.Duel
             divePassed.Clear();
         }
 
+        static float ActiveSeconds(Punch punch) => punch switch { Punch.Uppercut=>.21f, Punch.Backfist=>.22f, Punch.Leap=>.27f, _=>.14f };
+        // How far a grounded punch can carry him in its release, with the fist's own reach.
+        internal static float LungeReach(Punch punch) => ActiveSeconds(punch)*(punch==Punch.Jab ? 22f : 16f)+.82f;
+        // The burst forward as the held punch is let go, along the facing fixed at its start.
+        void ReleaseLunge(BossObservation facts)
+        {
+            if (Cross || !actor.Motor.Grounded) return;
+            if (Current!=Punch.Jab && Current!=Punch.Backfist && Current!=Punch.Uppercut) return;
+            Vector2 to=facts.Visible ? OpponentAt(facts,.08f) : actor.Position+Vector2.right*(LockedFacing*2f);
+            DriveTo(to,ActiveSeconds(Current),Current==Punch.Jab ? 22f : 16f);
+        }
+
         void DriveTo(Vector2 target,float seconds,float speed)
         {
             if (!actor.Navigation.TrySupport(actor.Position,actor.Motor.Size,out var support)) return;
@@ -364,13 +379,15 @@ namespace GoGhost.Duel
         internal static readonly Vector2 Guard = new Vector2(.29f,.31f);
         Vector2 Chamber => Current switch
         {
-            Punch.Uppercut=>new Vector2(.13f,-.36f), Punch.Backfist=>new Vector2(-.44f,.25f),
+            Punch.Uppercut=>Rising ? new Vector2(.06f,-.60f) : new Vector2(.10f,-.50f), Punch.Backfist=>new Vector2(-.44f,.25f),
             Punch.Leap=>new Vector2(-.21f,.44f), Punch.Meteor=>new Vector2(-.12f,.71f),
             _=>Cross ? new Vector2(-.25f,.20f) : new Vector2(.17f,.27f)
         };
         Vector2 StrokePoint(float t)
         {
             float extend=Mathf.SmoothStep(0,1,t);
+            // Rising: the fist is over his head within the first third and stays there, leading the body up.
+            if (Rising) return Vector2.Lerp(Chamber,new Vector2(.30f,1.05f),Mathf.Clamp01(t*3.2f));
             switch(Current)
             {
                 case Punch.Uppercut:
@@ -386,10 +403,12 @@ namespace GoGhost.Duel
         }
         internal Vector2 HandLocal => Phase switch
         {
-            Stage.Windup=>Vector2.Lerp(Guard,Chamber,PhaseProgress), Stage.Slip=>Chamber,
+            Stage.Windup=>Vector2.Lerp(Guard,Chamber,CoilProgress), Stage.Slip=>Chamber,
             Stage.Active=>StrokePoint(PhaseProgress), Stage.Recovery=>Vector2.Lerp(recoveryHand,Guard,PhaseProgress),
             _=>Guard
         };
+        // The coil is reached in the first 40% of a wind-up and then held, so there is a still pose to read.
+        internal float CoilProgress => Phase==Stage.Windup ? Mathf.SmoothStep(0,1,Mathf.Clamp01(PhaseProgress/.4f)) : 1;
         public Vector2 Fist() { var p=HandLocal; return actor.Position+new Vector2(LockedFacing*p.x,p.y); }
         // Read by the view to warn of the punch being wound up and of the Meteor's landing.
         internal Vector2 StrokeWorld(float t) { var p=StrokePoint(t); return actor.Position+new Vector2(LockedFacing*p.x,p.y); }

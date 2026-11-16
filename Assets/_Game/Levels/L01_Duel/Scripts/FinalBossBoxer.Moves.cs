@@ -51,8 +51,9 @@ namespace GoGhost.Duel
         // ---- Counter Guard ----
         public enum CoverStage { None, Raise, Hold, Warn, Open }
         internal const float CoverRaise = .20f, CoverHold = 1.0f, CoverWarn = .20f, CoverOpen = .60f, CoverCooldown = 4.5f;
-        internal const float CounterHitStop = .10f;
-        const float CoverMinimumGap = 2.5f, CounterReach = 8f, CounterSpeed = 22f, CoverWalk = 2.6f;
+        // The guard and its counter have no distance limits (Thomas, 2026-11-15): he covers up at any range
+        // and the dash goes all the way to where the player will be.
+        const float CounterSpeed = 22f, CoverWalk = 2.6f;
         internal CoverStage Cover { get; private set; }
         internal bool Covering => Cover==CoverStage.Raise || Cover==CoverStage.Hold || Cover==CoverStage.Warn;
         internal float CoverProgress => Mathf.InverseLerp(coverAt,coverUntil,Time.time);
@@ -62,7 +63,7 @@ namespace GoGhost.Duel
             get
             {
                 Vector2 delta=CounterTarget-actor.Position;
-                return actor.Position+delta.normalized*Mathf.Min(CounterReach,delta.magnitude+.4f);
+                return actor.Position+delta.normalized*(delta.magnitude+.4f);
             }
         }
         // When the guard was last set off; the view gathers a ring on the fists from this moment.
@@ -81,7 +82,6 @@ namespace GoGhost.Duel
             if (Time.time < coverReadyAt || Resting || !actor.Motor.Grounded || !facts.Visible || weapon==WeaponState.Armed
                 || Time.time-facts.LastShotAt > 1.5f) return false;
             Vector2 delta=target-actor.Position;
-            if (Mathf.Abs(delta.x) < CoverMinimumGap || Mathf.Abs(delta.y) > 3f) return false;
             actor.Motor.EndAttackMotion();
             actor.Motor.HoldHorizontal();
             LockedFacing=Mathf.Sign(delta.x);
@@ -150,8 +150,6 @@ namespace GoGhost.Duel
                 var facts=actor.Perception.Facts;
                 CounterTarget=facts.Visible ? (Vector2)facts.Body.center : (Vector2)playerBody.bounds.center;
                 actor.View?.Hit();
-                // The stopped shot freezes the fight for a beat before he charges (Thomas, 2026-11-15).
-                game.HitStop(CounterHitStop);
                 CounterChargedAt=Time.time;
                 SetCover(CoverStage.Warn,CoverWarn);
                 actor.Trace("boxer counter warned");
@@ -164,7 +162,7 @@ namespace GoGhost.Duel
         void LaunchCounter()
         {
             Vector2 delta=CounterTarget-actor.Position;
-            float distance=Mathf.Min(CounterReach,delta.magnitude+.4f);
+            float distance=delta.magnitude+.4f;
             if (Time.time-lastPunchEnd > ChainGap) chain=0;
             Current=Punch.Leap; Cross=false; signatureLeap=false; Rising=false; counter=true;
             if (Mathf.Abs(delta.x) > .12f) LockedFacing=Mathf.Sign(delta.x);

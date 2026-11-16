@@ -1,5 +1,12 @@
 # GO GHOST slice implementation
 
+## 2026-11-15 — Phase-two arena frame like every mission
+
+- **Asked:** only Mission 3 phase two shows a double outline on the arena frame; make it like the other missions.
+- **Found:** the EMP sweep gave every arena sprite a violet outline on top of `ArenaSilhouetteDressing`'s own.
+- **Changed:** `FinalBossEmpSweep.Initialize` takes the active supports and outlines the platforms only. `ArenaSilhouetteDressing.HidePlatformHairlines` (was `HideFrameHairlines`) hides only the platforms' dim sides; the ceiling and wall lines stay.
+- **Checks:** the game assembly compiles outside the editor with no errors; the editor was in Play Mode. NOT OBSERVED in the game: phase two after the transition and on direct retry.
+
 ## 2026-11-15 — Tower: six platforms, tiers 1.9 apart
 
 - **Asked:** phase two's platforms still cause falls and missed jumps; redesign them. He chose from a moving diagram: a low platform under the peak, tiers 1.9 apart, the current wave.
@@ -46,6 +53,15 @@
   - The EMP outline's "Sprite Tiling" warnings: the arena borders use Unity's built-in sliced UI sprite and draw correctly.
   - Open questions for Thomas: whether a Boss's head counts as On Ground, and whether the longer punch lunge is wanted.
 - **NOT TESTED:** everything in play with real input: each jump change, the Bonus Restart confirmation, the binding refusals, the Esc and focus fixes, the cursor on the creation menu, the window size in a standalone build, and the platform wave's look. The second-pass fixes after the review were compiled only.
+
+## 2026-11-15 — Punches wound up standing still; rising fist leads; hit-stop and counter range limits removed
+
+- **Asked:** the moves did not read as moves, the Rising Uppercut least; most had no wind-up like the Meteor's. Remove the hit-stop, which barely showed. Check every move again. During the work: why does the counter still have a distance limit.
+- **Found:** the wind-up pose was interpolated across the whole wind-up, so it was complete only on the frame the punch fired and there was never a still pose. Jab, Backfist and Uppercut also slid toward the player through the wind-up, up to 5.4 units, so the coil happened in motion. The pose differences were .07 to .27 of a unit on a 1.55 body. The Rising Uppercut flew most of its jump in the crouch and struck only near the top. The counter needed 2.5 of distance to start and its dash stopped at 8.
+- **Changed:** `FinalBossBoxer.cs` adds `CoilProgress`, moves the lunge into the stroke (`ReleaseLunge`), starts the rising stroke at take-off, and deepens the Uppercut's chamber. `BossSilhouetteView.Boxer.cs` uses the coil for the pose, enlarges each punch's pose and adds the counter's charge pose. `FinalBossBoxer.Footwork.cs` gates grounded punches on lunge reach. `FinalBossBoxer.Moves.cs` drops the hit-stop call and the counter's range limits; `DuelGame.HitStop` is deleted.
+- **Checked:** the game assembly compiles with Unity's bundled compiler outside the Editor.
+- **NOT TESTED:** everything in play: each pose's look and hold, the release lunge's reach and whether he now closes too little, the rising stroke through a platform, the counter's long dash against platforms below, and combinations with planted wind-ups.
+- **Phase one:** its five axe moves were not changed; their wind-ups and poses were not re-read in this pass.
 
 ## 2026-11-15 — Rainbow guard arc; hit-stop when a shot is stopped
 

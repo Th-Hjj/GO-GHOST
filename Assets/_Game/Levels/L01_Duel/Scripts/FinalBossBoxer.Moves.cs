@@ -51,6 +51,7 @@ namespace GoGhost.Duel
         // ---- Counter Guard ----
         public enum CoverStage { None, Raise, Hold, Warn, Open }
         internal const float CoverRaise = .20f, CoverHold = 1.0f, CoverWarn = .20f, CoverOpen = .60f, CoverCooldown = 4.5f;
+        internal const float CounterHitStop = .10f;
         const float CoverMinimumGap = 2.5f, CounterReach = 8f, CounterSpeed = 22f, CoverWalk = 2.6f;
         internal CoverStage Cover { get; private set; }
         internal bool Covering => Cover==CoverStage.Raise || Cover==CoverStage.Hold || Cover==CoverStage.Warn;
@@ -149,6 +150,8 @@ namespace GoGhost.Duel
                 var facts=actor.Perception.Facts;
                 CounterTarget=facts.Visible ? (Vector2)facts.Body.center : (Vector2)playerBody.bounds.center;
                 actor.View?.Hit();
+                // The stopped shot freezes the fight for a beat before he charges (Thomas, 2026-11-15).
+                game.HitStop(CounterHitStop);
                 CounterChargedAt=Time.time;
                 SetCover(CoverStage.Warn,CoverWarn);
                 actor.Trace("boxer counter warned");

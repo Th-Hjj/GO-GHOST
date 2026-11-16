@@ -47,6 +47,13 @@
   - Open questions for Thomas: whether a Boss's head counts as On Ground, and whether the longer punch lunge is wanted.
 - **NOT TESTED:** everything in play with real input: each jump change, the Bonus Restart confirmation, the binding refusals, the Esc and focus fixes, the cursor on the creation menu, the window size in a standalone build, and the platform wave's look. The second-pass fixes after the review were compiled only.
 
+## 2026-11-15 — Rainbow guard arc; hit-stop when a shot is stopped
+
+- **Asked:** the guard's effect in rainbow, and a frozen beat when the guard is set off before he follows up.
+- **Changed:** `BossSilhouetteView.Boxer.cs` colours the guard arc with a rainbow gradient that follows the body's flow. `DuelGame.cs` adds `HitStop`, a real-time freeze of the time scale that yields to pause, a held result and an invasion reading; `FinalBossBoxer.Moves.cs` calls it for .10 s when a shot is stopped.
+- **Checked:** the game assembly compiles with Unity's bundled compiler outside the Editor.
+- **NOT TESTED:** everything in play: the arc's look, the freeze's length and feel, the music and sounds through it, pausing during it, and a kill or a result landing inside it.
+
 ## 2026-11-15 — Final Boss warnings in one language: no marks, no rings
 
 - **Asked:** lay out every effect and warning of the Boss, review them together and agree one look. Thomas rejected the landing marks (added unasked) and the charge rings (a device the first two Bosses do not have), agreed the other rules, and approved the second version.

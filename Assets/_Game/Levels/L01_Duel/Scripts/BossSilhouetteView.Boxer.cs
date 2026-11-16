@@ -93,6 +93,9 @@ namespace GoGhost.Duel
         }
 
         float lockFlashFor=-1;
+        Gradient guardSpectrum;
+        readonly GradientColorKey[] guardColours=new GradientColorKey[6];
+        readonly GradientAlphaKey[] guardAlphas=new GradientAlphaKey[2];
         void DrawBoxer(FinalBossBoxer boxer)
         {
             // One language for every warning of this Boss (Thomas, 2026-11-15): the pose and one white step
@@ -108,12 +111,17 @@ namespace GoGhost.Duel
                 SetLine(AxeLine(29,"Axe perch rim",2),boxer.PerchLeft,boxer.PerchRight,SwordTellWidth(false,true),NeuralPalette.Alpha(NeuralPalette.Primary,.85f));
             if (boxer.Covering)
             {
-                // Defense shows a thin boundary, as the Swordsman's guard does, in the axe's violet.
+                // Defense shows a thin boundary, as the Swordsman's guard does. His is in his own rainbow,
+                // flowing along the arc with his body (Thomas, 2026-11-15; it was the axe's violet).
                 bool held=boxer.Cover!=FinalBossBoxer.CoverStage.Raise;
                 var arc=AxeLine(5,"Guard boundary",11);
                 float width=SwordTellWidth(false,held), facing=boxer.LockedFacing>0 ? 0 : 180;
                 arc.startWidth=arc.endWidth=width;
-                arc.startColor=arc.endColor=NeuralPalette.Alpha(NeuralPalette.Emp,held ? .8f : .3f);
+                if (guardSpectrum==null) guardSpectrum=new Gradient();
+                for (int i=0;i<guardColours.Length;i++) guardColours[i]=new GradientColorKey(Spectrum(RainbowPhase+i*.16f),i/(guardColours.Length-1f));
+                guardAlphas[0]=new GradientAlphaKey(held ? .8f : .3f,0); guardAlphas[1]=new GradientAlphaKey(held ? .8f : .3f,1);
+                guardSpectrum.SetKeys(guardColours,guardAlphas);
+                arc.colorGradient=guardSpectrum;
                 Vector2 centre=(Vector2)actor.Position+Vector2.up*.25f;
                 for(int i=0;i<11;i++) arc.SetPosition(i,ClipTellPoint(centre+Angle(facing+Mathf.Lerp(-60,60,i/10f))*1.1f,width));
                 if (boxer.Cover==FinalBossBoxer.CoverStage.Warn)

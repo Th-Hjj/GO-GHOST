@@ -105,6 +105,7 @@ The axe can cut from a wall to the floor, climb from the floor through a platfor
 - *The axe's light.* Phase one: the socket tick is .075 wide in ice blue from the start of the wind-up and .13 in cold white from 60%. Phase two: `_AxeLit` in `FinalBossRainbow.shader` lights the whole axe to .35 when ordered and .8 from 60% of the delay.
 - *Lines.* `SwordTellWidth` and the same alphas as the Swordsman: .02 at .3 while preparing, .025 at .8 once locked, .06 at .95 while active. The step is at 60%; nothing fades in. The order line is the axe's violet, the phase-one flight path its ice blue, both one width end to end.
 - *Rising Uppercut.* One curve from the fist to the top of the planned jump, a quadratic through those two points.
+- *Guard (Thomas, 2026-11-15, later the same day).* The guard's arc is the Boss's rainbow, flowing with his body, at the same two alphas; an exception to rainbow belonging to a landing fist. A stopped shot calls `DuelGame.HitStop(.10)`: the time scale is zero for a tenth of a second of real time, his white step holding through it, and the .2 s charge starts when time resumes. The menu, a held result and an invasion reading take precedence over a hit-stop.
 - *EMP.* Shapes unchanged; its thin strokes (lanes, tips, streaks, currents, release rays) use the three widths. The wave rings and the square core keep their own thickness.
 
 **Revision after play (Thomas, 2026-11-15; damage unchanged by his instruction).** This paragraph supersedes the figures in the three below where they differ.

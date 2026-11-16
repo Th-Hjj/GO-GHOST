@@ -84,7 +84,9 @@ namespace GoGhost.Duel
         }
         void OnDied(Enemy enemy)
         {
-            StopCombat();Body.enabled=false;
+            StopCombat();
+            if (!IsTrainingEnemy && !IsGhost) Motor.BeginDefeat();
+            Body.enabled=false;
             foreach(var c in GetComponentsInChildren<Collider2D>())c.enabled=false;
             GetComponent<Rigidbody2D>().simulated=false;
             if(Coordinator!=null)Coordinator.Release(this);

@@ -30,7 +30,7 @@ namespace GoGhost.Duel
         public Vector2 Position => body != null ? body.position + centreOffset : (Vector2)transform.position;
         public Vector2 PreviousPosition { get; private set; }
         public Vector2 Velocity => body != null ? body.linearVelocity : Vector2.zero;
-        public Vector2 Size => shape != null ? (Vector2)shape.bounds.size : DefaultBodySize;
+        public Vector2 Size => defeating ? defeatSize : shape != null ? (Vector2)shape.bounds.size : DefaultBodySize;
         public bool Grounded { get; private set; }
         public bool DashActive { get; private set; }
         public bool DashBlocked { get; private set; }
@@ -56,6 +56,48 @@ namespace GoGhost.Duel
         float dropHorizontal, stepRemaining,dropLandingX;
         bool fixedDropLanding;
         Vector2 stepPosition;
+        bool defeating;
+        Vector2 defeatSize;
+        float defeatFallSpeed;
+        Collider2D defeatSupport;
+        Vector3 defeatSupportPosition;
+
+        // The corpse no longer blocks fighters or shots. Its fall still uses the arena's real swept
+        // collision and one-way rules, with the body size cached before its collider is disabled.
+        internal void BeginDefeat()
+        {
+            defeatSize = Size;
+            defeating = true;
+            defeatFallSpeed = 0;
+            Grounded = navigation != null && navigation.TrySupport(Position, defeatSize, out defeatSupport);
+            if (defeatSupport != null) defeatSupportPosition = defeatSupport.transform.position;
+        }
+
+        void TickDefeat(float dt)
+        {
+            var here = Position;
+            if (Grounded && defeatSupport != null && defeatSupport.enabled)
+            {
+                var now = defeatSupport.transform.position;
+                body.position += (Vector2)(now - defeatSupportPosition);
+                defeatSupportPosition = now;
+                PreviousPosition = Position;
+                return;
+            }
+            Grounded = false;
+            defeatFallSpeed += Physics2D.gravity.y * Profile.GravityScale * dt;
+            var next = here + Vector2.up * (defeatFallSpeed * dt);
+            if (navigation != null && !navigation.SweepTraversal(here, next, defeatSize, out var hit, out next)
+                && hit.normal.y > .5f)
+            {
+                Grounded = true;
+                defeatFallSpeed = 0;
+                defeatSupport = hit.collider;
+                defeatSupportPosition = defeatSupport.transform.position;
+            }
+            body.position = next - centreOffset;
+            PreviousPosition = Position;
+        }
 
         void Awake()
         {
@@ -66,6 +108,7 @@ namespace GoGhost.Duel
         public void Configure(BossMotionProfile profile, ArenaNavigation2D nav)
         {
             if (body == null) Awake();
+            defeating = false; defeatSupport = null;
             Profile = profile ?? new BossMotionProfile(); navigation = nav;
             body.gravityScale = Profile.GravityScale;
             body.freezeRotation = true;
@@ -201,6 +244,7 @@ namespace GoGhost.Duel
         }
         void FixedUpdate()
         {
+            if (defeating) { TickDefeat(Time.fixedDeltaTime); return; }
             if (body == null || Profile == null || !enabledCombat) return;
             float dt = Time.fixedDeltaTime;
             var here = Position;

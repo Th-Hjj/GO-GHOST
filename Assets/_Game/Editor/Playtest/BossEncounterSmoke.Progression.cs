@@ -64,9 +64,13 @@ public static partial class BossEncounterSmoke
             if (wave == DuelGame.FinalBossWave) break;
 
             game.Bosses[0].Health.TakeDamage(100000, game.Player.gameObject);
+            yield return WaitFor(() => game.Phase == DuelPhase.BossVictoryHold, "Missing Boss defeat presentation.");
+            Require(Mathf.Approximately(Time.timeScale, .4f), "Victory did not start with slow motion.");
+            if (wave == 1) yield return Shot("boss-defeat-slow-motion");
             if (wave == 1)
             {
                 yield return WaitFor(() => game.Phase == DuelPhase.Between && game.PendingDialogue == null, "Mission 1 result.", 25);
+                Require(game.Bosses[0].Motor.Grounded && Time.timeScale == 0, "Victory froze before the Boss landed.");
                 yield return Settle(1f);
                 yield return Shot("cleared");
                 yield return Click("ContinueToWaveTwo");

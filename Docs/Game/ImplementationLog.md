@@ -1,5 +1,13 @@
 # GO GHOST slice implementation
 
+## 2026-11-15 — Boss defeat: brief slow motion, landing and a settled result
+
+- **Asked:** Bosses stayed dead in mid-air. Thomas approved an independent animated preview, then asked for implementation and a push to main after verification.
+- **Found:** `BossAgent.OnDied` disabled the body and all colliders, and Mission 1/2 victory immediately stopped the clock. The existing defeat pose could not finish. `BossMotor2D.Size` also read empty disabled-collider bounds.
+- **Changed:** defeated Bosses cache their body size and fall using the existing terrain sweep and one-way rules, without blocking fighters or projectiles. The winning hit ends combat and runs at .4 speed for .55 real seconds, then normal speed resumes. The pose releases the attack, folds the legs and lowers the head and weapon over .34 game seconds after landing. After .1 seconds settled, the normal result freezes; Final Boss victory proceeds to Finished. The sword stays attached to the lowered hand with its tip above the support. Pause/resume preserves the presentation speed; leaving restores normal time. The first Bonus death falls without slowing or ending the remaining fight. Player defeat still freezes immediately, and analytics close at the winning hit. No new assets or managers.
+- **Checks:** Unity compilation passed. Controlled Play Mode checks repositioned and killed the actors: Gunner air-to-floor with pause/resume, Swordsman air-to-platform and grounded, Final Boss air-to-floor then Finished, first Bonus death continuing combat and both-dead Bonus ending on the held result. Main Menu cleanup restored time scale 1. Reports and reviewed captures: `Logs/BossDefeatChange/Runtime/`. The complete Check Game Flow passed at `Logs/BossEncounter/Flow-20261116-063739-dba58e/game-flow.txt`, including defeat/retry, both invasions, the EMP transition, phase-two retry, ending, credits, save removal and analytics cutoff. The final sword-tip angle adjustment received compilation and focused Swordsman checks after that flow run.
+- **Limits:** controlled forced damage proves presentation and flow, not combat balance or human input. Audio was not judged by ear; Reduce Flashing and other resolutions were not exercised. No player build or website update was made for this change.
+
 ## 2026-11-15 — Tutorial frames, picker motion, EMP lights and paused thresholds
 
 - **Changed:** tutorial frames measure visible content, including rotated body pieces and rendered glyphs. Body and Rules have upright frames; individual slabs use their own cut. Add Rule, example rules, Target Profile and Test Room have margins fitted to their neighbouring controls. Condition and Action target their actual sentence cards.

@@ -17,6 +17,10 @@ namespace GoGhost.Duel
         readonly LineRenderer[] tells = new LineRenderer[30];
         bool paused, defeated, lastReload;
         float clock, gait, hitAt = -10, shotAt = -10, defeatAt, reloadAt, alpha = 1, nextEcho;
+        const float DefeatSinkSeconds = .34f;
+        float defeatSinkTime;
+        Pose defeatFrom;
+        internal bool DefeatPoseComplete => defeated && actor != null && actor.Motor.Grounded && defeatSinkTime >= DefeatSinkSeconds;
         int echoes;
         int lastMuzzleAttackId = -1;
         Vector2 lastMuzzleOrigin, lastMuzzleDirection;
@@ -151,7 +155,12 @@ namespace GoGhost.Duel
             Hide(Part.Weapon); Hide(Part.Sheath);
             enabled = false;
         }
-        public void Defeat() { defeated = true; defeatAt = clock; ClearTells(); }
+        public void Defeat()
+        {
+            defeatFrom = BuildPose();
+            defeated = true; defeatAt = hitAt = clock; defeatSinkTime = 0;
+            ClearTells();
+        }
         public void Hit() { hitAt = clock; }
         // One white step without the recoil of a hit: a punch locking in.
         float flashAt = -10;
@@ -169,6 +178,7 @@ namespace GoGhost.Duel
         {
             if (actor == null || paused || Time.deltaTime <= 0) return;
             float dt = Time.deltaTime; clock += dt;
+            if (defeated && actor.Motor.Grounded) defeatSinkTime = Mathf.Min(DefeatSinkSeconds, defeatSinkTime + dt);
             if (actor.Running && actor.Motor.Grounded) gait += Mathf.Abs(actor.Motor.Velocity.x) * dt * 2.8f;
             bool reloading = actor.Actions.Reloading;
             if (reloading && !lastReload) reloadAt = clock;
@@ -188,6 +198,7 @@ namespace GoGhost.Duel
         }
         Pose BuildPose()
         {
+            if (defeated) return BuildDefeatPose();
             bool gunner = visualKind == BossKind.Gunner;
             Vector2 velocity = actor == null ? Vector2.zero : actor.Motor.Velocity;
             bool grounded = actor == null || actor.Motor.Grounded;
@@ -285,16 +296,28 @@ namespace GoGhost.Duel
             }
             float hit = Mathf.Max(0,1-(clock-hitAt)/.14f);
             p.Chest.x -= hit*.07f; p.Head.x -= hit*.10f;
-            if (defeated)
-            {
-                float sink = Ease(Mathf.Clamp01((clock-defeatAt)/.45f));
-                p.Hip += new Vector2(-.13f,-.31f)*sink; p.Chest += new Vector2(.13f,-.40f)*sink;
-                p.Head += new Vector2(.22f,-.44f)*sink;
-                p.FrontFoot = Vector2.Lerp(p.FrontFoot,new Vector2(.40f,footY),sink);
-                p.BackFoot = Vector2.Lerp(p.BackFoot,new Vector2(-.38f,footY+.06f),sink);
-                p.FrontHand += new Vector2(.10f,-.42f)*sink; p.BackHand += new Vector2(.08f,-.39f)*sink;
-                p.Weapon += new Vector2(.06f,-.45f)*sink; p.WeaponAngle = Mathf.Lerp(p.WeaponAngle,-30,sink);
-            }
+            return p;
+        }
+        Pose BuildDefeatPose()
+        {
+            // Release the last attack pose, then let the legs fold only once the feet meet a surface.
+            float release = Ease(Mathf.Clamp01((clock - defeatAt) / .18f));
+            float sink = Ease(defeatSinkTime / DefeatSinkSeconds);
+            float footY = -actor.Motor.Size.y * .5f + .025f;
+            Pose p = defeatFrom;
+            p.Hip = Vector2.Lerp(p.Hip, new Vector2(-.13f * sink, -.12f - .31f * sink), release);
+            p.Chest = Vector2.Lerp(p.Chest, new Vector2(.015f + .13f * sink, .34f - .40f * sink), release);
+            p.Head = Vector2.Lerp(p.Head, new Vector2(.055f + .22f * sink, .57f - .44f * sink), release);
+            p.FrontFoot = Vector2.Lerp(p.FrontFoot, new Vector2(Mathf.Lerp(.22f, .40f, sink), footY), release);
+            p.BackFoot = Vector2.Lerp(p.BackFoot, new Vector2(Mathf.Lerp(-.22f, -.38f, sink), footY + .06f), release);
+            p.FrontHand = Vector2.Lerp(p.FrontHand, new Vector2(.20f + .10f * sink, .05f - .42f * sink), release);
+            p.BackHand = Vector2.Lerp(p.BackHand, new Vector2(-.05f + .08f * sink, -.05f - .39f * sink), release);
+            p.Weapon = Vector2.Lerp(p.Weapon, new Vector2(.28f + .06f * sink, .24f - .45f * sink), release);
+            // The sword is longer than the gun: keep its lowered tip above the landing surface.
+            p.WeaponAngle = Mathf.LerpAngle(p.WeaponAngle, visualKind == BossKind.Swordsman && !FinalAxe ? -12 : -30, release);
+            if (visualKind == BossKind.Swordsman && !FinalAxe)
+                p.Weapon = Vector2.Lerp(p.Weapon, p.FrontHand + Angle(p.WeaponAngle) * (SwordBladeLength * .5f), release);
+            p.Compression = p.Extension = p.Lean = 0;
             return p;
         }
         static void BladePose(ref Pose p,BossAbility ability,BossActionPhase phase,float time,int slash)

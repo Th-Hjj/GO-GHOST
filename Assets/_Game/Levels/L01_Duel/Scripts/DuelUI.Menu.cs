@@ -28,7 +28,7 @@ namespace GoGhost.Duel
             // The menu's parts count from the moment it opened, so a rebuilt page does not replay them.
             OvMotion.EntranceStart = menuOpenedAt; OvMotion.Continue = true;
             bool encounter = game.Phase == DuelPhase.Fight || game.Phase == DuelPhase.Prepare || game.Phase == DuelPhase.Training;
-            bool arena = encounter || game.ResultHeld;
+            bool arena = encounter || game.ResultHeld || game.VictoryPresentation;
 
             menuRoot = Rect("Menu", page, Vector2.zero, Vector2.zero);
             // Nothing under the menu answers the pointer. Over a fight the arena dims by itself; a page dims under this shade.

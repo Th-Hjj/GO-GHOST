@@ -94,7 +94,7 @@ Built on 2026-11-14 (`DuelUI.Motion.cs`, `OvMotion` in `OverrideGraphics.cs`). T
 | Flow | Overview and rule editor; Settings and its pages over the title or the menu | The old page stays 150 ms in front while its elements step aside and fade. The new elements start 90 ms in. Between the overview and the editor the character slides, the rule and Menu stay, and the title rolls upward inside a mask |
 | Open | Overview to and from Target Profile | The mission-colour field grows out of the target card's four corners in 340 ms and closes back onto the card in 300 ms |
 | Cut | Everything else, including the combat HUD and Pause over a fight | As before. The page's own entrances still play |
-| Hold | A fight into its result (defeat, Mission 1 and 2 cleared, the Bonus result) | The fight stops on the lethal frame and the result lands on it. See Results |
+| Hold | A fight into its result (defeat, Mission 1 and 2 cleared, the Bonus result) | Defeat stops on the lethal frame; victory slows briefly and lets the Boss land and fold before holding. See Results |
 
 A rebuild of the same page is a refresh: nothing replays, and an entrance that is under way carries on.
 
@@ -189,9 +189,9 @@ One player stands on the right roof with their back to the camera, looking towar
 
 **Results (D7, D13, D14).** The result word slams in with the glitch treatment over a hazard band. Primary button first, secondary below.
 
-**Held result (Thomas, 2026-11-15, trial tuning).** Chosen from a played prototype over the cut it replaces and a slow-motion fall, which would have needed a new fallen pose for three characters. A defeat, a Mission 1 or 2 win and the Bonus result stop the fight on the lethal frame, on the stopped combat clock Pause uses: bodies, bullets, warning lines and effects stay where they are until the player leaves the result (`DuelGame.ResultHold.cs`). Opening and closing Pause on a result keeps it held. The Final Boss victory keeps its own .85-second hold and the Finished page.
+**Held result (Thomas, 2026-11-15, trial tuning).** The original choice held the lethal frame; Thomas later approved an independent slow-motion landing preview for Boss victories. The winning hit ends attacks and damage, runs at .4 speed for .55 real seconds, then returns to normal speed. The defeated Boss falls using the existing terrain sweep and one-way rules. After landing he folds his knees, bows his head and lowers his weapon over .34 game seconds, then holds for .1 seconds before the result. Mission 1, Mission 2 and the both-dead Bonus result freeze that settled pose. Final Boss victory uses the same presentation before the Finished page, replacing the fixed .85-second delay. A first Bonus death falls without global slow motion. Player defeat still freezes the lethal frame. Pause stops and resumes the presentation, and keeps a finished result held (`DuelGame.ResultHold.cs`).
 
-| Seconds after the lethal frame | What happens |
+| Seconds after the result freezes | What happens |
 |---|---|
 | 0 | Everything stops. A defeated player shows the white step, then stays in the Danger tint |
 | .08 to .38 | The arena loses its colour and dims to 45%. Both fighters keep their colour. The HUD stays in place and dims to 45%; a beaten Boss's empty bar fades out, and on a cleared mission the player's bar with it |
@@ -200,7 +200,7 @@ One player stands on the right roof with their back to the camera, looking towar
 | .56 | The hazard band is drawn across from the left edge in .16 s |
 | .76, .81 | Primary button, then secondary. On a cleared mission the button waits for Happy's box to close |
 
-The pages carry no black ground and no scanlines while held. Entrances count from the lethal frame, so a rebuilt page carries on instead of replaying. Retry is immediate. Happy's box appears .8 s after the page as before; on a defeat it covers the player's bar. Mission 2 stays held until her line is acknowledged, then wipes into Mission 3 preparation. The grade is a runtime post-processing volume; the fighters are drawn after it by a second camera with its own light (`ResultHoldView.cs`). No art or asset is changed. The result is centred on the screen, so with a Rules sidebar a fighter can stand behind the word or a button.
+The pages carry no black ground and no scanlines while held. Entrances count from the result freeze, so a rebuilt page carries on instead of replaying. Retry is immediate. Happy's box appears .8 s after the page as before; on a defeat it covers the player's bar. Mission 2 stays held until her line is acknowledged, then wipes into Mission 3 preparation. The grade is a runtime post-processing volume; the fighters are drawn after it by a second camera with its own light (`ResultHoldView.cs`). No art or asset is changed. The result is centred on the screen, so with a Rules sidebar a fighter can stand behind the word or a button.
 
 - **Defeat (D7):** Retry, then Configuration. Phase-two defeat uses Retry Phase 2.
 - **Mission cleared (D13):** the mission name on a slab in that mission's colour, CLEARED as the result word, Continue to Mission 2 as the only button. Laid out as one title group over the open fight (Thomas, 2026-11-15, from a played sample; the page had read as crowded, with five rows from top to bottom and the word covering both fighters). CLEARED is 240, centred 300 from the top. The mission slab is its tag: 80 high with 70-point type, 12 above the capitals, on the word's slanted left edge. The hazard band is 16 thick, 18 below the capitals. The player's bar fades out. Happy's box and the button use the bottom of the screen in turn: the button (680 by 100, top at 764) arrives at full strength once her line is acknowledged and her box has closed (`AfterDialogue` in `DuelUI.ResultHold.cs`). Defeat and the Bonus result keep 340 and their centred buttons. The values are trial tuning.

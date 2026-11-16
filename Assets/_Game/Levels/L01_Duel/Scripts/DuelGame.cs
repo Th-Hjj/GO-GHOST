@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 namespace GoGhost.Duel
 {
     // BonusOffer and FinalBoss are retired (the Bonus is reached from F8 Waves); they keep their slots so later values do not shift.
-    public enum DuelPhase { Menu, Configure, Prepare, Fight, Between, Failed, Complete, Training, CharacterCreation, BonusOffer, FinalBoss, TargetProfile, MissionEntry, FinalVictoryHold }
+    public enum DuelPhase { Menu, Configure, Prepare, Fight, Between, Failed, Complete, Training, CharacterCreation, BonusOffer, FinalBoss, TargetProfile, MissionEntry, FinalVictoryHold, BossVictoryHold }
 
     // Encounter progression; the legacy components own every physical action and hit.
     public sealed partial class DuelGame : MonoBehaviour
@@ -111,7 +111,7 @@ namespace GoGhost.Duel
         {
             unfocused = !focus;
             if (!focus) developerResumeOnClose = false;
-            if (!focus && (Phase == DuelPhase.Fight || Phase == DuelPhase.Prepare || Phase == DuelPhase.Training)) SetPause(true);
+            if (!focus && (Phase == DuelPhase.Fight || Phase == DuelPhase.Prepare || Phase == DuelPhase.Training || VictoryPresentation)) SetPause(true);
         }
         public void NewGame()
         {
@@ -357,7 +357,7 @@ namespace GoGhost.Duel
         public void SetPause(bool value)
         {
             // Every page after the title can pause; the two short timed fades cannot.
-            if (Phase == DuelPhase.Menu || Phase == DuelPhase.MissionEntry || Phase == DuelPhase.FinalVictoryHold) return;
+            if (Phase == DuelPhase.Menu || Phase == DuelPhase.MissionEntry) return;
             if (DeveloperToolsOpen && !value) return;
             // Upload replaces the creation controls and cannot be rebuilt half way.
             if (value && startup != null) return;
@@ -377,7 +377,7 @@ namespace GoGhost.Duel
             foreach (var actor in actors) if (actor != null) actor.SetPaused(still);
             coordinator?.SetPaused(still);
             effects?.SetPaused(still || Phase == DuelPhase.Prepare);
-            Time.timeScale = held ? 0 : 1;
+            Time.timeScale = held ? 0 : VictoryPresentation && victoryElapsed < VictorySlowSeconds ? VictorySlowScale : 1;
             // Under the menu the fight is held the way a result is: grey and dim, with the fighters in colour.
             if (encounter != null && !ResultHeld)
             {
@@ -498,16 +498,7 @@ namespace GoGhost.Duel
             if(Phase==DuelPhase.Fight&&Wave==BonusWave&&Player!=null&&!Player.IsDead
                 &&Keyboard.current!=null&&Keyboard.current.pKey.wasPressedThisFrame)coordinator?.RequestNextDebugCombo();
 #endif
-            if (Phase == DuelPhase.FinalVictoryHold)
-            {
-                phaseTime += Time.deltaTime;
-                if (phaseTime >= .85f)
-                {
-                    ClearEncounter();
-                    SetPhase(DuelPhase.Complete);
-                    sounds?.Play(Sfx.Victory);
-                }
-            }
+            if (VictoryPresentation) TickVictoryPresentation();
             else if (Phase == DuelPhase.Prepare)
             {
                 float before = phaseTime;
@@ -547,32 +538,15 @@ namespace GoGhost.Duel
             if (defeat && FinalBossCutscene) ResetFinalBossTransition();
             Trace($"result wave={Wave} player={Player.CurrentHealth} bosses={HealthSummary()} elapsed={FightClock:0.00}");
             FinishMetrics(defeat ? "died" : "won", !defeat && Wave == 2);
-            if (!defeat && Wave == 2)
-            {
-                PlayMetrics.EndRun("complete");
-                HoldResult(false);
-                SetPhase(DuelPhase.Between);
-                sounds?.Play(Sfx.Victory);
-                handler.WaveCleared(2, () =>
-                {
-                    ClearEncounter();
-                    Wave = FinalBossWave;
-                    SetPhase(DuelPhase.Configure);
-                });
-                return;
-            }
-            if (!defeat && Wave == FinalBossWave)
-            {
-                StopCombat();
-                Player.IsInvulnerable = true;
-                SetPhase(DuelPhase.FinalVictoryHold);
-                return;
-            }
-            HoldResult(defeat);
-            sounds?.Play(defeat ? Sfx.Defeat : Sfx.Victory);
-            SetPhase(defeat ? DuelPhase.Failed : Wave == BonusWave ? DuelPhase.Complete : DuelPhase.Between);
             if (!defeat)
-                handler.WaveCleared(Wave);
+            {
+                if (Wave == 2) PlayMetrics.EndRun("complete");
+                BeginVictoryPresentation();
+                return;
+            }
+            HoldResult(true);
+            sounds?.Play(Sfx.Defeat);
+            SetPhase(DuelPhase.Failed);
         }
         public void Trace(string message)
         {

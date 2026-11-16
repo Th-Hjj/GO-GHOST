@@ -47,6 +47,13 @@
   - Open questions for Thomas: whether a Boss's head counts as On Ground, and whether the longer punch lunge is wanted.
 - **NOT TESTED:** everything in play with real input: each jump change, the Bonus Restart confirmation, the binding refusals, the Esc and focus fixes, the cursor on the creation menu, the window size in a standalone build, and the platform wave's look. The second-pass fixes after the review were compiled only.
 
+## 2026-11-15 — Counter Guard walks behind its guard and charges in place
+
+- **Asked:** the guard should move slowly without leaving its platform; a hit should trigger an effect, a .2 s charge in place, then a punch a little slower than now.
+- **Changed:** `FinalBossBoxer.Moves.cs` walks him at 2.6 during the hold, inside his support; the warning is .2 s and the dash 22. `BossSilhouetteView.Boxer.cs` gathers a ring onto the fist through the charge.
+- **Checked:** the game assembly compiles with Unity's bundled compiler outside the Editor.
+- **NOT TESTED:** everything in play. The Cross after the dash is still there; Thomas did not say whether it should stay.
+
 ## 2026-11-15 — Phase two revised after play: no punch line, stronger counter, rising from below, footwork, slip, combinations
 
 - **Asked:** after playing, Thomas found the counter harmless, never saw the Rising Uppercut, wanted a cleverer and more mobile Boss, and wanted the ordinary punch's short warning line gone. He ruled out any change to damage. He chose pose-only warning and asked for all of it together, naming the step back, the slip and the combinations.

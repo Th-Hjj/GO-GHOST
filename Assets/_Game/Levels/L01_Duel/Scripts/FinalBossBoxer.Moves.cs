@@ -50,8 +50,8 @@ namespace GoGhost.Duel
 
         // ---- Counter Guard ----
         public enum CoverStage { None, Raise, Hold, Warn, Open }
-        internal const float CoverRaise = .20f, CoverHold = 1.0f, CoverWarn = .35f, CoverOpen = .60f, CoverCooldown = 4.5f;
-        const float CoverMinimumGap = 2.5f, CounterReach = 8f, CounterSpeed = 26f;
+        internal const float CoverRaise = .20f, CoverHold = 1.0f, CoverWarn = .20f, CoverOpen = .60f, CoverCooldown = 4.5f;
+        const float CoverMinimumGap = 2.5f, CounterReach = 8f, CounterSpeed = 22f, CoverWalk = 2.6f;
         internal CoverStage Cover { get; private set; }
         internal bool Covering => Cover==CoverStage.Raise || Cover==CoverStage.Hold || Cover==CoverStage.Warn;
         internal float CoverProgress => Mathf.InverseLerp(coverAt,coverUntil,Time.time);
@@ -64,6 +64,8 @@ namespace GoGhost.Duel
                 return actor.Position+delta.normalized*Mathf.Min(CounterReach,delta.magnitude+.4f);
             }
         }
+        // When the guard was last set off; the view gathers a ring on the fists from this moment.
+        internal float CounterChargedAt { get; private set; } = float.NegativeInfinity;
         public int Covers { get; private set; }
         public int Counters { get; private set; }
         float coverAt, coverUntil, coverReadyAt;
@@ -92,7 +94,25 @@ namespace GoGhost.Duel
 
         void TickCover()
         {
-            if (actor.Motor.Grounded) actor.Motor.HoldHorizontal();
+            // Behind the guard he comes on slowly and never steps off what he stands on (Thomas, 2026-11-15).
+            // Once a shot is stopped he stands still and charges for the length of the warning.
+            if (actor.Motor.Grounded)
+            {
+                bool advance=false; float side=LockedFacing;
+                if (Cover==CoverStage.Hold)
+                {
+                    var seen=actor.Perception.Facts;
+                    if (seen.Visible && actor.Navigation.TrySupport(actor.Position,actor.Motor.Size,out var footing))
+                    {
+                        float gap=seen.Position.x-actor.Position.x;
+                        side=Mathf.Abs(gap) > .12f ? Mathf.Sign(gap) : LockedFacing;
+                        float edge=side > 0 ? footing.bounds.max.x-.6f : footing.bounds.min.x+.6f;
+                        advance=Mathf.Abs(gap) > 1.6f && (edge-actor.Position.x)*side > .15f;
+                        LockedFacing=side; actor.Face(Vector2.right*side);
+                    }
+                }
+                if (advance) actor.Motor.PursueOnGround(side,CoverWalk); else actor.Motor.HoldHorizontal();
+            }
             if (Cover==CoverStage.Warn)
             {
                 // The line follows the player through the warning and is fixed when the dash leaves,
@@ -129,6 +149,7 @@ namespace GoGhost.Duel
                 var facts=actor.Perception.Facts;
                 CounterTarget=facts.Visible ? (Vector2)facts.Body.center : (Vector2)playerBody.bounds.center;
                 actor.View?.Hit();
+                CounterChargedAt=Time.time;
                 SetCover(CoverStage.Warn,CoverWarn);
                 actor.Trace("boxer counter warned");
             }

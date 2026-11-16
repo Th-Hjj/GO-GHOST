@@ -124,6 +124,10 @@ namespace GoGhost.Duel
                     Color tell=AxeTellColor(false,true);
                     SetLine(AxeLine(13,"Counter warning",2),boxer.Fist(),end,.05f,tell);
                     SetLine(AxeLine(26,"Counter end",2),end-across*.45f,end+across*.45f,.05f,tell);
+                    // The stopped shot sets him off: a ring gathers onto the fist while he stands and charges,
+                    // as the violet ring gathers on his palm when he orders the axe.
+                    float gather=Ease(boxer.CoverProgress);
+                    DrawEmpRing(4,boxer.Fist(),Mathf.Lerp(.54f,.07f,gather),.063f,Color.Lerp(NeuralPalette.EmpHighlight,NeuralPalette.Primary,gather));
                 }
             }
             DrawFistTrace(boxer);

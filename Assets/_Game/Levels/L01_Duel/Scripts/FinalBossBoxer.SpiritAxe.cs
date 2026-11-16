@@ -218,7 +218,10 @@ namespace GoGhost.Duel
 
         bool TryOrder(BossObservation facts,Vector2 target)
         {
-            if (weapon!=WeaponState.Planted || Time.time<nextOrder || !facts.Visible) return false;
+            // A player standing on the axe gets it pulled from under them without the usual wait.
+            bool ridden=PerchActive && facts.Grounded && Mathf.Abs(facts.Position.x-(PerchLeft.x+PerchRight.x)*.5f) < .9f
+                && Mathf.Abs(facts.Body.min.y-(PerchLeft.y+PerchRight.y)*.5f) < .45f;
+            if (weapon!=WeaponState.Planted || !facts.Visible || Time.time < (ridden ? PlantedAt+.35f : nextOrder)) return false;
             var future=OpponentAt(facts,LaunchDelay+Vector2.Distance(AxeEdge,target)/FlightSpeed);
             if (actor.Perception.LearnedRetreat!=0) future.x+=actor.Perception.LearnedRetreat*.65f;
             future.x=Mathf.Clamp(future.x,leftWall+.4f,rightWall-.4f);
@@ -249,7 +252,7 @@ namespace GoGhost.Duel
             // A close boxing opening can come first; increasing value of a long-standing
             // anchor keeps the weapon in circulation when the target changes tier.
             float urgency=best.Value+Mathf.Min(2.5f,(Time.time-PlantedAt)*.52f);
-            if (Ready(Punch.Jab) && (actor.Position-target).sqrMagnitude<3f && urgency<1.45f) return false;
+            if (!ridden && Ready(Punch.Jab) && (actor.Position-target).sqrMagnitude<3f && urgency<1.45f) return false;
             if (best.Value==float.NegativeInfinity) return false;
             Arm(best);
             return true;
@@ -261,6 +264,9 @@ namespace GoGhost.Duel
             float fraction=Mathf.Clamp01(Vector2.Dot(future-AxeEdge,line)/line.sqrMagnitude);
             float miss=Vector2.Distance(future,AxeEdge+fraction*line);
             float score=baseValue-miss*.35f;
+            // A line that passes just behind the player, seen from the boxer, closes the way out.
+            float beyond=(AxeEdge.x+fraction*line.x-future.x)*Mathf.Sign(future.x-actor.Position.x);
+            if (beyond > 0 && beyond < 2.2f) score+=.35f;
             if (lastAxeMiss && (lastAxeTarget-end).sqrMagnitude<2.5f) score-=.75f;
             if (score>best.Value) best=new OrderPlan {Kind=kind,End=end,Value=score};
         }

@@ -40,6 +40,13 @@
   - Open questions for Thomas: whether a Boss's head counts as On Ground, and whether the longer punch lunge is wanted.
 - **NOT TESTED:** everything in play with real input: each jump change, the Bonus Restart confirmation, the binding refusals, the Esc and focus fixes, the cursor on the creation menu, the window size in a standalone build, and the platform wave's look. The second-pass fixes after the review were compiled only.
 
+## 2026-11-15 — Rising Uppercut, Counter Guard and phase-two attack choice
+
+- **Asked:** after the second prototype, build both moves in the game, then pull the Boss's attack choice and footwork together.
+- **Changed:** new `FinalBossBoxer.Moves.cs` holds the rising plan, the guard's stages, `BlockShot`, the counter and `AxePassesIn`. `FinalBossBoxer.cs` runs the guard ahead of punches, turns an Uppercut into a jump when `PlanRising` succeeds, and waits for the landing before the rising recovery. `TraceJump` can record its path for the warning. `BossAgent.ReceiveProjectile` lets the guard consume a bullet. `Decide` adds the spent-Dodge, axe-pass and level terms; `TryOrder` and `Consider` add the ridden-axe order and the line behind the player. `BossSilhouetteView.Boxer.cs` draws the guard pose and arc, the counter line and the rising path. No new tuning slot: the rising form uses the Uppercut's and the counter the Overhand's.
+- **Checked:** the game assembly compiles with Unity's bundled compiler outside the Editor. Thomas was in Play Mode, so nothing was run.
+- **NOT TESTED:** everything in play: both moves from trigger to recovery, the bullet stop and its sound, the counter's dash against platforms, the rising jump on moving steps and its strike timing, a player on the axe (the rising plan lands only on platforms, so it falls back to an ordinary Uppercut there), how often each move appears, and the new terms' effect on difficulty.
+
 ## 2026-11-15 — Wall-planted axe keeps its tilt
 
 - **Asked:** Thomas rejected the level handle as ugly. He approved the redesigned Rising Uppercut and kept the first Counter Guard.

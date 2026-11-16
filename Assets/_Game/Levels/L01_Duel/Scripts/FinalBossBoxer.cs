@@ -90,6 +90,7 @@ namespace GoGhost.Duel
                     actor.Motor.PursueOnGround(Mathf.Sign(Destination.x-actor.Position.x),3.5f);
                 return;
             }
+            if (Cover != CoverStage.None) { TickCover(); return; }
             if (Current != Punch.None) { TickPunch(facts); return; }
             if (Time.time < nextThink || Gesturing) return;
             nextThink=Time.time + actor.Profile.ReactionSeconds;
@@ -110,6 +111,9 @@ namespace GoGhost.Duel
                 if (actor.Motor.Grounded && !FindJump(target,.8f,out jump)) return false;
                 if (!actor.Motor.Grounded && !FindDive(target,out diveTarget)) return false;
             }
+            // An opponent standing above him turns the Uppercut into a jump at them.
+            Rising=punch==Punch.Uppercut && PlanRising(target);
+            counter=false;
             if (Time.time-lastPunchEnd > ChainGap) chain=0;
             Current=punch; Cross=false; signatureLeap=punch==Punch.Leap && ShoulderWindow;
             LockedFacing=Mathf.Abs(target.x-actor.Position.x) > .12f ? Mathf.Sign(target.x-actor.Position.x) : actor.Facing;
@@ -119,7 +123,7 @@ namespace GoGhost.Duel
             if (actor.Motor.Grounded || punch==Punch.Meteor) actor.Motor.EndAttackMotion();
             // An airborne straight or hook keeps the steering of its existing jump.
             // The first beat can cover ground even when the target is outside fist reach.
-            if (punch==Punch.Jab || punch==Punch.Backfist || punch==Punch.Uppercut)
+            if (!Rising && (punch==Punch.Jab || punch==Punch.Backfist || punch==Punch.Uppercut))
                 DriveTo(target,accepted.Windup,punch==Punch.Jab ? 18f : 13f);
             actor.Perception.ExpressedPressure(actor.Position);
             SetPhase(Stage.Windup,accepted.Windup);
@@ -154,6 +158,17 @@ namespace GoGhost.Duel
                     }
                     if (!LockDive(facts)) Recover();
                     return;
+                }
+                if (Rising)
+                {
+                    // The platforms have moved during the wind-up; the place he jumps at has not.
+                    if (FindJump(risingTarget,0,out jump) && TakeOff(jump))
+                    {
+                        airborne=false; airStart=Time.time;
+                        SetPhase(Stage.Slip,Mathf.Max(.04f,jump.StrikeAt));
+                        return;
+                    }
+                    Rising=false;
                 }
                 StartStroke();
             }
@@ -208,10 +223,12 @@ namespace GoGhost.Duel
                 Recover();
             }
             if (Phase != Stage.Recovery) return;
+            if (Rising && !actor.Motor.Grounded && Time.time-airStart<1.8f) { phaseUntil=Time.time+RisingRecovery; return; }
             if (Current==Punch.Leap && !actor.Motor.Grounded && Time.time-airStart<1.8f) return;
             if (Time.time < phaseUntil) return;
             readyAt[(int)Current]=Time.time+accepted.Cooldown;
             lastPunchEnd=Time.time;
+            Rising=counter=false;
             if (chain >= ChainLimit) { restUntil=Time.time+ChainRest; chain=0; actor.Trace("boxer rests"); }
             lastPunch=Current;
             Current=Punch.None;
@@ -296,7 +313,7 @@ namespace GoGhost.Duel
         void StartStroke()
         {
             hit=false; Stroke++; chain++;
-            float active=Current switch { Punch.Uppercut=>.21f, Punch.Backfist=>.22f, Punch.Leap=>.27f,
+            float active=Current switch { Punch.Uppercut=>Rising ? .30f : .21f, Punch.Backfist=>.22f, Punch.Leap=>.27f,
                 Punch.Meteor=>Mathf.Clamp(Vector2.Distance(diveTarget,actor.Position)/24f+.18f,.20f,.85f), _=>.14f };
             SetPhase(Stage.Active,active);
             punchTime=Time.time;
@@ -392,6 +409,7 @@ namespace GoGhost.Duel
         {
             CloseDiveLane();
             RemovePerch();
+            Cover=CoverStage.None; Rising=counter=false;
             diveLocked=false;
             if (InFlight) actor.Sounds?.StopAttack(actor.ActorId,300000+Orders);
             if (Current != Punch.None) actor.Motor?.EndAttackMotion();

@@ -101,6 +101,14 @@ namespace GoGhost.Duel
             float gap=Mathf.Abs(delta.x);
             float closing=facts.Velocity.x*Mathf.Sign(delta.x);
             float opening=facts.ReloadVisible ? .38f : 0;
+            // A Dodge just spent cannot answer the next heavy blow, so that is when to throw one.
+            bool dodgeSpent=Time.time-actor.Perception.DodgeStartedAt < 1.3f;
+            float punish=dodgeSpent ? .6f : 0;
+            // A blow that lands as the flying axe passes leaves no side to step to.
+            float axeIn=AxePassesIn(target);
+            float pincer=axeIn >= 0 && axeIn < .6f ? .5f : 0;
+            bool rising=RisingOpening(target) && facts.Grounded;
+            if (!dodgeSpent && !rising && TryCover(facts,target)) return;
             if (TryOrder(facts,target)) return;
             if (actor.Motor.DashActive) return;
             if (Ready(Punch.Leap) && actor.Motor.Grounded && ShoulderLead>-.30f && ShoulderLead<1f)
@@ -124,6 +132,17 @@ namespace GoGhost.Duel
                 +Mathf.Min(2f,Mathf.Abs(delta.y))*.14f + Mathf.Max(0,closing)*.05f + (ShoulderWindow ? 2.0f : 0);
             desirability[(int)Punch.Meteor]=.37f+Mathf.Clamp(-delta.y,-2f,4f)*.34f
                 + (actor.Motor.Grounded ? 0 : .95f) + opening - gap*.065f;
+            desirability[(int)Punch.Jab]+=pincer;
+            desirability[(int)Punch.Backfist]+=pincer;
+            desirability[(int)Punch.Uppercut]+=punish+(rising ? 1.1f : 0);
+            desirability[(int)Punch.Leap]+=punish+pincer;
+            desirability[(int)Punch.Meteor]+=punish;
+            // A fist thrown on the ground cannot reach another level.
+            if (Mathf.Abs(delta.y) > 1.3f)
+            {
+                desirability[(int)Punch.Jab]=desirability[(int)Punch.Backfist]=float.NegativeInfinity;
+                if (!rising && (facts.Grounded || delta.y < 0)) desirability[(int)Punch.Uppercut]=float.NegativeInfinity;
+            }
             float footwork=.73f+Mathf.Min(gap*.045f,.38f);
             if (Time.time<nextBurst && actor.Motor.HasRoute) footwork+=.13f;
             for (int i=1;i<desirability.Length;i++)
@@ -241,6 +260,7 @@ namespace GoGhost.Duel
                 velocity.x=BossMotor2D.StepHorizontal(velocity.x,wish,false,motion,dt);
                 velocity.y+=Physics2D.gravity.y*motion.GravityScale*dt;
                 var next=p+velocity*dt;
+                traceInto?.Add(next);
                 next.x=Mathf.Clamp(next.x,arena.min.x+.25f+half.x,arena.max.x-.25f-half.x);
                 if (next.y>ceiling) { next.y=ceiling; velocity.y=0; }
                 float distance=(next+Vector2.right*Mathf.Sign(aimX-actor.Position.x)*.85f-target).sqrMagnitude;

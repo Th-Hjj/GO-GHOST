@@ -202,6 +202,9 @@ namespace GoGhost.Duel
         public bool ReceiveProjectile(Projectile shot,Collider2D contact)
         {
             if(Actions.ReceiveProjectile(shot,contact))return true;
+            // The Final Boss's raised fists stop a shot from the front.
+            if(contact==Body&&Axe!=null&&Axe.PhaseTwo&&Axe.Boxer!=null&&shot.Owner!=gameObject
+                &&Axe.Boxer.BlockShot(shot.GetComponent<Rigidbody2D>().linearVelocity,shot.transform.position))return true;
             if(contact==Body){projectileContact=contact.ClosestPoint(shot.transform.position);projectileContactAt=Time.time;}
             return false;
         }

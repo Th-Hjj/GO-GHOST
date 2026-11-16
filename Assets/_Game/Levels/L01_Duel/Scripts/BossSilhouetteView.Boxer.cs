@@ -63,6 +63,16 @@ namespace GoGhost.Duel
                         p.BackHand=boxer.HandLocal;
                     else p.FrontHand=boxer.HandLocal;
                 }
+                else if (boxer.Cover!=FinalBossBoxer.CoverStage.None)
+                {
+                    // Both fists in front of the face; when nothing came, they drop and leave him open.
+                    bool open=boxer.Cover==FinalBossBoxer.CoverStage.Open;
+                    float up=boxer.Cover==FinalBossBoxer.CoverStage.Raise ? Ease(boxer.CoverProgress) : 1;
+                    float down=open ? Ease(Mathf.Clamp01(boxer.CoverProgress*3)) : 0;
+                    p.FrontHand=Vector2.Lerp(Vector2.Lerp(p.FrontHand,new Vector2(.27f,.50f),up),new Vector2(.30f,-.14f),down);
+                    p.BackHand=Vector2.Lerp(Vector2.Lerp(p.BackHand,new Vector2(.19f,.44f),up),new Vector2(.08f,-.20f),down);
+                    p.Chest+=new Vector2(.03f,-.03f)*(up-down); p.Head+=new Vector2(.03f,-.04f)*(up-down);
+                }
             }
             float ageSinceOrder=Time.time-boxer.CommandAt;
             if(ageSinceOrder<CommandPoseSeconds && !boxer.Retired)
@@ -96,6 +106,19 @@ namespace GoGhost.Duel
             // A landing edge carries a rim light, like every other place to stand.
             if (boxer.PerchActive)
                 SetLine(AxeLine(29,"Axe perch rim",2),boxer.PerchLeft,boxer.PerchRight,.03f,NeuralPalette.Alpha(NeuralPalette.Primary,.85f));
+            if (boxer.Covering)
+            {
+                // Defense shows a thin boundary, as the Swordsman's guard does, in the axe's violet.
+                bool held=boxer.Cover!=FinalBossBoxer.CoverStage.Raise;
+                var arc=AxeLine(5,"Guard boundary",11);
+                float width=SwordTellWidth(false,held), facing=boxer.LockedFacing>0 ? 0 : 180;
+                arc.startWidth=arc.endWidth=width;
+                arc.startColor=arc.endColor=NeuralPalette.Alpha(NeuralPalette.Emp,held ? .8f : .3f);
+                Vector2 centre=(Vector2)actor.Position+Vector2.up*.25f;
+                for(int i=0;i<11;i++) arc.SetPosition(i,ClipTellPoint(centre+Angle(facing+Mathf.Lerp(-60,60,i/10f))*1.1f,width));
+                if (boxer.Cover==FinalBossBoxer.CoverStage.Warn)
+                    SetLine(AxeLine(13,"Counter warning",2),boxer.Fist(),boxer.CounterTarget,SwordTellWidth(false,true),AxeTellColor(false,true));
+            }
             DrawFistTrace(boxer);
             DrawMeteorImpact(boxer);
             DrawBoxerWarnings(boxer);
@@ -119,7 +142,24 @@ namespace GoGhost.Duel
                 line.SetPosition(1,ClipTellPoint(boxer.Destination,width));
             }
             bool winding=boxer.Phase==FinalBossBoxer.Stage.Windup || boxer.Phase==FinalBossBoxer.Stage.Slip;
-            if (boxer.Current!=FinalBossBoxer.Punch.None && winding)
+            if (boxer.Rising && boxer.Phase==FinalBossBoxer.Stage.Windup && boxer.RisingArc.Count>2)
+            {
+                // The Rising Uppercut warns with the fist's path along the jump, up to its top.
+                var path=boxer.RisingArc;
+                int top=1;
+                while (top<path.Count-1 && path[top+1].y>=path[top].y) top++;
+                bool locked=boxer.PhaseProgress>.6f;
+                const int samples=12;
+                var line=AxeLine(10,"Rising warning",samples+1);
+                float width=SwordTellWidth(false,locked);
+                line.startWidth=line.endWidth=width;
+                line.startColor=line.endColor=AxeTellColor(false,locked);
+                var lift=new Vector2(boxer.LockedFacing*.30f,.85f);
+                line.SetPosition(0,ClipTellPoint(boxer.Fist(),width));
+                for(int i=1;i<=samples;i++)
+                    line.SetPosition(i,ClipTellPoint(path[Mathf.Min(top,Mathf.RoundToInt(top*i/(float)samples))]+lift,width));
+            }
+            else if (boxer.Current!=FinalBossBoxer.Punch.None && winding)
             {
                 bool locked=boxer.Phase==FinalBossBoxer.Stage.Slip || boxer.PhaseProgress>.6f;
                 const int samples=9;

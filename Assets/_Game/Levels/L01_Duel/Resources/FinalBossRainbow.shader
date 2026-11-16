@@ -5,6 +5,7 @@ Shader "GO GHOST/Final Boss Rainbow"
         [PerRendererData] _MainTex ("Sprite", 2D) = "white" {}
         _AxeCharge ("Axe charge", Float) = -1
         _AxeFlowPhase ("Phase two axe flow", Float) = -1
+        _AxeLit ("Phase two axe lit by an order", Range(0, 1)) = 0
         _AxeShadow ("Axe deep violet", Color) = (0.400, 0.278, 0.647, 1)
         _AxeHighlight ("Axe pale violet", Color) = (0.773, 0.655, 0.973, 1)
         _AxeDetail ("Axe channel (R) and bevel (G)", 2D) = "black" {}
@@ -39,6 +40,7 @@ Shader "GO GHOST/Final Boss Rainbow"
                 float _RainbowPhase;
                 float _AxeCharge;
                 float _AxeFlowPhase;
+                float _AxeLit;
                 float _HitFlash;
                 half4 _BaseColor;
                 half4 _AxeShadow;
@@ -75,6 +77,8 @@ Shader "GO GHOST/Final Boss Rainbow"
                         half2 detail = SAMPLE_TEXTURE2D(_AxeDetail, sampler_AxeDetail, i.uv).rg;
                         half3 lit = lerp(_AxeHighlight.rgb, half3(1, 1, 1), .55);
                         violet = lerp(violet, lit, max(detail.r, detail.g * .85));
+                        // An order lights the whole axe: its own warning, in place of a ring on the hand.
+                        violet = lerp(violet, lit, _AxeLit);
                         return half4(violet, tex.a * i.color.a);
                     }
                     float front = 1 - smoothstep(_AxeCharge - .055, _AxeCharge + .055, i.uv.y);

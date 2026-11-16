@@ -243,15 +243,16 @@ namespace GoGhost.Duel
                     Vector2 shaft=Angle(axe.HeldShaftAngle);
                     shaft.x*=axe.LockedFacing;
                     if(charge>0)SetLine(AxeLine(3,"Raised axe socket",2),axe.Hand()+shaft*.88f,
-                        axe.Hand()+shaft*1.09f,.035f,NeuralPalette.Alpha(FlightIce,.28f+.62f*charge));
+                        axe.Hand()+shaft*1.09f,SwordTellWidth(false,charge>=.6f),NeuralPalette.Alpha(FlightIce,charge>=.6f ? .8f : .3f));
                 }
             }
             if (axe.FlightWarning && axe.Path.Count >= 2)
             {
                 var line = AxeLine(6, "Axe flight warning", axe.Path.Count);
+                // The axe's route in its own ice blue, one width from end to end.
                 float width = SwordTellWidth(false,true);
-                line.startWidth=width*1.45f;line.endWidth=width*.65f;
-                line.startColor=NeuralPalette.Primary;line.endColor=NeuralPalette.Alpha(FlightIce,.55f);
+                line.startWidth=line.endWidth=width;
+                line.startColor=line.endColor=NeuralPalette.Alpha(FlightIce,.8f);
                 for (int i = 0; i < axe.Path.Count; i++) line.SetPosition(i, ClipTellPoint(axe.Path[i], width));
             }
             if(axe.FlightLive)DrawAxeTrail(axe.FlyingEdge);
@@ -273,17 +274,11 @@ namespace GoGhost.Duel
 
         void DrawCastCharge(FinalBossAxe axe)
         {
-            float t=Ease(axe.CastProgress);
-            float radius=Mathf.Lerp(.49f,.085f,t);
-            const int points=32;
-            var ring=AxeLine(14,"Axe socket wind-up",points);
-            ring.loop=true;
-            ring.startWidth=ring.endWidth=Mathf.Lerp(.045f,.065f,t);
-            ring.startColor=ring.endColor=NeuralPalette.Alpha(FlightIce,.72f+.25f*t);
-            for(int i=0;i<points;i++)
-                ring.SetPosition(i,ClipTellPoint(phaseOneSocket+Angle(i*360f/points)*radius,ring.startWidth));
+            // The throw is warned by the axe itself: its socket lights when the wind-up starts and
+            // brightens once at 60%. There is no ring around it (Thomas, 2026-11-15).
+            bool bright=axe.CastProgress>=.6f;
             SetLine(AxeLine(15,"Charged socket",2),phaseOneSocket-Vector2.up*.038f,phaseOneSocket+Vector2.up*.038f,
-                .075f+.055f*t,NeuralPalette.Primary);
+                bright ? .13f : .075f,bright ? NeuralPalette.Primary : NeuralPalette.Alpha(FlightIce,.75f));
             if(axe.Current==FinalBossAxe.Move.PalmDeflection)
                 SetLine(AxeLine(16,"Open palm",2),freePalm-Vector2.up*.055f,freePalm+Vector2.up*.095f,
                     .055f,NeuralPalette.Alpha(FlightIce,.9f));
@@ -296,14 +291,14 @@ namespace GoGhost.Duel
             float tension=axe.AnchorLatchProgress;
             // A thin steel tether denotes travel. The two socket ticks close as the
             // pull engages. Neither has the white core of a live cut.
-            SetLine(AxeLine(8,"Axe tether",2),axe.Hand(),grip,.012f+.008f*tension,
+            SetLine(AxeLine(8,"Axe tether",2),axe.Hand(),grip,SwordTellWidth(false,false),
                 NeuralPalette.Alpha(new Color32(111,129,145,255),.45f+.25f*tension));
             Vector2 normal=new Vector2(-forward.y,forward.x);
             for(int i=0;i<2;i++)
             {
                 Vector2 root=axe.AxePosition+normal*((i==0?-1:1)*Mathf.Lerp(.36f,.19f,tension));
                 SetLine(AxeLine(12+i,"Anchor clasp",2),root-forward*.09f,root+forward*.09f,
-                    .026f,NeuralPalette.Alpha(FlightIce,.7f));
+                    SwordTellWidth(false,true),NeuralPalette.Alpha(FlightIce,.7f));
             }
         }
 

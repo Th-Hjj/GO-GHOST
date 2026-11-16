@@ -47,6 +47,14 @@
   - Open questions for Thomas: whether a Boss's head counts as On Ground, and whether the longer punch lunge is wanted.
 - **NOT TESTED:** everything in play with real input: each jump change, the Bonus Restart confirmation, the binding refusals, the Esc and focus fixes, the cursor on the creation menu, the window size in a standalone build, and the platform wave's look. The second-pass fixes after the review were compiled only.
 
+## 2026-11-15 — Final Boss warnings in one language: no marks, no rings
+
+- **Asked:** lay out every effect and warning of the Boss, review them together and agree one look. Thomas rejected the landing marks (added unasked) and the charge rings (a device the first two Bosses do not have), agreed the other rules, and approved the second version.
+- **Changed:** `BossSilhouetteView.Boxer.cs` removes the palm ring, the counter's end bar and fist ring, the rising landing bar and the Meteor's landing outline; the order line and the counter line use the Swordsman's widths in two steps; the rising path is one quadratic curve. `FinalBossRainbow.shader` gains `_AxeLit`, set in two steps while an axe is ordered. `BossSilhouetteView.AxeAttacks.cs` removes the socket ring, steps the socket tick and draws the flight path in one width of ice blue. `BossSilhouetteView.Axe.cs` puts the EMP's thin strokes on the three widths.
+- **Checked:** the game assembly compiles with Unity's bundled compiler outside the Editor. The shader edit was not compiled here; Unity compiles it on import.
+- **NOT TESTED:** everything in play: how each warning reads without its mark or ring, the lit axe's two steps, the EMP strokes at their new widths, and the shader on import.
+- **Left as they were:** strike effects (blade arc, energized edge, fist trails and ring, Meteor impact, axe contact sweep), the EMP wave rings and core, the invasion burst sparks and contact ring.
+
 ## 2026-11-15 — Counter Guard walks behind its guard and charges in place
 
 - **Asked:** the guard should move slowly without leaving its platform; a hit should trigger an effect, a .2 s charge in place, then a punch a little slower than now.

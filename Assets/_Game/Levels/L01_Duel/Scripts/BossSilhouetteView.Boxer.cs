@@ -95,18 +95,17 @@ namespace GoGhost.Duel
         float lockFlashFor=-1;
         void DrawBoxer(FinalBossBoxer boxer)
         {
-            float age=Time.time-boxer.CommandAt;
-            if (!boxer.Retired && age<CommandPoseSeconds)
-            {
-                float pinch=Ease((age-.32f)/.18f);
-                DrawEmpRing(14,commandPalm,Mathf.Lerp(.54f,.07f,pinch),.063f,
-                    Color.Lerp(NeuralPalette.EmpHighlight,NeuralPalette.Emp,pinch));
-            }
+            // One language for every warning of this Boss (Thomas, 2026-11-15): the pose and one white step
+            // for the body, a line to the destination for what travels far, and the axe's own light for the
+            // axe. No rings and no marks at a destination. Lines use the Swordsman's widths and steps.
+            // An ordered axe lights up in two steps: when the order is given, and again at 60% of the delay.
+            if (chargedWeapon!=null)
+                chargedWeapon.SetFloat("_AxeLit",boxer.Retired || !boxer.AxeOrdered ? 0 : boxer.LaunchProgress>=.6f ? .8f : .35f);
             if (boxer.Detached && !boxer.InFlight)
                 DrawSpiritContact(boxer);
             // A landing edge carries a rim light, like every other place to stand.
             if (boxer.PerchActive)
-                SetLine(AxeLine(29,"Axe perch rim",2),boxer.PerchLeft,boxer.PerchRight,.03f,NeuralPalette.Alpha(NeuralPalette.Primary,.85f));
+                SetLine(AxeLine(29,"Axe perch rim",2),boxer.PerchLeft,boxer.PerchRight,SwordTellWidth(false,true),NeuralPalette.Alpha(NeuralPalette.Primary,.85f));
             if (boxer.Covering)
             {
                 // Defense shows a thin boundary, as the Swordsman's guard does, in the axe's violet.
@@ -119,15 +118,9 @@ namespace GoGhost.Duel
                 for(int i=0;i<11;i++) arc.SetPosition(i,ClipTellPoint(centre+Angle(facing+Mathf.Lerp(-60,60,i/10f))*1.1f,width));
                 if (boxer.Cover==FinalBossBoxer.CoverStage.Warn)
                 {
-                    // The whole dash, from the fist to where it ends, with a mark across the end.
-                    Vector2 end=boxer.CounterEnd, along=(end-(Vector2)actor.Position).normalized, across=new Vector2(-along.y,along.x);
-                    Color tell=AxeTellColor(false,true);
-                    SetLine(AxeLine(13,"Counter warning",2),boxer.Fist(),end,.05f,tell);
-                    SetLine(AxeLine(26,"Counter end",2),end-across*.45f,end+across*.45f,.05f,tell);
-                    // The stopped shot sets him off: a ring gathers onto the fist while he stands and charges,
-                    // as the violet ring gathers on his palm when he orders the axe.
-                    float gather=Ease(boxer.CoverProgress);
-                    DrawEmpRing(4,boxer.Fist(),Mathf.Lerp(.54f,.07f,gather),.063f,Color.Lerp(NeuralPalette.EmpHighlight,NeuralPalette.Primary,gather));
+                    // The whole dash, from the fist to where it ends. The white step on his body, when the
+                    // shot was stopped, is the rest of the warning.
+                    SetLine(AxeLine(13,"Counter warning",2),boxer.Fist(),boxer.CounterEnd,SwordTellWidth(false,true),AxeTellColor(false,true));
                 }
             }
             DrawFistTrace(boxer);
@@ -142,36 +135,32 @@ namespace GoGhost.Duel
             if (boxer.Retired) return;
             if (boxer.AxeOrdered)
             {
-                float t=boxer.LaunchProgress;
+                // The axe's route in its own violet: dim when ordered, bright from 60% of the delay.
+                bool locked=boxer.LaunchProgress>=.6f;
                 Vector2 from=boxer.Detached ? boxer.AxeEdge : heldPivot;
-                var line=AxeLine(6,"Axe order warning",2);
-                float width=Mathf.Lerp(.02f,.05f,t);
-                line.startWidth=width; line.endWidth=width*.6f;
-                line.startColor=NeuralPalette.Alpha(NeuralPalette.EmpHighlight,.25f+.65f*t);
-                line.endColor=NeuralPalette.Alpha(NeuralPalette.Emp,.20f+.55f*t);
-                line.SetPosition(0,ClipTellPoint(from,width));
-                line.SetPosition(1,ClipTellPoint(boxer.Destination,width));
+                SetLine(AxeLine(6,"Axe order warning",2),from,boxer.Destination,SwordTellWidth(false,locked),
+                    NeuralPalette.Alpha(NeuralPalette.Emp,locked ? .8f : .3f));
             }
             bool winding=boxer.Phase==FinalBossBoxer.Stage.Windup || boxer.Phase==FinalBossBoxer.Stage.Slip;
             if (boxer.Rising && boxer.Phase==FinalBossBoxer.Stage.Windup && boxer.RisingArc.Count>2)
             {
-                // The Rising Uppercut warns with the fist's path along the jump, up to its top.
+                // The Rising Uppercut warns with one smooth curve from the fist to the top of the jump.
+                // It is drawn from those two points, not from the jump's sampled path, so it cannot kink.
                 var path=boxer.RisingArc;
                 int top=1;
                 while (top<path.Count-1 && path[top+1].y>=path[top].y) top++;
-                bool locked=boxer.PhaseProgress>.6f;
-                const int samples=12;
+                bool locked=boxer.PhaseProgress>=.6f;
+                const int samples=16;
                 var line=AxeLine(10,"Rising warning",samples+1);
                 float width=SwordTellWidth(false,locked);
                 line.startWidth=line.endWidth=width;
                 line.startColor=line.endColor=AxeTellColor(false,locked);
-                var lift=new Vector2(boxer.LockedFacing*.30f,.85f);
-                line.SetPosition(0,ClipTellPoint(boxer.Fist(),width));
-                for(int i=1;i<=samples;i++)
-                    line.SetPosition(i,ClipTellPoint(path[Mathf.Min(top,Mathf.RoundToInt(top*i/(float)samples))]+lift,width));
-                // A mark where he will land.
-                Vector2 landing=boxer.RisingLanding;
-                SetLine(AxeLine(26,"Rising landing",2),landing-Vector2.right*.45f,landing+Vector2.right*.45f,width,AxeTellColor(false,locked));
+                Vector2 start=boxer.Fist(), peak=path[top]+new Vector2(boxer.LockedFacing*.30f,.85f);
+                for(int i=0;i<=samples;i++)
+                {
+                    float t=i/(float)samples, rise=1-(1-t)*(1-t);
+                    line.SetPosition(i,ClipTellPoint(new Vector2(Mathf.Lerp(start.x,peak.x,t),Mathf.Lerp(start.y,peak.y,rise)),width));
+                }
             }
             // An ordinary punch draws no line (Thomas, 2026-11-15: the short stroke line read as a mistake).
             // The wind-up pose is the warning, and the body shows one white step as the punch locks in.
@@ -183,17 +172,8 @@ namespace GoGhost.Duel
             }
             if (boxer.Diving)
             {
-                Vector2 landing=boxer.DiveLanding;
-                Color color=AxeTellColor(false,true);
-                SetLine(AxeLine(8,"Meteor dive warning",2),boxer.Fist(),landing,SwordTellWidth(false,true),color);
-                var rim=AxeLine(9,"Meteor landing warning",29);
-                rim.startWidth=rim.endWidth=.03f;
-                rim.startColor=rim.endColor=color;
-                for(int i=0;i<29;i++)
-                {
-                    float a=i*Mathf.PI/28;
-                    rim.SetPosition(i,ClipTellPoint(landing+new Vector2(Mathf.Cos(a)*2.5f,Mathf.Sin(a)*2.5f*.21f),.03f));
-                }
+                // The dive line alone; the ground wave is drawn when he lands.
+                SetLine(AxeLine(8,"Meteor dive warning",2),boxer.Fist(),boxer.DiveLanding,SwordTellWidth(false,true),AxeTellColor(false,true));
             }
         }
 

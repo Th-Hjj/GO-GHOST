@@ -198,7 +198,7 @@ namespace GoGhost.Duel
                     Vector2 dir=Angle(12+j*39+i*4);
                     Vector2 leading=shockwaveOrigin+dir*radius;
                     SetLine(AxeLine(WaveWakeSlots[i*5+j],"EMP wave streak",2),leading-dir*wakeLength,leading,
-                        .034f,NeuralPalette.Alpha(NeuralPalette.Emp,strength*.58f));
+                        SwordTellWidth(false,true),NeuralPalette.Alpha(NeuralPalette.Emp,strength*.58f));
                 }
                 float age = t * ShockwaveSeconds;
                 if (age < .30f)
@@ -207,7 +207,7 @@ namespace GoGhost.Duel
                         Vector2 dir=Angle(6+j*28);
                         float length=(1-age/.30f)*(i==0?2.1f:1.25f);
                         SetLine(AxeLine(6+j,"EMP release",2),shockwaveOrigin+dir*.10f,
-                            shockwaveOrigin+dir*(.11f+length),.045f,NeuralPalette.Alpha(NeuralPalette.Emp,1-age/.30f));
+                            shockwaveOrigin+dir*(.11f+length),SwordTellWidth(true,false),NeuralPalette.Alpha(NeuralPalette.Emp,1-age/.30f));
                     }
                 if (i == 0)
                     DrawEmpRing(2, shockwaveOrigin, radius, .044f, NeuralPalette.Alpha(NeuralPalette.Primary, strength * .85f));
@@ -365,11 +365,11 @@ namespace GoGhost.Duel
                 float far=(1-travel*travel)*span*(1-pinch);
                 float near=Mathf.Max(0,far-span*(.22f+.28f*charge));
                 float strength=Mathf.Clamp01(elapsed/.25f)*(1-pinch);
-                SetLine(AxeLine(i,"EMP intake lane",2),center,center+dir*span*(1-pinch),.019f,
+                SetLine(AxeLine(i,"EMP intake lane",2),center,center+dir*span*(1-pinch),SwordTellWidth(false,false),
                     NeuralPalette.Alpha(NeuralPalette.Emp,strength*.23f));
-                SetLine(AxeLine(8+i,"EMP incoming current",2),center+dir*near,center+dir*far,.039f+.027f*charge,
+                SetLine(AxeLine(8+i,"EMP incoming current",2),center+dir*near,center+dir*far,SwordTellWidth(true,false),
                     NeuralPalette.Alpha(NeuralPalette.Emp,strength*Mathf.Sin(Mathf.PI*travel)));
-                SetLine(AxeLine(18+i,"EMP bright tip",2),center+dir*near,center+dir*Mathf.Lerp(near,far,.22f),.028f,
+                SetLine(AxeLine(18+i,"EMP bright tip",2),center+dir*near,center+dir*Mathf.Lerp(near,far,.22f),SwordTellWidth(false,true),
                     NeuralPalette.Alpha(NeuralPalette.Primary,strength*Mathf.Sin(Mathf.PI*travel)));
             }
             float size=Mathf.Lerp(.04f,planted?.31f:.18f,charge)*(1-.62f*pinch);

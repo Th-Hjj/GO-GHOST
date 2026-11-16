@@ -99,6 +99,14 @@ The axe can cut from a wall to the floor, climb from the floor through a platfor
 
 **Pacing (Thomas, 2026-11-15, trial tuning).** Wind-ups: Jab .30 s, Uppercut .42, Backfist .40, Overhand .38, Meteor .45; the Cross that follows a Jab keeps its .16 s. A stroke counts toward a run when it starts within .9 s of the last punch ending. After the third stroke of a run no punch starts for .9 s (`ChainLimit`, `ChainRest` in `FinalBossBoxer.cs`); a Jab that is the third stroke gets no Cross. Movement and axe orders continue through the rest. The F8 panel still edits each punch's wind-up for the session.
 
+**Warning language (Thomas, 2026-11-15).** Agreed from a page of all the Boss's effects; it supersedes the shapes named elsewhere in this section.
+- *Three expressions only.* The body: the wind-up pose and one white step at 60%. What travels far (Meteor dive, Rising Uppercut, counter dash, the axe in both phases): one line from origin to destination, with nothing drawn at the destination. The axe: its own light.
+- *No landing marks and no charge rings.* Removed: the Meteor's landing outline, the counter's end bar and fist ring, the Rising Uppercut's landing bar, the palm ring on an axe order, the socket ring on a phase-one throw.
+- *The axe's light.* Phase one: the socket tick is .075 wide in ice blue from the start of the wind-up and .13 in cold white from 60%. Phase two: `_AxeLit` in `FinalBossRainbow.shader` lights the whole axe to .35 when ordered and .8 from 60% of the delay.
+- *Lines.* `SwordTellWidth` and the same alphas as the Swordsman: .02 at .3 while preparing, .025 at .8 once locked, .06 at .95 while active. The step is at 60%; nothing fades in. The order line is the axe's violet, the phase-one flight path its ice blue, both one width end to end.
+- *Rising Uppercut.* One curve from the fist to the top of the planned jump, a quadratic through those two points.
+- *EMP.* Shapes unchanged; its thin strokes (lanes, tips, streaks, currents, release rays) use the three widths. The wave rings and the square core keep their own thickness.
+
 **Revision after play (Thomas, 2026-11-15; damage unchanged by his instruction).** This paragraph supersedes the figures in the three below where they differ.
 - *Ordinary punches* draw no warning line. The wind-up pose warns, and the body shows one white step at 60% of the wind-up (`LockFlash`). The Meteor's dive line, the rising path and the counter line stay.
 - *Counter Guard:* warning .35 s; the target follows the player's forecast position through the warning and is fixed when the dash leaves; the line runs from the fist to the end of the dash with a mark across the end; dash speed 26; the body, widened by .2, strikes as well as the fist; on arriving grounded within 3.2 of the player he goes straight into a Cross; cooldown 4.5 s.

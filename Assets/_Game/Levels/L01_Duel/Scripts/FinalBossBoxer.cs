@@ -18,7 +18,7 @@ namespace GoGhost.Duel
         // After three strokes in a row he rests: no punch may start for a while. A stroke belongs to the
         // run when it starts soon after the last one ended. Walking and axe orders are not held.
         const int ChainLimit = 3;
-        const float ChainRest = .9f, ChainGap = .9f;
+        const float ChainRest = .8f, ChainGap = .9f;
         int chain;
         float lastPunchEnd = -100, restUntil;
         internal bool Resting => Time.time < restUntil;

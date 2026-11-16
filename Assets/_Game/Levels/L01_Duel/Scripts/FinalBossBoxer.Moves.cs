@@ -94,6 +94,8 @@ namespace GoGhost.Duel
         {
             if (Time.time < coverReadyAt || Resting || !actor.Motor.Grounded || !facts.Visible || weapon==WeaponState.Armed
                 || Time.time-facts.LastShotAt > 1.5f) return false;
+            // No bullets come from a player who is reloading, so the guard is not spent on them.
+            if (facts.ReloadVisible) return false;
             Vector2 delta=target-actor.Position;
             actor.Motor.EndAttackMotion();
             actor.Motor.HoldHorizontal();

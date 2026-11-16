@@ -92,6 +92,7 @@ namespace GoGhost.Duel
             heldAngle=Mathf.Atan2(shaft.y,shaft.x)*Mathf.Rad2Deg;
         }
 
+        float lockFlashFor=-1;
         void DrawBoxer(FinalBossBoxer boxer)
         {
             float age=Time.time-boxer.CommandAt;
@@ -117,7 +118,13 @@ namespace GoGhost.Duel
                 Vector2 centre=(Vector2)actor.Position+Vector2.up*.25f;
                 for(int i=0;i<11;i++) arc.SetPosition(i,ClipTellPoint(centre+Angle(facing+Mathf.Lerp(-60,60,i/10f))*1.1f,width));
                 if (boxer.Cover==FinalBossBoxer.CoverStage.Warn)
-                    SetLine(AxeLine(13,"Counter warning",2),boxer.Fist(),boxer.CounterTarget,SwordTellWidth(false,true),AxeTellColor(false,true));
+                {
+                    // The whole dash, from the fist to where it ends, with a mark across the end.
+                    Vector2 end=boxer.CounterEnd, along=(end-(Vector2)actor.Position).normalized, across=new Vector2(-along.y,along.x);
+                    Color tell=AxeTellColor(false,true);
+                    SetLine(AxeLine(13,"Counter warning",2),boxer.Fist(),end,.05f,tell);
+                    SetLine(AxeLine(26,"Counter end",2),end-across*.45f,end+across*.45f,.05f,tell);
+                }
             }
             DrawFistTrace(boxer);
             DrawMeteorImpact(boxer);
@@ -158,17 +165,17 @@ namespace GoGhost.Duel
                 line.SetPosition(0,ClipTellPoint(boxer.Fist(),width));
                 for(int i=1;i<=samples;i++)
                     line.SetPosition(i,ClipTellPoint(path[Mathf.Min(top,Mathf.RoundToInt(top*i/(float)samples))]+lift,width));
+                // A mark where he will land.
+                Vector2 landing=boxer.RisingLanding;
+                SetLine(AxeLine(26,"Rising landing",2),landing-Vector2.right*.45f,landing+Vector2.right*.45f,width,AxeTellColor(false,locked));
             }
-            else if (boxer.Current!=FinalBossBoxer.Punch.None && winding)
+            // An ordinary punch draws no line (Thomas, 2026-11-15: the short stroke line read as a mistake).
+            // The wind-up pose is the warning, and the body shows one white step as the punch locks in.
+            if (boxer.Current!=FinalBossBoxer.Punch.None && boxer.Phase==FinalBossBoxer.Stage.Windup
+                && boxer.PhaseProgress>=.6f && !Mathf.Approximately(lockFlashFor,boxer.PhaseStartedAt))
             {
-                bool locked=boxer.Phase==FinalBossBoxer.Stage.Slip || boxer.PhaseProgress>.6f;
-                const int samples=9;
-                var line=AxeLine(4,"Punch warning",samples);
-                float width=SwordTellWidth(false,locked);
-                line.startWidth=line.endWidth=width;
-                line.startColor=line.endColor=AxeTellColor(false,locked);
-                for(int i=0;i<samples;i++)
-                    line.SetPosition(i,ClipTellPoint(boxer.StrokeWorld(i/(samples-1f)),width));
+                lockFlashFor=boxer.PhaseStartedAt;
+                LockFlash();
             }
             if (boxer.Diving)
             {

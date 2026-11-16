@@ -92,6 +92,7 @@ namespace GoGhost.Duel
             }
             if (Cover != CoverStage.None) { TickCover(); return; }
             if (Current != Punch.None) { TickPunch(facts); return; }
+            if (combination!=null && !Gesturing && ContinueCombination(facts)) return;
             if (Time.time < nextThink || Gesturing) return;
             nextThink=Time.time + actor.Profile.ReactionSeconds;
             if (facts.Confidence <= .1f) { SeekLastSighting(); return; }
@@ -112,7 +113,10 @@ namespace GoGhost.Duel
                 if (!actor.Motor.Grounded && !FindDive(target,out diveTarget)) return false;
             }
             // An opponent standing above him turns the Uppercut into a jump at them.
-            Rising=punch==Punch.Uppercut && PlanRising(target);
+            bool rise=punch==Punch.Uppercut && (requireRising || RisingReady) && PlanRising(target);
+            if (requireRising && !rise) return false;
+            Rising=rise;
+            if (Rising) risingReadyAt=Time.time+RisingCooldown;
             counter=false;
             if (Time.time-lastPunchEnd > ChainGap) chain=0;
             Current=punch; Cross=false; signatureLeap=punch==Punch.Leap && ShoulderWindow;
@@ -206,7 +210,29 @@ namespace GoGhost.Duel
                     if (Current != Punch.None) Recover();
                     return;
                 }
+                // The counter's dash strikes with the whole body, not the fist alone.
+                if (counter && !hit)
+                {
+                    var reach=actor.Body.bounds; reach.Expand(.2f);
+                    if (reach.Intersects(playerBody.bounds)) DealPunch();
+                }
                 if (Time.time < phaseUntil) return;
+                if (counter && chain < ChainLimit && facts.Visible && actor.Motor.Grounded)
+                {
+                    // He arrives throwing: the dash runs straight into a Cross.
+                    var after=OpponentAt(facts,.15f)-actor.Position;
+                    if (Mathf.Abs(after.x) < 3.2f && Mathf.Abs(after.y) < 1.3f)
+                    {
+                        counter=false;
+                        Current=Punch.Jab; Cross=true;
+                        accepted=game.GetBossMoveTuning(true,(int)Punch.Jab);
+                        if (Mathf.Abs(after.x) > .12f) { LockedFacing=Mathf.Sign(after.x); actor.Face(Vector2.right*LockedFacing); }
+                        actor.Motor.EndAttackMotion();
+                        DriveTo(actor.Position+after,.16f,16f);
+                        SetPhase(Stage.Windup,.16f);
+                        return;
+                    }
+                }
                 if (Current == Punch.Jab && !Cross && chain < ChainLimit && facts.Visible)
                 {
                     var next=OpponentAt(facts,.15f)-actor.Position;
@@ -329,7 +355,10 @@ namespace GoGhost.Duel
             diveLocked=false;
             CloseDiveLane();
             if (actor.Motor.Grounded || Current==Punch.Meteor) actor.Motor.EndAttackMotion();
-            SetPhase(Stage.Recovery,signatureLeap ? Mathf.Max(.76f,accepted.Recovery) : accepted.Recovery);
+            float recovery=signatureLeap ? Mathf.Max(.76f,accepted.Recovery) : accepted.Recovery;
+            // Inside a combination the next punch follows on a shortened recovery.
+            if (CombinationContinues) recovery*=.5f;
+            SetPhase(Stage.Recovery,recovery);
         }
 
         internal static readonly Vector2 Guard = new Vector2(.29f,.31f);
@@ -409,7 +438,7 @@ namespace GoGhost.Duel
         {
             CloseDiveLane();
             RemovePerch();
-            Cover=CoverStage.None; Rising=counter=false;
+            Cover=CoverStage.None; Rising=counter=false; combination=null;
             diveLocked=false;
             if (InFlight) actor.Sounds?.StopAttack(actor.ActorId,300000+Orders);
             if (Current != Punch.None) actor.Motor?.EndAttackMotion();

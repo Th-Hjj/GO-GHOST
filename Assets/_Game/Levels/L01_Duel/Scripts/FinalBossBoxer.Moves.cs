@@ -11,7 +11,23 @@ namespace GoGhost.Duel
         // ---- Rising Uppercut ----
         // The jump is chosen and fixed when the wind-up starts, and its path is the warning.
         // He lands on the level he jumped at and recovers there.
-        const float RisingReach = 4.5f, RisingMinimum = 1.2f, RisingRecovery = .7f;
+        const float RisingReach = 6f, RisingMinimum = 1.2f, RisingRecovery = .7f, RisingCooldown = 3f;
+        float risingReadyAt;
+        bool requireRising;
+        internal Vector2 RisingLanding => jump.Landing-Vector2.up*(actor.Motor.Size.y*.5f);
+        internal float PhaseStartedAt => phaseAt;
+        bool RisingReady => Time.time >= risingReadyAt;
+
+        // The rising form has its own cooldown and does not wait for the ordinary Uppercut's.
+        bool TryRising()
+        {
+            float held=readyAt[(int)Punch.Uppercut];
+            readyAt[(int)Punch.Uppercut]=0; requireRising=true;
+            bool started=TryStart(Punch.Uppercut);
+            requireRising=false;
+            if (!started) readyAt[(int)Punch.Uppercut]=held;
+            return started;
+        }
         internal bool Rising { get; private set; }
         Vector2 risingTarget;
         readonly List<Vector2> risingArc = new List<Vector2>(64);
@@ -34,12 +50,20 @@ namespace GoGhost.Duel
 
         // ---- Counter Guard ----
         public enum CoverStage { None, Raise, Hold, Warn, Open }
-        internal const float CoverRaise = .20f, CoverHold = 1.0f, CoverWarn = .20f, CoverOpen = .60f, CoverCooldown = 7f;
-        const float CoverMinimumGap = 2.5f, CounterReach = 8f, CounterSpeed = 18f;
+        internal const float CoverRaise = .20f, CoverHold = 1.0f, CoverWarn = .35f, CoverOpen = .60f, CoverCooldown = 4.5f;
+        const float CoverMinimumGap = 2.5f, CounterReach = 8f, CounterSpeed = 26f;
         internal CoverStage Cover { get; private set; }
         internal bool Covering => Cover==CoverStage.Raise || Cover==CoverStage.Hold || Cover==CoverStage.Warn;
         internal float CoverProgress => Mathf.InverseLerp(coverAt,coverUntil,Time.time);
         internal Vector2 CounterTarget { get; private set; }
+        internal Vector2 CounterEnd
+        {
+            get
+            {
+                Vector2 delta=CounterTarget-actor.Position;
+                return actor.Position+delta.normalized*Mathf.Min(CounterReach,delta.magnitude+.4f);
+            }
+        }
         public int Covers { get; private set; }
         public int Counters { get; private set; }
         float coverAt, coverUntil, coverReadyAt;
@@ -69,6 +93,19 @@ namespace GoGhost.Duel
         void TickCover()
         {
             if (actor.Motor.Grounded) actor.Motor.HoldHorizontal();
+            if (Cover==CoverStage.Warn)
+            {
+                // The line follows the player through the warning and is fixed when the dash leaves,
+                // aimed where they will be when it arrives.
+                var facts=actor.Perception.Facts;
+                if (facts.Visible)
+                {
+                    float travel=Vector2.Distance(CounterTarget,actor.Position)/CounterSpeed;
+                    CounterTarget=OpponentAt(facts,Mathf.Max(0,coverUntil-Time.time)+travel);
+                    if (Mathf.Abs(CounterTarget.x-actor.Position.x) > .12f)
+                    { LockedFacing=Mathf.Sign(CounterTarget.x-actor.Position.x); actor.Face(Vector2.right*LockedFacing); }
+                }
+            }
             if (Time.time < coverUntil) return;
             switch (Cover)
             {
@@ -129,6 +166,73 @@ namespace GoGhost.Duel
             float along=Vector2.Dot(point-AxeEdge,direction);
             if (along < 0 || along > length) return -1;
             return (point-(AxeEdge+direction*along)).magnitude > 1.5f ? -1 : along/FlightSpeed;
+        }
+
+        // ---- Slip: a jump over a shot that is about to land ----
+        const float SlipCooldown = 2.5f, SlipChance = .6f;
+        float slipReadyAt;
+        int slipJudged;
+        public int Slips { get; private set; }
+        bool TrySlip(BossObservation facts)
+        {
+            if (Time.time < slipReadyAt || !actor.Motor.Grounded || !facts.Visible) return false;
+            Vector2 centre=actor.Position;
+            var body=new Bounds(centre,actor.Motor.Size+Vector2.one*.3f);
+            foreach (var shot in Projectile.Active)
+            {
+                if (shot==null || shot.OwnerLayer==actor.gameObject.layer) continue;
+                Vector2 position=shot.transform.position, velocity=shot.GetComponent<Rigidbody2D>().linearVelocity;
+                float speed=velocity.magnitude;
+                if (speed < .01f || Mathf.Abs(velocity.y) > Mathf.Abs(velocity.x)) continue;
+                if (!body.IntersectRay(new Ray(position,velocity/speed),out float distance)) continue;
+                float arrival=distance/speed;
+                if (arrival < .14f || arrival > .45f) continue;
+                // Each shot is judged once, so he does not slip every one.
+                int id=shot.GetEntityId().GetHashCode();
+                if (id==slipJudged) continue;
+                slipJudged=id;
+                if (Random.value > SlipChance || !actor.Motor.TryJump()) continue;
+                slipReadyAt=Time.time+SlipCooldown; Slips++;
+                actor.Trace("boxer slips");
+                return true;
+            }
+            return false;
+        }
+
+        // ---- Combinations: authored runs of punches, ended by the three-stroke rest ----
+        static readonly Punch[][] Combinations =
+        {
+            new[] { Punch.Jab, Punch.Uppercut },
+            new[] { Punch.Backfist, Punch.Jab },
+            new[] { Punch.Jab, Punch.Backfist, Punch.Leap },
+        };
+        Punch[] combination;
+        int combinationStep;
+        void BeginCombination(Punch first,float gap)
+        {
+            combination=null;
+            if (Rising || chain > 0 || gap > 3.5f) return;
+            int from=Random.Range(0,Combinations.Length);
+            for (int i=0;i<Combinations.Length;i++)
+            {
+                var candidate=Combinations[(from+i)%Combinations.Length];
+                if (candidate[0]!=first) continue;
+                combination=candidate; combinationStep=1;
+                return;
+            }
+        }
+        bool CombinationContinues => combination!=null && combinationStep < combination.Length && chain < ChainLimit;
+        bool ContinueCombination(BossObservation facts)
+        {
+            if (!CombinationContinues || Resting || !facts.Visible) { combination=null; return false; }
+            var next=combination[combinationStep++];
+            Vector2 delta=OpponentAt(facts,.2f)-actor.Position;
+            if (Mathf.Abs(delta.x) > 3.8f || (Mathf.Abs(delta.y) > 1.3f && next!=Punch.Leap)) { combination=null; return false; }
+            float held=readyAt[(int)next];
+            readyAt[(int)next]=0;
+            if (TryStart(next)) return true;
+            readyAt[(int)next]=held; combination=null;
+            return false;
         }
     }
 }

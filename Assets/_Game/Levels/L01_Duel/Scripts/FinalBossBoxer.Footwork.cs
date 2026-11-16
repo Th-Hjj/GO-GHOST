@@ -107,9 +107,18 @@ namespace GoGhost.Duel
             // A blow that lands as the flying axe passes leaves no side to step to.
             float axeIn=AxePassesIn(target);
             float pincer=axeIn >= 0 && axeIn < .6f ? .5f : 0;
-            bool rising=RisingOpening(target) && facts.Grounded;
+            bool rising=RisingOpening(target) && facts.Grounded && RisingReady;
+            if (TrySlip(facts)) return;
             if (!dodgeSpent && !rising && TryCover(facts,target)) return;
             if (TryOrder(facts,target)) return;
+            // A player on a higher level is answered from below: he comes under them and rises, and
+            // only climbs after them while that punch is cooling.
+            if (facts.Grounded && actor.Motor.Grounded && delta.y > RisingMinimum && Time.time >= risingReadyAt-.5f && !Resting)
+            {
+                if (rising && TryRising()) return;
+                if (gap > 2f) { actor.Motor.PursueOnGround(Mathf.Sign(delta.x),9.2f); return; }
+                if (!RisingReady) { actor.Motor.HoldHorizontal(); return; }
+            }
             if (actor.Motor.DashActive) return;
             if (Ready(Punch.Leap) && actor.Motor.Grounded && ShoulderLead>-.30f && ShoulderLead<1f)
             {
@@ -156,7 +165,7 @@ namespace GoGhost.Duel
                 int best=1;
                 for (int k=2;k<desirability.Length;k++) if (desirability[k]>desirability[best]) best=k;
                 if (desirability[best]<footwork) break;
-                if (TryStart((Punch)best)) return;
+                if (TryStart((Punch)best)) { BeginCombination((Punch)best,gap); return; }
                 desirability[best]=float.NegativeInfinity;
             }
             Pursue(target,facts);
@@ -189,9 +198,24 @@ namespace GoGhost.Duel
             }
             Vector2 delta=target-actor.Position;
             float side=Mathf.Sign(delta.x);
+            if (Resting)
+            {
+                // Out of a finished run of punches he steps back to arm's length and comes in again
+                // when the rest is over, instead of standing in front of the player.
+                float away=-(Mathf.Abs(delta.x) > .05f ? side : actor.Facing);
+                actor.Face(Vector2.right*-away);
+                if (Mathf.Abs(delta.x) < 3.2f && Mathf.Abs(delta.y) < 1.5f && actor.Navigation.TrySupport(actor.Position,motor.Size,out var footing))
+                {
+                    var arena=actor.Navigation.ArenaBounds;
+                    float edge=away > 0 ? Mathf.Min(footing.bounds.max.x,arena.max.x)-.6f : Mathf.Max(footing.bounds.min.x,arena.min.x)+.6f;
+                    if ((edge-actor.Position.x)*away > .3f) { motor.PursueOnGround(away,8f); return; }
+                }
+                motor.HoldHorizontal();
+                return;
+            }
             // A lower opponent makes an upper perch an offensive option for the dive.
             float takeHeight=Ready(Punch.Meteor) && Mathf.Abs(delta.x)>2 ? .65f : 0;
-            if (FindJump(target,takeHeight,out var hop))
+            if (FindJump(target,takeHeight,out var hop,true))
             {
                 float groundValue=Mathf.Abs(delta.y)*1.25f+Mathf.Abs(delta.x)*.48f;
                 float landingValue=Mathf.Abs(hop.Landing.y-target.y)*.70f+Mathf.Abs(hop.Landing.x-target.x)*.50f
@@ -223,7 +247,8 @@ namespace GoGhost.Duel
             motor.PursueOnGround(Mathf.Sign(dx),speed);
         }
 
-        bool FindJump(Vector2 target,float highGround,out JumpPlan best)
+        // cutOff: land on the middle side of the target, so the wall stays behind them.
+        bool FindJump(Vector2 target,float highGround,out JumpPlan best,bool cutOff=false)
         {
             SampleSurfaces();
             best=default; float bestCost=float.PositiveInfinity;
@@ -232,7 +257,9 @@ namespace GoGhost.Duel
             {
                 var surface=surfaces[i];
                 float margin=actor.Motor.Size.x*.5f;
-                float x=Mathf.Clamp(target.x-Mathf.Sign(target.x-from.x)*.55f,surface.Bounds.min.x+margin,surface.Bounds.max.x-margin);
+                float middle=actor.Navigation.ArenaBounds.center.x;
+                float stand=cutOff && Mathf.Abs(target.x-middle) > 3f ? Mathf.Sign(target.x-middle)*.9f : Mathf.Sign(target.x-from.x)*.55f;
+                float x=Mathf.Clamp(target.x-stand,surface.Bounds.min.x+margin,surface.Bounds.max.x-margin);
                 float height=surface.Top(.38f)+actor.Motor.Size.y*.5f-from.y;
                 var motion=actor.Axe.LeapMotion(height);
                 if (!TraceJump(x,target,motion,out var plan)) continue;

@@ -153,8 +153,11 @@ namespace GoGhost.Duel
         }
         public void Defeat() { defeated = true; defeatAt = clock; ClearTells(); }
         public void Hit() { hitAt = clock; }
+        // One white step without the recoil of a hit: a punch locking in.
+        float flashAt = -10;
+        internal void LockFlash() { flashAt = clock; }
         // Lost health turns the silhouette cold white for a moment. Alpha keeps following Camo.
-        float HitFlash => GameSettings.ReduceFlashing ? 0 : Mathf.Clamp01(1-(clock-hitAt)/.09f);
+        float HitFlash => GameSettings.ReduceFlashing ? 0 : Mathf.Clamp01(1-(clock-Mathf.Max(hitAt,flashAt))/.09f);
         public void ClearTells()
         {
             foreach (var line in tells) if (line != null) line.enabled = false;

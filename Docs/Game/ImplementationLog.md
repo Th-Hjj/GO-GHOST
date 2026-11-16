@@ -47,6 +47,14 @@
   - Open questions for Thomas: whether a Boss's head counts as On Ground, and whether the longer punch lunge is wanted.
 - **NOT TESTED:** everything in play with real input: each jump change, the Bonus Restart confirmation, the binding refusals, the Esc and focus fixes, the cursor on the creation menu, the window size in a standalone build, and the platform wave's look. The second-pass fixes after the review were compiled only.
 
+## 2026-11-15 — Phase two revised after play: no punch line, stronger counter, rising from below, footwork, slip, combinations
+
+- **Asked:** after playing, Thomas found the counter harmless, never saw the Rising Uppercut, wanted a cleverer and more mobile Boss, and wanted the ordinary punch's short warning line gone. He ruled out any change to damage. He chose pose-only warning and asked for all of it together, naming the step back, the slip and the combinations.
+- **Found, by reading:** the counter aimed at where the player stood when the shot was stopped and never corrected. The Rising Uppercut needed him grounded below the player, but his pursuit jumped to the player's level at the next decision, .12 s later. A diagnostic run to confirm this did not finish: the game paused on losing focus and Play Mode was then stopped.
+- **Changed:** `BossSilhouetteView.Boxer.cs` drops the punch line, adds the lock flash, the full counter line and both end marks. `FinalBossBoxer.Moves.cs` tracks the counter target, adds `TryRising`, `TrySlip` and the combinations. `FinalBossBoxer.cs` gives the counter its body strike and Cross and halves recovery inside a combination. `FinalBossBoxer.Footwork.cs` adds the walk-under, the step back and the middle-side landing. No damage value was touched.
+- **Checked:** the game assembly compiles with Unity's bundled compiler outside the Editor.
+- **NOT TESTED:** everything in play. In particular: whether the Rising Uppercut now appears, the step back's look (he may back off a platform's reach or stall at an edge), the slip's timing against real bullets, combinations against the three-stroke rest, and how much harder the fight is.
+
 ## 2026-11-15 — Rising Uppercut, Counter Guard and phase-two attack choice
 
 - **Asked:** after the second prototype, build both moves in the game, then pull the Boss's attack choice and footwork together.

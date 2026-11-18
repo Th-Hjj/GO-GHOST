@@ -29,22 +29,31 @@ namespace GoGhost.Duel
             return started;
         }
         internal bool Rising { get; private set; }
-        Vector2 risingTarget;
         readonly List<Vector2> risingArc = new List<Vector2>(64);
-        List<Vector2> traceInto;
         internal IReadOnlyList<Vector2> RisingArc => risingArc;
 
         bool RisingOpening(Vector2 target) => actor.Motor.Grounded && target.y-actor.Position.y > RisingMinimum
             && Mathf.Abs(target.x-actor.Position.x) <= RisingReach;
 
-        bool PlanRising(Vector2 target)
+        static float RisingDuration(BossMotionProfile motion) =>
+            Mathf.Clamp(motion.JumpSpeed/(Mathf.Abs(Physics2D.gravity.y)*motion.GravityScale),.25f,.7f);
+
+        static readonly Vector2 RisingChamber = new Vector2(.06f,-.60f);
+        static Vector2 RisingHand(float progress) =>
+            Vector2.Lerp(RisingChamber,new Vector2(.30f,1.05f),Mathf.Clamp01(progress*3.2f));
+
+        bool PlanRising(Vector2 target,float delay,float facing)
         {
             risingArc.Clear();
-            if (!RisingOpening(target) || !FindJump(target,0,out jump) || jump.Landing.y-actor.Position.y < .6f) return false;
-            risingTarget=target;
-            traceInto=risingArc;
-            TraceJump(jump.AimX,target,jump.Motion,out _);
-            traceInto=null;
+            if (!RisingOpening(target) || !FindJump(target,0,out jump,launchDelay:delay)
+                || jump.Landing.y-jump.Launch.y < .6f) return false;
+            TraceJump(jump.Launch,jump.AimX,target,jump.Motion,delay,out _,risingArc);
+            float duration=RisingDuration(jump.Motion);
+            for (int i=0;i<risingArc.Count;i++)
+            {
+                Vector2 hand=RisingHand(i*Time.fixedDeltaTime/duration);
+                risingArc[i]+=new Vector2(facing*hand.x,hand.y);
+            }
             return risingArc.Count > 2;
         }
 

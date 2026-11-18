@@ -106,7 +106,7 @@ The axe can cut from a wall to the floor, climb from the floor through a platfor
 - *No landing marks and no charge rings.* Removed: the Meteor's landing outline, the counter's end bar and fist ring, the Rising Uppercut's landing bar, the palm ring on an axe order, the socket ring on a phase-one throw.
 - *The axe's light.* Phase one: the socket tick is .075 wide in ice blue from the start of the wind-up and .13 in cold white from 60%. Phase two: `_AxeLit` in `FinalBossRainbow.shader` lights the whole axe to .35 when ordered and .8 from 60% of the delay.
 - *Lines.* `SwordTellWidth` and the same alphas as the Swordsman: .02 at .3 while preparing, .025 at .8 once locked, .06 at .95 while active. The step is at 60%; nothing fades in. The order line is the axe's violet, the phase-one flight path its ice blue, both one width end to end.
-- *Rising Uppercut.* One curve from the fist to the top of the planned jump, a quadratic through those two points.
+- *Rising Uppercut.* The line follows the fist from its release position to the top of the committed jump. Planning accounts for platform travel during the wind-up. If the jump cannot launch, the Boss recovers.
 - *Guard (Thomas, 2026-11-15, later the same day).* The guard's arc is the Boss's rainbow, flowing with his body, at the same two alphas; an exception to rainbow belonging to a landing fist. A hit-stop on a stopped shot was built and removed the same day.
 - *EMP.* Shapes unchanged; its thin strokes (lanes, tips, streaks, currents, release rays) use the three widths. The wave rings and the square core keep their own thickness.
 

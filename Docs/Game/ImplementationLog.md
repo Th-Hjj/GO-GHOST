@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-17 — Rising Uppercut follows its warning
+
+The warning used an illustrative curve and the Boss selected a second route at release. He now commits to a jump during the wind-up, predicts the moving supports at take-off and landing, and draws the fist positions along that jump. The fist extends on the same physics clock as the body. A failed take-off goes into recovery.
+
+Unity 6000.6.0f1 compiled. In controlled phase-two Play Mode trials, the player moved away after lock. The largest distance from the fist centre to the last rendered warning was 0.780 units on a rising support, 1.004 on a falling support and 0.639 near reversal before the fix. With the fix, all three measured below 0.001 in the uncapped run and at most 0.031 at a simulated 60 fps. Disabling the destination during the warning produced zero active punch frames. These trials exercised the real motor and renderer with controlled positions. A full manual fight and a player build were not run.
+
 ## 2026-11-15 — Boss defeat: brief slow motion, landing and a settled result
 
 - **Asked:** Bosses stayed dead in mid-air. Thomas approved an independent animated preview, then asked for implementation and a push to main after verification.

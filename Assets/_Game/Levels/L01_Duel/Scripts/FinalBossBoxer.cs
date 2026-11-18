@@ -105,7 +105,8 @@ namespace GoGhost.Duel
             if (!CanStart(punch)) return false;
             var facts=actor.Perception.Facts;
             // Aim where the opponent will be when the fist arrives: this punch's own wind-up and the start of its stroke.
-            Vector2 target=OpponentAt(facts,game.GetBossMoveTuning(true,(int)punch).Windup+.08f);
+            var tuningForPunch=game.GetBossMoveTuning(true,(int)punch);
+            Vector2 target=OpponentAt(facts,tuningForPunch.Windup+.08f);
             if (punch == Punch.Leap && !FindJump(target,0,out jump)) return false;
             if (punch == Punch.Meteor)
             {
@@ -113,16 +114,18 @@ namespace GoGhost.Duel
                 if (!actor.Motor.Grounded && !FindDive(target,out diveTarget)) return false;
             }
             // An opponent standing above him turns the Uppercut into a jump at them.
-            bool rise=punch==Punch.Uppercut && (requireRising || RisingReady) && PlanRising(target);
+            float facing=Mathf.Abs(target.x-actor.Position.x) > .12f ? Mathf.Sign(target.x-actor.Position.x) : actor.Facing;
+            bool rise=punch==Punch.Uppercut && (requireRising || RisingReady)
+                && PlanRising(target,tuningForPunch.Windup,facing);
             if (requireRising && !rise) return false;
             Rising=rise;
             if (Rising) risingReadyAt=Time.time+RisingCooldown;
             counter=false;
             if (Time.time-lastPunchEnd > ChainGap) chain=0;
             Current=punch; Cross=false; signatureLeap=punch==Punch.Leap && ShoulderWindow;
-            LockedFacing=Mathf.Abs(target.x-actor.Position.x) > .12f ? Mathf.Sign(target.x-actor.Position.x) : actor.Facing;
+            LockedFacing=facing;
             actor.Face(Vector2.right*LockedFacing);
-            accepted=game.GetBossMoveTuning(true,(int)punch);
+            accepted=tuningForPunch;
             Started[(int)punch]++;
             if (actor.Motor.Grounded || punch==Punch.Meteor) actor.Motor.EndAttackMotion();
             // Every punch is wound up standing still (Thomas, 2026-11-15): he plants, coils into the
@@ -164,17 +167,16 @@ namespace GoGhost.Duel
                 }
                 if (Rising)
                 {
-                    // The platforms have moved during the wind-up; the place he jumps at has not.
-                    if (FindJump(risingTarget,0,out jump) && TakeOff(jump))
+                    if (TakeOff(jump))
                     {
                         // The fist leads from the ground up: the stroke starts with the take-off and
                         // lasts to the top of the jump, so the whole rise is the punch.
                         airborne=false; airStart=Time.time;
                         StartStroke();
-                        SetPhase(Stage.Active,Mathf.Clamp(jump.Motion.JumpSpeed/(Mathf.Abs(Physics2D.gravity.y)*jump.Motion.GravityScale),.25f,.7f));
                         return;
                     }
-                    Rising=false;
+                    Recover();
+                    return;
                 }
                 ReleaseLunge(facts);
                 StartStroke();
@@ -354,7 +356,7 @@ namespace GoGhost.Duel
         void StartStroke()
         {
             hit=false; Stroke++; chain++;
-            float active=Current switch { Punch.Uppercut=>Rising ? .30f : .21f, Punch.Backfist=>.22f, Punch.Leap=>.27f,
+            float active=Current switch { Punch.Uppercut=>Rising ? RisingDuration(jump.Motion) : .21f, Punch.Backfist=>.22f, Punch.Leap=>.27f,
                 Punch.Meteor=>Mathf.Clamp(Vector2.Distance(diveTarget,actor.Position)/24f+.18f,.20f,.85f), _=>.14f };
             SetPhase(Stage.Active,active);
             punchTime=Time.time;
@@ -379,7 +381,7 @@ namespace GoGhost.Duel
         internal static readonly Vector2 Guard = new Vector2(.29f,.31f);
         Vector2 Chamber => Current switch
         {
-            Punch.Uppercut=>Rising ? new Vector2(.06f,-.60f) : new Vector2(.10f,-.50f), Punch.Backfist=>new Vector2(-.44f,.25f),
+            Punch.Uppercut=>Rising ? RisingChamber : new Vector2(.10f,-.50f), Punch.Backfist=>new Vector2(-.44f,.25f),
             Punch.Leap=>new Vector2(-.21f,.44f), Punch.Meteor=>new Vector2(-.12f,.71f),
             _=>Cross ? new Vector2(-.25f,.20f) : new Vector2(.17f,.27f)
         };
@@ -387,7 +389,7 @@ namespace GoGhost.Duel
         {
             float extend=Mathf.SmoothStep(0,1,t);
             // Rising: the fist is over his head within the first third and stays there, leading the body up.
-            if (Rising) return Vector2.Lerp(Chamber,new Vector2(.30f,1.05f),Mathf.Clamp01(t*3.2f));
+            if (Rising) return RisingHand(t);
             switch(Current)
             {
                 case Punch.Uppercut:
@@ -404,6 +406,8 @@ namespace GoGhost.Duel
         internal Vector2 HandLocal => Phase switch
         {
             Stage.Windup=>Vector2.Lerp(Guard,Chamber,CoilProgress), Stage.Slip=>Chamber,
+            Stage.Active when Rising=>RisingHand(actor.Motor.JumpStartedAt < 0 ? 0 :
+                (Time.fixedTime-actor.Motor.JumpStartedAt+Time.fixedDeltaTime)/RisingDuration(jump.Motion)),
             Stage.Active=>StrokePoint(PhaseProgress), Stage.Recovery=>Vector2.Lerp(recoveryHand,Guard,PhaseProgress),
             _=>Guard
         };

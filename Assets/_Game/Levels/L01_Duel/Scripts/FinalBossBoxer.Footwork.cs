@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace GoGhost.Duel
@@ -14,7 +15,7 @@ namespace GoGhost.Duel
         struct JumpPlan
         {
             public Collider2D Support;
-            public Vector2 Landing;
+            public Vector2 Launch, Landing;
             public BossMotionProfile Motion;
             public float Duration, StrikeAt, AimX;
         }
@@ -255,11 +256,14 @@ namespace GoGhost.Duel
         }
 
         // cutOff: land on the middle side of the target, so the wall stays behind them.
-        bool FindJump(Vector2 target,float highGround,out JumpPlan best,bool cutOff=false)
+        bool FindJump(Vector2 target,float highGround,out JumpPlan best,bool cutOff=false,float launchDelay=0)
         {
             SampleSurfaces();
             best=default; float bestCost=float.PositiveInfinity;
             var from=actor.Position;
+            if (launchDelay > 0 && actor.Navigation.TrySupport(from,actor.Motor.Size,out var support)
+                && support.TryGetComponent<PlatformOscillator>(out var carrier))
+                from.y+=carrier.DisplacementAfter(launchDelay);
             for (int i=0;i<surfaces.Length;i++)
             {
                 var surface=surfaces[i];
@@ -267,9 +271,9 @@ namespace GoGhost.Duel
                 float middle=actor.Navigation.ArenaBounds.center.x;
                 float stand=cutOff && Mathf.Abs(target.x-middle) > 3f ? Mathf.Sign(target.x-middle)*.9f : Mathf.Sign(target.x-from.x)*.55f;
                 float x=Mathf.Clamp(target.x-stand,surface.Bounds.min.x+margin,surface.Bounds.max.x-margin);
-                float height=surface.Top(.38f)+actor.Motor.Size.y*.5f-from.y;
+                float height=surface.Top(launchDelay+.38f)+actor.Motor.Size.y*.5f-from.y;
                 var motion=actor.Axe.LeapMotion(height);
-                if (!TraceJump(x,target,motion,out var plan)) continue;
+                if (!TraceJump(from,x,target,motion,launchDelay,out var plan)) continue;
                 var diff=plan.Landing-target;
                 float cost=Mathf.Abs(diff.x)*.82f+Mathf.Abs(diff.y)*.72f+plan.Duration*.65f
                     - highGround*Mathf.Clamp(plan.Landing.y-from.y,0,4);
@@ -281,10 +285,12 @@ namespace GoGhost.Duel
 
         // Mirror the motor's discrete acceleration and gravity. Only the body lands on
         // one-way surfaces; each crossing uses the surface height at both ends of the step.
-        bool TraceJump(float aimX,Vector2 target,BossMotionProfile motion,out JumpPlan plan)
+        bool TraceJump(Vector2 launch,float aimX,Vector2 target,BossMotionProfile motion,float delay,out JumpPlan plan,
+            List<Vector2> ascent=null)
         {
             plan=default;
-            Vector2 p=actor.Position, velocity=new Vector2(0,motion.JumpSpeed), half=actor.Motor.Size*.5f;
+            Vector2 p=launch, velocity=new Vector2(0,motion.JumpSpeed), half=actor.Motor.Size*.5f;
+            ascent?.Add(p);
             var arena=actor.Navigation.ArenaBounds;
             float ceiling=arena.max.y-.25f-half.y;
             float dt=Time.fixedDeltaTime, bestDistance=float.PositiveInfinity, strike=0;
@@ -294,16 +300,16 @@ namespace GoGhost.Duel
                 velocity.x=BossMotor2D.StepHorizontal(velocity.x,wish,false,motion,dt);
                 velocity.y+=Physics2D.gravity.y*motion.GravityScale*dt;
                 var next=p+velocity*dt;
-                traceInto?.Add(next);
                 next.x=Mathf.Clamp(next.x,arena.min.x+.25f+half.x,arena.max.x-.25f-half.x);
                 if (next.y>ceiling) { next.y=ceiling; velocity.y=0; }
+                if (ascent!=null && t<=RisingDuration(motion)+dt*.5f) ascent.Add(next);
                 float distance=(next+Vector2.right*Mathf.Sign(aimX-actor.Position.x)*.85f-target).sqrMagnitude;
                 if (distance<bestDistance) { bestDistance=distance; strike=t; }
                 int first=-1; float crossing=float.PositiveInfinity;
                 for (int k=0;k<surfaces.Length;k++)
                 {
                     var s=surfaces[k];
-                    float before=p.y-half.y-s.Top(t-dt), after=next.y-half.y-s.Top(t);
+                    float before=p.y-half.y-s.Top(delay+t-dt), after=next.y-half.y-s.Top(delay+t);
                     if (before<-.025f || after>0 || after>=before) continue;
                     float f=Mathf.Clamp01(before/(before-after));
                     float x=Mathf.Lerp(p.x,next.x,f);
@@ -313,8 +319,8 @@ namespace GoGhost.Duel
                 if (first>=0)
                 {
                     var surface=surfaces[first];
-                    plan=new JumpPlan { Support=surface.Collider, Motion=motion, Duration=t, AimX=aimX,
-                        Landing=new Vector2(next.x,surface.Top(t)+half.y+.015f), StrikeAt=Mathf.Clamp(strike-.10f,.055f,Mathf.Max(.055f,t-.16f)) };
+                    plan=new JumpPlan { Support=surface.Collider, Launch=launch, Motion=motion, Duration=t, AimX=aimX,
+                        Landing=new Vector2(next.x,surface.Top(delay+t)+half.y+.015f), StrikeAt=Mathf.Clamp(strike-.10f,.055f,Mathf.Max(.055f,t-.16f)) };
                     return t>.12f;
                 }
                 p=next;

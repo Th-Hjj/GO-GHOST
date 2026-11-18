@@ -165,23 +165,14 @@ namespace GoGhost.Duel
             bool winding=boxer.Phase==FinalBossBoxer.Stage.Windup || boxer.Phase==FinalBossBoxer.Stage.Slip;
             if (boxer.Rising && boxer.Phase==FinalBossBoxer.Stage.Windup && boxer.RisingArc.Count>2)
             {
-                // The Rising Uppercut warns with one smooth curve from the fist to the top of the jump.
-                // It is drawn from those two points, not from the jump's sampled path, so it cannot kink.
+                // The fixed-step points trace the committed fist from release through the rise.
                 var path=boxer.RisingArc;
-                int top=1;
-                while (top<path.Count-1 && path[top+1].y>=path[top].y) top++;
                 bool locked=boxer.PhaseProgress>=.6f;
-                const int samples=16;
-                var line=AxeLine(10,"Rising warning",samples+1);
+                var line=AxeLine(10,"Rising warning",path.Count);
                 float width=SwordTellWidth(false,locked);
                 line.startWidth=line.endWidth=width;
                 line.startColor=line.endColor=AxeTellColor(false,locked);
-                Vector2 start=boxer.Fist(), peak=path[top]+new Vector2(boxer.LockedFacing*.30f,.85f);
-                for(int i=0;i<=samples;i++)
-                {
-                    float t=i/(float)samples, rise=1-(1-t)*(1-t);
-                    line.SetPosition(i,ClipTellPoint(new Vector2(Mathf.Lerp(start.x,peak.x,t),Mathf.Lerp(start.y,peak.y,rise)),width));
-                }
+                for(int i=0;i<path.Count;i++) line.SetPosition(i,ClipTellPoint(path[i],width));
             }
             // An ordinary punch draws no line (Thomas, 2026-11-15: the short stroke line read as a mistake).
             // The wind-up pose is the warning, and the body shows one white step as the punch locks in.

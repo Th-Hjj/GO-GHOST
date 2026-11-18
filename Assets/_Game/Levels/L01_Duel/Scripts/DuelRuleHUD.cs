@@ -11,11 +11,13 @@ namespace GoGhost.Duel
         float rulePanelWidth=RulePanelWidth;
         const float ArenaRevealSeconds = .65f, CardRevealSeconds = .3f;
         float firstInvadedSidebarAt = float.NegativeInfinity;
+        List<ConditionalRule> frozenRuleCards;
         static float Reveal(float age, float duration) => Mathf.SmoothStep(0, 1, age / duration);
         internal void ResetEncounterPresentation()
         {
             if (hurtFlash != null) hurtFlash.enabled = false;
             firstInvadedSidebarAt = invadedAt = bossPoolSpentAt = secondPoolAt = float.NegativeInfinity;
+            frozenRuleCards = null;
             invadedOrder = -1;
             injectedOrders.Clear();
         }
@@ -84,10 +86,19 @@ namespace GoGhost.Duel
         }
         void OnDestroy()
         {ClearRuleHud();ruleGlowStates.Clear();ruleGlowController=null;DisposeCharacterFonts();if(portraitMaterial!=null)Destroy(portraitMaterial);}
+        // The EMP replaces the live rules and victory disposes their controller. Keep the cards on screen.
+        internal void FreezeRuleCards()
+        {
+            var rules = game.Rules;
+            frozenRuleCards = new List<ConditionalRule>();
+            if (rules == null) return;
+            foreach (var (op, row) in rules.OrderedRows)
+                frozenRuleCards.Add(rules.RuleAt((ControlOperation)op, row));
+        }
         void BuildRuleHud()
         {
             // A held result keeps the HUD of the fight it ended.
-            bool battle=game.Phase==DuelPhase.Prepare||game.Phase==DuelPhase.Fight||game.Phase==DuelPhase.Training||game.ResultHeld;
+            bool battle=game.Phase==DuelPhase.Prepare||game.Phase==DuelPhase.Fight||game.Phase==DuelPhase.Training||game.VictoryPresentation||game.ResultHeld;
             if(!battle||ruleGlowController!=game.Rules)
             {ruleGlowStates.Clear();ruleGlowController=battle?game.Rules:null;}
             if(!battle)return;
@@ -95,7 +106,7 @@ namespace GoGhost.Duel
             hudRules=game.Rules;
             if (hudScrollController != hudRules)
             {
-                if (!sidebarsSealed) hudScrollPosition = Time.unscaledTime-invadedAt < CardRevealSeconds ? 0 : 1;
+                if (frozenRuleCards == null) hudScrollPosition = Time.unscaledTime-invadedAt < CardRevealSeconds ? 0 : 1;
                 hudScrollController = hudRules;
             }
 #if UNITY_EDITOR
@@ -106,10 +117,9 @@ namespace GoGhost.Duel
             }
             else
 #endif
-            // Final Boss phase change: the stripped controller is shown as the frozen pre-shockwave list.
-            if(sealedPlayerRules!=null)
+            if(frozenRuleCards!=null)
             {
-                foreach(var rule in sealedPlayerRules)
+                foreach(var rule in frozenRuleCards)
                     ruleRows.Add(new RuleRowView{Rule=rule,Operation=ConditionalCatalog.Response(rule.Action).Operation,Row=-1});
             }
             else
@@ -285,8 +295,7 @@ namespace GoGhost.Duel
             if(canvas==null)return;
             float scale=canvas.GetComponent<Canvas>().scaleFactor;
             float width=Screen.width/Mathf.Max(.01f,scale),height=Screen.height/Mathf.Max(.01f,scale);
-            bool hasRules=ruleSidebar!=null&&hudRules==game.Rules&&
-                (game.Phase==DuelPhase.Prepare||game.Phase==DuelPhase.Fight||game.Phase==DuelPhase.Training||game.ResultHeld);
+            bool hasRules=ruleSidebar!=null&&hudRules==game.Rules;
             if(hasRules&&(Mathf.Abs(ruleHudSize.x-width)>.5f||Mathf.Abs(ruleHudSize.y-height)>.5f))LayoutRuleHud(width,height);
             float sidebar=hasRules?rulePanelWidth:0;
             // Reveal the player's sidebar at the opening countdown and withdraw it after the EMP.

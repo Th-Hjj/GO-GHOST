@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-18 — Keep the fight framing through Boss defeat
+
+A live Mission 2 result had two equipped rules, no sidebar and a full-width camera. Victory had disposed the rule controller before rebuilding the HUD for the Boss's landing. The HUD now keeps the fight's rule cards until the encounter ends. An empty sidebar stays absent, including after the Final Boss seals the player's rules.
+
+Unity 6000.6.0f1 compiled. One isolated Check Game Flow run compared the camera's pixel rect, orthographic size and sidebar on the winning hit, throughout the landing and on the held result. At 640 × 480 the arena kept its 118.4 px left inset with a rule in Mission 1 and its full width with zero rules in Mission 2. The run passed through the credits. Report in `Logs/BossEncounter/Flow-20261118-082139-630605/game-flow.txt`. Physical input, visual review at 2560 × 1440 and a player build were not tested.
+
 ## 2026-11-18 — Happy waits for a Test Room visit
 
 During Mission 1 preparation, Happy follows the existing Test Room explanation with “Please test out your setup here.” The invitation keeps the Test Room highlighted after a dialogue click. Returning from practice plays the existing Start Mission line. The new take uses the current Happy voice settings.

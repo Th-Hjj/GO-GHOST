@@ -202,6 +202,8 @@ One player stands on the right roof with their back to the camera, looking towar
 | .56 | The hazard band is drawn across from the left edge in .16 s |
 | .76, .81 | Primary button, then secondary. On a cleared mission the button waits for Happy's box to close |
 
+The winning hit, the Boss's landing and the held result share the fight's camera framing. If Rules was visible, its cards stay on the left and dim with the HUD. A fight with no visible rules keeps the full-width arena, including after the Final Boss's EMP.
+
 The pages carry no black ground and no scanlines while held. Entrances count from the result freeze, so a rebuilt page carries on instead of replaying. Retry is immediate. Happy's box appears .8 s after the page as before; on a defeat it covers the player's bar. Mission 2 stays held until her line is acknowledged, then wipes into Mission 3 preparation. The grade is a runtime post-processing volume; the fighters are drawn after it by a second camera with its own light (`ResultHoldView.cs`). No art or asset is changed. The result is centred on the screen, so with a Rules sidebar a fighter can stand behind the word or a button.
 
 - **Defeat (D7):** Retry, then Configuration. Phase-two defeat uses Retry Phase 2.

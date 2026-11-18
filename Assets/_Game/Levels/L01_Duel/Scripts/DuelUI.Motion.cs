@@ -53,7 +53,7 @@ namespace GoGhost.Duel
             switch (game.Phase)
             {
                 case DuelPhase.TargetProfile: return PageKind.Profile;
-                case DuelPhase.MissionEntry: case DuelPhase.FinalVictoryHold: return PageKind.Blank;
+                case DuelPhase.MissionEntry: return PageKind.Blank;
                 case DuelPhase.Menu: return PageKind.Menu;
                 case DuelPhase.CharacterCreation: return PageKind.Creation;
                 case DuelPhase.Configure:

@@ -7,7 +7,6 @@ namespace GoGhost.Duel
     // The EMP freezes the player's rule cards. The sidebar withdraws during the countdown.
     public sealed partial class DuelUI
     {
-        List<ConditionalRule> sealedPlayerRules;
         bool sidebarsSealed;
         float sidebarFadeFrom = -1, sidebarFadeSeconds = 1;
         float sealStarted;
@@ -38,13 +37,7 @@ namespace GoGhost.Duel
 
         public void SealSidebars()
         {
-            sealedPlayerRules = new List<ConditionalRule>();
-            var rules = game.Rules;
-            if (rules != null)
-                for (int op = 0; op < ConditionalCatalog.OperationLabels.Length; op++)
-                    for (int row = 0; row < rules.RuleCount((ControlOperation)op); row++)
-                        sealedPlayerRules.Add(rules.RuleAt((ControlOperation)op, row).Copy());
-            sealedPlayerRules.Sort((a, b) => a.DisplayOrder.CompareTo(b.DisplayOrder));
+            FreezeRuleCards();
             sidebarsSealed = true; sidebarFadeFrom = -1;
             sealStarted = Time.time;
             Show();
@@ -54,9 +47,9 @@ namespace GoGhost.Duel
 
         public void ClearSidebarSeal()
         {
-            bool was = sidebarsSealed;
-            sealedPlayerRules = null; sidebarsSealed = false; sidebarFadeFrom = -1;
-            if (was) Show();
+            if (!sidebarsSealed) return;
+            frozenRuleCards = null; sidebarsSealed = false; sidebarFadeFrom = -1;
+            Show();
         }
 
         // Split only the connection between condition and action. The text stays readable.

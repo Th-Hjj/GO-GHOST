@@ -14,6 +14,7 @@ namespace GoGhost.Duel
 
         void BeginVictoryPresentation()
         {
+            ui.FreezeRuleCards();
             StopCombat();
             Player.IsInvulnerable = true;
             // Keep both fighters in the same slowed world. Input and damage have already ended;

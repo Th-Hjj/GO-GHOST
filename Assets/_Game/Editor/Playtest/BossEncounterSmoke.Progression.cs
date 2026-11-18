@@ -59,6 +59,10 @@ public static partial class BossEncounterSmoke
         for (int wave = 1; wave <= DuelGame.FinalBossWave; wave++)
         {
             Require(game.Wave == wave && game.TrainingPending, "Missing preparation for Mission " + wave);
+            if (wave == 1)
+                game.EditLoadout(loadout => Require(loadout.TryAddRule(ControlOperation.Jump, ConditionalLoadout.CreateTutorialJumpRule()), "Missing victory sidebar fixture."));
+            if (wave == 2)
+                game.EditLoadout(loadout => loadout.Operations[(int)ControlOperation.Jump].Rules.Clear());
             yield return CheckProfile(wave);
             yield return Click("TestLoadout");
             // Entering and leaving the Test Room happen once the wipe has covered the screen.
@@ -82,10 +86,7 @@ public static partial class BossEncounterSmoke
             Note("PASS Mission " + wave + ": preparation, Test Room return, Start Mission, countdown.");
             if (wave == DuelGame.FinalBossWave) break;
 
-            game.Bosses[0].Health.TakeDamage(100000, game.Player.gameObject);
-            yield return WaitFor(() => game.Phase == DuelPhase.BossVictoryHold, "Missing Boss defeat presentation.");
-            Require(Mathf.Approximately(Time.timeScale, .4f), "Victory did not start with slow motion.");
-            if (wave == 1) yield return Shot("boss-defeat-slow-motion");
+            yield return CheckMissionVictoryFraming(wave == 1);
             if (wave == 1)
             {
                 yield return WaitFor(() => game.Phase == DuelPhase.Between && game.PendingDialogue == null, "Mission 1 result.", 25);
@@ -164,6 +165,32 @@ public static partial class BossEncounterSmoke
         yield return CheckCredits();
         Note("PASS final victory protection, ending, save removal, cleared flag, analytics cutoff, Main Menu cleanup.");
         Note("NOT TESTED: complete tutorial, rule editing, physical input, the pause key, Reduce Flashing, balance, standalone build, other hardware.");
+    }
+
+    static IEnumerator CheckMissionVictoryFraming(bool withRule)
+    {
+        var camera = Camera.main;
+        var viewport = camera.pixelRect;
+        float size = camera.orthographicSize;
+        Require((viewport.xMin > 0) == withRule, "Wrong combat viewport before the winning hit.");
+        void CheckFrame()
+        {
+            var panel = CurrentPage().Find("BattleRules");
+            Require((panel != null && panel.gameObject.activeInHierarchy) == withRule &&
+                camera.pixelRect == viewport && Mathf.Approximately(camera.orthographicSize, size),
+                $"Combat framing changed in {game.Phase}: Rules={panel != null}, viewport={camera.pixelRect} (was {viewport}), size={camera.orthographicSize} (was {size}).");
+            if (withRule)
+                Require(panel.Find("BattleRuleScroll/Viewport/RuleList").childCount == 1, "The equipped card disappeared.");
+        }
+        CheckFrame();
+        game.Bosses[0].Health.TakeDamage(100000, game.Player.gameObject);
+        yield return WaitFor(() => game.Phase == DuelPhase.BossVictoryHold, "Missing Boss defeat presentation.");
+        CheckFrame();
+        Require(Mathf.Approximately(Time.timeScale, .4f), "Victory did not start with slow motion.");
+        if (withRule) yield return Shot("boss-defeat-slow-motion");
+        yield return WaitFor(() => { CheckFrame(); return game.Phase == DuelPhase.Between; }, "Missing held result.");
+        yield return Observe(.85f, CheckFrame);
+        Note($"PASS Mission {game.Wave} winning hit through held result: Rules={withRule}, viewport={viewport}, size={size}.");
     }
 
     static IEnumerator CheckProfile(int wave)

@@ -210,7 +210,6 @@ namespace GoGhost.Duel
                 Image(page,Vector2.zero,new Vector2(4000,4000),NeuralPalette.Background);
             if(game.Phase==DuelPhase.TargetProfile){BuildTargetProfile();return;}
             if(game.Phase==DuelPhase.MissionEntry)return;
-            if(game.Phase==DuelPhase.FinalVictoryHold)return;
             if(game.Phase!=DuelPhase.CharacterCreation)ForgetCreationWords();
             if(game.Phase==DuelPhase.Menu){BuildOverrideMenu();return;}
             if(game.Phase==DuelPhase.CharacterCreation)

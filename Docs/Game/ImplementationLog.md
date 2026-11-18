@@ -12,6 +12,18 @@ The title's second row holds New Game and Online when a save exists; without one
 
 In Play Mode at 2560 × 1440 with a save, the title and the Online page were opened through their button callbacks and captured, with the field empty and with a code set from script. The first build left 24 units between New Game and Online and 28 between the field and Join, because slabs whose boxes are 12 apart stand a further cut apart; both now read as the 12 between rows. Captures are in `Logs/Online/`. The last change, starting the typed code 4 units further left, compiled and was not captured. The title without a save, typing on a keyboard, Esc and Back from the page, a narrow window, Reduce Flashing and Check Game Flow were NOT TESTED.
 
+## 2026-11-18 — Confirm clears the picker and holds the player still
+
+The full-height edge stays visible while editing. Both sides' picker controls and slabs now share a fade during the first .1 s of Confirm, before the cards move inward. The preview and game both dropped the player's 12-unit impact dip. The game holds the figure's visible limb colours through the merge, then blends them into the equipped colours as it returns to preparation.
+
+Source and diff checks only. Thomas will verify this revision in the Editor. The earlier Play Mode results below cover the preceding card animation.
+
+## 2026-11-18 — Rule cards meet edge to edge on Confirm
+
+In the 2560 × 1440 Game View, the two slanted faces started 423.14 design units apart. Fixed travel and an overshooting curve drove them 72.78 units into each other and left 24.86 units of overlap at rest. The arrow also covered the action text. Confirm now takes the visible faces from their current positions to a shared edge at .26 s. The arrow fades behind them, and the impact brightens the existing fills.
+
+Unity Play Mode button callbacks added Low Health → Jump, then reopened and confirmed that rule with Reduce Flashing enabled. Both runs measured zero overlap and returned to the overview with one rule. Only the first showed the card brightening. Game View captures and frame measurements are in `Logs/UIReview/ConfirmSeam/`. The separate campaign flow passed through the credits in `Logs/BossEncounter/Flow-20261118-083939-52621d/game-flow.txt`. Physical input and a player build were not tested.
+
 ## 2026-11-18 — Tutorial selection on the Difficulty page
 
 New Game now groups Tutorial On / Off with difficulty. The compact row aligns with Continue, and a light fill marks the selected option. Continue carries both choices into character creation, where the face, name and Upload controls take the right side.

@@ -973,18 +973,38 @@ namespace GoGhost.Duel
     // One of the two sentence cards driven into the other: a short pull back, then the hit.
     public sealed class CardSlam : MonoBehaviour
     {
-        public float Distance, Seconds = .26f;
-        RectTransform rect;
-        Vector2 home;
+        public const float Pullback = .1f, Contact = .26f, Cool = .3f;
+        const float Rise = .07f;
+        SlabButton card;
+        float from, to;
         double born;
 
-        void OnEnable() { rect = (RectTransform)transform; home = rect.anchoredPosition; born = Time.unscaledTimeAsDouble; }
+        public static void Play(SlabButton card, float target, double startedAt)
+        {
+            // Take over the visible face even if Confirm was pressed during its entrance or hover.
+            card.enabled = false;
+            var slam = card.gameObject.AddComponent<CardSlam>();
+            slam.card = card;
+            slam.from = card.Face.anchoredPosition.x;
+            slam.to = target;
+            slam.born = startedAt;
+            card.Face.localScale = Vector3.one;
+            if (card.Face.TryGetComponent(out CanvasGroup group)) group.alpha = 1;
+            card.Slab.SetFrame(0, Color.clear);
+        }
+
         void LateUpdate()
         {
-            float t = Mathf.Clamp01((float)(Time.unscaledTimeAsDouble - born) / Seconds);
-            float x = t < .22f ? -.07f * Distance * OvMotion.Snap(t / .22f)
-                : Mathf.LerpUnclamped(-.07f * Distance, Distance, OvMotion.Back((t - .22f) / .78f));
-            rect.anchoredPosition = home + Vector2.right * x;
+            float age = (float)(Time.unscaledTimeAsDouble - born);
+            float pulled = from - .07f * to;
+            float drive = Mathf.InverseLerp(Pullback, Contact, age);
+            float x = age < Pullback ? Mathf.Lerp(from, pulled, OvMotion.Snap(age / Pullback))
+                : Mathf.Lerp(pulled, to, drive * drive);
+            card.Face.anchoredPosition = new Vector2(x, 0);
+            float glow = age < Contact ? Mathf.InverseLerp(Contact - Rise, Contact, age)
+                : 1 - Mathf.InverseLerp(Contact, Contact + Cool, age);
+            card.Slab.color = GameSettings.ReduceFlashing ? card.Fill : Color.Lerp(card.Fill, Color.white, .5f * glow);
+            if (age >= Contact + Cool) enabled = false;
         }
     }
 

@@ -298,11 +298,18 @@ namespace GoGhost.Duel
         {
             if (overviewFigureRoot == null) return;
             float time = Time.unscaledTime;
+            if (confirmSequence == null && (pendingRule != null || installAge >= BodyInstallSeconds))
+                confirmedFigure = null;
             Color Part(NeuralBodySystem system)
             {
                 bool owned = (connectedSystems & (1 << (int)system)) != 0;
                 Color colour = owned ? NeuralPalette.Body(system) : NeuralPalette.Primary;
                 if (highlighted == system) colour = Color.Lerp(NeuralPalette.Body(system), Color.white, .5f + .5f * Mathf.Sin(time * 9));
+                if (confirmedFigure is { } held)
+                {
+                    Color from = system == NeuralBodySystem.Arms ? held.arms : system == NeuralBodySystem.Legs ? held.legs : held.spine;
+                    return confirmSequence != null ? from : Color.Lerp(from, colour, Mathf.SmoothStep(0, 1, installAge / BodyInstallSeconds));
+                }
                 if (system == installedSystem && installAge >= 0 && installAge < BodyInstallSeconds)
                     colour = Color.Lerp(Color.white, colour, installAge / BodyInstallSeconds);
                 return colour;
@@ -317,9 +324,8 @@ namespace GoGhost.Duel
             bool walking = slide < 1;
             Vector2 offset = figureSlideFrom * (1 - OvMotion.Glide(slide));
             figureScaleNow = walking ? Mathf.Lerp(figureScaleFrom, figureScale, OvMotion.Glide(slide)) : figureScale;
-            float dip = time >= figureDipAt && time < figureDipAt + .09f ? 12 : 0;
             overviewFigureRoot.localScale = new Vector3(figureScaleNow, figureScaleNow, 1);
-            overviewFigureRoot.anchoredPosition = overviewFigureHome + offset + Vector2.down * dip;
+            overviewFigureRoot.anchoredPosition = overviewFigureHome + offset;
             if (figureFloor != null)
                 figureFloor.localScale = new Vector3(walking ? OvMotion.Snap(Mathf.Clamp01((slide - .3f) / .6f)) : 1, 1, 1);
             figureFramePosition = figureFrameHome + offset;

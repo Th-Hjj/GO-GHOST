@@ -17,14 +17,17 @@ namespace GoGhost.Duel
         // The character keeps the overview's size in the editor (1.15 was tried and withdrawn, Thomas 2026-11-14).
         // A place may still ask for another size; the size then changes along the slide.
         float figureScale = 1, figureScaleFrom = 1, figureScaleNow = 1;
-        // The body dips once when a rule is confirmed. Previews of what an option does are made separately.
-        float figureDipAt = float.NegativeInfinity;
+        (Color arms, Color legs, Color spine)? confirmedFigure;
         // What the sentence cards and parameter rows last showed, so only a change is animated.
         readonly System.Collections.Generic.Dictionary<string, string> cardTexts = new System.Collections.Generic.Dictionary<string, string>();
         int builtChipCondition;
         string builtChipAction;
         double panelTurnAt = double.NegativeInfinity;
-        RectTransform editorCardLeft, editorCardRight, editorArrow, editorFrame;
+        SlabButton editorCardLeft, editorCardRight;
+        RectTransform editorArrow;
+        CanvasGroup editorChoices;
+        double confirmStartedAt;
+        float cardJoinTravel;
         Coroutine confirmSequence;
         PickerBracketMotion pickerBracket;
         int builtStep = -1, builtCategory = -1, builtActionCategory = -1, actionCategory;
@@ -178,7 +181,7 @@ namespace GoGhost.Duel
                 rise.From = new Vector2(0, -24); rise.Seconds = .16f;
             }
             cardTexts[name] = value;
-            if (side < 0) editorCardLeft = root; else editorCardRight = root;
+            if (side < 0) editorCardLeft = behaviour; else editorCardRight = behaviour;
         }
 
         // The open side's ground: one slab from the screen edge to the character. It opens from that edge
@@ -236,45 +239,50 @@ namespace GoGhost.Duel
             away.To = new Vector2(closingLeft ? -60 : 60, 0); away.Seconds = ClosingSideSeconds; away.Go();
         }
 
-        // Confirm: the two cards are driven together, the arrow bursts, the body dips, then the rule is installed.
+        // The picker fades during the pullback. The figure stays visible while the cards meet.
         void ConfirmRule()
         {
             if (confirmSequence != null || !CanConfirmRule()) return;
+            confirmedFigure = (figureArms[0].color, figureLegs[0].color, figureTorso[0].color);
+            confirmStartedAt = Time.unscaledTimeAsDouble;
             confirmSequence = StartCoroutine(PlayConfirm());
         }
 
         System.Collections.IEnumerator PlayConfirm()
         {
-            if (pageControls != null) pageControls.blocksRaycasts = false;
             hoveredRuleOption = null;
-            if (editorCardLeft != null) editorCardLeft.gameObject.AddComponent<CardSlam>().Distance = 224;
-            if (editorCardRight != null) editorCardRight.gameObject.AddComponent<CardSlam>().Distance = -224;
+            AnimateConfirm();
+            var draft = pendingRule;
+            while (Time.unscaledTimeAsDouble < confirmStartedAt + CardSlam.Contact + CardSlam.Cool)
+            {
+                if (editorChoices != null)
+                {
+                    editorChoices.alpha = ConfirmPickerAlpha;
+                }
+                yield return null;
+            }
+            confirmSequence = null;
+            if (pageControls != null) pageControls.blocksRaycasts = true;
+            if (pendingRule == draft) CommitRuleChoice();
+            else confirmedFigure = null;
+        }
+
+        float ConfirmPickerAlpha => 1 - Mathf.SmoothStep(0, 1, (float)(Time.unscaledTimeAsDouble - confirmStartedAt) / CardSlam.Pullback);
+
+        void AnimateConfirm()
+        {
+            if (pageControls != null) pageControls.blocksRaycasts = false;
+            CardSlam.Play(editorCardLeft, cardJoinTravel, confirmStartedAt);
+            CardSlam.Play(editorCardRight, -cardJoinTravel, confirmStartedAt);
+            float elapsed = (float)(Time.unscaledTimeAsDouble - confirmStartedAt);
+            editorChoices.alpha = ConfirmPickerAlpha;
             if (editorArrow != null)
             {
                 if (editorArrow.TryGetComponent(out Drift drift)) drift.enabled = false;
+                if (editorArrow.TryGetComponent(out SlamIn entrance)) entrance.enabled = false;
                 var burst = editorArrow.gameObject.AddComponent<PopOut>();
-                burst.Idle = 1; burst.Delay = .2f; burst.Seconds = .14f; burst.ScaleTo = 2.4f;
+                burst.Idle = 1; burst.Seconds = .14f; burst.Delay = CardSlam.Contact - burst.Seconds - elapsed; burst.ScaleTo = 2.4f;
             }
-            // The hit shows on the two cards alone: they whiten as they meet and cool slowly. Nothing lights the page.
-            if (!GameSettings.ReduceFlashing) { CardGlow(editorCardLeft); CardGlow(editorCardRight); }
-            figureDipAt = Time.unscaledTime + .22f;
-            yield return new WaitForSecondsRealtime(.56f);
-            confirmSequence = null;
-            if (pageControls != null) pageControls.blocksRaycasts = true;
-            CommitRuleChoice();
-        }
-
-        // White laid over a sentence card's slab, under its words.
-        void CardGlow(RectTransform card)
-        {
-            var face = card != null ? card.Find("Face") as RectTransform : null;
-            if (face == null || !face.TryGetComponent(out SlabGraphic slab)) return;
-            var glow = Rect("Glow", face, Vector2.zero, face.rect.size);
-            glow.SetAsFirstSibling();
-            var white = glow.gameObject.AddComponent<SlabGraphic>();
-            white.color = Color.white; white.Cut = slab.Cut; white.raycastTarget = false;
-            var fade = glow.gameObject.AddComponent<PopOut>();
-            fade.Idle = 0; fade.Peak = .5f; fade.Delay = .17f; fade.Rise = .07f; fade.Seconds = .3f;
         }
 
         void BuildOverrideEditor()
@@ -291,7 +299,8 @@ namespace GoGhost.Duel
             builtStep = step;
 
             OvHeader(frame, "Body Configuration");
-            editorFrame = frame;
+            var choices = Rect("Editor choices", frame, Vector2.zero, frame.sizeDelta);
+            editorChoices = choices.gameObject.AddComponent<CanvasGroup>();
             if (fresh) { cardTexts.Clear(); builtChipCondition = 0; builtChipAction = null; panelTurnAt = double.NegativeInfinity; }
 
             // The open side lies on a slab that reaches in from its screen edge. Changing sides closes one and opens the other.
@@ -299,11 +308,11 @@ namespace GoGhost.Duel
             if (turned && !fresh) panelTurnAt = now;
             bool turning = now - panelTurnAt < .4;
             Color partColour = string.IsNullOrEmpty(rule.Action) ? OverridePalette.Signal : NeuralPalette.Body(RuleSystem(rule));
-            if (turning) OvSidePanel(frame, !selectingCondition, partColour, 1, 0, 0, panelTurnAt);
-            if (turning) OvSidePanel(frame, selectingCondition, partColour, 0, 1, .1f, panelTurnAt);
-            else if (pageEntering) OvSidePanel(frame, selectingCondition, partColour, 0, 1, .06f, -1);
-            else OvSidePanel(frame, selectingCondition, partColour, 1, 1, 0, -1);
-            LeaveClosingSide(frame);
+            if (turning) OvSidePanel(choices, !selectingCondition, partColour, 1, 0, 0, panelTurnAt);
+            if (turning) OvSidePanel(choices, selectingCondition, partColour, 0, 1, .1f, panelTurnAt);
+            else if (pageEntering) OvSidePanel(choices, selectingCondition, partColour, 0, 1, .06f, -1);
+            else OvSidePanel(choices, selectingCondition, partColour, 1, 1, 0, -1);
+            LeaveClosingSide(choices);
 
             // The sentence: Condition » Action. The card of the open side is filled.
             const float column = 520, leftX = 56, rightX = 1024, cardTop = 160, cardHeight = 108, listTop = 308, listHeight = 392;
@@ -328,10 +337,13 @@ namespace GoGhost.Duel
             bool linked = ConditionChosen();
             // The arrow stands midway between the two cards.
             float between = (leftCard + column + rightX) / 2;
+            // At the top of the card the Action's inner edge begins one cut inside its rectangle.
+            cardJoinTravel = (rightX + editorCardRight.Slab.Cut - (leftCard + column)) * .5f;
             var arrow = OvText("»", frame, At(between - 184, cardTop - 6, 368, cardHeight), new Vector2(368, cardHeight), 110,
                 linked ? OverridePalette.Signal : (Color)new Color32(0x3A, 0x3A, 0x44, 255));
             arrow.name = "PreviewActionArrow";
             editorArrow = arrow.rectTransform;
+            editorArrow.SetSiblingIndex(editorCardLeft.transform.GetSiblingIndex());
             if (linked) arrow.gameObject.AddComponent<Drift>();
             if (pageEntering) { var land = arrow.gameObject.AddComponent<SlamIn>(); land.From = 1.35f; land.Seconds = .15f; land.Delay = 2 * OvMotion.Stagger; }
 
@@ -351,8 +363,8 @@ namespace GoGhost.Duel
             StandFigure(bodyPreview, new Vector2(0, floorTop + .75f * 245), stage.rectTransform);
 
             // Both columns exist for the tutorial frame; only the open side holds choices.
-            ruleEditor = Rect("RuleEditor", frame, At(leftX, listTop, column, listHeight), new Vector2(column, listHeight));
-            ruleList = Rect("RuleList", frame, At(rightX, listTop, column, listHeight), new Vector2(column, listHeight));
+            ruleEditor = Rect("RuleEditor", choices, At(leftX, listTop, column, listHeight), new Vector2(column, listHeight));
+            ruleList = Rect("RuleList", choices, At(rightX, listTop, column, listHeight), new Vector2(column, listHeight));
             pickIndent = selectingCondition ? leftIndent : rightIndent;
             if (selectingCondition) OvConditionStep(ruleEditor, rule, turned);
             else OvActionStep(ruleList, rule, turned);
@@ -379,6 +391,7 @@ namespace GoGhost.Duel
             dialogueFooterRightInset = halfWidth - 180 * fit;
             dialogueFooterBottomInset = halfHeight - 402 * fit;
             bodyPreview.SetAsLastSibling();
+            if (confirmSequence != null) AnimateConfirm();
             UpdateConfigurationSignals();
         }
 

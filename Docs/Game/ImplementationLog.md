@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-18 — Online, stage 1: title button and Online page
+
+The title's second row holds New Game and Online when a save exists; without one, Online is the secondary under New Game. Online opens a page over the shaded title landscape with Create Room, a Room Code field and Join. Create Room and Join are not wired; networking (PurrNet) is not installed.
+
+In Play Mode at 2560 × 1440 with a save, the title and the Online page were opened through their button callbacks and captured, with the field empty and with a code set from script. The first build left 24 units between New Game and Online and 28 between the field and Join, because slabs whose boxes are 12 apart stand a further cut apart; both now read as the 12 between rows. Captures are in `Logs/Online/`. The last change, starting the typed code 4 units further left, compiled and was not captured. The title without a save, typing on a keyboard, Esc and Back from the page, a narrow window, Reduce Flashing and Check Game Flow were NOT TESTED.
+
 ## 2026-11-18 — Tutorial selection on the Difficulty page
 
 New Game now groups Tutorial On / Off with difficulty. The compact row aligns with Continue, and a light fill marks the selected option. Continue carries both choices into character creation, where the face, name and Upload controls take the right side.

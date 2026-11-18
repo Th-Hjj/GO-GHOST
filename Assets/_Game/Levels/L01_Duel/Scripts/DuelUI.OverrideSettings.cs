@@ -9,7 +9,7 @@ namespace GoGhost.Duel
     // Override UI, stage 7: Settings, Key Bindings, Credits, the New Game confirmation and the flashing-lights notice.
     public sealed partial class DuelUI
     {
-        enum OverlayPage { None, Settings, Bindings, Confirm, Notice, Difficulty, Online }
+        enum OverlayPage { None, Settings, Bindings, Confirm, Notice, Difficulty }
         OverlayPage overlay;
         static readonly GameDifficulty[] DifficultyOptions = { GameDifficulty.Easy, GameDifficulty.Normal, GameDifficulty.Hard };
         GameDifficulty newRunDifficulty;
@@ -32,7 +32,6 @@ namespace GoGhost.Duel
                 newRunDifficulty = GameDifficulty.Normal;
                 newRunTutorial = true;
             }
-            if (value == OverlayPage.Online) roomCode = "";
             overlay = value; listeningBinding = -1; Show();
         }
         void CloseOverlay()
@@ -44,12 +43,11 @@ namespace GoGhost.Duel
             Show();
         }
 
-        RectTransform OvOverlayFrame(string title, bool back = true, bool overTitle = false)
+        RectTransform OvOverlayFrame(string title, bool back = true)
         {
             page.sizeDelta = (Vector2)layoutScreen / canvas.GetComponent<Canvas>().scaleFactor;
             // Opaque over a paused fight too: the arena must not show through the rows.
             OvFill(page, OverridePalette.Ink);
-            if (overTitle) BuildShadedTitle();
             var frame = OvFrame();
             // The flashing-lights notice stays a still screen.
             bool still = overlay == OverlayPage.Notice;
@@ -77,7 +75,6 @@ namespace GoGhost.Duel
                 case OverlayPage.Confirm: BuildOverrideConfirm(); break;
                 case OverlayPage.Notice: BuildOverrideNotice(); break;
                 case OverlayPage.Difficulty: BuildDifficultySelection(); break;
-                case OverlayPage.Online: BuildOnlinePage(); break;
             }
         }
 

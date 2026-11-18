@@ -194,26 +194,13 @@ namespace GoGhost.Duel
             if (saved)
             {
                 OvButton("Continue", frame, At(92, 616, 420, 82), new Vector2(420, 82), game.ContinueGame, OverrideButtonKind.Primary, 53, true, Enter(2 + late));
-                // New Game and Online share the second row (Thomas, 2026-11-18): a fourth row would reach the hazard band.
-                // Set by eye, not by halves. New Game keeps its words under Continue's, and its slab ends as far past them
-                // as it starts before them. Online begins where New Game's box ends: two slabs with the same slant
-                // already stand one cut apart, which is the 12 units between the rows.
-                OvButton("New Game", frame, At(92, 710, TitleNewGameWidth, 58), new Vector2(TitleNewGameWidth, 58), RequestNewGame,
-                    OverrideButtonKind.Secondary, 34, false, Enter(3 + late));
-                OvButton("Online", frame, At(92 + TitleNewGameWidth, 710, 420 - TitleNewGameWidth, 58), new Vector2(420 - TitleNewGameWidth, 58),
-                    () => OpenOverlay(OverlayPage.Online), OverrideButtonKind.Secondary, 34, false, Enter(4 + late), TextAlignmentOptions.Capline);
+                OvButton("New Game", frame, At(92, 710, 420, 58), new Vector2(420, 58), RequestNewGame, OverrideButtonKind.Secondary, 34, false, Enter(3 + late));
             }
-            else
-            {
-                // Without a save the same three rows stand in the same places, with Online alone on the second.
-                OvButton("New Game", frame, At(92, 616, 420, 82), new Vector2(420, 82), RequestNewGame, OverrideButtonKind.Primary, 53, true, Enter(2 + late));
-                OvButton("Online", frame, At(92, 710, 420, 58), new Vector2(420, 58), () => OpenOverlay(OverlayPage.Online), OverrideButtonKind.Secondary, 34,
-                    false, Enter(3 + late));
-            }
+            else OvButton("New Game", frame, At(92, 624, 420, 82), new Vector2(420, 82), RequestNewGame, OverrideButtonKind.Primary, 53, true, Enter(2 + late));
             // The menu is 85% of its first size and keeps its left and bottom edges (Thomas, 2026-11-14).
             // The small row sits under the buttons above on the same left edge. Its right end stops a little short:
             // a short dark slab level with a tall bright one reads as sticking out. A browser page has nothing to quit.
-            const float row = 782;
+            float row = saved ? 782 : 722;
             bool quit = Application.platform != RuntimePlatform.WebGLPlayer;
             const float span = 420 - 8, gap = 8;
             string[] titles = quit ? new[] { "Settings", "Credits", "Quit" } : new[] { "Settings", "Credits" };
@@ -223,7 +210,7 @@ namespace GoGhost.Duel
             for (int i = 0; i < titles.Length; i++)
             {
                 float w = i == titles.Length - 1 ? 92 + span - x : shares[i];
-                OvButton(titles[i], frame, At(x, row, w, 48), new Vector2(w, 48), clicks[i], OverrideButtonKind.Tertiary, 27, false, Enter(5 + i + late),
+                OvButton(titles[i], frame, At(x, row, w, 48), new Vector2(w, 48), clicks[i], OverrideButtonKind.Tertiary, 27, false, Enter(4 + i + late),
                     TextAlignmentOptions.Capline).GetComponent<SlabButton>().EnterDistance = 40;
                 x += w + gap;
             }

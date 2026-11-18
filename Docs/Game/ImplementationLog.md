@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-18 — Credits: instructor, course and playtesters
+
+The roll now lists A game by, Music, Instructor (Jung-Ho Sohn, under CTIN 489, Fall 2026) and Playtesters, three to a line in smaller type with placeholder names. The Fonts row is removed.
+
+Compiled. In Play Mode at 2560 × 1440 the roll was started from the title's Credits button, held at the instructor's row and at the playtesters' row, and captured: the small lines and the names share one left edge. The roll's full run, its end on the logo and more than one line of playtesters were NOT TESTED.
+
 ## 2026-11-18 — Online removed
 
 Thomas decided against the online mode. `DuelUI.Online.cs` is deleted, and `DuelUI.Override.cs` and `DuelUI.OverrideSettings.cs` are back to their content before stage 1. PurrNet was never installed. The page designs stay on the design canvas, row O.

@@ -11,12 +11,20 @@ namespace GoGhost.Duel
         // Trial tuning. Units are the 1600x900 frame's; the window is the sky above the hazard band.
         const float CreditsLead = .5f, CreditsSpeed = 80, CreditsWindowTop = 40, CreditsWindowHeight = 500, CreditsFade = 90;
         const float CreditsRoleHeight = 44, CreditsNameHeight = 84, CreditsGap = 150;
-        static readonly (string role, string[] names)[] CreditRows =
+        // A row with columns sets its names side by side in smaller type: the playtesters, three to a line.
+        const float CreditsSmallHeight = 58, CreditsColumn = 330;
+        // Thomas, 2026-11-18: the course stands over the instructor, the playtesters' names come later,
+        // and the fonts are no longer listed (their licence texts ship with the game).
+        static readonly (string over, string role, string[] names, int columns)[] CreditRows =
         {
-            ("A game by", new[] { "Thomas Hong", "Walker Grupp" }),
-            ("Music", new[] { "Efe Inan" }),
-            ("Fonts", new[] { "Barlow Condensed", "JetBrains Mono" }),
+            (null, "A game by", new[] { "Thomas Hong", "Walker Grupp" }, 1),
+            (null, "Music", new[] { "Efe Inan" }, 1),
+            ("CTIN 489, Fall 2026", "Instructor", new[] { "Jung-Ho Sohn" }, 1),
+            (null, "Playtesters", new[] { "[Placeholder]", "[Placeholder]", "[Placeholder]" }, 3),
         };
+        static float CreditsRowHeight((string over, string role, string[] names, int columns) row) =>
+            (row.over != null ? CreditsRoleHeight : 0) + CreditsRoleHeight + (row.columns > 1
+                ? Mathf.Ceil(row.names.Length / (float)row.columns) * CreditsSmallHeight : row.names.Length * CreditsNameHeight);
         bool creditsRoll;
         double creditsAt = -1;
         GameObject creditsBlocker, creditsWindow;
@@ -30,7 +38,7 @@ namespace GoGhost.Duel
             get
             {
                 float height = -CreditsGap;
-                foreach (var row in CreditRows) height += CreditsRoleHeight + row.names.Length * CreditsNameHeight + CreditsGap;
+                foreach (var row in CreditRows) height += CreditsRowHeight(row) + CreditsGap;
                 return height;
             }
         }
@@ -60,12 +68,24 @@ namespace GoGhost.Duel
             float y = total / 2;
             foreach (var row in CreditRows)
             {
-                OvText(row.role, content, new Vector2(0, y - CreditsRoleHeight / 2), new Vector2(1100, CreditsRoleHeight), 30, OverridePalette.TextDim,
-                    TextAlignmentOptions.CaplineLeft, false, 1);
-                y -= CreditsRoleHeight;
-                foreach (string name in row.names)
+                foreach (string label in new[] { row.over, row.role })
                 {
-                    OvText(name, content, new Vector2(0, y - CreditsNameHeight / 2), new Vector2(1100, CreditsNameHeight), 76, OverridePalette.Text,
+                    if (label == null) continue;
+                    OvText(label, content, new Vector2(0, y - CreditsRoleHeight / 2), new Vector2(1100, CreditsRoleHeight), 30, OverridePalette.TextDim,
+                        TextAlignmentOptions.CaplineLeft, false, 1);
+                    y -= CreditsRoleHeight;
+                }
+                for (int i = 0; i < row.names.Length; i++)
+                {
+                    if (row.columns > 1)
+                    {
+                        int column = i % row.columns;
+                        OvText(row.names[i], content, new Vector2(-550 + CreditsColumn * (column + .5f), y - CreditsSmallHeight / 2),
+                            new Vector2(CreditsColumn, CreditsSmallHeight), 44, OverridePalette.Text, TextAlignmentOptions.CaplineLeft, true, -.5f);
+                        if (column == row.columns - 1 || i == row.names.Length - 1) y -= CreditsSmallHeight;
+                        continue;
+                    }
+                    OvText(row.names[i], content, new Vector2(0, y - CreditsNameHeight / 2), new Vector2(1100, CreditsNameHeight), 76, OverridePalette.Text,
                         TextAlignmentOptions.CaplineLeft, true, -.5f);
                     y -= CreditsNameHeight;
                 }

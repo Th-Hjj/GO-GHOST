@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-18 — Online removed
+
+Thomas decided against the online mode. `DuelUI.Online.cs` is deleted, and `DuelUI.Override.cs` and `DuelUI.OverrideSettings.cs` are back to their content before stage 1. PurrNet was never installed. The page designs stay on the design canvas, row O.
+
+After the removal the project compiled, and in Play Mode at 2560 × 1440 with a save the title showed Continue, New Game at its full 420 width, Settings, Credits and Quit (`Logs/Online/title-restored-2.png`). The title without a save and Check Game Flow were NOT TESTED.
+
 ## 2026-11-18 — Online, stage 1: title button and Online page
 
 The title's second row holds New Game and Online when a save exists; without one, Online is the secondary under New Game. Online opens a page over the shaded title landscape with Create Room, a Room Code field and Join. Create Room and Join are not wired; networking (PurrNet) is not installed.

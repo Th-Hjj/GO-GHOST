@@ -6,6 +6,8 @@ On the Who Are You page both Tutorial buttons rebuilt the page and reset the dra
 
 Unity 6000.6.0f1 compiled. An isolated Play Mode run invoked both button callbacks during the demonstration, including repeated clicks on the selected option. The guide kept its instance and playback time, the active button matched the setting, drawn ink and the entered name survived a toggle, and Clear restarted the demonstration. The tutorial-off flow continued through the credits. Report in `Logs/tutorial-toggle-game-flow.txt`. Physical mouse input and a WebGL build were not tested.
 
+Follow-up requested after the toggle fix. The first valid stroke dismisses the guide for this character. Pressing Clear before drawing keeps the guide at its current point. Clearing after drawing leaves the head blank, including after a page refresh. In Unity Play Mode the button callbacks passed both Clear cases, repeated clicks, creation of a new character and drawing again. The tutorial-off flow passed through the credits. Report in `Logs/drawing-guide-clear-flow.txt`.
+
 ## 2026-11-17 — Rising Uppercut follows its warning
 
 The warning used an illustrative curve and the Boss selected a second route at release. He now commits to a jump during the wind-up, predicts the moving supports at take-off and landing, and draws the fist positions along that jump. The fist extends on the same physics clock as the body. A failed take-off goes into recovery.

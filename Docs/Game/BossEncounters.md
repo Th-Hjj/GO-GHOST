@@ -4,6 +4,12 @@ The preparation page offers rule editing and optional **Test Room** practice. Ea
 
 Boss attacks first use 75% of base damage, rounded half up. Multiply the resulting attack damage by 0.95 for the Mission 2 Swordsman or by 0.85 for Final Boss phase two (Thomas, 2026-11-15; 0.90 before), rounding half up per hit. Phase two then lands Jab 9, Cross 11, Uppercut 15, Backfist 14, Overhand 19, Meteor 23, axe 14 and the shoulder axe 20. Bonus uses the original 75% values. A reflected projectile carries its original shot damage.
 
+## Difficulty
+
+Normal uses the authored combat values. Easy scales the final amount of each Boss hit on the player to 70%, rounded half up with a minimum of 1. This includes enemy-owned projectiles and reflections. Friendly damage uses the usual amount.
+
+Hard uses Normal damage and attack timing. Gunner burst and jump shots show the shots in flight. Piercing shows its aiming line during the final lock. Sweep shows the two locked edges. Sword slashes show the active blade, and the Draw line starts at lock. The Final Boss shows close axe arcs during the stroke, keeps the phase-one flight path, and shows the phase-two axe order line for the final 40% of the half-second delay. Meteor, Rising Uppercut, Counter Guard, active effects and rule threat detection retain their full cues. The two coordinated Bonus attacks keep full warnings. GHOST uses fixed Normal combat.
+
 ## Final Boss and optional Bonus
 
 Mission 1 victory waits for **Continue to Mission 2**. Defeating Swordsman closes the Mission 2 metrics record and opens Mission 3 preparation with the same character and rules. **Start Mission** stages the real Final Boss on the Tower layout. Its wipe opens on the target card, and when the card pulls apart the usual three-second countdown starts automatically. A direct phase-two retry starts at the countdown.

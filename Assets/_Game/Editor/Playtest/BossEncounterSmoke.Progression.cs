@@ -14,10 +14,27 @@ public static partial class BossEncounterSmoke
     {
         // This Editor-only scope also keeps GameProgress.Cleared in memory.
         testStorage = GameSave.BeginTestStorage(Path.Combine(reportDirectory, "Save"));
+        previousNoticeSeen = GameSettings.NoticeSeen;
+        GameSettings.NoticeSeen = true; // Exercise the title without writing the real first-launch preference.
         GameProgress.Cleared = false;
         yield return CheckSaveRecovery();
         if (saveRecoveryOnly) yield break;
-        game.NewGame();
+        yield return Click("New Game");
+        yield return Click("ConfirmNewGame");
+        yield return WaitFor(() => AvailableButton("ChooseNormal") != null, "Missing standalone difficulty page.");
+        Require(Field<GameDifficulty>(game.GetComponent<DuelUI>(), "newRunDifficulty") == GameDifficulty.Normal, "New Game did not default to Normal.");
+        yield return Click("ChooseHard");
+        yield return Click("OverlayBack");
+        Require(GameSave.Read(out _).difficulty == GameDifficulty.Normal, "Backing out of selection changed the existing run.");
+        yield return Click("New Game");
+        yield return Click("ConfirmNewGame");
+        yield return WaitFor(() => Field<RectTransform>(game.GetComponent<DuelUI>(), "saveNoticePanel") == null,
+            "Save recovery notice did not finish.", 13);
+        yield return Settle(.8f);
+        yield return Shot("difficulty");
+        yield return Click("ChooseEasy");
+        yield return Click("ConfirmDifficulty");
+        Require(game.Phase == DuelPhase.CharacterCreation && game.Difficulty == GameDifficulty.Easy, "Difficulty selection did not enter creation on Easy.");
         PlayMetrics.MarkTestData();
         game.TutorialWanted = false; // The first-rule tutorial has its own interaction acceptance pass.
         game.Appearance.Name = "Game Flow Smoke";
@@ -46,6 +63,7 @@ public static partial class BossEncounterSmoke
             yield return Click("TestLoadout");
             // Entering and leaving the Test Room happen once the wipe has covered the screen.
             yield return WaitFor(() => game.Phase == DuelPhase.Training && game.Bosses.Count == 1 && game.Bosses[0].IsTrainingEnemy, "Missing Test Room.");
+            if (wave <= 2) yield return CheckDifficultyInTestRoom(wave == 1);
             if (wave == 1) { yield return Settle(.8f); yield return Shot("test-room"); yield return CheckMenu("Test Room", true); }
             yield return Click("← Back");
             yield return WaitFor(() => game.Phase == DuelPhase.Configure && game.Player == null, "Test Room did not cleanly return to preparation.");
@@ -58,6 +76,7 @@ public static partial class BossEncounterSmoke
             if (wave == 1) yield return CheckMenu("countdown", true);
             yield return WaitFor(() => game.Phase == DuelPhase.Fight, "Combat did not start.");
             game.Player.IsInvulnerable = true;
+            yield return Settle(.4f);
             yield return Shot("fight-" + wave);
             if (wave == 1) { yield return CheckMenu("fight", true); yield return CheckDefeatRoutes(); }
             Note("PASS Mission " + wave + ": preparation, Test Room return, Start Mission, countdown.");
@@ -93,6 +112,7 @@ public static partial class BossEncounterSmoke
         autoAcknowledge = false;
         finalBoss.Health.TakeDamage(100000, game.Player.gameObject);
         yield return WaitFor(() => game.FinalBossCutscene, "Missing Final Boss transition.", 15);
+        Require(!game.CanChangeDifficulty, "The phase transition unlocked difficulty.");
         foreach (var entry in VoiceStudioCatalog.Current.BossTransition)
         {
             yield return WaitFor(() => game.CutsceneText == entry.text && game.PendingDialogue == entry.text,
@@ -113,6 +133,7 @@ public static partial class BossEncounterSmoke
         yield return WaitFor(() => game.Phase == DuelPhase.Failed && game.CanRetryFinalBossPhaseTwo, "Missing phase-two defeat/retry.");
         yield return Click("RetryPhaseTwo");
         Require(game.Phase == DuelPhase.Prepare && game.Bosses[0].Axe.PhaseTwo && !game.FinalBossCutscene, "Phase-two retry replayed phase one or its transition.");
+        Require(!game.CanChangeDifficulty && game.Difficulty == GameDifficulty.Hard, "Phase-two retry lost its difficulty lock or selection.");
         Require(game.Player.CurrentHealth == phaseOneEndHealth, "Phase-two retry did not restore phase-one end health.");
         Require(game.Bosses[0].Health.CurrentHealth == game.Bosses[0].Health.MaxHealth, "Phase-two retry did not restore the full Boss pool.");
         Require(game.InvadedRuleCount == 0 && game.Rules.OrderedRows.Count == 0 && game.DraftLoadout.TotalRules == equippedRules,
@@ -224,9 +245,12 @@ public static partial class BossEncounterSmoke
         }
         rules.Add(new ConditionalRule { Condition = ConditionIds.GroundState, GroundState = GroundStateOption.Grounded,
             Action = ActionIds.Jump, DisplayOrder = 4 });
-        File.WriteAllText(path, JsonUtility.ToJson(legacy));
+        var legacyJson = Newtonsoft.Json.Linq.JObject.Parse(JsonUtility.ToJson(legacy));
+        legacyJson.Remove("difficulty");
+        File.WriteAllText(path, legacyJson.ToString());
         File.WriteAllBytes(Path.Combine(folder, "face.png"), drawing);
         game.ContinueGame();
+        Require(game.Difficulty == GameDifficulty.Normal, "Legacy save without difficulty did not default to Normal.");
         Require(game.Phase == DuelPhase.Configure && game.DraftLoadout.TotalRules == 5
             && game.SaveNotice.Contains("reselected"), "Continue discarded historical rules or omitted repair feedback.");
         game.StartFight(); Require(game.Phase == DuelPhase.Configure, "Invalid historical rules entered combat.");

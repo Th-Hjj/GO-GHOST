@@ -13,6 +13,8 @@ namespace GoGhost.Duel
         [SerializeField] SpriteRenderer[] parts = new SpriteRenderer[16];
         [SerializeField] Material tellMaterial, glowMaterial;
         BossAgent actor;
+        bool ReduceAttackWarnings { get; set; }
+        bool ShortWarnings => ReduceAttackWarnings && !actor.Actions.CooperativeAttack;
         readonly List<Flash> flashes = new List<Flash>(24);
         readonly LineRenderer[] tells = new LineRenderer[30];
         bool paused, defeated, lastReload;
@@ -48,6 +50,7 @@ namespace GoGhost.Duel
         public void Configure(BossAgent owner)
         {
             actor = owner; visualKind = owner.Profile.Kind; SetColors(); ConfigureFinalBossLook();
+            ReduceAttackWarnings = !owner.IsGhost && owner.GetComponentInParent<DuelGame>()?.Difficulty == GameDifficulty.Hard;
             clock = gait = 0; alpha = 1; defeated = paused = lastReload = false;
             swordPoseReady=false;
             hitAt = shotAt = -10; nextEcho = 0;
@@ -492,10 +495,11 @@ namespace GoGhost.Duel
             }
             if(action.UsesBladeArc)
             {
-                if(tells[0]==null)tells[0]=NewLine("BladeTell",false,25);
-                var line=tells[0];line.enabled=true;line.positionCount=25;
                 bool cutting=action.Phase==BossActionPhase.Active && (action.Ability!=BossAbility.LeapSlash
                     || action.PublicThreats.Count>0&&action.PublicThreats[0].Phase==BossThreatPhase.Active);
+                if (ShortWarnings && !cutting) return;
+                if(tells[0]==null)tells[0]=NewLine("BladeTell",false,25);
+                var line=tells[0];line.enabled=true;line.positionCount=25;
                 float finish=cutting?action.CutProgress:1;
                 float start=cutting?Mathf.Max(0,finish-.25f):0;
                 Vector2 root=actor.Position;
@@ -527,6 +531,7 @@ namespace GoGhost.Duel
                 {
                     if(!threat.Valid||threat.Phase==BossThreatPhase.Active||threat.Phase==BossThreatPhase.Recovery||slot>=6)continue;
                     if(threat.Shape==BossThreatShape.MovingBlade)continue;
+                    if (ShortWarnings && action.Ability == BossAbility.DrawDash && threat.Phase == BossThreatPhase.Preparation) continue;
                     if(tells[slot]==null)tells[slot]=NewLine("BossTell",false,2);
                     Vector2 end=threat.End;
                     if(threat.TerrainBlocked&&Projectile.TerrainHit(threat.Origin,end,threat.Radius,out var wall))end=threat.Origin+(end-threat.Origin).normalized*wall.distance;

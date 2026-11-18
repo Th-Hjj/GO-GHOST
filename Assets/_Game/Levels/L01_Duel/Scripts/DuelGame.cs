@@ -113,7 +113,9 @@ namespace GoGhost.Duel
             if (!focus) developerResumeOnClose = false;
             if (!focus && (Phase == DuelPhase.Fight || Phase == DuelPhase.Prepare || Phase == DuelPhase.Training || VictoryPresentation)) SetPause(true);
         }
-        public void NewGame()
+        public void NewGame() => StartNewRun(GameDifficulty.Normal);
+
+        internal void StartNewRun(GameDifficulty difficulty)
         {
             SaveNotice = null; saveFailed = savedRulesNeedRepair = false;
             handler.ResetSpeakerName();
@@ -122,6 +124,7 @@ namespace GoGhost.Duel
             savingRun = true; faceSaved = greeted = tutorialDone = false; savedRunId = null;
             metricsWaveJumpPending = false;
             Wave = 1;
+            Difficulty = difficulty;
             System.Array.Clear(profileOpened, 0, profileOpened.Length);
             DraftLegs = DraftArms = DraftSpine = false;
             DraftLoadout=new ConditionalLoadout();
@@ -193,6 +196,8 @@ namespace GoGhost.Duel
             encounter.name = "CombatAttempt";
             encounter.AddComponent<ArenaBoundary2D>().Initialize(ArenaBounds);
             Player = encounter.GetComponentInChildren<PlayerHealth>();
+            var encounterDifficulty = GhostArena ? GameDifficulty.Normal : Difficulty;
+            if (encounterDifficulty == GameDifficulty.Easy) Player.EnemyDamageMultiplier = .7f;
             Player.ResultSounds = sounds;
             Player.DamageTaken += ui.ShowHurtFlash;
             input = Player.GetComponent<PlayerInputReader>();

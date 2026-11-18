@@ -67,8 +67,10 @@ namespace GoGhost.Duel
                 if(threat.AttackId!=action.AttackId||slot>=4||action.Phase==BossActionPhase.Recovery)continue;
                 // Wave bodies carry their own charge/flight effect; omit projected travel guides.
                 if(threat.Shape==BossThreatShape.MovingBlade)continue;
+                if (ShortWarnings && action.CurrentSwordBeat == SwordBeat.Draw && threat.Phase == BossThreatPhase.Preparation) continue;
                 if(threat.Shape==BossThreatShape.BladeArc)
                 {
+                    if (ShortWarnings && threat.Phase != BossThreatPhase.Active) continue;
                     // The body pose carries early preparation. Show the local arc only near
                     // the actual swing, never a future airborne/advancing strike destination.
                     if(action.CurrentSwordBeat==SwordBeat.JumpCut)

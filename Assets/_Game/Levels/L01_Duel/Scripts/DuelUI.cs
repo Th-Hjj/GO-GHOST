@@ -170,7 +170,7 @@ namespace GoGhost.Duel
             // can also open over the Bonus result, whose Restart replaces the save.
             if(!game.DeveloperToolsOpen)
             {
-                if(overlay!=OverlayPage.None&&overlay!=OverlayPage.Confirm&&game.Phase!=DuelPhase.Menu&&!game.Paused)overlay=OverlayPage.None;
+                if(overlay!=OverlayPage.None&&overlay!=OverlayPage.Confirm&&overlay!=OverlayPage.Difficulty&&game.Phase!=DuelPhase.Menu&&!game.Paused)overlay=OverlayPage.None;
                 if(game.Phase==DuelPhase.Menu&&overlay==OverlayPage.None&&!GameSettings.NoticeSeen)overlay=OverlayPage.Notice;
             }
             LeaveMenuIfResumed();
@@ -253,7 +253,8 @@ namespace GoGhost.Duel
             UpdateOverlayInput();
             UpdateTitleBackdrop();
             if (game.DeveloperToolsOpen) return;
-            if (game.Phase==DuelPhase.TargetProfile && profileResolution != new Vector2Int(Screen.width,Screen.height)) {Show();return;}
+            if ((OverlayOpen || game.Paused || game.Phase == DuelPhase.Configure || game.Phase == DuelPhase.TargetProfile)
+                && layoutScreen != new Vector2Int(Screen.width, Screen.height)) { Show(); return; }
             UpdateProfileReading();
             if (RefreshConfigurationLayout()) return;
             UpdateRuleHud();

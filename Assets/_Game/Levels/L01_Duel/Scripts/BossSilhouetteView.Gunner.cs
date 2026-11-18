@@ -101,10 +101,12 @@ namespace GoGhost.Duel
                 // Once firing begins, real bullets replace the area preview, including future-ray tells.
                 if (action.Phase != BossActionPhase.Prepare && action.Phase != BossActionPhase.Locked) return;
                 bool locked = action.Phase == BossActionPhase.Locked;
+                if (ShortWarnings && !locked) return;
                 GunTellStyle(locked, action.PhaseProgress, action.PhaseProgress * actor.Profile.Sweep.Lock,
                     out float width, out Color color);
                 GunTell(0, "SweepEdge", action.Origin, action.SweepFrom, width, color);
                 GunTell(1, "SweepEdge", action.Origin, action.SweepTo, width, color);
+                if (ShortWarnings) return;
                 GunTell(2, "SweepBand", action.SweepFrom, action.SweepTo, .018f, NeuralPalette.Alpha(bodyColor, locked ? .32f : .22f));
                 // A single restrained pass along the existing band communicates the authored sweep order.
                 float t = locked ? 1 : action.PhaseProgress;
@@ -118,6 +120,7 @@ namespace GoGhost.Duel
                 if (!threat.Valid || (threat.Phase != BossThreatPhase.Preparation && threat.Phase != BossThreatPhase.Locked) || slot >= 6) continue;
                 bool locked = threat.Phase == BossThreatPhase.Locked;
                 bool burst = action.Ability == BossAbility.Burst || action.Ability == BossAbility.TacticalJumpShot;
+                if (ShortWarnings && (burst || (action.Ability == BossAbility.Piercing && !locked))) continue;
                 float lockDuration = burst ? actor.Profile.BurstShotLock : actor.Profile.Piercing.Lock;
                 float lockedAge = Mathf.Max(0, lockDuration - (threat.StartsAt - Time.time));
                 float progress = action.Phase == BossActionPhase.Prepare ? action.PhaseProgress

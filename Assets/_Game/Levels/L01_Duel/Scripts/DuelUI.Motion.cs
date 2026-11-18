@@ -69,6 +69,7 @@ namespace GoGhost.Duel
         {
             if (from == to && (to != PageKind.Overlay || pageOverlay == overlay)) return PageChange.Refresh;
             if (from == PageKind.None || from == PageKind.Dev || to == PageKind.Dev) return PageChange.Cut;
+            if (from == PageKind.Overlay && pageOverlay == OverlayPage.Difficulty && to == PageKind.Creation) return PageChange.Wipe;
             if (from == PageKind.Overlay || to == PageKind.Overlay)
                 return from == to || from == PageKind.Menu || to == PageKind.Menu || from == PageKind.Pause || to == PageKind.Pause
                     ? PageChange.Flow : PageChange.Cut;
@@ -270,7 +271,7 @@ namespace GoGhost.Duel
             var help = OvButton("Menu", frame, At(1424, 56, 120, 48), new Vector2(120, 48), () => game.SetPause(true), OverrideButtonKind.Tertiary, 28,
                 align: TextAlignmentOptions.Capline);
             help.name = "ConfigurationMenu";
-            var rule = OvRule(frame, 56, 132, 1488);
+            var rule = OvPageRule(frame, 132);
             headerShared.Add(help.gameObject); headerShared.Add(rule.gameObject);
             if (sharedHeader)
             {

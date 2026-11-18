@@ -7,7 +7,6 @@ namespace GoGhost.Duel
 {
     public sealed partial class DuelUI
     {
-        Vector2Int profileResolution;
         CanvasGroup outgoingPreparation;
         float outgoingScale;
         Material portraitMaterial;

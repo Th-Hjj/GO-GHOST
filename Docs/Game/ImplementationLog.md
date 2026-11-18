@@ -6,6 +6,18 @@ During Mission 1 preparation, Happy follows the existing Test Room explanation w
 
 Unity 6000.6.0f1 Play Mode passed the guided rule, both Test Room lines, repeated dialogue clicks, the blocked early mission start, room entry, Back and mission entry. The tutorial-off game flow through the credits also passed. Report at `Logs/BossEncounter/Flow-20261118-075942-e713f5/game-flow.txt`. The check invoked button callbacks and verified the loaded clip. Physical mouse input and listening by ear were not tested.
 
+## 2026-11-18 — Full-width page rules and menu alignment
+
+The Difficulty heading's moving stripe stopped 56 design units inside each edge. Difficulty, Settings, Key Bindings, the mission overview and the rule editor now size their horizontal rule to the viewport. The pause panel keeps a rule the width of its own controls. Full-page overlays and the pause menu fit the same frame as the preparation UI, including when the window is resized with Settings open. Difficulty choices, On/Off labels and resolution arrows are centred in their controls.
+
+Unity 6000.6.0f1 compiled. The 1280×960 Play Mode campaign passed through the credits. Reviewed its 29 page captures, including the combat Settings row, the settled HUD and results. The Settings and HUD checks now wait for their entrance animations before taking those captures. Additional real Game View captures at 2560×1440 and 2520×1080 checked Difficulty and Key Bindings on live resize. Two moving ultrawide frames differed across the entire width of the divider, and two frames with Reduce Flashing enabled were pixel-identical. The editor view was returned to 2560×1440. Evidence is under `Logs/BossEncounter/Flow-20261118-075849-7ea620/` and `Logs/UIReview/`. Physical input, a player build and a full manual balance pass were not tested.
+
+## 2026-11-17 — Run difficulty
+
+New Game opens a separate Easy, Normal and Hard picker before character creation. The selection belongs to the save. Older saves and new selections default to Normal. Settings can change the next attempt outside combat and displays the current value during an encounter. Easy takes 70% Boss damage per hit. Hard reduces selected anticipatory graphics while the Boss logic, damage and public threats use the normal values.
+
+Unity 6000.6.0f1 compiled. The isolated Play Mode campaign passed, including cancelling New Game with an existing save, creation, title edits and Continue, countdown and fight locks, post-defeat changes and retry. A 15-point enemy hit dealt 11 on Easy and 15 on Hard. A real Hard Gunner Piercing published its threat throughout preparation and showed its ray at lock. Report and page captures are under `Logs/BossEncounter/Flow-20261118-074850-ca7d24/`. Individual attacks beyond these checks, human-input balance and a player build were not tested by this run.
+
 ## 2026-11-17 — Tutorial choice preserves the face drawing guide
 
 On the Who Are You page both Tutorial buttons rebuilt the page and reset the drawing demonstration to its first stroke. They now update the tutorial choice and its two button colours in place.

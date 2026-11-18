@@ -17,6 +17,7 @@ public static partial class BossEncounterSmoke
     static DuelGame game;
     static SceneAsset previousPlayScene;
     static IDisposable testStorage;
+    static bool? previousNoticeSeen;
     static double deadline;
     static int lastFrame;
     static bool batch, running, finishing, autoAcknowledge, saveRecoveryOnly;
@@ -179,6 +180,8 @@ public static partial class BossEncounterSmoke
         EditorApplication.playModeStateChanged -= OnPlayState;
         Application.logMessageReceived -= OnLog;
         EditorSceneManager.playModeStartScene = previousPlayScene;
+        if (previousNoticeSeen.HasValue) GameSettings.NoticeSeen = previousNoticeSeen.Value;
+        previousNoticeSeen = null;
         try { testStorage?.Dispose(); }
         catch (Exception ex) { failure = (failure == null ? "" : failure + Environment.NewLine) + "Storage cleanup: " + ex; }
         finally { testStorage = null; game = null; steps.Clear(); }

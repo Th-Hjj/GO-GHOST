@@ -9,8 +9,11 @@ namespace GoGhost.Duel
     // Override UI, stage 7: Settings, Key Bindings, Credits, the New Game confirmation and the flashing-lights notice.
     public sealed partial class DuelUI
     {
-        enum OverlayPage { None, Settings, Bindings, Confirm, Notice }
+        enum OverlayPage { None, Settings, Bindings, Confirm, Notice, Difficulty }
         OverlayPage overlay;
+        static readonly GameDifficulty[] DifficultyOptions = { GameDifficulty.Easy, GameDifficulty.Normal, GameDifficulty.Hard };
+        GameDifficulty newRunDifficulty;
+        GameDifficulty? titleDifficulty;
         int listeningBinding = -1, listeningSince;
         // Typing the name must not open the menu when Pause is bound to a letter.
         public bool TextEntryFocused => EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null
@@ -20,7 +23,12 @@ namespace GoGhost.Duel
         internal bool EscapeClaimed => game.Phase == DuelPhase.Configure && !game.Paused && selectorRow >= 0
             && GameSettings.BindingPath(GameSettings.Pause) == "<Keyboard>/escape";
 
-        void OpenOverlay(OverlayPage value) { overlay = value; listeningBinding = -1; Show(); }
+        void OpenOverlay(OverlayPage value)
+        {
+            if (value == OverlayPage.Settings && game.Phase == DuelPhase.Menu) titleDifficulty = game.ReadTitleDifficulty();
+            if (value == OverlayPage.Difficulty) newRunDifficulty = GameDifficulty.Normal;
+            overlay = value; listeningBinding = -1; Show();
+        }
         void CloseOverlay()
         {
             listeningBinding = -1;
@@ -32,10 +40,10 @@ namespace GoGhost.Duel
 
         RectTransform OvOverlayFrame(string title, bool back = true)
         {
-            page.sizeDelta = canvas.rect.size;
+            page.sizeDelta = (Vector2)layoutScreen / canvas.GetComponent<Canvas>().scaleFactor;
             // Opaque over a paused fight too: the arena must not show through the rows.
             OvFill(page, OverridePalette.Ink);
-            var frame = Rect("Frame", page, Vector2.zero, new Vector2(1600, 900));
+            var frame = OvFrame();
             // The flashing-lights notice stays a still screen.
             bool still = overlay == OverlayPage.Notice;
             if (back)
@@ -45,7 +53,7 @@ namespace GoGhost.Duel
             {
                 OvArrive(OvText(title, frame, new Vector2(56 + 600 - 800, 450 - 122 - 56), new Vector2(1200, 112), 112, OverridePalette.Text,
                     TextAlignmentOptions.CaplineLeft, true, -.5f), new Vector2(-120, 0), 0);
-                OvArrive(OvRule(frame, 56, 244, 1488), Vector2.zero, 1);
+                OvArrive(OvPageRule(frame, 244), Vector2.zero, 1);
             }
             // Everything under the heading arrives as one block.
             var content = Rect("Content", frame, Vector2.zero, new Vector2(1600, 900));
@@ -61,13 +69,15 @@ namespace GoGhost.Duel
                 case OverlayPage.Bindings: BuildOverrideBindings(); break;
                 case OverlayPage.Confirm: BuildOverrideConfirm(); break;
                 case OverlayPage.Notice: BuildOverrideNotice(); break;
+                case OverlayPage.Difficulty: BuildDifficultySelection(); break;
             }
         }
 
         Button OvToggle(string name, string label, RectTransform frame, float left, float top, float width, bool selected, UnityEngine.Events.UnityAction click)
         {
             return OvOption(name, label, frame, At(left, top, width, 52), new Vector2(width, 52), click,
-                selected ? OverridePalette.Text : OverridePalette.Surface, selected ? OverridePalette.Ink : OverridePalette.Text, 30, -1, -1);
+                selected ? OverridePalette.Text : OverridePalette.Surface, selected ? OverridePalette.Ink : OverridePalette.Text, 30, -1, -1,
+                align: TextAlignmentOptions.Capline);
         }
 
         void BuildOverrideSettings()
@@ -106,11 +116,11 @@ namespace GoGhost.Duel
             if (!web) y += pitch;
             if (!web) OvText("Resolution", frame, At(right + 4, y, 300, 52), new Vector2(300, 52), 36, OverridePalette.Text, TextAlignmentOptions.CaplineLeft, false, 1);
             if (!web) OvOption("ResolutionPrevious", "«", frame, At(right + 330, y, 52, 52), new Vector2(52, 52), () => SetDisplay(GameSettings.Fullscreen, GameSettings.VSync, -1),
-                OverridePalette.Surface, OverridePalette.Text, 30, -1, -1);
+                OverridePalette.Surface, OverridePalette.Text, 30, -1, -1, align: TextAlignmentOptions.Capline);
             int width = GameSettings.Width > 0 ? GameSettings.Width : Screen.width, height = GameSettings.Height > 0 ? GameSettings.Height : Screen.height;
             if (!web) OvText(width + " × " + height, frame, At(right + 390, y, 210, 52), new Vector2(210, 52), 34, OverridePalette.Text);
             if (!web) OvOption("ResolutionNext", "»", frame, At(right + 608, y, 52, 52), new Vector2(52, 52), () => SetDisplay(GameSettings.Fullscreen, GameSettings.VSync, 1),
-                OverridePalette.Surface, OverridePalette.Text, 30, -1, -1);
+                OverridePalette.Surface, OverridePalette.Text, 30, -1, -1, align: TextAlignmentOptions.Capline);
             y += pitch;
             OvText("VSync", frame, At(right + 4, y, 300, 52), new Vector2(300, 52), 36, OverridePalette.Text, TextAlignmentOptions.CaplineLeft, false, 1);
             OvToggle("VSyncOn", "On", frame, right + 330, y, 96, GameSettings.VSync, () => SetDisplay(GameSettings.Fullscreen, true, 0));
@@ -119,6 +129,48 @@ namespace GoGhost.Duel
             OvText("Reduce Flashing", frame, At(right + 4, y, 320, 52), new Vector2(320, 52), 36, OverridePalette.Text, TextAlignmentOptions.CaplineLeft, false, 1);
             OvToggle("ReduceFlashingOn", "On", frame, right + 330, y, 96, GameSettings.ReduceFlashing, () => SetReduceFlashing(true));
             OvToggle("ReduceFlashingOff", "Off", frame, right + 434, y, 96, !GameSettings.ReduceFlashing, () => SetReduceFlashing(false));
+            BuildDifficultySetting(frame, rowTop + 4 * pitch);
+        }
+
+        void BuildDifficultySelection()
+        {
+            var frame = OvOverlayFrame("Difficulty");
+            for (int i = 0; i < DifficultyOptions.Length; i++)
+            {
+                var option = DifficultyOptions[i];
+                bool selected = option == newRunDifficulty;
+                OvOption("Choose" + option, option.ToString(), frame, At(56 + i * 504, 356, 480, 116), new Vector2(480, 116),
+                    () => { newRunDifficulty = option; Show(); }, selected ? OverridePalette.Text : OverridePalette.Surface,
+                    selected ? OverridePalette.Ink : OverridePalette.Text, 68, Enter(2 + i), -1, align: TextAlignmentOptions.Capline);
+            }
+            OvButton("Continue", frame, At(56, 646, 420, 76), new Vector2(420, 76), () =>
+            {
+                overlay = OverlayPage.None;
+                game.StartNewRun(newRunDifficulty);
+            }, OverrideButtonKind.Primary, 48, true, Enter(5)).name = "ConfirmDifficulty";
+        }
+
+        void BuildDifficultySetting(RectTransform frame, float top)
+        {
+            bool title = game.Phase == DuelPhase.Menu;
+            if ((title && !titleDifficulty.HasValue) || (game.Phase == DuelPhase.Complete && game.Wave == DuelGame.FinalBossWave)) return;
+            GameDifficulty selected = title ? titleDifficulty.Value : game.GhostArena ? GameDifficulty.Normal : game.Difficulty;
+            OvText("Difficulty", frame, At(60, top, 200, 52), new Vector2(200, 52), 36, OverridePalette.Text, TextAlignmentOptions.CaplineLeft, false, 1);
+            if (!title && !game.CanChangeDifficulty)
+            {
+                OvText(selected.ToString(), frame, At(270, top, 490, 52), new Vector2(490, 52), 32, OverridePalette.TextDim, TextAlignmentOptions.CaplineLeft).name = "LockedDifficulty";
+                return;
+            }
+            for (int i = 0; i < DifficultyOptions.Length; i++)
+            {
+                var option = DifficultyOptions[i];
+                OvToggle("SetDifficulty" + option, option.ToString(), frame, 270 + i * 144, top, 132, option == selected, () =>
+                {
+                    if (option == selected) return;
+                    if (game.SetDifficulty(option) && title) titleDifficulty = option;
+                    Show();
+                });
+            }
         }
 
         void SetVolume(int group, int value)
@@ -222,7 +274,7 @@ namespace GoGhost.Duel
                 TextAlignmentOptions.CaplineLeft, true, -.5f);
             OvBodyAt("Your saved run will be replaced.", frame, At(186, 430, 1100, 44), new Vector2(1100, 44), 26, QuietCardText);
             OvButton("Cancel", frame, At(180, 520, 440, 96), new Vector2(440, 96), CloseOverlay, OverrideButtonKind.Primary, 62).name = "ConfirmCancel";
-            OvButton("New Game", frame, At(180, 632, 300, 68), new Vector2(300, 68), () => { overlay = OverlayPage.None; game.NewGame(); },
+            OvButton("New Game", frame, At(180, 632, 300, 68), new Vector2(300, 68), () => OpenOverlay(OverlayPage.Difficulty),
                 OverrideButtonKind.Secondary, 40).name = "ConfirmNewGame";
         }
 
@@ -247,7 +299,7 @@ namespace GoGhost.Duel
         void RequestNewGame()
         {
             if (GameSave.Exists) OpenOverlay(OverlayPage.Confirm);
-            else game.NewGame();
+            else OpenOverlay(OverlayPage.Difficulty);
         }
     }
 }

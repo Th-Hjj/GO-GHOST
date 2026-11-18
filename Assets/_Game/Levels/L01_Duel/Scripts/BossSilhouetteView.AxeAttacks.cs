@@ -233,7 +233,10 @@ namespace GoGhost.Duel
             RecordGrip(axe.Hand());
             if (axe.TryGetCut(out var cut, out bool locked, out bool active))
             {
-                if(active||locked)DrawAxeCut(cut,active);
+                if(active||locked)
+                {
+                    if (active || !ReduceAttackWarnings) DrawAxeCut(cut,active);
+                }
                 else if(axe.Phase==FinalBossAxe.Stage.Active && !axe.AxeFlying &&
                     (axe.Current==FinalBossAxe.Move.LeapingCrosscut||axe.Current==FinalBossAxe.Move.AnchorVault))
                 {

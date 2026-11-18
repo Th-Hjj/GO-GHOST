@@ -37,6 +37,21 @@ public static partial class BossEncounterSmoke
         foreach (string page in new[] { "MenuKeyBindings", "MenuSettings" })
         {
             yield return Click(page);
+            if (page == "MenuSettings")
+            {
+                yield return WaitFor(() => AvailableButton("OverlayBack") != null, "Settings did not open.");
+                if (!encounter) yield return WaitFor(() => AvailableButton("SetDifficultyEasy") != null, "Difficulty controls did not arrive on " + where);
+                bool locked = System.Array.Exists(CurrentPage().GetComponentsInChildren<TMPro.TMP_Text>(), label => label.name == "LockedDifficulty");
+                Require(locked == encounter && game.CanChangeDifficulty != encounter, "Incorrect difficulty lock on " + where);
+                Require(!encounter || !System.Array.Exists(CurrentPage().GetComponentsInChildren<UnityEngine.UI.Button>(),
+                    button => button.name.StartsWith("SetDifficulty")), "Combat Settings contains difficulty controls on " + where);
+                if (where == "held result") yield return Click("SetDifficultyHard");
+                if (where == "overview" || where == "fight")
+                {
+                    yield return Settle(.8f);
+                    yield return Shot("difficulty-settings-" + where);
+                }
+            }
             yield return Click("OverlayBack");
             yield return WaitFor(() => AvailableButton("MenuResume") != null && game.Paused, page + " did not return to the menu on " + where);
         }
@@ -58,7 +73,18 @@ public static partial class BossEncounterSmoke
         yield return CheckMenu("held result", false);
         yield return Click("Retry");
         Require(game.Phase == DuelPhase.Prepare && Time.timeScale == 1, "Retry was not immediate.");
+        Require(game.Difficulty == GameDifficulty.Hard && !game.CanChangeDifficulty, "Retry did not apply and lock the result selection.");
+        // Keep the fresh Gunner idle until his real Piercing executor can be exercised in isolation.
+        var gunner = game.Bosses[0];
+        gunner.enabled = false;
         yield return WaitFor(() => game.Phase == DuelPhase.Fight, "Retry countdown.");
+        yield return WaitFor(() => gunner.Motor.Grounded, "Gunner did not land.");
+        Require(gunner.Actions.TryStart(BossAbility.Piercing, game.Player.transform.position), "Gunner could not start Piercing.");
+        yield return null;
+        Require(gunner.PublicThreats.Count > 0 && !AimLineVisible(gunner), "Hard Piercing exposed its early route or removed its threat.");
+        yield return WaitFor(() => gunner.Actions.Phase == BossActionPhase.Locked && AimLineVisible(gunner), "Hard Piercing omitted its locked ray.");
+        gunner.enabled = true;
+        Note("PASS Hard Gunner Piercing: public threat during preparation, visible ray at lock.");
         game.Player.TakeDamage(100000, game.Bosses[0].gameObject);
         yield return WaitFor(() => game.Phase == DuelPhase.Failed, "Missing second defeat.");
         yield return Click("Reconfigure");
@@ -92,10 +118,32 @@ public static partial class BossEncounterSmoke
         Require(game.Phase == DuelPhase.Menu && !game.Paused && Time.timeScale == 1, "Menu Main Menu did not reach the title.");
         yield return Settle(1f);
         yield return Shot("title-with-save");
+        yield return Click("Settings");
+        yield return Click("SetDifficultyEasy");
+        Require(GameSave.Read(out _).difficulty == GameDifficulty.Easy, "Title Settings did not update the existing save.");
+        yield return Click("SetDifficultyHard");
+        yield return Click("OverlayBack");
         yield return Click("Continue");
         yield return WaitFor(() => game.Phase == DuelPhase.Configure && game.Wave == wave, "Continue did not return to Mission " + wave);
+        Require(game.Difficulty == GameDifficulty.Hard, "Continue lost the saved difficulty.");
         Note("PASS Main Menu from the menu and Continue into Mission " + wave + ".");
     }
+
+    static IEnumerator CheckDifficultyInTestRoom(bool easy)
+    {
+        var boss = game.Bosses[0];
+        int health = game.Player.CurrentHealth;
+        game.Player.TakeDamage(15, boss.gameObject);
+        Require(health - game.Player.CurrentHealth == (easy ? 11 : 15), "Unexpected incoming damage in the Test Room.");
+        yield return WaitFor(() => boss.Actions.Phase == BossActionPhase.Prepare && boss.PublicThreats.Count > 0,
+            "The robot did not publish its shot warning.");
+        yield return null;
+        Require(AimLineVisible(boss) == easy && boss.PublicThreats.Count > 0, "Displayed aim and public threat did not match difficulty.");
+        Note("PASS " + game.Difficulty + " incoming damage and visible shot warning with a live public threat.");
+    }
+
+    static bool AimLineVisible(BossAgent boss) => System.Array.Exists(boss.View.GetComponentsInChildren<LineRenderer>(),
+        line => line.name == "GunAimTell" && line.enabled);
 
     static IEnumerator CheckCredits()
     {

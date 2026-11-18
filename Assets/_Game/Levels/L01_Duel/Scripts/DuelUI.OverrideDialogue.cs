@@ -198,12 +198,26 @@ namespace GoGhost.Duel
             }
             // A small choice at the bottom right; it must not compete with Upload.
             OvText("Tutorial", frame, At(1254, 822, 130, 38), new Vector2(130, 38), 24, OverridePalette.TextDim, TextAlignmentOptions.CaplineRight, false, 1);
-            for (int i = 0; i < 2; i++)
+            var tutorialButtons = new SlabButton[2];
+            void SelectTutorial(bool on)
+            {
+                if (game.TutorialWanted == on) return;
+                game.TutorialWanted = on;
+                var selected = tutorialButtons[on ? 0 : 1];
+                var other = tutorialButtons[on ? 1 : 0];
+                selected.Sweep(selected.Fill, selected.Ink);
+                selected.Fill = OverridePalette.Text;
+                selected.Ink = OverridePalette.Ink;
+                other.Fill = OverridePalette.Surface;
+                other.Ink = OverridePalette.Text;
+            }
+            for (int i = 0; i < tutorialButtons.Length; i++)
             {
                 bool on = i == 0, selected = game.TutorialWanted == on;
-                OvOption(on ? "TutorialOn" : "TutorialOff", on ? "On" : "Off", frame, At(1396 + i * 76, 822, 70, 38), new Vector2(70, 38),
-                    () => { game.TutorialWanted = on; Show(); }, selected ? OverridePalette.Text : OverridePalette.Surface,
+                var button = OvOption(on ? "TutorialOn" : "TutorialOff", on ? "On" : "Off", frame, At(1396 + i * 76, 822, 70, 38), new Vector2(70, 38),
+                    () => SelectTutorial(on), selected ? OverridePalette.Text : OverridePalette.Surface,
                     selected ? OverridePalette.Ink : OverridePalette.Text, 22, -1, -1);
+                tutorialButtons[i] = button.GetComponent<SlabButton>();
             }
             if (game.StartupProgress >= 0) ShowStartupProgress(game.StartupProgress);
         }

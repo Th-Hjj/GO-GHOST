@@ -129,17 +129,18 @@ namespace GoGhost.Duel
             var test = OvButton("Test Room", frame, At(1184, railTop, 360, 64), new Vector2(360, 64), game.StartConfiguredEncounter,
                 OverrideButtonKind.Tertiary, 32, true);
             test.name = "TestLoadout";
-            test.interactable = ConfigurationReady;
+            overviewLoadoutReady = ConfigurationReady;
+            test.interactable = overviewLoadoutReady && game.ConfigurationVoice.CanEnterTestRoom;
             EnterFrom(test, 4, 1);
-            tutorialTest = (RectTransform)test.transform;
-            if (test.interactable) dialogueExits.Add(tutorialTest);
+            tutorialTest = test;
+            if (overviewLoadoutReady) dialogueExits.Add((RectTransform)test.transform);
             start = OvButton("Start Mission", frame, At(1184, 744, 360, 108), new Vector2(360, 108), game.StartMission,
                 OverrideButtonKind.Primary, 54, align: TextAlignmentOptions.Capline);
             start.name = "StartMission";
-            start.interactable = ConfigurationReady;
+            start.interactable = overviewLoadoutReady && game.ConfigurationVoice.CanStartMission;
             EnterFrom(start, 5, 1);
-            tutorialStart = (RectTransform)start.transform;
-            if (start.interactable) dialogueExits.Add(tutorialStart);
+            tutorialStart = start;
+            if (overviewLoadoutReady) dialogueExits.Add((RectTransform)start.transform);
 
             // Happy's box sits under the figure and the rules, left of Start Mission.
             float halfWidth = page.sizeDelta.x / 2, halfHeight = page.sizeDelta.y / 2;

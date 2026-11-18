@@ -339,6 +339,12 @@
       "locked": false
     },
     {
+      "key": "Handler/TutorialPreparationEnterTest",
+      "label": "First mission preparation · Enter the Test Room",
+      "text": "Please test out your setup here.",
+      "locked": false
+    },
+    {
       "key": "Handler/TutorialPreparationStart",
       "label": "First mission preparation · Start Mission",
       "text": "When you're ready, click Start Mission.",

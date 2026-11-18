@@ -10,7 +10,7 @@ namespace GoGhost.Duel
 
         public void StartConfiguredEncounter()
         {
-            if (!TrainingPending || Paused || DeveloperToolsOpen || !DialogueAllowsPreparationNavigation || !ui.ConfigurationReady) return;
+            if (!TrainingPending || Paused || DeveloperToolsOpen || !handler.CanEnterTestRoom || !DialogueAllowsPreparationNavigation || !ui.ConfigurationReady) return;
             ui.WipeThen(1, () => { if (TrainingPending && !Paused && !DeveloperToolsOpen) CreateEncounter(true); });
         }
 

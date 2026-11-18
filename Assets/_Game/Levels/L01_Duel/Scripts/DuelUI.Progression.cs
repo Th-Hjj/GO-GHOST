@@ -84,7 +84,7 @@ namespace GoGhost.Duel
                 ambientSpeaker.text = showDescription ? (description == null ? "" : game.HappySpeakerName) : game.HappySpeakerName;
                 ambientDialogue.maxVisibleCharacters = showDescription ? int.MaxValue : game.DialogueVisibleCharacters;
                 // No mark while Happy waits for a choice or a button instead of a click.
-                bool awaitsAction = TutorialChoiceOpen || VisibleTutorialFocus == TutorialFocus.AddRule;
+                bool awaitsAction = TutorialChoiceOpen || VisibleTutorialFocus is TutorialFocus.AddRule or TutorialFocus.EnterTestRoom;
                 ambientContinue.alpha = show && !showDescription && !awaitsAction && game.DialogueCanAdvance ? 1 : 0;
                 if (reading)
                 {

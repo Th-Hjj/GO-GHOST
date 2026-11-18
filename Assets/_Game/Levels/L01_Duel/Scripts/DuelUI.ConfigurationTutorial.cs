@@ -7,7 +7,9 @@ namespace GoGhost.Duel
     public sealed partial class DuelUI
     {
         RectTransform tutorialPreview, tutorialSubmit, tutorialExample;
-        RectTransform tutorialProfile, tutorialTest, tutorialStart;
+        RectTransform tutorialProfile;
+        Button tutorialTest, tutorialStart;
+        bool overviewLoadoutReady;
         RectTransform tutorialCondition, tutorialAction;
         readonly List<Button> tutorialEditorButtons = new List<Button>();
         readonly Vector3[] tutorialCorners = new Vector3[4];
@@ -27,7 +29,8 @@ namespace GoGhost.Duel
         {
             tutorialSpot = null;
             tutorialPreview = tutorialSubmit = tutorialExample = null;
-            tutorialProfile = tutorialTest = tutorialStart = null;
+            tutorialProfile = null;
+            tutorialTest = tutorialStart = null;
             tutorialCondition = tutorialAction = null;
             tutorialEditorButtons.Clear();
         }
@@ -36,6 +39,8 @@ namespace GoGhost.Duel
         {
             var focus = VisibleTutorialFocus;
             var voice = game.ConfigurationVoice;
+            if (tutorialTest != null) tutorialTest.interactable = overviewLoadoutReady && voice.CanEnterTestRoom;
+            if (tutorialStart != null) tutorialStart.interactable = overviewLoadoutReady && voice.CanStartMission;
             // Nothing is pointed at until the line is actually heard.
             bool speaking = TutorialOnPage && voice.TutorialRunning && !voice.WaitingForPageSpeech && !wipePending;
             RectTransform target = !speaking ? null : focus switch
@@ -49,8 +54,8 @@ namespace GoGhost.Duel
                 TutorialFocus.Action => tutorialAction,
                 TutorialFocus.Relation => tutorialPreview,
                 TutorialFocus.TargetProfile => tutorialProfile,
-                TutorialFocus.TestLoadout => tutorialTest,
-                TutorialFocus.StartMission => tutorialStart,
+                TutorialFocus.TestLoadout or TutorialFocus.EnterTestRoom when tutorialTest != null => (RectTransform)tutorialTest.transform,
+                TutorialFocus.StartMission when tutorialStart != null => (RectTransform)tutorialStart.transform,
                 _ => null
             };
             if (page == null || (target != null && !target.IsChildOf(page))) target = null;
@@ -107,7 +112,7 @@ namespace GoGhost.Duel
             // The rule rows have only ten units between them; the first row is also under the heading.
             // The profile and Test Room are twelve units apart. Their frames must stay in those gaps.
             float verticalRoom = (focus is TutorialFocus.AddRule or TutorialFocus.Example ? 6
-                : focus is TutorialFocus.TargetProfile or TutorialFocus.TestLoadout ? 8
+                : focus is TutorialFocus.TargetProfile or TutorialFocus.TestLoadout or TutorialFocus.EnterTestRoom ? 8
                 : room / scale) * scale;
             min -= new Vector2(room * Mathf.Sqrt(1 + slope * slope), verticalRoom);
             max += new Vector2(room * Mathf.Sqrt(1 + slope * slope), verticalRoom);

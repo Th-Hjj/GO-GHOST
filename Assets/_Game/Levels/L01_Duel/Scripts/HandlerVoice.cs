@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace GoGhost.Duel
 {
-    internal enum TutorialFocus { None, Body, Rules, Example, AddRule, Condition, Action, Relation, Pick, Confirm, TargetProfile, TestLoadout, StartMission }
+    internal enum TutorialFocus { None, Body, Rules, Example, AddRule, Condition, Action, Relation, Pick, Confirm, TargetProfile, TestLoadout, EnterTestRoom, StartMission }
 
     public sealed class HandlerVoice : MonoBehaviour
     {
@@ -22,6 +22,8 @@ namespace GoGhost.Duel
         const double InstallSpeechDelay = 1.4;
         internal TutorialFocus Focus { get; private set; }
         internal bool CanOpenRuleEditor => !tutorialActive || Focus == TutorialFocus.AddRule;
+        internal bool CanEnterTestRoom => Focus is not (TutorialFocus.TargetProfile or TutorialFocus.TestLoadout);
+        internal bool CanStartMission => CanEnterTestRoom && Focus != TutorialFocus.EnterTestRoom;
         bool suspended;
         AudioClip interruptedClip;
         int interruptedSample;
@@ -77,6 +79,7 @@ namespace GoGhost.Duel
                     "Handler/TutorialConfirm" => TutorialFocus.Confirm,
                     "Handler/TutorialPreparationProfile" => TutorialFocus.TargetProfile,
                     "Handler/TutorialPreparationTest" => TutorialFocus.TestLoadout,
+                    "Handler/TutorialPreparationEnterTest" => TutorialFocus.EnterTestRoom,
                     "Handler/TutorialPreparationStart" => TutorialFocus.StartMission,
                     _ => TutorialFocus.None
                 };
@@ -90,9 +93,15 @@ namespace GoGhost.Duel
         {
             if (PendingDialogue == null || WaitingForPageSpeech || Time.frameCount == dialogueFrame) return;
             dialogueFrame = Time.frameCount;
-            if (!DialogueReady || waitForVoice && Speaking)
+            if (!DialogueReady || (waitForVoice || Focus == TutorialFocus.EnterTestRoom) && Speaking)
             {
                 revealed = true;
+                return;
+            }
+            if (Focus == TutorialFocus.EnterTestRoom)
+            {
+                // A click may dismiss the invitation. Only returning from practice runs its continuation.
+                PendingDialogue = null;
                 return;
             }
             Advance();
@@ -254,8 +263,9 @@ namespace GoGhost.Duel
         {
             SuspendConfiguration(false);
             // Following the highlighted invitation also acknowledges its explanation.
-            if ((visited == DuelPhase.TargetProfile && Focus == TutorialFocus.TargetProfile)
-                || (visited == DuelPhase.Training && Focus == TutorialFocus.TestLoadout))
+            if (visited == DuelPhase.Training && Focus == TutorialFocus.EnterTestRoom)
+                Advance();
+            else if (visited == DuelPhase.TargetProfile && Focus == TutorialFocus.TargetProfile)
                 Acknowledge(waitForVoice: false);
         }
 
@@ -321,7 +331,8 @@ namespace GoGhost.Duel
                     if (!line.key.StartsWith(prefix, StringComparison.Ordinal)) continue;
                     SpeakDialogue(line.key, Next, realtime);
                     // The line that asks for a rule waits for the player to add one.
-                    if (auto && Focus != TutorialFocus.AddRule) StartCoroutine(AutoAdvance(dialogueId));
+                    if ((auto && Focus != TutorialFocus.AddRule) || Focus == TutorialFocus.TestLoadout)
+                        StartCoroutine(AutoAdvance(dialogueId));
                     if (line.key == "Handler/TutorialIntroJump") installExample?.Invoke();
                     return;
                 }

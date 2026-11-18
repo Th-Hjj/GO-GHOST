@@ -62,7 +62,7 @@ namespace GoGhost.Duel
 
         public void StartMission()
         {
-            if (Phase != DuelPhase.Configure || Paused || DeveloperToolsOpen || !DialogueAllowsPreparationNavigation || !ui.ConfigurationReady) return;
+            if (Phase != DuelPhase.Configure || Paused || DeveloperToolsOpen || !handler.CanStartMission || !DialogueAllowsPreparationNavigation || !ui.ConfigurationReady) return;
             ui.KeepPreparationForFade();
             CreateEncounter(false, fadePreparation: true);
             ui.FadePreparation(0);

@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-18 — Happy waits for a Test Room visit
+
+During Mission 1 preparation, Happy follows the existing Test Room explanation with “Please test out your setup here.” The invitation keeps the Test Room highlighted after a dialogue click. Returning from practice plays the existing Start Mission line. The new take uses the current Happy voice settings.
+
+Unity 6000.6.0f1 Play Mode passed the guided rule, both Test Room lines, repeated dialogue clicks, the blocked early mission start, room entry, Back and mission entry. The tutorial-off game flow through the credits also passed. Report at `Logs/BossEncounter/Flow-20261118-075942-e713f5/game-flow.txt`. The check invoked button callbacks and verified the loaded clip. Physical mouse input and listening by ear were not tested.
+
 ## 2026-11-17 — Tutorial choice preserves the face drawing guide
 
 On the Who Are You page both Tutorial buttons rebuilt the page and reset the drawing demonstration to its first stroke. They now update the tutorial choice and its two button colours in place.

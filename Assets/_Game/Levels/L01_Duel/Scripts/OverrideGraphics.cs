@@ -801,9 +801,12 @@ namespace GoGhost.Duel
 
         void Update()
         {
+            if (Appearance != null && Appearance.DrawingGuideDismissed)
+            {
+                gameObject.SetActive(false);
+                return;
+            }
             clock += Mathf.Min(Time.unscaledDeltaTime, 1f / 30f);
-            // After a Clear the demonstration starts again from its first stroke.
-            if (Appearance != null && Appearance.HasInk) clock = 0;
             SetVerticesDirty();
         }
 
@@ -873,7 +876,7 @@ namespace GoGhost.Duel
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             vh.Clear();
-            if (Appearance == null || Appearance.HasInk) return;
+            if (Appearance == null || Appearance.DrawingGuideDismissed) return;
             float t = clock % Loop;
             // The head's interior is black, so fading to black is a fade-out without overlapping alpha.
             float fade = 1 - Mathf.Clamp01((t - FadeAt) / FadeSeconds);

@@ -6,11 +6,15 @@ using UnityEngine;
 
 namespace GoGhost.Duel
 {
+    // Zero is the default for saves written before difficulty selection.
+    public enum GameDifficulty { Normal, Easy, Hard }
+
     [Serializable] public sealed class SaveData
     {
         public int version = GameSave.CurrentVersion;
         public string name = "";
         public int wave = 1;
+        public GameDifficulty difficulty;
         public bool[] profiles;
         public bool tutorialDone;
         public string runId;
@@ -223,6 +227,7 @@ namespace GoGhost.Duel
 
         static void ValidateStructure(SaveData data)
         {
+            if (!Enum.IsDefined(typeof(GameDifficulty), data.difficulty)) data.difficulty = GameDifficulty.Normal;
             if (data.wave < 1 || data.wave > DuelGame.FinalBossWave) throw new InvalidDataException("Invalid mission.");
             data.name = data.name ?? "";
             if (!string.IsNullOrEmpty(data.runId))
@@ -343,6 +348,40 @@ namespace GoGhost.Duel
         bool saveFailed, savedRulesNeedRepair;
         public string SaveNotice { get; private set; }
 
+        public GameDifficulty Difficulty { get; private set; }
+        public bool CanChangeDifficulty => !GhostArena && (Phase == DuelPhase.CharacterCreation ||
+            Phase == DuelPhase.Configure || Phase == DuelPhase.TargetProfile || Phase == DuelPhase.Failed ||
+            Phase == DuelPhase.Between || (Phase == DuelPhase.Complete && Wave == BonusWave));
+
+        internal GameDifficulty? ReadTitleDifficulty()
+        {
+            if (!GameSave.Exists) return null;
+            var data = GameSave.Read(out _);
+            if (GameSave.LastMessage != null) SaveNotice = GameSave.LastMessage;
+            return data?.difficulty;
+        }
+
+        internal bool SetDifficulty(GameDifficulty value)
+        {
+            if (!Enum.IsDefined(typeof(GameDifficulty), value)) return false;
+            if (Phase == DuelPhase.Menu)
+            {
+                // Patch only the selected slot. An abandoned creation or an Editor run may still be in memory.
+                var slot = GameSave.Read(out var drawing);
+                if (slot != null)
+                {
+                    slot.difficulty = value;
+                    if (GameSave.Write(slot, drawing)) { SaveNotice = null; return true; }
+                }
+                SaveNotice = GameSave.LastMessage;
+                return false;
+            }
+            if (!CanChangeDifficulty) return false;
+            Difficulty = value;
+            if (Phase != DuelPhase.CharacterCreation) SaveGame();
+            return true;
+        }
+
         // Written after Upload, on every rule change, when a mission is cleared and on leaving for the menu.
         void SaveGame()
         {
@@ -353,7 +392,7 @@ namespace GoGhost.Duel
             var data = new SaveData
             {
                 name = Appearance.Name, wave = Mathf.Clamp(reached, 1, FinalBossWave), profiles = (bool[])profileOpened.Clone(),
-                tutorialDone = tutorialDone, runId = savedRunId, operations = DraftLoadout.Copy().Operations
+                tutorialDone = tutorialDone, runId = savedRunId, operations = DraftLoadout.Copy().Operations, difficulty = Difficulty
             };
             if (GameSave.Write(data, faceSaved ? null : Appearance.ExportPng()))
             {
@@ -384,6 +423,7 @@ namespace GoGhost.Duel
             savedRunId = data.runId;
             metricsWaveJumpPending = false;
             Wave = Mathf.Clamp(data.wave, 1, FinalBossWave);
+            Difficulty = data.difficulty;
             System.Array.Clear(profileOpened, 0, profileOpened.Length);
             if (data.profiles != null)
                 for (int i = 0; i < profileOpened.Length && i < data.profiles.Length; i++) profileOpened[i] = data.profiles[i];

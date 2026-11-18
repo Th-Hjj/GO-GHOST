@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-17 — Run difficulty
+
+New Game opens a separate Easy, Normal and Hard picker before character creation. The selection belongs to the save. Older saves and new selections default to Normal. Settings can change the next attempt outside combat and displays the current value during an encounter. Easy takes 70% Boss damage per hit. Hard reduces selected anticipatory graphics while the Boss logic, damage and public threats use the normal values.
+
+Unity 6000.6.0f1 compiled. The isolated Play Mode campaign passed, including cancelling New Game with an existing save, creation, title edits and Continue, countdown and fight locks, post-defeat changes and retry. A 15-point enemy hit dealt 11 on Easy and 15 on Hard. A real Hard Gunner Piercing published its threat throughout preparation and showed its ray at lock. Report and page captures are under `Logs/BossEncounter/Flow-20261118-074850-ca7d24/`. Individual attacks beyond these checks, human-input balance and a player build were not tested by this run.
+
 ## 2026-11-17 — Tutorial choice preserves the face drawing guide
 
 On the Who Are You page both Tutorial buttons rebuilt the page and reset the drawing demonstration to its first stroke. They now update the tutorial choice and its two button colours in place.

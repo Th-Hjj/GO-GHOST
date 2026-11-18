@@ -47,6 +47,7 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         OnHealthChanged?.Invoke(CurrentHealth,MaxHealth);
     }
     public bool IsInvulnerable { get; set; }
+    public float EnemyDamageMultiplier { get; set; } = 1f;
     public bool IsDead { get; private set; }
 
     /// <summary>True once per battle until ResetLastStand() is called again.</summary>
@@ -73,6 +74,8 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     public void TakeDamage(int amount, GameObject source)
     {
         if (IsDead || IsInvulnerable || amount <= 0) return;
+        if (EnemyDamageMultiplier != 1f && source != null && source.TryGetComponent<Enemy>(out _))
+            amount = Mathf.Max(1, Mathf.FloorToInt(amount * EnemyDamageMultiplier + .5f));
 
         int projectedHealth = CurrentHealth - amount;
 

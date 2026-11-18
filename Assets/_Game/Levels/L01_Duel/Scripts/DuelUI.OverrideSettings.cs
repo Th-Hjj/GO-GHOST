@@ -9,8 +9,11 @@ namespace GoGhost.Duel
     // Override UI, stage 7: Settings, Key Bindings, Credits, the New Game confirmation and the flashing-lights notice.
     public sealed partial class DuelUI
     {
-        enum OverlayPage { None, Settings, Bindings, Confirm, Notice }
+        enum OverlayPage { None, Settings, Bindings, Confirm, Notice, Difficulty }
         OverlayPage overlay;
+        static readonly GameDifficulty[] DifficultyOptions = { GameDifficulty.Easy, GameDifficulty.Normal, GameDifficulty.Hard };
+        GameDifficulty newRunDifficulty;
+        GameDifficulty? titleDifficulty;
         int listeningBinding = -1, listeningSince;
         // Typing the name must not open the menu when Pause is bound to a letter.
         public bool TextEntryFocused => EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null
@@ -20,7 +23,12 @@ namespace GoGhost.Duel
         internal bool EscapeClaimed => game.Phase == DuelPhase.Configure && !game.Paused && selectorRow >= 0
             && GameSettings.BindingPath(GameSettings.Pause) == "<Keyboard>/escape";
 
-        void OpenOverlay(OverlayPage value) { overlay = value; listeningBinding = -1; Show(); }
+        void OpenOverlay(OverlayPage value)
+        {
+            if (value == OverlayPage.Settings && game.Phase == DuelPhase.Menu) titleDifficulty = game.ReadTitleDifficulty();
+            if (value == OverlayPage.Difficulty) newRunDifficulty = GameDifficulty.Normal;
+            overlay = value; listeningBinding = -1; Show();
+        }
         void CloseOverlay()
         {
             listeningBinding = -1;
@@ -61,6 +69,7 @@ namespace GoGhost.Duel
                 case OverlayPage.Bindings: BuildOverrideBindings(); break;
                 case OverlayPage.Confirm: BuildOverrideConfirm(); break;
                 case OverlayPage.Notice: BuildOverrideNotice(); break;
+                case OverlayPage.Difficulty: BuildDifficultySelection(); break;
             }
         }
 
@@ -119,6 +128,48 @@ namespace GoGhost.Duel
             OvText("Reduce Flashing", frame, At(right + 4, y, 320, 52), new Vector2(320, 52), 36, OverridePalette.Text, TextAlignmentOptions.CaplineLeft, false, 1);
             OvToggle("ReduceFlashingOn", "On", frame, right + 330, y, 96, GameSettings.ReduceFlashing, () => SetReduceFlashing(true));
             OvToggle("ReduceFlashingOff", "Off", frame, right + 434, y, 96, !GameSettings.ReduceFlashing, () => SetReduceFlashing(false));
+            BuildDifficultySetting(frame, rowTop + 4 * pitch);
+        }
+
+        void BuildDifficultySelection()
+        {
+            var frame = OvOverlayFrame("Difficulty");
+            for (int i = 0; i < DifficultyOptions.Length; i++)
+            {
+                var option = DifficultyOptions[i];
+                bool selected = option == newRunDifficulty;
+                OvOption("Choose" + option, option.ToString(), frame, At(56 + i * 504, 356, 480, 116), new Vector2(480, 116),
+                    () => { newRunDifficulty = option; Show(); }, selected ? OverridePalette.Text : OverridePalette.Surface,
+                    selected ? OverridePalette.Ink : OverridePalette.Text, 68, Enter(2 + i), -1);
+            }
+            OvButton("Continue", frame, At(56, 646, 420, 76), new Vector2(420, 76), () =>
+            {
+                overlay = OverlayPage.None;
+                game.StartNewRun(newRunDifficulty);
+            }, OverrideButtonKind.Primary, 48, true, Enter(5)).name = "ConfirmDifficulty";
+        }
+
+        void BuildDifficultySetting(RectTransform frame, float top)
+        {
+            bool title = game.Phase == DuelPhase.Menu;
+            if ((title && !titleDifficulty.HasValue) || (game.Phase == DuelPhase.Complete && game.Wave == DuelGame.FinalBossWave)) return;
+            GameDifficulty selected = title ? titleDifficulty.Value : game.GhostArena ? GameDifficulty.Normal : game.Difficulty;
+            OvText("Difficulty", frame, At(60, top, 200, 52), new Vector2(200, 52), 36, OverridePalette.Text, TextAlignmentOptions.CaplineLeft, false, 1);
+            if (!title && !game.CanChangeDifficulty)
+            {
+                OvText(selected.ToString(), frame, At(270, top, 490, 52), new Vector2(490, 52), 32, OverridePalette.TextDim, TextAlignmentOptions.CaplineLeft).name = "LockedDifficulty";
+                return;
+            }
+            for (int i = 0; i < DifficultyOptions.Length; i++)
+            {
+                var option = DifficultyOptions[i];
+                OvToggle("SetDifficulty" + option, option.ToString(), frame, 270 + i * 144, top, 132, option == selected, () =>
+                {
+                    if (option == selected) return;
+                    if (game.SetDifficulty(option) && title) titleDifficulty = option;
+                    Show();
+                });
+            }
         }
 
         void SetVolume(int group, int value)
@@ -222,7 +273,7 @@ namespace GoGhost.Duel
                 TextAlignmentOptions.CaplineLeft, true, -.5f);
             OvBodyAt("Your saved run will be replaced.", frame, At(186, 430, 1100, 44), new Vector2(1100, 44), 26, QuietCardText);
             OvButton("Cancel", frame, At(180, 520, 440, 96), new Vector2(440, 96), CloseOverlay, OverrideButtonKind.Primary, 62).name = "ConfirmCancel";
-            OvButton("New Game", frame, At(180, 632, 300, 68), new Vector2(300, 68), () => { overlay = OverlayPage.None; game.NewGame(); },
+            OvButton("New Game", frame, At(180, 632, 300, 68), new Vector2(300, 68), () => OpenOverlay(OverlayPage.Difficulty),
                 OverrideButtonKind.Secondary, 40).name = "ConfirmNewGame";
         }
 
@@ -247,7 +298,7 @@ namespace GoGhost.Duel
         void RequestNewGame()
         {
             if (GameSave.Exists) OpenOverlay(OverlayPage.Confirm);
-            else game.NewGame();
+            else OpenOverlay(OverlayPage.Difficulty);
         }
     }
 }

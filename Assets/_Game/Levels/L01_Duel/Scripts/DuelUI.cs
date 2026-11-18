@@ -170,7 +170,7 @@ namespace GoGhost.Duel
             // can also open over the Bonus result, whose Restart replaces the save.
             if(!game.DeveloperToolsOpen)
             {
-                if(overlay!=OverlayPage.None&&overlay!=OverlayPage.Confirm&&game.Phase!=DuelPhase.Menu&&!game.Paused)overlay=OverlayPage.None;
+                if(overlay!=OverlayPage.None&&overlay!=OverlayPage.Confirm&&overlay!=OverlayPage.Difficulty&&game.Phase!=DuelPhase.Menu&&!game.Paused)overlay=OverlayPage.None;
                 if(game.Phase==DuelPhase.Menu&&overlay==OverlayPage.None&&!GameSettings.NoticeSeen)overlay=OverlayPage.Notice;
             }
             LeaveMenuIfResumed();

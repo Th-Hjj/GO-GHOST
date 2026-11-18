@@ -159,8 +159,9 @@ namespace GoGhost.Duel
                 // The axe's route in its own violet: dim when ordered, bright from 60% of the delay.
                 bool locked=boxer.LaunchProgress>=.6f;
                 Vector2 from=boxer.Detached ? boxer.AxeEdge : heldPivot;
-                SetLine(AxeLine(6,"Axe order warning",2),from,boxer.Destination,SwordTellWidth(false,locked),
-                    NeuralPalette.Alpha(NeuralPalette.Emp,locked ? .8f : .3f));
+                if (!ReduceAttackWarnings || locked)
+                    SetLine(AxeLine(6,"Axe order warning",2),from,boxer.Destination,SwordTellWidth(false,locked),
+                        NeuralPalette.Alpha(NeuralPalette.Emp,locked ? .8f : .3f));
             }
             bool winding=boxer.Phase==FinalBossBoxer.Stage.Windup || boxer.Phase==FinalBossBoxer.Stage.Slip;
             if (boxer.Rising && boxer.Phase==FinalBossBoxer.Stage.Windup && boxer.RisingArc.Count>2)

@@ -25,6 +25,7 @@ namespace GoGhost.Duel
         public float AimDelay=>Phase==BossActionPhase.Prepare?Mathf.Max(0,phaseUntil-Time.time)+LockSeconds
             :BurstAction&&Phase==BossActionPhase.Active?Mathf.Max(p.BurstShotLock,nextShot-Time.time):LockSeconds;
         public bool StaggeredBurst {get;private set;}
+        internal bool CooperativeAttack => comboTarget;
         public int DropCorrections {get;private set;}
         bool BurstAction=>Ability==BossAbility.Burst||Ability==BossAbility.TacticalJumpShot;
         bool JumpAction=>Ability==BossAbility.LeapSlash||Ability==BossAbility.TacticalJumpShot||Ability==BossAbility.FlankLeap;

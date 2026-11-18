@@ -69,6 +69,7 @@ namespace GoGhost.Duel
         {
             if (from == to && (to != PageKind.Overlay || pageOverlay == overlay)) return PageChange.Refresh;
             if (from == PageKind.None || from == PageKind.Dev || to == PageKind.Dev) return PageChange.Cut;
+            if (from == PageKind.Overlay && pageOverlay == OverlayPage.Difficulty && to == PageKind.Creation) return PageChange.Wipe;
             if (from == PageKind.Overlay || to == PageKind.Overlay)
                 return from == to || from == PageKind.Menu || to == PageKind.Menu || from == PageKind.Pause || to == PageKind.Pause
                     ? PageChange.Flow : PageChange.Cut;

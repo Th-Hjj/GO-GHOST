@@ -271,7 +271,7 @@ namespace GoGhost.Duel
             var help = OvButton("Menu", frame, At(1424, 56, 120, 48), new Vector2(120, 48), () => game.SetPause(true), OverrideButtonKind.Tertiary, 28,
                 align: TextAlignmentOptions.Capline);
             help.name = "ConfigurationMenu";
-            var rule = OvRule(frame, 56, 132, 1488);
+            var rule = OvPageRule(frame, 132);
             headerShared.Add(help.gameObject); headerShared.Add(rule.gameObject);
             if (sharedHeader)
             {

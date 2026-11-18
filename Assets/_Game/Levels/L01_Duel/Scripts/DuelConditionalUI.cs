@@ -19,7 +19,7 @@ namespace GoGhost.Duel
         // Presentation order only. Runtime priority remains the relative order within each operation.
         readonly List<ConditionalRule> displayedRules = new List<ConditionalRule>();
 
-        Vector2Int configurationScreen;
+        Vector2Int layoutScreen;
         RectTransform ruleEditor, ruleList, bodyPreview;
         readonly MissionBodyRegion[] neuralRegions=new MissionBodyRegion[6];
         readonly List<UnityEngine.UI.Image> equippedAccents=new List<UnityEngine.UI.Image>();
@@ -91,7 +91,7 @@ namespace GoGhost.Duel
         {
             var scaler = canvas.GetComponent<UnityEngine.UI.CanvasScaler>();
             var root = canvas.GetComponent<Canvas>();
-            configurationScreen = new Vector2Int(Screen.width, Screen.height);
+            layoutScreen = new Vector2Int(Screen.width, Screen.height);
             if (game.Phase == DuelPhase.Configure && !game.DeveloperToolsOpen)
             {
                 scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ConstantPixelSize;
@@ -111,11 +111,6 @@ namespace GoGhost.Duel
         {
             if (game == null || game.Phase != DuelPhase.Configure) return false;
             if (game.Paused || OverlayOpen) return true;
-            if (configurationScreen.x != Screen.width || configurationScreen.y != Screen.height)
-            {
-                Show();
-                return true;
-            }
             if (!DeveloperShortcutConsumed && game.PauseChangedFrame != Time.frameCount && selectorRow >= 0 && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
             {
                 CancelRuleEdit();

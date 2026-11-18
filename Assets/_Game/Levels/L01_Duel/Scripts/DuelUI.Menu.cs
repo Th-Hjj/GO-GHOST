@@ -30,7 +30,7 @@ namespace GoGhost.Duel
             bool encounter = game.Phase == DuelPhase.Fight || game.Phase == DuelPhase.Prepare || game.Phase == DuelPhase.Training;
             bool arena = encounter || game.ResultHeld || game.VictoryPresentation;
 
-            menuRoot = Rect("Menu", page, Vector2.zero, Vector2.zero);
+            menuRoot = OvFrame("Menu");
             // Nothing under the menu answers the pointer. Over a fight the arena dims by itself; a page dims under this shade.
             var shade = Image(menuRoot, Vector2.zero, new Vector2(4000, 4000), arena ? Color.clear : NeuralPalette.Alpha(OverridePalette.Ink, .74f));
             shade.raycastTarget = true;

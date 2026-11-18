@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-18 — Full-width page rules and menu alignment
+
+The Difficulty heading's moving stripe stopped 56 design units inside each edge. Difficulty, Settings, Key Bindings, the mission overview and the rule editor now size their horizontal rule to the viewport. The pause panel keeps a rule the width of its own controls. Full-page overlays and the pause menu fit the same frame as the preparation UI, including when the window is resized with Settings open. Difficulty choices, On/Off labels and resolution arrows are centred in their controls.
+
+Unity 6000.6.0f1 compiled. The 1280×960 Play Mode campaign passed through the credits. Reviewed its 29 page captures, including the combat Settings row, the settled HUD and results. The Settings and HUD checks now wait for their entrance animations before taking those captures. Additional real Game View captures at 2560×1440 and 2520×1080 checked Difficulty and Key Bindings on live resize. Two moving ultrawide frames differed across the entire width of the divider, and two frames with Reduce Flashing enabled were pixel-identical. The editor view was returned to 2560×1440. Evidence is under `Logs/BossEncounter/Flow-20261118-075849-7ea620/` and `Logs/UIReview/`. Physical input, a player build and a full manual balance pass were not tested.
+
 ## 2026-11-17 — Run difficulty
 
 New Game opens a separate Easy, Normal and Hard picker before character creation. The selection belongs to the save. Older saves and new selections default to Normal. Settings can change the next attempt outside combat and displays the current value during an encounter. Easy takes 70% Boss damage per hit. Hard reduces selected anticipatory graphics while the Boss logic, damage and public threats use the normal values.

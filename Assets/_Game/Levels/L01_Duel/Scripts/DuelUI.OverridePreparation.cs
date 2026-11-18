@@ -14,9 +14,9 @@ namespace GoGhost.Duel
         float dialogueFooterLeftInset = 32;
 
         // Mockup coordinates live on a 1600x900 frame, shrunk when the window is narrower than that.
-        RectTransform OvFrame()
+        RectTransform OvFrame(string name = "Frame")
         {
-            var frame = Rect("Frame", page, Vector2.zero, new Vector2(1600, 900));
+            var frame = Rect(name, page, Vector2.zero, new Vector2(1600, 900));
             frame.localScale = Vector3.one * Mathf.Min(1, page.sizeDelta.x / 1600f, page.sizeDelta.y / 900f);
             return frame;
         }
@@ -36,6 +36,12 @@ namespace GoGhost.Duel
             stripes.Band = 10; stripes.SecondsPerPeriod = 1.2f;
             stripes.color = OverridePalette.Signal; stripes.Other = OverridePalette.Ink; stripes.raycastTarget = false;
             return r;
+        }
+
+        RectTransform OvPageRule(RectTransform frame, float top)
+        {
+            float width = page.rect.width / frame.localScale.x;
+            return OvRule(frame, (1600 - width) * .5f, top, width);
         }
 
         void OvDivider(Transform parent, float x)
@@ -408,9 +414,8 @@ namespace GoGhost.Duel
 
         void BuildOverrideProfile()
         {
-            profileResolution = new Vector2Int(Screen.width, Screen.height);
             float scale = canvas.GetComponent<Canvas>().scaleFactor;
-            page.sizeDelta = (Vector2)profileResolution / scale;
+            page.sizeDelta = (Vector2)layoutScreen / scale;
             OvFill(page, OverridePalette.Ink);
             var frame = OvFrame();
             bool final = game.Wave == DuelGame.FinalBossWave;

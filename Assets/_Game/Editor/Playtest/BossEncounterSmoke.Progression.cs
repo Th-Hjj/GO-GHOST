@@ -76,6 +76,7 @@ public static partial class BossEncounterSmoke
             if (wave == 1) yield return CheckMenu("countdown", true);
             yield return WaitFor(() => game.Phase == DuelPhase.Fight, "Combat did not start.");
             game.Player.IsInvulnerable = true;
+            yield return Settle(.4f);
             yield return Shot("fight-" + wave);
             if (wave == 1) { yield return CheckMenu("fight", true); yield return CheckDefeatRoutes(); }
             Note("PASS Mission " + wave + ": preparation, Test Room return, Start Mission, countdown.");

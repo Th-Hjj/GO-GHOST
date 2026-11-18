@@ -40,10 +40,10 @@ namespace GoGhost.Duel
 
         RectTransform OvOverlayFrame(string title, bool back = true)
         {
-            page.sizeDelta = canvas.rect.size;
+            page.sizeDelta = (Vector2)layoutScreen / canvas.GetComponent<Canvas>().scaleFactor;
             // Opaque over a paused fight too: the arena must not show through the rows.
             OvFill(page, OverridePalette.Ink);
-            var frame = Rect("Frame", page, Vector2.zero, new Vector2(1600, 900));
+            var frame = OvFrame();
             // The flashing-lights notice stays a still screen.
             bool still = overlay == OverlayPage.Notice;
             if (back)
@@ -53,7 +53,7 @@ namespace GoGhost.Duel
             {
                 OvArrive(OvText(title, frame, new Vector2(56 + 600 - 800, 450 - 122 - 56), new Vector2(1200, 112), 112, OverridePalette.Text,
                     TextAlignmentOptions.CaplineLeft, true, -.5f), new Vector2(-120, 0), 0);
-                OvArrive(OvRule(frame, 56, 244, 1488), Vector2.zero, 1);
+                OvArrive(OvPageRule(frame, 244), Vector2.zero, 1);
             }
             // Everything under the heading arrives as one block.
             var content = Rect("Content", frame, Vector2.zero, new Vector2(1600, 900));
@@ -76,7 +76,8 @@ namespace GoGhost.Duel
         Button OvToggle(string name, string label, RectTransform frame, float left, float top, float width, bool selected, UnityEngine.Events.UnityAction click)
         {
             return OvOption(name, label, frame, At(left, top, width, 52), new Vector2(width, 52), click,
-                selected ? OverridePalette.Text : OverridePalette.Surface, selected ? OverridePalette.Ink : OverridePalette.Text, 30, -1, -1);
+                selected ? OverridePalette.Text : OverridePalette.Surface, selected ? OverridePalette.Ink : OverridePalette.Text, 30, -1, -1,
+                align: TextAlignmentOptions.Capline);
         }
 
         void BuildOverrideSettings()
@@ -115,11 +116,11 @@ namespace GoGhost.Duel
             if (!web) y += pitch;
             if (!web) OvText("Resolution", frame, At(right + 4, y, 300, 52), new Vector2(300, 52), 36, OverridePalette.Text, TextAlignmentOptions.CaplineLeft, false, 1);
             if (!web) OvOption("ResolutionPrevious", "«", frame, At(right + 330, y, 52, 52), new Vector2(52, 52), () => SetDisplay(GameSettings.Fullscreen, GameSettings.VSync, -1),
-                OverridePalette.Surface, OverridePalette.Text, 30, -1, -1);
+                OverridePalette.Surface, OverridePalette.Text, 30, -1, -1, align: TextAlignmentOptions.Capline);
             int width = GameSettings.Width > 0 ? GameSettings.Width : Screen.width, height = GameSettings.Height > 0 ? GameSettings.Height : Screen.height;
             if (!web) OvText(width + " × " + height, frame, At(right + 390, y, 210, 52), new Vector2(210, 52), 34, OverridePalette.Text);
             if (!web) OvOption("ResolutionNext", "»", frame, At(right + 608, y, 52, 52), new Vector2(52, 52), () => SetDisplay(GameSettings.Fullscreen, GameSettings.VSync, 1),
-                OverridePalette.Surface, OverridePalette.Text, 30, -1, -1);
+                OverridePalette.Surface, OverridePalette.Text, 30, -1, -1, align: TextAlignmentOptions.Capline);
             y += pitch;
             OvText("VSync", frame, At(right + 4, y, 300, 52), new Vector2(300, 52), 36, OverridePalette.Text, TextAlignmentOptions.CaplineLeft, false, 1);
             OvToggle("VSyncOn", "On", frame, right + 330, y, 96, GameSettings.VSync, () => SetDisplay(GameSettings.Fullscreen, true, 0));
@@ -140,7 +141,7 @@ namespace GoGhost.Duel
                 bool selected = option == newRunDifficulty;
                 OvOption("Choose" + option, option.ToString(), frame, At(56 + i * 504, 356, 480, 116), new Vector2(480, 116),
                     () => { newRunDifficulty = option; Show(); }, selected ? OverridePalette.Text : OverridePalette.Surface,
-                    selected ? OverridePalette.Ink : OverridePalette.Text, 68, Enter(2 + i), -1);
+                    selected ? OverridePalette.Ink : OverridePalette.Text, 68, Enter(2 + i), -1, align: TextAlignmentOptions.Capline);
             }
             OvButton("Continue", frame, At(56, 646, 420, 76), new Vector2(420, 76), () =>
             {

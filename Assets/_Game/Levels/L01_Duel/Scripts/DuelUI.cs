@@ -253,7 +253,8 @@ namespace GoGhost.Duel
             UpdateOverlayInput();
             UpdateTitleBackdrop();
             if (game.DeveloperToolsOpen) return;
-            if (game.Phase==DuelPhase.TargetProfile && profileResolution != new Vector2Int(Screen.width,Screen.height)) {Show();return;}
+            if ((OverlayOpen || game.Paused || game.Phase == DuelPhase.Configure || game.Phase == DuelPhase.TargetProfile)
+                && layoutScreen != new Vector2Int(Screen.width, Screen.height)) { Show(); return; }
             UpdateProfileReading();
             if (RefreshConfigurationLayout()) return;
             UpdateRuleHud();

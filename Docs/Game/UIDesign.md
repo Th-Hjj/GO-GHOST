@@ -63,7 +63,7 @@ Match state never changes font, size, weight, spacing or wrapping (existing rule
 ### Shape
 
 - **Slab.** Every control and card is a right-leaning parallelogram. The horizontal cut is 0.21 × height, rounded to a pixel (22 on a 108 slab, 18 on 88, 12 on 52).
-- **Hazard stripe.** 55° Signal/Ink bands, 14 wide on large bands and 10 on thin rules, scrolling one period every 1.2–1.4 s.
+- **Hazard stripe.** 55° Signal/Ink bands, 14 wide on large bands and 10 on thin rules, scrolling one period every 1.2–1.4 s. The horizontal rule under a full-page heading reaches both viewport edges. The pause menu's rule spans its own button column. Reduce Flashing holds the pattern still.
 - No rounded corners, outlines, drop shadows or gradients. Menus carry a 1-pixel scanline every 4 pixels at 1.8% white.
 
 ## Components

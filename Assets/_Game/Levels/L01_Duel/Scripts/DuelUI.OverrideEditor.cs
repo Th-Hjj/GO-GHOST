@@ -109,10 +109,10 @@ namespace GoGhost.Duel
 
         // rest: the fill this control has when it is not the chosen one; any other fill counts as chosen.
         Button OvOption(string name, string label, Transform parent, Vector2 pos, Vector2 size, UnityEngine.Events.UnityAction click,
-            Color fill, Color ink, float points, float enterDelay, float side, Color? rest = null)
+            Color fill, Color ink, float points, float enterDelay, float side, Color? rest = null, TextAlignmentOptions align = TextAlignmentOptions.CaplineLeft)
         {
             Color resting = rest ?? OverridePalette.Surface;
-            var button = OvButton(label, parent, pos, size, click, OverrideButtonKind.Tertiary, points, enterDelay: enterDelay);
+            var button = OvButton(label, parent, pos, size, click, OverrideButtonKind.Tertiary, points, enterDelay: enterDelay, align: align);
             button.name = name;
             var behaviour = button.GetComponent<SlabButton>();
             behaviour.Fill = fill; behaviour.Ink = ink; behaviour.Shift = 8; behaviour.EnterSide = side; behaviour.Overshoot = true;

@@ -46,7 +46,11 @@ public static partial class BossEncounterSmoke
                 Require(!encounter || !System.Array.Exists(CurrentPage().GetComponentsInChildren<UnityEngine.UI.Button>(),
                     button => button.name.StartsWith("SetDifficulty")), "Combat Settings contains difficulty controls on " + where);
                 if (where == "held result") yield return Click("SetDifficultyHard");
-                if (where == "overview" || where == "fight") yield return Shot("difficulty-settings-" + where);
+                if (where == "overview" || where == "fight")
+                {
+                    yield return Settle(.8f);
+                    yield return Shot("difficulty-settings-" + where);
+                }
             }
             yield return Click("OverlayBack");
             yield return WaitFor(() => AvailableButton("MenuResume") != null && game.Paused, page + " did not return to the menu on " + where);

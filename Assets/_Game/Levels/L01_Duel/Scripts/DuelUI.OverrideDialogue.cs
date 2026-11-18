@@ -216,7 +216,7 @@ namespace GoGhost.Duel
                 bool on = i == 0, selected = game.TutorialWanted == on;
                 var button = OvOption(on ? "TutorialOn" : "TutorialOff", on ? "On" : "Off", frame, At(1396 + i * 76, 822, 70, 38), new Vector2(70, 38),
                     () => SelectTutorial(on), selected ? OverridePalette.Text : OverridePalette.Surface,
-                    selected ? OverridePalette.Ink : OverridePalette.Text, 22, -1, -1);
+                    selected ? OverridePalette.Ink : OverridePalette.Text, 22, -1, -1, align: TextAlignmentOptions.Capline);
                 tutorialButtons[i] = button.GetComponent<SlabButton>();
             }
             if (game.StartupProgress >= 0) ShowStartupProgress(game.StartupProgress);

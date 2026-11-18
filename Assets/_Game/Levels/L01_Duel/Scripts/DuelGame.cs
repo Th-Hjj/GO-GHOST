@@ -34,7 +34,6 @@ namespace GoGhost.Duel
         // The frame on which the menu opened or closed; that key press is spent.
         public int PauseChangedFrame { get; private set; } = -1;
         public bool FirstConfiguration { get; private set; }
-        // Chosen on the creation page; a New Game starts with the tutorial on.
         public bool TutorialWanted { get; set; } = true;
         public PlayerHealth Player { get; private set; }
         public Enemy Police { get; private set; }
@@ -113,9 +112,9 @@ namespace GoGhost.Duel
             if (!focus) developerResumeOnClose = false;
             if (!focus && (Phase == DuelPhase.Fight || Phase == DuelPhase.Prepare || Phase == DuelPhase.Training || VictoryPresentation)) SetPause(true);
         }
-        public void NewGame() => StartNewRun(GameDifficulty.Normal);
+        public void NewGame() => StartNewRun(GameDifficulty.Normal, tutorialWanted: true);
 
-        internal void StartNewRun(GameDifficulty difficulty)
+        internal void StartNewRun(GameDifficulty difficulty, bool tutorialWanted)
         {
             SaveNotice = null; saveFailed = savedRulesNeedRepair = false;
             handler.ResetSpeakerName();
@@ -129,7 +128,7 @@ namespace GoGhost.Duel
             DraftLegs = DraftArms = DraftSpine = false;
             DraftLoadout=new ConditionalLoadout();
             FirstConfiguration = true;
-            TutorialWanted = true;
+            TutorialWanted = tutorialWanted;
             ResetCharacterAppearance();
             SetPhase(DuelPhase.CharacterCreation);
             BeginPreload();

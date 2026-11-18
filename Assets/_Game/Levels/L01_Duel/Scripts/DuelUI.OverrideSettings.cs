@@ -13,6 +13,7 @@ namespace GoGhost.Duel
         OverlayPage overlay;
         static readonly GameDifficulty[] DifficultyOptions = { GameDifficulty.Easy, GameDifficulty.Normal, GameDifficulty.Hard };
         GameDifficulty newRunDifficulty;
+        bool newRunTutorial;
         GameDifficulty? titleDifficulty;
         int listeningBinding = -1, listeningSince;
         // Typing the name must not open the menu when Pause is bound to a letter.
@@ -26,7 +27,11 @@ namespace GoGhost.Duel
         void OpenOverlay(OverlayPage value)
         {
             if (value == OverlayPage.Settings && game.Phase == DuelPhase.Menu) titleDifficulty = game.ReadTitleDifficulty();
-            if (value == OverlayPage.Difficulty) newRunDifficulty = GameDifficulty.Normal;
+            if (value == OverlayPage.Difficulty)
+            {
+                newRunDifficulty = GameDifficulty.Normal;
+                newRunTutorial = true;
+            }
             overlay = value; listeningBinding = -1; Show();
         }
         void CloseOverlay()
@@ -143,11 +148,40 @@ namespace GoGhost.Duel
                     () => { newRunDifficulty = option; Show(); }, selected ? OverridePalette.Text : OverridePalette.Surface,
                     selected ? OverridePalette.Ink : OverridePalette.Text, 68, Enter(2 + i), -1, align: TextAlignmentOptions.Capline);
             }
+            BuildNewRunTutorial(frame);
             OvButton("Continue", frame, At(56, 646, 420, 76), new Vector2(420, 76), () =>
             {
                 overlay = OverlayPage.None;
-                game.StartNewRun(newRunDifficulty);
+                game.StartNewRun(newRunDifficulty, newRunTutorial);
             }, OverrideButtonKind.Primary, 48, true, Enter(5)).name = "ConfirmDifficulty";
+        }
+
+        void BuildNewRunTutorial(RectTransform frame)
+        {
+            const float top = 530;
+            OvText("Tutorial", frame, At(60, top, 172, 52), new Vector2(172, 52), 36,
+                OverridePalette.TextDim, TextAlignmentOptions.CaplineLeft, false, 1);
+            var buttons = new SlabButton[2];
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                bool on = i == 0;
+                var button = OvToggle(on ? "TutorialOn" : "TutorialOff", on ? "On" : "Off",
+                    frame, 236 + i * 124, top, 116, on == newRunTutorial, () => SelectTutorial(on));
+                buttons[i] = button.GetComponent<SlabButton>();
+            }
+
+            void SelectTutorial(bool on)
+            {
+                if (newRunTutorial == on) return;
+                newRunTutorial = on;
+                var selected = buttons[on ? 0 : 1];
+                var other = buttons[on ? 1 : 0];
+                selected.Sweep(selected.Fill, selected.Ink);
+                selected.Fill = OverridePalette.Text;
+                selected.Ink = OverridePalette.Ink;
+                other.Fill = OverridePalette.Surface;
+                other.Ink = OverridePalette.Text;
+            }
         }
 
         void BuildDifficultySetting(RectTransform frame, float top)

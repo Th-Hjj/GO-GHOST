@@ -23,6 +23,10 @@ public static partial class BossEncounterSmoke
         yield return Click("ConfirmNewGame");
         yield return WaitFor(() => AvailableButton("ChooseNormal") != null, "Missing standalone difficulty page.");
         Require(Field<GameDifficulty>(game.GetComponent<DuelUI>(), "newRunDifficulty") == GameDifficulty.Normal, "New Game did not default to Normal.");
+        yield return Click("TutorialOff");
+        yield return Click("TutorialOn");
+        Require(AvailableButton("TutorialOn").GetComponent<SlabButton>().Fill == OverridePalette.Text, "Tutorial On was not selected.");
+        yield return Click("TutorialOff");
         yield return Click("ChooseHard");
         yield return Click("OverlayBack");
         Require(GameSave.Read(out _).difficulty == GameDifficulty.Normal, "Backing out of selection changed the existing run.");
@@ -31,14 +35,18 @@ public static partial class BossEncounterSmoke
         yield return WaitFor(() => Field<RectTransform>(game.GetComponent<DuelUI>(), "saveNoticePanel") == null,
             "Save recovery notice did not finish.", 13);
         yield return Settle(.8f);
+        Require(AvailableButton("TutorialOn").GetComponent<SlabButton>().Fill == OverridePalette.Text, "New Game did not default to Tutorial On.");
         yield return Shot("difficulty");
+        yield return Click("TutorialOff");
         yield return Click("ChooseEasy");
+        Require(AvailableButton("TutorialOff").GetComponent<SlabButton>().Fill == OverridePalette.Text, "Changing difficulty lost Tutorial Off.");
         yield return Click("ConfirmDifficulty");
         Require(game.Phase == DuelPhase.CharacterCreation && game.Difficulty == GameDifficulty.Easy, "Difficulty selection did not enter creation on Easy.");
+        Require(!game.TutorialWanted, "Tutorial Off did not carry into character creation.");
         PlayMetrics.MarkTestData();
-        game.TutorialWanted = false; // The first-rule tutorial has its own interaction acceptance pass.
         game.Appearance.Name = "Game Flow Smoke";
         yield return Settle(1f);
+        Require(AvailableButton("TutorialOff") == null && AvailableButton("TutorialOn") == null, "Character creation still offers the tutorial choice.");
         yield return Shot("creation");
         yield return CheckMenu("creation", false);
         game.CompleteCharacterCreation();

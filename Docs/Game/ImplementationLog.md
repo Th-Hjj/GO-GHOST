@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-18 — Tutorial selection on the Difficulty page
+
+New Game now groups Tutorial On / Off with difficulty. The compact row aligns with Continue, and a light fill marks the selected option. Continue carries both choices into character creation, where the face, name and Upload controls take the right side.
+
+Unity 6000.6.0f1 compiled. The isolated Play Mode check switched Off and On, backed out, reopened New Game with On selected, then changed difficulty with Off selected. Character creation received Off and Mission 1 preparation opened with empty Rules. The flow passed through the credits. Reviewed the 1600×900 Difficulty and creation captures in `Logs/BossEncounter/Flow-20261118-082943-ff67c4/Pages/`. The check used button callbacks. Physical input and a player build were not tested.
+
 ## 2026-11-18 — Keep the fight framing through Boss defeat
 
 A live Mission 2 result had two equipped rules, no sidebar and a full-width camera. Victory had disposed the rule controller before rebuilding the HUD for the Boss's landing. The HUD now keeps the fight's rule cards until the encounter ends. An empty sidebar stays absent, including after the Final Boss seals the player's rules.

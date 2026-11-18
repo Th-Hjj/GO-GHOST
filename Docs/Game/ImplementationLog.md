@@ -1,5 +1,9 @@
 # GO GHOST slice implementation
 
+## 2026-11-18 — Web delivery
+
+WebGL player built from 5de1fb0 in the open editor: 0 errors, 23 warnings, 157 s. Output: `Builds/Web-20261118/go-ghost`. Data file 33,667,686 bytes in three parts; Build payload 46,793,591 bytes. Installed in `Th-Hjj/thhong-games` (commit 5302084) and pushed. Check Game Flow passed before the build, on 73b8c61, at `Logs/BossEncounter/Flow-20261118-092553-d96780`; the credits change after it was only compiled and captured. The site passed `npm run build`. Headless Edge loaded the package from the site folder and from https://thhong.games/games/go-ghost/ to the flashing-lights page with no JavaScript or console errors, and all six deployed Build files match the package by SHA-256. NOT TESTED in the browser: anything past the flashing-lights page, including the credits and the rule Confirm motion.
+
 ## 2026-11-18 — Credits: instructor, course and playtesters
 
 The roll now lists A game by, Music, Instructor (Jung-Ho Sohn, under CTIN 489, Fall 2026) and Playtesters, three to a line in smaller type with placeholder names. The Fonts row is removed.

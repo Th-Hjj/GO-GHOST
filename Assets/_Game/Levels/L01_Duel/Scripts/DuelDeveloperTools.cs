@@ -190,6 +190,7 @@ namespace GoGhost.Duel
         {
             if (!CanPreviewBossMove(phaseTwo) || move < (phaseTwo ? (int)FinalBossBoxer.Punch.Jab : (int)FinalBossAxe.Move.TripleCut)
                 || move >= (phaseTwo ? phaseTwoTuning.Length : axeTuning.Length)) return;
+            PlayMetrics.MarkTestData();
             var axe = actors[0].Axe;
             if (phaseTwo) axe.Boxer.PreviewPunch = (FinalBossBoxer.Punch)move;
             else axe.PreviewMove = (FinalBossAxe.Move)move;
@@ -208,7 +209,9 @@ namespace GoGhost.Duel
             // A jumped run is not the player's run: never write, delete or clear their save.
             savingRun = false;
             metricsWaveJumpPending = true;
-            if(wave>2){PlayMetrics.MarkTestData();PlayMetrics.EndRun("developer_wave_jump");}
+            if (wave != BonusWave && !PlayMetrics.RunActive) PlayMetrics.ResetRun(Difficulty.ToString(), "Unknown");
+            PlayMetrics.MarkTestData();
+            if (wave == BonusWave) PlayMetrics.EndRun("developer_wave_jump");
             // Keep equipped rules/order, but discard any incomplete picker draft.
             DraftLoadout=DraftLoadout.Copy();
             Wave=wave;

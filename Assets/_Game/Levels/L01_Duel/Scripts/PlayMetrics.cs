@@ -35,6 +35,12 @@ public static class PlayMetrics
     {
         public string attemptId, startedUtc, endedUtc, result = "in_progress";
         public int wave;
+        public string difficulty;
+        public int finalBossStartPhase, finalBossPhase, finalBossHealth = -1, finalBossMaxHealth = -1;
+        public int phaseOneExitPlayerHealth = -1;
+        public float phaseOneCombatSeconds, phaseTwoCombatSeconds;
+        public List<string> invadedRules;
+        public OperationStats[] phaseTwoOperations;
         public bool started, developerWaveJump, tuningChanged, testData;
         public float seconds;
         public string endReason;
@@ -54,9 +60,22 @@ public static class PlayMetrics
         public int Dodges { get => Total(operations[4]); set => operations[4].manualCount = value - operations[4].automaticCount; }
         public int Shots { get => Total(operations[3]); set => operations[3].manualCount = value - operations[3].automaticCount; }
     }
+    [Serializable] public sealed class DifficultyChange
+    {
+        public string from, to, location, utc;
+        public int wave;
+        public double playSeconds;
+    }
     [Serializable] public sealed class RunData
     {
-        public int schemaVersion = 4;
+        public int schemaVersion = 5;
+        public string previousRunId, initialDifficulty, latestDifficulty, tutorialSelection;
+        public double firstCustomRuleAtSeconds = -1;
+        public bool gameCleared;
+        public int guidedTestRoomVisits, freeTestRoomVisits;
+        public double missionTwoClearPlaySeconds = -1;
+        public List<DifficultyChange> difficultyChanges = new List<DifficultyChange>();
+        public float gameClearSeconds;
         public string sessionId, runId, startedUtc, updatedUtc;
         public string playerName = "YOU", endedUtc, endReason;
         public bool characterCreated, finished;
@@ -129,7 +148,8 @@ public static class PlayMetrics
             operation = ((ControlOperation)i).ToString(), unit = i == 0 || i == 2 ? "seconds" : "count" };
         return result;
     }
-    public static void ResetRun()
+    public static void ResetRun() => ResetRun(null, null);
+    public static void ResetRun(string difficulty, string tutorial, string previousRunId = null)
     {
         if (Current != null) Finish("abandoned", false);
         EndRun("new_game");
@@ -137,37 +157,87 @@ public static class PlayMetrics
         History.Clear(); Array.Clear(DeathsByWave, 0, DeathsByWave.Length);
         run = new RunData { sessionId = sessionId, runId = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N"),
             startedUtc = DateTime.UtcNow.ToString("o"), applicationVersion = Application.version,
+            previousRunId = previousRunId, initialDifficulty = difficulty, latestDifficulty = difficulty, tutorialSelection = tutorial,
             platform = Application.platform.ToString(), editor = Application.isEditor, attempts = History, deathsByWave = DeathsByWave };
         Current = null; counting = false; LastSaveError = null;
         stage = DuelPhase.CharacterCreation; stagePaused = false;
         lastClock = lastSave = Time.realtimeSinceStartupAsDouble;
         Save();
     }
-    // Continue extends the saved run's record. A record that already ended at Mission 2 stays closed.
-    public static void ResumeRun(string runId)
+    // Older schemas keep their original scope. A continued legacy save gets a linked record.
+    public static void ResumeRun(string runId) => ResumeRun(runId, null, 0);
+    public static void ResumeRun(string runId, string difficulty, int wave)
     {
         if (Current != null) Finish("abandoned", false);
         EndRun("continue");
         run = null; Current = null; counting = false; LastSaveError = null;
         History.Clear(); Array.Clear(DeathsByWave, 0, DeathsByWave.Length);
-        if (string.IsNullOrEmpty(runId)) return;
         try
         {
             string path = Path.Combine(DirectoryPath, runId + ".json");
-            if (!File.Exists(path)) return;
-            var saved = JsonUtility.FromJson<RunData>(File.ReadAllText(path));
-            if (saved == null || saved.endReason == "complete" || saved.levelCleared) return;
+            var saved = File.Exists(path) ? JsonUtility.FromJson<RunData>(File.ReadAllText(path)) : null;
+            if (saved == null || saved.schemaVersion != 5 || saved.gameCleared)
+            {
+                ResetRun(difficulty, "Unknown", runId);
+                return;
+            }
             if (saved.attempts != null) History.AddRange(saved.attempts);
             if (saved.deathsByWave != null) Array.Copy(saved.deathsByWave, DeathsByWave, Math.Min(saved.deathsByWave.Length, DeathsByWave.Length));
             saved.attempts = History; saved.deathsByWave = DeathsByWave;
             saved.finished = false; saved.endReason = null; saved.endedUtc = null;
             if (string.IsNullOrEmpty(sessionId)) sessionId = Guid.NewGuid().ToString("N");
             run = saved;
+            if (difficulty != null) AddDifficultyChange(run, difficulty, wave, "Continue");
             stage = DuelPhase.Configure; stagePaused = false;
             lastClock = lastSave = Time.realtimeSinceStartupAsDouble;
-            Save();
+            // A save resumes in preparation. Retain the last checkpoint of an interrupted fight.
+            if (saved.activeAttempt != null && saved.activeAttempt.result == "in_progress")
+            {
+                Current = saved.activeAttempt;
+                Finish("abandoned", false, "interrupted");
+            }
+            else Save();
         }
-        catch (Exception e) { run = null; Debug.LogWarning("Analytics record could not be resumed: " + e.Message); }
+        catch (Exception e)
+        {
+            run = null;
+            Debug.LogWarning("Analytics record could not be resumed: " + e.Message);
+            ResetRun(difficulty, "Unknown", runId);
+        }
+    }
+    static bool AddDifficultyChange(RunData record, string value, int wave, string location)
+    {
+        if (record.latestDifficulty == value) return false;
+        record.difficultyChanges.Add(new DifficultyChange {
+            from = record.latestDifficulty, to = value, wave = wave, location = location,
+            utc = DateTime.UtcNow.ToString("o"), playSeconds = record.playSeconds });
+        record.latestDifficulty = value;
+        return true;
+    }
+    public static void ChangeDifficulty(string value, int wave, DuelPhase phase)
+    {
+        if (!RunActive) return;
+        TrackTime();
+        if (AddDifficultyChange(run, value, wave, phase.ToString())) Save();
+    }
+    public static void ChangeSavedDifficulty(string runId, string value, int wave)
+    {
+        if (string.IsNullOrEmpty(runId)) return;
+        try
+        {
+            string path = Path.Combine(DirectoryPath, runId + ".json");
+            if (!File.Exists(path)) return;
+            var record = JsonUtility.FromJson<RunData>(File.ReadAllText(path));
+            if (record.schemaVersion != 5 || record.gameCleared || !AddDifficultyChange(record, value, wave, "Menu")) return;
+            record.updatedUtc = DateTime.UtcNow.ToString("o");
+            WriteFile(path, JsonUtility.ToJson(record, true));
+            if (run?.runId == runId)
+            {
+                run.latestDifficulty = value;
+                run.difficultyChanges = record.difficultyChanges;
+            }
+        }
+        catch (Exception e) { LastSaveError = e.Message; Debug.LogWarning("Analytics difficulty update failed: " + e.Message); }
     }
     public static void SetName(string name, bool confirmed = false)
     {
@@ -226,7 +296,10 @@ public static class PlayMetrics
         if (loadout.TotalRules > 0 && run.firstRuleAtSeconds < 0) run.firstRuleAtSeconds = run.playSeconds;
         switch (change)
         {
-            case "add": run.rulesAdded++; break;
+            case "add":
+                if (run.rulesAdded == 0) run.firstCustomRuleAtSeconds = run.playSeconds;
+                run.rulesAdded++;
+                break;
             case "edit": run.rulesEdited++; break;
             case "remove": run.rulesRemoved++; break;
             case "reorder": run.rulesReordered++; break;
@@ -235,15 +308,22 @@ public static class PlayMetrics
     }
     public static void OpenHelp() { if (RunActive) { run.helpOpened++; Save(); } }
     public static void RecordTrainingDeath() { if (RunActive) { run.trainingDeaths++; Save(); } }
-    public static void BeginAttempt(int wave, ConditionalLoadout loadout, float[] tuning, bool waveJump, bool tuned)
+    public static void BeginAttempt(int wave, ConditionalLoadout loadout, float[] tuning, bool waveJump, bool tuned, int finalBossPhase = 0)
     {
-        if (wave < 1 || wave > 2) return;
+        if (wave < 1 || wave > DuelGame.FinalBossWave) return;
         if (!RunActive) ResetRun();
         if (Current != null) Finish("abandoned", false);
         Current = new Attempt { attemptId = Guid.NewGuid().ToString("N"), wave = wave,
             startedUtc = DateTime.UtcNow.ToString("o"), rules = loadout.Copy().Operations,
             initialTuning = (float[])tuning.Clone(), finalTuning = (float[])tuning.Clone(),
             developerWaveJump = waveJump, tuningChanged = tuned, testData = waveJump || tuned };
+        Current.difficulty = run.latestDifficulty;
+        Current.finalBossStartPhase = Current.finalBossPhase = finalBossPhase;
+        if (wave == DuelGame.FinalBossWave)
+        {
+            Current.invadedRules = new List<string>(2);
+            Current.phaseTwoOperations = NewOperations();
+        }
         Current.ruleDescriptions = Describe(loadout);
         run.latestRules = Current.ruleDescriptions;
         counting = false;
@@ -279,7 +359,12 @@ public static class PlayMetrics
     public static void Record(ControlOperation operation, string automaticAction, int count = 0, float seconds = 0, bool hold = false, bool drop = false)
     {
         if (!Counting) return;
-        var op = Current.operations[(int)operation];
+        RecordOperation(Current.operations[(int)operation], operation, automaticAction, count, seconds, hold, drop);
+        if (Current.finalBossPhase == 2)
+            RecordOperation(Current.phaseTwoOperations[(int)operation], operation, automaticAction, count, seconds, hold, drop);
+    }
+    static void RecordOperation(OperationStats op, ControlOperation operation, string automaticAction, int count, float seconds, bool hold, bool drop)
+    {
         bool automatic = !string.IsNullOrEmpty(automaticAction);
         if (hold) { if (automatic) op.automaticHoldSeconds += seconds; }
         else if (drop) { if (automatic) op.automaticDrops += count; else op.manualDrops += count; }
@@ -333,6 +418,12 @@ public static class PlayMetrics
         Current.result = result; Current.endedUtc = DateTime.UtcNow.ToString("o");
         Current.endReason = reason ?? result;
         Calculate(Current.operations, out Current.hasAutomationData, out Current.automaticPercent);
+        if (result == "won" && Current.wave == DuelGame.FinalBossWave)
+        {
+            run.gameCleared = true;
+            run.gameClearSeconds = run.combatSeconds + Current.seconds;
+        }
+        if (Current.wave == DuelGame.FinalBossWave) Calculate(Current.phaseTwoOperations, out _, out _);
         run.attempts.Add(Current);
         run.combatSeconds += Current.seconds;
         run.testData |= Current.testData;
@@ -340,8 +431,15 @@ public static class PlayMetrics
         Current = null;
         run.operations = RunOperations(false);
         Calculate(run.operations, out run.hasAutomationData, out run.automaticPercent);
-        if (levelCleared) { run.levelCleared = true; run.levelClearSeconds = run.combatSeconds; }
-        Save();
+        if (levelCleared && !run.levelCleared)
+        {
+            TrackTime();
+            run.levelCleared = true;
+            run.levelClearSeconds = run.combatSeconds;
+            run.missionTwoClearPlaySeconds = run.playSeconds;
+        }
+        if (run.gameCleared) EndRun("complete");
+        else Save();
     }
     public static bool Save()
     {
@@ -354,7 +452,11 @@ public static class PlayMetrics
             // JsonUtility cannot write null objects; mark "no active attempt" explicitly instead of
             // exporting a default object that reads as an in-progress wave 0 fight.
             run.activeAttempt = Current ?? new Attempt { result = "none", operations = Array.Empty<OperationStats>() };
-            if (Current != null) Calculate(Current.operations, out Current.hasAutomationData, out Current.automaticPercent);
+            if (Current != null)
+            {
+                Calculate(Current.operations, out Current.hasAutomationData, out Current.automaticPercent);
+                if (Current.wave == DuelGame.FinalBossWave) Calculate(Current.phaseTwoOperations, out _, out _);
+            }
             WriteFile(JsonPath, JsonUtility.ToJson(run, true));
             lastSave = Time.realtimeSinceStartupAsDouble;
             LastSaveError = null;

@@ -42,7 +42,7 @@ namespace GoGhost.Duel
                 {
                     PlayMetrics.Calculate(operations,out bool valid,out float percent);
                     AnalyticsText("Recorded operations",-390,95,520,27);
-                    AnalyticsText("Deaths  W1: "+run.deathsByWave[1]+"   W2: "+run.deathsByWave[2],270,95,700);
+                    AnalyticsText("Deaths  W1: "+run.deathsByWave[1]+"   W2: "+run.deathsByWave[2]+"   W3: "+run.deathsByWave[3],270,95,700);
                     string[] headings={"Operation","Automatic","Manual","Auto %"};
                     float[] xs={-470,-100,225,510}; float[] widths={360,300,300,240};
                     for(int c=0;c<4;c++)AnalyticsText(headings[c],xs[c],35,widths[c]);
@@ -58,6 +58,7 @@ namespace GoGhost.Duel
                         +"    |    Drops  Auto: "+operations[1].automaticDrops+"  Manual: "+operations[1].manualDrops,0,-265,1300,21);
                     if(fight!=null)AnalyticsText("Remaining HP  You: "+fight.playerHealth+" / "+fight.playerMaxHealth
                         +(fight.gunnerMaxHealth>0?"    Gunner: "+fight.gunnerHealth+" / "+fight.gunnerMaxHealth:"")
+                        +(fight.finalBossMaxHealth>0?"    Final Boss P"+fight.finalBossPhase+": "+fight.finalBossHealth+" / "+fight.finalBossMaxHealth:"")
                         +(fight.swordMaxHealth>0?"    Swordsman: "+fight.swordHealth+" / "+fight.swordMaxHealth:""),0,-318,1300,21);
                 }
             }
@@ -76,9 +77,9 @@ namespace GoGhost.Duel
                 "Character: "+MetricNumber(run.creationSeconds)+"s    Configuration: "+MetricNumber(run.configurationSeconds)+"s",
                 "Training: "+MetricNumber(run.trainingSeconds)+"s    Paused: "+MetricNumber(run.pauseSeconds)+"s",
                 "Rules  Added: "+run.rulesAdded+"    Edited: "+run.rulesEdited+"    Removed: "+run.rulesRemoved+"    Reordered: "+run.rulesReordered,
-                "Most rules equipped: "+run.maxRulesEquipped,
-                "First rule: "+(run.firstRuleAtSeconds<0?"N/A":MetricNumber(run.firstRuleAtSeconds)+"s")+"    First fight: "+(run.firstFightAtSeconds<0?"N/A":MetricNumber(run.firstFightAtSeconds)+"s"),
-                "Deaths  Training: "+run.trainingDeaths+"    W1: "+run.deathsByWave[1]+"    W2: "+run.deathsByWave[2],
+                "Most rules equipped: "+run.maxRulesEquipped+"    Difficulty: "+run.latestDifficulty+"    Tutorial: "+run.tutorialSelection,
+                "First custom rule: "+(run.firstCustomRuleAtSeconds<0?"N/A":MetricNumber(run.firstCustomRuleAtSeconds)+"s")+"    First fight: "+(run.firstFightAtSeconds<0?"N/A":MetricNumber(run.firstFightAtSeconds)+"s"),
+                "Deaths  Training: "+run.trainingDeaths+"    W1: "+run.deathsByWave[1]+"    W2: "+run.deathsByWave[2]+"    W3: "+run.deathsByWave[3],
                 (run.finished?"Ended: "+run.endReason:"In progress")+(run.editor?"    EDITOR":"")+(run.testData?"    TEST DATA":"")
             };
             for(int i=0;i<rows.Length;i++)AnalyticsText(rows[i],0,95-i*52,1300,23);
@@ -109,7 +110,7 @@ namespace GoGhost.Duel
             {
                 int index=run.attempts.Count-1-analyticsPage*5-i;if(index<0)break;
                 var a=run.attempts[index];
-                AnalyticsText("#"+(index+1)+"    "+MetricWave(a.wave)+" "+PlayMetrics.BossName(a.wave)+"    "+a.result.ToUpperInvariant()
+                AnalyticsText("#"+(index+1)+"    "+MetricWave(a.wave)+" "+PlayMetrics.BossName(a.wave)+(a.finalBossPhase>0?" P"+a.finalBossStartPhase+" to P"+a.finalBossPhase:"")+"    "+a.result.ToUpperInvariant()
                     +"    "+MetricNumber(a.seconds)+"s    Auto "+MetricPercent(a.hasAutomationData,a.automaticPercent)+(a.testData?"    TEST":""),0,75-i*65,1300,23,58);
             }
             if(run.attempts.Count==0)AnalyticsText("No completed fights yet.",0,55,1300);

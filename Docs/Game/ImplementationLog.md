@@ -1,5 +1,11 @@
 # GO GHOST slice implementation
 
+## 2026-11-19 — Beta playtest telemetry
+
+Schema 5 keeps the Mission 2 Alpha milestone and continues through Final Boss victory. Final Boss attempts save entry and last phase, both combat times, invasions, remaining HP and phase-two control use. Runs record the initial and per-attempt difficulty, changes from Settings, tutorial choice, the first confirmed custom rule and guided/free practice visits. Continuing a legacy save opens a linked record. Interrupted attempts retain their last checkpoint.
+
+Unity 6000.6.0f1 compiled. Check Game Flow passed in `Logs/BossEncounter/Flow-20261120-002010-bc0a0a/game-flow.txt`. Its exported run recorded Easy at creation, Hard on the first defeat, two changes in title Settings and three free practice visits. The same JSON held the W2 milestone, a W3 phase-one entry with two invasions, a phase-two death, a direct phase-two retry and victory. An isolated checkpoint check also retained an interrupted W3 attempt once without a death and rejected Bonus attempts. Combat outcomes were controlled. Full tutorial and human combat balance were not tested.
+
 ## 2026-11-18 — Web delivery
 
 WebGL player built from 5de1fb0 in the open editor: 0 errors, 23 warnings, 157 s. Output: `Builds/Web-20261118/go-ghost`. Data file 33,667,686 bytes in three parts; Build payload 46,793,591 bytes. Installed in `Th-Hjj/thhong-games` (commit 5302084) and pushed. Check Game Flow passed before the build, on 73b8c61, at `Logs/BossEncounter/Flow-20261118-092553-d96780`; the credits change after it was only compiled and captured. The site passed `npm run build`. Headless Edge loaded the package from the site folder and from https://thhong.games/games/go-ghost/ to the flashing-lights page with no JavaScript or console errors, and all six deployed Build files match the package by SHA-256. NOT TESTED in the browser: anything past the flashing-lights page, including the credits and the rule Confirm motion.

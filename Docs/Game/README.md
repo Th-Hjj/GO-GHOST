@@ -30,7 +30,7 @@ Each preparation page keeps the body and Rules list beside + Add Rule. Edit a ru
 
 There is no Help page. The pause key, or the **Menu** button on preparation pages, opens the game menu on every page after the title: Resume, Configuration (in a fight or the Test Room), Key Bindings, Settings and Main Menu. Each New Game saves one independent JSON record with the character nickname; see [Gameplay Analytics](GameplayAnalytics.md).
 
-Mission 2 victory closes the playtest record. Mission 3 phase one opens with the same three-second countdown as Missions 1 and 2. The Boss’s combat AI controls his movement and axe attacks. At 66% and 33% health he adds a rule to the player’s left sidebar for that fight. The EMP seals the player’s rules for phase two. Phase-two defeat offers **Retry Phase 2**. Victory holds the Boss defeat pose before **You've Finished The Game!** and its **Continue** button, which rolls the credits. [Progression and dialogue](BossEncounters.md#final-boss-and-optional-bonus)
+Mission 2 victory marks the Alpha comparison point. Final Boss victory completes the Beta record. Mission 3 phase one opens with the same three-second countdown as Missions 1 and 2. The Boss’s combat AI controls his movement and axe attacks. At 66% and 33% health he adds a rule to the player’s left sidebar for that fight. The EMP seals the player’s rules for phase two. Phase-two defeat offers **Retry Phase 2**. Victory holds the Boss defeat pose before **You've Finished The Game!** and its **Continue** button, which rolls the credits. [Progression and dialogue](BossEncounters.md#final-boss-and-optional-bonus)
 
 ## Builds and Editor checks
 

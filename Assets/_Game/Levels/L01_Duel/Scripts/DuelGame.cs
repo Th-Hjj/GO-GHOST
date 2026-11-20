@@ -119,7 +119,7 @@ namespace GoGhost.Duel
             SaveNotice = null; saveFailed = savedRulesNeedRepair = false;
             handler.ResetSpeakerName();
             ClearEncounter("new_game");
-            PlayMetrics.ResetRun();
+            PlayMetrics.ResetRun(difficulty.ToString(), tutorialWanted ? "On" : "Off");
             savingRun = true; faceSaved = greeted = tutorialDone = false; savedRunId = null;
             metricsWaveJumpPending = false;
             Wave = 1;
@@ -524,7 +524,7 @@ namespace GoGhost.Duel
         void FixedUpdate()
         {
             if ((Phase == DuelPhase.Fight || Phase == DuelPhase.Training) && !Paused) FightClock += Time.fixedDeltaTime;
-            if (Phase == DuelPhase.Fight) PlayMetrics.SetClock(FightClock);
+            if (Phase == DuelPhase.Fight) TickCombatMetrics();
         }
         void LateUpdate()
         {
@@ -544,7 +544,6 @@ namespace GoGhost.Duel
             FinishMetrics(defeat ? "died" : "won", !defeat && Wave == 2);
             if (!defeat)
             {
-                if (Wave == 2) PlayMetrics.EndRun("complete");
                 BeginVictoryPresentation();
                 return;
             }
@@ -563,7 +562,8 @@ namespace GoGhost.Duel
         public void ConfigurePlaytestWave(int wave)
         {
             NewGame(); savingRun = false; FinishCharacterCreation(installStarterRule: false); Wave = Mathf.Clamp(wave, 1, BonusWave); metricsWaveJumpPending = true;
-            if (Wave > 2) { PlayMetrics.MarkTestData(); PlayMetrics.EndRun("developer_wave_jump"); }
+            PlayMetrics.MarkTestData();
+            if (Wave == BonusWave) PlayMetrics.EndRun("developer_wave_jump");
             ui.Show();
         }
         public void ObserveThirdWave()

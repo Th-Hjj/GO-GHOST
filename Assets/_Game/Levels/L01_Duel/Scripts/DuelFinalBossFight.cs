@@ -142,6 +142,13 @@ namespace GoGhost.Duel
             try { BindEncounterRules(); }
             finally { DraftLoadout = installed; }
             InvadedRuleCount++;
+            if (PlayMetrics.Current?.invadedRules != null)
+            {
+                var expression = ConditionalCatalog.Expression(rule);
+                PlayMetrics.Current.invadedRules.Add(expression.Conditions + " -> " + expression.Action);
+                CaptureMetricsHealth();
+                PlayMetrics.Save();
+            }
             ui.FlashInvadedRule(order);
             ui.Show();
             Trace($"final boss invasion: {ConditionalCatalog.Expression(rule).Conditions} -> {ConditionalCatalog.Expression(rule).Action}");

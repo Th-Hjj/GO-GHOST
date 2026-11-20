@@ -61,14 +61,20 @@ public static partial class BossEncounterSmoke
         yield return Click("CancelRuleEdit");
         yield return WaitFor(() => AvailableButton("StartMission") != null, "Cancel did not return to the overview.");
         string metricsPath = PlayMetrics.JsonPath;
-        string closedMetrics = null;
+        Require(PlayMetrics.Run.initialDifficulty == "Easy" && PlayMetrics.Run.tutorialSelection == "Off", "New Game telemetry lost the selected settings.");
         int equippedRules = game.DraftLoadout.TotalRules;
 
         for (int wave = 1; wave <= DuelGame.FinalBossWave; wave++)
         {
             Require(game.Wave == wave && game.TrainingPending, "Missing preparation for Mission " + wave);
             if (wave == 1)
+            {
                 game.EditLoadout(loadout => Require(loadout.TryAddRule(ControlOperation.Jump, ConditionalLoadout.CreateTutorialJumpRule()), "Missing victory sidebar fixture."));
+                Require(PlayMetrics.Run.firstCustomRuleAtSeconds < 0 && PlayMetrics.Run.rulesAdded == 0, "Example counted as a custom rule.");
+                game.EditLoadout(loadout => loadout.Operations[(int)ControlOperation.Jump].Rules.Clear(), "remove");
+                game.EditLoadout(loadout => Require(loadout.TryAddRule(ControlOperation.Jump, ConditionalLoadout.CreateTutorialJumpRule()), "Missing custom rule fixture."), "add");
+                Require(PlayMetrics.Run.firstCustomRuleAtSeconds >= PlayMetrics.Run.firstRuleAtSeconds && PlayMetrics.Run.rulesAdded == 1, "First confirmed custom rule missing.");
+            }
             if (wave == 2)
                 game.EditLoadout(loadout => loadout.Operations[(int)ControlOperation.Jump].Rules.Clear());
             yield return CheckProfile(wave);
@@ -107,8 +113,8 @@ public static partial class BossEncounterSmoke
             else
             {
                 yield return WaitFor(() => game.Wave == DuelGame.FinalBossWave && game.Phase == DuelPhase.Configure, "Mission 3 preparation.", 25);
-                Require(!PlayMetrics.RunActive && PlayMetrics.Run.levelCleared, "Mission 2 did not close analytics.");
-                closedMetrics = File.ReadAllText(metricsPath);
+                Require(PlayMetrics.JsonPath == metricsPath && PlayMetrics.RunActive && PlayMetrics.Run.levelCleared && !PlayMetrics.Run.gameCleared,
+                    "Mission 2 did not retain its milestone in the original active record.");
             }
         }
 
@@ -140,6 +146,11 @@ public static partial class BossEncounterSmoke
         game.Player.IsInvulnerable = false;
         game.Player.TakeDamage(100000, finalBoss.gameObject);
         yield return WaitFor(() => game.Phase == DuelPhase.Failed && game.CanRetryFinalBossPhaseTwo, "Missing phase-two defeat/retry.");
+        var lost = PlayMetrics.History[PlayMetrics.History.Count - 1];
+        Require(lost.wave == 3 && lost.result == "died" && lost.finalBossStartPhase == 1 && lost.finalBossPhase == 2
+            && lost.phaseOneExitPlayerHealth == phaseOneEndHealth && lost.invadedRules.Count == 2
+            && lost.swordHealth == -1 && lost.finalBossMaxHealth == finalBoss.Health.MaxHealth && lost.phaseOneCombatSeconds > 0,
+            "Missing Final Boss phase, invasions or health in the defeated attempt.");
         yield return Click("RetryPhaseTwo");
         Require(game.Phase == DuelPhase.Prepare && game.Bosses[0].Axe.PhaseTwo && !game.FinalBossCutscene, "Phase-two retry replayed phase one or its transition.");
         Require(!game.CanChangeDifficulty && game.Difficulty == GameDifficulty.Hard, "Phase-two retry lost its difficulty lock or selection.");
@@ -164,14 +175,26 @@ public static partial class BossEncounterSmoke
         foreach (var line in new[] { "You've", "Finished", "The Game!" })
             Require(Array.Exists(texts, text => text.text == line), "Missing ending text: " + line);
         Require(!GameSave.Exists && GameProgress.Cleared, "Victory did not remove the test save and set the isolated cleared flag.");
-        Require(File.ReadAllText(metricsPath) == closedMetrics, "Final Boss or retry changed the closed Mission 2 metrics.");
+        var exported = JsonUtility.FromJson<PlayMetrics.RunData>(File.ReadAllText(metricsPath));
+        var won = exported.attempts[exported.attempts.Count - 1];
+        Require(exported.schemaVersion == 5 && exported.finished && exported.endReason == "complete" && exported.gameCleared
+            && exported.initialDifficulty == "Easy" && exported.latestDifficulty == "Hard" && exported.tutorialSelection == "Off"
+            && exported.difficultyChanges.Exists(change => change.wave == 1 && change.from == "Easy" && change.to == "Hard")
+            && exported.difficultyChanges.Exists(change => change.wave == 2 && change.location == "Menu" && change.to == "Easy")
+            && exported.difficultyChanges.Exists(change => change.wave == 2 && change.location == "Menu" && change.to == "Hard")
+            && exported.guidedTestRoomVisits == 0 && exported.freeTestRoomVisits == 3
+            && exported.levelCleared && exported.deathsByWave[3] == 1 && exported.gameClearSeconds > exported.levelClearSeconds
+            && exported.activeAttempt.result == "none" && won.wave == 3 && won.result == "won" && won.finalBossHealth == 0
+            && won.finalBossStartPhase == 2 && won.finalBossPhase == 2 && won.difficulty == "Hard"
+            && won.phaseOneCombatSeconds == 0 && won.phaseOneExitPlayerHealth == -1 && won.invadedRules.Count == 0,
+            "Export did not preserve the W2 milestone, Final Boss defeat, phase-two retry and final clear.");
         yield return Settle(1.5f);
         yield return Shot("finished");
         yield return Click("Main Menu");
         Require(game.Phase == DuelPhase.Menu && game.Player == null && !game.Paused && !AudioListener.pause && Time.timeScale == 1,
             "Main Menu did not clear combat/global pause.");
         yield return CheckCredits();
-        Note("PASS final victory protection, ending, save removal, cleared flag, analytics cutoff, Main Menu cleanup.");
+        Note("PASS final victory protection, ending, save removal, cleared flag, full-run analytics, Main Menu cleanup.");
         Note("NOT TESTED: complete tutorial, rule editing, physical input, the pause key, Reduce Flashing, balance, standalone build, other hardware.");
     }
 
@@ -280,12 +303,18 @@ public static partial class BossEncounterSmoke
         }
         rules.Add(new ConditionalRule { Condition = ConditionIds.GroundState, GroundState = GroundStateOption.Grounded,
             Action = ActionIds.Jump, DisplayOrder = 4 });
+        legacy.runId = "legacy-metrics";
+        string historicalPath = Path.Combine(PlayMetrics.DirectoryPath, legacy.runId + ".json");
+        const string historical = "{\"schemaVersion\":4,\"levelCleared\":true,\"endReason\":\"complete\"}";
+        File.WriteAllText(historicalPath, historical);
         var legacyJson = Newtonsoft.Json.Linq.JObject.Parse(JsonUtility.ToJson(legacy));
         legacyJson.Remove("difficulty");
         File.WriteAllText(path, legacyJson.ToString());
         File.WriteAllBytes(Path.Combine(folder, "face.png"), drawing);
         game.ContinueGame();
         Require(game.Difficulty == GameDifficulty.Normal, "Legacy save without difficulty did not default to Normal.");
+        Require(PlayMetrics.RunActive && PlayMetrics.Run.previousRunId == legacy.runId && PlayMetrics.JsonPath != historicalPath
+            && File.ReadAllText(historicalPath) == historical, "Continue overwrote historical W2 telemetry or lost the link.");
         Require(game.Phase == DuelPhase.Configure && game.DraftLoadout.TotalRules == 5
             && game.SaveNotice.Contains("reselected"), "Continue discarded historical rules or omitted repair feedback.");
         game.StartFight(); Require(game.Phase == DuelPhase.Configure, "Invalid historical rules entered combat.");

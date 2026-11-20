@@ -11,7 +11,17 @@ namespace GoGhost.Duel
         public void StartConfiguredEncounter()
         {
             if (!TrainingPending || Paused || DeveloperToolsOpen || !handler.CanEnterTestRoom || !DialogueAllowsPreparationNavigation || !ui.ConfigurationReady) return;
-            ui.WipeThen(1, () => { if (TrainingPending && !Paused && !DeveloperToolsOpen) CreateEncounter(true); });
+            bool guided = handler.Focus == TutorialFocus.EnterTestRoom;
+            ui.WipeThen(1, () =>
+            {
+                if (!TrainingPending || Paused || DeveloperToolsOpen) return;
+                if (PlayMetrics.RunActive)
+                {
+                    if (guided) PlayMetrics.Run.guidedTestRoomVisits++;
+                    else PlayMetrics.Run.freeTestRoomVisits++;
+                }
+                CreateEncounter(true);
+            });
         }
 
         public void BackFromTraining()

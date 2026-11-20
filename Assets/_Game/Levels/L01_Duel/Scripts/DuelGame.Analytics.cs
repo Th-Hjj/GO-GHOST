@@ -9,7 +9,7 @@ namespace GoGhost.Duel
         PlayerShooting metricsGun;
         PlayerDodge metricsDodge;
         bool metricsWaveJumpPending;
-        bool MetricsActive => Phase == DuelPhase.Fight && !Paused && !DeveloperToolsOpen && PlayMetrics.Counting;
+        bool MetricsActive => Phase == DuelPhase.Fight && !Paused && !DeveloperToolsOpen && !FinalBossCutscene && !InvasionHeld && PlayMetrics.Counting;
 
         bool MetricsTuned()
         {
@@ -19,11 +19,12 @@ namespace GoGhost.Duel
         }
         void BeginMetrics()
         {
-            // The playtest record ends at W2; the Final Boss visit and Bonus are unmeasured.
-            if (Wave > 2) return;
+            if (Wave > FinalBossWave || GhostArena) return;
+            if (!PlayMetrics.RunActive) PlayMetrics.ResetRun(Difficulty.ToString(), "Unknown");
             PlayMetrics.SetName(Appearance.DisplayName);
             PlayMetrics.RecordConfiguration(DraftLoadout);
-            PlayMetrics.BeginAttempt(Wave, DraftLoadout, developerValues, metricsWaveJumpPending, MetricsTuned());
+            PlayMetrics.BeginAttempt(Wave, DraftLoadout, developerValues, metricsWaveJumpPending, MetricsTuned(),
+                Wave == FinalBossWave ? actors[0].Health.PhaseIndex : 0);
             metricsWaveJumpPending = false;
             metricsMovement = Player.GetComponent<PlayerMovement>();
             metricsInput = input; metricsGun = Rifle; metricsDodge = Dodge;
@@ -78,9 +79,27 @@ namespace GoGhost.Duel
             foreach (var boss in actors)
             {
                 if (boss == null) continue;
+                if (attempt.wave == FinalBossWave)
+                {
+                    attempt.finalBossPhase = boss.Health.PhaseIndex;
+                    attempt.finalBossHealth = boss.Health.CurrentHealth;
+                    attempt.finalBossMaxHealth = boss.Health.MaxHealth;
+                    continue;
+                }
                 if (boss.ActorId == 1) { attempt.gunnerHealth = boss.Health.CurrentHealth; attempt.gunnerMaxHealth = boss.Health.MaxHealth; }
                 if (boss.ActorId == 2) { attempt.swordHealth = boss.Health.CurrentHealth; attempt.swordMaxHealth = boss.Health.MaxHealth; }
             }
+        }
+        void TickCombatMetrics()
+        {
+            var attempt = PlayMetrics.Current;
+            if (attempt == null) return;
+            if (attempt.wave != FinalBossWave) { PlayMetrics.SetClock(FightClock); return; }
+            if (!MetricsActive) return;
+            attempt.finalBossPhase = actors[0].Health.PhaseIndex;
+            if (attempt.finalBossPhase == 1) attempt.phaseOneCombatSeconds += Time.fixedDeltaTime;
+            else attempt.phaseTwoCombatSeconds += Time.fixedDeltaTime;
+            attempt.seconds = attempt.phaseOneCombatSeconds + attempt.phaseTwoCombatSeconds;
         }
         void MetricsStage()
         {
@@ -102,7 +121,7 @@ namespace GoGhost.Duel
         {
             PlayMetrics.SetName(Appearance?.DisplayName);
             CaptureMetricsHealth();
-            PlayMetrics.SetClock(FightClock);
+            if (PlayMetrics.Current?.wave != FinalBossWave) PlayMetrics.SetClock(FightClock);
             PlayMetrics.Finish(result, cleared, reason);
             UnbindMetrics();
         }

@@ -124,7 +124,7 @@ Manual and automatic Dodge share the executor's registered-Boss pass-through rul
 
 Normal weapon tuning is Revolver **20 damage / 6 rounds / .45 s primary / 1.80 s auto reload / .10 s burst / +/-14 degrees burst spread**; Move **7**, Jump **12**, gravity scale **3**; Dodge **distance 3 / movement .18 s / immunity .20 s / start cooldown 1.7 s**. No action writes transforms, damage, cooldowns or outcomes. Bullets cross interior terrain, stop at the Arena perimeter and respect allied Boss blocking; physical movement/melee collision and current Boss combat remain intact.
 
-Each combat attempt starts with a copy of the equipped rules, fresh actors and a three-second preparation countdown. **Retry** starts the same encounter directly. **Configuration** returns to preparation. Outside the first guided visit, Test Room is optional. The current wave route and Wave 2 metrics cutoff are documented in [Boss Encounters](BossEncounters.md).
+Each combat attempt starts with a copy of the equipped rules, fresh actors and a three-second preparation countdown. **Retry** starts the same encounter directly. **Configuration** returns to preparation. Outside the first guided visit, Test Room is optional. The current wave route and Final Boss telemetry scope are documented in [Boss Encounters](BossEncounters.md).
 
 ## Configuration compatibility
 

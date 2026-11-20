@@ -68,6 +68,12 @@ namespace GoGhost.Duel
             finalBossPhaseTwoHealth = Player != null ? Player.CurrentHealth : -1;
             FinalBossPhaseTwoReached = true;
             FinalBossCutscene = true;
+            if (PlayMetrics.Current != null)
+            {
+                PlayMetrics.Current.phaseOneExitPlayerHealth = finalBossPhaseTwoHealth;
+                CaptureMetricsHealth();
+                PlayMetrics.Save();
+            }
             music?.StopMusic();
             ui.FadeSpentBossHealth();
             finalBossTransition = StartCoroutine(FinalBossTransition());
@@ -128,6 +134,7 @@ namespace GoGhost.Duel
             while (boss.Axe.Transitioning) yield return null;
             finalBossTransition = null;
             FinalBossCutscene = false;
+            MetricsStage();
             ui.ClearSidebarSeal();
         }
 

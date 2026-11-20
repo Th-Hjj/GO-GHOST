@@ -371,13 +371,19 @@ namespace GoGhost.Duel
                 if (slot != null)
                 {
                     slot.difficulty = value;
-                    if (GameSave.Write(slot, drawing)) { SaveNotice = null; return true; }
+                    if (GameSave.Write(slot, drawing))
+                    {
+                        PlayMetrics.ChangeSavedDifficulty(slot.runId, value.ToString(), slot.wave);
+                        SaveNotice = null;
+                        return true;
+                    }
                 }
                 SaveNotice = GameSave.LastMessage;
                 return false;
             }
             if (!CanChangeDifficulty) return false;
             Difficulty = value;
+            PlayMetrics.ChangeDifficulty(value.ToString(), Wave, Phase);
             if (Phase != DuelPhase.CharacterCreation) SaveGame();
             return true;
         }
@@ -419,7 +425,7 @@ namespace GoGhost.Duel
             saveFailed = false;
             if (data == null) { ui.Show(); return; }
             ClearEncounter("continue");
-            PlayMetrics.ResumeRun(data.runId);
+            PlayMetrics.ResumeRun(data.runId, data.difficulty.ToString(), data.wave);
             savedRunId = data.runId;
             metricsWaveJumpPending = false;
             Wave = Mathf.Clamp(data.wave, 1, FinalBossWave);
